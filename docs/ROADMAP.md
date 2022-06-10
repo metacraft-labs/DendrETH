@@ -93,7 +93,7 @@ Goals:
 
 ## Collaboration and Reporting
 
-All development will take place in this Github repository and all communications related to the project will be carried out in a public [Telegram group](https://t.me/DenrETH). The team will publish weekly reports intended for the EF research team and other technical audiences, summarizing the most imporant findings and developments.
+All development will take place in this Github repository and all communications related to the project will be carried out in a public [Telegram group](https://t.me/ProjectDendrETH). The team will publish weekly reports intended for the EF research team and other technical audiences, summarizing the most imporant findings and developments.
 
 Upon important project milestones, Blockdaemon will publish a series of explainer articles promoting the project to the general public.
 
