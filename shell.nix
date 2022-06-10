@@ -7,6 +7,9 @@ mkShell {
     # For priting the direnv banner
     figlet
 
+    # For formatting Nix files
+    alejandra
+
     # For an easy way to launch all required blockchain simulations
     # and tailed log files
     tmux
@@ -14,7 +17,7 @@ mkShell {
 
     # Node.js dev environment for unit tests
     nodejs
-    (yarn.override { inherit nodejs; })
+    (yarn.override {inherit nodejs;})
   ];
 
   shellHook = ''
