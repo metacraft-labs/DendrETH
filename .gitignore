@@ -1,0 +1,6 @@
+# Each developer can create a personal .env file with
+# local settings overrides (e.g. WEB3_URL)
+.env
+
+# Cached profile files created by direnv
+.direnv/
