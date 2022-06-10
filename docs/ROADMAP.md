@@ -22,8 +22,8 @@ The majority of the implementation work will be carried out by an young team of 
 * [Emil Ivanichkov](https://github.com/EmilIvanichkovv)
 * [Simeon Armenchev](https://github.com/monyarm)
 * Dimo Dimov
-* Georgi Chonkov
-* Georgi Georgiev
+* [Georgi Chonkov](https://github.com/grc02)
+* [Georgi Georgiev](https://github.com/GeorgiGeorgiev7)
 
 The team will be provided with mentorship consisting of frequent planning meetings, code reviews and direct implementation assistance from Zahary Karadjov, [Petar Kirov](https://github.com/PetarKirov) (former CTO of the [Jarvis Network](https://jarvis.network/), a company specializing in DeFi solutions for multiple chains) and [Rafael Belchior](https://github.com/rafaelapb), member of the Blockdaemon team, contributor and mentor at Hyperledger Cactus, and PhD student at [Técnico Lisboa](http://tecnico.ulisboa.pt/) and [INESC-ID](https://www.inesc-id.pt/), focusing on blockchain interoperability research.
 
