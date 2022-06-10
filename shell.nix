@@ -1,6 +1,7 @@
 {pkgs}:
 with pkgs; let
   nodejs = nodejs-16_x;
+  corepack = callPackage ./nix/corepack-shims {inherit nodejs;};
 in
   mkShell {
     buildInputs = [
@@ -17,7 +18,7 @@ in
 
       # Node.js dev environment for unit tests
       nodejs
-      (yarn.override {inherit nodejs;})
+      corepack
     ];
 
     shellHook = ''
