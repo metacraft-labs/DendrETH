@@ -19,5 +19,8 @@
     "ethereum",
     "smart-contract",
     "light-client-sync"
-  ]
+  ],
+  "devDependencies": {
+    "prettier": "^2.6.2"
+  }
 }
