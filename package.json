@@ -1,0 +1,22 @@
+{
+  "name": "DendrETH",
+  "version": "0.0.1",
+  "license": "CC0-1.0",
+  "description": "A smart contract implementation of the Ethereum light client sync protocol",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/metacraft-labs/DendrETH.git"
+  },
+  "bugs": {
+    "url": "https://github.com/metacraft-labs/DendrETH/issues"
+  },
+  "homepage": "https://github.com/metacraft-labs/DendrETH#readme",
+  "keywords": [
+    "ethereum",
+    "smart-contract",
+    "light-client-sync"
+  ]
+}
