@@ -50,7 +50,7 @@ https://betterprogramming.pub/easily-reproducible-development-environments-with-
 
 The fully-reproducible development environment of the DendrETH project is defined in the following simple file:
 
-https://github.com/metacraft-labs/DenrETH/blob/main/shell.nix
+https://github.com/metacraft-labs/DendrETH/blob/main/shell.nix
 
 Please note that the precise versions of the referenced packages are pinned through a lock file, also stored in the repo.
 
