@@ -19,6 +19,9 @@ in
       # Node.js dev environment for unit tests
       nodejs
       corepack
+
+      # For WebAssembly unit-testing
+      wasm3 # wasmer is currently broken on macOS ARM
     ];
 
     shellHook = ''
