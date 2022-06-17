@@ -1,3 +1,6 @@
 [submodule "vendor/nim"]
 	path = vendor/nim
 	url = git@github.com:metacraft-labs/nim.git
+[submodule "nimbus-eth2"]
+	path = vendor/nimbus-eth2
+	url = git@github.com:status-im/nimbus-eth2.git
