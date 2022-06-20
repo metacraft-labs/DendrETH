@@ -1,37 +1,32 @@
 import
   spec/presets,
   spec/beacon_time,
-  spec/preset/mainnet/altair_preset,
-  spec/configs/mainnet
-# import
-#   ../../nimbus-eth2/vendor/nim-stew/stew/bitops2,
-#   ../../nimbus-eth2/vendor/nim-stew/stew/objects,
-#   ../../nimbus-eth2/beacon_chain/spec/datatypes/altair,
-#   ../../nimbus-eth2/beacon_chain/spec/helpers
-
-# from ../../nimbus-eth2/beacon_chain/consensus_object_pools/block_pools_types import BlockError
+  spec/preset/mainnet/altair_preset
 
 func period_contains_fork_version(
     period: SyncCommitteePeriod,
-    fork_version: Version): bool =
+    fork_version: Version): bool {.cdecl, exportc, dynlib} =
   ## Determine whether a given `fork_version` is used during a given `period`.
   let
     periodStartEpoch = period.start_epoch
     periodEndEpoch = periodStartEpoch + EPOCHS_PER_SYNC_COMMITTEE_PERIOD - 1
   return
-    if fork_version == SHARDING_FORK_VERSION:
-      periodEndEpoch >= SHARDING_FORK_EPOCH
-    elif fork_version == BELLATRIX_FORK_VERSION:
-      periodStartEpoch < SHARDING_FORK_EPOCH and
-      SHARDING_FORK_EPOCH != BELLATRIX_FORK_EPOCH and
-      periodEndEpoch >= BELLATRIX_FORK_EPOCH
-    elif fork_version == ALTAIR_FORK_VERSION:
-      periodStartEpoch < BELLATRIX_FORK_EPOCH and
-      BELLATRIX_FORK_EPOCH != ALTAIR_FORK_EPOCH and
-      periodEndEpoch >= ALTAIR_FORK_EPOCH
-    elif fork_version == GENESIS_FORK_VERSION:
+    if fork_version == defaultRuntimeConfig.SHARDING_FORK_VERSION:
+      periodEndEpoch >= defaultRuntimeConfig.SHARDING_FORK_EPOCH
+    elif fork_version == defaultRuntimeConfig.BELLATRIX_FORK_VERSION:
+      periodStartEpoch < defaultRuntimeConfig.SHARDING_FORK_EPOCH and
+      defaultRuntimeConfig.SHARDING_FORK_EPOCH != defaultRuntimeConfig.BELLATRIX_FORK_EPOCH and
+      periodEndEpoch >= defaultRuntimeConfig.BELLATRIX_FORK_EPOCH
+    elif fork_version == defaultRuntimeConfig.ALTAIR_FORK_VERSION:
+      periodStartEpoch < defaultRuntimeConfig.BELLATRIX_FORK_EPOCH and
+      defaultRuntimeConfig.BELLATRIX_FORK_EPOCH != defaultRuntimeConfig.ALTAIR_FORK_EPOCH and
+      periodEndEpoch >= defaultRuntimeConfig.ALTAIR_FORK_EPOCH
+    elif fork_version == defaultRuntimeConfig.GENESIS_FORK_VERSION:
       # Light client sync protocol requires Altair
       false
     else:
       # Unviable fork
       false
+
+proc start*() {.exportc: "_start".} =
+  discard

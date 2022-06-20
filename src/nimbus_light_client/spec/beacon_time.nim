@@ -45,10 +45,14 @@ template ethTimeUnit*(typ: type) {.dirty.} =
 #   proc readValue*(reader: var JsonReader, value: var typ)
 #                  {.raises: [IOError, SerializationError, Defect].} =
 #     value = typ reader.readValue(uint64)
+template ethVersionUnit*(typ: type) {.dirty.} =
+  proc `==`*(x: typ, y: typ): bool {.borrow, noSideEffect.}
+
 
 ethTimeUnit Slot
 ethTimeUnit Epoch
 ethTimeUnit SyncCommitteePeriod
+ethVersionUnit Version
 
 
 template start_epoch*(period: SyncCommitteePeriod): Epoch =

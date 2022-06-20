@@ -1,0 +1,25 @@
+<html>
+  <head>
+    <script>
+    (async () => {
+        const moduleName = 'res.wasm';
+        const wasmModule = await fetch(moduleName)
+
+        const importObject = {
+            env: {
+                print: x => {
+                    console.log(x);
+                }
+            }
+        };
+        const { instance: { exports } } = await WebAssembly.instantiateStreaming(wasmModule, importObject);
+        console.log(exports);
+        const r = exports.period_contains_fork_version(BigInt(65), [ 0x03, 0x00, 0x00, 0x00]);
+        console.log(r)
+    })();
+    </script>
+  </head>
+  <body>
+    Test page
+  </body>
+</html>
