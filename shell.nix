@@ -37,6 +37,7 @@ in
     ];
 
     shellHook = ''
+      export PATH="$PATH:$PWD/node_modules/.bin";
       export CC=clang
       figlet "DendrETH"
     '';
