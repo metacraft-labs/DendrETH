@@ -21,7 +21,7 @@ The majority of the implementation work will be carried out by an young team of 
 
 * [Emil Ivanichkov](https://github.com/EmilIvanichkovv)
 * [Simeon Armenchev](https://github.com/monyarm)
-* Dimo Dimov
+* [Dimo Dimov](https://github.com/Dimo99)
 * [Georgi Chonkov](https://github.com/grc02)
 * [Georgi Georgiev](https://github.com/GeorgiGeorgiev7)
 
