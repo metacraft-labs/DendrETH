@@ -2,6 +2,7 @@
   "name": "DendrETH",
   "version": "0.0.1",
   "license": "CC0-1.0",
+  "type": "module",
   "description": "A smart contract implementation of the Ethereum light client sync protocol",
   "packageManager": "yarn@3.2.1",
   "directories": {
@@ -21,8 +22,15 @@
     "light-client-sync"
   ],
   "devDependencies": {
+    "@types/jest": "^28.1.2",
     "@types/node": "^18.0.0",
+    "jest": "^28.1.1",
     "prettier": "^2.6.2",
+    "ts-jest": "^28.0.5",
+    "ts-node": "^10.8.1",
     "typescript": "^4.7.4"
+  },
+  "scripts": {
+    "test": "jest"
   }
 }
