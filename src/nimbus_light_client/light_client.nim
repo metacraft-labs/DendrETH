@@ -1,7 +1,8 @@
 import
   spec/presets,
   spec/beacon_time,
-  spec/preset/mainnet/altair_preset
+  spec/preset/mainnet/altair_preset,
+  spec/datatypes/altair
 
 func period_contains_fork_version(
     period: SyncCommitteePeriod,
@@ -27,6 +28,12 @@ func period_contains_fork_version(
     else:
       # Unviable fork
       false
+
+# https://github.com/ethereum/consensus-specs/blob/v1.1.10/specs/altair/sync-protocol.md#get_active_header
+func is_finality_update*(update: altair.LightClientUpdate): bool
+  {.cdecl, exportc, dynlib} =
+  not update.finalized_header.isZeroMemory
+
 
 proc start*() {.exportc: "_start".} =
   discard
