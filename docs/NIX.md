@@ -1,3 +1,5 @@
+# Getting started with Nix
+
 Developing and testing all components in the DendrETH projects requires a
 diverse set of software packages that must be installed by all contributors:
 
