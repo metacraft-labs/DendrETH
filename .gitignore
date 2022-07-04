@@ -143,3 +143,6 @@ dist
 
 # Nix
 result
+
+# WebAssembly compiled code
+*.wasm

@@ -1,8 +1,9 @@
 {pkgs}:
 with pkgs; let
   nodejs = nodejs-18_x;
-  corepack = callPackage ./nix/corepack-shims {inherit nodejs;};
   llvm = llvmPackages_14;
+  corepack = callPackage ./nix/corepack-shims {inherit nodejs;};
+  nim-wasm = callPackage ./nix/nim-wasm {inherit llvm;};
 in
   mkShell {
     buildInputs = [
@@ -24,16 +25,14 @@ in
       # For WebAssembly unit-testing
       wasm3 # wasmer is currently broken on macOS ARM
 
-      nim
-
-      llvm.lld
-      llvm.clang-unwrapped
-      llvm.llvm
       # Foor finalization of the output and it also provides a
       # 15% size reduction of the generated .wasm files.
       binaryen
 
+      llvm.clang
       ldc
+      nim
+      nim-wasm
     ];
 
     shellHook = ''
