@@ -1,5 +1,5 @@
-import ../../../../nimbus-eth2/vendor/nim-ssz-serialization/ssz_serialization/types
-
+# import ../../../../nimbus-eth2/vendor/nim-ssz-serialization/ssz_serialization/types
+import ../../ssz_serialization/types
 import ./base
 
 type

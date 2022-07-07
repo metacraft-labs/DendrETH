@@ -32,6 +32,7 @@ template ethTimeUnit*(typ: type) {.dirty.} =
 
   # Nim integration
   proc `$`*(x: typ): string {.borrow, noSideEffect.}
+
 #   proc hash*(x: typ): Hash {.borrow, noSideEffect.}
 
   template asUInt64*(v: typ): uint64 = distinctBase(v)
