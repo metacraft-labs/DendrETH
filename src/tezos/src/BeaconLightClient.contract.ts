@@ -18,7 +18,6 @@ type Epoch = Uint64;
 type Gwei = Uint64;
 
 type ValidatorIndex = Uint64;
-type GeneralizedIndex = Uint64;
 type CommitteeIndex = Uint64;
 
 type Root = Bytes32;
@@ -34,12 +33,6 @@ type BLSSignature = Bytes46; // TSignature
 // ================
 
 // PHASE 0
-interface Fork {
-    previous_version: Version;
-    current_version: Version;
-    epoch: Epoch;
-}
-
 interface ForkData {
     current_version: Version;
     genesis_validators_root: Root;
@@ -48,46 +41,6 @@ interface ForkData {
 interface SigningData {
     object_root: Root;
     domain: Domain;
-}
-
-interface Checkpoint {
-    epoch: Epoch;
-    root: Root;
-}
-
-interface Validator {
-    pubkey: BLSPubkey;
-    withdrawal_credentials: BLSPubkey; // Commitment to pubkey for withdrawals
-    effective_balance: Gwei; // Balance at stake
-    slashed: TBool;
-    // Status epochs
-    activation_eligibility_epoch: Epoch; // When criteria for activation were met
-    activation_epoch: Epoch;
-    exit_epoch: Epoch;
-    withdrawable_epoch: Epoch; // When validator can withdraw funds
-}
-
-interface AttestationData {
-    slot: Slot;
-    index: CommitteeIndex;
-    // LMD GHOST vote
-    beacon_block_root: Root;
-    // FFG vote
-    source: Checkpoint;
-    target: Checkpoint;
-}
-
-interface PendingAttestation {
-    aggregation_bits: TList<Bit>;
-    data: AttestationData;
-    inclusion_delay: Slot;
-    proposer_index: ValidatorIndex;
-}
-
-interface Eth1Data {
-    deposit_root: Root;
-    deposit_count: Uint64;
-    block_hash: TBytes;
 }
 
 interface BeaconBlockHeader {
@@ -144,28 +97,16 @@ class Constants {
     GENESIS_FORK_VERSION: Version = '0x0' as Version;
 
     EPOCHS_PER_SYNC_COMMITTEE_PERIOD: Uint64 = 256;
-    EPOCHS_PER_ETH1_VOTING_PERIOD: Uint64 = 32;
-    EPOCHS_PER_HISTORICAL_VECTOR: Uint64 = 65536;
-    EPOCHS_PER_SLASHINGS_VECTOR: Uint64 = 8192;
 
-    SLOTS_PER_HISTORICAL_ROOT: Uint64 = 8192;
     SLOTS_PER_EPOCH: Uint64 = 32;
 
-    VALIDATOR_REGISTRY_LIMIT: Uint64 = 1099511627776;
-    HISTORICAL_ROOTS_LIMIT: Uint64 = 16777216;
-
-    JUSTIFICATION_BITS_LENGTH: Uint64 = 4;
     BLSPUBLICKEY_LENGTH: Uint64 = 96;
 
     SYNC_COMMITTEE_SIZE: Uint64 = 512;
-    MAX_ATTESTATIONS: Uint64 = 128;
 
     // ALTAIR
     FINALIZED_ROOT_INDEX: Uint64 = 105;
     FINALIZED_ROOT_DEPTH: Uint64 = 6;
-
-    NEXT_SYNC_COMMITTEE_INDEX: Uint64 = 55;
-    NEXT_SYNC_COMMITTEE_DEPTH: Uint64 = 5;
 
     MIN_SYNC_COMMITTEE_PARTICIPANTS: Uint64 = 1;
 
