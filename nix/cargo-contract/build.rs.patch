@@ -1,0 +1,21 @@
+diff --git a/build.rs b/build.rs
+index bbb7baad..bd4a040f 100644
+--- a/build.rs
++++ b/build.rs
+@@ -176,6 +176,7 @@ fn build_and_zip_dylint_driver(
+         "build",
+         "--release",
+         "--locked",
++        "--offline",
+         &target_dir,
+         &manifest_arg,
+     ]);
+@@ -190,7 +191,7 @@ fn build_and_zip_dylint_driver(
+     // fixed Rust toolchain via the `ink_linting/rust-toolchain` file. By removing
+     // these env variables we avoid issues with different Rust toolchains
+     // interfering with each other.
+-    cmd.env_remove("RUSTUP_TOOLCHAIN");
++    // cmd.env_remove("RUSTUP_TOOLCHAIN");
+     cmd.env_remove("CARGO_TARGET_DIR");
+
+     println!(

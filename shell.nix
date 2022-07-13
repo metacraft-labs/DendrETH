@@ -72,6 +72,10 @@ in
         # Developer tool to help you get up and running quickly with a new Rust
         # project by leveraging a pre-existing git repository as a template.
         cargo-generate
+
+        # For using with parity ink
+        cargo-contract
+        dylint
       ]
       ++ lib.optionals (!stdenv.isDarwin) [
         metacraft-labs.solana
@@ -98,6 +102,8 @@ in
       fi
 
       scripts/check-user-env-file-contents.sh
+
+      export C_INCLUDE_PATH="${nim-unwrapped}/nim/lib:${glibc.dev}/include"
 
       figlet "DendrETH"
     '';

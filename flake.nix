@@ -48,6 +48,10 @@
           "wasm3-0.5.0"
         ];
       };
-      preOverlays = [mcl-blockchain.overlays.default (import ./libs/nix/overlay.nix) rust-overlay.overlays.default];
+      preOverlays = [
+        mcl-blockchain.overlays.default (import ./libs/nix/overlay.nix)
+        rust-overlay.overlays.default
+      ];
+      overlay = ./overlay.nix;
     };
 }
