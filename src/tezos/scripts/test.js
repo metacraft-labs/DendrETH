@@ -2,10 +2,11 @@
 
 const { execSync } = require('child_process');
 const fs = require('fs');
+const path = require('path');
 
-const SCRIPT_PATH = './scripts/smartpy-cli/SmartPy.sh';
-const TEST_PATH = './build/test/';
-const SRC_PATH = './src';
+const SCRIPT_PATH = path.join(__dirname, '..', 'scripts', 'smartpy-cli', 'SmartPy.sh');
+const TEST_PATH = path.join(__dirname, '..', 'build', 'test');
+const SRC_PATH = path.join(__dirname, '..', 'src');
 
 // Change the following regex to filter the templates being tested
 const FILE_FILTER = /.*[.]contract[.]ts/;
@@ -23,8 +24,8 @@ files
         try {
             const dir = `${TEST_PATH}${fileName.replace('.ts', '')}`;
             fs.mkdirSync(dir, { recursive: true });
-            execSync(`${SCRIPT_PATH} test ${SRC_PATH}/${fileName} ${dir}`);
+            execSync(`sh ${SCRIPT_PATH} test ${SRC_PATH}/${fileName} ${dir}`);
         } catch (e) {
-            console.error(e.output.toString() || e);
+            console.error(e);
         }
     });
