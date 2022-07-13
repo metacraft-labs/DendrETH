@@ -1,0 +1,24 @@
+{
+	"compilerOptions": {
+		"lib": ["es2015.symbol"],
+		"strict": true,
+		"alwaysStrict": true,
+		"noImplicitReturns": true,
+		"noImplicitAny": true,
+		"downlevelIteration": true,
+		"noUnusedParameters": true,
+		"noUnusedLocals": true,
+		"allowSyntheticDefaultImports": true,
+		"experimentalDecorators": true,
+		"typeRoots": [
+			"node_modules/@smartpy",
+		]
+	},
+	"include": [
+		"src",
+		"templates"
+	],
+	"exclude": [
+		"node_modules"
+	],
+}
