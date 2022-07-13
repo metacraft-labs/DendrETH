@@ -214,17 +214,12 @@ class Helpers extends Constants {
     };
 
     reverse64 = (value: Uint64): Uint64 => {
-        let result_bit_list: TList<Bit> = [];
         let result: Uint64 = 0;
 
-        let byte_1: TList<Bit> = [];
-        let byte_2: TList<Bit> = [];
-        let byte_3: TList<Bit> = [];
-        let byte_4: TList<Bit> = [];
-        let byte_5: TList<Bit> = [];
-        let byte_6: TList<Bit> = [];
-        let byte_7: TList<Bit> = [];
-        let byte_8: TList<Bit> = [];
+        let byte_1: TList<Bit> = []; let byte_2: TList<Bit> = [];
+        let byte_3: TList<Bit> = []; let byte_4: TList<Bit> = [];
+        let byte_5: TList<Bit> = []; let byte_6: TList<Bit> = [];
+        let byte_7: TList<Bit> = []; let byte_8: TList<Bit> = [];
 
         for (let i = 0; i < 64; i += 1) {
             let bit: Bit = 0;
@@ -232,65 +227,25 @@ class Helpers extends Constants {
                 bit = value % 2;
                 value = Sp.ediv(value, 2).openSome().fst();
             }
-            if (i < 8) {
-                byte_1.push(bit);
-            } else if (i < 16) {
-                byte_2.push(bit);
-            } else if (i < 24) {
-                byte_3.push(bit);
-            } else if (i < 32) {
-                byte_4.push(bit);
-            } else if (i < 40) {
-                byte_5.push(bit);
-            } else if (i < 48) {
-                byte_6.push(bit);
-            } else if (i < 56) {
-                byte_7.push(bit);
-            } else {
-                byte_8.push(bit);
-            }
+            if (i < 8) { byte_1.push(bit); }
+            else if (i < 16) { byte_2.push(bit); }
+            else if (i < 24) { byte_3.push(bit); }
+            else if (i < 32) { byte_4.push(bit); }
+            else if (i < 40) { byte_5.push(bit); }
+            else if (i < 48) { byte_6.push(bit); }
+            else if (i < 56) { byte_7.push(bit); }
+            else { byte_8.push(bit); }
         }
-
-        byte_1 = byte_1.reverse();
-        byte_2 = byte_2.reverse();
-        byte_3 = byte_3.reverse();
-        byte_4 = byte_4.reverse();
-        byte_5 = byte_5.reverse();
-        byte_6 = byte_6.reverse();
-        byte_7 = byte_7.reverse();
-        byte_8 = byte_8.reverse();
-
-        for (let bit of byte_1) {
-            result_bit_list.push(bit);
-        }
-        for (let bit of byte_2) {
-            result_bit_list.push(bit);
-        }
-        for (let bit of byte_3) {
-            result_bit_list.push(bit);
-        }
-        for (let bit of byte_4) {
-            result_bit_list.push(bit);
-        }
-        for (let bit of byte_5) {
-            result_bit_list.push(bit);
-        }
-        for (let bit of byte_6) {
-            result_bit_list.push(bit);
-        }
-        for (let bit of byte_7) {
-            result_bit_list.push(bit);
-        }
-        for (let bit of byte_8) {
-            result_bit_list.push(bit);
-        }
-
+        
+        let bytes: TList<TList<Bit>> = [byte_1, byte_2, byte_3, byte_4, byte_5, byte_6, byte_7, byte_8];
         let counter: TNat = 0;
-        for (let bit of result_bit_list) {
-            if (bit == 1) {
-                result += this.pow(2, 64 - counter - 1);
-            }   
-            counter += 1;
+        for (let byte of bytes) {
+            for (let bit of byte) {
+                if (bit == 1) {
+                    result += this.pow(2, 64 - counter - 1);
+                }   
+                counter += 1;
+            }
         }
 
         return result;
