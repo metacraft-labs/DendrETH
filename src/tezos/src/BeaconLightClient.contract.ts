@@ -138,7 +138,7 @@ class Helpers extends Constants {
 
     getElementInBytesArrayAt = (index: Uint64, arr: TList<Bytes32>): Bytes32 => {
         if ((arr as TList<Bytes32>).size() == 0 || (arr as TList<Bytes32>).size() < index || index < 0) {
-            return '0x0' as Bytes32;
+            Sp.failWith("Helpers: Invalid params!")
         }
 
         let i = 0;
@@ -153,6 +153,10 @@ class Helpers extends Constants {
     };
 
     setElementInBytesArrayAt = (index: Uint64, element: Bytes, arr: TList<Bytes32>): TList<Bytes32> => {
+        if ((arr as TList<Bytes32>).size() == 0 || (arr as TList<Bytes32>).size() < index || index < 0) {
+            Sp.failWith("Helpers: Invalid params!")
+        }
+
         let i = 0;
         const result_array: TList<Bytes32> = [];
         for (const e of arr as TList<Bytes32>) {
@@ -169,7 +173,7 @@ class Helpers extends Constants {
 
     getElementInUintArrayAt = (index: Uint64, arr: TList<Uint64>): Uint64 => {
         if ((arr as TList<Uint64>).size() == 0 || (arr as TList<Uint64>).size() < index || index < 0) {
-            return 0 as Uint64;
+            Sp.failWith("Helpers: Invalid params!")
         }
 
         let i = 0;
