@@ -6,7 +6,6 @@
 	"scripts": {
 		"compile": "node ./scripts/compile.js",
 		"test": "node ./scripts/test.js",
-		"originate": "node ./scripts/compile.js && node ./scripts/originate.js",
 		"update": "npm i create-smartpy-project@latest && create-smartpy-project update --path ./ --typescript"
 	},
 	"devDependencies": {
