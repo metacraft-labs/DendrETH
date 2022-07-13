@@ -111,6 +111,32 @@ class Constants {
     MIN_SYNC_COMMITTEE_PARTICIPANTS: Uint64 = 1;
 
     EMPTY_BEACON_HEADER_HASH: Bytes = '0xc78009fdf07fc56a11f122370658a353aaa542ed63e44c4bc15ff4cd105ab33c' as Bytes;
+
+    EMPTY_LIGHT_CLIENT_UPDATE: LightClientUpdate = {
+        header: {
+            slot: 0,
+            proposer_index: 0,
+            parent_root: '0x0',
+            state_root: '0x0',
+            body_root: '0x0',
+        },
+        next_sync_committee: {
+            pubkeys: [],
+            aggregate_pubkey: '0x0',
+        },
+        next_sync_committee_branch: [],
+        finality_header: {
+            slot: 0,
+            proposer_index: 0,
+            parent_root: '0x0',
+            state_root: '0x0',
+            body_root: '0x0',
+        },
+        finality_branch: [],
+        sync_committee_bits: [],
+        sync_committee_signature: '0x0',
+        fork_version: '0x0',
+    };
 }
 
 // =============
@@ -606,31 +632,7 @@ class BeaconLightClient extends Helpers {
             this.apply_light_client_update(store.snapshot, update);
             store.valid_updates = [];
         } else if (current_slot > store.snapshot.header.slot + update_timeout) {
-            let best_valid_update: LightClientUpdate = {
-                header: {
-                    slot: 0,
-                    proposer_index: 0,
-                    parent_root: '0x0',
-                    state_root: '0x0',
-                    body_root: '0x0',
-                },
-                next_sync_committee: {
-                    pubkeys: [],
-                    aggregate_pubkey: '0x0',
-                },
-                next_sync_committee_branch: [],
-                finality_header: {
-                    slot: 0,
-                    proposer_index: 0,
-                    parent_root: '0x0',
-                    state_root: '0x0',
-                    body_root: '0x0',
-                },
-                finality_branch: [],
-                sync_committee_bits: [],
-                sync_committee_signature: '0x0',
-                fork_version: '0x0',
-            };
+            let best_valid_update: LightClientUpdate = this.EMPTY_LIGHT_CLIENT_UPDATE;
             let most_active_participants: TNat = 0;
             for (let update of store.valid_updates) {
                 let current_update_active_participants = 0;
