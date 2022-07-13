@@ -143,3 +143,10 @@ dist
 
 # Nix
 result
+
+# Nim
+nimcache
+
+# Rust
+
+target

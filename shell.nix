@@ -27,19 +27,24 @@ in
       nim
 
       llvm.lld
-      llvm.clang-unwrapped
+      llvm.clang
       llvm.llvm
       # Foor finalization of the output and it also provides a
       # 15% size reduction of the generated .wasm files.
       binaryen
 
       ldc
+
+      # For using with parity ink
+      cargo-contract
+      dylint
     ];
 
     shellHook = ''
       export NODE_OPTIONS="--experimental-vm-modules"
       export PATH="$PATH:$PWD/node_modules/.bin";
       export CC=clang
+      export C_INCLUDE_PATH="${nim-unwrapped}/nim/lib:${glibc.dev}/include"
       figlet "DendrETH"
     '';
   }
