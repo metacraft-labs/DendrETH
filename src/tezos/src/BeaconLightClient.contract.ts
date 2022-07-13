@@ -121,7 +121,7 @@ class Constants {
 class Helpers extends Constants {
     // Utils
     pow = (base: TNat, exponent: TNat): TNat => {
-        if (base == 0 || base == 1 || exponent == 1) {
+        if (base == 1 || exponent == 1) {
             return base;
         }
         if (exponent == 0) {
