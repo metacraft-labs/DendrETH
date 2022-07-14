@@ -1,5 +1,11 @@
-proc appender*(a, b: int): seq[int] =
-  @[a,b]
+proc print(value: int) {.importc, cdecl}
 
-proc main*(x, y: int): int =
-  return appender(x, y).len
+proc createSeq*(a, b: int): seq[int]  {.cdecl, exportc, dynlib} =
+  @[a,b,a,b,a]
+
+proc printCreateSeqLen*(a,b: int) {.cdecl, exportc, dynlib} =
+  print(createSeq(a, b).len)
+
+proc start*() {.exportc: "_start".} =
+  discard
+
