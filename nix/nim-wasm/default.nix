@@ -19,6 +19,7 @@ writeShellApplication {
       --noMain \
       --opt:size \
       --listCmd \
+      --d:nimNoLibc \
       --d:wasm \
       --d:noSignalHandler \
       --d:nimPreviewFloatRoundtrip \
