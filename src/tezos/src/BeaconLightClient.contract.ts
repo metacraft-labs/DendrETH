@@ -188,13 +188,13 @@ class Helpers extends Constants {
         for (const e of arr as TList<Bytes32>) {
             if (i != index) {
                 result_array.push(e);
-                i += 1;
             } else {
                 result_array.push(element);
             }
+            i += 1;
         }
 
-        return result_array;
+        return result_array.reverse();
     };
 
     getElementInUintArrayAt = (index: Uint64, arr: TList<Uint64>): Uint64 => {
@@ -345,11 +345,11 @@ class Helpers extends Constants {
 
     hash_tree_root__block_header = (block_header: BeaconBlockHeader): Bytes32 => {
         const leaves: TList<Bytes32> = [];
-        leaves.push(this.to_little_endian_64(block_header.slot));
-        leaves.push(this.to_little_endian_64(block_header.proposer_index));
-        leaves.push(block_header.parent_root);
-        leaves.push(block_header.state_root);
         leaves.push(block_header.body_root);
+        leaves.push(block_header.state_root);
+        leaves.push(block_header.parent_root);
+        leaves.push(this.to_little_endian_64(block_header.proposer_index));
+        leaves.push(this.to_little_endian_64(block_header.slot));
         return this.merkle_root(leaves);
     };
 
@@ -363,13 +363,14 @@ class Helpers extends Constants {
             );
         }
 
-        const leaves: TList<Bytes32> = [];
+        let leaves: TList<Bytes32> = [];
         for (let key of sync_committee.pubkeys) {
             if ((key as TBytes).size() != this.BLSPUBLICKEY_LENGTH) {
                 Sp.failWith('Invalid pubkey: Length should be equal to ' + this.BLSPUBLICKEY_LENGTH + '!');
             }
             leaves.push(Sp.sha256((key as TBytes).concat('0x00000000000000000000000000000000')));
         }
+        leaves = leaves.reverse();
         const pubkeys_root = this.merkle_root(leaves);
 
         if ((sync_committee.aggregate_pubkey as TBytes).size() != this.BLSPUBLICKEY_LENGTH) {
@@ -514,12 +515,13 @@ class BeaconLightClient extends Helpers {
         }
 
         // Verify sync committee aggregate signature
-        const participant_pubkeys: TList<Bytes> = [];
+        let participant_pubkeys: TList<Bytes> = [];
         for (let i = 0; i < (update.sync_committee_bits as TList<TNat>).size(); i += 1) {
             if (this.getElementInUintArrayAt(i, update.sync_committee_bits) == 1) {
                 participant_pubkeys.push(this.getElementInBytesArrayAt(i, sync_committee.pubkeys));
             }
         }
+        participant_pubkeys = participant_pubkeys.reverse();
 
         const domain: Domain = this.compute_domain(
             this.DOMAIN_SYNC_COMMITTEE,
@@ -567,7 +569,9 @@ class BeaconLightClient extends Helpers {
         genesis_validators_root: Root,
     ) => {
         this.validate_light_client_update(store.snapshot, update, genesis_validators_root);
+        store.valid_updates = (store.valid_updates as TList<LightClientUpdate>).reverse();
         (store.valid_updates as TList<LightClientUpdate>).push(update);
+        store.valid_updates = (store.valid_updates as TList<LightClientUpdate>).reverse();
 
         const update_timeout: TNat = this.SLOTS_PER_EPOCH * this.EPOCHS_PER_SYNC_COMMITTEE_PERIOD;
 
