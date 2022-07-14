@@ -23,11 +23,10 @@ writeShellApplication {
       --d:noSignalHandler \
       --d:nimPreviewFloatRoundtrip \
       --exceptions:goto \
-      --gc:none \
+      --gc:destructors \
       --threads:off \
       --stackTrace:off \
       --lineTrace:off \
-      --mm:none \
       --passC:"-w" \
       --passC:"-ferror-limit=3" \
       --passC:"-I${./include}" \
