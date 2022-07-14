@@ -28,6 +28,8 @@ type Version = Bytes4;
 type BLSPubkey = Bytes98; // TKey
 type BLSSignature = Bytes46; // TSignature
 
+type Bitvector = TList<Bit>;
+
 // ================
 //  / INTERFACES \
 // ================
@@ -73,9 +75,9 @@ interface LightClientUpdate {
     next_sync_committee_branch: TList<Bytes32>;
     // Finality proof for the update header
     finality_header: BeaconBlockHeader;
-    finality_branch: TList<TBytes>;
+    finality_branch: TList<Bytes32>;
     // Sync committee aggregate signature
-    sync_committee_bits: TList<Bit>;
+    sync_committee_bits: Bitvector;
     sync_committee_signature: BLSSignature;
     // Fork version for the aggregate signature
     fork_version: Version;
@@ -83,7 +85,7 @@ interface LightClientUpdate {
 
 interface LightClientStore {
     snapshot: LightClientSnapshot;
-    valid_updates: TList<LightClientUpdate>;
+    valid_updates: TSet<LightClientUpdate>;
 }
 
 // ===============
@@ -110,43 +112,40 @@ class Constants {
 
     MIN_SYNC_COMMITTEE_PARTICIPANTS: Uint64 = 1;
 
-    EMPTY_BEACON_HEADER_HASH: Bytes = '0xc78009fdf07fc56a11f122370658a353aaa542ed63e44c4bc15ff4cd105ab33c' as Bytes;
+    EMPTY_BEACON_HEADER: BeaconBlockHeader = {
+        slot: 0 as Slot,
+        proposer_index: 0 as ValidatorIndex,
+        parent_root: '0x0' as Root,
+        state_root: '0x0' as Root,
+        body_root: '0x0' as Root,
+    }
+
+    EMPTY_SYNC_COMMITTEE: SyncCommittee = {
+        pubkeys: [] as TList<BLSPubkey>,
+        aggregate_pubkey: '0x0' as BLSPubkey,
+    }
 
     EMPTY_LIGHT_CLIENT_UPDATE: LightClientUpdate = {
-        header: {
-            slot: 0,
-            proposer_index: 0,
-            parent_root: '0x0',
-            state_root: '0x0',
-            body_root: '0x0',
-        },
-        next_sync_committee: {
-            pubkeys: [],
-            aggregate_pubkey: '0x0',
-        },
-        next_sync_committee_branch: [],
-        finality_header: {
-            slot: 0,
-            proposer_index: 0,
-            parent_root: '0x0',
-            state_root: '0x0',
-            body_root: '0x0',
-        },
-        finality_branch: [],
-        sync_committee_bits: [],
-        sync_committee_signature: '0x0',
-        fork_version: '0x0',
+        header: this.EMPTY_BEACON_HEADER,
+        next_sync_committee: this.EMPTY_SYNC_COMMITTEE,
+        next_sync_committee_branch: [] as TList<Bytes32>,
+        finality_header: this.EMPTY_BEACON_HEADER,
+        finality_branch: [] as TList<TBytes>,
+        sync_committee_bits: [] as Bitvector,
+        sync_committee_signature: '0x0' as BLSSignature,
+        fork_version: '0x0'as Version, 
     };
+
+
 }
 
-// =============
-//  / HELPERS \
-// =============
+// ===========
+//  / UTILS \
+// ===========
 
 @Contract
-class Helpers extends Constants {
-    // Utils
-    pow = (base: TNat, exponent: TNat): TNat => {
+class Utils extends Constants {
+    pow = (base: Uint64, exponent: Uint64): Uint64 => {
         if (base == 1 || exponent == 1) {
             return base;
         }
@@ -154,12 +153,29 @@ class Helpers extends Constants {
             return 1;
         }
 
-        let result: TNat = 1;
+        let result: Uint64 = 1;
         for (let i = 0; i < exponent; i += 1) {
             result = result * base;
         }
 
         return result;
+    };
+
+    getElementInUintArrayAt = (index: Uint64, arr: TList<Uint64>): Uint64 => {
+        if ((arr as TList<Uint64>).size() == 0 || (arr as TList<Uint64>).size() < index || index < 0) {
+            Sp.failWith("Helpers: Invalid params!")
+        }
+
+        let i: Uint64 = 0;
+        for (const ele of arr as TList<Uint64>) {
+            if (i == index) {
+                return ele;
+            }
+            i += 1;
+        }
+
+        Sp.failWith("Helpers: Invalid params!")
+        return 0 as Uint64;
     };
 
     getElementInBytesArrayAt = (index: Uint64, arr: TList<Bytes32>): Bytes32 => {
@@ -175,6 +191,7 @@ class Helpers extends Constants {
             i += 1;
         }
 
+        Sp.failWith("Helpers: Invalid params!")
         return '0x0' as Bytes32;
     };
 
@@ -196,30 +213,21 @@ class Helpers extends Constants {
 
         return result_array.reverse();
     };
+}
 
-    getElementInUintArrayAt = (index: Uint64, arr: TList<Uint64>): Uint64 => {
-        if ((arr as TList<Uint64>).size() == 0 || (arr as TList<Uint64>).size() < index || index < 0) {
-            Sp.failWith("Helpers: Invalid params!")
-        }
+// =============
+//  / HELPERS \
+// =============
 
-        let i = 0;
-        for (const ele of arr as TList<Uint64>) {
-            if (i == index) {
-                return ele;
-            }
-            i += 1;
-        }
-
-        return 0 as Uint64;
-    };
-
+@Contract
+class Helpers extends Utils {
     reverse64 = (value: Uint64): Uint64 => {
         let result: Uint64 = 0;
 
-        let byte_1: TList<Bit> = []; let byte_2: TList<Bit> = [];
-        let byte_3: TList<Bit> = []; let byte_4: TList<Bit> = [];
-        let byte_5: TList<Bit> = []; let byte_6: TList<Bit> = [];
-        let byte_7: TList<Bit> = []; let byte_8: TList<Bit> = [];
+        let byte_1: Bitvector = []; let byte_2: Bitvector = [];
+        let byte_3: Bitvector = []; let byte_4: Bitvector = [];
+        let byte_5: Bitvector = []; let byte_6: Bitvector = [];
+        let byte_7: Bitvector = []; let byte_8: Bitvector = [];
 
         for (let i = 0; i < 64; i += 1) {
             let bit: Bit = 0;
@@ -237,8 +245,8 @@ class Helpers extends Constants {
             else { byte_8.push(bit); }
         }
         
-        let bytes: TList<TList<Bit>> = [byte_1, byte_2, byte_3, byte_4, byte_5, byte_6, byte_7, byte_8];
-        let counter: TNat = 0;
+        let bytes: TList<Bitvector> = [byte_1, byte_2, byte_3, byte_4, byte_5, byte_6, byte_7, byte_8];
+        let counter: Uint64 = 0;
         for (let byte of bytes) {
             for (let bit of byte) {
                 if (bit == 1) {
@@ -255,7 +263,6 @@ class Helpers extends Constants {
         return Sp.pack(this.reverse64(value));
     };
 
-    // Main helpers
     compute_epoch_at_slot = (slot: Slot): Epoch => {
         return Sp.ediv(slot, this.SLOTS_PER_EPOCH).openSome().fst();
     };
@@ -268,7 +275,7 @@ class Helpers extends Constants {
         root: Root,
     ): TBool => {
         let value = leaf;
-        let i: TNat = 0;
+        let i: Uint64 = 0;
         for (let n of branch) {
             if ((this.pow(Sp.ediv(index, 2).openSome().fst(), i) % 2) + depth == 0) {
                 value = Sp.sha256((n as Bytes32).concat(value));
@@ -315,17 +322,17 @@ class Helpers extends Constants {
             );
         }
 
-        const bottom_length: Uint64 = this.get_power_of_two_ceil((leaves as TList<TBytes>).size());
+        const bottom_length: Uint64 = this.get_power_of_two_ceil((leaves as TList<Bytes32>).size());
         const tree: TList<Bytes32> = [];
-        for (let i = 0; i < (leaves as TList<TBytes>).size(); i += 1) {
+        for (let i = 0; i < (leaves as TList<Bytes32>).size(); i += 1) {
             this.setElementInBytesArrayAt(bottom_length + i, this.getElementInBytesArrayAt(i, leaves), tree);
         }
         for (let i = bottom_length - 1; i > 0; i -= 1) {
             this.setElementInBytesArrayAt(
                 i,
                 Sp.sha256(
-                    (this.getElementInBytesArrayAt(i * 2, tree) as TBytes).concat(
-                        this.getElementInBytesArrayAt(i * 2 + 1, tree) as TBytes,
+                    (this.getElementInBytesArrayAt(i * 2, tree) as Bytes32).concat(
+                        this.getElementInBytesArrayAt(i * 2 + 1, tree) as Bytes32,
                     ),
                 ),
                 tree,
@@ -336,11 +343,11 @@ class Helpers extends Constants {
     };
 
     hash_tree_root__fork_data = (fork_data: ForkData): Bytes32 => {
-        return Sp.sha256((fork_data.current_version as TBytes).concat(fork_data.genesis_validators_root));
+        return Sp.sha256((fork_data.current_version as Version).concat(fork_data.genesis_validators_root));
     };
 
     hash_tree_root__signing_data = (signing_data: SigningData): Bytes32 => {
-        return Sp.sha256((signing_data.object_root as TBytes).concat(signing_data.domain));
+        return Sp.sha256((signing_data.object_root as Root).concat(signing_data.domain));
     };
 
     hash_tree_root__block_header = (block_header: BeaconBlockHeader): Bytes32 => {
@@ -365,19 +372,19 @@ class Helpers extends Constants {
 
         let leaves: TList<Bytes32> = [];
         for (let key of sync_committee.pubkeys) {
-            if ((key as TBytes).size() != this.BLSPUBLICKEY_LENGTH) {
+            if ((key as BLSPubkey).size() != this.BLSPUBLICKEY_LENGTH) {
                 Sp.failWith('Invalid pubkey: Length should be equal to ' + this.BLSPUBLICKEY_LENGTH + '!');
             }
-            leaves.push(Sp.sha256((key as TBytes).concat('0x00000000000000000000000000000000')));
+            leaves.push(Sp.sha256((key as BLSPubkey).concat('0x00000000000000000000000000000000')));
         }
         leaves = leaves.reverse();
         const pubkeys_root = this.merkle_root(leaves);
 
-        if ((sync_committee.aggregate_pubkey as TBytes).size() != this.BLSPUBLICKEY_LENGTH) {
+        if ((sync_committee.aggregate_pubkey as BLSPubkey).size() != this.BLSPUBLICKEY_LENGTH) {
             Sp.failWith('Invalid aggregate pubkey: Length should be equal to ' + this.BLSPUBLICKEY_LENGTH + '!');
         }
         const aggregate_pubkeys_root: Bytes32 = Sp.sha256(
-            (sync_committee.aggregate_pubkey as TBytes).concat('0x00000000000000000000000000000000'),
+            (sync_committee.aggregate_pubkey as BLSPubkey).concat('0x00000000000000000000000000000000'),
         );
 
         return Sp.sha256(pubkeys_root.concat(aggregate_pubkeys_root));
@@ -403,7 +410,7 @@ class Helpers extends Constants {
         genesis_validators_root: Root = '0x0',
     ): Domain => {
         const fork_data_root: Root = this.compute_fork_data_root(fork_version, genesis_validators_root);
-        return (domain_type as TBytes).concat(fork_data_root.slice(0, 28).openSome());
+        return (domain_type as DomainType).concat(fork_data_root.slice(0, 28).openSome());
     };
 }
 
@@ -413,7 +420,7 @@ class Helpers extends Constants {
 
 @Contract
 class BeaconLightClient extends Helpers {
-    blsFastAggregateVerify = (pubkeys: TList<TBytes>, root: TBytes, signature: TBytes): TBool => {
+    blsFastAggregateVerify = (pubkeys: TList<BLSPubkey>, root: Root, signature: BLSSignature): TBool => {
         pubkeys;
         root;
         signature;
@@ -449,16 +456,10 @@ class BeaconLightClient extends Helpers {
         }
 
         // Verify update header root is the finalized root of the finality header, if specified
-        let signed_header: BeaconBlockHeader = {
-            slot: 0,
-            proposer_index: 0,
-            parent_root: '0x0',
-            state_root: '0x0',
-            body_root: '0x0',
-        };
-        if (this.hash_tree_root__block_header(update.finality_header) == this.EMPTY_BEACON_HEADER_HASH) {
+        let signed_header: BeaconBlockHeader = this.EMPTY_BEACON_HEADER;
+        if (this.hash_tree_root__block_header(update.finality_header) == this.hash_tree_root__block_header(this.EMPTY_BEACON_HEADER)) {
             signed_header = update.header;
-            if ((update.finality_branch as TList<TBytes>).size() != 0) {
+            if ((update.finality_branch as TList<Bytes32>).size() != 0) {
                 Sp.failWith(
                     'Update validation failed: There is no finality header, but the finality branch is not empty!',
                 );
@@ -479,10 +480,7 @@ class BeaconLightClient extends Helpers {
         }
 
         // Verify update next sync committee if the update period incremented
-        let sync_committee: SyncCommittee = {
-            pubkeys: [],
-            aggregate_pubkey: '0x0',
-        };
+        let sync_committee: SyncCommittee = this.EMPTY_SYNC_COMMITTEE;
         if (update_period == snapshot_period) {
             sync_committee = snapshot.current_sync_committee;
             if ((update.next_sync_committee_branch as TList<TBytes>).size() != 0) {
@@ -515,8 +513,8 @@ class BeaconLightClient extends Helpers {
         }
 
         // Verify sync committee aggregate signature
-        let participant_pubkeys: TList<Bytes> = [];
-        for (let i = 0; i < (update.sync_committee_bits as TList<TNat>).size(); i += 1) {
+        let participant_pubkeys: TList<BLSPubkey> = [];
+        for (let i = 0; i < (update.sync_committee_bits as Bitvector).size(); i += 1) {
             if (this.getElementInUintArrayAt(i, update.sync_committee_bits) == 1) {
                 participant_pubkeys.push(this.getElementInBytesArrayAt(i, sync_committee.pubkeys));
             }
@@ -542,13 +540,13 @@ class BeaconLightClient extends Helpers {
     };
 
     apply_light_client_update = (snapshot: LightClientSnapshot, update: LightClientUpdate) => {
-        const snapshot_period: TNat = Sp.ediv(
+        const snapshot_period: Uint64 = Sp.ediv(
             this.compute_epoch_at_slot(snapshot.header.slot),
             this.EPOCHS_PER_SYNC_COMMITTEE_PERIOD,
         )
             .openSome()
             .fst();
-        const update_period: TNat = Sp.ediv(
+        const update_period: Uint64 = Sp.ediv(
             this.compute_epoch_at_slot(update.header.slot),
             this.EPOCHS_PER_SYNC_COMMITTEE_PERIOD,
         )
@@ -569,11 +567,9 @@ class BeaconLightClient extends Helpers {
         genesis_validators_root: Root,
     ) => {
         this.validate_light_client_update(store.snapshot, update, genesis_validators_root);
-        store.valid_updates = (store.valid_updates as TList<LightClientUpdate>).reverse();
-        (store.valid_updates as TList<LightClientUpdate>).push(update);
-        store.valid_updates = (store.valid_updates as TList<LightClientUpdate>).reverse();
+        (store.valid_updates as TSet<LightClientUpdate>).add(update);
 
-        const update_timeout: TNat = this.SLOTS_PER_EPOCH * this.EPOCHS_PER_SYNC_COMMITTEE_PERIOD;
+        const update_timeout: Uint64 = this.SLOTS_PER_EPOCH * this.EPOCHS_PER_SYNC_COMMITTEE_PERIOD;
 
         let current_sync_committee_participants = 0;
         for (let bit of update.sync_committee_bits) {
@@ -582,8 +578,8 @@ class BeaconLightClient extends Helpers {
             }
         }
         if (
-            current_sync_committee_participants * 3 >= (update.sync_committee_bits as TList<TNat>).size() * 2 &&
-            this.hash_tree_root__block_header(update.finality_header) != this.EMPTY_BEACON_HEADER_HASH
+            current_sync_committee_participants * 3 >= (update.sync_committee_bits as Bitvector).size() * 2 &&
+            this.hash_tree_root__block_header(update.finality_header) != this.hash_tree_root__block_header(this.EMPTY_BEACON_HEADER)
         ) {
             // Apply update if (1) 2/3 quorum is reached and (2) we have a finality proof.
             // Note that (2) means that the current light client design needs finality.
@@ -592,8 +588,8 @@ class BeaconLightClient extends Helpers {
             store.valid_updates = [];
         } else if (current_slot > store.snapshot.header.slot + update_timeout) {
             let best_valid_update: LightClientUpdate = this.EMPTY_LIGHT_CLIENT_UPDATE;
-            let most_active_participants: TNat = 0;
-            for (let update of store.valid_updates) {
+            let most_active_participants: Uint64 = 0;
+            for (let update of (store.valid_updates as TSet<LightClientUpdate>).elements()) {
                 let current_update_active_participants = 0;
                 for (let bit of update.sync_committee_bits) {
                     if (bit == 1) {
