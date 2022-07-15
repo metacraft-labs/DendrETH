@@ -28,6 +28,7 @@ writeShellApplication {
       --threads:off \
       --stackTrace:off \
       --lineTrace:off \
+      --lib:./vendor/nim/lib \
       --passC:"-w" \
       --passC:"-ferror-limit=3" \
       --passC:"-I${./include}" \
