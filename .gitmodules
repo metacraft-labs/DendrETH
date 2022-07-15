@@ -1,0 +1,3 @@
+[submodule "vendor/nim"]
+	path = vendor/nim
+	url = git@github.com:metacraft-labs/nim.git
