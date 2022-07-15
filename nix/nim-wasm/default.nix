@@ -7,7 +7,7 @@ writeShellApplication {
   name = "nim-wasm";
   runtimeInputs = [nim llvm.lld llvm.clang-unwrapped];
   text = ''
-    input_file="$1"
+    input_file="''${!#}"
     output_file="''${input_file%.nim}.wasm"
     set -x
     nim c \
@@ -38,6 +38,6 @@ writeShellApplication {
       --passC:"-std=c99" \
       --passL:"--target=wasm32-unknown-unknown-wasm -nostdlib -Wl,--no-entry,--allow-undefined,--export-dynamic,--gc-sections,--strip-all" \
       "-o:$output_file" \
-      "$input_file"
+      "$@"
   '';
 }
