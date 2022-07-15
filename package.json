@@ -34,6 +34,11 @@
     "typescript": "^4.7.4"
   },
   "scripts": {
+    "clean": "yarn clean:normal",
+    "clean:all": "yarn clean:jest && EXCL_NM='' yarn clean:untracked_artifacts",
+    "clean:normal": "yarn clean:jest && EXCL_NM='-e node_modules' yarn clean:untracked_artifacts",
+    "clean:jest": "jest --clear-cache",
+    "clean:untracked_artifacts": "git clean -fdx -e .env -e .direnv -e .yarn -e .vscode $EXCL_NM -- $(git rev-parse --show-toplevel)",
     "test": "jest"
   }
 }
