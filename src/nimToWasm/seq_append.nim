@@ -8,4 +8,3 @@ proc printCreateSeqLen*(a,b: int) {.cdecl, exportc, dynlib} =
 
 proc start*() {.exportc: "_start".} =
   discard
-

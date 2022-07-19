@@ -19,6 +19,7 @@
       --d:wasm
       --d:noSignalHandler
       --d:nimPreviewFloatRoundtrip
+      --d:lightClientEmbedded
       --exceptions:goto
       --gc:destructors
       --threads:off
