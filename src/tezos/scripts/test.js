@@ -3,6 +3,7 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const {getFilesInDir} = require("./utils/utils")
 
 const SCRIPT_PATH = path.join(__dirname, '..', 'scripts', 'smartpy-cli', 'SmartPy.sh');
 const TEST_PATH = path.join(__dirname, '..', 'build', 'test');
@@ -16,16 +17,16 @@ if (fs.existsSync(TEST_PATH)) {
 }
 fs.mkdirSync(TEST_PATH, { recursive: true });
 
-const files = fs.readdirSync(SRC_PATH, { encoding: 'utf-8' });
+const files = getFilesInDir(SRC_PATH, { encoding: 'utf-8' ,withFileTypes: true});
 
 files
-    .filter((f) => f.match(FILE_FILTER))
-    .map(async (fileName) => {
+    .filter((f) => f.name.match(FILE_FILTER))
+    .map(async (file) => {
         try {
-            const dir = `${TEST_PATH}${fileName.replace('.ts', '')}`;
+            const dir = path.join(TEST_PATH, file.name.replace('.ts', ''));
             fs.mkdirSync(dir, { recursive: true });
-            execSync(`sh ${SCRIPT_PATH} test ${SRC_PATH}/${fileName} ${dir}`);
+            execSync(`sh ${SCRIPT_PATH} test ${file.path}/${file.name} ${dir}`);
         } catch (e) {
-            console.error(e);
+            // console.error(e.message);
         }
     });
