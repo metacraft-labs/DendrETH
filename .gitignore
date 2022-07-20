@@ -146,3 +146,6 @@ result
 
 # WebAssembly compiled code
 *.wasm
+
+# Nim
+nimcache/
