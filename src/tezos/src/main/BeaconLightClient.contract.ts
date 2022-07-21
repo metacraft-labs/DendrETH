@@ -30,7 +30,7 @@ class BeaconLightClient extends U.Utils {
         // Verify update does not skip a sync committee period
         const snapshot_period: T.Uint64 = Sp.ediv(
             this.compute_epoch_at_slot(snapshot.header.slot),
-            84,
+            this.EPOCHS_PER_SYNC_COMMITTEE_PERIOD,
         )
             .openSome()
             .fst();
