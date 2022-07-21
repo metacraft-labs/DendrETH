@@ -25,6 +25,7 @@ files
         try {
             const dir = path.join(BUILD_PATH, file.name.replace('.ts', ''));
             fs.mkdirSync(dir, { recursive: true });
+            console.log(` >>> Runnning ${file.name} compilation...`)
             execSync(`sh ${SCRIPT_PATH} compile ${file.path}/${file.name} ${dir}`);
         } catch (e) {
             // console.error(e.message);
