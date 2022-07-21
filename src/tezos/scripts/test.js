@@ -25,6 +25,7 @@ files
         try {
             const dir = path.join(TEST_PATH, file.name.replace('.ts', ''));
             fs.mkdirSync(dir, { recursive: true });
+            console.log(` >>> Runnning ${file.name} test...`)
             execSync(`sh ${SCRIPT_PATH} test ${file.path}/${file.name} ${dir}`);
         } catch (e) {
             // console.error(e.message);
