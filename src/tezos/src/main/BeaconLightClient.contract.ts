@@ -9,7 +9,12 @@ import * as U from "../utils/Utils.contract";
 
 @Contract
 class BeaconLightClient extends U.Utils {
-    
+    // store: I.LightClientStore = this.EMPTY_LIGHT_CLIENT_STORE;
+
+    constructor(public store: I.LightClientStore) {
+        super();
+    }
+
     blsFastAggregateVerify = (pubkeys: TList<T.BLSPubkey>, root: T.Root, signature: T.BLSSignature): TBool => {
         pubkeys;
         root;
@@ -151,13 +156,12 @@ class BeaconLightClient extends U.Utils {
     };
 
     process_light_client_update = (
-        store: I.LightClientStore,
         update: I.LightClientUpdate,
         current_slot: T.Slot,
         genesis_validators_root: T.Root,
     ) => {
-        this.validate_light_client_update(store.snapshot, update, genesis_validators_root);
-        (store.valid_updates as TSet<I.LightClientUpdate>).add(update);
+        this.validate_light_client_update(this.store.snapshot, update, genesis_validators_root);
+        (this.store.valid_updates as TSet<I.LightClientUpdate>).add(update);
 
         const update_timeout: T.Uint64 = this.SLOTS_PER_EPOCH * this.EPOCHS_PER_SYNC_COMMITTEE_PERIOD;
 
@@ -174,12 +178,12 @@ class BeaconLightClient extends U.Utils {
             // Apply update if (1) 2/3 quorum is reached and (2) we have a finality proof.
             // Note that (2) means that the current light client design needs finality.
             // It may be changed to re-organizable light client design. See the on-going issue eth2.0-specs#2182.
-            this.apply_light_client_update(store.snapshot, update);
-            store.valid_updates = [];
-        } else if (current_slot > store.snapshot.header.slot + update_timeout) {
+            this.apply_light_client_update(this.store.snapshot, update);
+            this.store.valid_updates = [];
+        } else if (current_slot > this.store.snapshot.header.slot + update_timeout) {
             let best_valid_update: I.LightClientUpdate = this.EMPTY_LIGHT_CLIENT_UPDATE;
             let most_active_participants: T.Uint64 = 0;
-            for (let update of (store.valid_updates as TSet<I.LightClientUpdate>).elements()) {
+            for (let update of (this.store.valid_updates as TSet<I.LightClientUpdate>).elements()) {
                 let current_update_active_participants = 0;
                 for (let bit of update.sync_committee_bits) {
                     if (bit == 1) {
@@ -191,10 +195,30 @@ class BeaconLightClient extends U.Utils {
                     best_valid_update = update;
                 }
             }
-            this.apply_light_client_update(store.snapshot, best_valid_update);
-            store.valid_updates = [];
+            this.apply_light_client_update(this.store.snapshot, best_valid_update);
+            this.store.valid_updates = [];
         }
     };
 }
 
-Dev.compileContract('compilation', new BeaconLightClient());
+Dev.compileContract('compilation', new BeaconLightClient({
+    snapshot: {
+        header: {
+            slot: 0,
+            proposer_index: 0,
+            parent_root: "0x0" as T.Root,
+            state_root: "0x0" as T.Root,
+            body_root: "0x0" as T.Root
+        },
+        current_sync_committee: {
+            pubkeys: [],
+            aggregate_pubkey: "0x0" as T.BLSPubkey
+        },
+        next_sync_committee: {
+            pubkeys: [],
+            aggregate_pubkey: "0x0" as T.BLSPubkey
+        }
+    },
+    valid_updates: [] as TSet<I.LightClientUpdate>
+} as I.LightClientStore
+));

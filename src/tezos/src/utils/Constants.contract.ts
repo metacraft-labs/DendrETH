@@ -31,12 +31,12 @@ export class Constants {
         parent_root: '0x0' as T.Root,
         state_root: '0x0' as T.Root,
         body_root: '0x0' as T.Root,
-    }
+    };
 
     EMPTY_SYNC_COMMITTEE: I.SyncCommittee = {
         pubkeys: [] as TList<T.BLSPubkey>,
         aggregate_pubkey: '0x0' as T.BLSPubkey,
-    }
+    };
 
     EMPTY_LIGHT_CLIENT_UPDATE: I.LightClientUpdate = {
         header: this.EMPTY_BEACON_HEADER,
@@ -46,8 +46,23 @@ export class Constants {
         finality_branch: [] as TList<TBytes>,
         sync_committee_bits: [] as T.Bitvector,
         sync_committee_signature: '0x0' as T.BLSSignature,
-        fork_version: '0x0'as T.Version, 
+        fork_version: '0x0' as T.Version,
     };
+
+    // EMPTY_LIGHT_CLIENT_STORE: I.LightClientStore = {
+    //     snapshot: {
+    //         header: this.EMPTY_BEACON_HEADER,
+    //         current_sync_committee: {
+    //             pubkeys: [],
+    //             aggregate_pubkey: "0x0" as T.BLSPubkey
+    //         },
+    //         next_sync_committee: {
+    //             pubkeys: [],
+    //             aggregate_pubkey: "0x0" as T.BLSPubkey
+    //         }
+    //     },
+    //     valid_updates: [] as TSet<I.LightClientUpdate>
+    // };
 }
 
 Dev.compileContract('compilation', new Constants());
