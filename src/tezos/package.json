@@ -9,20 +9,20 @@
 		"update": "npm i create-smartpy-project@latest && create-smartpy-project update --path ./ --typescript"
 	},
 	"devDependencies": {
-		"create-smartpy-project": "^0.2.2",
+		"@smartpy/timelock": "^0.0.9",
+		"@smartpy/ts-types": "^0.8.4",
 		"@typescript-eslint/eslint-plugin": "4.28.1",
 		"@typescript-eslint/parser": "4.28.1",
+		"blakejs": "^1.1.1",
+		"bs58check": "^2.1.2",
+		"create-smartpy-project": "^0.2.2",
 		"eslint": "7.29.0",
 		"eslint-config-prettier": "8.3.0",
 		"eslint-plugin-prettier": "3.4.0",
-		"@smartpy/timelock": "^0.0.9",
-		"@smartpy/ts-types": "^0.8.4",
-		"bs58check": "^2.1.2",
 		"js-sha3": "^0.8.0",
 		"libsodium-wrappers-sumo": "^0.7.9",
-		"tezos-bls12-381": "^1.1.1",
-		"blakejs": "^1.1.1",
 		"lodash": "^4.17.21",
+		"tezos-bls12-381": "^1.1.1",
 		"xhr2-cookies": "^1.1.0"
 	},
 	"engines": {

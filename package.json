@@ -5,6 +5,9 @@
   "type": "module",
   "description": "A smart contract implementation of the Ethereum light client sync protocol",
   "packageManager": "yarn@3.2.1",
+  "workspaces": [
+    "src/tezos"
+  ],
   "directories": {
     "doc": "docs"
   },
