@@ -6,7 +6,7 @@ client [from source](https://nimbus.guide/build.html) and then launching a
 Prater node with the following command:
 
 ```
-./run-prater-node.sh --light-client-data-serve --light-client-data-import-mode=on-demand
+./run-prater-node.sh --light-client-data-serve --light-client-data-import-mode=on-demand --light-client-data-max-periods=999999
 ```
 
 Wait for the client to fully sync with the network. You'll see an indicator for this
@@ -16,7 +16,19 @@ around 60GB of storage. You'll be then able to query the REST API on the default
 Here is an example query:
 
 ```
-curl -H http://localhost:5053/eth/v0/beacon/light_client/bootstrap/0x8c59e1ea7215fa02e84ee141be0833ba6e1793281214f3ae4deff6ea019b1f13
+curl http://localhost:5052/eth/v0/beacon/light_client/bootstrap/0x8c59e1ea7215fa02e84ee141be0833ba6e1793281214f3ae4deff6ea019b1f13
 ```
 
 This requests [block 3,200,000](https://prater.beaconcha.in/block/3200000), the first block in epoch 100,000.
+
+You can also launch additional nodes by specifying an unique `NODE_ID` environment variable when launching the script above. For example, to launch a separate Mainnet node while your Prater node is still running, use the following command:
+
+```
+NODE_ID=1 ./run-mainnet-node.sh --light-client-data-serve --light-client-data-import-mode=on-demand --light-client-data-max-periods=999999
+```
+
+The `NODE_ID` value determines the data dir of the node in `nimbus-eth2/build/data` and the REST port being used (5052 + `NODE_ID`). In other words, the Mainnet node launched above will store its data in `build/data/shared_mainnet_1` and it will listen on port 5053. You'll be then able to request the snapshot matching the first [Altair block](https://beaconcha.in/block/2375680) with the following command:
+
+```
+curl http://localhost:5053/eth/v0/beacon/light_client/bootstrap/0x4df61a042151aa94fe5412063bdc7357e7a0266348745fc741ea669487ce6553
+```
