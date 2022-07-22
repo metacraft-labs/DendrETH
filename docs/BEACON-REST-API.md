@@ -27,8 +27,14 @@ You can also launch additional nodes by specifying an unique `NODE_ID` environme
 NODE_ID=1 ./run-mainnet-node.sh --light-client-data-serve --light-client-data-import-mode=on-demand --light-client-data-max-periods=999999
 ```
 
-The `NODE_ID` value determines the data dir of the node in `nimbus-eth2/build/data` and the REST port being used (5052 + `NODE_ID`). In other words, the Mainnet node launched above will store its data in `build/data/shared_mainnet_1` and it will listen on port 5053. You'll be then able to request the snapshot matching the first [Altair block](https://beaconcha.in/block/2375680) with the following command:
+The `NODE_ID` value determines the data dir of the node in `nimbus-eth2/build/data` and the REST port being used (5052 + `NODE_ID`). In other words, the Mainnet node launched above will store its data in `build/data/shared_mainnet_1` and it will listen on port 5053. You'll be then able to request the snapshot matching the [first Altair block](https://beaconcha.in/block/2375680) with the following command:
 
 ```
 curl http://localhost:5053/eth/v0/beacon/light_client/bootstrap/0x4df61a042151aa94fe5412063bdc7357e7a0266348745fc741ea669487ce6553
+```
+
+Similarly, the [first Altair block for Prater](https://prater.beaconcha.in/block/1173120) can still be obtained on port 5052 with the following command:
+
+```
+curl 'http://localhost:5052/eth/v0/beacon/light_client/bootstrap/0x24ad5b7d941e147b80edb0aa34c1c454e6e467e68e83142e51e9d21b9226eb79'
 ```
