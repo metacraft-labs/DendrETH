@@ -1,18 +1,23 @@
 import { loadWasm } from '../src/ts-utils/load-wasm';
+import { compileNimFileToWasm } from '../src/ts-utils/compile-nim-to-wasm';
 
 interface MyExports {
   [key: string]: WebAssembly.ExportValue;
   printAdd: (a: number, b: number) => void;
 }
 
+const nimFilePath = './src/nimToWasm/add.nim';
+
 describe('calling Nim functions compiled to Wasm', () => {
   let logMessages: string[];
   let exports: MyExports;
+  let wasmFilePath: string;
   beforeEach(async () => {
+    wasmFilePath = (await compileNimFileToWasm(nimFilePath)).outputFileName;
     logMessages = [];
     exports = await loadWasm<MyExports>({
       from: {
-        filepath: './src/nimToWasm/add.wasm',
+        filepath: wasmFilePath,
       },
       importObject: {
         env: {
