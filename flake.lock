@@ -15,6 +15,30 @@
         "type": "github"
       }
     },
+    "mcl-blockchain": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1657795893,
+        "narHash": "sha256-dhmEbG8fKYDIrJpSJAsHhbVM8KRssWWee/t3Ul+MVhA=",
+        "owner": "metacraft-labs",
+        "repo": "nix-blockchain-development",
+        "rev": "04864e5423eb00760e39a0af5b191c1a0ae44957",
+        "type": "github"
+      },
+      "original": {
+        "owner": "metacraft-labs",
+        "ref": "solana",
+        "repo": "nix-blockchain-development",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1654758790,
@@ -34,6 +58,7 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
+        "mcl-blockchain": "mcl-blockchain",
         "nixpkgs": "nixpkgs"
       }
     }

@@ -34,12 +34,19 @@ in
       binaryen
 
       ldc
+
+      nix-tree
+
+      metacraft-labs.solana
+      criterion # needed for solana
     ];
 
     shellHook = ''
       export NODE_OPTIONS="--experimental-vm-modules"
       export PATH="$PATH:$PWD/node_modules/.bin";
       export CC=clang
+      export C_INCLUDE_PATH="${nim-unwrapped}/nim/lib:${glibc.dev}/include:${criterion.dev}/include"
+      export LIBRARY_PATH="${glibc.dev}/lib"
       figlet "DendrETH"
     '';
   }
