@@ -31,6 +31,6 @@ Programming language: Cadence
 
 ## Alternative ZK toolchains
 
-https://zokrates.github.io/
-https://leo-lang.org/
-https://filecoin.io/blog/posts/introducing-lurk-a-programming-language-for-recursive-zk-snarks/
+* https://zokrates.github.io/
+* https://leo-lang.org/
+* https://filecoin.io/blog/posts/introducing-lurk-a-programming-language-for-recursive-zk-snarks/
