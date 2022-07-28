@@ -10,7 +10,7 @@ export async function compileNimFileToWasm(nimSourceFilepath: string) {
   const outputFileName = inputFileName.replace(/\.nim$/, '.wasm');
   console.info(`➤ rm ${outputFileName}`);
   await rm(outputFileName, { force: true });
-  const command = `nim-wasm c -o:${outputFileName} ${inputFileName}`;
+  const command = `nim-wasm c --lib:"./vendor/nim/lib" -o:${outputFileName} ${inputFileName}`;
   console.info(`➤ ${command}`);
   await exec(command);
   return { outputFileName };
