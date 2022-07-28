@@ -29,6 +29,12 @@ https://docs.onflow.org/cadence/language/
 
 Programming language: Cadence
 
+### Neo
+
+https://docs.neo.org/v2/docs/en-us/sc/gettingstarted/introduction.html
+
+Suggested programming language: C#, (possibly C++ in the future).
+
 ## Alternative ZK toolchains
 
 * https://zokrates.github.io/
