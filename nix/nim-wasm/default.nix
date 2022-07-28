@@ -35,7 +35,7 @@
       --passC:"--target=wasm32-unknown-unknown-wasm"
       --passC:"-nostdinc -fno-builtin -fno-exceptions -fno-threadsafe-statics"
       --passC:"-fvisibility=hidden -flto"
-      --passC:"-std=c99"
+      --passC:"-std=gnu99"
       --passL:"--target=wasm32-unknown-unknown-wasm -nostdlib -Wl,--no-entry,--allow-undefined,--export-dynamic,--gc-sections,--strip-all"
     '';
     destination = "/nim/nim.cfg";
