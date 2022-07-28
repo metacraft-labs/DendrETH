@@ -8,7 +8,7 @@ This would allow other smart contracts in the third-party blockchain to react to
 
 A bridge based on the light client sync protocol will authenticate all data through the signatures of the Ethereum validators participating in the sync committees, significantly reducing the required level of trust in the bridge operator and limiting the potential for attacks.
 
-The DendrETH project aims to develop highly efficient Ethereum light client implementations in the form of smart contracts for multiple third-party blockchains such as Solana, Polkadot, Cosmos, Cardano, Avalanche, Tezos and any EVM-compatible chain. It will explore and document different design trade-offs, based on the application of toolchains for fraud proofs and zero-knowledge proofs. The project is expected to produce a number of recommendations for changes in the Ethereum specifications that may improve the characteristic of the developed bridges in the future.
+The DendrETH project aims to develop highly efficient Ethereum light client implementations in the form of smart contracts for multiple third-party blockchains such as Solana, Polkadot, Cosmos, Cardano, Avalanche, EOS, Tezos and any EVM-compatible chain. It will explore and document different design trade-offs, based on the application of toolchains for fraud proofs and zero-knowledge proofs. The project is expected to produce a number of recommendations for changes in the Ethereum specifications that may improve the characteristic of the developed bridges in the future.
 
 All developed software will be released under permissive license. The implemented bridges will be deployed and operated by at least one partnering large institutional operator ([Blockdaemon](https://blockdaemon.com/)).
 
