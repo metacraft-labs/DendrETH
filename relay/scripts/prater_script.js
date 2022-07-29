@@ -1,7 +1,7 @@
 const axios = require("axios").default;
 const { writeFile } = require("fs");
 // The correct path should be selected, where the snapshot.json is, in order to get the correct data
-const snapshot = require("./prater/snapshot.json");
+const bootstrap = require("../../../eth2-light-client-updates/prater/bootstrap.json");
 
 /*
 The HOST should stay "http://localhost", while the PORT may change, depending on how the beacon node has been set up
@@ -10,7 +10,7 @@ One sync committee period is around 27 hours -  EPOCHS_PER_SYNC_COMMITTEE_PERIOD
 */
 const HOST = "http://localhost";
 const port = 5052;
-const path = "./prater";
+const path = "../../../eth2-light-client-updates/prater";
 const EPOCHS_PER_SYNC_COMMITTEE_PERIOD = 256;
 const SLOTS_PER_EPOCH = 32;
 
@@ -20,7 +20,7 @@ async function getBlockData() {
     `${HOST}:${port}/eth/v1/beacon/headers/finalized`
   );
 
-  const slot = snapshot.data.v.header.slot;
+  const slot = bootstrap.data.v.header.slot;
   const current_sync_committee_period = Math.floor(
     slot / (EPOCHS_PER_SYNC_COMMITTEE_PERIOD * SLOTS_PER_EPOCH)
   );
@@ -50,7 +50,7 @@ async function getBlockData() {
       { flag: "w+" },
       (err) => {
         if (err) throw err;
-        console.log("updatesResponse data has been saved!");
+        console.log(`Update №${current_sync_committee_period + i} has been saved!`);
       }
     );
   }
@@ -61,12 +61,12 @@ async function getBlockData() {
   );
 
   writeFile(
-    `${path}/snapshot.json`,
+    `${path}/bootstrap.json`,
     JSON.stringify(snapshotData.data, null, 2),
     { flag: "w+" },
     (err) => {
       if (err) throw err;
-      console.log("Snapshot count has been updated and saved!");
+      console.log("Bootstrap has been updated and saved!");
     }
   );
 }
