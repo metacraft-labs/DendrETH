@@ -1,7 +1,7 @@
 const axios = require("axios").default;
 const { writeFile } = require("fs");
 // The correct path should be selected, where the snapshot.json is, in order to get the data
-const data = require("./mainnet/snapshot.json");
+const snapshot = require("./mainnet/snapshot.json");
 
 /*
 The HOST should stay "http://localhost", while the PORT may change, depending on how the beacon node has been set up
