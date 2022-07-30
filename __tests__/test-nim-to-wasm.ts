@@ -24,10 +24,11 @@ describe('calling Nim functions compiled to Wasm', () => {
   const perFileState: Record<string, NimTestState> = {};
 
   function testNimToWasmFile<T extends WebAssembly.Exports = {}>(
+    testName: string,
     path: string,
     func: (state: NimTestState<T>) => void,
   ) {
-    test(`Testing '${path}'`, () =>
+    test(`Testing '${path}': '${testName}'`, () =>
       func(perFileState[path] as NimTestState<T>));
   }
 
