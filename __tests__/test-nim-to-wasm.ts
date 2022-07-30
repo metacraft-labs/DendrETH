@@ -1,12 +1,11 @@
 import { dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
-
 import glob_ from 'glob';
 const glob = glob_.sync;
 
 import { compileNimFileToWasm } from '../src/ts-utils/compile-nim-to-wasm';
 import { loadWasm } from '../src/ts-utils/load-wasm';
-
+import { hexToArray } from  '../src/ts-utils/hex-utils';
 interface NimTestState<T extends WebAssembly.Exports = {}> {
   exports: T;
   logMessages: string[];
@@ -116,5 +115,25 @@ describe('calling Nim functions compiled to Wasm', () => {
       exports.arrayMapAdd(array, value),
       5);
     expect(res).toStrictEqual(expectedRes);
+  });
+
+
+testNimToWasmFile<{
+  eth2DigestCompare: (a: Uint8Array) => Boolean;
+  memory:WebAssembly.Memory
+}>("Compare eth2Digests", 'eth2Digest.nim', ({ exports, logMessages }) => {
+  const correctBlockRoot = 'ca6ddab42853a7aef751e6c2bf38b4ddb79a06a1f971201dcf28b0f2db2c0d61'
+  const correctBlockRootBuffer = hexToArray(correctBlockRoot)
+  var blockRootArray = new Uint8Array(exports.memory.buffer, 0, 32)
+  blockRootArray.set(correctBlockRootBuffer)
+  const correctTestRes = exports.eth2DigestCompare(blockRootArray);
+  expect(correctTestRes).toStrictEqual(1);
+
+  const incorrectBlockRoot = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+  const incorrectBlockRootBuffer = hexToArray(incorrectBlockRoot)
+  var blockRootArray = new Uint8Array(exports.memory.buffer, 0, 32)
+  blockRootArray.set(incorrectBlockRootBuffer)
+  const incorrectTestRes = exports.eth2DigestCompare(blockRootArray);
+  expect(incorrectTestRes).toStrictEqual(0);
   });
 });
