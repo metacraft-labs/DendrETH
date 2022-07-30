@@ -1,20 +1,16 @@
 const axios = require("axios").default;
 const { writeFile } = require("fs");
-// The correct path should be selected, where the snapshot.json is, in order to get the data
-const bootstrap = require("../../../eth2-light-client-updates/mainnet/bootstrap.json");
+// The correct path should be selected, where the snapshot.json is, in order to get the correct data
+const snapshot = require("./prater/snapshot.json");
 
 /*
 The HOST should stay "http://localhost", while the PORT may change, depending on how the beacon node has been set up
-The HOST is at PORT = 5053, because it has been started with: 
-"NODE_ID=1 ./run-mainnet-beacon-node.sh --light-client-data-serve --light-client-data-import-mode=on-demand --light-client-data-max-periods=1000", 
-thus it is not 5052, but 5053. If the node is set without the NODE_ID parameter, than it's going to be 5052
 The PATH may also change depending on how data is read from the snapshot.json file and written to the updates folder
 One sync committee period is around 27 hours -  EPOCHS_PER_SYNC_COMMITTEE_PERIOD * SLOTS_PER_EPOCH, where one slot is 12s and one epoch is 32 slots
-START_PERIOD - first committee after the Altair hard fork
 */
 const HOST = "http://localhost";
-const port = 5053;
-const path = "../../../eth2-light-client-updates/mainnet";
+const port = 5052;
+const path = "./prater";
 const EPOCHS_PER_SYNC_COMMITTEE_PERIOD = 256;
 const SLOTS_PER_EPOCH = 32;
 
@@ -24,7 +20,7 @@ async function getBlockData() {
     `${HOST}:${port}/eth/v1/beacon/headers/finalized`
   );
 
-  const slot = bootstrap.data.v.header.slot;
+  const slot = snapshot.data.v.header.slot;
   const current_sync_committee_period = Math.floor(
     slot / (EPOCHS_PER_SYNC_COMMITTEE_PERIOD * SLOTS_PER_EPOCH)
   );
@@ -32,8 +28,15 @@ async function getBlockData() {
     latestFinalizedHeader.data.data.header.message.slot /
       (EPOCHS_PER_SYNC_COMMITTEE_PERIOD * SLOTS_PER_EPOCH)
   );
+
   // Determing the start and end point for the updates
   const count = endPoint - current_sync_committee_period;
+
+  console.log(slot);
+  console.log(latestFinalizedHeader.data.data.header.message.slot);
+  console.log(current_sync_committee_period);
+  console.log(endPoint);
+  console.log(count);
 
   const updatesResponse = await axios.get(
     `${HOST}:${port}/eth/v0/beacon/light_client/updates?start_period=${current_sync_committee_period}&count=${count}`
@@ -47,7 +50,7 @@ async function getBlockData() {
       { flag: "w+" },
       (err) => {
         if (err) throw err;
-        console.log(`Update №${current_sync_committee_period + i} has been saved!`);
+        console.log("updatesResponse data has been saved!");
       }
     );
   }
@@ -58,12 +61,12 @@ async function getBlockData() {
   );
 
   writeFile(
-    `${path}/bootstrap.json`,
+    `${path}/snapshot.json`,
     JSON.stringify(snapshotData.data, null, 2),
     { flag: "w+" },
     (err) => {
       if (err) throw err;
-      console.log("Bootstrap has been updated and saved!");
+      console.log("Snapshot count has been updated and saved!");
     }
   );
 }
