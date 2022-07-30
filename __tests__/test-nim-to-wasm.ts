@@ -1,7 +1,6 @@
 import { dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-
 import glob_ from 'glob';
 const glob = glob_.sync;
 
@@ -64,7 +63,7 @@ describe('calling Nim functions compiled to Wasm', () => {
 
   testNimToWasmFile<{
     printAdd: (a: number, b: number) => void;
-  }>('add.nim', ({ exports, logMessages }) => {
+  }>("Sum of two numbers", 'add.nim', ({ exports, logMessages }) => {
     const res = exports.printAdd(2, 3);
     expect(res).toBe(undefined);
     expect(logMessages).toEqual(['5']);
@@ -72,9 +71,50 @@ describe('calling Nim functions compiled to Wasm', () => {
 
   testNimToWasmFile<{
     printCreateSeqLen: (a: number, b: number) => void;
-  }>('seq_append.nim', ({ exports, logMessages }) => {
+  }>("Length of seq", 'seq_append.nim', ({ exports, logMessages }) => {
     const res = exports.printCreateSeqLen(2, 3);
     expect(res).toBe(undefined);
     expect(logMessages).toEqual(['5']);
+  });
+
+  testNimToWasmFile<{
+    sumOfArrayElements: (a: Int32Array) => number;
+    memory:WebAssembly.Memory
+  }>("Passing arrays to wasm(nim)", 'arrays.nim', ({ exports }) => {
+    const array = new Int32Array(exports.memory.buffer, 0, 5);
+    array.set([3, 15, 18, 4, 2]);
+    let expectedRes = 42; // 3+15+18+4+2=42
+    const res = exports.sumOfArrayElements(array);
+    expect(res).toBe(expectedRes);
+  });
+
+  testNimToWasmFile<{
+    createNewArray: (a: number) => any;
+    memory:WebAssembly.Memory
+  }>("Receiving arrays from wasm(nim)", 'arrays.nim', ({ exports }) => {
+    let value = 42
+    const expectedRes = new Int32Array(exports.memory.buffer, 0, 5)
+    expectedRes.set([42, 42, 42, 42, 42]);
+    let res = new Int32Array(
+      exports.memory.buffer,
+      exports.createNewArray(value),
+      5);
+    expect(res).toStrictEqual(expectedRes);
+  });
+
+  testNimToWasmFile<{
+    arrayMapAdd: (a: Int32Array, b: number) => any;
+    memory:WebAssembly.Memory
+  }>("Passing and receiving arrays from wasm(nim)", 'arrays.nim', ({ exports }) => {
+    const array = new Int32Array(exports.memory.buffer, 0, 5);
+    array.set([3, 15, 18, 4, 2]);
+    let value = 42
+    const expectedRes = new Int32Array(exports.memory.buffer, 0, 5)
+    expectedRes.set([45, 67, 60, 46, 44]);
+    let res = new Int32Array(
+      exports.memory.buffer,
+      exports.arrayMapAdd(array, value),
+      5);
+    expect(res).toStrictEqual(expectedRes);
   });
 });
