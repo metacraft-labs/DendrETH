@@ -1,0 +1,14 @@
+{
+  "name": "relay-scripts",
+  "version": "1.0.0",
+  "description": "Relay scripts for fetching info from the Beacon API",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "CC0-1.0",
+  "dependencies": {
+    "axios": "^0.27.2"
+  }
+}
