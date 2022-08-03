@@ -6,7 +6,7 @@ with pkgs; let
   nim-wasm = callPackage ./nix/nim-wasm {inherit llvm;};
 in
   mkShell {
-    buildInputs = [
+    packages = [
       # For priting the direnv banner
       figlet
 
