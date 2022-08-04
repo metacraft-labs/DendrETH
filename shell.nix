@@ -29,6 +29,8 @@ in
       # 15% size reduction of the generated .wasm files.
       binaryen
 
+      metacraft-labs.circom
+
       llvm.clang
       ldc
       nim
