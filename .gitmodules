@@ -4,3 +4,9 @@
 [submodule "nimbus-eth2"]
 	path = vendor/nimbus-eth2
 	url = git@github.com:status-im/nimbus-eth2.git
+[submodule "vendor/circom-pairing"]
+	path = vendor/circom-pairing
+	url = https://github.com/metacraft-labs/circom-pairing.git
+[submodule "vendor/rapidsnark"]
+	path = vendor/rapidsnark
+	url = https://github.com/iden3/rapidsnark.git

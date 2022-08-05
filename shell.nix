@@ -4,6 +4,9 @@ with pkgs; let
   llvm = llvmPackages_13;
   corepack = callPackage ./nix/corepack-shims {inherit nodejs;};
   nim-wasm = callPackage ./nix/nim-wasm {inherit llvm;};
+  packageOverrides = pkgs.callPackage ./python-packages.nix {};
+  python = pkgs.python38.override {inherit packageOverrides;};
+  pythonWithPackages = python.withPackages (ps: [ps.requests]);
 in
   mkShell {
     packages = [
@@ -30,6 +33,11 @@ in
       binaryen
 
       metacraft-labs.circom
+      nlohmann_json
+      pythonWithPackages
+      gmp
+      nasm
+      libsodium
 
       llvm.clang
       ldc
