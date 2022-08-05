@@ -30,6 +30,11 @@ in
       binaryen
 
       metacraft-labs.circom
+      nlohmann_json
+      python38
+      gmp
+      nasm
+      libsodium
 
       llvm.clang
       ldc
