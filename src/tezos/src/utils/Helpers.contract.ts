@@ -9,11 +9,8 @@ import * as C from "../utils/Constants.contract";
 @Contract
 export class Helpers extends C.Constants {
     pow = (base: T.Uint64, exponent: T.Uint64): T.Uint64 => {
-        if (base == 1 || exponent == 1) {
+        if (base == 1) {
             return base;
-        }
-        if (exponent == 0) {
-            return 1;
         }
 
         let result: T.Uint64 = 1;
@@ -25,8 +22,8 @@ export class Helpers extends C.Constants {
     };
 
     getElementInUintArrayAt = (index: T.Uint64, arr: TList<T.Uint64>): T.Uint64 => {
-        if ((arr as TList<T.Uint64>).size() == 0 || (arr as TList<T.Uint64>).size() < index || index < 0) {
-            Sp.failWith("Helpers: Invalid params!")
+        if (index >= (arr as TList<T.Uint64>).size()) {
+            return 0 as T.Uint64;
         }
 
         let i: T.Uint64 = 0;
@@ -37,13 +34,13 @@ export class Helpers extends C.Constants {
             i += 1;
         }
 
-        Sp.failWith("Helpers: Invalid params!")
+        Sp.failWith("Helpers: Invalid params!");
         return 0 as T.Uint64;
     };
 
     getElementInBytesArrayAt = (index: T.Uint64, arr: TList<T.Bytes32>): T.Bytes32 => {
-        if ((arr as TList<T.Bytes32>).size() == 0 || (arr as TList<T.Bytes32>).size() < index || index < 0) {
-            Sp.failWith("Helpers: Invalid params!")
+        if (index >= (arr as TList<T.Bytes32>).size()) {
+            return "0x0000000000000000000000000000000000000000000000000000000000000000" as T.Bytes32;
         }
 
         let i = 0;
@@ -54,13 +51,13 @@ export class Helpers extends C.Constants {
             i += 1;
         }
 
-        Sp.failWith("Helpers: Invalid params!")
-        return '0x0' as T.Bytes32;
+        Sp.failWith("Helpers: Invalid params!");
+        return '0x0000000000000000000000000000000000000000000000000000000000000000' as T.Bytes32;
     };
 
-    setElementInBytesArrayAt = (index: T.Uint64, element: T.Bytes, arr: TList<T.Bytes32>): TList<T.Bytes32> => {
-        if ((arr as TList<T.Bytes32>).size() == 0 || (arr as TList<T.Bytes32>).size() < index || index < 0) {
-            Sp.failWith("Helpers: Invalid params!")
+    setElementInBytesArrayAt = (index: T.Uint64, arr: TList<T.Bytes32>, element: T.Bytes): TList<T.Bytes32> => {
+        if (index >= (arr as TList<T.Bytes32>).size()) {
+            Sp.failWith("Helpers: Invalid params!");
         }
 
         let i = 0;

@@ -39,16 +39,18 @@ export interface LightClientSnapshot {
 
 export interface LightClientUpdate {
     // Update beacon block header
-    header: BeaconBlockHeader;
+    attested_header: BeaconBlockHeader;
     // Next sync committee corresponding to the header
     next_sync_committee: SyncCommittee;
     next_sync_committee_branch: TList<T.Bytes32>;
     // Finality proof for the update header
-    finality_header: BeaconBlockHeader;
+    finalized_header: BeaconBlockHeader;
     finality_branch: TList<T.Bytes32>;
     // Sync committee aggregate signature
-    sync_committee_bits: T.Bitvector;
-    sync_committee_signature: T.BLSSignature;
+    sync_aggregate: {
+        sync_committee_bits: T.Bitvector;
+        sync_committee_signature: T.BLSSignature;
+    }
     // Fork version for the aggregate signature
     fork_version: T.Version;
 }

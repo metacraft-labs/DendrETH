@@ -9,13 +9,13 @@ import type * as I from "../types/interfaces";
 export class Constants {
     // PHASE 0
     DOMAIN_SYNC_COMMITTEE: T.DomainType = '0x07000000' as T.DomainType;
-    GENESIS_FORK_VERSION: T.Version = '0x0' as T.Version;
+    GENESIS_FORK_VERSION: T.Version = '0x00000000' as T.Version;
 
     EPOCHS_PER_SYNC_COMMITTEE_PERIOD: T.Uint64 = 256;
 
     SLOTS_PER_EPOCH: T.Uint64 = 32;
 
-    BLSPUBLICKEY_LENGTH: T.Uint64 = 96;
+    BLSPUBLICKEY_LENGTH: T.Uint64 = 48;
 
     SYNC_COMMITTEE_SIZE: T.Uint64 = 512;
 
@@ -23,19 +23,22 @@ export class Constants {
     FINALIZED_ROOT_INDEX: T.Uint64 = 105;
     FINALIZED_ROOT_DEPTH: T.Uint64 = 6;
 
+    NEXT_SYNC_COMMITTEE_INDEX: T.Uint64 = 55;
+    NEXT_SYNC_COMMITTEE_DEPTH: T.Uint64 = 5;
+
     MIN_SYNC_COMMITTEE_PARTICIPANTS: T.Uint64 = 1;
 
     EMPTY_BEACON_HEADER: I.BeaconBlockHeader = {
         slot: 0 as T.Slot,
         proposer_index: 0 as T.ValidatorIndex,
-        parent_root: '0x0' as T.Root,
-        state_root: '0x0' as T.Root,
-        body_root: '0x0' as T.Root,
+        parent_root: '0x0000000000000000000000000000000000000000000000000000000000000000' as T.Root,
+        state_root: '0x0000000000000000000000000000000000000000000000000000000000000000' as T.Root,
+        body_root: '0x0000000000000000000000000000000000000000000000000000000000000000' as T.Root,
     };
 
     EMPTY_SYNC_COMMITTEE: I.SyncCommittee = {
         pubkeys: [] as TList<T.BLSPubkey>,
-        aggregate_pubkey: '0x0' as T.BLSPubkey,
+        aggregate_pubkey: '0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000' as T.BLSPubkey,
     };
 
     EMPTY_LIGHT_CLIENT_UPDATE: I.LightClientUpdate = {
@@ -45,24 +48,9 @@ export class Constants {
         finality_header: this.EMPTY_BEACON_HEADER,
         finality_branch: [] as TList<TBytes>,
         sync_committee_bits: [] as T.Bitvector,
-        sync_committee_signature: '0x0' as T.BLSSignature,
-        fork_version: '0x0' as T.Version,
+        sync_committee_signature: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000' as T.BLSSignature,
+        fork_version: '0x00000000' as T.Version,
     };
-
-    // EMPTY_LIGHT_CLIENT_STORE: I.LightClientStore = {
-    //     snapshot: {
-    //         header: this.EMPTY_BEACON_HEADER,
-    //         current_sync_committee: {
-    //             pubkeys: [],
-    //             aggregate_pubkey: "0x0" as T.BLSPubkey
-    //         },
-    //         next_sync_committee: {
-    //             pubkeys: [],
-    //             aggregate_pubkey: "0x0" as T.BLSPubkey
-    //         }
-    //     },
-    //     valid_updates: [] as TSet<I.LightClientUpdate>
-    // };
 }
 
 Dev.compileContract('compilation', new Constants());
