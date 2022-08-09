@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.7.6;
+pragma solidity 0.8.9;
 
 import './Fp.sol';
 import '../Bytes.sol';
@@ -108,7 +108,7 @@ library G1 {
     return from(output);
   }
 
-  function from(uint256[4] memory x) internal view returns (G1Point memory) {
+  function from(uint256[4] memory x) internal pure returns (G1Point memory) {
     return G1Point(Fp(x[0], x[1]), Fp(x[2], x[3]));
   }
 
