@@ -1,6 +1,6 @@
 from nimcrypto/hash import MDigest, fromHex
 
-import ../../src/nim-light-client/light_client_utils
+import light_client_utils
 import ./helpers/helpers
 
 proc beaconBlockHeaderCompare*(

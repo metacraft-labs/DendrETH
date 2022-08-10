@@ -1,4 +1,4 @@
-import .../src/nim-light-client/light_client_utils
+import light_client_utils
 
 from ssz_serialization/codec import readSszValue
 from stew/ranges/ptr_arith import makeOpenArray

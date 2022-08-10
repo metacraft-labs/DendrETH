@@ -6,7 +6,7 @@ import { ssz } from '@lodestar/types';
 
 import { compileNimFileToWasm } from '../src/ts-utils/compile-nim-to-wasm';
 import { loadWasm, marshalSzzObjectToWasm } from '../src/ts-utils/wasm-utils';
-import { hexToArray } from  '../src/ts-utils/hex-utils';
+import { hexToArray } from '../src/ts-utils/hex-utils';
 interface NimTestState<T extends WebAssembly.Exports = {}> {
   exports: T;
   logMessages: string[];
@@ -15,9 +15,10 @@ interface NimTestState<T extends WebAssembly.Exports = {}> {
 
 describe('calling Nim functions compiled to Wasm', () => {
   const filesToTest = glob(
-    dirname(fileURLToPath(import.meta.url)) + '/nimToWasm/*.nim', {
-      ignore: '**/panicoverride\\.nim'
-    }
+    dirname(fileURLToPath(import.meta.url)) + '/nimToWasm/*.nim',
+    {
+      ignore: '**/panicoverride\\.nim',
+    },
   );
 
   const perFileState: Record<string, NimTestState> = {};
@@ -63,7 +64,7 @@ describe('calling Nim functions compiled to Wasm', () => {
 
   testNimToWasmFile<{
     printAdd: (a: number, b: number) => void;
-  }>("Sum of two numbers", 'add.nim', ({ exports, logMessages }) => {
+  }>('Sum of two numbers', 'add.nim', ({ exports, logMessages }) => {
     const res = exports.printAdd(2, 3);
     expect(res).toBe(undefined);
     expect(logMessages).toEqual(['5']);
@@ -71,7 +72,7 @@ describe('calling Nim functions compiled to Wasm', () => {
 
   testNimToWasmFile<{
     printCreateSeqLen: (a: number, b: number) => void;
-  }>("Length of seq", 'seq_append.nim', ({ exports, logMessages }) => {
+  }>('Length of seq', 'seq_append.nim', ({ exports, logMessages }) => {
     const res = exports.printCreateSeqLen(2, 3);
     expect(res).toBe(undefined);
     expect(logMessages).toEqual(['5']);
@@ -79,8 +80,8 @@ describe('calling Nim functions compiled to Wasm', () => {
 
   testNimToWasmFile<{
     sumOfArrayElements: (a: Int32Array) => number;
-    memory:WebAssembly.Memory
-  }>("Passing arrays to wasm(nim)", 'arrays.nim', ({ exports }) => {
+    memory: WebAssembly.Memory;
+  }>('Passing arrays to wasm(nim)', 'arrays.nim', ({ exports }) => {
     const array = new Int32Array(exports.memory.buffer, 0, 5);
     array.set([3, 15, 18, 4, 2]);
     let expectedRes = 42; // 3+15+18+4+2=42
@@ -90,55 +91,62 @@ describe('calling Nim functions compiled to Wasm', () => {
 
   testNimToWasmFile<{
     createNewArray: (a: number) => any;
-    memory:WebAssembly.Memory
-  }>("Receiving arrays from wasm(nim)", 'arrays.nim', ({ exports }) => {
-    let value = 42
-    const expectedRes = new Int32Array(exports.memory.buffer, 0, 5)
+    memory: WebAssembly.Memory;
+  }>('Receiving arrays from wasm(nim)', 'arrays.nim', ({ exports }) => {
+    let value = 42;
+    const expectedRes = new Int32Array(exports.memory.buffer, 0, 5);
     expectedRes.set([42, 42, 42, 42, 42]);
     let res = new Int32Array(
       exports.memory.buffer,
       exports.createNewArray(value),
-      5);
+      5,
+    );
     expect(res).toStrictEqual(expectedRes);
   });
 
   testNimToWasmFile<{
     arrayMapAdd: (a: Int32Array, b: number) => any;
-    memory:WebAssembly.Memory
-  }>("Passing and receiving arrays from wasm(nim)", 'arrays.nim', ({ exports }) => {
-    const array = new Int32Array(exports.memory.buffer, 0, 5);
-    array.set([3, 15, 18, 4, 2]);
-    let value = 42
-    const expectedRes = new Int32Array(exports.memory.buffer, 0, 5)
-    expectedRes.set([45, 67, 60, 46, 44]);
-    let res = new Int32Array(
-      exports.memory.buffer,
-      exports.arrayMapAdd(array, value),
-      5);
-    expect(res).toStrictEqual(expectedRes);
+    memory: WebAssembly.Memory;
+  }>(
+    'Passing and receiving arrays from wasm(nim)',
+    'arrays.nim',
+    ({ exports }) => {
+      const array = new Int32Array(exports.memory.buffer, 0, 5);
+      array.set([3, 15, 18, 4, 2]);
+      let value = 42;
+      const expectedRes = new Int32Array(exports.memory.buffer, 0, 5);
+      expectedRes.set([45, 67, 60, 46, 44]);
+      let res = new Int32Array(
+        exports.memory.buffer,
+        exports.arrayMapAdd(array, value),
+        5,
+      );
+      expect(res).toStrictEqual(expectedRes);
+    },
+  );
+
+  testNimToWasmFile<{
+    eth2DigestCompare: (a: Uint8Array) => Boolean;
+    memory: WebAssembly.Memory;
+  }>('Compare eth2Digests', 'eth2Digest.nim', ({ exports, logMessages }) => {
+    const correctBlockRoot =
+      'ca6ddab42853a7aef751e6c2bf38b4ddb79a06a1f971201dcf28b0f2db2c0d61';
+    const correctBlockRootBuffer = hexToArray(correctBlockRoot);
+    var blockRootArray = new Uint8Array(exports.memory.buffer, 0, 32);
+    blockRootArray.set(correctBlockRootBuffer);
+    const correctTestRes = exports.eth2DigestCompare(blockRootArray);
+    expect(correctTestRes).toStrictEqual(1);
+
+    const incorrectBlockRoot =
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const incorrectBlockRootBuffer = hexToArray(incorrectBlockRoot);
+    var blockRootArray = new Uint8Array(exports.memory.buffer, 0, 32);
+    blockRootArray.set(incorrectBlockRootBuffer);
+    const incorrectTestRes = exports.eth2DigestCompare(blockRootArray);
+    expect(incorrectTestRes).toStrictEqual(0);
   });
 
-
-testNimToWasmFile<{
-  eth2DigestCompare: (a: Uint8Array) => Boolean;
-  memory:WebAssembly.Memory
-}>("Compare eth2Digests", 'eth2Digest.nim', ({ exports, logMessages }) => {
-  const correctBlockRoot = 'ca6ddab42853a7aef751e6c2bf38b4ddb79a06a1f971201dcf28b0f2db2c0d61'
-  const correctBlockRootBuffer = hexToArray(correctBlockRoot)
-  var blockRootArray = new Uint8Array(exports.memory.buffer, 0, 32)
-  blockRootArray.set(correctBlockRootBuffer)
-  const correctTestRes = exports.eth2DigestCompare(blockRootArray);
-  expect(correctTestRes).toStrictEqual(1);
-
-  const incorrectBlockRoot = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-  const incorrectBlockRootBuffer = hexToArray(incorrectBlockRoot)
-  var blockRootArray = new Uint8Array(exports.memory.buffer, 0, 32)
-  blockRootArray.set(incorrectBlockRootBuffer)
-  const incorrectTestRes = exports.eth2DigestCompare(blockRootArray);
-  expect(incorrectTestRes).toStrictEqual(0);
-  });
-
-testNimToWasmFile<{
+  testNimToWasmFile<{
     allocMemory: (a: number) => any;
     beaconBlockHeaderCompare: (a: number, b: number) => any;
     memory: WebAssembly.Memory;
@@ -157,10 +165,15 @@ testNimToWasmFile<{
           '0x916babc5bb75209f7a279ed8dd2545721ea3d6b2b6ab331c74dd4247db172b8b',
       });
 
-      const { startOffset, length } = marshalSzzObjectToWasm(exports, testBeaconBlockHeader, ssz.phase0.BeaconBlockHeader);
+      const { startOffset, length } = marshalSzzObjectToWasm(
+        exports,
+        testBeaconBlockHeader,
+        ssz.phase0.BeaconBlockHeader,
+      );
 
-      expect(exports.beaconBlockHeaderCompare(startOffset, length))
-        .toStrictEqual(1);
+      expect(
+        exports.beaconBlockHeaderCompare(startOffset, length),
+      ).toStrictEqual(1);
     },
   );
 });
