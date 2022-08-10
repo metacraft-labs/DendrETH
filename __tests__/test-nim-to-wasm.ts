@@ -2,6 +2,7 @@ import { dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import glob_ from 'glob';
 const glob = glob_.sync;
+import { ssz } from '@lodestar/types';
 
 import { compileNimFileToWasm } from '../src/ts-utils/compile-nim-to-wasm';
 import { loadWasm, marshalSzzObjectToWasm } from '../src/ts-utils/wasm-utils';
@@ -136,4 +137,30 @@ testNimToWasmFile<{
   const incorrectTestRes = exports.eth2DigestCompare(blockRootArray);
   expect(incorrectTestRes).toStrictEqual(0);
   });
+
+testNimToWasmFile<{
+    allocMemory: (a: number) => any;
+    beaconBlockHeaderCompare: (a: number, b: number) => any;
+    memory: WebAssembly.Memory;
+  }>(
+    'Compare Beacon Block Headers',
+    'beaconBlockHeader.nim',
+    ({ exports, logMessages }) => {
+      const testBeaconBlockHeader = ssz.phase0.BeaconBlockHeader.fromJson({
+        slot: 3566048,
+        proposer_index: 265275,
+        parent_root:
+          '0x6d8394a7292d616d8825f139b09fc4dca581a9c0af44499b3283b2dfda346762',
+        state_root:
+          '0x2176c5be4719af3e4ac67e12c55e273468791becc5ee60b4e430a05fd289acdd',
+        body_root:
+          '0x916babc5bb75209f7a279ed8dd2545721ea3d6b2b6ab331c74dd4247db172b8b',
+      });
+
+      const { startOffset, length } = marshalSzzObjectToWasm(exports, testBeaconBlockHeader, ssz.phase0.BeaconBlockHeader);
+
+      expect(exports.beaconBlockHeaderCompare(startOffset, length))
+        .toStrictEqual(1);
+    },
+  );
 });
