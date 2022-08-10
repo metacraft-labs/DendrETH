@@ -413,6 +413,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@chainsafe/persistent-merkle-tree@npm:^0.4.2":
+  version: 0.4.2
+  resolution: "@chainsafe/persistent-merkle-tree@npm:0.4.2"
+  dependencies:
+    "@chainsafe/as-sha256": ^0.3.1
+  checksum: f9cfcb2132a243992709715dbd28186ab48c7c0c696f29d30857693cca5526bf753974a505ef68ffd5623bbdbcaa10f9083f4dd40bf99eb6408e451cc26a1a9e
+  languageName: node
+  linkType: hard
+
+"@chainsafe/ssz@npm:^0.9.2":
+  version: 0.9.2
+  resolution: "@chainsafe/ssz@npm:0.9.2"
+  dependencies:
+    "@chainsafe/as-sha256": ^0.3.1
+    "@chainsafe/persistent-merkle-tree": ^0.4.2
+    case: ^1.6.3
+  checksum: 639edfb35e45afceab0c2c485e340733daad5d5a397d623288db141079cbaec9341fa477cd42b140323bd598c74cb78ada11f7c7638fdd164741703e045c2cb7
+  languageName: node
+  linkType: hard
+
 "@cspotcode/source-map-support@npm:^0.8.0":
   version: 0.8.1
   resolution: "@cspotcode/source-map-support@npm:0.8.1"
@@ -756,6 +776,23 @@ __metadata:
     "@jridgewell/resolve-uri": ^3.0.3
     "@jridgewell/sourcemap-codec": ^1.4.10
   checksum: b9537b9630ffb631aef9651a085fe361881cde1772cd482c257fe3c78c8fd5388d681f504a9c9fe1081b1c05e8f75edf55ee10fdb58d92bbaa8dbf6a7bd6b18c
+  languageName: node
+  linkType: hard
+
+"@lodestar/params@npm:^0.41.0":
+  version: 0.41.0
+  resolution: "@lodestar/params@npm:0.41.0"
+  checksum: 36bc8ca074a517c67c2755c667084c65abff3618201e14eeb9b9299bdc82d5edc90d142e7ffb711d257e99f383aa7da72536812fdc6da1a9c7abfacc6dc55de3
+  languageName: node
+  linkType: hard
+
+"@lodestar/types@npm:^0.41.0":
+  version: 0.41.0
+  resolution: "@lodestar/types@npm:0.41.0"
+  dependencies:
+    "@chainsafe/ssz": ^0.9.2
+    "@lodestar/params": ^0.41.0
+  checksum: 0255ba43c088e25151e86ee8760e69eb501f9b16def25c6eb5224173478aa151d9ca2ea79a1fdc70bee5ba78b77f34a251cfa987657947cba91cdb23a07c6d88
   languageName: node
   linkType: hard
 
@@ -1145,6 +1182,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "DendrETH@workspace:."
   dependencies:
+    "@chainsafe/ssz": ^0.9.2
+    "@lodestar/types": ^0.41.0
     "@types/glob": ^7.2.0
     "@types/jest": ^28.1.2
     "@types/node": ^18.0.0
@@ -1653,21 +1692,6 @@ __metadata:
   version: 1.0.30001374
   resolution: "caniuse-lite@npm:1.0.30001374"
   checksum: a75656e971d7ef2af4d2f3529a4620ae1a45d09460601fbc34b26f6867f31bbca006f71d8840291c471a2f01fc1994044f319a5660241ffaf35a2d84535af442
-  languageName: node
-  linkType: hard
-
-"chai@npm:^4.3.6":
-  version: 4.3.6
-  resolution: "chai@npm:4.3.6"
-  dependencies:
-    assertion-error: ^1.1.0
-    check-error: ^1.0.2
-    deep-eql: ^3.0.1
-    get-func-name: ^2.0.0
-    loupe: ^2.3.1
-    pathval: ^1.1.1
-    type-detect: ^4.0.5
-  checksum: acff93fd537f96d4a4d62dd83810285dffcfccb5089e1bf2a1205b28ec82d93dff551368722893cf85004282df10ee68802737c33c90c5493957ed449ed7ce71
   languageName: node
   linkType: hard
 
