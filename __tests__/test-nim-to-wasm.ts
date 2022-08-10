@@ -4,7 +4,7 @@ import glob_ from 'glob';
 const glob = glob_.sync;
 
 import { compileNimFileToWasm } from '../src/ts-utils/compile-nim-to-wasm';
-import { loadWasm } from '../src/ts-utils/load-wasm';
+import { loadWasm, marshalSzzObjectToWasm } from '../src/ts-utils/wasm-utils';
 import { hexToArray } from  '../src/ts-utils/hex-utils';
 interface NimTestState<T extends WebAssembly.Exports = {}> {
   exports: T;
