@@ -5,8 +5,6 @@ const path = require("path");
 
 const { getFilesInDir } = require("./utils");
 
-SNAPSHOT = require("./data/mainnet/snapshot.json").data.v;
-
 describe("BeaconLightClient", async function () {
   const formatUpdate = (update, FORK_VERSION) => {
     update = JSON.parse(update);
@@ -41,13 +39,8 @@ describe("BeaconLightClient", async function () {
       await ethers.getContractFactory("BeaconLightClient")
     ).deploy(
       bls.address,
-      SNAPSHOT.header.slot,
-      SNAPSHOT.header.proposer_index,
-      SNAPSHOT.header.parent_root,
-      SNAPSHOT.header.state_root,
-      SNAPSHOT.header.body_root,
-      SNAPSHOT.current_sync_committee.pubkeys,
-      SNAPSHOT.current_sync_committee.aggregate_pubkey,
+      SNAPSHOT.current_sync_committee,
+      SNAPSHOT.header,
       GENESIS_VALIDATORS_ROOT
     );
 
@@ -55,7 +48,10 @@ describe("BeaconLightClient", async function () {
       path.join(__dirname, "data", network, "updates")
     ).map(u => formatUpdate(u, FORK_VERSION));
 
-    for (let update of UPDATES) {
+    let prev_sync_committee = SNAPSHOT.current_sync_committee;
+
+    for (let update of UPDATES.slice(0, 5)) {
+      update.prev_sync_committee = prev_sync_committee;
       await blc.light_client_update(update, {
         gasLimit: 30000000,
       });
@@ -63,6 +59,7 @@ describe("BeaconLightClient", async function () {
       const state_root = await blc.state_root();
       expect(state_root).to.equal(update.finalized_header.state_root);
       console.log(state_root);
+      prev_sync_committee = update.next_sync_committee;
     }
   });
 
@@ -76,13 +73,8 @@ describe("BeaconLightClient", async function () {
       await ethers.getContractFactory("BeaconLightClient")
     ).deploy(
       bls.address,
-      SNAPSHOT.header.slot,
-      SNAPSHOT.header.proposer_index,
-      SNAPSHOT.header.parent_root,
-      SNAPSHOT.header.state_root,
-      SNAPSHOT.header.body_root,
-      SNAPSHOT.current_sync_committee.pubkeys,
-      SNAPSHOT.current_sync_committee.aggregate_pubkey,
+      SNAPSHOT.current_sync_committee,
+      SNAPSHOT.header,
       GENESIS_VALIDATORS_ROOT
     );
 
@@ -90,7 +82,10 @@ describe("BeaconLightClient", async function () {
       path.join(__dirname, "data", network, "updates")
     ).map(u => formatUpdate(u, FORK_VERSION));
 
-    for (let update of UPDATES) {
+    let prev_sync_committee = SNAPSHOT.current_sync_committee;
+
+    for (let update of UPDATES.slice(0, 5)) {
+      update.prev_sync_committee = prev_sync_committee;
       await blc.light_client_update(update, {
         gasLimit: 30000000,
       });
@@ -98,6 +93,7 @@ describe("BeaconLightClient", async function () {
       const state_root = await blc.state_root();
       expect(state_root).to.equal(update.finalized_header.state_root);
       console.log(state_root);
+      prev_sync_committee = update.next_sync_committee;
     }
   });
 });
