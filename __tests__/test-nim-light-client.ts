@@ -145,4 +145,36 @@ describe('Light Client in Nim compiled to Wasm', () => {
       ).toStrictEqual(1);
     },
   );
+
+  testNimToWasmFile<{
+    allocMemory: (a: number) => any;
+    initializeLightClientStoreTest: (a: number, b: number) => any;
+    memory: WebAssembly.Memory;
+  }>(
+    'Test `initialize_light_client_store`',
+    'initializeLightClientStore.nim',
+    ({ exports, logMessages }) => {
+      const header = ssz.phase0.BeaconBlockHeader.fromJson(
+        BOOTSTRAP.data.v.header,
+      );
+      const { startOffset: headerStartOffset, length: headerLength } =
+        marshalSzzObjectToWasm(exports, header, ssz.phase0.BeaconBlockHeader);
+
+      const bootstrap = SSZSpecTypes.LightClientBootstrap.fromJson(
+        BOOTSTRAP.data.v,
+      );
+      const { startOffset: bootstrapStartOffset, length: bootstrapLength } =
+        marshalSzzObjectToWasm(
+          exports,
+          bootstrap,
+          SSZSpecTypes.LightClientBootstrap,
+        );
+      expect(
+        exports.initializeLightClientStoreTest(
+          headerStartOffset,
+          bootstrapStartOffset,
+        ),
+      ).toStrictEqual(1);
+    },
+  );
 });
