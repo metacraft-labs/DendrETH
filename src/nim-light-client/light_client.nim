@@ -5,7 +5,7 @@ func initialize_light_client_store*(
     trusted_block_root: Eth2Digest,
     bootstrap: LightClientBootstrap
   ): LightClientStore {.cdecl, exportc, dynlib} =
-  assertLC(hash_tree_root(bootstrap.header) != trusted_block_root)
+  assertLC(hash_tree_root(bootstrap.header) == trusted_block_root)
 
   assertLC(
     is_valid_merkle_branch(
