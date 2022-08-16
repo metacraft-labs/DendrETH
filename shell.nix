@@ -33,6 +33,7 @@ in
       ldc
       nim
       nim-wasm
+      python38
     ];
 
     shellHook = ''
