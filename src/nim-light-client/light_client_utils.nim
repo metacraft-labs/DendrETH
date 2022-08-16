@@ -862,10 +862,6 @@ template is_better_update*[A, B: SomeLightClientUpdate](
     new_update: A, old_update: B): bool =
   is_better_data(toMeta(new_update), toMeta(old_update))
 
-# Other helpers
-template assertLC*(cond: untyped, msg = "") =
-  assert(cond)
-
 template initNextSyncCommitteeBranch*(): NextSyncCommitteeBranch =
   var res: NextSyncCommitteeBranch
   for el in 0 ..< log2trunc(NEXT_SYNC_COMMITTEE_INDEX):
@@ -877,3 +873,34 @@ template initFinalityBranch*(): FinalityBranch =
   for el in 0 ..< log2trunc(FINALIZED_ROOT_INDEX):
     res[el] = Eth2Digest()
   res
+
+# Other helpers
+type
+  BlockError* {.pure.} = enum
+    Invalid = "Invalid Block"
+      ## Block is broken / doesn't apply cleanly - whoever sent it is fishy (or
+      ## we're buggy)
+
+    MissingParent = "Missing Parent"
+      ## We don't know the parent of this block so we can't tell if it's valid
+      ## or not - it'll go into the quarantine and be reexamined when the parent
+      ## appears or be discarded if finality obsoletes it
+
+    UnviableFork = "Unviable Fork"
+      ## Block is from a history / fork that does not include our most current
+      ## finalized checkpoint
+
+    Duplicate = "Duplicate"
+      ## We've seen this block already, can't add again
+
+when defined(lightClientWASM):
+  proc wasmQuit(errmsg: cstring, errsize: int):int {. importc, cdecl, exportc, dynlib} =
+    discard
+
+template assertLC*(cond: untyped, msg: BlockError) =
+  if not cond:
+    when defined(lightClientWASM):
+      discard wasmQuit($msg, ($msg).len)
+    else:
+      quit 1
+  else: discard
