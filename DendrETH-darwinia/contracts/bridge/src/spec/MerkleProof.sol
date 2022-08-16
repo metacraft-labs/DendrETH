@@ -10,7 +10,7 @@ contract MerkleProof {
         uint64 depth,
         uint64 index,
         bytes32 root
-    ) internal pure returns (bool) {
+    ) internal view returns (bool) {
         bytes32 value = leaf;
         for (uint i = 0; i < depth; ++i) {
             if ((index / (2**i)) % 2 == 1) {
@@ -19,6 +19,7 @@ contract MerkleProof {
                 value = hash_node(value, branch[i]);
             }
         }
+
         return value == root;
     }
 
