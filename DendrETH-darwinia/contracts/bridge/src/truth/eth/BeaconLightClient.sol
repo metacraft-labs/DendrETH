@@ -63,6 +63,9 @@ interface IBLS {
 }
 
 contract BeaconLightClient is BeaconChain, Bitfield {
+    event FinalizedHeaderImported(BeaconBlockHeader finalized_header);
+    event NextSyncCommitteeImported(uint64 indexed period, bytes32 indexed next_sync_committee_root);
+
     // address(0x0800)
     address private immutable BLS_PRECOMPILE;
 
@@ -93,12 +96,8 @@ contract BeaconLightClient is BeaconChain, Bitfield {
         // The beacon block header that is attested to by the sync committee
         BeaconBlockHeader attested_header;
 
-        // Next sync committee corresponding to the finalized header
-        SyncCommittee next_sync_committee;
-        bytes32[] next_sync_committee_branch;
-
-        // Previous sync committee
-        SyncCommittee prev_sync_committee;
+        // Sync committee corresponding to sign attested header
+        SyncCommittee signature_sync_committee;
 
         // The finalized beacon block header attested to by Merkle branch
         BeaconBlockHeader finalized_header;
@@ -114,21 +113,37 @@ contract BeaconLightClient is BeaconChain, Bitfield {
         uint64 signature_slot;
     }
 
+    struct SyncCommitteePeriodUpdate {
+        // Next sync committee corresponding to the finalized header
+        SyncCommittee next_sync_committee;
+        bytes32[] next_sync_committee_branch;
+    }
+
     // Beacon block header that is finalized
     BeaconBlockHeader public finalized_header;
 
-    bytes32 public prev_sync_committee_hash;
+    // Attested_state_root
+    bytes32 public attested_state_root;
+
+    // Sync committees corresponding to the header
+    // sync_committee_perid => sync_committee_root
+    bytes32 public prev_sync_committee_root;
+
+
 
     constructor(
         address _bls,
-        SyncCommittee memory _signature_sync_committee,
-        BeaconBlockHeader memory _finalized_header,
+        uint64 _slot,
+        uint64 _proposer_index,
+        bytes32 _parent_root,
+        bytes32 _state_root,
+        bytes32 _body_root,
+        bytes32 _current_sync_committee_hash,
         bytes32 _genesis_validators_root
-    )
-    {
+    ) {
         BLS_PRECOMPILE = _bls;
-        finalized_header = _finalized_header;
-        prev_sync_committee_hash = hash_tree_root(_signature_sync_committee);
+        finalized_header = BeaconBlockHeader(_slot, _proposer_index, _parent_root, _state_root, _body_root);
+        prev_sync_committee_root = _current_sync_committee_hash;
         GENESIS_VALIDATORS_ROOT = _genesis_validators_root;
     }
 
@@ -136,45 +151,48 @@ contract BeaconLightClient is BeaconChain, Bitfield {
         return finalized_header.state_root;
     }
 
-    function light_client_update(FinalizedHeaderUpdate calldata update) external {
+    function import_next_sync_committee(SyncCommitteePeriodUpdate calldata update) external payable {
+        require(verify_next_sync_committee(
+                update.next_sync_committee,
+                update.next_sync_committee_branch,
+                attested_state_root),
+                "!next_sync_committee"
+        );
+
+        uint64 current_period = compute_sync_committee_period(finalized_header.slot);
+        uint64 next_period = current_period + 1;
+        bytes32 next_sync_committee_root = hash_tree_root(update.next_sync_committee);
+        prev_sync_committee_root = next_sync_committee_root;
+        emit NextSyncCommitteeImported(next_period, next_sync_committee_root);
+    }
+
+    function import_finalized_header(FinalizedHeaderUpdate calldata update) external payable {
         require(is_supermajority(update.sync_aggregate.sync_committee_bits), "!supermajor");
-
-        require(prev_sync_committee_hash == hash_tree_root(update.prev_sync_committee), "!sync_committee");
-
-        require(
-            verify_signed_header(
-            update.sync_aggregate,
-            update.prev_sync_committee,
-            update.fork_version,
-            update.attested_header),
-            "!sign");
-
-        require(
-            verify_finalized_header(
-            update.finalized_header,
-            update.finality_branch,
-            update.attested_header.state_root),
-            "!finalized_header"
+        require(verify_finalized_header(
+                update.finalized_header,
+                update.finality_branch,
+                update.attested_header.state_root),
+                "!finalized_header"
         );
 
         uint64 finalized_period = compute_sync_committee_period(finalized_header.slot);
         uint64 signature_period = compute_sync_committee_period(update.signature_slot);
+        require(signature_period == finalized_period ||
+                signature_period == finalized_period + 1,
+               "!signature_period");
+        require(prev_sync_committee_root == hash_tree_root(update.signature_sync_committee), "!sync_committee");
 
-        require(
-            signature_period == finalized_period ||
-            signature_period == finalized_period + 1,
-            "!signature_period");
+        require(verify_signed_header(
+                update.sync_aggregate,
+                update.signature_sync_committee,
+                update.fork_version,
+                update.attested_header),
+               "!sign");
 
-        require(
-            verify_next_sync_committee(
-            update.next_sync_committee,
-            update.next_sync_committee_branch,
-            update.attested_header.state_root),
-            "!next_sync_committee"
-        );
-
-        prev_sync_committee_hash = hash_tree_root(update.next_sync_committee);
+        require(update.finalized_header.slot > finalized_header.slot, "!new");
         finalized_header = update.finalized_header;
+        attested_state_root = update.attested_header.state_root;
+        emit FinalizedHeaderImported(update.finalized_header);
     }
 
     function verify_signed_header(
@@ -208,7 +226,7 @@ contract BeaconLightClient is BeaconChain, Bitfield {
         BeaconBlockHeader calldata header,
         bytes32[] calldata finality_branch,
         bytes32 attested_header_root
-    ) internal pure returns (bool) {
+    ) internal view returns (bool) {
         require(finality_branch.length == FINALIZED_CHECKPOINT_ROOT_DEPTH, "!finality_branch");
         bytes32 header_root = hash_tree_root(header);
         return is_valid_merkle_branch(
@@ -224,7 +242,7 @@ contract BeaconLightClient is BeaconChain, Bitfield {
         SyncCommittee calldata next_sync_committee,
         bytes32[] calldata next_sync_committee_branch,
         bytes32 header_state_root
-    ) internal pure returns (bool) {
+    ) internal view returns (bool) {
         require(next_sync_committee_branch.length == NEXT_SYNC_COMMITTEE_DEPTH, "!next_sync_committee_branch");
         bytes32 next_sync_committee_root = hash_tree_root(next_sync_committee);
         return is_valid_merkle_branch(
