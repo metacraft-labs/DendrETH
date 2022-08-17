@@ -53,7 +53,7 @@ class Constants {
         finality_branch: [],
         sync_committee_bits: [],
         sync_committee_signature: empty_bytes(46),
-        fork_version: [0, 0, 0, 0],
+        fork_version: empty_bytes(4),
     };
 };
 
@@ -404,14 +404,6 @@ class BeaconLightClient extends Utils {
             }
         }
 
-
-
-
-
-
-
-
-        
         // Verify sync committee aggregate signature
         let participants_pubkeys = [];
         for (let i = 0; i < update.sync_aggregate.sync_committee_bits.length; i += 1) {
@@ -426,19 +418,6 @@ class BeaconLightClient extends Utils {
         }
 
         participants_pubkeys = participants_pubkeys.reverse();
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         const domain = this.compute_domain(
             this.DOMAIN_SYNC_COMMITTEE,

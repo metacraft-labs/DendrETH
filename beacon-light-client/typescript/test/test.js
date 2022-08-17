@@ -83,7 +83,7 @@ describe("Tests", function () {
 
     const EMPTY_BYTES4 = Array(4).fill(0);
     const EMPTY_BYTES32 = Array(32).fill(0);
-    const EMPTY_BYTES46 = Array(46).fill(0);
+    const EMPTY_BYTES98 = Array(98).fill(0);
 
     const EMPTY_BEACON_HEADER = {
         slot: 0,
@@ -95,7 +95,7 @@ describe("Tests", function () {
 
     const EMPTY_SYNC_COMMITTEE = {
         pubkeys: [],
-        aggregate_pubkey: EMPTY_BYTES46,
+        aggregate_pubkey: EMPTY_BYTES98,
     };
 
     const EMPTY_LIGHT_CLIENT_UPDATE = {
@@ -105,7 +105,7 @@ describe("Tests", function () {
         finality_header: EMPTY_BEACON_HEADER,
         finality_branch: [],
         sync_committee_bits: [],
-        sync_committee_signature: EMPTY_BYTES46,
+        sync_committee_signature: EMPTY_BYTES98,
         fork_version: EMPTY_BYTES4,
     };
 
