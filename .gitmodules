@@ -4,3 +4,21 @@
 [submodule "nimbus-eth2"]
 	path = vendor/nimbus-eth2
 	url = git@github.com:status-im/nimbus-eth2.git
+[submodule "vendor/nim-ssz-serialization"]
+	path = vendor/nim-ssz-serialization
+	url = git@github.com:metacraft-labs/nim-ssz-serialization.git
+[submodule "vendor/nimcrypto"]
+	path = vendor/nimcrypto
+	url = git@github.com:cheatfate/nimcrypto.git
+[submodule "vendor/nim-blscurve"]
+	path = vendor/nim-blscurve
+	url = git@github.com:metacraft-labs/nim-blscurve.git
+[submodule "vendor/nim-stew"]
+	path = vendor/nim-stew
+	url = git@github.com:status-im/nim-stew.git
+[submodule "vendor/nim-serialization"]
+	path = vendor/nim-serialization
+	url = git@github.com:status-im/nim-serialization.git
+[submodule "vendor/nim-stint"]
+	path = vendor/nim-stint
+	url = git@github.com:status-im/nim-stint.git

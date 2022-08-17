@@ -20,6 +20,7 @@
       --d:noSignalHandler
       --d:nimPreviewFloatRoundtrip
       --d:lightClientEmbedded
+      --d:lightClientWASM
       --exceptions:goto
       --gc:destructors
       --threads:off
@@ -35,7 +36,8 @@
       --passC:"--target=wasm32-unknown-unknown-wasm"
       --passC:"-nostdinc -fno-builtin -fno-exceptions -fno-threadsafe-statics"
       --passC:"-fvisibility=hidden -flto"
-      --passC:"-std=c99"
+      --passC:"-std=gnu99"
+      --passC:"-mbulk-memory" # prevents clang from inserting calls to `memcpy`
       --passL:"--target=wasm32-unknown-unknown-wasm -nostdlib -Wl,--no-entry,--allow-undefined,--export-dynamic,--gc-sections,--strip-all"
     '';
     destination = "/nim/nim.cfg";

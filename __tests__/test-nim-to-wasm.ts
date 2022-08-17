@@ -44,6 +44,11 @@ describe('calling Nim functions compiled to Wasm', () => {
             env: {
               print: (x: unknown) =>
                 perFileState[basename(nimFilePath)].logMessages.push(String(x)),
+              wasmQuit: (x: any, y: any) => {
+                  {
+                    throw("");
+                  }
+                },
             },
           },
         });
@@ -54,7 +59,7 @@ describe('calling Nim functions compiled to Wasm', () => {
         };
       }),
     );
-  });
+  }, 20000 /* timeout in milliseconds */);
 
   testNimToWasmFile<{
     printAdd: (a: number, b: number) => void;
