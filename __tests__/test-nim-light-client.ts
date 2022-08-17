@@ -5,8 +5,17 @@ const glob = glob_.sync;
 import { ssz } from '@lodestar/types';
 
 import { compileNimFileToWasm } from '../src/ts-utils/compile-nim-to-wasm';
-import { loadWasm, marshalSzzObjectToWasm } from '../src/ts-utils/wasm-utils';
-import { hexToArray } from '../src/ts-utils/hex-utils';
+import {
+  loadWasm,
+  marshalSzzObjectToWasm,
+  WasmError,
+  wasmException,
+} from '../src/ts-utils/wasm-utils';
+import { hexToArray, arrayToString } from '../src/ts-utils/hex-utils';
+import { SSZSpecTypes } from '../src/ts-utils/sszSpecTypes';
+
+import BOOTSTRAP from './bootstrap.json';
+
 interface NimTestState<T extends WebAssembly.Exports = {}> {
   exports: T;
   logMessages: string[];
@@ -45,7 +54,7 @@ describe('Light Client in Nim compiled to Wasm', () => {
             env: {
               wasmQuit: (x: any, y: any) => {
                 {
-                  throw("");
+                  throw wasmException(x, y);
                 }
               },
             },

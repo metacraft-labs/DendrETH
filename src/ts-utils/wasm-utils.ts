@@ -49,3 +49,12 @@ export function marshalSzzObjectToWasm<T>(
       length: serialized.length
     }
 }
+
+export interface WasmError extends Error {
+  errMessageOffset: number
+  errSize: number;
+}
+
+export function wasmException(errMessageOffset: any, errSize: any): WasmError {
+  return {errMessageOffset: errMessageOffset, errSize, name: '', message: ''};
+}
