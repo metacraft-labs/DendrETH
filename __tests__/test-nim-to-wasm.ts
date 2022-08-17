@@ -54,7 +54,7 @@ describe('calling Nim functions compiled to Wasm', () => {
         };
       }),
     );
-  }, 20000);
+  }, 20000 /* timeout in milliseconds */);
 
   testNimToWasmFile<{
     printAdd: (a: number, b: number) => void;
