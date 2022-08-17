@@ -70,6 +70,31 @@ describe('Light Client in Nim compiled to Wasm', () => {
   }, 20000);
 
   testNimToWasmFile<{
+    assertLCFailTest: (a: number) => any;
+    memory: WebAssembly.Memory;
+  }>(
+    'Test triggering `assertLC` in nim module',
+    'assertLCTest.nim',
+    ({ exports, logMessages }) => {
+      expect(() => {
+        exports.assertLCFailTest(42);
+      }).toThrow();
+
+      try {
+        exports.assertLCFailTest(42);
+      } catch (err) {
+        const error = new Uint8Array(
+          exports.memory.buffer,
+          (err as WasmError).errMessageOffset,
+          (err as WasmError).errSize,
+        );
+        expect(arrayToString(error)).toStrictEqual('Invalid Block');
+      }
+    },
+  );
+
+
+  testNimToWasmFile<{
     eth2DigestCompare: (a: Uint8Array) => Boolean;
     memory: WebAssembly.Memory;
   }>('Compare eth2Digests', 'eth2Digest.nim', ({ exports, logMessages }) => {
