@@ -1,6 +1,4 @@
 import light_client_utils
-when defined(lightClientWASM):
-  from light_client_utils import BlockError
 
 # https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#initialize_light_client_store
 func initialize_light_client_store*(
