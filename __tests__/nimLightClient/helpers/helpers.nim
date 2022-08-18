@@ -6,7 +6,7 @@ import serialization/object_serialization
 
 export object_serialization
 
-proc allocMemory*(size: uint32): pointer {.cdecl, exportc, dynlib} =
+proc allocMemory*(size: int): pointer {.cdecl, exportc, dynlib} =
   alloc(size)
 
 proc deserializeSSZType*[T](t: var T, memory: pointer, length: Natural) =
