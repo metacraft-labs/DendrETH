@@ -12,7 +12,6 @@
       --os:standalone
       --cpu:wasm32
       --cc:clang
-      --noMain
       --opt:size
       --listCmd
       --d:nimNoLibc
