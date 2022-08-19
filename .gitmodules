@@ -22,3 +22,6 @@
 [submodule "vendor/nim-stint"]
 	path = vendor/nim-stint
 	url = git@github.com:status-im/nim-stint.git
+[submodule "vendor/eth2-light-client-updates"]
+	path = vendor/eth2-light-client-updates
+	url = git@github.com:metacraft-labs/eth2-light-client-updates.git
