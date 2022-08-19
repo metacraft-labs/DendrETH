@@ -9,9 +9,9 @@ import {
   loadWasm,
   marshalSzzObjectToWasm,
   WasmError,
-  wasmException,
+  throwWasmException,
 } from '../src/ts-utils/wasm-utils';
-import { hexToArray, arrayToString } from '../src/ts-utils/hex-utils';
+import { hexToArray } from '../src/ts-utils/hex-utils';
 import { SSZSpecTypes } from '../src/ts-utils/sszSpecTypes';
 
 import BOOTSTRAP from './bootstrap.json';
@@ -47,18 +47,8 @@ describe('Light Client in Nim compiled to Wasm', () => {
         const wasmFilePath = (await compileNimFileToWasm(nimFilePath))
           .outputFileName;
         const exports = await loadWasm<{}>({
-          from: {
-            filepath: wasmFilePath,
-          },
-          importObject: {
-            env: {
-              wasmQuit: (x: any, y: any) => {
-                {
-                  throw wasmException(x, y);
-                }
-              },
-            },
-          },
+          from: { filepath: wasmFilePath },
+          importObject: {}
         });
         perFileState[basename(nimFilePath)] = {
           wasmFilePath,
@@ -67,7 +57,7 @@ describe('Light Client in Nim compiled to Wasm', () => {
         };
       }),
     );
-  }, 20000);
+  }, 20000 /* timeout in milliseconds */);
 
   testNimToWasmFile<{
     assertLCFailTest: (a: number) => any;
@@ -78,21 +68,9 @@ describe('Light Client in Nim compiled to Wasm', () => {
     ({ exports, logMessages }) => {
       expect(() => {
         exports.assertLCFailTest(42);
-      }).toThrow();
-
-      try {
-        exports.assertLCFailTest(42);
-      } catch (err) {
-        const error = new Uint8Array(
-          exports.memory.buffer,
-          (err as WasmError).errMessageOffset,
-          (err as WasmError).errSize,
-        );
-        expect(arrayToString(error)).toStrictEqual('Invalid Block');
-      }
+      }).toThrow(new WasmError('Invalid Block'));
     },
   );
-
 
   testNimToWasmFile<{
     eth2DigestCompare: (a: Uint8Array) => Boolean;
