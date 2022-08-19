@@ -7,9 +7,24 @@ export async function loadWasm<Exports extends WebAssembly.Exports>({
   importObject,
 }: {
   from: { url: URL } | { filepath: string };
-  importObject?: WebAssembly.Imports;
+  importObject: WebAssembly.Imports;
 }) {
   let res: WebAssembly.WebAssemblyInstantiatedSource;
+  let memory: WebAssembly.Memory;
+  importObject = {
+    env: {
+      print: (x: unknown) => console.log(x),
+      wasmQuit: (errOffset: number, errLength: number) => {
+        throwWasmException({
+          memory,
+          startOffset: errOffset,
+          length: errLength,
+        });
+      },
+      ...importObject.env,
+    },
+  };
+
   if ('url' in from && from.url instanceof URL) {
     const url = from.url;
     const resp = fetch(url);
@@ -23,38 +38,56 @@ export async function loadWasm<Exports extends WebAssembly.Exports>({
   } else {
     throw new Error('Invalid argument: `from`');
   }
+  memory = (res.instance.exports as any).memory;
   return res.instance.exports as Exports;
 }
 
-interface WasmModuleMemoryInterface extends WebAssembly.Exports {
+export interface WasmModuleMemoryInterface extends WebAssembly.Exports {
   memory: WebAssembly.Memory;
   allocMemory: (a: number) => any;
 }
 
-interface MemorySlice {
+export interface Slice {
   startOffset: number;
   length: number;
 }
 
+export interface MemorySlice extends Slice {
+  memory: WebAssembly.Memory;
+}
+
+export function readMemory(slice: MemorySlice): Uint8Array {
+  return new Uint8Array(slice.memory.buffer, slice.startOffset, slice.length);
+}
+
+export function writeMemory(memory: MemorySlice, bytes: Uint8Array): void {
+  readMemory(memory).set(bytes, 0);
+}
+
 export function marshalSzzObjectToWasm<T>(
-  exports: WasmModuleMemoryInterface,
+  { memory, allocMemory }: WasmModuleMemoryInterface,
   sszObject: T,
-  sszType: Type<T>): MemorySlice {
-    const serialized = sszType.serialize(sszObject);
-    const startOffset = exports.allocMemory(serialized.length);
-    const slice = new Uint8Array(exports.memory.buffer);
-    slice.set(serialized, startOffset);
-    return {
-      startOffset,
-      length: serialized.length
-    }
+  sszType: Type<T>,
+): MemorySlice {
+  const serialized = sszType.serialize(sszObject);
+  const startOffset = allocMemory(serialized.length);
+  const slice: MemorySlice = {
+    memory,
+    startOffset,
+    length: serialized.length,
+  };
+  writeMemory(slice, serialized);
+  return slice;
 }
 
-export interface WasmError extends Error {
-  errMessageOffset: number
-  errSize: number;
+export function decodeUtf8(slice: MemorySlice): string {
+  const decoder = new TextDecoder('utf-8');
+  return decoder.decode(readMemory(slice));
 }
 
-export function wasmException(errMessageOffset: any, errSize: any): WasmError {
-  return {errMessageOffset: errMessageOffset, errSize, name: '', message: ''};
+export class WasmError extends Error {}
+
+export function throwWasmException(slice: MemorySlice): never {
+  const errorMessage = decodeUtf8(slice);
+  throw new WasmError(errorMessage);
 }

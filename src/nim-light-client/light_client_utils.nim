@@ -611,7 +611,7 @@ type
       ## We've seen this block already, can't add again
 
 when defined(lightClientWASM):
-  proc wasmQuit(errmsg: cstring, errsize: int):int {. importc, cdecl, exportc, dynlib} =
+  proc wasmQuit(errMsg: cstring, errLength: int):int {. importc, cdecl, exportc, dynlib} =
     discard
 
 template assertLC*(cond: untyped, msg: BlockError) =
