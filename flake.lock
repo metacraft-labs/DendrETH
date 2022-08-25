@@ -17,19 +17,15 @@
     },
     "mcl-blockchain": {
       "inputs": {
-        "flake-utils": [
-          "flake-utils"
-        ],
-        "nixpkgs": [
-          "nixpkgs"
-        ]
+        "flake-utils": "flake-utils",
+        "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1660637532,
-        "narHash": "sha256-lniyF4XPOFNDTR6RkftplEX9qFx69wZb1oxGSiB9jq8=",
+        "lastModified": 1661362553,
+        "narHash": "sha256-8SAbNuOXLvStkmge5mkjo3gPxhj/5jpEDP48IJ9tc2s=",
         "owner": "metacraft-labs",
         "repo": "nix-blockchain-development",
-        "rev": "691127dadc827c2242539f2021cbfc423fe5ab2a",
+        "rev": "4c2051c7922e14dbb1f1074105e8a39a6de8a685",
         "type": "github"
       },
       "original": {
@@ -40,11 +36,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1660496378,
-        "narHash": "sha256-sgAhmrC1iSnl5T2VPPiMpciH1aRw5c7PYEdXX6jd6Gk=",
+        "lastModified": 1661262176,
+        "narHash": "sha256-42FXNd2B0QECaULG0Vx+oYzQ9euKcmlg2gmX2D+HbKI=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "879121648fe522b38cc1cf75aef160a14a1f2e7b",
+        "rev": "b9fd420fa535fd254c6f1f26df770b32a9dc98b4",
         "type": "github"
       },
       "original": {
@@ -56,9 +52,15 @@
     },
     "root": {
       "inputs": {
-        "flake-utils": "flake-utils",
+        "flake-utils": [
+          "mcl-blockchain",
+          "flake-utils"
+        ],
         "mcl-blockchain": "mcl-blockchain",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": [
+          "mcl-blockchain",
+          "nixpkgs"
+        ]
       }
     }
   },
