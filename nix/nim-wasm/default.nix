@@ -20,24 +20,32 @@
       --d:nimPreviewFloatRoundtrip
       --d:lightClientEmbedded
       --d:lightClientWASM
-      --exceptions:goto
       --gc:destructors
       --threads:off
       --stackTrace:off
       --lineTrace:off
       --lib:"./vendor/nim/lib"
-      --clang.options.linker:""
-      --clang.cpp.options.linker:""
-      --passC:"-w"
-      --passC:"-ferror-limit=3"
-      --passC:"-I${./include}"
-      --passC:"-fuse-ld=wasm-ld"
-      --passC:"--target=wasm32-unknown-unknown-wasm"
-      --passC:"-nostdinc -fno-builtin -fno-exceptions -fno-threadsafe-statics"
-      --passC:"-fvisibility=hidden -flto"
-      --passC:"-std=gnu99"
-      --passC:"-mbulk-memory" # prevents clang from inserting calls to `memcpy`
-      --passL:"--target=wasm32-unknown-unknown-wasm -nostdlib -Wl,--no-entry,--allow-undefined,--export-dynamic,--gc-sections,--strip-all"
+      @if emcc:
+        --d:useMalloc
+        --clang.exe:emcc -g
+        --clang.linkerexe:emcc
+        --clang.cpp.exe:emcc
+        --clang.cpp.linkerexe:emcc
+        --passL:" -g -O0 -s ASSERTIONS=1 -s ALLOW_MEMORY_GROWTH -s WASM=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s EXPORTED_RUNTIME_METHODS=`['ccall']`"
+      @else:
+        --clang.options.linker:""
+        --clang.cpp.options.linker:""
+        --passC:"-w"
+        --passC:"-ferror-limit=3"
+        --passC:"-I${./include}"
+        --passC:"-fuse-ld=wasm-ld"
+        --passC:"--target=wasm32-unknown-unknown-wasm"
+        --passC:"-nostdinc -fno-builtin -fno-exceptions -fno-threadsafe-statics"
+        --passC:"-fvisibility=default -flto"
+        --passC:"-std=gnu99"
+        --passC:"-mbulk-memory" # prevents clang from inserting calls to `memcpy`
+        --passL:"-g --target=wasm32-unknown-unknown-wasm -nostdlib -Wl,--no-entry,--allow-undefined,--export-dynamic,--gc-sections,--strip-all"
+      @end
     '';
     destination = "/nim/nim.cfg";
   };

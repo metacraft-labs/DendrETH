@@ -1,3 +1,10 @@
+when defined(emcc):
+  {.emit: "#include <emscripten.h>".}
+  {.pragma: wasmPragma, cdecl, exportc, dynlib, codegenDecl: "EMSCRIPTEN_KEEPALIVE $# $#$#".}
+else:
+  {.pragma: wasmPragma, cdecl, exportc, dynlib.}
+
+import marshal
 from nimcrypto/hash import MDigest, fromHex
 
 import light_client_utils
@@ -7,7 +14,7 @@ from ../../src/nim-light-client/light_client import initialize_light_client_stor
 proc initializeLightClientStoreTest(
     dataRoot: pointer,
     dataBootstrap: pointer,
-    ): bool {.cdecl, exportc, dynlib} =
+    ): bool {.wasmPragma.} =
   var beaconBlockHeader: BeaconBlockHeader
   beaconBlockHeader.deserializeSSZType(dataRoot, sizeof(BeaconBlockHeader))
 
@@ -17,7 +24,10 @@ proc initializeLightClientStoreTest(
   let lightClientStore =
    initialize_light_client_store(hash_tree_root(beaconBlockHeader), bootstrap)
 
-  LightClientStore(
+  var expectedLightClientStore = LightClientStore(
     finalized_header: bootstrap.header,
     current_sync_committee: bootstrap.current_sync_committee,
-    optimistic_header: bootstrap.header) == lightClientStore
+    optimistic_header: bootstrap.header)
+
+  return expectedLightClientStore == lightClientStore
+
