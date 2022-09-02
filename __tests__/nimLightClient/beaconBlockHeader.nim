@@ -1,3 +1,9 @@
+when defined(emcc):
+  {.emit: "#include <emscripten.h>".}
+  {.pragma: wasmPragma, cdecl, exportc, dynlib, codegenDecl: "EMSCRIPTEN_KEEPALIVE $# $#$#".}
+else:
+  {.pragma: wasmPragma, cdecl, exportc, dynlib.}
+
 from nimcrypto/hash import MDigest, fromHex
 
 import light_client_utils
@@ -5,7 +11,7 @@ import ./helpers/helpers
 
 proc beaconBlockHeaderCompare*(
     data: pointer, length: Natural
-  ): bool {.cdecl, exportc, dynlib} =
+  ): bool {.wasmPragma.} =
   let expected = BeaconBlockHeader(
     slot: 3566048.Slot,
     proposer_index: 265275.uint64,
