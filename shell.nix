@@ -31,7 +31,11 @@ in
 
       metacraft-labs.circom
 
-      llvm.clang
+      emscripten
+      # clang
+      llvm.clang-unwrapped
+      # llvm.llvm
+      # llvm.lld
       ldc
       nim
       nim-wasm
