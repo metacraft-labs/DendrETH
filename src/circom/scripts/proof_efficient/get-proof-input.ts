@@ -77,11 +77,13 @@ async function getProof(update) {
   return input;
 }
 
-const UPDATES = getFilesInDir(
-  path.join(__dirname, "data", "mainnet", "updates")
-);
+(async () => {
+  const UPDATES = getFilesInDir(
+    path.join(__dirname, "../../../", "data", "mainnet", "updates")
+  );
 
-for (let update of UPDATES.slice(0, 1)) {
-  writeFileSync("input.json", JSON.stringify(getProof(JSON.parse(update as unknown as string))));
-}
+  for (let update of UPDATES.slice(0, 1)) {
+    writeFileSync(path.join(__dirname, "input.json"), JSON.stringify(await getProof(JSON.parse(update as unknown as string))));
+  }
+})();
 
