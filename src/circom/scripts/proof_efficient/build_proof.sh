@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-PHASE1=../../circuits/pot28_final.ptau
+PHASE1=../../circuits/pot25_final.ptau
 CIRCUIT_NAME=proof_efficient
 BUILD_DIR=../../build/"$CIRCUIT_NAME"
 
@@ -18,12 +18,12 @@ fi
 
 echo $PWD
 
-echo "****COMPILING CIRCUIT****"
-start=`date +%s`
-#circom "$CIRCUIT_NAME".circom --O0 --c --output "$BUILD_DIR"
-circom "$CIRCUIT_NAME".circom --O2 --r1cs --sym --c --output "$BUILD_DIR"
-end=`date +%s`
-echo "DONE ($((end-start))s)"
+# echo "****COMPILING CIRCUIT****"
+# start=`date +%s`
+# #circom "$CIRCUIT_NAME".circom --O0 --c --output "$BUILD_DIR"
+# circom "$CIRCUIT_NAME".circom --O1 --r1cs --sym --c --output "$BUILD_DIR"
+# end=`date +%s`
+# echo "DONE ($((end-start))s)"
 
 # echo "****COMPILING C++ WITNESS GENERATION CODE****"
 # start=`date +%s`
@@ -45,7 +45,7 @@ cd "$BUILD_DIR"
 
 echo "****GENERATING ZKEY 0****"
 start=`date +%s`
-node --trace-gc --trace-gc-ignore-scavenger --max-old-space-size=2048000 --initial-old-space-size=2048000 --no-global-gc-scheduling --no-incremental-marking --max-semi-space-size=1024 --initial-heap-size=2048000 --expose-gc ../../node_modules/snarkjs/cli.js zkey new "$CIRCUIT_NAME".r1cs "$PHASE1" "$CIRCUIT_NAME"_0.zkey -v > zkey0.out
+node --trace-gc --trace-gc-ignore-scavenger --max-old-space-size=2048000 --initial-old-space-size=2048000 --no-global-gc-scheduling --no-incremental-marking --max-semi-space-size=1024 --initial-heap-size=2048000 --expose-gc ../../../../node_modules/snarkjs/cli.js zkey new "$CIRCUIT_NAME".r1cs "$PHASE1" "$CIRCUIT_NAME"_0.zkey -v > zkey0.out
 end=`date +%s`
 echo "DONE ($((end-start))s)"
 
