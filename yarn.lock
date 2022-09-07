@@ -517,13 +517,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@chainsafe/lodestar-params@npm:^0.39.0":
-  version: 0.39.0
-  resolution: "@chainsafe/lodestar-params@npm:0.39.0"
-  checksum: ef9de13ee6f9146394c6953e285c80535d0cce8ccfebcd5419aa0ce53ebe0d10b42e4b978dccf69af71b07a786a320ae2dd4960923678595dede9e3ea5f72202
-  languageName: node
-  linkType: hard
-
 "@chainsafe/lodestar-types@npm:^0.34.4":
   version: 0.34.4
   resolution: "@chainsafe/lodestar-types@npm:0.34.4"
@@ -531,16 +524,6 @@ __metadata:
     "@chainsafe/lodestar-params": ^0.34.4
     "@chainsafe/ssz": ^0.8.20
   checksum: 31430e51d046545eb9ce2d6cbbacc2b31fff90725b999855c355b427cf855704a11eb9877b1a1cc7752090d192d3cc97c41ff8e6bde3f44e947d6118c3daa75a
-  languageName: node
-  linkType: hard
-
-"@chainsafe/lodestar-types@npm:^0.39.0":
-  version: 0.39.0
-  resolution: "@chainsafe/lodestar-types@npm:0.39.0"
-  dependencies:
-    "@chainsafe/lodestar-params": ^0.39.0
-    "@chainsafe/ssz": ^0.9.2
-  checksum: 8c9243d423a98bf041e06b04ee4fe4fee7cfcb3a9cd3814816ee8d775deac27dbd734adcb89887e62c359ab23a17977b5c17ffae5983fd90bf0f516c905eae92
   languageName: node
   linkType: hard
 
@@ -2473,7 +2456,6 @@ __metadata:
   dependencies:
     "@chainsafe/bls": ^7.1.1
     "@chainsafe/blst": ^0.2.5
-    "@chainsafe/lodestar-types": ^0.39.0
     "@chainsafe/ssz": ^0.9.2
     "@iden3/binfileutils": ^0.0.11
     "@noble/bls12-381": ^1.3.0
