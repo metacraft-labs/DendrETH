@@ -47,8 +47,8 @@
     "test": "jest --verbose --silent"
   },
   "dependencies": {
-    "@chainsafe/bls": "^7.1.1",
-    "@chainsafe/blst": "^0.2.5",
+    "@chainsafe/bls": "^6.0.3",
+    "@chainsafe/blst": "^0.2.4",
     "@iden3/binfileutils": "^0.0.11",
     "@nomiclabs/hardhat-ethers": "^2.1.1",
     "@nomiclabs/hardhat-etherscan": "^3.1.0",

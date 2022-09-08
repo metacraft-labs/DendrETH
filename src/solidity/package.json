@@ -11,7 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "@chainsafe/bls": "^6.0.3",
-    "@chainsafe/blst": "^0.2.4",
+    "@chainsafe/blst": "0.2.4",
     "@chainsafe/lodestar-types": "^0.34.4",
     "@chainsafe/ssz": "^0.9.2",
     "@iden3/binfileutils": "^0.0.11",
