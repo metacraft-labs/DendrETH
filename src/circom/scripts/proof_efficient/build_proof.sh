@@ -18,12 +18,12 @@ fi
 
 echo $PWD
 
-# echo "****COMPILING CIRCUIT****"
-# start=`date +%s`
-# #circom "$CIRCUIT_NAME".circom --O0 --c --output "$BUILD_DIR"
-# circom "$CIRCUIT_NAME".circom --O1 --r1cs --sym --c --output "$BUILD_DIR"
-# end=`date +%s`
-# echo "DONE ($((end-start))s)"
+echo "****COMPILING CIRCUIT****"
+start=`date +%s`
+#circom "$CIRCUIT_NAME".circom --O0 --c --output "$BUILD_DIR"
+circom "$CIRCUIT_NAME".circom --O1 --r1cs --sym --c --output "$BUILD_DIR"
+end=`date +%s`
+echo "DONE ($((end-start))s)"
 
 # echo "****COMPILING C++ WITNESS GENERATION CODE****"
 # start=`date +%s`
@@ -49,20 +49,20 @@ node --trace-gc --trace-gc-ignore-scavenger --max-old-space-size=2048000 --initi
 end=`date +%s`
 echo "DONE ($((end-start))s)"
 
-echo "****CONTRIBUTE TO PHASE 2 CEREMONY****"
-start=`date +%s`
-npx snarkjs zkey contribute -verbose "$CIRCUIT_NAME"_0.zkey "$CIRCUIT_NAME".zkey -n="First phase2 contribution" -e="some random text 5555" > contribute.out
-end=`date +%s`
-echo "DONE ($((end-start))s)"
+# echo "****CONTRIBUTE TO PHASE 2 CEREMONY****"
+# start=`date +%s`
+# npx snarkjs zkey contribute -verbose "$CIRCUIT_NAME"_0.zkey "$CIRCUIT_NAME".zkey -n="First phase2 contribution" -e="some random text 5555" > contribute.out
+# end=`date +%s`
+# echo "DONE ($((end-start))s)"
 
-echo "****VERIFYING FINAL ZKEY****"
-start=`date +%s`
-node --trace-gc --trace-gc-ignore-scavenger --max-old-space-size=2048000 --initial-old-space-size=2048000 --no-global-gc-scheduling --no-incremental-marking --max-semi-space-size=1024 --initial-heap-size=2048000 --expose-gc ../../node_modules/snarkjs/cli.js zkey verify -verbose "$CIRCUIT_NAME".r1cs "$PHASE1" "$CIRCUIT_NAME".zkey > verify.out
-end=`date +%s`
-echo "DONE ($((end-start))s)"
+# echo "****VERIFYING FINAL ZKEY****"
+# start=`date +%s`
+# node --trace-gc --trace-gc-ignore-scavenger --max-old-space-size=2048000 --initial-old-space-size=2048000 --no-global-gc-scheduling --no-incremental-marking --max-semi-space-size=1024 --initial-heap-size=2048000 --expose-gc ../../node_modules/snarkjs/cli.js zkey verify -verbose "$CIRCUIT_NAME".r1cs "$PHASE1" "$CIRCUIT_NAME".zkey > verify.out
+# end=`date +%s`
+# echo "DONE ($((end-start))s)"
 
 echo "****EXPORTING VKEY****"
 start=`date +%s`
-npx snarkjs zkey export verificationkey "$CIRCUIT_NAME".zkey vkey.json -v
+npx snarkjs zkey export verificationkey "$CIRCUIT_NAME"_0.zkey vkey.json -v
 end=`date +%s`
 echo "DONE ($((end-start))s)"

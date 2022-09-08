@@ -77,8 +77,15 @@ template ProofEfficient(N) {
   for(var j = 0; j < 2; j++) {
     for(var k = 0; k < K; k++) {
       verify.pubkey[j][k] <== aggregateKeys.out[j][k];
-      verify.signature[j][j][k] <== signature[j][j][k];
-      verify.hash[j][j][k] <== hash[j][j][k];
+    }
+  }
+
+  for(var i = 0; i < 2; i++) {
+    for(var j = 0; j < 2; j++) {
+      for(var k = 0; k < K; k++) {
+        verify.signature[i][j][k] <== signature[i][j][k];
+        verify.hash[i][j][k] <== hash[i][j][k];
+      }
     }
   }
 
