@@ -1,5 +1,6 @@
 import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-etherscan';
+import 'import @nomiclabs/hardhat-ethers';
 import { task } from 'hardhat/config';
 // import "hardhat-gas-reporter";
 import { groth16 } from 'snarkjs';
@@ -180,8 +181,11 @@ task('deployverifier', 'Deploy verifier').setAction(
 
     const a = [argv[0], argv[1]];
     const b = [
+
       [argv[2], argv[3]],
+
       [argv[4], argv[5]],
+    ,
     ];
     const c = [argv[6], argv[7]];
     const Input = argv.slice(8);
