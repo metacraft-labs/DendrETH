@@ -2,7 +2,9 @@
 pragma solidity 0.8.9;
 
 import '../../utils/Bitfield.sol';
+import '../../utils/BLSVerify.sol';
 import '../../spec/BeaconChain.sol';
+
 import 'hardhat/console.sol';
 
 /** Etherum beacon light client.
@@ -55,24 +57,12 @@ import 'hardhat/console.sol';
  *  - No need to query for period 0 next_sync_committee until the end of period 0
  *  - After the import next_sync_committee of period 0, populate period 1's committee
  */
-
-interface IBLS {
-  function fast_aggregate_verify(
-    bytes[] calldata pubkeys,
-    bytes calldata message,
-    bytes calldata signature
-  ) external pure returns (bool);
-}
-
-contract BeaconLightClient is BeaconChain, Bitfield {
+contract BeaconLightClient is BeaconChain, Bitfield, BLSVerify {
   event FinalizedHeaderImported(BeaconBlockHeader finalized_header);
   event NextSyncCommitteeImported(
     uint64 indexed period,
     bytes32 indexed next_sync_committee_root
   );
-
-  // address(0x0800)
-  address private immutable BLS_PRECOMPILE;
 
   bytes32 public immutable GENESIS_VALIDATORS_ROOT;
 
@@ -94,14 +84,18 @@ contract BeaconLightClient is BeaconChain, Bitfield {
 
   bytes4 private constant DOMAIN_SYNC_COMMITTEE = 0x07000000;
 
-  uint8 constant MOD_EXP_PRECOMPILE_ADDRESS = 0x5;
-
   struct SyncAggregate {
-    bytes32[2] sync_committee_bits;
+    uint256[3] sync_committee_bits;
     bytes sync_committee_signature;
   }
 
-  struct FinalizedHeaderUpdate {
+  struct Proof {
+    uint256 a;
+    uint256 b;
+    uint256 c;
+  }
+
+  struct LightClientUpdate {
     // The beacon block header that is attested to by the sync committee
     BeaconBlockHeader attested_header;
     // Sync committee
@@ -115,26 +109,22 @@ contract BeaconLightClient is BeaconChain, Bitfield {
     uint64 signature_slot;
     // Fork version for the aggregate signature
     bytes4 fork_version;
-  }
 
-  struct SyncCommitteePeriodUpdate {
-    // Next sync committee corresponding to the finalized header
     bytes32 next_sync_committee_root;
+
     bytes32[] next_sync_committee_branch;
+
+    Proof proof;
   }
 
   // Beacon block header that is finalized
   BeaconBlockHeader public finalized_header;
-
-  // Attested_state_root
-  bytes32 public attested_state_root;
 
   // Sync committees corresponding to the header
   // sync_committee_period => sync_committee_root
   bytes32 public prev_sync_committee_root;
 
   constructor(
-    address _bls,
     uint64 _slot,
     uint64 _proposer_index,
     bytes32 _parent_root,
@@ -143,7 +133,6 @@ contract BeaconLightClient is BeaconChain, Bitfield {
     bytes32 _current_sync_committee_hash,
     bytes32 _genesis_validators_root
   ) {
-    BLS_PRECOMPILE = _bls;
     finalized_header = BeaconBlockHeader(
       _slot,
       _proposer_index,
@@ -159,21 +148,7 @@ contract BeaconLightClient is BeaconChain, Bitfield {
     return finalized_header.state_root;
   }
 
-  function import_next_sync_committee(SyncCommitteePeriodUpdate calldata update)
-    external
-    payable
-  {
-    require(verify_next_sync_committee(update), '!next_sync_committee');
-
-    prev_sync_committee_root = update.next_sync_committee_root;
-
-    emit NextSyncCommitteeImported(
-      compute_sync_committee_period(finalized_header.slot) + 1,
-      update.next_sync_committee_root
-    );
-  }
-
-  function import_finalized_header(FinalizedHeaderUpdate calldata update)
+  function light_client_update(LightClientUpdate calldata update)
     external
     payable
   {
@@ -191,9 +166,21 @@ contract BeaconLightClient is BeaconChain, Bitfield {
       '!finalized_header'
     );
 
+    require(
+      is_valid_merkle_branch(
+        update.next_sync_committee_root,
+        update.next_sync_committee_branch,
+        NEXT_SYNC_COMMITTEE_DEPTH,
+        NEXT_SYNC_COMMITTEE_INDEX,
+        update.attested_header.state_root
+      ),
+      '!next_sync_committee'
+    );
+
     uint64 finalized_period = compute_sync_committee_period(
       finalized_header.slot
     );
+
     uint64 signature_period = compute_sync_committee_period(
       update.signature_slot
     );
@@ -205,15 +192,9 @@ contract BeaconLightClient is BeaconChain, Bitfield {
     );
 
     require(
-      prev_sync_committee_root ==
-        hash_tree_root(update.signature_sync_committee),
-      '!sync_committee'
-    );
-
-    require(
       verify_signed_header(
         update.sync_aggregate,
-        update.signature_sync_committee,
+        prev_sync_committee_root,
         update.fork_version,
         update.attested_header
       ),
@@ -221,38 +202,19 @@ contract BeaconLightClient is BeaconChain, Bitfield {
     );
 
     require(update.finalized_header.slot > finalized_header.slot, '!new');
+
     finalized_header = update.finalized_header;
-    attested_state_root = update.attested_header.state_root;
+    prev_sync_committee_root = update.next_sync_committee_root;
+
     emit FinalizedHeaderImported(update.finalized_header);
   }
 
   function verify_signed_header(
     SyncAggregate calldata sync_aggregate,
-    SyncCommittee calldata sync_committee,
+    bytes32 sync_committee,
     bytes4 fork_version,
     BeaconBlockHeader calldata header
   ) internal view returns (bool) {
-    // Verify sync committee aggregate signature
-    uint256 participants = sum(sync_aggregate.sync_committee_bits);
-    bytes[] memory participant_pubkeys = new bytes[](participants);
-    uint64 n;
-    for (uint64 i; i < SYNC_COMMITTEE_SIZE; ) {
-      uint256 index = i >> 8;
-      uint256 sindex = (i >> 3) % 32;
-      uint256 offset = i % 8;
-      if (
-        (uint8(sync_aggregate.sync_committee_bits[index][sindex]) >> offset) &
-          1 ==
-        1
-      ) {
-        participant_pubkeys[n++] = sync_committee.pubkeys[i];
-      }
-
-      unchecked {
-        ++i;
-      }
-    }
-
     bytes32 domain = compute_domain(
       DOMAIN_SYNC_COMMITTEE,
       fork_version,
@@ -263,7 +225,13 @@ contract BeaconLightClient is BeaconChain, Bitfield {
     bytes memory message = abi.encodePacked(signing_root);
     bytes memory signature = sync_aggregate.sync_committee_signature;
     require(signature.length == BLSSIGNATURE_LENGTH, '!signature');
-    return fast_aggregate_verify(participant_pubkeys, message, signature);
+
+    return true;
+    //   verify_here_will_be_added_soon(
+    //     participant_pubkeys,
+    //     hashToField(message),
+    //     signature
+    //   );
   }
 
   function verify_finalized_header(
@@ -286,27 +254,7 @@ contract BeaconLightClient is BeaconChain, Bitfield {
       );
   }
 
-  function verify_next_sync_committee(SyncCommitteePeriodUpdate calldata update)
-    internal
-    view
-    returns (bool)
-  {
-    require(
-      update.next_sync_committee_branch.length == NEXT_SYNC_COMMITTEE_DEPTH,
-      '!next_sync_committee_branch'
-    );
-
-    return
-      is_valid_merkle_branch(
-        update.next_sync_committee_root,
-        update.next_sync_committee_branch,
-        NEXT_SYNC_COMMITTEE_DEPTH,
-        NEXT_SYNC_COMMITTEE_INDEX,
-        attested_state_root
-      );
-  }
-
-  function is_supermajority(bytes32[2] calldata sync_committee_bits)
+  function is_supermajority(uint256[3] memory sync_committee_bits)
     internal
     pure
     returns (bool)
@@ -314,33 +262,33 @@ contract BeaconLightClient is BeaconChain, Bitfield {
     return sum(sync_committee_bits) * 3 >= SYNC_COMMITTEE_SIZE * 2;
   }
 
-  function fast_aggregate_verify(
-    bytes[] memory pubkeys,
-    bytes memory message,
-    bytes memory signature
-  ) internal view returns (bool valid) {
-    bytes memory input = abi.encodeWithSelector(
-      IBLS.fast_aggregate_verify.selector,
-      pubkeys,
-      message,
-      signature
-    );
-    (bool ok, bytes memory out) = BLS_PRECOMPILE.staticcall(input);
-    if (ok) {
-      if (out.length == 32) {
-        valid = abi.decode(out, (bool));
-      }
-    } else {
-      if (out.length > 0) {
-        assembly {
-          let returndata_size := mload(out)
-          revert(add(32, out), returndata_size)
-        }
-      } else {
-        revert('!verify');
-      }
-    }
-  }
+  //   function fast_aggregate_verify(
+  //     bytes[] memory pubkeys,
+  //     bytes memory message,
+  //     bytes memory signature
+  //   ) internal view returns (bool valid) {
+  //     bytes memory input = abi.encodeWithSelector(
+  //       IBLS.fast_aggregate_verify.selector,
+  //       pubkeys,
+  //       message,
+  //       signature
+  //     );
+  //     (bool ok, bytes memory out) = BLS_PRECOMPILE.staticcall(input);
+  //     if (ok) {
+  //       if (out.length == 32) {
+  //         valid = abi.decode(out, (bool));
+  //       }
+  //     } else {
+  //       if (out.length > 0) {
+  //         assembly {
+  //           let returndata_size := mload(out)
+  //           revert(add(32, out), returndata_size)
+  //         }
+  //       } else {
+  //         revert('!verify');
+  //       }
+  //     }
+  //   }
 
   function compute_sync_committee_period(uint64 slot)
     internal
@@ -350,7 +298,14 @@ contract BeaconLightClient is BeaconChain, Bitfield {
     return slot / SLOTS_PER_EPOCH / EPOCHS_PER_SYNC_COMMITTEE_PERIOD;
   }
 
-  function sum(bytes32[2] memory x) internal pure returns (uint256) {
-    return countSetBits(uint256(x[0])) + countSetBits(uint256(x[1]));
+  function sum(uint256[3] memory sync_committee_bits)
+    internal
+    pure
+    returns (uint256)
+  {
+    return
+      countSetBits(uint256(sync_committee_bits[0])) +
+      countSetBits(uint256(sync_committee_bits[1])) +
+      countSetBits(uint256(sync_committee_bits[2]));
   }
 }
