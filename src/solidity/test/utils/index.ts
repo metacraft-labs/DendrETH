@@ -2,10 +2,10 @@ import * as fs from "fs";
 import * as path from "path";
 
 import { PointG1, PointG2 } from "@noble/bls12-381";
-import { BitVectorType } from "@chainsafe/ssz";
-import { ssz } from "../../node_modules/@chainsafe/lodestar-types/lib";
+import { BitArray, BitVectorType } from "@chainsafe/ssz";
+import { ssz } from "@chainsafe/lodestar-types";
 
-import { formatJSONBlockHeader, formatPubkeysToPoints, formatBitmask } from "./format";
+import { formatJSONBlockHeader, formatPubkeysToPoints, formatBitmask, JSONHeader } from "./format";
 
 import {
     bigint_to_array,
@@ -26,7 +26,7 @@ interface JSONUpdate {
     finalized_header: JSONHeader;
     finality_branch: string[];
     sync_aggregate: {
-        sync_committee_bits: string[];
+        sync_committee_bits: string;
         sync_committee_signature: string;
     };
     signature_slot: string;
@@ -47,8 +47,8 @@ export function getFilesInDir(_path: string) {
 
 export function getAggregatePubkey(update1: JSONUpdate, update2: JSONUpdate): string {
     // Extract active participants public keys as G1 points
-    const points: PointG1[] = formatPubkeysToPoints(update1);
-    const bitmask: BitVectorType = formatBitmask(update2);
+    const points: PointG1[] = formatPubkeysToPoints(update1.next_sync_committee);
+    const bitmask: BitArray = formatBitmask(update2.sync_aggregate.sync_committee_bits);
 
     const aggregatePubkey = points.filter((_, i) => bitmask.get(i)).reduce((prev, curr) => prev.add(curr)).toHex(true);
     return aggregatePubkey;
@@ -117,8 +117,8 @@ export function getMessage(root: Uint8Array, fork_version: Uint8Array) {
 // }
 
 // TODO: Implement in Solidity - contracts/bridge/src/utils/BLSVerify.sol
-export async function getProof(update: JSONUpdate) {
-    const pubkeyPoints: PointG1[] = update.next_sync_committee.pubkeys.map(x => PointG1.fromHex(formatHex(x))).slice(0, 2);
+export async function getProofInput(prevUpdate: JSONUpdate, update: JSONUpdate) {
+    const pubkeyPoints: PointG1[] = prevUpdate.next_sync_committee.pubkeys.map(x => PointG1.fromHex(formatHex(x))).slice(0, 2);
     const bitmask = new BitVectorType(512).fromJson(update.sync_aggregate.sync_committee_bits);
     const signature: PointG2 = PointG2.fromSignature(formatHex(update.sync_aggregate.sync_committee_signature));
 

@@ -1,10 +1,11 @@
 import { PointG1 } from "@noble/bls12-381";
-import { BitVectorType } from "@chainsafe/ssz";
-import { ssz } from "../../node_modules/@chainsafe/lodestar-types/lib";
-import { hexToBytes, formatHex } from "./bls";
+import { BitArray, BitVectorType } from "@chainsafe/ssz";
+import { ssz } from "@chainsafe/lodestar-types";
+import { hexToBytes, formatHex, bigint_to_array, bytesToHex } from "./bls";
+import { SyncCommittee } from "@chainsafe/lodestar-types/lib/altair/sszTypes";
 
 
-interface JSONHeader {
+export interface JSONHeader {
     slot: string;
     proposer_index: string;
     parent_root: string;
@@ -12,12 +13,14 @@ interface JSONHeader {
     body_root: string;
 }
 
+interface SyncCommitee {
+    pubkeys: string[];
+    aggregate_pubkey: string;
+}
+
 interface JSONUpdate {
     attested_header: JSONHeader;
-    next_sync_committee: {
-        pubkeys: string[];
-        aggregate_pubkey: string;
-    };
+    next_sync_committee: SyncCommitee;
     next_sync_committee_branch: string[];
     finalized_header: JSONHeader;
     finality_branch: string[];
@@ -42,30 +45,26 @@ export function formatJSONUpdate(update, FORK_VERSION: string) {
     update.sync_aggregate.sync_committee_bits =
         update.sync_aggregate.sync_committee_bits.replace("0x", "");
 
-    update.sync_aggregate.sync_committee_bits = [
-        "0x".concat(
-            update.sync_aggregate.sync_committee_bits.slice(
-                0,
-                update.sync_aggregate.sync_committee_bits.length / 2
-            )
-        ),
-        "0x".concat(
-            update.sync_aggregate.sync_committee_bits.slice(
-                update.sync_aggregate.sync_committee_bits.length / 2
-            )
-        ),
-    ];
+    update.sync_aggregate.sync_committee_bits = bigint_to_array(3, 253, BigInt(formatHex(update.sync_aggregate.sync_committee_bits)));
 
     update.fork_version = FORK_VERSION;
     return update;
 };
 
-export function formatPubkeysToPoints(update: JSONUpdate): PointG1[] {
-    const points: PointG1[] = update.next_sync_committee.pubkeys.map(x => PointG1.fromHex(formatHex(x)));
+export function formatPubkeysToPoints(update: SyncCommitee): PointG1[] {
+    const points: PointG1[] = update.pubkeys.map(x => PointG1.fromHex(formatHex(x)));
     return points;
 }
 
-export function formatBitmask(update: JSONUpdate): BitVectorType {
-    const bitmask: BitVectorType = new BitVectorType(512).fromJson(update.sync_aggregate.sync_committee_bits);
+export function hashTreeRootSyncCommitee(sync_commitee: SyncCommitee): string {
+  let wrapper = SyncCommittee.defaultValue();
+  wrapper.pubkeys = sync_commitee.pubkeys.map(hexToBytes);
+  wrapper.aggregatePubkey = hexToBytes(sync_commitee.aggregate_pubkey);
+
+  return bytesToHex(SyncCommittee.hashTreeRoot(wrapper));
+}
+
+export function formatBitmask(sync_committee_bits: string): BitArray {
+    const bitmask = new BitVectorType(512).fromJson(sync_committee_bits);
     return bitmask;
 }
