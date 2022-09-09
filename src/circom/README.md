@@ -12,3 +12,8 @@ In scripts folder you have the circuits with main components. And you can build 
 Also you have previous versions of this current branch in sync_implementation. Where most of the circuits are implemented in circom-pairing fork in sync_protcol branch.
 Circuits are executed with commands from the scripts and data is feeded from JS scripts there.
 For bigger circuits you may need up to hundreds of GB of RAM.
+
+Diagrams
+
+![](light_client.drawio.png)
+![](zero_knowledge_diagram.drawio.png)
