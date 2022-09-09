@@ -98,8 +98,6 @@ contract BeaconLightClient is BeaconChain, Bitfield, BLSVerify {
   struct LightClientUpdate {
     // The beacon block header that is attested to by the sync committee
     BeaconBlockHeader attested_header;
-    // Sync committee
-    SyncCommittee signature_sync_committee;
     // The finalized beacon block header attested to by Merkle branch
     BeaconBlockHeader finalized_header;
     bytes32[] finality_branch;
