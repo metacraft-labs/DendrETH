@@ -92,14 +92,14 @@ template ProofEfficient(N) {
   component bits2Num[2];
   bits2Num[0] = Bits2Num(253);
   for(var i = 0; i < 253; i++) {
-    bits2Num[0].in[i] <== hasher.out[i];
+    bits2Num[0].in[i] <== hasher.out[252-i];
   }
   hashTreeRoot[1] <== bits2Num[0].out;
 
   bits2Num[1] = Bits2Num(3);
 
   for(var i = 0; i < 3; i++){
-    bits2Num[1].in[i] <== hasher.out[253+i];
+    bits2Num[1].in[i] <== hasher.out[255-i];
   }
 
   hashTreeRoot[0] <== bits2Num[1].out;

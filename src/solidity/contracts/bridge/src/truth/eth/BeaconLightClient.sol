@@ -5,8 +5,6 @@ import '../../utils/Bitfield.sol';
 import '../../utils/BLSVerify.sol';
 import '../../spec/BeaconChain.sol';
 
-import 'hardhat/console.sol';
-
 /** Etherum beacon light client.
  *  Current arthitecture diverges from spec's proposed updated splitting them into:
  *  - Finalized header updates: To import a recent finalized header signed by a known sync committee by `import_finalized_header`.
@@ -86,13 +84,7 @@ contract BeaconLightClient is BeaconChain, Bitfield, BLSVerify {
 
   struct SyncAggregate {
     uint256[3] sync_committee_bits;
-    bytes sync_committee_signature;
-  }
-
-  struct Proof {
-    uint256 a;
-    uint256 b;
-    uint256 c;
+    uint256[7][2][2] sync_committee_signature;
   }
 
   struct LightClientUpdate {
@@ -107,12 +99,11 @@ contract BeaconLightClient is BeaconChain, Bitfield, BLSVerify {
     uint64 signature_slot;
     // Fork version for the aggregate signature
     bytes4 fork_version;
-
     bytes32 next_sync_committee_root;
-
     bytes32[] next_sync_committee_branch;
-
-    Proof proof;
+    uint256[2] a;
+    uint256[2][2] b;
+    uint256[2] c;
   }
 
   // Beacon block header that is finalized
@@ -194,7 +185,10 @@ contract BeaconLightClient is BeaconChain, Bitfield, BLSVerify {
         update.sync_aggregate,
         prev_sync_committee_root,
         update.fork_version,
-        update.attested_header
+        update.attested_header,
+        update.a,
+        update.b,
+        update.c
       ),
       '!sign'
     );
@@ -211,25 +205,73 @@ contract BeaconLightClient is BeaconChain, Bitfield, BLSVerify {
     SyncAggregate calldata sync_aggregate,
     bytes32 sync_committee,
     bytes4 fork_version,
-    BeaconBlockHeader calldata header
+    BeaconBlockHeader calldata header,
+    uint256[2] memory a,
+    uint256[2][2] memory b,
+    uint256[2] memory c
   ) internal view returns (bool) {
-    bytes32 domain = compute_domain(
-      DOMAIN_SYNC_COMMITTEE,
-      fork_version,
-      GENESIS_VALIDATORS_ROOT
-    );
+    // TODO: move bit reversal into the circuit
+    uint256 sync_committee1 = (uint256(sync_committee) & ((1 << 3) - 1));
+    uint256 reverse1 = 0;
+    for (uint256 i = 0; i < 3; i++) {
+      if (sync_committee1 & (1 << i) != 0) {
+        reverse1 |= 1 << (2 - i);
+      }
+    }
 
-    bytes32 signing_root = compute_signing_root(header, domain);
-    bytes memory message = abi.encodePacked(signing_root);
-    bytes memory signature = sync_aggregate.sync_committee_signature;
-    require(signature.length == BLSSIGNATURE_LENGTH, '!signature');
+    uint256 sync_commitee2 = (uint256(sync_committee) &
+      (((1 << 253) - 1) << 3)) >> 3;
 
-    return true;
-    //   verify_here_will_be_added_soon(
-    //     participant_pubkeys,
-    //     hashToField(message),
-    //     signature
-    //   );
+    uint256 reverse2 = 0;
+
+    for (uint256 i = 0; i < 253; i++) {
+      if (sync_commitee2 & (1 << i) != 0) {
+        reverse2 |= 1 << (252 - i);
+      }
+    }
+
+    uint256[61] memory input;
+
+    {
+      input[0] = reverse1;
+      input[1] = reverse2;
+      input[2] = sync_aggregate.sync_committee_bits[0];
+      input[3] = sync_aggregate.sync_committee_bits[1];
+      input[4] = sync_aggregate.sync_committee_bits[2];
+    }
+
+    for (uint256 i = 0; i < 2; i++) {
+      for (uint256 j = 0; j < 2; j++) {
+        for (uint256 k = 0; k < 7; k++) {
+          input[i * 14 + j * 7 + k + 5] = sync_aggregate
+            .sync_committee_signature[i][j][k];
+        }
+      }
+    }
+
+    uint256[7][2][2] memory hashMessage;
+
+    {
+      bytes32 domain = compute_domain(
+        DOMAIN_SYNC_COMMITTEE,
+        fork_version,
+        GENESIS_VALIDATORS_ROOT
+      );
+
+      bytes32 signing_root = compute_signing_root(header, domain);
+
+      hashMessage = hashToField(signing_root);
+    }
+
+    for (uint256 i = 0; i < 2; i++) {
+      for (uint256 j = 0; j < 2; j++) {
+        for (uint256 k = 0; k < 7; k++) {
+          input[i * 14 + j * 7 + k + 33] = hashMessage[i][j][k];
+        }
+      }
+    }
+
+    return verifyProof(a, b, c, input);
   }
 
   function verify_finalized_header(
