@@ -1,8 +1,6 @@
 import { expect } from "chai";
 
 import { init, PublicKey, Signature } from "@chainsafe/bls";
-import { BitVectorType } from "@chainsafe/ssz";
-import { PointG1 } from "@noble/bls12-381";
 import { ssz } from "@chainsafe/lodestar-types";
 
 import { formatJSONBlockHeader } from "./utils/format";
@@ -12,8 +10,7 @@ import * as constants from "./utils/constants";
 import update1 from "../../data/mainnet/updates/00290.json";
 import update2 from "../../data/mainnet/updates/00291.json";
 
-
-describe.only("Verification", async () => {
+describe("Verification", async () => {
   it("Sync committee signature verification", async () => {
     // Extract the signed message 
     const block_header = formatJSONBlockHeader(update2.attested_header);

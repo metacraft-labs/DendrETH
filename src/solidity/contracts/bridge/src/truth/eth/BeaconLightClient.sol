@@ -5,7 +5,7 @@ import '../../utils/Bitfield.sol';
 import '../../utils/BLSVerify.sol';
 import '../../spec/BeaconChain.sol';
 
-/** Etherum beacon light client.
+/** Ethereum beacon light client.
  *  Current arthitecture diverges from spec's proposed updated splitting them into:
  *  - Finalized header updates: To import a recent finalized header signed by a known sync committee by `import_finalized_header`.
  *  - Sync period updates: To advance to the next committee by `import_next_sync_committee`.
@@ -244,34 +244,6 @@ contract BeaconLightClient is BeaconChain, Bitfield, BLSVerify {
   {
     return sum(sync_committee_bits) * 3 >= SYNC_COMMITTEE_SIZE * 2;
   }
-
-  //   function fast_aggregate_verify(
-  //     bytes[] memory pubkeys,
-  //     bytes memory message,
-  //     bytes memory signature
-  //   ) internal view returns (bool valid) {
-  //     bytes memory input = abi.encodeWithSelector(
-  //       IBLS.fast_aggregate_verify.selector,
-  //       pubkeys,
-  //       message,
-  //       signature
-  //     );
-  //     (bool ok, bytes memory out) = BLS_PRECOMPILE.staticcall(input);
-  //     if (ok) {
-  //       if (out.length == 32) {
-  //         valid = abi.decode(out, (bool));
-  //       }
-  //     } else {
-  //       if (out.length > 0) {
-  //         assembly {
-  //           let returndata_size := mload(out)
-  //           revert(add(32, out), returndata_size)
-  //         }
-  //       } else {
-  //         revert('!verify');
-  //       }
-  //     }
-  //   }
 
   function compute_sync_committee_period(uint64 slot)
     internal
