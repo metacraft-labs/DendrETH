@@ -1,6 +1,6 @@
 import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-etherscan';
-import 'import @nomiclabs/hardhat-ethers';
+import '@nomiclabs/hardhat-ethers';
 import { task } from 'hardhat/config';
 // import "hardhat-gas-reporter";
 import { groth16 } from 'snarkjs';
