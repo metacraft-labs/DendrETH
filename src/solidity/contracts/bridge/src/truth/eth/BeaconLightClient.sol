@@ -82,11 +82,6 @@ contract BeaconLightClient is BeaconChain, Bitfield, BLSVerify {
 
   bytes4 private constant DOMAIN_SYNC_COMMITTEE = 0x07000000;
 
-  struct SyncAggregate {
-    uint256[3] sync_committee_bits;
-    uint256[7][2][2] sync_committee_signature;
-  }
-
   struct LightClientUpdate {
     // The beacon block header that is attested to by the sync committee
     BeaconBlockHeader attested_header;
@@ -210,42 +205,6 @@ contract BeaconLightClient is BeaconChain, Bitfield, BLSVerify {
     uint256[2][2] memory b,
     uint256[2] memory c
   ) internal view returns (bool) {
-    // TODO: move bit reversal into the circuit
-    uint256 sync_committee1 = (uint256(sync_committee) & ((1 << 3) - 1));
-    uint256 reverse1 = 0;
-    for (uint256 i = 0; i < 3; i++) {
-      if (sync_committee1 & (1 << i) != 0) {
-        reverse1 |= 1 << (2 - i);
-      }
-    }
-
-    uint256 sync_commitee2 = (uint256(sync_committee) &
-      (((1 << 253) - 1) << 3)) >> 3;
-
-    uint256 reverse2 = 0;
-
-    for (uint256 i = 0; i < 253; i++) {
-      if (sync_commitee2 & (1 << i) != 0) {
-        reverse2 |= 1 << (252 - i);
-      }
-    }
-
-    uint256[61] memory input;
-
-    input[0] = reverse1;
-    input[1] = reverse2;
-    input[2] = sync_aggregate.sync_committee_bits[0];
-    input[3] = sync_aggregate.sync_committee_bits[1];
-    input[4] = sync_aggregate.sync_committee_bits[2];
-
-    for (uint256 i = 0; i < 2; i++) {
-      for (uint256 j = 0; j < 2; j++) {
-        for (uint256 k = 0; k < 7; k++) {
-          input[i * 14 + j * 7 + k + 5] = sync_aggregate
-            .sync_committee_signature[i][j][k];
-        }
-      }
-    }
 
     bytes32 domain = compute_domain(
       DOMAIN_SYNC_COMMITTEE,
@@ -255,17 +214,7 @@ contract BeaconLightClient is BeaconChain, Bitfield, BLSVerify {
 
     bytes32 signing_root = compute_signing_root(header, domain);
 
-    uint256[7][2][2] memory hashMessage = hashToField(signing_root);
-
-    for (uint256 i = 0; i < 2; i++) {
-      for (uint256 j = 0; j < 2; j++) {
-        for (uint256 k = 0; k < 7; k++) {
-          input[i * 14 + j * 7 + k + 33] = hashMessage[i][j][k];
-        }
-      }
-    }
-
-    return verifyProof(a, b, c, input);
+    return verifySignature(a, b, c, sync_aggregate, signing_root, sync_committee);
   }
 
   function verify_finalized_header(
