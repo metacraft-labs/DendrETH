@@ -1,11 +1,15 @@
 import * as fs from "fs";
 import * as path from "path";
 
+import { readFileSync, writeFileSync } from "fs";
+import { exec } from "child_process";
+
+import { groth16 } from "snarkjs";
 import { PointG1, PointG2 } from "@noble/bls12-381";
 import { BitArray, BitVectorType } from "@chainsafe/ssz";
 import { ssz } from "@chainsafe/lodestar-types";
 
-import { formatJSONBlockHeader, formatPubkeysToPoints, formatBitmask, JSONHeader, JSONUpdate as FormatedJsonUpdate } from "./format";
+import { formatJSONBlockHeader, formatPubkeysToPoints, formatBitmask, JSONHeader, FormatedJsonUpdate } from "./format";
 
 import {
   bigint_to_array,
@@ -15,6 +19,11 @@ import {
 } from "./bls";
 
 import * as constants from "./constants";
+
+import { exec } from "child_process";
+import { promisify } from "util";
+
+const promiseExec = promisify(exec);
 
 interface JSONUpdate {
   attested_header: JSONHeader;
@@ -30,6 +39,12 @@ interface JSONUpdate {
     sync_committee_signature: string;
   };
   signature_slot: string;
+}
+
+interface Proof {
+  a: string[2];
+  b: string[2][2];
+  c: string[2];
 }
 
 export function getFilesInDir(_path: string) {
@@ -116,8 +131,35 @@ export function getMessage(root: Uint8Array, fork_version: Uint8Array) {
 //     };
 // }
 
-// TODO: Implement in Solidity - contracts/bridge/src/utils/BLSVerify.sol
-export async function getProofInput(prevUpdate: FormatedJsonUpdate, update: FormatedJsonUpdate) {
+export async function getSolidityProof(prevUpdate: FormatedJsonUpdate, update: FormatedJsonUpdate, network: string, generateProof?: boolean): Proof {
+  fs.writeFileSync("input.json", JSON.stringify(await getProofInput(prevUpdate, update)));
+
+  const period = compute_sync_committee_period(parseInt(update.attested_header.slot));
+
+  if (generateProof) {
+    console.log("Witness generation...");
+    console.log((await promiseExec("../circom/build/god_please/proof_efficient/proof_efficient_cpp/proof_efficient input.json witness.wtns")).stdout);
+
+    console.log("Proof generation...");
+    console.log((await promiseExec(`../../vendor/rapidsnark/build/prover ../circom/build/god_please/proof_efficient/proof_efficient_0.zkey witness.wtns data/${network}/proof${period}.json data/${NETWORK}/public${period}.json`)).stdout);
+
+    await promiseExec("rm input.json witness.wtns");
+  }
+
+  const proof = JSON.parse(fs.readFileSync(`data/${network}/proof${period}.json`).toString());
+  const publicSignals = JSON.parse(fs.readFileSync(`data/${network}/public${period}.json`).toString());
+  const calldata = await groth16.exportSolidityCallData(proof, publicSignals);
+
+  const argv = calldata.replace(/["[\]\s]/g, "").split(',').map(x => BigInt(x).toString());
+
+  const a = [argv[0], argv[1]];
+  const b = [[argv[2], argv[3]], [argv[4], argv[5]]];
+  const c = [argv[6], argv[7]];
+
+  return { a, b, c };
+}
+
+async function getProofInput(prevUpdate: FormatedJsonUpdate, update: FormatedJsonUpdate) {
   const pubkeyPoints: PointG1[] = prevUpdate.next_sync_committee.pubkeys.map(x => PointG1.fromHex(formatHex(x)));
 
   const block_header = formatJSONBlockHeader(update.attested_header);
@@ -146,3 +188,6 @@ export async function getProofInput(prevUpdate: FormatedJsonUpdate, update: Form
   return input;
 }
 
+function compute_sync_committee_period(slot: number) {
+  return parseInt(slot / constants.SLOTS_PER_EPOCH / constants.EPOCHS_PER_SYNC_COMMITTEE_PERIOD);
+}

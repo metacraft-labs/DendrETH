@@ -3,7 +3,8 @@ import { BitArray, BitVectorType } from "@chainsafe/ssz";
 import { ssz } from "@chainsafe/lodestar-types";
 import { hexToBytes, formatHex, bigint_to_array, bytesToHex } from "./bls";
 import { SyncCommittee } from "@chainsafe/lodestar-types/lib/altair/sszTypes";
-
+import { Proof } from "./index";
+import * as constants from "./constants";
 
 export interface JSONHeader {
   slot: string;
@@ -18,7 +19,7 @@ interface SyncCommitee {
   aggregate_pubkey: string;
 }
 
-export interface JSONUpdate {
+export interface FormatedJsonUpdate {
   attested_header: JSONHeader;
   next_sync_committee: SyncCommitee;
   next_sync_committee_branch: string[];
@@ -41,7 +42,7 @@ export function formatJSONBlockHeader(header: JSONHeader) {
   return block_header;
 }
 
-export function formatJSONUpdate(update, FORK_VERSION: string): JSONUpdate {
+export function formatJSONUpdate(update, FORK_VERSION: string): FormatedJsonUpdate {
   const SyncCommitteeBits = new BitVectorType(512);
   let bitmask = SyncCommitteeBits.fromJson(update.sync_aggregate.sync_committee_bits);
   update.sync_aggregate.sync_committee_bits = [
@@ -90,8 +91,24 @@ export function formatJSONUpdate(update, FORK_VERSION: string): JSONUpdate {
   return update;
 };
 
-export function formatPubkeysToPoints(update: SyncCommitee): PointG1[] {
-  const points: PointG1[] = update.pubkeys.map(x => PointG1.fromHex(formatHex(x)));
+export function formatLightClientUpdate(update: FormatedJsonUpdate, proof: Proof) {
+  return {
+    attested_header: update.attested_header,
+    finalized_header: update.finalized_header,
+    finality_branch: update.finality_branch,
+    sync_aggregate: update.sync_aggregate,
+    signature_slot: update.signature_slot,
+    fork_version: constants.ALTAIR_FORK_VERSION,
+    next_sync_committee_root: hashTreeRootSyncCommitee(update.next_sync_committee),
+    next_sync_committee_branch: update.next_sync_committee_branch,
+    a: proof.a,
+    b: proof.b,
+    c: proof.c
+  };
+}
+
+export function formatPubkeysToPoints(sync_commitee: SyncCommitee): PointG1[] {
+  const points: PointG1[] = sync_commitee.pubkeys.map(x => PointG1.fromHex(formatHex(x)));
   return points;
 }
 
