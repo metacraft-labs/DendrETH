@@ -232,13 +232,11 @@ contract BeaconLightClient is BeaconChain, Bitfield, BLSVerify {
 
     uint256[61] memory input;
 
-    {
-      input[0] = reverse1;
-      input[1] = reverse2;
-      input[2] = sync_aggregate.sync_committee_bits[0];
-      input[3] = sync_aggregate.sync_committee_bits[1];
-      input[4] = sync_aggregate.sync_committee_bits[2];
-    }
+    input[0] = reverse1;
+    input[1] = reverse2;
+    input[2] = sync_aggregate.sync_committee_bits[0];
+    input[3] = sync_aggregate.sync_committee_bits[1];
+    input[4] = sync_aggregate.sync_committee_bits[2];
 
     for (uint256 i = 0; i < 2; i++) {
       for (uint256 j = 0; j < 2; j++) {
@@ -249,19 +247,15 @@ contract BeaconLightClient is BeaconChain, Bitfield, BLSVerify {
       }
     }
 
-    uint256[7][2][2] memory hashMessage;
+    bytes32 domain = compute_domain(
+      DOMAIN_SYNC_COMMITTEE,
+      fork_version,
+      GENESIS_VALIDATORS_ROOT
+    );
 
-    {
-      bytes32 domain = compute_domain(
-        DOMAIN_SYNC_COMMITTEE,
-        fork_version,
-        GENESIS_VALIDATORS_ROOT
-      );
+    bytes32 signing_root = compute_signing_root(header, domain);
 
-      bytes32 signing_root = compute_signing_root(header, domain);
-
-      hashMessage = hashToField(signing_root);
-    }
+    uint256[7][2][2] memory hashMessage = hashToField(signing_root);
 
     for (uint256 i = 0; i < 2; i++) {
       for (uint256 j = 0; j < 2; j++) {
