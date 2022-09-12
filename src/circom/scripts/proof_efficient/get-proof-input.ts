@@ -1,10 +1,11 @@
 import { PointG1, PointG2 } from "@noble/bls12-381";
-import { bigint_to_array, formatHex, hexToBytes, utils } from "../../../ts-utils/bls";
+import { bigint_to_array, bytesToHex, formatHex, hexToBytes, utils } from "../../../ts-utils/bls";
 import { ssz } from "@chainsafe/lodestar-types";
 import { writeFileSync } from "fs";
 import { BitVectorType } from "@chainsafe/ssz";
 import * as path from "path";
 import { getFilesInDir } from "../../../ts-utils/data";
+import { SyncCommittee } from "@chainsafe/lodestar-types/lib/altair/sszTypes";
 
 const hashToField = utils.hashToField;
 
@@ -33,7 +34,7 @@ function getMessage(blockRoot: Uint8Array) {
 }
 
 async function getProof(prevUpdate, update) {
-  let points: PointG1[] = prevUpdate.next_sync_committee.pubkeys.map(x => PointG1.fromHex(x.slice(2))).slice(1, 3);
+  let points: PointG1[] = prevUpdate.next_sync_committee.pubkeys.map(x => PointG1.fromHex(x.slice(2)));
   const SyncCommitteeBits = new BitVectorType(512);
   let bitmask = SyncCommitteeBits.fromJson(update.sync_aggregate.sync_committee_bits);
   let signature: PointG2 = PointG2.fromSignature(formatHex(update.sync_aggregate.sync_committee_signature));
@@ -50,8 +51,36 @@ async function getProof(prevUpdate, update) {
 
   let input = {
     points: points.map(x => [bigint_to_array(55, 7, x.toAffine()[0].value), bigint_to_array(55, 7, x.toAffine()[1].value)]),
-    aggregatedKey: BigInt(update.next_sync_committee.aggregate_pubkey).toString(2).split(''),
-    bitmask: bigint_to_array(253, 3, BigInt("0b" + bitmask.toBoolArray().map(x => x ? "1" : "0").join(''))).reverse(),
+    aggregatedKey: BigInt(prevUpdate.next_sync_committee.aggregate_pubkey).toString(2).split(''),
+    bitmask: [
+    BigInt(
+      '0b' +
+        bitmask
+          .toBoolArray()
+          .map(x => (x ? '1' : '0'))
+          .slice(0, 6)
+          .reverse()
+          .join(''),
+    ).toString(),
+    BigInt(
+      '0b' +
+        bitmask
+          .toBoolArray()
+          .map(x => (x ? '1' : '0'))
+          .slice(6, 259)
+          .reverse()
+          .join(''),
+    ).toString(),
+    BigInt(
+      '0b' +
+        bitmask
+          .toBoolArray()
+          .map(x => (x ? '1' : '0'))
+          .slice(259, 512)
+          .reverse()
+          .join(''),
+    ).toString(),
+  ],
     signature: [
       [
         bigint_to_array(55, 7, signature.toAffine()[0].c0.value),

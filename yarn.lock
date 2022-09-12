@@ -2417,6 +2417,7 @@ __metadata:
     "@nomiclabs/hardhat-ethers": ^2.1.1
     "@nomiclabs/hardhat-etherscan": ^3.1.0
     "@nomiclabs/hardhat-waffle": ^2.0.3
+    await-exec: ^0.1.2
     chai: ^4.3.6
     circom_tester: ^0.0.14
     crypto-js: ^4.1.1
@@ -3022,6 +3023,13 @@ __metadata:
   version: 1.0.5
   resolution: "available-typed-arrays@npm:1.0.5"
   checksum: 20eb47b3cefd7db027b9bbb993c658abd36d4edd3fe1060e83699a03ee275b0c9b216cc076ff3f2db29073225fb70e7613987af14269ac1fe2a19803ccc97f1a
+  languageName: node
+  linkType: hard
+
+"await-exec@npm:^0.1.2":
+  version: 0.1.2
+  resolution: "await-exec@npm:0.1.2"
+  checksum: 19fe95f371f098efd8c088905eea76725d164f7277cece92b32da9266ec8fa1e508fb89b60f1480709ac4584ce217692d2a0452c6a334abb4ab53451a2db2621
   languageName: node
   linkType: hard
 
