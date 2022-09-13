@@ -3,6 +3,7 @@ pragma circom 2.0.3;
 include "hash_tree_root.circom";
 include "compress.circom";
 include "aggregate_bitmask.circom";
+include "is_supermajority.circom";
 include "../../../vendor/circom-pairing/circuits/bls_signature.circom";
 
 template ProofMoreEfficient(N) {
