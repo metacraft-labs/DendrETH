@@ -2446,6 +2446,7 @@ __metadata:
     "@types/node": ^18.0.0
     circom_tester: ^0.0.14
     crypto-js: ^4.1.1
+    dotenv: ^16.0.2
     ethereum-waffle: ^3.4.4
     ethers: ^5.7.0
     glob: ^8.0.3
@@ -5499,6 +5500,13 @@ __metadata:
   version: 0.1.2
   resolution: "dom-walk@npm:0.1.2"
   checksum: 19eb0ce9c6de39d5e231530685248545d9cd2bd97b2cb3486e0bfc0f2a393a9addddfd5557463a932b52fdfcf68ad2a619020cd2c74a5fe46fbecaa8e80872f3
+  languageName: node
+  linkType: hard
+
+"dotenv@npm:^16.0.2":
+  version: 16.0.2
+  resolution: "dotenv@npm:16.0.2"
+  checksum: ca8f9ca2d67929c7771069f4c31b4e46b9932621009e658e5afd655dde2d69b77642bf36dbc9e72bc170523dfd908a9ee41c26f034c1fdc605ace3b1b4b10faf
   languageName: node
   linkType: hard
 

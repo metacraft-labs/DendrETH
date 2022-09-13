@@ -4,7 +4,7 @@ import { getConstructorArgs } from "./utils";
 task("deploy", "Deploy the beacon light client contract")
     .setAction(async (_, { run, ethers, network }) => {
         await run('compile');
-        const deployer = await ethers.getSigner();
+        const [deployer] = await ethers.getSigners();
 
         const beaconLightClient = await (await ethers.getContractFactory('BeaconLightClient'))
             .deploy(...getConstructorArgs(network.name));

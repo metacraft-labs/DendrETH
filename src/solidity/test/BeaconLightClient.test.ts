@@ -1,7 +1,7 @@
 import * as path from "path";
 import { ethers } from "hardhat";
 import { getFilesInDir, getSolidityProof } from "./utils";
-import { formatJSONUpdate, hashTreeRootSyncCommitee, JSONUpdate, formatLightClientUpdate } from "./utils/format";
+import { formatJSONUpdate, hashTreeRootSyncCommitee, formatLightClientUpdate, FormatedJsonUpdate } from "./utils/format";
 import * as  constants from "./utils/constants";
 import { getConstructorArgs } from "../tasks/utils";
 
@@ -23,7 +23,7 @@ describe("BeaconLightClient", async function () {
 
   it("Importing real data", async function () {
     console.log(" >>> Begin importing of real updates");
-    let period = 291;
+    let period = 461;
     let prevUpdate = UPDATES[0];
     for (let update of UPDATES.slice(1, 4)) {
       const proof = await getSolidityProof(prevUpdate, update, NETWORK, true);
