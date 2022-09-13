@@ -16,8 +16,6 @@ describe("Is supermajority test", () => {
       bitmask: bitmask
     });
 
-    console.log(witnes);
-
     expect(witnes[1]).to.be.eq(0n);
   });
 
@@ -33,8 +31,6 @@ describe("Is supermajority test", () => {
     const witnes = await circuit.calculateWitness({
       bitmask: bitmask
     });
-
-    console.log(witnes);
 
     expect(witnes[1]).to.be.eq(1n);
   });

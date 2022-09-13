@@ -1,6 +1,6 @@
 require("dotenv").config();
 
-// import "hardhat-gas-reporter";
+import "hardhat-gas-reporter";
 
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-etherscan";
@@ -36,6 +36,12 @@ export default {
         process.env.ROPSTEN_NETWORK_PRIVATE_KEY,
       ],
     },
+    mainnet: {
+      url: `https://goerli.infura.io/v3/${process.env.GOERLI_NETWORK_INFURA_API_KEY}`,
+      accounts: [
+        process.env.ROPSTEN_NETWORK_PRIVATE_KEY,
+      ]
+    }
   },
   mocha: {
     timeout: 100000000,
