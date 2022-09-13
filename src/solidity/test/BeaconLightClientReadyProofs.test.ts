@@ -1,7 +1,7 @@
 import * as path from "path";
 import { ethers } from "hardhat";
 import { getFilesInDir, getSolidityProof } from "./utils";
-import { formatJSONUpdate, formatLightClientUpdate } from "./utils/format";
+import { FormatedJsonUpdate, formatJSONUpdate, formatLightClientUpdate } from "./utils/format";
 import * as  constants from "./utils/constants";
 import { getConstructorArgs } from "../tasks/utils";
 

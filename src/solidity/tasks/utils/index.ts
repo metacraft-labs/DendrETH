@@ -1,8 +1,9 @@
-import { hashTreeRootSyncCommitee } from "../../test/utils/format"; 
+import { hashTreeRootSyncCommitee } from "../../test/utils/format";
 import { GENESIS_VALIDATORS_ROOT } from "../../test/utils/constants";
 import { bytesToHex } from "../../test/utils/bls";
 
 export const getConstructorArgs = (network: string) => {
+    network = network === 'hardhat' ? 'mainnet' : network;
     const UPDATE0 = require(`../../../data/${network}/updates/00290.json`);
 
     return [

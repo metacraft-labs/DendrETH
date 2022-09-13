@@ -1,8 +1,8 @@
 import { hexToBytes } from "./bls";
 
-export const SLOTS_PER_EPOCH: Uint8Array = 32;
+export const SLOTS_PER_EPOCH: number = 32;
 
-export const EPOCHS_PER_SYNC_COMMITTEE_PERIOD: Uint8Array = 256;
+export const EPOCHS_PER_SYNC_COMMITTEE_PERIOD: number = 256;
 
 export const GENESIS_FORK_VERSION: Uint8Array = hexToBytes("0x00000000");
 
