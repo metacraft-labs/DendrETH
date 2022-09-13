@@ -2,7 +2,6 @@ import * as fs from "fs";
 import * as path from "path";
 
 import { readFileSync, writeFileSync } from "fs";
-import { exec } from "child_process";
 
 import { groth16 } from "snarkjs";
 import { PointG1, PointG2 } from "@noble/bls12-381";
@@ -41,10 +40,10 @@ interface JSONUpdate {
   signature_slot: string;
 }
 
-interface Proof {
-  a: string[2];
-  b: string[2][2];
-  c: string[2];
+export interface Proof {
+  a: string[];
+  b: string[][];
+  c: string[];
 }
 
 export function getFilesInDir(_path: string) {
@@ -131,7 +130,7 @@ export function getMessage(root: Uint8Array, fork_version: Uint8Array) {
 //     };
 // }
 
-export async function getSolidityProof(prevUpdate: FormatedJsonUpdate, update: FormatedJsonUpdate, network: string, generateProof?: boolean): Proof {
+export async function getSolidityProof(prevUpdate: FormatedJsonUpdate, update: FormatedJsonUpdate, network: string, generateProof?: boolean): Promise<Proof> {
   fs.writeFileSync("input.json", JSON.stringify(await getProofInput(prevUpdate, update)));
 
   const period = compute_sync_committee_period(parseInt(update.attested_header.slot));
@@ -141,7 +140,7 @@ export async function getSolidityProof(prevUpdate: FormatedJsonUpdate, update: F
     console.log((await promiseExec("../circom/build/god_please/proof_efficient/proof_efficient_cpp/proof_efficient input.json witness.wtns")).stdout);
 
     console.log("Proof generation...");
-    console.log((await promiseExec(`../../vendor/rapidsnark/build/prover ../circom/build/god_please/proof_efficient/proof_efficient_0.zkey witness.wtns data/${network}/proof${period}.json data/${NETWORK}/public${period}.json`)).stdout);
+    console.log((await promiseExec(`../../vendor/rapidsnark/build/prover ../circom/build/god_please/proof_efficient/proof_efficient_0.zkey witness.wtns data/${network}/proof${period}.json data/${network}/public${period}.json`)).stdout);
 
     await promiseExec("rm input.json witness.wtns");
   }
@@ -150,7 +149,7 @@ export async function getSolidityProof(prevUpdate: FormatedJsonUpdate, update: F
   const publicSignals = JSON.parse(fs.readFileSync(`data/${network}/public${period}.json`).toString());
   const calldata = await groth16.exportSolidityCallData(proof, publicSignals);
 
-  const argv = calldata.replace(/["[\]\s]/g, "").split(',').map(x => BigInt(x).toString());
+  const argv: string[] = calldata.replace(/["[\]\s]/g, "").split(',').map(x => BigInt(x).toString());
 
   const a = [argv[0], argv[1]];
   const b = [[argv[2], argv[3]], [argv[4], argv[5]]];
@@ -189,5 +188,5 @@ async function getProofInput(prevUpdate: FormatedJsonUpdate, update: FormatedJso
 }
 
 function compute_sync_committee_period(slot: number) {
-  return parseInt(slot / constants.SLOTS_PER_EPOCH / constants.EPOCHS_PER_SYNC_COMMITTEE_PERIOD);
+  return Math.floor(Math.floor(slot / constants.SLOTS_PER_EPOCH) / constants.EPOCHS_PER_SYNC_COMMITTEE_PERIOD);
 }
