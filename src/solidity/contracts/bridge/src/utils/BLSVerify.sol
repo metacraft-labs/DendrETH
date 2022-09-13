@@ -115,7 +115,6 @@ contract BLSVerify is Verifier {
     return Fp(a, b);
   }
 
-  // NOTE: function exposed for testing...
   function expandMessage(bytes32 message) private pure returns (bytes memory) {
     bytes memory b0Input = new bytes(143);
     for (uint256 i; i < 32; ) {
