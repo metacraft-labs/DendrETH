@@ -58,28 +58,8 @@ template ProofMoreEfficient(N) {
     }
   }
 
-  component bitmaskNum2Bits[3];
-
-  bitmaskNum2Bits[0] = Num2Bits(6);
-  bitmaskNum2Bits[0].in <== bitmask[0];
-
-  for(var i = 0; i < 6; i++) {
-    aggregateKeys.bitmask[i] <== bitmaskNum2Bits[0].out[i];
-  }
-
-  bitmaskNum2Bits[1] = Num2Bits(253);
-  bitmaskNum2Bits[1].in <== bitmask[1];
-
-  for(var i = 0; i < 253; i++) {
-    aggregateKeys.bitmask[i+6] <== bitmaskNum2Bits[1].out[i];
-  }
-
-
-  bitmaskNum2Bits[2] = Num2Bits(253);
-  bitmaskNum2Bits[2].in <== bitmask[2];
-
-  for(var i = 0; i < 253; i++) {
-    aggregateKeys.bitmask[i+6+253] <== bitmaskNum2Bits[2].out[i];
+  for(var i = 0; i < N; i++) {
+    aggregateKeys.bitmask[i] <== bitmask[i];
   }
 
   component verify = CoreVerifyPubkeyG1(55, K);
