@@ -14,8 +14,8 @@ import {
 import { hexToArray } from '../src/ts-utils/hex-utils';
 import { SSZSpecTypes } from '../src/ts-utils/sszSpecTypes';
 
-import BOOTSTRAP from './bootstrap.json';
-import UPDATE from './update.json';
+import BOOTSTRAP from '../vendor/eth2-light-client-updates/mainnet/bootstrap.json';
+import UPDATE from '../vendor/eth2-light-client-updates/mainnet/updates/00290.json';
 interface NimTestState<T extends WebAssembly.Exports = {}> {
   exports: T;
   logMessages: string[];
@@ -57,7 +57,7 @@ describe('Light Client in Nim compiled to Wasm', () => {
         };
       }),
     );
-  }, 20000 /* timeout in milliseconds */);
+  }, 60000 /* timeout in milliseconds */);
 
   testNimToWasmFile<{
     assertLCFailTest: (a: number) => any;
@@ -133,12 +133,12 @@ describe('Light Client in Nim compiled to Wasm', () => {
     'initializeLightClientStore.nim',
     ({ exports, logMessages }) => {
       const header = ssz.phase0.BeaconBlockHeader.fromJson(
-        BOOTSTRAP.data.v.header,
+        BOOTSTRAP.header,
       );
       const { startOffset: headerStartOffset, length: headerLength } =
         marshalSzzObjectToWasm(exports, header, ssz.phase0.BeaconBlockHeader);
       const bootstrap = SSZSpecTypes.LightClientBootstrap.fromJson(
-        BOOTSTRAP.data.v,
+        BOOTSTRAP,
         );
         const { startOffset: bootstrapStartOffset, length: bootstrapLength } =
         marshalSzzObjectToWasm(
@@ -155,46 +155,42 @@ describe('Light Client in Nim compiled to Wasm', () => {
     },
   );
 
-//   testNimToWasmFile<{
-//     allocMemory: (a: number) => any;
-//     validateLightClientUpdateTest: (a: number, b: number, c: number) => any;
-//     memory: WebAssembly.Memory;
-//   }>(
-//     'Test `validate_light_client_update`',
-//     'validateLightClientUpdate.nim',
-//     ({ exports, logMessages }) => {
-//       const header = ssz.phase0.BeaconBlockHeader.fromJson(
-//         BOOTSTRAP.data.v.header,
-//       );
-//       const { startOffset: headerStartOffset, length: headerLength } =
-//         marshalSzzObjectToWasm(exports, header, ssz.phase0.BeaconBlockHeader);
+  testNimToWasmFile<{
+    allocMemory: (a: number) => any;
+    validateLightClientUpdateTest: (a: number, b: number, c: number) => any;
+    memory: WebAssembly.Memory;
+  }>(
+    'Test `validate_light_client_update`',
+    'validateLightClientUpdate.nim',
+    ({ exports, logMessages }) => {
+      const header = ssz.phase0.BeaconBlockHeader.fromJson(
+        BOOTSTRAP.header,
+      );
+      const { startOffset: headerStartOffset, length: headerLength } =
+        marshalSzzObjectToWasm(exports, header, ssz.phase0.BeaconBlockHeader);
 
 
-//       const bootstrap = SSZSpecTypes.LightClientBootstrap.fromJson(
-//         BOOTSTRAP.data.v,
-//       );
-//       const { startOffset: bootstrapStartOffset, length: bootstrapLength } =
-//         marshalSzzObjectToWasm(
-//           exports,
-//           bootstrap,
-//           SSZSpecTypes.LightClientBootstrap,
-//         );
+      const bootstrap = SSZSpecTypes.LightClientBootstrap.fromJson(
+        BOOTSTRAP,
+      );
+      const { startOffset: bootstrapStartOffset, length: bootstrapLength } =
+        marshalSzzObjectToWasm(
+          exports,
+          bootstrap,
+          SSZSpecTypes.LightClientBootstrap,
+        );
 
-//       const update = SSZSpecTypes.LightClientUpdate.fromJson(UPDATE.data[0]);
-//       const { startOffset: updateStartOffset, length: updateLength } =
-//         marshalSzzObjectToWasm(exports, update, SSZSpecTypes.LightClientUpdate);
+      const update = SSZSpecTypes.LightClientUpdate.fromJson(UPDATE);
+      const { startOffset: updateStartOffset, length: updateLength } =
+        marshalSzzObjectToWasm(exports, update, SSZSpecTypes.LightClientUpdate);
 
-//       const data = readMemory({memory: exports.memory, startOffset: updateStartOffset, length: updateLength})
-//       console.log(updateLength)
-
-
-//       expect(
-//         exports.validateLightClientUpdateTest(
-//           headerStartOffset,
-//           bootstrapStartOffset,
-//           updateStartOffset,
-//         ),
-//       ).toStrictEqual(1);
-//     },
-//   );
+      expect(
+        exports.validateLightClientUpdateTest(
+          headerStartOffset,
+          bootstrapStartOffset,
+          updateStartOffset,
+        ),
+      ).toStrictEqual(1);
+    },
+  );
 });
