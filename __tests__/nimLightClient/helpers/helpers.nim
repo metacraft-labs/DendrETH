@@ -4,7 +4,7 @@ when defined(emcc):
 else:
   {.pragma: wasmPragma, cdecl, exportc, dynlib.}
 
-import /home/Emil/code/repos/metacraft-labs/DendrETH/src/nim-light-client/light_client_utils
+import light_client_utils
 
 from ssz_serialization/codec import readSszValue
 from stew/ranges/ptr_arith import makeOpenArray
