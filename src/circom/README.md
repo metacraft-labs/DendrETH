@@ -13,6 +13,23 @@ Also you have previous versions of this current branch in sync_implementation. W
 Circuits are executed with commands from the scripts and data is feeded from JS scripts there.
 For bigger circuits you may need up to hundreds of GB of RAM.
 
+## Benchmarks
+
+All benchmarks were run on a 32-core, 384G RAM machine with 1TB hard drive (AWS r5.8xlarge instance). Constraints refer to non-linear constraints.
+
+|                                      | proof_efficient |
+| ------------------------------------ | --------------- |
+| Constraints                          | N/a             |
+| Circuit compilation                  | 5h              |
+| Witness generation C++ compilation   | 1h              |
+| Witness generation                   | 1.1m            |
+| Trusted setup phase 2 key generation | N/a             |
+| Trusted setup phase 2 contribution   | N/a             |
+| Proving key size                     | 49G             |
+| Proving key verification             | N/a             |
+| Proving time (rapidsnark)            | 4m              |
+| Proof verification time              | 1s              |
+
 Diagrams
 
 ![](light_client.drawio.png)
