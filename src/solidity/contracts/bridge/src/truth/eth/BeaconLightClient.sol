@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-import '../../utils/Bitfield.sol';
 import '../../utils/BLSVerify.sol';
 import '../../spec/BeaconChain.sol';
 
@@ -55,7 +54,7 @@ import '../../spec/BeaconChain.sol';
  *  - No need to query for period 0 next_sync_committee until the end of period 0
  *  - After the import next_sync_committee of period 0, populate period 1's committee
  */
-contract BeaconLightClient is BeaconChain, Bitfield, BLSVerify {
+contract BeaconLightClient is BeaconChain, BLSVerify {
   event FinalizedHeaderImported(BeaconBlockHeader finalized_header);
   event NextSyncCommitteeImported(
     uint64 indexed period,
@@ -77,9 +76,6 @@ contract BeaconLightClient is BeaconChain, Bitfield, BLSVerify {
   uint64 private constant FINALIZED_CHECKPOINT_ROOT_INDEX = 105;
   uint64 private constant FINALIZED_CHECKPOINT_ROOT_DEPTH = 6;
 
-  uint64 private constant EPOCHS_PER_SYNC_COMMITTEE_PERIOD = 256;
-  uint64 private constant SLOTS_PER_EPOCH = 32;
-
   bytes4 private constant DOMAIN_SYNC_COMMITTEE = 0x07000000;
 
   struct LightClientUpdate {
@@ -88,10 +84,6 @@ contract BeaconLightClient is BeaconChain, Bitfield, BLSVerify {
     // The finalized beacon block header attested to by Merkle branch
     BeaconBlockHeader finalized_header;
     bytes32[] finality_branch;
-    // Sync committee aggregate signature
-    SyncAggregate sync_aggregate;
-    // Slot at which the aggregate signature was created (untrusted)
-    uint64 signature_slot;
     // Fork version for the aggregate signature
     bytes4 fork_version;
     bytes32 next_sync_committee_root;
@@ -137,11 +129,6 @@ contract BeaconLightClient is BeaconChain, Bitfield, BLSVerify {
     payable
   {
     require(
-      is_supermajority(update.sync_aggregate.sync_committee_bits),
-      '!supermajor'
-    );
-
-    require(
       verify_finalized_header(
         update.finalized_header,
         update.finality_branch,
@@ -161,23 +148,8 @@ contract BeaconLightClient is BeaconChain, Bitfield, BLSVerify {
       '!next_sync_committee'
     );
 
-    uint64 finalized_period = compute_sync_committee_period(
-      finalized_header.slot
-    );
-
-    uint64 signature_period = compute_sync_committee_period(
-      update.signature_slot
-    );
-
-    require(
-      signature_period == finalized_period ||
-        signature_period == finalized_period + 1,
-      '!signature_period'
-    );
-
     require(
       verify_signed_header(
-        update.sync_aggregate,
         prev_sync_committee_root,
         update.fork_version,
         update.attested_header,
@@ -197,7 +169,6 @@ contract BeaconLightClient is BeaconChain, Bitfield, BLSVerify {
   }
 
   function verify_signed_header(
-    SyncAggregate calldata sync_aggregate,
     bytes32 sync_committee,
     bytes4 fork_version,
     BeaconBlockHeader calldata header,
@@ -214,7 +185,7 @@ contract BeaconLightClient is BeaconChain, Bitfield, BLSVerify {
 
     bytes32 signing_root = compute_signing_root(header, domain);
 
-    return verifySignature(a, b, c, sync_aggregate, signing_root, sync_committee);
+    return verifySignature(a, b, c, signing_root, sync_committee);
   }
 
   function verify_finalized_header(
@@ -235,32 +206,5 @@ contract BeaconLightClient is BeaconChain, Bitfield, BLSVerify {
         FINALIZED_CHECKPOINT_ROOT_INDEX,
         attested_header_root
       );
-  }
-
-  function is_supermajority(uint256[3] memory sync_committee_bits)
-    internal
-    pure
-    returns (bool)
-  {
-    return sum(sync_committee_bits) * 3 >= SYNC_COMMITTEE_SIZE * 2;
-  }
-
-  function compute_sync_committee_period(uint64 slot)
-    internal
-    pure
-    returns (uint64)
-  {
-    return slot / SLOTS_PER_EPOCH / EPOCHS_PER_SYNC_COMMITTEE_PERIOD;
-  }
-
-  function sum(uint256[3] memory sync_committee_bits)
-    internal
-    pure
-    returns (uint256)
-  {
-    return
-      countSetBits(uint256(sync_committee_bits[0])) +
-      countSetBits(uint256(sync_committee_bits[1])) +
-      countSetBits(uint256(sync_committee_bits[2]));
   }
 }

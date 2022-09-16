@@ -45,35 +45,7 @@ export function formatJSONBlockHeader(header: JSONHeader) {
 export function formatJSONUpdate(update, FORK_VERSION: string): FormatedJsonUpdate {
   const SyncCommitteeBits = new BitVectorType(512);
   let bitmask = SyncCommitteeBits.fromJson(update.sync_aggregate.sync_committee_bits);
-  update.sync_aggregate.sync_committee_bits = [
-    BigInt(
-      '0b' +
-      bitmask
-        .toBoolArray()
-        .map(x => (x ? '1' : '0'))
-        .slice(0, 6)
-        .reverse()
-        .join(''),
-    ).toString(),
-    BigInt(
-      '0b' +
-      bitmask
-        .toBoolArray()
-        .map(x => (x ? '1' : '0'))
-        .slice(6, 259)
-        .reverse()
-        .join(''),
-    ).toString(),
-    BigInt(
-      '0b' +
-      bitmask
-        .toBoolArray()
-        .map(x => (x ? '1' : '0'))
-        .slice(259, 512)
-        .reverse()
-        .join(''),
-    ).toString()
-  ];
+  update.sync_aggregate.sync_committee_bits = bitmask.toBoolArray().map(x => x ? '1' : '0');
   let signature: PointG2 = PointG2.fromSignature(formatHex(update.sync_aggregate.sync_committee_signature));
 
   update.sync_aggregate.sync_committee_signature = [
@@ -96,8 +68,6 @@ export function formatLightClientUpdate(update: FormatedJsonUpdate, proof: Proof
     attested_header: update.attested_header,
     finalized_header: update.finalized_header,
     finality_branch: update.finality_branch,
-    sync_aggregate: update.sync_aggregate,
-    signature_slot: update.signature_slot,
     fork_version: constants.ALTAIR_FORK_VERSION,
     next_sync_committee_root: hashTreeRootSyncCommitee(update.next_sync_committee),
     next_sync_committee_branch: update.next_sync_committee_branch,
