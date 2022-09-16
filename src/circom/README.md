@@ -19,11 +19,11 @@ All benchmarks were run on a 32-core, 384G RAM machine with 1TB hard drive (AWS 
 
 |                                      | proof_efficient |
 | ------------------------------------ | --------------- |
-| Constraints                          | N/a             |
-| Circuit compilation                  | 5h              |
+| Constraints                          | 88945803        |
+| Circuit compilation                  | 6h              |
 | Witness generation C++ compilation   | 1h              |
-| Witness generation                   | 1.1m            |
-| Trusted setup phase 2 key generation | N/a             |
+| Witness generation                   | 3m              |
+| Trusted setup phase 2 key generation | 26h             |
 | Trusted setup phase 2 contribution   | N/a             |
 | Proving key size                     | 49G             |
 | Proving key verification             | N/a             |

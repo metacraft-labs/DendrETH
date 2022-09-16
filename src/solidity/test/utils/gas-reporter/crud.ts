@@ -8,7 +8,7 @@ export const copyRecursiveSync = function (src: string, dest: string): Path[] {
 
     var exists = fs.existsSync(src);
     var stats = exists && fs.statSync(src);
-    var isDirectory = exists && stats.isDirectory();
+    var isDirectory = exists && (stats as fs.Stats).isDirectory();
     if (isDirectory) {
         fs.mkdirSync(dest);
         fs.readdirSync(src).forEach(function (childItemName) {
