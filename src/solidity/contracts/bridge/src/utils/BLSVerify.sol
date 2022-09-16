@@ -8,11 +8,6 @@ contract BLSVerify is Verifier {
     uint256 b;
   }
 
-  struct SyncAggregate {
-    uint256[3] sync_committee_bits;
-    uint256[7][2][2] sync_committee_signature;
-  }
-
   uint8 constant MOD_EXP_PRECOMPILE_ADDRESS = 0x5;
   string constant BLS_SIG_DST = 'BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_+';
 
@@ -192,54 +187,25 @@ contract BLSVerify is Verifier {
     uint256[2] memory a,
     uint256[2][2] memory b,
     uint256[2] memory c,
-    SyncAggregate calldata sync_aggregate,
     bytes32 signing_root,
     bytes32 sync_committee
   ) internal view returns (bool) {
-    uint256[61] memory input;
+    uint256[30] memory input;
 
-    // TODO: move bit reversal into the circuit
     uint256 sync_committee1 = (uint256(sync_committee) & ((1 << 3) - 1));
-    uint256 reverse1 = 0;
-    for (uint256 i = 0; i < 3; i++) {
-      if (sync_committee1 & (1 << i) != 0) {
-        reverse1 |= 1 << (2 - i);
-      }
-    }
 
     uint256 sync_commitee2 = (uint256(sync_committee) &
       (((1 << 253) - 1) << 3)) >> 3;
 
-    uint256 reverse2 = 0;
-
-    for (uint256 i = 0; i < 253; i++) {
-      if (sync_commitee2 & (1 << i) != 0) {
-        reverse2 |= 1 << (252 - i);
-      }
-    }
-
-    input[0] = reverse1;
-    input[1] = reverse2;
-
-    input[2] = sync_aggregate.sync_committee_bits[0];
-    input[3] = sync_aggregate.sync_committee_bits[1];
-    input[4] = sync_aggregate.sync_committee_bits[2];
-
-    for (uint256 i = 0; i < 2; i++) {
-      for (uint256 j = 0; j < 2; j++) {
-        for (uint256 k = 0; k < 7; k++) {
-          input[i * 14 + j * 7 + k + 5] = sync_aggregate
-            .sync_committee_signature[i][j][k];
-        }
-      }
-    }
+    input[0] = sync_committee1;
+    input[1] = sync_commitee2;
 
     uint256[7][2][2] memory hashMessage = hashToField(signing_root);
 
     for (uint256 i = 0; i < 2; i++) {
       for (uint256 j = 0; j < 2; j++) {
         for (uint256 k = 0; k < 7; k++) {
-          input[i * 14 + j * 7 + k + 33] = hashMessage[i][j][k];
+          input[i * 14 + j * 7 + k + 2] = hashMessage[i][j][k];
         }
       }
     }
