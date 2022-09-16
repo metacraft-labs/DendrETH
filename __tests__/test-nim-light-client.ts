@@ -193,4 +193,42 @@ describe('Light Client in Nim compiled to Wasm', () => {
       ).toStrictEqual(1);
     },
   );
+
+  testNimToWasmFile<{
+    allocMemory: (a: number) => any;
+    processSingleLightClientUpdateTest: (a: number, b: number, c: number) => any;
+    memory: WebAssembly.Memory;
+  }>(
+    'Test `process_light_client_update` with one update',
+    'processSingleLightClientUpdate.nim',
+    ({ exports, logMessages }) => {
+      const header = ssz.phase0.BeaconBlockHeader.fromJson(
+        BOOTSTRAP.header,
+      );
+      const { startOffset: headerStartOffset, length: headerLength } =
+        marshalSzzObjectToWasm(exports, header, ssz.phase0.BeaconBlockHeader);
+
+      const bootstrap = SSZSpecTypes.LightClientBootstrap.fromJson(
+        BOOTSTRAP,
+      );
+      const { startOffset: bootstrapStartOffset, length: bootstrapLength } =
+        marshalSzzObjectToWasm(
+          exports,
+          bootstrap,
+          SSZSpecTypes.LightClientBootstrap,
+        );
+
+      const update = SSZSpecTypes.LightClientUpdate.fromJson(UPDATE);
+      const { startOffset: updateStartOffset, length: updateLength } =
+        marshalSzzObjectToWasm(exports, update, SSZSpecTypes.LightClientUpdate);
+
+      expect(
+        exports.processSingleLightClientUpdateTest(
+          headerStartOffset,
+          bootstrapStartOffset,
+          updateStartOffset,
+        ),
+      ).toStrictEqual(1);
+    },
+  );
 });
