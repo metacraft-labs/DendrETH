@@ -25,7 +25,7 @@ proc validateLightClientUpdateTest(
   var update: LightClientUpdate
   update.deserializeSSZType(dataUpdate, sizeof(LightClientUpdate))
 
-  let genesis_validators_root = MDigest[256].fromHex("4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95")
+  let genesis_validators_root = MDigest[256].fromHex(GENESIS_VALIDATORS_ROOT)
   let lightClientStore =
    initialize_light_client_store(hash_tree_root(beaconBlockHeader), bootstrap)
 

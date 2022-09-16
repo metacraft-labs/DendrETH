@@ -48,7 +48,7 @@ describe('Light Client in Nim compiled to Wasm', () => {
           .outputFileName;
         const exports = await loadWasm<{}>({
           from: { filepath: wasmFilePath },
-          importObject: {}
+          importObject: {},
         });
         perFileState[basename(nimFilePath)] = {
           wasmFilePath,
@@ -132,20 +132,16 @@ describe('Light Client in Nim compiled to Wasm', () => {
     'Test `initialize_light_client_store`',
     'initializeLightClientStore.nim',
     ({ exports, logMessages }) => {
-      const header = ssz.phase0.BeaconBlockHeader.fromJson(
-        BOOTSTRAP.header,
-      );
+      const header = ssz.phase0.BeaconBlockHeader.fromJson(BOOTSTRAP.header);
       const { startOffset: headerStartOffset, length: headerLength } =
         marshalSzzObjectToWasm(exports, header, ssz.phase0.BeaconBlockHeader);
-      const bootstrap = SSZSpecTypes.LightClientBootstrap.fromJson(
-        BOOTSTRAP,
-        );
-        const { startOffset: bootstrapStartOffset, length: bootstrapLength } =
+      const bootstrap = SSZSpecTypes.LightClientBootstrap.fromJson(BOOTSTRAP);
+      const { startOffset: bootstrapStartOffset, length: bootstrapLength } =
         marshalSzzObjectToWasm(
           exports,
           bootstrap,
           SSZSpecTypes.LightClientBootstrap,
-          );
+        );
       expect(
         exports.initializeLightClientStoreTest(
           headerStartOffset,
@@ -163,16 +159,11 @@ describe('Light Client in Nim compiled to Wasm', () => {
     'Test `validate_light_client_update`',
     'validateLightClientUpdate.nim',
     ({ exports, logMessages }) => {
-      const header = ssz.phase0.BeaconBlockHeader.fromJson(
-        BOOTSTRAP.header,
-      );
+      const header = ssz.phase0.BeaconBlockHeader.fromJson(BOOTSTRAP.header);
       const { startOffset: headerStartOffset, length: headerLength } =
         marshalSzzObjectToWasm(exports, header, ssz.phase0.BeaconBlockHeader);
 
-
-      const bootstrap = SSZSpecTypes.LightClientBootstrap.fromJson(
-        BOOTSTRAP,
-      );
+      const bootstrap = SSZSpecTypes.LightClientBootstrap.fromJson(BOOTSTRAP);
       const { startOffset: bootstrapStartOffset, length: bootstrapLength } =
         marshalSzzObjectToWasm(
           exports,
@@ -196,21 +187,21 @@ describe('Light Client in Nim compiled to Wasm', () => {
 
   testNimToWasmFile<{
     allocMemory: (a: number) => any;
-    processSingleLightClientUpdateTest: (a: number, b: number, c: number) => any;
+    processSingleLightClientUpdateTest: (
+      a: number,
+      b: number,
+      c: number,
+    ) => any;
     memory: WebAssembly.Memory;
   }>(
     'Test `process_light_client_update` with one update',
     'processSingleLightClientUpdate.nim',
     ({ exports, logMessages }) => {
-      const header = ssz.phase0.BeaconBlockHeader.fromJson(
-        BOOTSTRAP.header,
-      );
+      const header = ssz.phase0.BeaconBlockHeader.fromJson(BOOTSTRAP.header);
       const { startOffset: headerStartOffset, length: headerLength } =
         marshalSzzObjectToWasm(exports, header, ssz.phase0.BeaconBlockHeader);
 
-      const bootstrap = SSZSpecTypes.LightClientBootstrap.fromJson(
-        BOOTSTRAP,
-      );
+      const bootstrap = SSZSpecTypes.LightClientBootstrap.fromJson(BOOTSTRAP);
       const { startOffset: bootstrapStartOffset, length: bootstrapLength } =
         marshalSzzObjectToWasm(
           exports,
@@ -234,25 +225,26 @@ describe('Light Client in Nim compiled to Wasm', () => {
 
   testNimToWasmFile<{
     allocMemory: (a: number) => any;
-    processLightClientUpdatesTest: (a: number, b: number, c: number, d: number) => any;
+    processLightClientUpdatesTest: (
+      a: number,
+      b: number,
+      c: number,
+      d: number,
+    ) => any;
     memory: WebAssembly.Memory;
   }>(
-    'Test `process_light_client_update` with couple of updates',
+    'Test `process_light_client_update` with several updates',
     'processLightClientUpdates.nim',
     async ({ exports, logMessages }) => {
       const updateFiles = glob(
         dirname(fileURLToPath(import.meta.url)) +
           '../../vendor/eth2-light-client-updates/mainnet/updates/*.json',
       );
-      const header = ssz.phase0.BeaconBlockHeader.fromJson(
-        BOOTSTRAP.header,
-      );
+      const header = ssz.phase0.BeaconBlockHeader.fromJson(BOOTSTRAP.header);
       const { startOffset: headerStartOffset, length: headerLength } =
         marshalSzzObjectToWasm(exports, header, ssz.phase0.BeaconBlockHeader);
 
-      const bootstrap = SSZSpecTypes.LightClientBootstrap.fromJson(
-        BOOTSTRAP,
-      );
+      const bootstrap = SSZSpecTypes.LightClientBootstrap.fromJson(BOOTSTRAP);
       const { startOffset: bootstrapStartOffset, length: bootstrapLength } =
         marshalSzzObjectToWasm(
           exports,
@@ -260,10 +252,10 @@ describe('Light Client in Nim compiled to Wasm', () => {
           SSZSpecTypes.LightClientBootstrap,
         );
 
-      var updatesOffsets:BigInt[] = [];
+      var updatesOffsets: BigInt[] = [];
       //TODO: Refactor alloc function in order to be able to allocate memory for all updates
-      const updatesCount = 30
-      for (let index = 0; index < updatesCount; index++)  {
+      const updatesCount = 30;
+      for (let index = 0; index < updatesCount; index++) {
         const curUpdate = await readJson(updateFiles[index]);
         const update = SSZSpecTypes.LightClientUpdate.fromJson(curUpdate);
         // console.log(update)
@@ -288,7 +280,7 @@ describe('Light Client in Nim compiled to Wasm', () => {
           headerStartOffset,
           bootstrapStartOffset,
           updatesArrStartOffset,
-          updatesArrLength
+          updatesArrLength,
         ),
       ).toStrictEqual(1);
     },

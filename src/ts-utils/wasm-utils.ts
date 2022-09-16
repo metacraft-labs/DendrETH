@@ -4,48 +4,56 @@ import { Type } from '@chainsafe/ssz';
 import { assert } from 'node:console';
 
 var HEAP,
-/** @type {ArrayBuffer} */
+  /** @type {ArrayBuffer} */
   buffer,
-/** @type {Int8Array} */
+  /** @type {Int8Array} */
   HEAP8,
-/** @type {Uint8Array} */
+  /** @type {Uint8Array} */
   HEAPU8: Uint8Array,
-/** @type {Int16Array} */
+  /** @type {Int16Array} */
   HEAP16,
-/** @type {Uint16Array} */
+  /** @type {Uint16Array} */
   HEAPU16,
-/** @type {Int32Array} */
+  /** @type {Int32Array} */
   HEAP32,
-/** @type {Uint32Array} */
+  /** @type {Uint32Array} */
   HEAPU32,
-/** @type {Float32Array} */
+  /** @type {Float32Array} */
   HEAPF32,
-/** @type {Float64Array} */
+  /** @type {Float64Array} */
   HEAPF64;
 
-function alignUp(x:any, multiple:any) {
+function alignUp(x: any, multiple: any) {
   if (x % multiple > 0) {
     x += multiple - (x % multiple);
   }
   return x;
 }
-var Module:any = typeof Module !== 'undefined' ? Module : {};
+var Module: any = typeof Module !== 'undefined' ? Module : {};
 
-
-function updateGlobalBufferAndViews(buf:any) {
+function updateGlobalBufferAndViews(buf: any) {
   buffer = buf;
   Module['HEAPU8'] = HEAP8 = new Uint8Array(buf);
 }
 
-
-export function emscripten_realloc_buffer(size: any, memory: WebAssembly.Memory) {
+export function emscripten_realloc_buffer(
+  size: any,
+  memory: WebAssembly.Memory,
+) {
   try {
     // round size grow request up to wasm page size (fixed 64KB per spec)
     memory.grow((size - memory.buffer.byteLength + 65535) >>> 16); // .grow() takes a delta compared to the previous size
     updateGlobalBufferAndViews(memory.buffer);
     return 1 /*success*/;
-  } catch(e) {
-    console.log('emscripten_realloc_buffer: Attempted to grow heap from ' + memory.buffer.byteLength  + ' bytes to ' + size + ' bytes, but got error: ' + e);
+  } catch (e) {
+    console.log(
+      'emscripten_realloc_buffer: Attempted to grow heap from ' +
+        memory.buffer.byteLength +
+        ' bytes to ' +
+        size +
+        ' bytes, but got error: ' +
+        e,
+    );
   }
   // implicit 0 return to save code size (caller will cast "undefined" into 0
   // anyhow)
@@ -71,12 +79,13 @@ export async function loadWasm<Exports extends WebAssembly.Exports>({
           length: errLength,
         });
       },
-      emscripten_notify_memory_growth: (x:undefined) => console.log("emscripten_notify_memory_growth"),
+      emscripten_notify_memory_growth: (x: undefined) =>
+        console.log('emscripten_notify_memory_growth'),
       emscripten_memcpy_big: (dest: any, src: any, num: any) => {
         HEAPU8.copyWithin(dest, src, src + num);
       },
       emscripten_resize_heap: (requestedSize: any) => {
-        console.log("emscripten_resize_heap")
+        console.log('emscripten_resize_heap');
         var oldSize = HEAPU8.length;
         requestedSize = requestedSize >>> 0;
         // With pthreads, races can happen (another thread might increase the size in between), so return a failure, and let the caller retry.
@@ -138,15 +147,25 @@ export async function loadWasm<Exports extends WebAssembly.Exports>({
         return false;
       },
 
-      blscurve_blst_min_pubkey_sig_coreInit000: (x: any) => {"blscurve_blst_min_pubkey_sig_coreInit000"},
-      main: (x: any) => {"main"},
+      blscurve_blst_min_pubkey_sig_coreInit000: (x: any) => {
+        'blscurve_blst_min_pubkey_sig_coreInit000';
+      },
+      main: (x: any) => {
+        'main';
+      },
 
       ...importObject.env,
     },
     wasi_snapshot_preview1: {
-      args_sizes_get: (x: any) => {"args_sizes_get"},
-      args_get: (x: any) => {"args_get"},
-      proc_exit: (x: any) => {"proc_exit"},
+      args_sizes_get: (x: any) => {
+        'args_sizes_get';
+      },
+      args_get: (x: any) => {
+        'args_get';
+      },
+      proc_exit: (x: any) => {
+        'proc_exit';
+      },
     },
   };
 
@@ -164,7 +183,7 @@ export async function loadWasm<Exports extends WebAssembly.Exports>({
     throw new Error('Invalid argument: `from`');
   }
   memory = (res.instance.exports as any).memory;
-  HEAPU8 = new Uint8Array(memory.buffer)
+  HEAPU8 = new Uint8Array(memory.buffer);
   return res.instance.exports as Exports;
 }
 
