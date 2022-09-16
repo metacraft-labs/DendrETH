@@ -21,16 +21,18 @@ proc processLightClientUpdatesTest(
 
   var beaconBlockHeader: BeaconBlockHeader
   beaconBlockHeader.deserializeSSZType(dataRoot, sizeof(BeaconBlockHeader))
+
   var bootstrap: LightClientBootstrap
   bootstrap.deserializeSSZType(dataBootstrap, sizeof(LightClientBootstrap))
 
-  var update: LightClientUpdate
-  let genesis_validators_root = MDigest[256].fromHex("4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95")
+  let genesis_validators_root = MDigest[256].fromHex(GENESIS_VALIDATORS_ROOT)
   var lightClientStore =
    initialize_light_client_store(hash_tree_root(beaconBlockHeader), bootstrap)
 
   var updateOffsets: array[30, uint32]
   updateOffsets.deserializeSSZType(dataUpdates, updatesDataLength)
+
+  var update: LightClientUpdate
   for dataUpdate in updateOffsets:
     update.deserializeSSZType(cast[pointer](dataUpdate), sizeof(LightClientUpdate))
     process_light_client_update(lightClientStore,

@@ -77,8 +77,6 @@ type
 
 const
 # Constants from base.nim
-  MAX_GRAFFITI_SIZE* = 32
-  DEPOSIT_CONTRACT_TREE_DEPTH* = 32
   ZERO_HASH* = Eth2Digest()
 
 # Constants from altair.nim
@@ -100,6 +98,7 @@ const
 # Constants from presets
   # Genesis
   GENESIS_FORK_VERSION = Version [byte 0x00, 0x00, 0x00, 0x00]
+  GENESIS_VALIDATORS_ROOT* = "4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95"
   #Phase0
   SLOTS_PER_EPOCH* {.intdefine.}: uint64 = 32
   SYNC_COMMITTEE_SIZE* = 512
