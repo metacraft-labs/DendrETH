@@ -9,7 +9,7 @@ import {
   loadWasm,
   marshalSzzObjectToWasm,
   WasmError,
-  throwWasmException,
+  readJson,
 } from '../src/ts-utils/wasm-utils';
 import { hexToArray } from '../src/ts-utils/hex-utils';
 import { SSZSpecTypes } from '../src/ts-utils/sszSpecTypes';
@@ -227,6 +227,68 @@ describe('Light Client in Nim compiled to Wasm', () => {
           headerStartOffset,
           bootstrapStartOffset,
           updateStartOffset,
+        ),
+      ).toStrictEqual(1);
+    },
+  );
+
+  testNimToWasmFile<{
+    allocMemory: (a: number) => any;
+    processLightClientUpdatesTest: (a: number, b: number, c: number, d: number) => any;
+    memory: WebAssembly.Memory;
+  }>(
+    'Test `process_light_client_update` with couple of updates',
+    'processLightClientUpdates.nim',
+    async ({ exports, logMessages }) => {
+      const updateFiles = glob(
+        dirname(fileURLToPath(import.meta.url)) +
+          '../../vendor/eth2-light-client-updates/mainnet/updates/*.json',
+      );
+      const header = ssz.phase0.BeaconBlockHeader.fromJson(
+        BOOTSTRAP.header,
+      );
+      const { startOffset: headerStartOffset, length: headerLength } =
+        marshalSzzObjectToWasm(exports, header, ssz.phase0.BeaconBlockHeader);
+
+      const bootstrap = SSZSpecTypes.LightClientBootstrap.fromJson(
+        BOOTSTRAP,
+      );
+      const { startOffset: bootstrapStartOffset, length: bootstrapLength } =
+        marshalSzzObjectToWasm(
+          exports,
+          bootstrap,
+          SSZSpecTypes.LightClientBootstrap,
+        );
+
+      var updatesOffsets:BigInt[] = [];
+      //TODO: Refactor alloc function in order to be able to allocate memory for all updates
+      const updatesCount = 30
+      for (let index = 0; index < updatesCount; index++)  {
+        const curUpdate = await readJson(updateFiles[index]);
+        const update = SSZSpecTypes.LightClientUpdate.fromJson(curUpdate);
+        // console.log(update)
+        const { startOffset: updateStartOffset, length: updateLength } =
+          marshalSzzObjectToWasm(
+            exports,
+            update,
+            SSZSpecTypes.LightClientUpdate,
+          );
+        updatesOffsets.push(BigInt(updateStartOffset));
+      }
+
+      const { startOffset: updatesArrStartOffset, length: updatesArrLength } =
+        marshalSzzObjectToWasm(
+          exports,
+          updatesOffsets,
+          SSZSpecTypes.updatesArray,
+        );
+
+      expect(
+        exports.processLightClientUpdatesTest(
+          headerStartOffset,
+          bootstrapStartOffset,
+          updatesArrStartOffset,
+          updatesArrLength
         ),
       ).toStrictEqual(1);
     },

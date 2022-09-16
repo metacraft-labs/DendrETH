@@ -1,8 +1,10 @@
 import {
+  UintBigintType,
   BitVectorType,
   ByteVectorType,
   ContainerType,
   VectorCompositeType,
+  ListBasicType
 } from '@chainsafe/ssz';
 import {
   SYNC_COMMITTEE_SIZE,
@@ -39,6 +41,8 @@ export type LightClientBootstrap = {
 };
 
 export class SSZSpecTypes {
+  static updatesArray = new ListBasicType(new UintBigintType(4), 100);
+
   static LightClientBootstrap = new ContainerType<LightClientBootstrap>({
     header: ssz.phase0.BeaconBlockHeader,
     current_sync_committee: SyncCommittee,
