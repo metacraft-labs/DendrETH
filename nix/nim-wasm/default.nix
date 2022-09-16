@@ -12,6 +12,7 @@
       --os:standalone
       --cpu:wasm32
       --cc:clang
+      --noMain
       --opt:size
       --listCmd
       --d:nimNoLibc
@@ -27,11 +28,11 @@
       --lib:"./vendor/nim/lib"
       @if emcc:
         --d:useMalloc
-        --clang.exe:emcc -g
+        --clang.exe:emcc
         --clang.linkerexe:emcc
         --clang.cpp.exe:emcc
         --clang.cpp.linkerexe:emcc
-        --passL:" -g -O0 -s ASSERTIONS=1 -s ALLOW_MEMORY_GROWTH -s WASM=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s EXPORTED_RUNTIME_METHODS=`['ccall']`"
+        --passL:"-Oz -s ALLOW_MEMORY_GROWTH -s WASM=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0"
       @else:
         --clang.options.linker:""
         --clang.cpp.options.linker:""
@@ -41,10 +42,10 @@
         --passC:"-fuse-ld=wasm-ld"
         --passC:"--target=wasm32-unknown-unknown-wasm"
         --passC:"-nostdinc -fno-builtin -fno-exceptions -fno-threadsafe-statics"
-        --passC:"-fvisibility=default -flto"
+        --passC:"-fvisibility=hidden -flto"
         --passC:"-std=gnu99"
         --passC:"-mbulk-memory" # prevents clang from inserting calls to `memcpy`
-        --passL:"-g --target=wasm32-unknown-unknown-wasm -nostdlib -Wl,--no-entry,--allow-undefined,--export-dynamic,--gc-sections,--strip-all"
+        --passL:"--target=wasm32-unknown-unknown-wasm -nostdlib -Wl,--no-entry,--allow-undefined,--export-dynamic,--gc-sections,--strip-all"
       @end
     '';
     destination = "/nim/nim.cfg";
