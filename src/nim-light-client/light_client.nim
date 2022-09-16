@@ -1,10 +1,16 @@
+when defined(emcc):
+  {.emit: "#include <emscripten.h>".}
+  {.pragma: wasmPragma, cdecl, exportc, dynlib, codegenDecl: "EMSCRIPTEN_KEEPALIVE $# $#$#".}
+else:
+  {.pragma: wasmPragma, cdecl, exportc, dynlib.}
+
 import light_client_utils
 
 # https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#initialize_light_client_store
 func initialize_light_client_store*(
     trusted_block_root: Eth2Digest,
     bootstrap: LightClientBootstrap
-  ): LightClientStore {.cdecl, exportc, dynlib} =
+  ): LightClientStore {.wasmPragma.} =
   assertLC(hash_tree_root(bootstrap.header) == trusted_block_root, BlockError.Invalid)
 
   assertLC(
@@ -27,7 +33,7 @@ proc validate_light_client_update*(
     update: LightClientUpdate,
     current_slot: Slot,
     genesis_validators_root: Eth2Digest
-    ): void {.cdecl, exportc, dynlib} =
+    ): void {.wasmPragma.} =
   # Verify sync committee has sufficient participants
   template sync_aggregate(): auto = update.sync_aggregate
   template sync_committee_bits(): auto = sync_aggregate.sync_committee_bits
@@ -139,7 +145,7 @@ proc validate_light_client_update*(
 # https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#apply_light_client_update
 func apply_light_client_update(
     store: var LightClientStore,
-    update: LightClientUpdate): void {.cdecl, exportc, dynlib} =
+    update: LightClientUpdate): void =
   let
     store_period = store.finalized_header.slot.sync_committee_period
     finalized_period = update.finalized_header.slot.sync_committee_period
@@ -164,7 +170,7 @@ func apply_light_client_update(
 # https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#process_light_client_store_force_update
 func process_light_client_store_force_update*(
     store: var LightClientStore,
-    current_slot: Slot): void {.discardable, cdecl, exportc, dynlib.} =
+    current_slot: Slot): void {.discardable, wasmPragma .} =
   if store.best_valid_update.isSome and
       current_slot > store.finalized_header.slot + UPDATE_TIMEOUT:
     # Forced best update when the update timeout has elapsed
@@ -179,7 +185,7 @@ proc process_light_client_update* (
     store: var LightClientStore,
     update: LightClientUpdate,
     current_slot: Slot,
-    genesis_validators_root: Eth2Digest): void {.cdecl, exportc, dynlib.} =
+    genesis_validators_root: Eth2Digest): void {.wasmPragma.} =
   validate_light_client_update(
     store, update, current_slot, genesis_validators_root)
 
@@ -219,7 +225,7 @@ proc process_light_client_finality_update* (
     store: var LightClientStore,
     finality_update: LightClientFinalityUpdate,
     current_slot: Slot,
-    genesis_validators_root: Eth2Digest): void {.cdecl, exportc, dynlib.} =
+    genesis_validators_root: Eth2Digest): void {.wasmPragma.} =
   let update = LightClientUpdate(
     attested_header: finality_update.attested_header,
     next_sync_committee: SyncCommittee(),
@@ -237,7 +243,7 @@ proc process_light_client_optimistic_update* (
     store: var LightClientStore,
     optimistic_update: LightClientOptimisticUpdate,
     current_slot: Slot,
-    genesis_validators_root: Eth2Digest): void {.cdecl, exportc, dynlib.} =
+    genesis_validators_root: Eth2Digest): void {.wasmPragma.} =
   let update = LightClientUpdate(
     attested_header: optimistic_update.attested_header,
     next_sync_committee: SyncCommittee(),
