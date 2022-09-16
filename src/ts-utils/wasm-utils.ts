@@ -217,3 +217,7 @@ export function throwWasmException(slice: MemorySlice): never {
   const errorMessage = decodeUtf8(slice);
   throw new WasmError(errorMessage);
 }
+
+export async function readJson(path: string): Promise<unknown> {
+  return JSON.parse(await readFile(path, 'utf-8'));
+}
