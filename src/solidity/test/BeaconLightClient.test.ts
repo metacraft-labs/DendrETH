@@ -13,7 +13,7 @@ describe("BeaconLightClient", async function () {
 
   beforeEach(async function () {
     UPDATES = getFilesInDir(
-      path.join(__dirname, "..", "..", "data", NETWORK, "updates")
+      path.join(__dirname, "..", "..", "..", "vendor", "eth2-light-client-updates", NETWORK, "updates")
     ).map(u => formatJSONUpdate(JSON.parse(u.toString()), constants.GENESIS_FORK_VERSION.join("")));
   });
 
