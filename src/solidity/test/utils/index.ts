@@ -131,16 +131,15 @@ export function getMessage(root: Uint8Array, fork_version: Uint8Array) {
 // }
 
 export async function getSolidityProof(prevUpdate: FormatedJsonUpdate, update: FormatedJsonUpdate, network: string, generateProof?: boolean): Promise<Proof> {
-  fs.writeFileSync("input.json", JSON.stringify(await getProofInput(prevUpdate, update)));
-
   const period = compute_sync_committee_period(parseInt(update.attested_header.slot));
 
   if (generateProof) {
+    fs.writeFileSync("input.json", JSON.stringify(await getProofInput(prevUpdate, update)));
     console.log("Witness generation...");
-    console.log((await promiseExec("../circom/build/god_please/proof_efficient/proof_efficient_cpp/proof_efficient input.json witness.wtns")).stdout);
+    console.log(await promiseExec(`../circom/build/proof_more_efficient/proof_more_efficient_cpp/proof_more_efficient input.json witness.wtns`));
 
     console.log("Proof generation...");
-    console.log((await promiseExec(`../../vendor/rapidsnark/build/prover ../circom/build/god_please/proof_efficient/proof_efficient_0.zkey witness.wtns data/${network}/proof${period}.json data/${network}/public${period}.json`)).stdout);
+    console.log((await promiseExec(`../../vendor/rapidsnark/build/prover ../circom/build/proof_more_efficient/proof_more_efficient_0.zkey witness.wtns data/${network}/proof${period}.json data/${network}/public${period}.json`)).stdout);
 
     await promiseExec("rm input.json witness.wtns");
   }
