@@ -4,7 +4,7 @@ import { bytesToHex } from "../../test/utils/bls";
 
 export const getConstructorArgs = (network: string) => {
     network = network === 'hardhat' ? 'mainnet' : network;
-    const UPDATE0 = require(`../../../data/${network}/updates/00290.json`);
+    const UPDATE0 = require(`../../../../vendor/eth2-light-client-updates/${network}/updates/00290.json`);
 
     return [
         parseInt(UPDATE0.attested_header.slot),
