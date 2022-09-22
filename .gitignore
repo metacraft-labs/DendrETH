@@ -156,3 +156,5 @@ src/circom/contracts/circuits/HelloWorld
 src/circom/cache
 src/circom/artifacts
 src/circom/contracts/*.sol
+build
+*.wtns
