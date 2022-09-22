@@ -18,33 +18,33 @@ template IsValidMerkleBranch(N) {
     hashers[i] = HashTwo();
     isZero[i] = IsZero();
 
-    isZero[i].in <== (index / (2**i)) % 2;
+    isZero[i].in <-- (index \ (2**i)) % 2;
 
     var current[256];
 
     for(var j = 0; j < 256; j++) {
-      current[j] = i == 0 ? leaf[j] : hashers[i].out[j];
+      current[j] = i == 0 ? leaf[j] : hashers[i - 1].out[j];
     }
 
     for(var j = 0; j < 256; j++) {
-      hashers[i].in[0][j] <== (branch[i][j] - current[j]) * isZero[i].out + current[j];
-      hashers[i].in[1][j] <== (current[i] - branch[i][j]) * isZero[i].out + branch[i][j];
+      hashers[i].in[0][j] <== (current[j] - branch[i][j]) * isZero[i].out + branch[i][j];
+      hashers[i].in[1][j] <== (branch[i][j] - current[j]) * isZero[i].out + current[j];
     }
   }
 
   var counter = 0;
   component isEqual[N+1];
-  for(var i = 0; i < 256; i++) {
+  for(var i = 0; i < N; i++) {
     isEqual[i] = IsEqual();
     isEqual[i].in[0] <== root[i];
-    isEqual[i].in[1] <== hashers[255].out[i];
+    isEqual[i].in[1] <== hashers[N-1].out[i];
     counter += isEqual[i].out;
   }
 
-  isEqual[256] = IsEqual();
+  isEqual[N] = IsEqual();
 
-  isEqual[256].in[0] <== 256;
-  isEqual[256].in[1] <== counter;
+  isEqual[N].in[0] <== N;
+  isEqual[N].in[1] <== counter;
 
-  out <== isEqual[256].out;
+  out <== isEqual[N].out;
 }

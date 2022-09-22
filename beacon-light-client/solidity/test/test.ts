@@ -1,9 +1,34 @@
-// import { getInputSignature } from "./utils";
+import path from "path";
+import { getFilesInDir, getMessage, getSolidityProof } from "./utils";
+import { formatJSONBlockHeader, formatJSONUpdate, hashTreeRootSyncCommitee } from "./utils/format";
+import * as  constants from "./utils/constants";
+import { ssz } from "@chainsafe/lodestar-types";
+import { bigint_to_array, bytesToHex, hexToBytes, utils } from "./utils/bls";
 
-// (async () => {
-//   const result = await getInputSignature(
-//     "b31ec527b1821c904bcffa5c80447f88efcc43752fe72f73659b8616d5d6e934f36d635455b0c6122ff78566628feabd",
-//     "8a61ab5882c991b3fa488c47979901ab4d7853fef18b87130a9e5cbb3522cc10c88d671fd25e3040121d345a4d74c1bf0eb1831274974665fcc5811bebdb95dd36b9778774e5975a29a83988afb9622c7adef05c7eb83c927484eeb077d0d841",
-//     "99b25de3a036ba10aca594fbecc34e7ad0f3b6db2b74157f55b0bff7c0663a04");
-//   console.log(JSON.stringify(result));
-// })();
+(async () => {
+  const UPDATES = getFilesInDir(
+    path.join(__dirname, "..", "..", "..", "vendor", "eth2-light-client-updates", "mainnet", "updates")
+  ).map(u => formatJSONUpdate(JSON.parse(u.toString()), constants.GENESIS_FORK_VERSION.join("")));
+
+  console.log(BigInt(UPDATES[1].attested_header.state_root).toString(2).padStart(256, '0').split('').join(','))
+  console.log(BigInt(hashTreeRootSyncCommitee(UPDATES[1].next_sync_committee)).toString(2).padStart(256, '0').split('').join(','))
+  console.log(UPDATES[1].next_sync_committee_branch.map(BigInt).map(x=>x.toString(2).padStart(256, '0').split('').join(',')))
+
+  const block_header = formatJSONBlockHeader(UPDATES[0].attested_header);
+  const hash = ssz.phase0.BeaconBlockHeader.hashTreeRoot(block_header);
+
+  const message = getMessage(hash, constants.ALTAIR_FORK_VERSION);
+  console.log(bytesToHex(message));
+  const u = await utils.hashToField(message, 2);
+
+  // console.log([
+  //   [
+  //     bigint_to_array(55, 7, u[0][0]),
+  //     bigint_to_array(55, 7, u[0][1])
+  //   ],
+  //   [
+  //     bigint_to_array(55, 7, u[1][0]),
+  //     bigint_to_array(55, 7, u[1][1])
+  //   ]
+  // ])
+})();
