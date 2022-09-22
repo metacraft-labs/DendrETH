@@ -2,7 +2,7 @@ import type { InitialOptionsTsJest } from 'ts-jest'
 
 const config: InitialOptionsTsJest = {
   preset: 'ts-jest/presets/default-esm', // or other ESM presets
-  testMatch: [ "**/__tests__/**/*.ts" ],
+  testMatch: [ "**/tests/**/*.ts" ],
   globals: {
     'ts-jest': {
       useESM: true,

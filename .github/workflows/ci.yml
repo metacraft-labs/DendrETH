@@ -31,8 +31,8 @@ jobs:
       - name: Install Node.js dependencies
         run: nix develop -c yarn install --immutable
 
-      - name: Run emsctipten tests
-        run: nix develop -c yarn test-emcc
+      #- name: Run emsctipten tests
+      #  run: nix develop -c yarn test-emcc
 
-      - name: Run tests
-        run: nix develop -c yarn test
+      #- name: Run tests
+      #  run: nix develop -c yarn test
