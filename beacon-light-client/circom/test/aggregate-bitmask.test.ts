@@ -1,6 +1,6 @@
 import { PointG1 } from "@noble/bls12-381";
 import { bigint_to_array } from "../../../libs/typescript/ts-utils/bls";
-import { c } from "circom_tester";
+import { fastestTester } from "./circuit_tester";
 import { expect } from "chai";
 import * as update from "../../../vendor/eth2-light-client-updates/mainnet/updates/00290.json";
 import { BitVectorType } from "@chainsafe/ssz";
@@ -16,7 +16,7 @@ describe("Aggregate bitmask test", () => {
     const expectedResult = bigint_to_array(55, 7, sum.toAffine()[0].value);
     expectedResult.push(...bigint_to_array(55, 7, sum.toAffine()[1].value));
 
-    const circuit = await c("./scripts/aggregate_bitmask/aggregate_bitmask.circom");
+    const circuit = await fastestTester("./scripts/aggregate_bitmask/aggregate_bitmask.circom");
 
     let input = { points: [points.map(x => [bigint_to_array(55, 7, x.toAffine()[0].value), bigint_to_array(55, 7, x.toAffine()[1].value)])], bitmask: bitmask.toBoolArray().map(x => x ? 1 : 0) };
     const witnes = await circuit.calculateWitness(input);

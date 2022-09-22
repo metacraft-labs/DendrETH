@@ -1,6 +1,6 @@
 import { Fp, PointG1 } from "@noble/bls12-381";
 import { bigint_to_array } from "../../../libs/typescript/ts-utils/bls";
-import { wasm } from "circom_tester";
+import { wasm } from "./circuit_tester";
 import { expect } from "chai";
 
 describe("Is supermajority test", () => {
@@ -18,7 +18,6 @@ describe("Is supermajority test", () => {
 
     expect(witnes[1]).to.be.eq(0n);
   });
-
 
   it("When there is a supermajority", async () => {
     const circuit = await wasm("./scripts/is_supermajority/is_supermajority.circom");
