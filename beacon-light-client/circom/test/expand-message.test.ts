@@ -1,4 +1,4 @@
-import { wasm } from "circom_tester";
+import { wasm } from "./circuit_tester";
 import { expect } from "chai";
 
 describe("Expand message test test", () => {

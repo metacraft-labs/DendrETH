@@ -25,7 +25,7 @@ describe.only("BeaconLightClientReadyProofs", async function () {
     console.log(" >>> Begin importing of real updates");
     let period = 291;
     let prevUpdate = UPDATES[0];
-    for (let update of UPDATES.slice(1, 4)) {
+    for (let update of UPDATES.slice(1)) {
       const proof = await getSolidityProof(prevUpdate, update, NETWORK);
       const lightClientUpdate = formatLightClientUpdate(update, proof);
 
