@@ -2,8 +2,8 @@
 with pkgs; let
   nodejs = nodejs-18_x;
   llvm = llvmPackages_13;
-  corepack = callPackage ./nix/corepack-shims {inherit nodejs;};
-  nim-wasm = callPackage ./nix/nim-wasm {inherit llvm;};
+  corepack = callPackage ./libs/nix/corepack-shims {inherit nodejs;};
+  nim-wasm = callPackage ./libs/nix/nim-wasm {inherit llvm;};
 in
   mkShell {
     packages = [
