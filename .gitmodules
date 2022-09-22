@@ -25,3 +25,9 @@
 [submodule "vendor/eth2-light-client-updates"]
 	path = vendor/eth2-light-client-updates
 	url = git@github.com:metacraft-labs/eth2-light-client-updates.git
+[submodule "vendor/circom-pairing"]
+	path = vendor/circom-pairing
+	url = https://github.com/metacraft-labs/circom-pairing.git
+[submodule "vendor/rapidsnark"]
+	path = vendor/rapidsnark
+	url = https://github.com/iden3/rapidsnark.git
