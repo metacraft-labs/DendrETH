@@ -36,21 +36,32 @@ in
       nasm
       libsodium
 
+      # For some reason, this is used by make when compiling the
+      # Circom tests on macOS even when we specify CC=clang below:
+      gcc
+
+      # Used for building the Nim beacon light client to WebAssembly
       emscripten
-      # clang
-      llvm.clang-unwrapped
+
+      # Used for Nim compilations and for building node_modules
+      # Please note that building native node bindings may require
+      # other build tools such as gyp, ninja, cmake, gcc, etc, but
+      # we currently don't seem to have such dependencies
+      llvm.clang
+
       # llvm.llvm
       # llvm.lld
       ldc
       nim
       nim-wasm
-      python38
     ];
 
     shellHook = ''
       export NODE_OPTIONS="--experimental-vm-modules"
       export PATH="$PATH:$PWD/node_modules/.bin";
       export CC=clang
+      export LOCAL_NIM_LIB="$PWD/vendor/nim/lib"
+
       figlet "DendrETH"
     '';
   }

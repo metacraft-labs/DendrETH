@@ -1,0 +1,5 @@
+contracts/circuits/HelloWorld
+cache
+artifacts
+contracts/*.sol
+
