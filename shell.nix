@@ -62,6 +62,10 @@ in
       export CC=clang
       export LOCAL_NIM_LIB="$PWD/vendor/nim/lib"
 
+      cp -r $(dirname $(which emcc))/../share/emscripten/cache $PWD/.emscripten_cache
+      chmod u+rwX -R $PWD/.emscripten_cache
+      export EM_CACHE=$PWD/.emscripten_cache
+
       figlet "DendrETH"
     '';
   }
