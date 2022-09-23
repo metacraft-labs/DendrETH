@@ -147,6 +147,9 @@ result
 # WebAssembly compiled code
 *.wasm
 
+# Emscripten cache
+.emscripten_cache
+
 # Nim
 nimcache/
 
