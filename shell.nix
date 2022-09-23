@@ -41,7 +41,7 @@ in
       gcc
 
       # Used for building the Nim beacon light client to WebAssembly
-      emscripten
+      emscripten-inriched-cache
 
       # Used for Nim compilations and for building node_modules
       # Please note that building native node bindings may require
@@ -61,10 +61,6 @@ in
       export PATH="$PATH:$PWD/node_modules/.bin";
       export CC=clang
       export LOCAL_NIM_LIB="$PWD/vendor/nim/lib"
-
-      cp -r $(dirname $(which emcc))/../share/emscripten/cache $PWD/.emscripten_cache
-      chmod u+rwX -R $PWD/.emscripten_cache
-      export EM_CACHE=$PWD/.emscripten_cache
 
       figlet "DendrETH"
     '';

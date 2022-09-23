@@ -32,6 +32,6 @@
       inherit self nixpkgs;
       name = "DendrETH";
       shell = ./shell.nix;
-      preOverlays = [mcl-blockchain.overlays.default];
+      preOverlays = [mcl-blockchain.overlays.default (import ./libs/nix/overlay.nix)];
     };
 }
