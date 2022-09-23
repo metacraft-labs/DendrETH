@@ -41,7 +41,7 @@ in
       gcc
 
       # Used for building the Nim beacon light client to WebAssembly
-      emscripten-inriched-cache
+      emscripten-enriched-cache
 
       # Used for Nim compilations and for building node_modules
       # Please note that building native node bindings may require

@@ -72,7 +72,8 @@ export async function loadWasm<Exports extends WebAssembly.Exports>({
   importObject = {
     env: {
       print: (x: undefined) => console.log(x),
-      __main_argc_argv:() => console.log("__main_argc_argv"),
+      // __main_argc_argv is needed for the new version of emscripten
+      __main_argc_argv: () => console.log('__main_argc_argv'),
       wasmQuit: (errOffset: number, errLength: number) => {
         throwWasmException({
           memory,
