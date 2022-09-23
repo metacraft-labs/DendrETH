@@ -5,10 +5,9 @@ algorithm][0] in the form of a smart contract for multiple targeted
 blockchains, aiming to enable the creation of secure bridges that don't
 require a trusted operator.
 
-For EVM-based blockchains, we build upon prior research by [0xPARC][2],
-[Darwinia][3], [Alex Stokes][3] and the Nimbus team to deliver the first
+For EVM-based blockchains, we build upon prior research by [0xPARC][1],
+[Darwinia][2], [Alex Stokes][3] and the Nimbus team to deliver the first
 end-to-end demonstration of syncing the entire Mainnet history since Altair.
-
 The current [Solidity implementation][4] leverages a [Circom zero-knowledge
 circuit][5] to the verify the BLS signatures of the Ethereum 2 validators and
 to apply most of the syncing protocol rules. At the moment, parts of the light
@@ -51,7 +50,7 @@ updates to the contract hosted on another blockchain in the form of regular
 transactions. The contract is initialized with a starting bootstrap state and
 it updates its view of the beacon chain with each processed update.
 
-The allows it to maintain information about a recent finalized beacon chain
+This allows it to maintain information about a recent finalized beacon chain
 block header and a recent optimistic head. The information in these headers
 is enough to authenticate any data point in the Ethereum ecosystem because a
 beacon chain block header references a `BeaconState` root hash, which in turn
@@ -93,9 +92,10 @@ The circuits employed by this project are some of the largest ever developed.
 We are building upon the BLS primitives implemented by the [circom-pairing][1]
 project and the SHA256 implementation from [circomlib][15], both of which are
 already very large. To perform our compilations, we had to purchase a server
-with 384GB of RAM and the fully integrated build requires the following amount
+with 384GB of RAM where the fully integrated build takes the following amount
 of time:
 
+|                                      |                 |
 | ------------------------------------ | --------------- |
 | Circuit compilation                  | 6h              |
 | Circuit Constraints                  | 88945803        |
