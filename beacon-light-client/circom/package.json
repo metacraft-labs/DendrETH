@@ -9,7 +9,7 @@
     "chai": "^4.3.6",
     "circom_tester": "^0.0.14",
     "circomlib": "2.0.2",
-    "ethereum-waffle": "^3.4.4",
+    "ethereum-waffle": "^4.0.7",
     "ethers": "^5.6.4",
     "hardhat": "^2.9.3",
     "snarkjs": "0.4.24"
