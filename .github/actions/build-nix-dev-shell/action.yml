@@ -1,0 +1,35 @@
+name: 'Prepare Nix dev shell'
+description: 'Installs Nix and Cachix, builds the dev shell and install dependencies with Yarn'
+inputs:
+  nix-install-url:
+    description: 'Enable recursive git clone'
+    default: https://releases.nixos.org/nix/nix-2.11.1/install
+    required: false
+  cachix-cache:
+    description: 'Cachix binary cache to push to'
+    default: 'nix-blockchain-development'
+    required: false
+  build-platform:
+    description: 'The platform for which to build the dev shell'
+    default: 'x86_64-linux'
+    required: false
+
+runs:
+  using: 'composite'
+  steps:
+    - uses: cachix/install-nix-action@v17
+      with:
+        install_url: ${{ inputs.nix-install-url }}
+
+    - uses: cachix/cachix-action@v10
+      with:
+        name: ${{ inputs.cachix-cache }}
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+    - name: Build Nix dev shell
+      shell: bash
+      run: nix build '.#devShell.${{ inputs.build-platform }}'
+
+    - name: Install Node.js dependencies
+      shell: bash
+      run: nix develop -c yarn install --immutable
