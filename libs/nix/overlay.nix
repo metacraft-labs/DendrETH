@@ -1,5 +1,5 @@
 finalNixPkgs: previousNixPkgs: {
-  emscripten-inriched-cache = previousNixPkgs.emscripten.overrideAttrs (old: {
+  emscripten-enriched-cache = previousNixPkgs.emscripten.overrideAttrs (old: {
     postInstall = ''
       pushd $TMPDIR
       echo 'int __main_argc_argv() { return 42; }' >test.c
