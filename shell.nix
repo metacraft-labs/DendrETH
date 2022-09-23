@@ -72,10 +72,6 @@ in
         # Developer tool to help you get up and running quickly with a new Rust
         # project by leveraging a pre-existing git repository as a template.
         cargo-generate
-
-        # For using with parity ink
-        cargo-contract
-        dylint
       ]
       ++ lib.optionals (!stdenv.isDarwin) [
         metacraft-labs.solana
@@ -84,11 +80,25 @@ in
 
         # A basic Cosmos SDK app to host WebAssembly smart contracts
         metacraft-labs.wasmd
+
+        # For using with parity ink
+        cargo-contract
+        dylint
       ];
 
     shellHook = ''
       set -e
-
+    ''
+    +
+    (
+      if (!stdenv.isDarwin) then ''
+        export C_INCLUDE_PATH="${nim-unwrapped}/nim/lib:${glibc.dev}/include"
+      ''
+      else
+        ""
+    )
+    +
+    ''
       export NODE_OPTIONS="--experimental-vm-modules"
       export PATH="$PATH:$PWD/node_modules/.bin";
       export CC=clang
@@ -102,8 +112,6 @@ in
       fi
 
       scripts/check-user-env-file-contents.sh
-
-      export C_INCLUDE_PATH="${nim-unwrapped}/nim/lib:${glibc.dev}/include"
 
       figlet "DendrETH"
     '';

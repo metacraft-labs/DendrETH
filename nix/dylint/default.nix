@@ -38,7 +38,10 @@ with pkgs;
       clang_11
       openssl.dev
       pkg-config
+    ] ++ lib.optionals (stdenv.isDarwin) [
+      darwin.apple_sdk.frameworks.Security
     ];
+
     buildInputs = [
     ];
 
