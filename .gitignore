@@ -153,7 +153,11 @@ result
 # Nim
 nimcache/
 
-#Circom related
+# Circom related
 *.ptau
 build
 *.wtns
+
+# Rust and Solana builds
+target
+
