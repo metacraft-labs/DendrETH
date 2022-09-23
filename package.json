@@ -58,7 +58,6 @@
     "circom_tester": "^0.0.14",
     "crypto-js": "^4.1.1",
     "dotenv": "^16.0.2",
-    "ethereum-waffle": "^3.4.4",
     "ethers": "^5.7.0",
     "hardhat": "^2.10.2",
     "hardhat-gas-reporter": "^1.0.8",
