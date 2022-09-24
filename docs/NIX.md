@@ -28,31 +28,42 @@ the project on a new machine trivial.
 
 Furthermore, Nix makes it practical to have multiple projects on a single
 machine that use different versions of the required tools. If the DendrETH
-project wants to upgrade the Rust complier to a nighly version, this won't
+project wants to upgrade the Rust compiler to a nightly version, this won't
 interfere with the build environment of any other projects where all tools
 can be pinned to a different version.
 
 You can think about Nix as the "virtualenv for all software". In practice,
-working with multiple projects is made extremely easy by the `direnv` tool
-which will switch your environment automatically every time you enter a
-particular project's directory.
+working with multiple projects is made extremely easy by the [direnv][1]
+tool which can switch your environment automatically every time you enter
+a particular project's directory.
 
-To get started with Nix, you can use the bootstrap script provided in this
-repository. It will install Nix and direnv on your machine with the default
-recommended settings:
+To install Nix on any Linux distribution or macOS, simply run the following
+command:
 
 ```bash
-cd DendrETH
-scripts/nix-bootstrap
+curl https://nixos.org/nix/install | sh
 ```
 
-To learn more about Nix, the following articles provides a good introduction:
+DendrETH is taking advantage of some experimental Nix features such as the
+`nix` command the so called `flakes` which provide more control when pinning
+all dependencies of the project to precise versions. These feature must be
+[enabled manually][2] after the installation. To learn more about the Nix
+flakes, please see the following tutorial:
 
-https://betterprogramming.pub/easily-reproducible-development-environments-with-nix-and-direnv-e8753f456110
+https://www.tweag.io/blog/2020-05-25-flakes/
 
-The fully-reproducible development environment of the DendrETH project is defined in the following simple file:
+The fully-reproducible development environment of the DendrETH project is
+defined in the following simple file:
 
 https://github.com/metacraft-labs/DendrETH/blob/main/shell.nix
 
-Please note that the precise versions of the referenced packages are pinned through a lock file, also stored in the repo.
+Please note that the precise versions of the referenced packages are pinned
+through a lock file, also stored in the repo.
 
+If you need further and more general introduction to development with Nix,
+the following article may be a good start:
+
+https://betterprogramming.pub/easily-reproducible-development-environments-with-nix-and-direnv-e8753f456110
+
+[1]: https://direnv.net/
+[2]: https://nixos.wiki/wiki/Flakes#Enable_flakes
