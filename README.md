@@ -22,7 +22,7 @@ implementation][8] of the light client syncing protocol based on the highly
 efficient BLS, SSZ and Light client syncing libraries developed by
 [Supranational][9] and the [Nimbus team][10]. When compared to the
 similarly positioned [Snowbridge][11] project, our implementation
-brings a whopping 380x reduction in size (2.2MB vs 58kb) which should
+brings a whopping 36x reduction in size (2.2MB vs 60kb) which should
 also translate in significant reduction in gas costs (currently, our
 code is targeting only the standard WebAssembly run-time instead of
 the full blockchain environments).
