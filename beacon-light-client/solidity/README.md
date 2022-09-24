@@ -1,10 +1,17 @@
-This is solidity implementation of the Eth2 light client.
-With the verification of the BLS12-381 signatures. Moved to a ZK circuit and verified on chain.
+This folder contains a complete Solidity implementation of a beacon chain light client. The verification of BLS12-381 signatures is based on a zero-knowledge circuit developed in the [circom](../circom) folder.
 
-To run simulation of the light client updates using the aldready precomputed
-proofs for updates run `yarn hardhat test test/BeaconLightClientReadyProofs.test.ts` in `src\solidity` directory.
+## Tests
 
-To run simulation of the light client updates generating the proofs yourself run
-`yarn hardhat test test/BeaconLightClient.test.ts` in `src\solidity` directory, requiring ~64GB ram to generate the proofs.
+You can run a syncing simulation based on pre-computed light client updates and proofs through the following command:
 
-For this you need to have the `proof_efficient.circom` circuit compiled executing the `./build_proof.sh`, which requires 384GB of ram.
+```bash
+yarn hardhat test test/BeaconLightClientReadyProofs.test.ts
+```
+
+To generate the proofs yourself, run:
+
+```bash
+yarn hardhat test test/BeaconLightClient.test.ts
+```
+
+This would require roughly 64GB of RAM. Prior to this, you need to compile the `proof_efficient.circom` circuit (potentially on a different machine) through the [`./build_proof.sh`](../circom/scripts/proof_efficient/build_proof.sh) script which will require roughly 340GB of RAM.

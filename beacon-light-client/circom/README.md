@@ -1,21 +1,19 @@
-To run tests
+This folder contains the building blocks of the DendrETH light client syncing circuit
+which are assembled in the final `proof_efficient` circuit.
+
+## Tests
+
+You can use the following command to run all tests:
 
 ```
 yarn hardhat test
 ```
 
-which will run test on the circuits. Have in mind that `aggregate-bitmask.test.ts` will take a few minutes.
+## Building
 
-In scripts folder you have the circuits with main components. And you can build them with the scripts. As well get example input from the JS scripts. For bigger circuits you may need up to hundreds of GB of RAM.
+In the scripts folder, you'll find the circuits with main components. You can build them with the provided shell scripts and use the provided JavaScript files for producing example inputs. Please note that compiling some of the larger circuits is expected to take multiple hours and may require a computer with hundreds of GB of RAM.
 
-
-Also you have previous versions of this current branch in sync_implementation. Where most of the circuits are implemented in circom-pairing fork in sync_protcol branch.
-Circuits are executed with commands from the scripts and data is feeded from JS scripts there.
-For bigger circuits you may need up to hundreds of GB of RAM.
-
-## Benchmarks
-
-All benchmarks were run on a 32-core, 384G RAM machine with 1TB hard drive (AWS r5.8xlarge instance). Constraints refer to non-linear constraints.
+As an example, here are our build times from a 32-core, 384G RAM machine with a 1TB NVMe hard drive, configured with 500GB of swap space. Constraints refer to non-linear constraints.
 
 |                                      | proof_efficient |
 | ------------------------------------ | --------------- |
@@ -30,7 +28,9 @@ All benchmarks were run on a 32-core, 384G RAM machine with 1TB hard drive (AWS 
 | Proving time (rapidsnark)            | 4m              |
 | Proof verification time              | 1s              |
 
-Diagrams
+## Diagrams
+
+These crude diagrams may help you understand the interactions between all components of the system better:
 
 ![](light_client.drawio.png)
 ![](zero_knowledge_diagram.drawio.png)
