@@ -2,27 +2,28 @@
 
 The DendrETH project implements the beacon chain [light client syncing
 algorithm][0] in the form of a smart contract for multiple targeted
-blockchains, aiming to enable the creation of secure bridges that don't
-require a trusted operator.
+blockchains, aiming to enable the creation of secure cross-blockchain
+bridges that don't require a trusted operator.
 
 For EVM-based blockchains, we build upon prior research by [0xPARC][1],
-[Darwinia][2], [Alex Stokes][3] and the Nimbus team to deliver the first
-end-to-end demonstration of syncing the entire Mainnet history since Altair.
-The current [Solidity implementation][4] leverages a [Circom zero-knowledge
-circuit][5] to the verify the BLS signatures of the Ethereum 2 validators and
-to apply most of the syncing protocol rules. At the moment, parts of the light
-client update verification logic is still done in Solidity, but our team is
-well on track to implement a complete header-to-header zero-knowledge circuit
-which will enable any type of Ethereum client to develop one-shot syncing
-capabilities similar to the ones offered by the [Mina][6] blockchain (please
-see our [analysis][7] regarding the limitations of this approach).
+[Darwinia][2], [Alex Stokes][3] and the Nimbus team to deliver the
+first end-to-end implementation capable of syncing the entire Mainnet
+history since Altair. Our current [Solidity contract][4] leverages
+a [Circom zero-knowledge circuit][5] to the verify the BLS signatures of
+the Ethereum 2 validators and to apply most of the syncing protocol rules.
+At the moment, parts of the light client update verification logic is
+still done in Solidity, but our team is well on track to implement a
+complete header-to-header zero-knowledge circuit which will enable any
+type of Ethereum client to develop one-shot syncing capabilities similar
+to the ones offered by the [Mina][6] protocol (please see our [analysis][7]
+regarding the limitations of this approach).
 
 For blockchains based on WebAssembly and BPF, we are developing a [direct
-implementation][8] of the light client syncing protocol based on the highly
-efficient BLS, SSZ and Light client syncing libraries developed by
-[Supranational][9] and the [Nimbus team][10]. When compared to the
+implementation][8] of the light client syncing protocol based on the
+highly efficient BLS, SSZ and Light client syncing libraries developed
+by [Supranational][9] and the [Nimbus team][10]. When compared to the
 similarly positioned [Snowbridge][11] project, our implementation
-brings a whopping 36x reduction in size (2.2MB vs 60kb) which should
+brings a 36-fold reduction in code size (2.2MB vs 60kb) which should
 also translate in significant reduction in gas costs (currently, our
 code is targeting only the standard WebAssembly run-time instead of
 the full blockchain environments).
@@ -31,13 +32,13 @@ the full blockchain environments).
 
 ### Pre-requisites
 
-Due to the large number of required compiler toolchains and blockchain run-time
-environments targeted by this project, installing all pre-requisites by hand is
-not practical. We are offering a deterministic build environment based on the
-Nix package manager, which is best supported on Linux, but also runs on macOS
-with some minor limitations at the moment. Windows users may try to use Nix in
-the Windows Subsystem for Linux, but our team is not currently testing this
-configuration.
+Due to the large number of required compiler toolchains and blockchain
+run-time environments targeted by this project, installing all pre-requisites
+by hand is not practical. We are offering a deterministic build environment
+based on the Nix package manager, which is best supported on Linux, but also
+runs on macOS with some minor limitations at the moment. Windows users may try
+to use Nix in the Windows Subsystem for Linux, but our team is not currently
+testing this configuration.
 
 See [Getting started with Nix][12] for more details.
 
