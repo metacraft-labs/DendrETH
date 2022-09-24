@@ -1,8 +1,7 @@
 # Safety considerations for long-range Ethereum light client syncing
 
-Authors: Yordan Miladinov, Zahary Karadjov
-
-<br>
+Authors: Yordan Miladinov,
+         Zahary Karadjov
 
 ### Introduction
 
@@ -14,8 +13,6 @@ The counter measure employed by Ethereum is to require all clients to always sta
 
 This document analyses weak subjectivity from the perspective of light clients. The light client software may be pre-configured with a trusted bootstrap state and it may rely on recursive zero-knowledge proofs (as developed by the DendrETH project) to perform one-shot syncing over a long-range. A critical question is what is the longest possible range for this operation to remain safe?
 
----
-<br>
 
 ### Sync committee corruption
 
@@ -39,8 +36,6 @@ We choose to proceed our exploration with the lowest probability of corruption (
 
 Details on the computation can be found here: [notebooks/corruption](./notebooks/corruption.ipynb)
 
----
-<br>
 
 ### Long-range attacks
 
@@ -78,8 +73,6 @@ Details on the computation can be found [here](./notebooks/churn.ipynb).
 
 _But what if a light client is slightly more outdated?_
 
----
-<br>
 
 ### Dynamic period
 
@@ -103,8 +96,6 @@ Let's say a light client is outdated by 230 days. For the next 22 days of catchi
 
 The same principle can be applied when accepting a one-shot syncing zero-knowledge proof which can feature the minimum sync committee participation rate in the entire chain of header transitions.
 
----
-<br>
 
 ### Observed sync committee participation on Mainnet
 
@@ -115,8 +106,6 @@ __Figure 4__: `SyncAggregate` participation rate in all blocks for slots 2375680
 
 In conclusion: so far sync committees prove reliable for light clients to sync at least once every ~230.5 days.
 
----
-<br>
 
 ### `sync_committee_slashing` proposal
 
@@ -140,9 +129,6 @@ def process_sync_committee_slashing(state: BeaconState, update: LightClientUpdat
 ```
 
 As with other slashings, the penalty can be proportional to the number of participating validators. This will ensure that in the case of an actual attack with a sync committee majority, the most severe penalty will be imposed.
-
----
-<br>
 
 ### References:
 [^1]: Buterin, Vitalik (November 2014), [Proof of Stake: How I Learned to Love Weak Subjectivity](https://blog.ethereum.org/2014/11/25/proof-stake-learned-love-weak-subjectivity); Ethereum Blog
