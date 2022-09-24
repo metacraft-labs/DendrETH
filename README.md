@@ -3,7 +3,9 @@
 The DendrETH project implements the beacon chain [light client syncing
 algorithm][0] in the form of a smart contract for multiple targeted
 blockchains, aiming to enable the creation of secure cross-blockchain
-bridges that don't require a trusted operator.
+bridges that don't require a trusted operator. In their current state,
+our contracts are complete and suitable for testnet deployments, but
+they are still not intended for production use.
 
 For EVM-based blockchains, we build upon prior research by [0xPARC][1],
 [Darwinia][2], [Alex Stokes][3] and the Nimbus team to deliver the
