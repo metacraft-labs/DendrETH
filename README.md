@@ -80,6 +80,7 @@ commands:
 ```bash
 git clone https://github.com/metacraft-labs/DendrETH.git
 cd DendrETH
+git submodule update --init --recursive
 nix develop # or `direnv allow` if you are using direnv
 yarn install
 make evm-simulation
