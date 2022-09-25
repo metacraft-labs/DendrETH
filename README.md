@@ -11,8 +11,8 @@ For EVM-based blockchains, we build upon prior research by [0xPARC][1],
 [Darwinia][2], [Alex Stokes][3] and the Nimbus team to deliver the
 first end-to-end implementation capable of syncing the entire Mainnet
 history since Altair. Our current [Solidity contract][4] leverages
-a [Circom zero-knowledge circuit][5] to the verify the BLS signatures of
-the Ethereum 2 validators and to apply most of the syncing protocol rules.
+a [Circom zero-knowledge circuit][5] to verify the BLS signatures of the
+Ethereum 2 validators and to apply most of the syncing protocol rules.
 At the moment, parts of the light client update verification logic is
 still done in Solidity, but our team is well on track to implement a
 complete header-to-header zero-knowledge circuit which will enable any
