@@ -8,6 +8,7 @@ import { compileNimFileToWasm } from '../libs/typescript/ts-utils/compile-nim-to
 import {
   loadWasm,
   marshalSzzObjectToWasm,
+  writeSSZObjectToWasm,
   WasmError,
   readJson,
 } from '../libs/typescript/ts-utils/wasm-utils';
@@ -37,8 +38,11 @@ describe('Light Client in Nim compiled to Wasm', () => {
     path: string,
     func: (state: NimTestState<T>) => void,
   ) {
-    test(`Testing '${path}': '${testName}'`, () =>
-      func(perFileState[path] as NimTestState<T>));
+    test(
+      `Testing '${path}': '${testName}'`,
+      () => func(perFileState[path] as NimTestState<T>),
+      100000,
+    );
   }
 
   beforeAll(async () => {
@@ -225,25 +229,17 @@ describe('Light Client in Nim compiled to Wasm', () => {
 
   testNimToWasmFile<{
     allocMemory: (a: number) => any;
-    processLightClientUpdatesTest: (
-      a: number,
-      b: number,
-      c: number,
-      d: number,
-    ) => any;
+    deallocMemory: (a: number) => any;
+    initializeLightClientStore: (a: number, b: number) => any;
+    processLightClientUpdate: (a: number, b: number) => any;
     memory: WebAssembly.Memory;
   }>(
-    'Test `process_light_client_update` with several updates',
-    'processLightClientUpdates.nim',
+    'Test `process_light_client_update` with all updates',
+    'processAllLightClientUpdates.nim',
     async ({ exports, logMessages }) => {
-      const updateFiles = glob(
-        dirname(fileURLToPath(import.meta.url)) +
-          '../../vendor/eth2-light-client-updates/mainnet/updates/*.json',
-      );
       const header = ssz.phase0.BeaconBlockHeader.fromJson(BOOTSTRAP.header);
       const { startOffset: headerStartOffset, length: headerLength } =
         marshalSzzObjectToWasm(exports, header, ssz.phase0.BeaconBlockHeader);
-
       const bootstrap = SSZSpecTypes.LightClientBootstrap.fromJson(BOOTSTRAP);
       const { startOffset: bootstrapStartOffset, length: bootstrapLength } =
         marshalSzzObjectToWasm(
@@ -251,38 +247,37 @@ describe('Light Client in Nim compiled to Wasm', () => {
           bootstrap,
           SSZSpecTypes.LightClientBootstrap,
         );
-
-      var updatesOffsets: BigInt[] = [];
-      //TODO: Refactor alloc function in order to be able to allocate memory for all updates
-      const updatesCount = 30;
-      for (let index = 0; index < updatesCount; index++) {
-        const curUpdate = await readJson(updateFiles[index]);
+      // Find place in the wasm memory where we can write each update
+      const someUpdate = SSZSpecTypes.LightClientUpdate.fromJson(UPDATE);
+      const { startOffset: updatesStartOffset } = marshalSzzObjectToWasm(
+        exports,
+        someUpdate,
+        SSZSpecTypes.LightClientUpdate,
+      );
+      const storeOffsetInMemory = exports.initializeLightClientStore(
+        headerStartOffset,
+        bootstrapStartOffset,
+      );
+      const updateFiles = glob(
+        dirname(fileURLToPath(import.meta.url)) +
+          '../../vendor/eth2-light-client-updates/mainnet/updates/*.json',
+      );
+      for (var updateFile of updateFiles) {
+        const curUpdate = await readJson(updateFile);
         const update = SSZSpecTypes.LightClientUpdate.fromJson(curUpdate);
-        // console.log(update)
-        const { startOffset: updateStartOffset, length: updateLength } =
-          marshalSzzObjectToWasm(
-            exports,
-            update,
-            SSZSpecTypes.LightClientUpdate,
-          );
-        updatesOffsets.push(BigInt(updateStartOffset));
-      }
-
-      const { startOffset: updatesArrStartOffset, length: updatesArrLength } =
-        marshalSzzObjectToWasm(
+        writeSSZObjectToWasm(
           exports,
-          updatesOffsets,
-          SSZSpecTypes.updatesArray,
+          update,
+          SSZSpecTypes.LightClientUpdate,
+          updatesStartOffset,
         );
-
-      expect(
-        exports.processLightClientUpdatesTest(
-          headerStartOffset,
-          bootstrapStartOffset,
-          updatesArrStartOffset,
-          updatesArrLength,
-        ),
-      ).toStrictEqual(1);
+        expect(
+          exports.processLightClientUpdate(
+            updatesStartOffset,
+            storeOffsetInMemory,
+          ),
+        ).toStrictEqual(1);
+      }
     },
   );
 });
