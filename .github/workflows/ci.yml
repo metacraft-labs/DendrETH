@@ -24,6 +24,7 @@ jobs:
       - uses: cachix/cachix-action@v10
         with:
           name: nix-blockchain-development
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       - name: Build Nix dev shell
         run: nix build '.#devShell.x86_64-linux'
