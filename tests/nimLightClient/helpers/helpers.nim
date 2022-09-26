@@ -13,7 +13,10 @@ import serialization/object_serialization
 export object_serialization
 
 proc allocMemory*(size: int): pointer {.wasmPragma.} =
-  alloc(size)
+  let res = alloc(size)
+  if cast[int](res) == 0:
+    quit 1
+  return res
 
 proc deserializeSSZType*[T](t: var T, memory: pointer, length: Natural) =
   readSszValue(makeOpenArray(memory, byte, length), t)
