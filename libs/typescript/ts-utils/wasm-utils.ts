@@ -211,6 +211,8 @@ export function writeMemory(memory: MemorySlice, bytes: Uint8Array): void {
   readMemory(memory).set(bytes, 0);
 }
 
+// Write ssz representations of some object in the wasm memory.
+// Serialize the object, allocate memory and write it
 export function marshalSzzObjectToWasm<T>(
   { memory, allocMemory }: WasmModuleMemoryInterface,
   sszObject: T,
@@ -218,6 +220,24 @@ export function marshalSzzObjectToWasm<T>(
 ): MemorySlice {
   const serialized = sszType.serialize(sszObject);
   const startOffset = allocMemory(serialized.length);
+  const slice: MemorySlice = {
+    memory,
+    startOffset,
+    length: serialized.length,
+  };
+  writeMemory(slice, serialized);
+  return slice;
+}
+
+// Write ssz representations of some object in the wasm memory.
+// Serialize the object and write it on previously calculated offset
+export function writeSSZObjectToWasm<T>(
+  { memory }: WasmModuleMemoryInterface,
+  sszObject: T,
+  sszType: Type<T>,
+  startOffset,
+): MemorySlice {
+  const serialized = sszType.serialize(sszObject);
   const slice: MemorySlice = {
     memory,
     startOffset,
