@@ -41,7 +41,7 @@ describe('Light Client in Nim compiled to Wasm', () => {
     test(
       `Testing '${path}': '${testName}'`,
       () => func(perFileState[path] as NimTestState<T>),
-      100000,
+      110000,
     );
   }
 
