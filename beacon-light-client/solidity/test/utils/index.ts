@@ -1,22 +1,19 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { readFileSync, writeFileSync } from 'fs';
-
 import { groth16 } from 'snarkjs';
-import { PointG1, PointG2 } from '@noble/bls12-381';
-import { BitArray, BitVectorType } from '@chainsafe/ssz';
+import { PointG1 } from '@noble/bls12-381';
+import { BitArray } from '@chainsafe/ssz';
 import { ssz } from '@chainsafe/lodestar-types';
 
 import {
-  formatJSONBlockHeader,
   formatPubkeysToPoints,
   formatBitmask,
   JSONHeader,
   FormatedJsonUpdate,
 } from './format';
 
-import { bigint_to_array, formatHex, hexToBytes, utils } from './bls';
+import { bigint_to_array, bytesToHex, hexToBytes } from './bls';
 
 import * as constants from './constants';
 
@@ -154,6 +151,12 @@ export async function getSolidityProof(
   const proofsDir = `../../vendor/eth2-light-client-updates/${network}/proofs`;
 
   if (generateProof) {
+    const proofsManifest = `${proofsDir}/manifest.json`;
+
+    if (JSON.parse(fs.readFileSync(proofsManifest)).version < 2) {
+      throw new Error('Please update vendor/eth2-light-client-updates');
+    }
+
     fs.writeFileSync(
       'input.json',
       JSON.stringify(await getProofInput(prevUpdate, update)),
@@ -161,7 +164,7 @@ export async function getSolidityProof(
     console.log('Witness generation...');
     console.log(
       await promiseExec(
-        `../circom/build/proof_more_efficient/proof_more_efficient_cpp/proof_more_efficient input.json witness.wtns`,
+        `../circom/build/light_client/light_client_cpp/light_client input.json witness.wtns`,
       ),
     );
 
@@ -169,7 +172,7 @@ export async function getSolidityProof(
     console.log(
       (
         await promiseExec(
-          `${proofsDir}/proof${period}.json ${proofsDir}/public${period}.json`,
+          `../../vendor/rapidsnark/build/prover ../circom/build/light_client/light_client_0.zkey witness.wtns ${proofsDir}/proof${period}.json ${proofsDir}/public${period}.json`,
         )
       ).stdout,
     );
@@ -204,30 +207,112 @@ async function getProofInput(
   prevUpdate: FormatedJsonUpdate,
   update: FormatedJsonUpdate,
 ) {
-  const pubkeyPoints: PointG1[] = prevUpdate.next_sync_committee.pubkeys.map(
-    x => PointG1.fromHex(formatHex(x)),
+  let points: PointG1[] = prevUpdate.next_sync_committee.pubkeys.map(x =>
+    PointG1.fromHex(x.slice(2)),
+  );
+  let bitmask = update.sync_aggregate.sync_committee_bits;
+  const BeaconBlockHeader = ssz.phase0.BeaconBlockHeader;
+  let block_header = BeaconBlockHeader.defaultValue();
+  block_header.slot = Number.parseInt(update.attested_header.slot);
+  block_header.proposerIndex = Number.parseInt(
+    update.attested_header.proposer_index,
+  );
+  block_header.parentRoot = hexToBytes(update.attested_header.parent_root);
+  block_header.stateRoot = hexToBytes(update.attested_header.state_root);
+  block_header.bodyRoot = hexToBytes(update.attested_header.body_root);
+  let hash = BeaconBlockHeader.hashTreeRoot(block_header);
+
+  let prevBlock_header = BeaconBlockHeader.defaultValue();
+  prevBlock_header.slot = Number.parseInt(prevUpdate.attested_header.slot);
+  prevBlock_header.proposerIndex = Number.parseInt(
+    prevUpdate.attested_header.proposer_index,
+  );
+  prevBlock_header.parentRoot = hexToBytes(
+    prevUpdate.attested_header.parent_root,
+  );
+  prevBlock_header.stateRoot = hexToBytes(
+    prevUpdate.attested_header.state_root,
+  );
+  prevBlock_header.bodyRoot = hexToBytes(prevUpdate.attested_header.body_root);
+  let prevHash = BeaconBlockHeader.hashTreeRoot(prevBlock_header);
+
+  let branch = prevUpdate.next_sync_committee_branch;
+  let branchInput = branch.map(x =>
+    BigInt(x).toString(2).padStart(256, '0').split(''),
   );
 
-  const block_header = formatJSONBlockHeader(update.attested_header);
-  const hash = ssz.phase0.BeaconBlockHeader.hashTreeRoot(block_header);
+  let dataView = new DataView(new ArrayBuffer(8));
+  dataView.setBigUint64(0, BigInt(prevBlock_header.slot));
+  let slot = dataView.getBigUint64(0, true);
+  slot = BigInt('0x' + slot.toString(16).padStart(16, '0').padEnd(64, '0'));
 
-  const message = getMessage(hash, constants.ALTAIR_FORK_VERSION);
-  const u = await utils.hashToField(message, 2);
+  dataView.setBigUint64(0, BigInt(prevBlock_header.proposerIndex));
+  let proposer_index = dataView.getBigUint64(0, true);
+  proposer_index = BigInt(
+    '0x' + proposer_index.toString(16).padStart(16, '0').padEnd(64, '0'),
+  );
 
-  const input = {
-    points: pubkeyPoints.map(x => [
+  let nextBlockHeaderHash1 = BigInt('0x' + bytesToHex(hash))
+    .toString(2)
+    .padStart(256, '0')
+    .slice(0, 253);
+  let nextBlockHeaderHash2 = BigInt('0x' + bytesToHex(hash))
+    .toString(2)
+    .padStart(256, '0')
+    .slice(253, 256);
+
+  let prevBlockHeaderHash1 = BigInt('0x' + bytesToHex(prevHash))
+    .toString(2)
+    .padStart(256, '0')
+    .slice(0, 253);
+  let prevBlockHeaderHash2 = BigInt('0x' + bytesToHex(prevHash))
+    .toString(2)
+    .padStart(256, '0')
+    .slice(253, 256);
+
+  let input = {
+    points: points.map(x => [
       bigint_to_array(55, 7, x.toAffine()[0].value),
       bigint_to_array(55, 7, x.toAffine()[1].value),
     ]),
+    prevHeaderHashNum: [
+      BigInt('0b' + prevBlockHeaderHash1).toString(10),
+      BigInt('0b' + prevBlockHeaderHash2).toString(10),
+    ],
+    nextHeaderHashNum: [
+      BigInt('0b' + nextBlockHeaderHash1).toString(10),
+      BigInt('0b' + nextBlockHeaderHash2).toString(10),
+    ],
+    slot: slot.toString(2).padStart(256, '0').split(''),
+    proposer_index: proposer_index.toString(2).padStart(256, '0').split(''),
+    parent_root: BigInt(
+      '0x' + bytesToHex(prevBlock_header.parentRoot as Uint8Array),
+    )
+      .toString(2)
+      .padStart(256, '0')
+      .split(''),
+    state_root: BigInt(
+      '0x' + bytesToHex(prevBlock_header.stateRoot as Uint8Array),
+    )
+      .toString(2)
+      .padStart(256, '0')
+      .split(''),
+    body_root: BigInt(
+      '0x' + bytesToHex(prevBlock_header.bodyRoot as Uint8Array),
+    )
+      .toString(2)
+      .padStart(256, '0')
+      .split(''),
+    fork_version: BigInt('0x' + bytesToHex(constants.ALTAIR_FORK_VERSION))
+      .toString(2)
+      .padStart(32, '0')
+      .split(''),
     aggregatedKey: BigInt(prevUpdate.next_sync_committee.aggregate_pubkey)
       .toString(2)
       .split(''),
-    bitmask: update.sync_aggregate.sync_committee_bits,
+    bitmask: bitmask,
+    branch: branchInput,
     signature: update.sync_aggregate.sync_committee_signature,
-    hash: [
-      [bigint_to_array(55, 7, u[0][0]), bigint_to_array(55, 7, u[0][1])],
-      [bigint_to_array(55, 7, u[1][0]), bigint_to_array(55, 7, u[1][1])],
-    ],
   };
 
   return input;

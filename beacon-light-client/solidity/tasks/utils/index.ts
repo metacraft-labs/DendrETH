@@ -1,6 +1,4 @@
-import { hashTreeRootSyncCommitee } from '../../test/utils/format';
-import { GENESIS_VALIDATORS_ROOT } from '../../test/utils/constants';
-import { bytesToHex } from '../../test/utils/bls';
+import { hashTreeRootBeaconBlock } from '../../test/utils/format';
 
 export const getConstructorArgs = (network: string) => {
   network = network === 'hardhat' ? 'mainnet' : network;
@@ -12,7 +10,6 @@ export const getConstructorArgs = (network: string) => {
     UPDATE0.attested_header.parent_root,
     UPDATE0.attested_header.body_root,
     UPDATE0.attested_header.state_root,
-    hashTreeRootSyncCommitee(UPDATE0.next_sync_committee),
-    '0x' + bytesToHex(GENESIS_VALIDATORS_ROOT),
+    hashTreeRootBeaconBlock(UPDATE0.attested_header),
   ];
 };
