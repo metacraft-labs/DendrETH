@@ -1,9 +1,4 @@
-const {
-    Sp,
-    empty_bytes,
-    Uint8ArrayToHexString
-} = require("./environment");
-
+const { Sp, empty_bytes, Uint8ArrayToHexString } = require('./environment');
 
 // ===============
 //  / CONSTANTS \
@@ -55,7 +50,7 @@ class Constants {
         sync_committee_signature: empty_bytes(46),
         fork_version: [0, 0, 0, 0],
     };
-};
+}
 
 // =============
 //  / HELPERS \
@@ -89,7 +84,7 @@ class Helpers extends Constants {
             i += 1;
         }
 
-        Sp.failWith("Helpers: Invalid params!");
+        Sp.failWith('Helpers: Invalid params!');
         return 0;
     };
 
@@ -106,13 +101,13 @@ class Helpers extends Constants {
             i += 1;
         }
 
-        Sp.failWith("Helpers: Invalid params!");
+        Sp.failWith('Helpers: Invalid params!');
         return empty_bytes(32);
     };
 
     setElementInBytesArrayAt = (index, arr, element) => {
         if (index >= arr.length) {
-            Sp.failWith("Helpers: Invalid params!");
+            Sp.failWith('Helpers: Invalid params!');
         }
 
         let i = 0;
@@ -128,8 +123,7 @@ class Helpers extends Constants {
 
         return result_array.reverse();
     };
-};
-
+}
 
 // ===========
 //  / UTILS \
@@ -144,7 +138,7 @@ class Utils extends Helpers {
             let p = 0;
             let m = Sp.ediv(i, 8).openSome().snd();
 
-            p = (i - m + (c - i));
+            p = i - m + (c - i);
 
             if (m == 0) {
                 c -= 8;
@@ -192,7 +186,7 @@ class Utils extends Helpers {
         } else if (leaves.length == 2) {
             return Sp.sha256([
                 ...this.getElementInBytesArrayAt(0, leaves),
-                ...this.getElementInBytesArrayAt(1, leaves)
+                ...this.getElementInBytesArrayAt(1, leaves),
             ]);
         }
 
@@ -207,21 +201,15 @@ class Utils extends Helpers {
                 tree,
                 Sp.sha256([
                     ...this.getElementInBytesArrayAt(i * 2, tree),
-                    ...this.getElementInBytesArrayAt(i * 2 + 1, tree)
-                ])
+                    ...this.getElementInBytesArrayAt(i * 2 + 1, tree),
+                ]),
             );
         }
 
         return this.getElementInBytesArrayAt(1, tree);
     };
 
-    is_valid_merkle_branch = (
-        leaf,
-        branch,
-        depth,
-        index,
-        root,
-    ) => {
+    is_valid_merkle_branch = (leaf, branch, depth, index, root) => {
         let value = leaf;
         let i = 0;
         for (let n of branch) {
@@ -263,8 +251,8 @@ class Utils extends Helpers {
         if (sync_committee.pubkeys.length != this.SYNC_COMMITTEE_SIZE) {
             Sp.failWith(
                 'Invalid sync_committee size: Committee participant should be equal to' +
-                this.SYNC_COMMITTEE_SIZE +
-                '!',
+                    this.SYNC_COMMITTEE_SIZE +
+                    '!',
             );
         }
 
@@ -282,9 +270,7 @@ class Utils extends Helpers {
         leaves = leaves.reverse();
         const pubkeys_root = this.merkle_root(leaves);
 
-        const aggregate_pubkeys_root = Sp.sha256(
-            [...sync_committee.aggregate_pubkey, ...Array(16).fill(0)]
-        );
+        const aggregate_pubkeys_root = Sp.sha256([...sync_committee.aggregate_pubkey, ...Array(16).fill(0)]);
 
         return Sp.sha256([...pubkeys_root, ...aggregate_pubkeys_root]);
     };
@@ -303,16 +289,11 @@ class Utils extends Helpers {
         });
     };
 
-    compute_domain = (
-        domain_type,
-        fork_version,
-        genesis_validators_root,
-    ) => {
+    compute_domain = (domain_type, fork_version, genesis_validators_root) => {
         const fork_data_root = this.compute_fork_data_root(fork_version, genesis_validators_root);
         return [...domain_type, ...fork_data_root.slice(0, 28)];
     };
-};
-
+}
 
 // ===================
 //  / Main Contract \
@@ -333,17 +314,10 @@ class BeaconLightClient extends Utils {
     };
 
     compute_sync_committee_period = (slot) => {
-        return Sp.ediv(
-            this.compute_epoch_at_slot(slot),
-            this.EPOCHS_PER_SYNC_COMMITTEE_PERIOD,
-        )
-            .openSome()
-            .fst();
+        return Sp.ediv(this.compute_epoch_at_slot(slot), this.EPOCHS_PER_SYNC_COMMITTEE_PERIOD).openSome().fst();
     };
 
-    validate_light_client_update = (
-        update
-    ) => {
+    validate_light_client_update = (update) => {
         // Verify update slot is larger than snapshot slot
         if (!(update.attested_header.slot > this.store.snapshot.header.slot)) {
             Sp.failWith('Update validation failed: Update slot is before the current snapshot slot!');
@@ -360,7 +334,10 @@ class BeaconLightClient extends Utils {
 
         // Verify update header root is the finalized root of the finality header, if specified
         let signed_header = this.EMPTY_BEACON_HEADER;
-        if (this.hash_tree_root__block_header(update.finalized_header) == this.hash_tree_root__block_header(this.EMPTY_BEACON_HEADER)) {
+        if (
+            this.hash_tree_root__block_header(update.finalized_header) ==
+            this.hash_tree_root__block_header(this.EMPTY_BEACON_HEADER)
+        ) {
             signed_header = update.attested_header;
             if (update.finality_branch.length != 0) {
                 Sp.failWith(
@@ -404,14 +381,6 @@ class BeaconLightClient extends Utils {
             }
         }
 
-
-
-
-
-
-
-
-        
         // Verify sync committee aggregate signature
         let participants_pubkeys = [];
         for (let i = 0; i < update.sync_aggregate.sync_committee_bits.length; i += 1) {
@@ -427,19 +396,6 @@ class BeaconLightClient extends Utils {
 
         participants_pubkeys = participants_pubkeys.reverse();
 
-
-
-
-
-
-
-
-
-
-
-
-
-
         const domain = this.compute_domain(
             this.DOMAIN_SYNC_COMMITTEE,
             this.GENESIS_FORK_VERSION,
@@ -447,11 +403,7 @@ class BeaconLightClient extends Utils {
         );
         const signing_root = this.compute_signing_root(signed_header, domain);
 
-        const valid = this.blsFastAggregateVerify(
-            participants_pubkeys,
-            signing_root,
-            update.sync_committee_signature,
-        );
+        const valid = this.blsFastAggregateVerify(participants_pubkeys, signing_root, update.sync_committee_signature);
 
         if (!valid) {
             Sp.failWith('Update validation failed: Fast aggregate verification failed!');
@@ -468,10 +420,7 @@ class BeaconLightClient extends Utils {
         this.store.snapshot.header = update.attested_header;
     };
 
-    process_light_client_update = (
-        update,
-        current_slot
-    ) => {
+    process_light_client_update = (update, current_slot) => {
         this.validate_light_client_update(update);
         this.store.valid_updates.splice(0, 0, update);
 
@@ -485,7 +434,8 @@ class BeaconLightClient extends Utils {
         }
         if (
             committee_participants * 3 >= update.sync_aggregate.sync_committee_bits.length * 2 &&
-            this.hash_tree_root__block_header(update.finalized_header) != this.hash_tree_root__block_header(this.EMPTY_BEACON_HEADER)
+            this.hash_tree_root__block_header(update.finalized_header) !=
+                this.hash_tree_root__block_header(this.EMPTY_BEACON_HEADER)
         ) {
             // Apply update if (1) 2/3 quorum is reached and (2) we have a finality proof.
             // Note that (2) means that the current light client design needs finality.
@@ -511,12 +461,12 @@ class BeaconLightClient extends Utils {
             this.store.valid_updates = [];
         }
     };
-};
+}
 
 module.exports = {
     Sp,
     BeaconLightClient,
     Utils,
     Helpers,
-    Constants
+    Constants,
 };

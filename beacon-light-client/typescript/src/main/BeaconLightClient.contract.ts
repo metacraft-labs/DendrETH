@@ -1,7 +1,7 @@
-import type * as T from "../types/basic-types";
-import type * as I from "../types/interfaces";
+import type * as T from '../types/basic-types';
+import type * as I from '../types/interfaces';
 
-import * as U from "../utils/Utils.contract";
+import * as U from '../utils/Utils.contract';
 
 // ===================
 //  / Main Contract \
@@ -20,9 +20,7 @@ class BeaconLightClient extends U.Utils {
         return true;
     };
 
-    validate_light_client_update = (
-        update: I.LightClientUpdate,
-    ) => {
+    validate_light_client_update = (update: I.LightClientUpdate) => {
         // Verify update slot is larger than snapshot slot
         if (!(update.attested_header.slot > this.store.snapshot.header.slot)) {
             Sp.failWith('Update validation failed: Update slot is before the current snapshot slot!');
@@ -48,7 +46,10 @@ class BeaconLightClient extends U.Utils {
 
         // Verify update header root is the finalized root of the finality header, if specified
         let signed_header: I.BeaconBlockHeader = this.EMPTY_BEACON_HEADER;
-        if (this.hash_tree_root__block_header(update.finalized_header) == this.hash_tree_root__block_header(this.EMPTY_BEACON_HEADER)) {
+        if (
+            this.hash_tree_root__block_header(update.finalized_header) ==
+            this.hash_tree_root__block_header(this.EMPTY_BEACON_HEADER)
+        ) {
             signed_header = update.attested_header;
             if ((update.finality_branch as TList<T.Bytes32>).size() != 0) {
                 Sp.failWith(
@@ -145,10 +146,7 @@ class BeaconLightClient extends U.Utils {
         this.store.snapshot.header = update.attested_header;
     };
 
-    process_light_client_update = (
-        update: I.LightClientUpdate,
-        current_slot: T.Slot
-    ) => {
+    process_light_client_update = (update: I.LightClientUpdate, current_slot: T.Slot) => {
         this.validate_light_client_update(update);
         (this.store.valid_updates as TSet<I.LightClientUpdate>).add(update);
 
@@ -162,7 +160,8 @@ class BeaconLightClient extends U.Utils {
         }
         if (
             committee_participants * 3 >= (update.sync_aggregate.sync_committee_bits as T.Bitvector).size() * 2 &&
-            this.hash_tree_root__block_header(update.finalized_header) != this.hash_tree_root__block_header(this.EMPTY_BEACON_HEADER)
+            this.hash_tree_root__block_header(update.finalized_header) !=
+                this.hash_tree_root__block_header(this.EMPTY_BEACON_HEADER)
         ) {
             // Apply update if (1) 2/3 quorum is reached and (2) we have a finality proof.
             // Note that (2) means that the current light client design needs finality.
@@ -190,25 +189,29 @@ class BeaconLightClient extends U.Utils {
     };
 }
 
-Dev.compileContract('compilation', new BeaconLightClient({
-    snapshot: {
-        header: {
-            slot: 0,
-            proposer_index: 0,
-            parent_root: "0x0" as T.Root,
-            state_root: "0x0" as T.Root,
-            body_root: "0x0" as T.Root
-        },
-        current_sync_committee: {
-            pubkeys: [],
-            aggregate_pubkey: "0x0" as T.BLSPubkey
-        },
-        next_sync_committee: {
-            pubkeys: [],
-            aggregate_pubkey: "0x0" as T.BLSPubkey
-        }
-    },
-    valid_updates: [] as TSet<I.LightClientUpdate>
-} as I.LightClientStore,
-    "0x32251a5a748672e3acb1e574ec27caf3b6be68d581c44c402eb166d71a89808e"
-));
+Dev.compileContract(
+    'compilation',
+    new BeaconLightClient(
+        {
+            snapshot: {
+                header: {
+                    slot: 0,
+                    proposer_index: 0,
+                    parent_root: '0x0' as T.Root,
+                    state_root: '0x0' as T.Root,
+                    body_root: '0x0' as T.Root,
+                },
+                current_sync_committee: {
+                    pubkeys: [],
+                    aggregate_pubkey: '0x0' as T.BLSPubkey,
+                },
+                next_sync_committee: {
+                    pubkeys: [],
+                    aggregate_pubkey: '0x0' as T.BLSPubkey,
+                },
+            },
+            valid_updates: [] as TSet<I.LightClientUpdate>,
+        } as I.LightClientStore,
+        '0x32251a5a748672e3acb1e574ec27caf3b6be68d581c44c402eb166d71a89808e',
+    ),
+);

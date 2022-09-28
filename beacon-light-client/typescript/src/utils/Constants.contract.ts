@@ -1,5 +1,5 @@
-import type * as T from "../types/basic-types";
-import type * as I from "../types/interfaces";
+import type * as T from '../types/basic-types';
+import type * as I from '../types/interfaces';
 
 // ===============
 //  / CONSTANTS \
@@ -38,7 +38,8 @@ export class Constants {
 
     EMPTY_SYNC_COMMITTEE: I.SyncCommittee = {
         pubkeys: [] as TList<T.BLSPubkey>,
-        aggregate_pubkey: '0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000' as T.BLSPubkey,
+        aggregate_pubkey:
+            '0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000' as T.BLSPubkey,
     };
 
     EMPTY_LIGHT_CLIENT_UPDATE: I.LightClientUpdate = {
@@ -48,7 +49,8 @@ export class Constants {
         finality_header: this.EMPTY_BEACON_HEADER,
         finality_branch: [] as TList<TBytes>,
         sync_committee_bits: [] as T.Bitvector,
-        sync_committee_signature: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000' as T.BLSSignature,
+        sync_committee_signature:
+            '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000' as T.BLSSignature,
         fork_version: '0x00000000' as T.Version,
     };
 }

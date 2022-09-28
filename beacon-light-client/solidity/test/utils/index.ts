@@ -1,26 +1,27 @@
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from 'fs';
+import * as path from 'path';
 
-import { readFileSync, writeFileSync } from "fs";
+import { readFileSync, writeFileSync } from 'fs';
 
-import { groth16 } from "snarkjs";
-import { PointG1, PointG2 } from "@noble/bls12-381";
-import { BitArray, BitVectorType } from "@chainsafe/ssz";
-import { ssz } from "@chainsafe/lodestar-types";
-
-import { formatJSONBlockHeader, formatPubkeysToPoints, formatBitmask, JSONHeader, FormatedJsonUpdate } from "./format";
+import { groth16 } from 'snarkjs';
+import { PointG1, PointG2 } from '@noble/bls12-381';
+import { BitArray, BitVectorType } from '@chainsafe/ssz';
+import { ssz } from '@chainsafe/lodestar-types';
 
 import {
-  bigint_to_array,
-  formatHex,
-  hexToBytes,
-  utils
-} from "./bls";
+  formatJSONBlockHeader,
+  formatPubkeysToPoints,
+  formatBitmask,
+  JSONHeader,
+  FormatedJsonUpdate,
+} from './format';
 
-import * as constants from "./constants";
+import { bigint_to_array, formatHex, hexToBytes, utils } from './bls';
 
-import { exec } from "child_process";
-import { promisify } from "util";
+import * as constants from './constants';
+
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
 const promiseExec = promisify(exec);
 
@@ -48,7 +49,10 @@ export interface Proof {
 
 export function getFilesInDir(_path: string) {
   let files: Buffer[] = [];
-  const content = fs.readdirSync(_path, { encoding: 'utf-8', withFileTypes: true });
+  const content = fs.readdirSync(_path, {
+    encoding: 'utf-8',
+    withFileTypes: true,
+  });
   for (let f of content) {
     if (f.isDirectory()) {
       files = [...files, ...getFilesInDir(path.join(_path, f.name))];
@@ -59,12 +63,20 @@ export function getFilesInDir(_path: string) {
   return files;
 }
 
-export function getAggregatePubkey(update1: JSONUpdate, update2: JSONUpdate): string {
+export function getAggregatePubkey(
+  update1: JSONUpdate,
+  update2: JSONUpdate,
+): string {
   // Extract active participants public keys as G1 points
   const points: PointG1[] = formatPubkeysToPoints(update1.next_sync_committee);
-  const bitmask: BitArray = formatBitmask(update2.sync_aggregate.sync_committee_bits);
+  const bitmask: BitArray = formatBitmask(
+    update2.sync_aggregate.sync_committee_bits,
+  );
 
-  const aggregatePubkey = points.filter((_, i) => bitmask.get(i)).reduce((prev, curr) => prev.add(curr)).toHex(true);
+  const aggregatePubkey = points
+    .filter((_, i) => bitmask.get(i))
+    .reduce((prev, curr) => prev.add(curr))
+    .toHex(true);
   return aggregatePubkey;
 }
 
@@ -130,36 +142,71 @@ export function getMessage(root: Uint8Array, fork_version: Uint8Array) {
 //     };
 // }
 
-export async function getSolidityProof(prevUpdate: FormatedJsonUpdate, update: FormatedJsonUpdate, network: string, generateProof?: boolean): Promise<Proof> {
-  const period = compute_sync_committee_period(parseInt(update.attested_header.slot));
+export async function getSolidityProof(
+  prevUpdate: FormatedJsonUpdate,
+  update: FormatedJsonUpdate,
+  network: string,
+  generateProof?: boolean,
+): Promise<Proof> {
+  const period = compute_sync_committee_period(
+    parseInt(update.attested_header.slot),
+  );
   const proofsDir = `../../vendor/eth2-light-client-updates/${network}/proofs`;
 
   if (generateProof) {
-    fs.writeFileSync("input.json", JSON.stringify(await getProofInput(prevUpdate, update)));
-    console.log("Witness generation...");
-    console.log(await promiseExec(`../circom/build/proof_more_efficient/proof_more_efficient_cpp/proof_more_efficient input.json witness.wtns`));
+    fs.writeFileSync(
+      'input.json',
+      JSON.stringify(await getProofInput(prevUpdate, update)),
+    );
+    console.log('Witness generation...');
+    console.log(
+      await promiseExec(
+        `../circom/build/proof_more_efficient/proof_more_efficient_cpp/proof_more_efficient input.json witness.wtns`,
+      ),
+    );
 
-    console.log("Proof generation...");
-    console.log((await promiseExec(`${proofsDir}/proof${period}.json ${proofsDir}/public${period}.json`)).stdout);
+    console.log('Proof generation...');
+    console.log(
+      (
+        await promiseExec(
+          `${proofsDir}/proof${period}.json ${proofsDir}/public${period}.json`,
+        )
+      ).stdout,
+    );
 
-    await promiseExec("rm input.json witness.wtns");
+    await promiseExec('rm input.json witness.wtns');
   }
 
-  const proof = JSON.parse(fs.readFileSync(`${proofsDir}/proof${period}.json`).toString());
-  const publicSignals = JSON.parse(fs.readFileSync(`${proofsDir}/public${period}.json`).toString());
+  const proof = JSON.parse(
+    fs.readFileSync(`${proofsDir}/proof${period}.json`).toString(),
+  );
+  const publicSignals = JSON.parse(
+    fs.readFileSync(`${proofsDir}/public${period}.json`).toString(),
+  );
   const calldata = await groth16.exportSolidityCallData(proof, publicSignals);
 
-  const argv: string[] = calldata.replace(/["[\]\s]/g, "").split(',').map(x => BigInt(x).toString());
+  const argv: string[] = calldata
+    .replace(/["[\]\s]/g, '')
+    .split(',')
+    .map(x => BigInt(x).toString());
 
   const a = [argv[0], argv[1]];
-  const b = [[argv[2], argv[3]], [argv[4], argv[5]]];
+  const b = [
+    [argv[2], argv[3]],
+    [argv[4], argv[5]],
+  ];
   const c = [argv[6], argv[7]];
 
   return { a, b, c };
 }
 
-async function getProofInput(prevUpdate: FormatedJsonUpdate, update: FormatedJsonUpdate) {
-  const pubkeyPoints: PointG1[] = prevUpdate.next_sync_committee.pubkeys.map(x => PointG1.fromHex(formatHex(x)));
+async function getProofInput(
+  prevUpdate: FormatedJsonUpdate,
+  update: FormatedJsonUpdate,
+) {
+  const pubkeyPoints: PointG1[] = prevUpdate.next_sync_committee.pubkeys.map(
+    x => PointG1.fromHex(formatHex(x)),
+  );
 
   const block_header = formatJSONBlockHeader(update.attested_header);
   const hash = ssz.phase0.BeaconBlockHeader.hashTreeRoot(block_header);
@@ -168,25 +215,27 @@ async function getProofInput(prevUpdate: FormatedJsonUpdate, update: FormatedJso
   const u = await utils.hashToField(message, 2);
 
   const input = {
-    points: pubkeyPoints.map(x => [bigint_to_array(55, 7, x.toAffine()[0].value), bigint_to_array(55, 7, x.toAffine()[1].value)]),
-    aggregatedKey: BigInt(prevUpdate.next_sync_committee.aggregate_pubkey).toString(2).split(''),
+    points: pubkeyPoints.map(x => [
+      bigint_to_array(55, 7, x.toAffine()[0].value),
+      bigint_to_array(55, 7, x.toAffine()[1].value),
+    ]),
+    aggregatedKey: BigInt(prevUpdate.next_sync_committee.aggregate_pubkey)
+      .toString(2)
+      .split(''),
     bitmask: update.sync_aggregate.sync_committee_bits,
     signature: update.sync_aggregate.sync_committee_signature,
     hash: [
-      [
-        bigint_to_array(55, 7, u[0][0]),
-        bigint_to_array(55, 7, u[0][1])
-      ],
-      [
-        bigint_to_array(55, 7, u[1][0]),
-        bigint_to_array(55, 7, u[1][1])
-      ]
-    ]
+      [bigint_to_array(55, 7, u[0][0]), bigint_to_array(55, 7, u[0][1])],
+      [bigint_to_array(55, 7, u[1][0]), bigint_to_array(55, 7, u[1][1])],
+    ],
   };
 
   return input;
 }
 
 function compute_sync_committee_period(slot: number) {
-  return Math.floor(Math.floor(slot / constants.SLOTS_PER_EPOCH) / constants.EPOCHS_PER_SYNC_COMMITTEE_PERIOD);
+  return Math.floor(
+    Math.floor(slot / constants.SLOTS_PER_EPOCH) /
+      constants.EPOCHS_PER_SYNC_COMMITTEE_PERIOD,
+  );
 }

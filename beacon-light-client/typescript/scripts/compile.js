@@ -3,7 +3,7 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const {getFilesInDir} = require("./utils/utils")
+const { getFilesInDir } = require('./utils/utils');
 
 const SCRIPT_PATH = path.join(__dirname, '..', 'scripts', 'smartpy-cli', 'SmartPy.sh');
 const BUILD_PATH = path.join(__dirname, '..', 'build', 'compilation');
@@ -17,7 +17,7 @@ if (fs.existsSync(BUILD_PATH)) {
 }
 fs.mkdirSync(BUILD_PATH, { recursive: true });
 
-const files = getFilesInDir(SRC_PATH, { encoding: 'utf-8' ,withFileTypes: true});
+const files = getFilesInDir(SRC_PATH, { encoding: 'utf-8', withFileTypes: true });
 
 files
     .filter((f) => f.name.match(FILE_FILTER))
@@ -25,7 +25,7 @@ files
         try {
             const dir = path.join(BUILD_PATH, file.name.replace('.ts', ''));
             fs.mkdirSync(dir, { recursive: true });
-            console.log(` >>> Runnning ${file.name} compilation...`)
+            console.log(` >>> Runnning ${file.name} compilation...`);
             execSync(`sh ${SCRIPT_PATH} compile ${file.path}/${file.name} ${dir}`);
         } catch (e) {
             // console.error(e.message);

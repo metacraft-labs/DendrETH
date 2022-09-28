@@ -1,13 +1,13 @@
 ## EVM-based Blockchains
 
-* Ethreum Classic
-* Binance Smart Chain
-* Polygon
-* Avalanche
-* Celo
-* Theta
-* Hedera
-* Fantom
+- Ethreum Classic
+- Binance Smart Chain
+- Polygon
+- Avalanche
+- Celo
+- Theta
+- Hedera
+- Fantom
 
 ## Other blockchains with viable smart contract platforms
 
@@ -37,8 +37,8 @@ Suggested programming language: C#, (possibly C++ in the future).
 
 ## Alternative ZK toolchains
 
-* https://zokrates.github.io/
-* https://leo-lang.org/
-* https://filecoin.io/blog/posts/introducing-lurk-a-programming-language-for-recursive-zk-snarks/
-* https://github.com/QED-it/zkinterface (a good hub of links to other projects)
-* https://github.com/circify/circ
+- https://zokrates.github.io/
+- https://leo-lang.org/
+- https://filecoin.io/blog/posts/introducing-lurk-a-programming-language-for-recursive-zk-snarks/
+- https://github.com/QED-it/zkinterface (a good hub of links to other projects)
+- https://github.com/circify/circ

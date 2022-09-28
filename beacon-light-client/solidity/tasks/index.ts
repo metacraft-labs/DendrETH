@@ -1,3 +1,3 @@
-import "./accounts";
-import "./deploy";
-import "./verify-contracts";
+import './accounts';
+import './deploy';
+import './verify-contracts';

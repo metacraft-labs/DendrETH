@@ -3,6 +3,6 @@ export type StringifiedContract = string;
 export type RawContract = Buffer;
 
 export interface Path {
-    src: string;
-    dest: string;
+  src: string;
+  dest: string;
 }

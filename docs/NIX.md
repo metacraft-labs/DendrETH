@@ -3,10 +3,10 @@
 Developing and testing all components in the DendrETH projects requires a
 diverse set of software packages that must be installed by all contributors:
 
-* Compilers and development libraries for the full set of supported blockchains.
-* Blockchain simulation environments.
-* Testing frameworks.
-* Various project automation tools and utilities such as docker compose, tmux, etc.
+- Compilers and development libraries for the full set of supported blockchains.
+- Blockchain simulation environments.
+- Testing frameworks.
+- Various project automation tools and utilities such as docker compose, tmux, etc.
 
 If the members of the development team were required to install all these
 components manually, setting up the project on a new machine would have

@@ -1,4 +1,4 @@
-# Compiling Nim to WebAssembly __without Emscripten__
+# Compiling Nim to WebAssembly **without Emscripten**
 
 ## Start with a basic Nim file
 

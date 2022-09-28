@@ -1,7 +1,7 @@
-import * as T from "../types/basic-types";
-import type * as I from "../types/interfaces";
+import * as T from '../types/basic-types';
+import type * as I from '../types/interfaces';
 
-import * as H from "../utils/Helpers.contract";
+import * as H from '../utils/Helpers.contract';
 
 // =============
 //  / HELPERS \
@@ -16,7 +16,7 @@ export class Utils extends H.Helpers {
             let p: T.Uint64 = 0;
             let m: T.Uint64 = Sp.ediv(i, 8).openSome().snd();
 
-            p = (i - m + (c - i));
+            p = i - m + (c - i);
 
             if (m == 0) {
                 c -= 8;
@@ -71,7 +71,7 @@ export class Utils extends H.Helpers {
         const bottom_length: T.Uint64 = this.get_power_of_two_ceil((leaves as TList<T.Bytes32>).size());
         const tree: TList<T.Bytes32> = [];
         for (let i = 0; i < bottom_length * 2; i += 1) {
-            tree.push("0x0000000000000000000000000000000000000000000000000000000000000000" as T.Bytes32);
+            tree.push('0x0000000000000000000000000000000000000000000000000000000000000000' as T.Bytes32);
         }
         for (let i = 0; i < (leaves as TList<T.Bytes32>).size(); i += 1) {
             tree = this.setElementInBytesArrayAt(bottom_length + i, this.getElementInBytesArrayAt(i, leaves), tree);
@@ -84,7 +84,7 @@ export class Utils extends H.Helpers {
                     (this.getElementInBytesArrayAt(i * 2, tree) as T.Bytes32).concat(
                         this.getElementInBytesArrayAt(i * 2 + 1, tree) as T.Bytes32,
                     ),
-                )
+                ),
             );
         }
 
@@ -101,7 +101,7 @@ export class Utils extends H.Helpers {
         let value = leaf;
         let i: T.Uint64 = 0;
         for (let n of branch) {
-            if ((Sp.ediv(index, this.pow(2, i)).openSome().fst() % 2) == 1) {
+            if (Sp.ediv(index, this.pow(2, i)).openSome().fst() % 2 == 1) {
                 value = Sp.sha256((n as T.Bytes32).concat(value));
             } else {
                 value = Sp.sha256(value.concat(n as T.Bytes32));
@@ -117,7 +117,9 @@ export class Utils extends H.Helpers {
     };
 
     hash_tree_root__fork_data = (fork_data: I.ForkData): T.Bytes32 => {
-        return Sp.sha256("0x00000000000000000000000000000000000000000000000000000000" as T.Bytes).concat(fork_data.current_version as T.Version).concat(fork_data.genesis_validators_root);
+        return Sp.sha256('0x00000000000000000000000000000000000000000000000000000000' as T.Bytes)
+            .concat(fork_data.current_version as T.Version)
+            .concat(fork_data.genesis_validators_root);
     };
 
     hash_tree_root__signing_data = (signing_data: I.SigningData): T.Bytes32 => {
@@ -129,8 +131,16 @@ export class Utils extends H.Helpers {
         leaves.push(block_header.body_root);
         leaves.push(block_header.state_root);
         leaves.push(block_header.parent_root);
-        leaves.push(this.to_little_endian_64(block_header.proposer_index).concat("0x000000000000000000000000000000000000000000000000" as T.Bytes));
-        leaves.push(this.to_little_endian_64(block_header.slot).concat("0x000000000000000000000000000000000000000000000000" as T.Bytes));
+        leaves.push(
+            this.to_little_endian_64(block_header.proposer_index).concat(
+                '0x000000000000000000000000000000000000000000000000' as T.Bytes,
+            ),
+        );
+        leaves.push(
+            this.to_little_endian_64(block_header.slot).concat(
+                '0x000000000000000000000000000000000000000000000000' as T.Bytes,
+            ),
+        );
         return this.merkle_root(leaves);
     };
 
@@ -138,9 +148,9 @@ export class Utils extends H.Helpers {
         if ((sync_committee.pubkeys as TList<T.BLSPubkey>).size() != this.SYNC_COMMITTEE_SIZE) {
             Sp.failWith(
                 'Invalid sync_committee size: Committee participant should be less than' +
-                this.SYNC_COMMITTEE_SIZE +
-                1 +
-                '!',
+                    this.SYNC_COMMITTEE_SIZE +
+                    1 +
+                    '!',
             );
         }
 

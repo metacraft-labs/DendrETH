@@ -2,7 +2,7 @@
 //  / INTERFACES \
 // ================
 
-import type * as T from "../types/basic-types";
+import type * as T from '../types/basic-types';
 
 // PHASE 0
 export interface ForkData {
@@ -50,7 +50,7 @@ export interface LightClientUpdate {
     sync_aggregate: {
         sync_committee_bits: T.Bitvector;
         sync_committee_signature: T.BLSSignature;
-    }
+    };
     // Fork version for the aggregate signature
     fork_version: T.Version;
 }
