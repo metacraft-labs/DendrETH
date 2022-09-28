@@ -1,21 +1,23 @@
 <html>
   <head>
     <script>
-    (async () => {
+      (async () => {
         const moduleName = 'add.wasm';
-        const wasmModule = await fetch(moduleName)
+        const wasmModule = await fetch(moduleName);
 
         const importObject = {
-            env: {
-                print: x => {
-                    console.log(x);
-                }
-            }
+          env: {
+            print: x => {
+              console.log(x);
+            },
+          },
         };
-        const { instance: { exports } } = await WebAssembly.instantiateStreaming(wasmModule, importObject);
+        const {
+          instance: { exports },
+        } = await WebAssembly.instantiateStreaming(wasmModule, importObject);
         console.log(exports);
         const r = exports.printAdd(42, 25);
-    })();
+      })();
     </script>
   </head>
   <body>

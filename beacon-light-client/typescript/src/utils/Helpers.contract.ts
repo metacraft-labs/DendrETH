@@ -1,6 +1,6 @@
-import type * as T from "../types/basic-types";
+import type * as T from '../types/basic-types';
 
-import * as C from "../utils/Constants.contract";
+import * as C from '../utils/Constants.contract';
 
 // ===========
 //  / UTILS \
@@ -34,13 +34,13 @@ export class Helpers extends C.Constants {
             i += 1;
         }
 
-        Sp.failWith("Helpers: Invalid params!");
+        Sp.failWith('Helpers: Invalid params!');
         return 0 as T.Uint64;
     };
 
     getElementInBytesArrayAt = (index: T.Uint64, arr: TList<T.Bytes32>): T.Bytes32 => {
         if (index >= (arr as TList<T.Bytes32>).size()) {
-            return "0x0000000000000000000000000000000000000000000000000000000000000000" as T.Bytes32;
+            return '0x0000000000000000000000000000000000000000000000000000000000000000' as T.Bytes32;
         }
 
         let i = 0;
@@ -51,13 +51,13 @@ export class Helpers extends C.Constants {
             i += 1;
         }
 
-        Sp.failWith("Helpers: Invalid params!");
+        Sp.failWith('Helpers: Invalid params!');
         return '0x0000000000000000000000000000000000000000000000000000000000000000' as T.Bytes32;
     };
 
     setElementInBytesArrayAt = (index: T.Uint64, arr: TList<T.Bytes32>, element: T.Bytes): TList<T.Bytes32> => {
         if (index >= (arr as TList<T.Bytes32>).size()) {
-            Sp.failWith("Helpers: Invalid params!");
+            Sp.failWith('Helpers: Invalid params!');
         }
 
         let i = 0;

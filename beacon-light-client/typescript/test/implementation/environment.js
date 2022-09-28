@@ -1,5 +1,4 @@
-const { digest } = require("@chainsafe/as-sha256");
-
+const { digest } = require('@chainsafe/as-sha256');
 
 // ===============================
 //  / SMARTTS ENVIRONMENT SETUP \
@@ -8,11 +7,11 @@ const { digest } = require("@chainsafe/as-sha256");
 const empty_bytes = (size) => Array(size).fill(0);
 
 function Uint8ArrayToHexString(array) {
-    let hex = "";
+    let hex = '';
     for (let n of array) {
-        hex = hex.concat(n.toString(16).padStart(2, "0"));
+        hex = hex.concat(n.toString(16).padStart(2, '0'));
     }
-    return "0x".concat(hex.padStart(64, "0"));
+    return '0x'.concat(hex.padStart(64, '0'));
 }
 
 class TPair {
@@ -28,7 +27,7 @@ class TPair {
     snd() {
         return this.second;
     }
-};
+}
 
 class TOption {
     constructor(o1, o2) {
@@ -39,7 +38,7 @@ class TOption {
     openSome() {
         return new TPair(this.o1, this.o2);
     }
-};
+}
 
 class SpClass {
     failWith(message) {
@@ -52,10 +51,9 @@ class SpClass {
 
     pack(n) {
         const array = [];
-        const hexString = n.toString(16).padStart(Math.ceil(n.toString(16).length / 2) * 2, "0");
+        const hexString = n.toString(16).padStart(Math.ceil(n.toString(16).length / 2) * 2, '0');
 
-        for (let i = 0; i < hexString.length; i += 2)
-            array.push(parseInt(hexString.slice(i, i + 2), 16));
+        for (let i = 0; i < hexString.length; i += 2) array.push(parseInt(hexString.slice(i, i + 2), 16));
 
         return array;
     }
@@ -63,12 +61,12 @@ class SpClass {
     sha256(s) {
         return digest(s);
     }
-};
+}
 
 const Sp = new SpClass();
 
 module.exports = {
     Sp,
     empty_bytes,
-    Uint8ArrayToHexString
+    Uint8ArrayToHexString,
 };

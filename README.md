@@ -99,18 +99,18 @@ already very large. To perform our compilations, we had to purchase a server
 with 384GB of RAM where the fully integrated build takes the following amount
 of time:
 
-|                                      |                 |
-| ------------------------------------ | --------------- |
-| Circuit compilation                  | 6h              |
-| Circuit Constraints                  | 88945803        |
-| Witness generation C++ compilation   | 1h              |
-| Witness generation                   | 3m              |
-| Trusted setup phase 2 key generation | 26h             |
-| Trusted setup phase 2 contribution   | N/a             |
-| Proving key size                     | 49G             |
-| Proving key verification             | N/a             |
-| Proving time (rapidsnark)            | 4m              |
-| Proof verification time              | 1s              |
+|                                      |          |
+| ------------------------------------ | -------- |
+| Circuit compilation                  | 6h       |
+| Circuit Constraints                  | 88945803 |
+| Witness generation C++ compilation   | 1h       |
+| Witness generation                   | 3m       |
+| Trusted setup phase 2 key generation | 26h      |
+| Trusted setup phase 2 contribution   | N/a      |
+| Proving key size                     | 49G      |
+| Proving key verification             | N/a      |
+| Proving time (rapidsnark)            | 4m       |
+| Proof verification time              | 1s       |
 
 You can examine the required commands for building the final circuit here:
 
@@ -120,18 +120,20 @@ https://github.com/metacraft-labs/DendrETH/blob/main/beacon-light-client/circom/
 
 At the moment, there are multiple test suites of interest:
 
-* The WebAssembly tests of the Nim light client:
+- The WebAssembly tests of the Nim light client:
+
   ```
   yarn test-emcc
   ```
 
-* The Circom components test suite:
+- The Circom components test suite:
+
   ```
   cd beacon-light-client/circom
   yarn hardhat test
   ```
 
-* The Solidity contract test suite:
+- The Solidity contract test suite:
   ```
   cd beacon-light-client/solidity
   yarn hardhat test
@@ -139,12 +141,12 @@ At the moment, there are multiple test suites of interest:
 
 ## License
 
-  All code within this repository is [licensed under GPLv3][16].
+All code within this repository is [licensed under GPLv3][16].
 
 ## Roadmap
 
-  Please check out our [roadmap][17] to learn more about the blockchains and the
-  use cases that we plan to support in the future.
+Please check out our [roadmap][17] to learn more about the blockchains and the
+use cases that we plan to support in the future.
 
 [0]: https://github.com/ethereum/annotated-spec/blob/master/altair/sync-protocol.md
 [1]: https://github.com/yi-sun/circom-pairing

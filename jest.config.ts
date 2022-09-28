@@ -1,8 +1,8 @@
-import type { InitialOptionsTsJest } from 'ts-jest'
+import type { InitialOptionsTsJest } from 'ts-jest';
 
 const config: InitialOptionsTsJest = {
   preset: 'ts-jest/presets/default-esm', // or other ESM presets
-  testMatch: [ "**/tests/**/*.ts" ],
+  testMatch: ['**/tests/**/*.ts'],
   globals: {
     'ts-jest': {
       useESM: true,
@@ -11,6 +11,6 @@ const config: InitialOptionsTsJest = {
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
-}
+};
 
-export default config
+export default config;

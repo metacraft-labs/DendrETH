@@ -11,7 +11,7 @@
 // We are using Fp for private keys (shorter) and Fp2 for signatures (longer).
 // Some projects may prefer to swap this relation, it is not supported for now.
 
-import * as nodeCrypto from "crypto";
+import * as nodeCrypto from 'crypto';
 // prettier-ignore
 
 // To verify curve parameters, see pairing-friendly-curves spec:
@@ -67,8 +67,8 @@ export const CURVE = {
 };
 
 export function mod(a: bigint, b: bigint) {
-    const res = a % b;
-    return res >= 0n ? res : b + res;
+  const res = a % b;
+  return res >= 0n ? res : b + res;
 }
 
 const SHA256_DIGEST_SIZE = 32;
@@ -84,172 +84,172 @@ const SHA256_DIGEST_SIZE = 32;
 // m = 2 (or 1 for G1 see section 8.8.1)
 // k = 128
 const htfDefaults = {
-    // DST: a domain separation tag
-    // defined in section 2.2.5
-    DST: "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_", // to comply with https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#bls-signatures
-    // p: the characteristic of F
-    //    where F is a finite field of characteristic p and order q = p^m
-    p: CURVE.P,
-    // m: the extension degree of F, m >= 1
-    //     where F is a finite field of characteristic p and order q = p^m
-    m: 2,
-    // k: the target security level for the suite in bits
-    // defined in section 5.1
-    k: 128,
-    // option to use a message that has already been processed by
-    // expand_message_xmd
-    expand: true,
+  // DST: a domain separation tag
+  // defined in section 2.2.5
+  DST: 'BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_', // to comply with https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#bls-signatures
+  // p: the characteristic of F
+  //    where F is a finite field of characteristic p and order q = p^m
+  p: CURVE.P,
+  // m: the extension degree of F, m >= 1
+  //     where F is a finite field of characteristic p and order q = p^m
+  m: 2,
+  // k: the target security level for the suite in bits
+  // defined in section 5.1
+  k: 128,
+  // option to use a message that has already been processed by
+  // expand_message_xmd
+  expand: true,
 };
 
 // Global symbol available in browsers only. Ensure we do not depend on @types/dom
 declare const self: Record<string, any> | undefined;
-const crypto: { node?: any; web?: any; } = {
-    node: nodeCrypto,
-    web: typeof self === "object" && "crypto" in self ? self.crypto : undefined,
+const crypto: { node?: any; web?: any } = {
+  node: nodeCrypto,
+  web: typeof self === 'object' && 'crypto' in self ? self.crypto : undefined,
 };
 
 export const utils = {
-    hashToField: hash_to_field,
-    bytesToHex,
-    sha256: async (message: Uint8Array): Promise<Uint8Array> => {
-        if (crypto.web) {
-            const buffer = await crypto.web.subtle.digest("SHA-256", message.buffer);
-            return new Uint8Array(buffer);
-        } else if (crypto.node) {
-            return Uint8Array.from(
-                crypto.node.createHash("sha256").update(message).digest()
-            );
-        } else {
-            throw new Error("The environment doesn't have sha256 function");
-        }
-    },
-    mod,
+  hashToField: hash_to_field,
+  bytesToHex,
+  sha256: async (message: Uint8Array): Promise<Uint8Array> => {
+    if (crypto.web) {
+      const buffer = await crypto.web.subtle.digest('SHA-256', message.buffer);
+      return new Uint8Array(buffer);
+    } else if (crypto.node) {
+      return Uint8Array.from(
+        crypto.node.createHash('sha256').update(message).digest(),
+      );
+    } else {
+      throw new Error("The environment doesn't have sha256 function");
+    }
+  },
+  mod,
 };
 
 const hexes = Array.from({ length: 256 }, (v, i) =>
-    i.toString(16).padStart(2, "0")
+  i.toString(16).padStart(2, '0'),
 );
 export function bytesToHex(uint8a: Uint8Array): string {
-    // pre-caching chars could speed this up 6x.
-    let hex = "";
-    for (let i = 0; i < uint8a.length; i++) {
-        hex += hexes[uint8a[i]];
-    }
-    return hex;
+  // pre-caching chars could speed this up 6x.
+  let hex = '';
+  for (let i = 0; i < uint8a.length; i++) {
+    hex += hexes[uint8a[i]];
+  }
+  return hex;
 }
 
 export function formatHex(str: string): string {
-    if (str.startsWith("0x")) {
-        str = str.slice(2);
-    }
-    return str;
+  if (str.startsWith('0x')) {
+    str = str.slice(2);
+  }
+  return str;
 }
 
 export function hexToBytes(hex: string): Uint8Array {
-    if (typeof hex !== "string") {
-        throw new TypeError("hexToBytes: expected string, got " + typeof hex);
-    }
-    hex = formatHex(hex);
-    if (hex.length % 2)
-        throw new Error("hexToBytes: received invalid unpadded hex");
-    const array = new Uint8Array(hex.length / 2);
-    for (let i = 0; i < array.length; i++) {
-        const j = i * 2;
-        const hexByte = hex.slice(j, j + 2);
-        if (hexByte.length !== 2) throw new Error("Invalid byte sequence");
-        const byte = Number.parseInt(hexByte, 16);
-        if (Number.isNaN(byte) || byte < 0)
-            throw new Error("Invalid byte sequence");
-        array[i] = byte;
-    }
-    return array;
+  if (typeof hex !== 'string') {
+    throw new TypeError('hexToBytes: expected string, got ' + typeof hex);
+  }
+  hex = formatHex(hex);
+  if (hex.length % 2)
+    throw new Error('hexToBytes: received invalid unpadded hex');
+  const array = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < array.length; i++) {
+    const j = i * 2;
+    const hexByte = hex.slice(j, j + 2);
+    if (hexByte.length !== 2) throw new Error('Invalid byte sequence');
+    const byte = Number.parseInt(hexByte, 16);
+    if (Number.isNaN(byte) || byte < 0)
+      throw new Error('Invalid byte sequence');
+    array[i] = byte;
+  }
+  return array;
 }
 
 function ensureBytes(hex: string | Uint8Array): Uint8Array {
-    // Uint8Array.from() instead of hash.slice() because node.js Buffer
-    // is instance of Uint8Array, and its slice() creates **mutable** copy
-    return hex instanceof Uint8Array ? Uint8Array.from(hex) : hexToBytes(hex);
+  // Uint8Array.from() instead of hash.slice() because node.js Buffer
+  // is instance of Uint8Array, and its slice() creates **mutable** copy
+  return hex instanceof Uint8Array ? Uint8Array.from(hex) : hexToBytes(hex);
 }
 
 function concatBytes(...arrays: Uint8Array[]): Uint8Array {
-    if (arrays.length === 1) return arrays[0];
-    const length = arrays.reduce((a, arr) => a + arr.length, 0);
-    const result = new Uint8Array(length);
-    for (let i = 0, pad = 0; i < arrays.length; i++) {
-        const arr = arrays[i];
-        result.set(arr, pad);
-        pad += arr.length;
-    }
-    return result;
+  if (arrays.length === 1) return arrays[0];
+  const length = arrays.reduce((a, arr) => a + arr.length, 0);
+  const result = new Uint8Array(length);
+  for (let i = 0, pad = 0; i < arrays.length; i++) {
+    const arr = arrays[i];
+    result.set(arr, pad);
+    pad += arr.length;
+  }
+  return result;
 }
 
 // UTF8 to ui8a
 function stringToBytes(str: string) {
-    const bytes = new Uint8Array(str.length);
-    for (let i = 0; i < str.length; i++) {
-        bytes[i] = str.charCodeAt(i);
-    }
-    return bytes;
+  const bytes = new Uint8Array(str.length);
+  for (let i = 0; i < str.length; i++) {
+    bytes[i] = str.charCodeAt(i);
+  }
+  return bytes;
 }
 
 // Octet Stream to Integer
 function os2ip(bytes: Uint8Array): bigint {
-    let result = 0n;
-    for (let i = 0; i < bytes.length; i++) {
-        result = result * 256n;
-        result += BigInt(bytes[i]);
-    }
-    return result;
+  let result = 0n;
+  for (let i = 0; i < bytes.length; i++) {
+    result = result * 256n;
+    result += BigInt(bytes[i]);
+  }
+  return result;
 }
 
 // Integer to Octet Stream
 function i2osp(value: number, length: number): Uint8Array {
-    if (value < 0 || value >= 1 << (8 * length)) {
-        throw new Error(`bad I2OSP call: value=${value} length=${length}`);
-    }
-    const res = Array.from({ length }).fill(0) as number[];
-    for (let i = length - 1; i >= 0; i--) {
-        res[i] = value & 0xff;
-        value >>>= 8;
-    }
-    return new Uint8Array(res);
+  if (value < 0 || value >= 1 << (8 * length)) {
+    throw new Error(`bad I2OSP call: value=${value} length=${length}`);
+  }
+  const res = Array.from({ length }).fill(0) as number[];
+  for (let i = length - 1; i >= 0; i--) {
+    res[i] = value & 0xff;
+    value >>>= 8;
+  }
+  return new Uint8Array(res);
 }
 
 function strxor(a: Uint8Array, b: Uint8Array): Uint8Array {
-    const arr = new Uint8Array(a.length);
-    for (let i = 0; i < a.length; i++) {
-        arr[i] = a[i] ^ b[i];
-    }
-    return arr;
+  const arr = new Uint8Array(a.length);
+  for (let i = 0; i < a.length; i++) {
+    arr[i] = a[i] ^ b[i];
+  }
+  return arr;
 }
 
 // Produces a uniformly random byte string using a cryptographic hash function H that outputs b bits
 // https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-hash-to-curve-11#section-5.4.1
 async function expand_message_xmd(
-    msg: Uint8Array,
-    DST: Uint8Array,
-    lenInBytes: number
+  msg: Uint8Array,
+  DST: Uint8Array,
+  lenInBytes: number,
 ): Promise<Uint8Array> {
-    const H = utils.sha256;
-    const b_in_bytes = SHA256_DIGEST_SIZE;
-    const r_in_bytes = b_in_bytes * 2;
+  const H = utils.sha256;
+  const b_in_bytes = SHA256_DIGEST_SIZE;
+  const r_in_bytes = b_in_bytes * 2;
 
-    const ell = Math.ceil(lenInBytes / b_in_bytes);
-    if (ell > 255) throw new Error("Invalid xmd length");
-    const DST_prime = concatBytes(DST, i2osp(DST.length, 1));
-    const Z_pad = i2osp(0, r_in_bytes);
-    const l_i_b_str = i2osp(lenInBytes, 2);
-    const b = new Array<Uint8Array>(ell);
-    const b_0 = await H(
-        concatBytes(Z_pad, msg, l_i_b_str, i2osp(0, 1), DST_prime)
-    );
-    b[0] = await H(concatBytes(b_0, i2osp(1, 1), DST_prime));
-    for (let i = 1; i <= ell; i++) {
-        const args = [strxor(b_0, b[i - 1]), i2osp(i + 1, 1), DST_prime];
-        b[i] = await H(concatBytes(...args));
-    }
-    const pseudo_random_bytes = concatBytes(...b);
-    return pseudo_random_bytes.slice(0, lenInBytes);
+  const ell = Math.ceil(lenInBytes / b_in_bytes);
+  if (ell > 255) throw new Error('Invalid xmd length');
+  const DST_prime = concatBytes(DST, i2osp(DST.length, 1));
+  const Z_pad = i2osp(0, r_in_bytes);
+  const l_i_b_str = i2osp(lenInBytes, 2);
+  const b = new Array<Uint8Array>(ell);
+  const b_0 = await H(
+    concatBytes(Z_pad, msg, l_i_b_str, i2osp(0, 1), DST_prime),
+  );
+  b[0] = await H(concatBytes(b_0, i2osp(1, 1), DST_prime));
+  for (let i = 1; i <= ell; i++) {
+    const args = [strxor(b_0, b[i - 1]), i2osp(i + 1, 1), DST_prime];
+    b[i] = await H(concatBytes(...args));
+  }
+  const pseudo_random_bytes = concatBytes(...b);
+  return pseudo_random_bytes.slice(0, lenInBytes);
 }
 
 // hashes arbitrary-length byte strings to a list of one or more elements of a finite field F
@@ -260,57 +260,57 @@ async function expand_message_xmd(
 // Outputs:
 // [u_0, ..., u_(count - 1)], a list of field elements.
 async function hash_to_field(
-    msg: Uint8Array,
-    count: number,
-    options = {}
+  msg: Uint8Array,
+  count: number,
+  options = {},
 ): Promise<bigint[][]> {
-    // if options is provided but incomplete, fill any missing fields with the
-    // value in hftDefaults (ie hash to G2).
-    const htfOptions = { ...htfDefaults, ...options };
-    const log2p = htfOptions.p.toString(2).length;
-    const L = Math.ceil((log2p + htfOptions.k) / 8); // section 5.1 of ietf draft link above
-    const len_in_bytes = count * htfOptions.m * L;
-    const DST = stringToBytes(htfOptions.DST);
-    let pseudo_random_bytes = msg;
-    if (htfOptions.expand) {
-        pseudo_random_bytes = await expand_message_xmd(msg, DST, len_in_bytes);
+  // if options is provided but incomplete, fill any missing fields with the
+  // value in hftDefaults (ie hash to G2).
+  const htfOptions = { ...htfDefaults, ...options };
+  const log2p = htfOptions.p.toString(2).length;
+  const L = Math.ceil((log2p + htfOptions.k) / 8); // section 5.1 of ietf draft link above
+  const len_in_bytes = count * htfOptions.m * L;
+  const DST = stringToBytes(htfOptions.DST);
+  let pseudo_random_bytes = msg;
+  if (htfOptions.expand) {
+    pseudo_random_bytes = await expand_message_xmd(msg, DST, len_in_bytes);
+  }
+  const u = new Array(count);
+  for (let i = 0; i < count; i++) {
+    const e = new Array(htfOptions.m);
+    for (let j = 0; j < htfOptions.m; j++) {
+      const elm_offset = L * (j + i * htfOptions.m);
+      const tv = pseudo_random_bytes.slice(elm_offset, elm_offset + L);
+      e[j] = mod(os2ip(tv), htfOptions.p);
     }
-    const u = new Array(count);
-    for (let i = 0; i < count; i++) {
-        const e = new Array(htfOptions.m);
-        for (let j = 0; j < htfOptions.m; j++) {
-            const elm_offset = L * (j + i * htfOptions.m);
-            const tv = pseudo_random_bytes.slice(elm_offset, elm_offset + L);
-            e[j] = mod(os2ip(tv), htfOptions.p);
-        }
-        u[i] = e;
-    }
-    return u;
+    u[i] = e;
+  }
+  return u;
 }
 
 export function bigint_to_array(n: number, k: number, x: bigint) {
-    let mod: bigint = 1n;
-    for (let idx = 0; idx < n; idx++) {
-        mod = mod * 2n;
-    }
+  let mod: bigint = 1n;
+  for (let idx = 0; idx < n; idx++) {
+    mod = mod * 2n;
+  }
 
-    let ret: string[] = [];
-    var x_temp: bigint = x;
-    for (let idx = 0; idx < k; idx++) {
-        ret.push((x_temp % mod).toString());
-        x_temp = x_temp / mod;
-    }
-    return ret;
+  let ret: string[] = [];
+  var x_temp: bigint = x;
+  for (let idx = 0; idx < k; idx++) {
+    ret.push((x_temp % mod).toString());
+    x_temp = x_temp / mod;
+  }
+  return ret;
 }
 
 export async function msg_hash(message: string) {
-    let msg = stringToBytes(message);
+  let msg = stringToBytes(message);
 
-    let u = await hash_to_field(msg, 2);
-    // return u;
+  let u = await hash_to_field(msg, 2);
+  // return u;
 
-    return [
-        [bigint_to_array(55, 7, u[0][0]), bigint_to_array(55, 7, u[0][1])],
-        [bigint_to_array(55, 7, u[1][0]), bigint_to_array(55, 7, u[1][1])],
-    ];
+  return [
+    [bigint_to_array(55, 7, u[0][0]), bigint_to_array(55, 7, u[0][1])],
+    [bigint_to_array(55, 7, u[1][0]), bigint_to_array(55, 7, u[1][1])],
+  ];
 }

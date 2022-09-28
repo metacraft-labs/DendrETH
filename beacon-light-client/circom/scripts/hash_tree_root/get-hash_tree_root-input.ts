@@ -1,12 +1,20 @@
-import { PointG1 } from "@noble/bls12-381";
-import * as update from "../../../../vendor/eth2-light-client-updates/mainnet/updates/00290.json";
-import { writeFileSync } from "fs";
+import { PointG1 } from '@noble/bls12-381';
+import * as update from '../../../../vendor/eth2-light-client-updates/mainnet/updates/00290.json';
+import { writeFileSync } from 'fs';
 
-let points: PointG1[] = update.next_sync_committee.pubkeys.map(x => PointG1.fromHex(x.slice(2)));
+let points: PointG1[] = update.next_sync_committee.pubkeys.map(x =>
+  PointG1.fromHex(x.slice(2)),
+);
 
 let input = {
-  points: points.map(point => BigInt("0x" + point.toHex(true)).toString(2).split('')),
-  aggregatedKey: BigInt(update.next_sync_committee.aggregate_pubkey).toString(2).split('')
+  points: points.map(point =>
+    BigInt('0x' + point.toHex(true))
+      .toString(2)
+      .split(''),
+  ),
+  aggregatedKey: BigInt(update.next_sync_committee.aggregate_pubkey)
+    .toString(2)
+    .split(''),
 };
 
-writeFileSync("scripts/hash_tree_root/input.json", JSON.stringify(input));
+writeFileSync('scripts/hash_tree_root/input.json', JSON.stringify(input));
