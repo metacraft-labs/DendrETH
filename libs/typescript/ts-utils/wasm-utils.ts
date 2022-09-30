@@ -74,6 +74,7 @@ export async function loadWasm<Exports extends WebAssembly.Exports>({
       print: (x: undefined) => console.log(x),
       // __main_argc_argv is needed for the new version of emscripten
       __main_argc_argv: () => console.log('__main_argc_argv'),
+      exit: () => console.log('exit'),
       wasmQuit: (errOffset: number, errLength: number) => {
         throwWasmException({
           memory,
@@ -168,6 +169,9 @@ export async function loadWasm<Exports extends WebAssembly.Exports>({
       proc_exit: (x: any) => {
         'proc_exit';
       },
+      clock_res_get: () => console.log('clock_res_get'),
+      fd_fdstat_get: () => console.log('fd_fdstat_get'),
+      clock_time_get: () => console.log('clock_time_get'),
     },
   };
 
