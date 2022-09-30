@@ -1,6 +1,5 @@
 when defined(emcc):
-  {.emit: "#include <emscripten.h>".}
-  {.pragma: wasmPragma, cdecl, exportc, dynlib, codegenDecl: "EMSCRIPTEN_KEEPALIVE $# $#$#".}
+  {.pragma: wasmPragma, cdecl, exportc, dynlib, codegenDecl: "__attribute__((used)) $# $#$#".}
 else:
   {.pragma: wasmPragma, cdecl, exportc, dynlib.}
 
