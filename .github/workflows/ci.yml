@@ -9,7 +9,7 @@ on:
       - main
 
 env:
-  INFURA_API_KEY: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+  INFURA_API_KEY: '${{ secrets.INFURA_API_KEY }}'
   USER_PRIVATE_KEY: '${{ secrets.USER_PRIVATE_KEY }}'
   ETHERSCAN_API_KEY: '${{ secrets.ETHERSCAN_API_KEY }}'
 
