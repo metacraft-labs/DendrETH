@@ -8,6 +8,11 @@ on:
     branches:
       - main
 
+env:
+  INFURA_API_KEY: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+  USER_PRIVATE_KEY: '${{ secrets.USER_PRIVATE_KEY }}'
+  ETHERSCAN_API_KEY: '${{ secrets.ETHERSCAN_API_KEY }}'
+
 jobs:
   Tests:
     runs-on: ubuntu-latest
