@@ -44,6 +44,16 @@ testing this configuration.
 
 See [Getting started with Nix][12] for more details.
 
+Certain scripts in this repository will require API credentials for Infura
+and Etherscan in order to be able to deploy the contracts in the official
+networks. To specify such credentials, please create a file named `.env` and
+place it at the root of your working copy. Its contents should look like this:
+
+```bash
+INFURA_API_KEY=1234567890abcdef1234567890abcdef
+ETHERSCAN_API_KEY=1234567890ABCDEF1234567890ABCDEF12
+```
+
 ### How does a smart contract sync with the network?
 
 A normal light client will download light client updates from the Ethereum
@@ -166,3 +176,5 @@ use cases that we plan to support in the future.
 [15]: https://github.com/iden3/circomlib
 [16]: https://github.com/metacraft-labs/DendrETH/blob/main/LICENSE
 [17]: https://github.com/metacraft-labs/DendrETH/blob/main/docs/ROADMAP.md
+[18]: https://infura.io
+[19]: https://etherscan.io
