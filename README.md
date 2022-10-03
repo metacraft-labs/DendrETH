@@ -13,12 +13,11 @@ first end-to-end implementation capable of syncing the entire Mainnet
 history since Altair. Our current [Solidity contract][4] leverages
 a [Circom zero-knowledge circuit][5] to verify the BLS signatures of the
 Ethereum 2 validators and to apply most of the syncing protocol rules.
-At the moment, parts of the light client update verification logic is
-still done in Solidity, but our team is well on track to implement a
-complete header-to-header zero-knowledge circuit which will enable any
-type of Ethereum client to develop one-shot syncing capabilities similar
-to the ones offered by the [Mina][6] protocol (please see our [analysis][7]
-regarding the limitations of this approach).
+Since the circuit is able to verify complete header-to-header transitions,
+it may be used in recursive manner in the future to allow any Ethereum
+client to implement one-shot syncing capabilities similar to the ones
+offered by the [Mina][6] protocol (please see our [analysis][7] regarding
+the limitations of this approach).
 
 For blockchains based on WebAssembly and BPF, we are developing a [direct
 implementation][8] of the light client syncing protocol based on the
@@ -98,7 +97,7 @@ make evm-simulation
 
 You should see a [Hardhat simulation](https://hardhat.org/hardhat-runner/docs/getting-started#overview),
 sequentially processing all available updates. At the time of this writing, each
-update costs around 770K in gas (roughly equal to $8).
+update costs around 330K in gas.
 
 ### Building the Circom circuits
 
