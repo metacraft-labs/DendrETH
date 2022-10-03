@@ -177,7 +177,11 @@ export async function getSolidityProof(
   const proofsManifest = `${proofsDir}/manifest.json`;
 
   if (JSON.parse(fs.readFileSync(proofsManifest)).version < 2) {
-    throw new Error('Please update vendor/eth2-light-client-updates');
+    throw new Error(
+      'The currently used proof files are targetting an older version ' +
+        'of the circuit. Please run "git submodule update" to fetch ' +
+        'the latest proof files in vendor/eth2-light-client-updates.',
+    );
   }
 
   const proof = JSON.parse(
