@@ -4,7 +4,7 @@ import { ssz } from '@chainsafe/lodestar-types';
 import { hexToBytes, formatHex, bigint_to_array, bytesToHex } from './bls';
 import { SyncCommittee } from '@chainsafe/lodestar-types/lib/altair/sszTypes';
 import { Proof } from './index';
-import * as constants from './constants';
+import { BeaconBlockHeader } from '@chainsafe/lodestar-types/lib/phase0/sszTypes';
 
 export interface JSONHeader {
   slot: string;
@@ -80,11 +80,6 @@ export function formatLightClientUpdate(
     attested_header: update.attested_header,
     finalized_header: update.finalized_header,
     finality_branch: update.finality_branch,
-    fork_version: constants.ALTAIR_FORK_VERSION,
-    next_sync_committee_root: hashTreeRootSyncCommitee(
-      update.next_sync_committee,
-    ),
-    next_sync_committee_branch: update.next_sync_committee_branch,
     a: proof.a,
     b: proof.b,
     c: proof.c,
@@ -104,6 +99,16 @@ export function hashTreeRootSyncCommitee(sync_commitee: SyncCommitee): string {
   wrapper.aggregatePubkey = hexToBytes(sync_commitee.aggregate_pubkey);
 
   return '0x' + bytesToHex(SyncCommittee.hashTreeRoot(wrapper));
+}
+
+export function hashTreeRootBeaconBlock(header: JSONHeader) {
+  const block_header = ssz.phase0.BeaconBlockHeader.defaultValue();
+  block_header.slot = parseInt(header.slot);
+  block_header.proposerIndex = parseInt(header.proposer_index);
+  block_header.parentRoot = hexToBytes(header.parent_root);
+  block_header.stateRoot = hexToBytes(header.state_root);
+  block_header.bodyRoot = hexToBytes(header.body_root);
+  return '0x' + bytesToHex(BeaconBlockHeader.hashTreeRoot(block_header));
 }
 
 export function formatBitmask(sync_committee_bits: string): BitArray {

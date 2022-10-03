@@ -56,27 +56,9 @@ import '../../spec/BeaconChain.sol';
  */
 contract BeaconLightClient is BeaconChain, BLSVerify {
   event FinalizedHeaderImported(BeaconBlockHeader finalized_header);
-  event NextSyncCommitteeImported(
-    uint64 indexed period,
-    bytes32 indexed next_sync_committee_root
-  );
-
-  bytes32 public immutable GENESIS_VALIDATORS_ROOT;
-
-  /**
-   * A bellatrix beacon state has 25 fields, with a depth of 5.
-   * | field                               | gindex | depth |
-   * | ----------------------------------- | ------ | ----- |
-   * | next_sync_committee                 | 55     | 5     |
-   * | finalized_checkpoint_root           | 105    | 6     |
-   */
-  uint64 private constant NEXT_SYNC_COMMITTEE_INDEX = 55;
-  uint64 private constant NEXT_SYNC_COMMITTEE_DEPTH = 5;
 
   uint64 private constant FINALIZED_CHECKPOINT_ROOT_INDEX = 105;
   uint64 private constant FINALIZED_CHECKPOINT_ROOT_DEPTH = 6;
-
-  bytes4 private constant DOMAIN_SYNC_COMMITTEE = 0x07000000;
 
   struct LightClientUpdate {
     // The beacon block header that is attested to by the sync committee
@@ -84,10 +66,6 @@ contract BeaconLightClient is BeaconChain, BLSVerify {
     // The finalized beacon block header attested to by Merkle branch
     BeaconBlockHeader finalized_header;
     bytes32[] finality_branch;
-    // Fork version for the aggregate signature
-    bytes4 fork_version;
-    bytes32 next_sync_committee_root;
-    bytes32[] next_sync_committee_branch;
     uint256[2] a;
     uint256[2][2] b;
     uint256[2] c;
@@ -96,9 +74,7 @@ contract BeaconLightClient is BeaconChain, BLSVerify {
   // Beacon block header that is finalized
   BeaconBlockHeader public finalized_header;
 
-  // Sync committees corresponding to the header
-  // sync_committee_period => sync_committee_root
-  bytes32 public prev_sync_committee_root;
+  bytes32 prev_block_header_hash;
 
   constructor(
     uint64 _slot,
@@ -106,8 +82,7 @@ contract BeaconLightClient is BeaconChain, BLSVerify {
     bytes32 _parent_root,
     bytes32 _state_root,
     bytes32 _body_root,
-    bytes32 _current_sync_committee_hash,
-    bytes32 _genesis_validators_root
+    bytes32 _prev_block_header_hash
   ) {
     finalized_header = BeaconBlockHeader(
       _slot,
@@ -116,8 +91,7 @@ contract BeaconLightClient is BeaconChain, BLSVerify {
       _state_root,
       _body_root
     );
-    prev_sync_committee_root = _current_sync_committee_hash;
-    GENESIS_VALIDATORS_ROOT = _genesis_validators_root;
+    prev_block_header_hash = _prev_block_header_hash;
   }
 
   function state_root() public view returns (bytes32) {
@@ -128,6 +102,18 @@ contract BeaconLightClient is BeaconChain, BLSVerify {
     external
     payable
   {
+    bytes32 attested_header_hash = hash_tree_root(update.attested_header);
+    require(
+      verifySignature(
+        update.a,
+        update.b,
+        update.c,
+        prev_block_header_hash,
+        attested_header_hash
+      ),
+      '!proof'
+    );
+
     require(
       verify_finalized_header(
         update.finalized_header,
@@ -137,55 +123,12 @@ contract BeaconLightClient is BeaconChain, BLSVerify {
       '!finalized_header'
     );
 
-    require(
-      is_valid_merkle_branch(
-        update.next_sync_committee_root,
-        update.next_sync_committee_branch,
-        NEXT_SYNC_COMMITTEE_DEPTH,
-        NEXT_SYNC_COMMITTEE_INDEX,
-        update.attested_header.state_root
-      ),
-      '!next_sync_committee'
-    );
-
-    require(
-      verify_signed_header(
-        prev_sync_committee_root,
-        update.fork_version,
-        update.attested_header,
-        update.a,
-        update.b,
-        update.c
-      ),
-      '!sign'
-    );
-
     require(update.finalized_header.slot > finalized_header.slot, '!new');
 
     finalized_header = update.finalized_header;
-    prev_sync_committee_root = update.next_sync_committee_root;
+    prev_block_header_hash = attested_header_hash;
 
     emit FinalizedHeaderImported(update.finalized_header);
-  }
-
-  function verify_signed_header(
-    bytes32 sync_committee,
-    bytes4 fork_version,
-    BeaconBlockHeader calldata header,
-    uint256[2] memory a,
-    uint256[2][2] memory b,
-    uint256[2] memory c
-  ) internal view returns (bool) {
-
-    bytes32 domain = compute_domain(
-      DOMAIN_SYNC_COMMITTEE,
-      fork_version,
-      GENESIS_VALIDATORS_ROOT
-    );
-
-    bytes32 signing_root = compute_signing_root(header, domain);
-
-    return verifySignature(a, b, c, signing_root, sync_committee);
   }
 
   function verify_finalized_header(

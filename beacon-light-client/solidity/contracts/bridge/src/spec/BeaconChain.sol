@@ -4,118 +4,12 @@ pragma solidity 0.8.9;
 import './MerkleProof.sol';
 
 contract BeaconChain is MerkleProof {
-  uint64 internal constant SYNC_COMMITTEE_SIZE = 512;
-  uint64 internal constant BLSPUBLICKEY_LENGTH = 48;
-  uint64 internal constant BLSSIGNATURE_LENGTH = 96;
-
-  struct ForkData {
-    bytes4 current_version;
-    bytes32 genesis_validators_root;
-  }
-
-  struct SigningData {
-    bytes32 object_root;
-    bytes32 domain;
-  }
-
-  struct SyncCommittee {
-    bytes[SYNC_COMMITTEE_SIZE] pubkeys;
-    bytes aggregate_pubkey;
-  }
-
   struct BeaconBlockHeader {
     uint64 slot;
     uint64 proposer_index;
     bytes32 parent_root;
     bytes32 state_root;
     bytes32 body_root;
-  }
-
-  // Return the signing root for the corresponding signing data.
-  function compute_signing_root(
-    BeaconBlockHeader memory beacon_header,
-    bytes32 domain
-  ) internal pure returns (bytes32) {
-    return
-      hash_tree_root(
-        SigningData({
-          object_root: hash_tree_root(beacon_header),
-          domain: domain
-        })
-      );
-  }
-
-  // Return the 32-byte fork data root for the ``current_version`` and ``genesis_validators_root``.
-  // This is used primarily in signature domains to avoid collisions across forks/chains.
-  function compute_fork_data_root(
-    bytes4 current_version,
-    bytes32 genesis_validators_root
-  ) internal pure returns (bytes32) {
-    return
-      hash_tree_root(
-        ForkData({
-          current_version: current_version,
-          genesis_validators_root: genesis_validators_root
-        })
-      );
-  }
-
-  //  Return the domain for the ``domain_type`` and ``fork_version``.
-  function compute_domain(
-    bytes4 domain_type,
-    bytes4 fork_version,
-    bytes32 genesis_validators_root
-  ) internal pure returns (bytes32) {
-    bytes32 fork_data_root = compute_fork_data_root(
-      fork_version,
-      genesis_validators_root
-    );
-    return bytes32(domain_type) | (fork_data_root >> 32);
-  }
-
-  function hash_tree_root(ForkData memory fork_data)
-    internal
-    pure
-    returns (bytes32)
-  {
-    return
-      hash_node(
-        bytes32(fork_data.current_version),
-        fork_data.genesis_validators_root
-      );
-  }
-
-  function hash_tree_root(SigningData memory signing_data)
-    internal
-    pure
-    returns (bytes32)
-  {
-    return hash_node(signing_data.object_root, signing_data.domain);
-  }
-
-  function hash_tree_root(SyncCommittee memory sync_committee)
-    public
-    pure
-    returns (bytes32)
-  {
-    bytes32[] memory pubkeys_leaves = new bytes32[](SYNC_COMMITTEE_SIZE);
-    for (uint256 i = 0; i < SYNC_COMMITTEE_SIZE; ++i) {
-      bytes memory key = sync_committee.pubkeys[i];
-      require(key.length == BLSPUBLICKEY_LENGTH, '!key');
-      pubkeys_leaves[i] = hash(abi.encodePacked(key, bytes16(0)));
-    }
-
-    bytes32 pubkeys_root = merkle_root(pubkeys_leaves);
-
-    require(
-      sync_committee.aggregate_pubkey.length == BLSPUBLICKEY_LENGTH,
-      '!agg_key'
-    );
-    bytes32 aggregate_pubkey_root = hash(
-      abi.encodePacked(sync_committee.aggregate_pubkey, bytes16(0))
-    );
-
-    return hash_node(pubkeys_root, aggregate_pubkey_root);
   }
 
   function hash_tree_root(BeaconBlockHeader memory beacon_header)
