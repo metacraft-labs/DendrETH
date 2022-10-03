@@ -6,15 +6,23 @@ task('deploy', 'Deploy the beacon light client contract').setAction(
     await run('compile');
     const [deployer] = await ethers.getSigners();
 
+    console.log('Deploying contracts with the account:', deployer.address);
+    console.log('Account balance:', (await deployer.getBalance()).toString());
+
     const beaconLightClient = await (
       await ethers.getContractFactory('BeaconLightClient')
     ).deploy(...getConstructorArgs(network.name));
 
     console.log('>>> Waiting for BeaconLightClient deployment...');
 
-    await beaconLightClient.deployed();
+    console.log(
+      'Deploying transaction hash..',
+      beaconLightClient.deployTransaction.hash,
+    );
 
-    console.log(`>>> ${beaconLightClient.address}`);
+    const contract = await beaconLightClient.deployed();
+
+    console.log(`>>> ${contract.address}`);
     console.log('>>> Done!');
   },
 );

@@ -1,10 +1,10 @@
-import { PointG1, PointG2 } from "@noble/bls12-381";
-import { BitArray, BitVectorType } from "@chainsafe/ssz";
-import { ssz } from "@chainsafe/lodestar-types";
-import { hexToBytes, formatHex, bigint_to_array, bytesToHex } from "./bls";
-import { SyncCommittee } from "@chainsafe/lodestar-types/lib/altair/sszTypes";
-import { Proof } from "./index";
-import { BeaconBlockHeader } from "@chainsafe/lodestar-types/lib/phase0/sszTypes";
+import { PointG1, PointG2 } from '@noble/bls12-381';
+import { BitArray, BitVectorType } from '@chainsafe/ssz';
+import { ssz } from '@chainsafe/lodestar-types';
+import { hexToBytes, formatHex, bigint_to_array, bytesToHex } from './bls';
+import { SyncCommittee } from '@chainsafe/lodestar-types/lib/altair/sszTypes';
+import { Proof } from './index';
+import { BeaconBlockHeader } from '@chainsafe/lodestar-types/lib/phase0/sszTypes';
 
 export interface JSONHeader {
   slot: string;
@@ -108,7 +108,7 @@ export function hashTreeRootBeaconBlock(header: JSONHeader) {
   block_header.parentRoot = hexToBytes(header.parent_root);
   block_header.stateRoot = hexToBytes(header.state_root);
   block_header.bodyRoot = hexToBytes(header.body_root);
-  return "0x" + bytesToHex(BeaconBlockHeader.hashTreeRoot(block_header));
+  return '0x' + bytesToHex(BeaconBlockHeader.hashTreeRoot(block_header));
 }
 
 export function formatBitmask(sync_committee_bits: string): BitArray {
