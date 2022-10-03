@@ -151,12 +151,6 @@ export async function getSolidityProof(
   const proofsDir = `../../vendor/eth2-light-client-updates/${network}/proofs`;
 
   if (generateProof) {
-    const proofsManifest = `${proofsDir}/manifest.json`;
-
-    if (JSON.parse(fs.readFileSync(proofsManifest)).version < 2) {
-      throw new Error('Please update vendor/eth2-light-client-updates');
-    }
-
     fs.writeFileSync(
       'input.json',
       JSON.stringify(await getProofInput(prevUpdate, update)),
@@ -178,6 +172,12 @@ export async function getSolidityProof(
     );
 
     await promiseExec('rm input.json witness.wtns');
+  }
+
+  const proofsManifest = `${proofsDir}/manifest.json`;
+
+  if (JSON.parse(fs.readFileSync(proofsManifest)).version < 2) {
+    throw new Error('Please update vendor/eth2-light-client-updates');
   }
 
   const proof = JSON.parse(
