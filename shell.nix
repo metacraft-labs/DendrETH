@@ -1,9 +1,15 @@
 {pkgs}:
 with pkgs; let
-  nodejs = nodejs-18_x;
+  nodejs = nodejs-16_x;
   llvm = llvmPackages_13;
   corepack = callPackage ./libs/nix/corepack-shims {inherit nodejs;};
   nim-wasm = callPackage ./libs/nix/nim-wasm {inherit llvm;};
+  my-python-packages = ps: ps.callPackage ./my-python-packages.nix {};
+  python-with-my-packages = python38.withPackages (ps:
+    with ps; [
+      (my-python-packages ps)
+      setuptools
+    ]);
 in
   mkShell {
     packages = [
@@ -30,8 +36,10 @@ in
       binaryen
 
       metacraft-labs.circom
+      metacraft-labs.solana
+      rustup
       nlohmann_json
-      python38
+      python-with-my-packages
       gmp
       nasm
       libsodium
