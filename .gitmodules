@@ -28,3 +28,6 @@
 [submodule "vendor/rapidsnark"]
 	path = vendor/rapidsnark
 	url = https://github.com/iden3/rapidsnark.git
+[submodule "vendor/solana-circom"]
+	path = vendor/solana-circom
+	url = https://github.com/Electron-Labs/solana-circom.git
