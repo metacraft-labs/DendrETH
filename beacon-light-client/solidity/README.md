@@ -1,4 +1,5 @@
 This folder contains a complete Solidity implementation of a beacon chain light client. The verification of BLS12-381 signatures is based on a zero-knowledge circuit developed in the [circom](../circom) folder.
+Please set up the required environment variables by renaming ``.env.example`` to ``.env`` and populating the necessary fields.
 
 ## Tests
 
