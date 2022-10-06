@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "yarn hardhat test",
-    "gas": "yarn hardhat run test/utils/gas-reporter"
+    "gas": "yarn hardhat run test/utils/gas-reporter/src/index.ts"
   },
   "type": "commonjs",
   "author": "",

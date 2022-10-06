@@ -13,8 +13,9 @@ const optionalConf = {
 };
 
 const mandatoryConf = {
-  LOCAL_HARDHAT_PRIVATE_KEY: process.env.LOCAL_HARDHAT_PRIVATE_KEY ||
-    "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+  LOCAL_HARDHAT_PRIVATE_KEY:
+    process.env.LOCAL_HARDHAT_PRIVATE_KEY ||
+    '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
   INFURA_API_KEY: process.env.INFURA_API_KEY,
   ETHERSCAN_API_KEY: process.env.ETHERSCAN_API_KEY,
 };
