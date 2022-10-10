@@ -40,8 +40,8 @@ jobs:
       - name: Install Node.js dependencies
         run: nix develop -c yarn format:check
 
-      - name: Run emsctipten tests
+      - name: Run Nim Light Client compiled with emsctipten tests
         run: nix develop -c yarn test-emcc
 
-      #- name: Run tests
-      #  run: nix develop -c yarn test
+      - name: Run Nim Light Client compiled with clang tests
+        run: nix develop -c yarn test
