@@ -1,0 +1,7 @@
+# Nim
+/wasm-build/wasm-nimcache/*
+!wasm-build/wasm-nimcache/.gitkeep
+
+# C
+/wasm-build/wasm-ccache/*
+!wasm-build/wasm-ccache/.gitkeep
