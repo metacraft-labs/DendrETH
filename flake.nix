@@ -32,6 +32,15 @@
       inherit self nixpkgs;
       name = "DendrETH";
       shell = ./shell.nix;
+      config = {
+        permittedInsecurePackages = [
+          # wasm3 is insecure if used to execute untrusted third-party code
+          # however, since we're using it for development, these problems do not
+          # affect us.
+          # Marked as insecure: https://github.com/NixOS/nixpkgs/pull/192915
+          "wasm3-0.5.0"
+        ];
+      };
       preOverlays = [mcl-blockchain.overlays.default (import ./libs/nix/overlay.nix)];
     };
 }
