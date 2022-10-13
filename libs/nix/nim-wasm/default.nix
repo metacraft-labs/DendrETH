@@ -86,7 +86,6 @@
         --passL:"-Wl,-L${emscripten-enriched-cache}/share/emscripten/cache/sysroot/lib/wasm32-emscripten"
         --passL:"-Wl,-lstubs,-lc"
         --passL:"-Wl,-ldlmalloc"
-        --passL:"-Wl,-lc_rt-optz"
 
         # Wasm specific LLD options: https://lld.llvm.org/WebAssembly.html
         --passL:"-Wl,--export-dynamic"

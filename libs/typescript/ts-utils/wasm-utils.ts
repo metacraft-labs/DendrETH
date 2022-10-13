@@ -137,6 +137,7 @@ export async function loadWasm<Exports extends WebAssembly.Exports>({
           );
 
           var replacement = emscripten_realloc_buffer(newSize, memory);
+          HEAPU8 = new Uint8Array(memory.buffer);
           if (replacement) {
             return true;
           }
