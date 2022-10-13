@@ -3,6 +3,7 @@
   writeShellApplication,
   llvm,
   nim,
+  emscripten-enriched-cache,
 }: let
   nimcfg = writeTextFile {
     name = "nim-cfg";
@@ -74,10 +75,6 @@
         --passC:"-Werror"
         --passC:"-Wall"
 
-        # --passL:"--target=wasm32-unknown-unknown-wasm"
-        # --passL:"-nostdlib"
-        # --passL:"-Wl,--no-entry,-L/nix/store/cxgpscy3p231hii96c311haz3lqcf47g-emscripten-3.0.0/share/emscripten/cache/sysroot/lib/wasm32-emscripten,-lGL,-lal,-lstubs,-lc,-lcompiler_rt,-lc++-noexcept,-lc++abi-noexcept,-ldlmalloc,-lstandalonewasm-memgrow,-lc_rt-optz,-lsockets,--import-undefined,-z,stack-size=5242880,--initial-memory=16777216,--max-memory=2147483648,--global-base=1024"
-
         # General LLD options: https://man.archlinux.org/man/extra/lld/ld.lld.1.en
         --passL:"--target=wasm32-unknown-unknown-wasm"
         --passL:"-nostdlib"
@@ -86,7 +83,7 @@
         --passL:"-Wl,-z,stack-size=5242880"
 
         # Link libraries
-        --passL:"-Wl,-L/nix/store/cxgpscy3p231hii96c311haz3lqcf47g-emscripten-3.0.0/share/emscripten/cache/sysroot/lib/wasm32-emscripten"
+        --passL:"-Wl,-L${emscripten-enriched-cache}/share/emscripten/cache/sysroot/lib/wasm32-emscripten"
         --passL:"-Wl,-lstubs,-lc"
         --passL:"-Wl,-ldlmalloc"
         --passL:"-Wl,-lc_rt-optz"
