@@ -4,6 +4,13 @@ with pkgs; let
   llvm = llvmPackages_13;
   corepack = callPackage ./libs/nix/corepack-shims {inherit nodejs;};
   nim-wasm = callPackage ./libs/nix/nim-wasm {inherit llvm;};
+
+  rustTargetWasm =
+    pkgs.rust-bin.stable.latest.default.override
+    {
+      extensions = ["rust-src"];
+      targets = ["wasm32-unknown-unknown"];
+    };
 in
   mkShell {
     packages = [
@@ -54,6 +61,8 @@ in
       ldc
       nim
       nim-wasm
+
+      rustTargetWasm
     ];
 
     shellHook = ''
