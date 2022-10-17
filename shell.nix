@@ -68,6 +68,9 @@ in
         # llvm.lld
         ldc
 
+        # A basic Cosmos SDK app to host WebAssembly smart contracts
+        metacraft-labs.wasmd
+
         rustTargetWasm
         # Developer tool to help you get up and running quickly with a new Rust
         # project by leveraging a pre-existing git repository as a template.
