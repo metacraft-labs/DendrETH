@@ -10,6 +10,13 @@ with pkgs; let
       (my-python-packages ps)
       setuptools
     ]);
+
+  rustTargetWasm =
+    pkgs.rust-bin.stable.latest.default.override
+    {
+      extensions = ["rust-src"];
+      targets = ["wasm32-unknown-unknown"];
+    };
 in
   mkShell {
     packages =
@@ -60,6 +67,8 @@ in
         # llvm.llvm
         # llvm.lld
         ldc
+
+        rustTargetWasm
       ]
       ++ lib.optionals (!stdenv.isDarwin) [
         metacraft-labs.solana
