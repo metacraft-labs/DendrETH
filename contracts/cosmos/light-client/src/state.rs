@@ -21,5 +21,5 @@ pub struct BeaconBlockHeader {
 
 //     pub current_sync_committee_branch: CurrentSyncCommitteeBranch,
 // }
-
 pub const CONFIG: Item<BeaconBlockHeader> = Item::new("config");
+pub const SLOT: Item<u32> = Item::new("slot");

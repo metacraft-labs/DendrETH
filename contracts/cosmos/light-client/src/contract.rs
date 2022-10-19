@@ -2,19 +2,21 @@
 use cosmwasm_std::{
     entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult,
 };
-use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::msg::{ConfigResponse, SlotResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
 
 // use cw2::set_contract_version;
 
 use crate::error::ContractError;
-use crate::state::{BeaconBlockHeader, CONFIG};
+use crate::state::{BeaconBlockHeader, CONFIG, SLOT};
 
 /*
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:light-client";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 */
-
+extern "C" {
+    fn printSlotOfHeader(a: &BeaconBlockHeader) -> u32;
+}
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     _deps: DepsMut,
@@ -29,7 +31,9 @@ pub fn instantiate(
         state_root: _msg.state_root,
         body_root: _msg.body_root,
     };
+    let res = unsafe { printSlotOfHeader(&header) };
     CONFIG.save(_deps.storage, &header)?;
+    SLOT.save(_deps.storage, &res)?;
     Ok(Response::default())
 
 }
@@ -47,7 +51,7 @@ pub fn execute(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(_deps: Deps, _env: Env, _msg: QueryMsg) -> StdResult<Binary> {
     match _msg {
-        QueryMsg::BeaconBlockHeader {} => to_binary::<ConfigResponse>(&CONFIG.load(_deps.storage)?.into()),
+        QueryMsg::BeaconBlockHeader {} => to_binary::<SlotResponse>(&SLOT.load(_deps.storage)?.into()),
     }
 }
 

@@ -31,6 +31,11 @@ pub struct ConfigResponse {
     pub body_root: Addr,
 }
 
+#[cw_serde]
+pub struct SlotResponse {
+    pub slot: u32,
+}
+
 impl From<BeaconBlockHeader> for ConfigResponse {
     fn from(header: BeaconBlockHeader) -> ConfigResponse {
         ConfigResponse {
@@ -39,6 +44,14 @@ impl From<BeaconBlockHeader> for ConfigResponse {
             parent_root: header.parent_root,
             state_root: header.state_root,
             body_root: header.body_root,
+        }
+    }
+}
+
+impl From<u32> for SlotResponse {
+    fn from(slot: u32) -> SlotResponse {
+        SlotResponse {
+            slot: slot,
         }
     }
 }
