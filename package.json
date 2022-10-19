@@ -6,7 +6,8 @@
   "packageManager": "yarn@3.2.1",
   "workspaces": [
     "beacon-light-client/circom",
-    "beacon-light-client/solidity"
+    "beacon-light-client/solidity",
+    "beacon-light-client/solana"
   ],
   "directories": {
     "doc": "docs"

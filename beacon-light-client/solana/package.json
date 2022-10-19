@@ -1,0 +1,16 @@
+{
+  "name": "solana",
+  "type": "commonjs",
+  "scripts": {
+    "start": "ts-node scripts/main.ts",
+    "build:program-rust": "cargo build-bpf --manifest-path=./contracts/rust-light-client/Cargo.toml --bpf-out-dir=dist/program"
+  },
+  "dependencies": {
+    "@solana/buffer-layout": "4.0.0",
+    "@solana/web3.js": "^1.66.1",
+    "borsh": "^0.7.0",
+    "buffer": "^6.0.3",
+    "ts-node": "^10.9.1",
+    "yaml": "^2.1.3"
+  }
+}

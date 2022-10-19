@@ -1,4 +1,5 @@
 use ark_bn254::{Bn254, Fq, Fq2, Fr, G1Affine, G1Projective, G2Affine, G2Projective};
+use ark_groth16::Proof;
 use serde::Deserialize;
 use serde_json;
 use std::env;
@@ -9,7 +10,7 @@ use std::str::FromStr;
 pub struct RawCircuitProof {
     pi_a: Vec<String>,
     pi_b: Vec<Vec<String>>,
-    pi_c: Vec<String>
+    pi_c: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -137,21 +138,37 @@ impl From<CircuitProof> for ark_groth16::Proof<Bn254> {
     }
 }
 
+pub mod instruction;
+use crate::instruction::ProofData;
+unsafe fn any_as_u8_slice<T: Sized>(p: &T) -> &[u8] {
+    ::std::slice::from_raw_parts((p as *const T) as *const u8, ::std::mem::size_of::<T>())
+}
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    let instruction_data: [u8; 384] = [
+        11, 7, 201, 86, 108, 234, 171, 101, 246, 129, 197, 161, 102, 172, 91, 179, 81, 130, 206,
+        28, 90, 71, 4, 180, 18, 216, 27, 59, 84, 218, 167, 21, 4, 211, 41, 64, 124, 230, 84, 98,
+        177, 136, 199, 242, 6, 187, 249, 62, 223, 232, 38, 220, 188, 79, 101, 32, 254, 212, 163,
+        232, 22, 104, 54, 45, 66, 225, 164, 171, 51, 236, 65, 56, 254, 63, 89, 170, 204, 246, 95,
+        40, 191, 112, 151, 112, 45, 129, 42, 118, 176, 213, 68, 209, 155, 225, 50, 43, 7, 64, 158,
+        209, 169, 24, 119, 201, 66, 46, 156, 247, 232, 128, 187, 234, 134, 238, 203, 217, 175, 193,
+        30, 222, 236, 132, 249, 240, 141, 196, 11, 48, 129, 41, 216, 181, 249, 78, 83, 145, 167,
+        236, 102, 154, 233, 27, 249, 209, 231, 21, 61, 7, 27, 78, 251, 109, 78, 115, 164, 195, 245,
+        64, 144, 34, 132, 45, 126, 240, 198, 46, 85, 216, 220, 89, 171, 145, 119, 169, 65, 103,
+        216, 254, 230, 71, 249, 140, 165, 17, 174, 148, 143, 198, 210, 229, 71, 4, 156, 26, 229,
+        99, 240, 243, 47, 180, 228, 233, 201, 38, 16, 116, 164, 1, 172, 46, 31, 253, 185, 3, 180,
+        181, 46, 220, 114, 87, 157, 193, 34, 40, 193, 61, 223, 105, 41, 143, 121, 90, 40, 145, 149,
+        150, 72, 180, 39, 17, 39, 187, 98, 168, 201, 171, 114, 10, 223, 184, 183, 213, 50, 65, 82,
+        23, 150, 112, 31, 83, 62, 171, 83, 152, 247, 9, 154, 23, 30, 20, 123, 210, 101, 116, 20,
+        25, 219, 193, 117, 212, 167, 68, 32, 174, 29, 167, 48, 13, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 227, 205, 135, 104, 194, 99,
+        208, 121, 227, 109, 5, 212, 185, 131, 111, 101, 64, 109, 80, 254, 225, 178, 177, 145, 68,
+        213, 197, 249, 169, 255, 108, 28, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    ];
 
-    let input_str = read_to_string(&args[1]).unwrap();
-    let res = CircuitVerifyingKey::read_input_from_json(&input_str);
-    let out = ark_groth16::VerifyingKey::from(res);
-    let pvk = ark_groth16::prepare_verifying_key(&out);
+    let proof_data = ProofData::unpack(&instruction_data);
 
-    let pub_input_str = read_to_string(&args[2]).unwrap();
-    let pub_input = read_input_from_json(&pub_input_str);
-
-    let proof_str = read_to_string(&args[3]).unwrap();
-    let proof = ark_groth16::Proof::from(CircuitProof::read_input_from_json(&proof_str));
-
-    if ark_groth16::verify_proof(&pvk, &proof, &pub_input).unwrap() {
+    if ark_groth16::verify_proof(&proof_data.pvk, &proof_data.proof, &proof_data.pub_input).unwrap() {
         println!("OK!");
     } else {
         eprintln!("Invalid proof");

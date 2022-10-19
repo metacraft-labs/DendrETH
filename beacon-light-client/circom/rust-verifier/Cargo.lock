@@ -391,6 +391,7 @@ version = "0.1.0"
 dependencies = [
  "ark-bn254",
  "ark-groth16",
+ "num-bigint",
  "serde",
  "serde_json",
 ]

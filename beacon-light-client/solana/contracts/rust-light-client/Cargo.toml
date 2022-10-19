@@ -1,14 +1,20 @@
 [package]
-name = "rust-verifier"
-version = "0.1.0"
+name = "rust-light-client"
+version = "0.0.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = { version = "1.0.137", default-features = false, features = ["derive"] }
-serde_json = { version = "1.0.81" }
+borsh = "0.9.3"
+borsh-derive = "0.9.1"
+solana-program = "~1.8.14"
 
+# Zkey dependencies
 ark-groth16 = { git = "https://github.com/arkworks-rs/groth16", rev = "765817f", default-features = false }
 ark-bn254 = { version = "0.3.0", default-features = false, features = ["curve"] }
 num-bigint = "0.4"
+
+[lib]
+name = "light_client"
+crate-type = ["cdylib", "lib"]
