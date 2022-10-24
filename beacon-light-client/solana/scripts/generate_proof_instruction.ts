@@ -63,3 +63,4 @@ export function getProofInstruction(proof, public_data): Uint8Array {
 
   return data;
 }
+

@@ -7,7 +7,7 @@ pub struct ProofData {
 }
 
 impl ProofData {
-    pub fn unpack(input: &[u8; 384]) -> Self {
+    pub fn unpack(input: &[u8; 384]) -> Box<ProofData> {
         let a1 = Fq::from(BigUint::from_bytes_le(&input[0..32]));
         let a2 = Fq::from(BigUint::from_bytes_le(&input[32..64]));
 
@@ -35,9 +35,9 @@ impl ProofData {
         let pub_input3 = Fr::from(BigUint::from_bytes_le(&input[320..352]));
         let pub_input4 = Fr::from(BigUint::from_bytes_le(&input[352..384]));
 
-        ProofData {
+        Box::new(ProofData {
             proof: ark_groth16::Proof { a, b, c },
-            pub_input: [pub_input1, pub_input2, pub_input3, pub_input4],
-        }
+            pub_input: [pub_input1, pub_input2, pub_input3, pub_input4]
+        })
     }
 }

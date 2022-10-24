@@ -1,4 +1,5 @@
 use ark_bn254::{Bn254, Fq, Fq2, Fr, G1Affine, G1Projective, G2Affine, G2Projective};
+use ark_groth16::VerifyingKey;
 use num_bigint::BigUint;
 
 pub struct ProofData {
@@ -36,7 +37,7 @@ impl ProofData {
         let pub_input3 = Fr::from(BigUint::from_bytes_le(&input[320..352]));
         let pub_input4 = Fr::from(BigUint::from_bytes_le(&input[352..384]));
 
-        let vk_data = [
+        let vk_data = vec![
             226, 242, 109, 190, 162, 153, 245, 34, 59, 100, 108, 177, 251, 51, 234, 219, 5, 157,
             148, 7, 85, 157, 116, 65, 223, 217, 2, 227, 167, 154, 77, 45, 38, 25, 77, 0, 255, 202,
             118, 240, 1, 3, 35, 25, 10, 131, 137, 206, 69, 227, 159, 32, 96, 236, 216, 97, 176,
@@ -80,73 +81,13 @@ impl ProofData {
             223, 76, 175, 38, 38, 250, 152, 60, 55, 81, 168, 211, 22,
         ];
 
-        let vk: ark_groth16::VerifyingKey<Bn254> = ark_groth16::VerifyingKey {
-            alpha_g1: G1Affine::from(G1Projective::new(
-                Fq::from(BigUint::from_bytes_le(&vk_data[0..32])),
-                Fq::from(BigUint::from_bytes_le(&vk_data[32..64])),
-                Fq::from(1),
-            )),
-            beta_g2: G2Affine::from(G2Projective::new(
-                Fq2::new(
-                    Fq::from(BigUint::from_bytes_le(&vk_data[64..96])),
-                    Fq::from(BigUint::from_bytes_le(&vk_data[96..128])),
-                ),
-                Fq2::new(
-                    Fq::from(BigUint::from_bytes_le(&vk_data[128..160])),
-                    Fq::from(BigUint::from_bytes_le(&vk_data[160..192])),
-                ),
-                Fq2::new(Fq::from(1), Fq::from(0)),
-            )),
-            gamma_g2: G2Affine::from(G2Projective::new(
-                Fq2::new(
-                    Fq::from(BigUint::from_bytes_le(&vk_data[192..224])),
-                    Fq::from(BigUint::from_bytes_le(&vk_data[224..256])),
-                ),
-                Fq2::new(
-                    Fq::from(BigUint::from_bytes_le(&vk_data[256..288])),
-                    Fq::from(BigUint::from_bytes_le(&vk_data[288..320])),
-                ),
-                Fq2::new(Fq::from(1), Fq::from(0)),
-            )),
-            delta_g2: G2Affine::from(G2Projective::new(
-                Fq2::new(
-                    Fq::from(BigUint::from_bytes_le(&vk_data[320..352])),
-                    Fq::from(BigUint::from_bytes_le(&vk_data[352..384])),
-                ),
-                Fq2::new(
-                    Fq::from(BigUint::from_bytes_le(&vk_data[384..416])),
-                    Fq::from(BigUint::from_bytes_le(&vk_data[416..448])),
-                ),
-                Fq2::new(Fq::from(1), Fq::from(0)),
-            )),
-            gamma_abc_g1: vec![
-                G1Affine::from(G1Projective::new(
-                    Fq::from(BigUint::from_bytes_le(&vk_data[448..480])),
-                    Fq::from(BigUint::from_bytes_le(&vk_data[480..512])),
-                    Fq::from(1),
-                )),
-                G1Affine::from(G1Projective::new(
-                    Fq::from(BigUint::from_bytes_le(&vk_data[512..544])),
-                    Fq::from(BigUint::from_bytes_le(&vk_data[544..576])),
-                    Fq::from(1),
-                )),
-                G1Affine::from(G1Projective::new(
-                    Fq::from(BigUint::from_bytes_le(&vk_data[576..608])),
-                    Fq::from(BigUint::from_bytes_le(&vk_data[608..640])),
-                    Fq::from(1),
-                )),
-                G1Affine::from(G1Projective::new(
-                    Fq::from(BigUint::from_bytes_le(&vk_data[640..672])),
-                    Fq::from(BigUint::from_bytes_le(&vk_data[672..704])),
-                    Fq::from(1),
-                )),
-                G1Affine::from(G1Projective::new(
-                    Fq::from(BigUint::from_bytes_le(&vk_data[704..736])),
-                    Fq::from(BigUint::from_bytes_le(&vk_data[736..768])),
-                    Fq::from(1),
-                )),
-            ],
-        };
+
+        let pesho: u8 = 0;
+        let vk = fun_name(vk_data);
+        let gosho: u8 = 0;
+
+        println!("{:p}", &pesho);
+        println!("{:p}", &gosho);
 
         let pvk = ark_groth16::prepare_verifying_key(&vk);
 
@@ -156,4 +97,74 @@ impl ProofData {
             pvk: pvk,
         }
     }
+}
+
+fn fun_name(vk_data: Vec<u8>) -> Box<VerifyingKey<Bn254>> {
+    Box::new(ark_groth16::VerifyingKey {
+        alpha_g1: G1Affine::from(G1Projective::new(
+            Fq::from(BigUint::from_bytes_le(&vk_data[0..32])),
+            Fq::from(BigUint::from_bytes_le(&vk_data[32..64])),
+            Fq::from(1),
+        )),
+        beta_g2: G2Affine::from(G2Projective::new(
+            Fq2::new(
+                Fq::from(BigUint::from_bytes_le(&vk_data[64..96])),
+                Fq::from(BigUint::from_bytes_le(&vk_data[96..128])),
+            ),
+            Fq2::new(
+                Fq::from(BigUint::from_bytes_le(&vk_data[128..160])),
+                Fq::from(BigUint::from_bytes_le(&vk_data[160..192])),
+            ),
+            Fq2::new(Fq::from(1), Fq::from(0)),
+        )),
+        gamma_g2: G2Affine::from(G2Projective::new(
+            Fq2::new(
+                Fq::from(BigUint::from_bytes_le(&vk_data[192..224])),
+                Fq::from(BigUint::from_bytes_le(&vk_data[224..256])),
+            ),
+            Fq2::new(
+                Fq::from(BigUint::from_bytes_le(&vk_data[256..288])),
+                Fq::from(BigUint::from_bytes_le(&vk_data[288..320])),
+            ),
+            Fq2::new(Fq::from(1), Fq::from(0)),
+        )),
+        delta_g2: G2Affine::from(G2Projective::new(
+            Fq2::new(
+                Fq::from(BigUint::from_bytes_le(&vk_data[320..352])),
+                Fq::from(BigUint::from_bytes_le(&vk_data[352..384])),
+            ),
+            Fq2::new(
+                Fq::from(BigUint::from_bytes_le(&vk_data[384..416])),
+                Fq::from(BigUint::from_bytes_le(&vk_data[416..448])),
+            ),
+            Fq2::new(Fq::from(1), Fq::from(0)),
+        )),
+        gamma_abc_g1: vec![
+            G1Affine::from(G1Projective::new(
+                Fq::from(BigUint::from_bytes_le(&vk_data[448..480])),
+                Fq::from(BigUint::from_bytes_le(&vk_data[480..512])),
+                Fq::from(1),
+            )),
+            G1Affine::from(G1Projective::new(
+                Fq::from(BigUint::from_bytes_le(&vk_data[512..544])),
+                Fq::from(BigUint::from_bytes_le(&vk_data[544..576])),
+                Fq::from(1),
+            )),
+            G1Affine::from(G1Projective::new(
+                Fq::from(BigUint::from_bytes_le(&vk_data[576..608])),
+                Fq::from(BigUint::from_bytes_le(&vk_data[608..640])),
+                Fq::from(1),
+            )),
+            G1Affine::from(G1Projective::new(
+                Fq::from(BigUint::from_bytes_le(&vk_data[640..672])),
+                Fq::from(BigUint::from_bytes_le(&vk_data[672..704])),
+                Fq::from(1),
+            )),
+            G1Affine::from(G1Projective::new(
+                Fq::from(BigUint::from_bytes_le(&vk_data[704..736])),
+                Fq::from(BigUint::from_bytes_le(&vk_data[736..768])),
+                Fq::from(1),
+            )),
+        ],
+    })
 }
