@@ -1,45 +1,18 @@
-use std::{process::exit, io::stdout, str::from_utf8};
-use std::convert::TryFrom;
+use schemars::{schema_for, JsonSchema};
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, DepsMut, StdResult, Uint128, Uint64};
-use std::{fmt::Write, num::ParseIntError};
-use crate::ContractError;
+use cosmwasm_std::{Addr, DepsMut, StdResult, Uint64, Uint128, Uint512};
+use serde::{Serialize, Deserialize};
+use std::{fmt::Write, num::ParseIntError, marker::PhantomData};
+use typenum::{U512};
+use crate::{error::FixedVecError, helpers::BigArray};
+// use bls::{PublicKeyBytes};
 
-use hex::FromHex;
+pub type SyncCommitteeSize = Uint512;
 
+/// The byte-length of a BLS public key when serialized in compressed form.
+pub const PUBLIC_KEY_BYTES_LEN: usize = 48;
 
 pub type Hash256 = ([u8; 32]);
-
-fn slice_to_arr64<T>(slice: &[T]) -> Option<&[T; 64]> {
-    if slice.len() == 64 {
-        Some(unsafe { &*(slice as *const [T] as *const [T; 64]) })
-    } else {
-        None
-    }
-}
-
-fn rem_first_two(value: &str) -> &str {
-    let mut chars = value.chars();
-    chars.next();
-    chars.next();
-    chars.as_str()
-}
-
-pub fn decode_hex(s: &str) -> Result<Vec<u8>, ParseIntError> {
-    (0..s.len())
-        .step_by(2)
-        .map(|i| u8::from_str_radix(&s[i..i + 2], 16))
-        .collect()
-}
-
-fn vector_as_u8_32_array(vector: Vec<u8>) -> [u8;32] {
-    let mut arr = [0u8;32];
-    for i in (0..32) {
-        arr[i] = vector[i];
-    }
-    arr
-}
-
 #[cw_serde]
 pub struct BeaconBlockHeader {
     pub slot: Uint64,
@@ -49,15 +22,115 @@ pub struct BeaconBlockHeader {
     pub body_root: Hash256,
 }
 
-#[no_mangle]
-pub fn addrToHash256(addr: &Addr) -> Result<Hash256, ContractError>{
-    // TODO FIX ME
-    let bytes = addr.as_str();
-    let hash = &bytes[2..bytes.len()];
-    let decoded = <[u8; 32]>::from_hex(rem_first_two(addr.as_str()));
-    if hash.len() == 64 {
-        return Ok(decoded.unwrap());
-    }else {
-        return Err(ContractError::CavemanError("PROBLEM".to_string()));
+#[cw_serde]
+pub struct FixedVector<T, N> {
+    pub vec: Vec<T>,
+    _phantom: PhantomData<N>,
+}
+
+impl<T, N> FixedVector<T, N> {
+    /// Returns `Ok` if the given `vec` equals the fixed length of `Self`. Otherwise returns
+    /// `Err`.
+    pub fn new(vec: Vec<T>) -> Result<Self, FixedVecError> {
+        if vec.len() == Self::capacity() {
+            Ok(Self {
+                vec,
+                _phantom: PhantomData,
+            })
+        } else {
+            Err(FixedVecError::OutOfBounds {
+                i: vec.len(),
+                len: Self::capacity(),
+            })
+        }
+    }
+
+    /// Create a new vector filled with clones of `elem`.
+    pub fn from_elem(elem: T) -> Self
+    where
+        T: Clone,
+    {
+        Self {
+            // TODO: Find way to use `to_usize()`
+            vec: vec![elem; std::mem::size_of::<N>()],
+            _phantom: PhantomData,
+        }
+    }
+
+    /// Identical to `self.capacity`, returns the type-level constant length.
+    ///
+    /// Exists for compatibility with `Vec`.
+    pub fn len(&self) -> usize {
+        self.vec.len()
+    }
+
+    /// True if the type-level constant length of `self` is zero.
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// Returns the type-level constant length.
+    pub fn capacity() -> usize {
+        // TODO: Find a way to use U512 (https://docs.rs/typenum/latest/typenum/type.U512.html)
+        512
     }
 }
+
+
+// #[cw_serde]
+// #[derive(JsonSchema)]
+pub type PublicKeyBytes = ([u8; PUBLIC_KEY_BYTES_LEN]);
+
+#[derive(Clone)]
+#[derive(PartialEq)]
+#[derive(Debug)]
+#[derive(Deserialize)]
+#[derive(Serialize)]
+#[derive(Copy)]
+pub struct PubKey{
+    #[serde(with = "BigArray")]
+    pub blob: [u8; PUBLIC_KEY_BYTES_LEN],
+}
+impl Default for PubKey {
+    fn default() -> Self {
+        PubKey{
+            blob: [0; 48],
+        }
+    }
+}
+
+#[derive(Clone)]
+#[derive(PartialEq)]
+#[derive(Debug)]
+#[derive(Deserialize)]
+#[derive(Serialize)]
+pub struct HashArray {
+    #[serde(with = "BigArray")]
+    pub data: [PubKey; 512],
+    #[serde(with = "BigArray")]
+    pub hashes: [Hash256; 512],
+}
+
+impl Default for HashArray {
+    fn default() -> Self {
+        HashArray{
+            data: [PubKey::default(); 512],
+            hashes: [Hash256::default(); 512]
+        }
+    }
+}
+#[cw_serde]
+pub struct SyncCommittee {
+    pub pubkeys: FixedVector<PubKey, SyncCommitteeSize>,
+    pub aggregate_pubkey: PubKey,
+}
+
+
+#[cw_serde]
+pub struct SyncCommitteeDumb {
+    pub pubkeys: HashArray,
+    pub aggregate_pubkey: PubKey,
+}
+
+const _check_sizeof_block_header: [u8; 112] = [0; std::mem::size_of::<BeaconBlockHeader>()];
+// const _check_sizeof_sync_committee: [u8; 112] = [0; std::mem::size_of::<SyncCommitteeDumb>()];
