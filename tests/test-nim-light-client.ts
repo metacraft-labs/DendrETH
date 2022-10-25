@@ -41,7 +41,7 @@ describe('Light Client in Nim compiled to Wasm', () => {
     test(
       `Testing '${path}': '${testName}'`,
       () => func(perFileState[path] as NimTestState<T>),
-      110000,
+      300000,
     );
   }
 
@@ -61,7 +61,7 @@ describe('Light Client in Nim compiled to Wasm', () => {
         };
       }),
     );
-  }, 60000 /* timeout in milliseconds */);
+  }, 120000 /* timeout in milliseconds */);
 
   testNimToWasmFile<{
     assertLCFailTest: (a: number) => any;
