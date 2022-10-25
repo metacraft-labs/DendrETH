@@ -2,7 +2,7 @@ import { groth16 } from 'snarkjs';
 import { readFileSync } from 'fs';
 
 (async () => {
-  for (let i = 291; i <= 301; i++) {
+  for (let i = 291; i <= 416; i++) {
     const verificationKey = JSON.parse(
       readFileSync('scripts/light_client_recursive/vkey.json', 'utf8'),
     );
@@ -22,7 +22,7 @@ import { readFileSync } from 'fs';
     const isValid = await groth16.verify(verificationKey, pub, proof);
 
     if (isValid) {
-      console.log(`Valid proof for update: ${i}`);
+      console.log(`Verified recursive proof for period: ${i}`);
     } else {
       console.log(`Invalid proof`, '\x1b[31m');
     }

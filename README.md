@@ -12,12 +12,13 @@ For EVM-based blockchains, we build upon prior research by [0xPARC][1],
 first end-to-end implementation capable of syncing the entire Mainnet
 history since Altair. Our current [Solidity contract][4] leverages
 a [Circom zero-knowledge circuit][5] to verify the BLS signatures of the
-Ethereum 2 validators and all of the syncing protocol rules. Since the
-circuit is able to verify complete header-to-header transitions, it may
-be used in recursive manner in the future to allow any Ethereum client
-to implement one-shot syncing capabilities similar to the ones offered
-by the [Mina][6] protocol (please see our [analysis][7] regarding the
-limitations of this approach).
+Ethereum 2 validators and all of the syncing protocol rules.
+
+Since the base circuit is able to verify complete header-to-header
+transitions, we also provide a recursive variant that can be used
+by any Ethereum client to implement one-shot syncing capabilities
+similar to the ones available in the [Mina][6] protocol (please see our
+[analysis][7] regarding the limitations of this approach).
 
 For blockchains based on WebAssembly and BPF, we are developing a [direct
 implementation][8] of the light client syncing protocol based on the
@@ -99,6 +100,23 @@ You should see a [Hardhat simulation](https://hardhat.org/hardhat-runner/docs/ge
 sequentially processing all available updates. At the time of this writing, each
 update costs around 330K in gas.
 
+### One-shot syncing simulation
+
+Our archive of light client updates also includes pre-generated [zero-knowledge
+proofs][14] for the latest version of the [one-shot syncing Circom circuit][20].
+
+To see a simulation demonstrating the syncing process to any sync committee
+period, you can execute the following commands:
+
+```bash
+git clone https://github.com/metacraft-labs/DendrETH.git
+cd DendrETH
+git submodule update --init --recursive
+nix develop # or `direnv allow` if you are using direnv
+yarn install
+make one-shot-syncing-simulation
+```
+
 ### Building the Circom circuits
 
 The circuits employed by this project are some of the largest ever developed.
@@ -177,3 +195,4 @@ use cases that we plan to support in the future.
 [17]: https://github.com/metacraft-labs/DendrETH/blob/main/docs/ROADMAP.md
 [18]: https://infura.io
 [19]: https://etherscan.io
+[20]: https://github.com/metacraft-labs/DendrETH/tree/main/beacon-light-client/circom/circuits/light_client_recursive.circom
