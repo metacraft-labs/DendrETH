@@ -36,7 +36,6 @@ in
       binaryen
 
       metacraft-labs.circom
-      metacraft-labs.solana
       rustup
       nlohmann_json
       python-with-my-packages
@@ -60,7 +59,10 @@ in
       # llvm.llvm
       # llvm.lld
       ldc
-      nim
+    ]
+    ++ lib.optionals (!stdenv.isDarwin) [
+      metacraft-labs.solana
+      nim # Compiling Nim 1.6.8 is currently broken on macOS/M1
       nim-wasm
     ];
 
