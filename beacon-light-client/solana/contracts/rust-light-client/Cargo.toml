@@ -11,10 +11,10 @@ borsh-derive = "0.9.1"
 solana-program = "~1.8.14"
 
 # Zkey dependencies
-ark-groth16 = { path = "../../../../../groth16" }
+ark-groth16 = { git = "https://github.com/arkworks-rs/groth16", rev = "765817f", default-features = false }
 # ark-bn254 = { path = "../../../../algebra/", default-features = false, features = ["curve"], }
-ark-bn254 = { path = "../../../../../curves/bn254" }
-ark-ec = { path = "../../../../../algebra/ec" }
+ark-bn254 = { version = "0.3.0", default-features = false, features = ["curve"] }
+ark-ec = { version = "0.3.0" }
 num-bigint = "0.4"
 
 [lib]
