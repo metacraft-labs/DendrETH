@@ -25,11 +25,11 @@ const UPDATES = getFilesInDir(
     'updates',
   ),
 );
-let prevUpdate = UPDATES[1];
-let period = 292;
+let prevUpdate = UPDATES[0];
+let period = 291;
 
 (async () => {
-  for (let update of UPDATES.slice(2)) {
+  for (let update of UPDATES.slice(1)) {
     console.log('Proof convertion...');
     await promiseExec(
       `python ${path.join(__dirname, 'proof_converter.py')} ${proofsDir}/proof${
