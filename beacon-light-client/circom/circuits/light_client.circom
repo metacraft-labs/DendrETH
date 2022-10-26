@@ -15,6 +15,7 @@ template LightClient(N) {
   var K = 7;
   signal input prevHeaderHashNum[2];
   signal input nextHeaderHashNum[2];
+  signal input finalizedHeaderHashNum[2]
 
   signal input slot[256];
   signal input proposer_index[256];
@@ -22,7 +23,6 @@ template LightClient(N) {
   signal input state_root[256];
   signal input body_root[256];
 
-  signal input finalized_header_root[256];
   signal input finalized_branch[6][256];
 
   signal input fork_version[32];
@@ -148,6 +148,23 @@ template LightClient(N) {
     for(var j = 0; j < 256; j++) {
       isValidMerkleBranch_finality.branch[i][j] <== finalized_branch[i][j];
     }
+  }
+
+
+  var finalized_header_root[256];
+
+  component finalizedNum2bits1 = Num2Bits(253);
+  finalizedNum2bits1.in <== prevHeaderHashNum[0];
+
+  component finalizedNum2bits2 = Num2Bits(3);
+  finalizedNum2bits2.in <== prevHeaderHashNum[1];
+
+  for(var i = 0; i < 253; i++) {
+    prevHeaderHash[i] = finalizedNum2bits1.out[252 - i];
+  }
+
+  for(var i = 253; i < 256; i++) {
+    prevHeaderHash[i] = finalizedNum2bits2.out[255 - i];
   }
 
   for(var i = 0; i < 256; i++) {
