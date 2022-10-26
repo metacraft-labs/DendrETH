@@ -15,7 +15,7 @@ template LightClient(N) {
   var K = 7;
   signal input prevHeaderHashNum[2];
   signal input nextHeaderHashNum[2];
-  signal input finalizedHeaderHashNum[2]
+  signal input finalizedHeaderHashNum[2];
 
   signal input slot[256];
   signal input proposer_index[256];
