@@ -160,11 +160,11 @@ template LightClient(N) {
   finalizedNum2bits2.in <== prevHeaderHashNum[1];
 
   for(var i = 0; i < 253; i++) {
-    prevHeaderHash[i] = finalizedNum2bits1.out[252 - i];
+    finalized_header_root[i] = finalizedNum2bits1.out[252 - i];
   }
 
   for(var i = 253; i < 256; i++) {
-    prevHeaderHash[i] = finalizedNum2bits2.out[255 - i];
+    finalized_header_root[i] = finalizedNum2bits2.out[255 - i];
   }
 
   for(var i = 0; i < 256; i++) {
