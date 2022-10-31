@@ -1,44 +1,53 @@
 import bncurve/groups
-import marshal
+import std/json
+import std/strformat
 
-let a = Point[G1](x: FQ.fromString("20510836325130461380554319577840128724515264999438295340411017938605111235799"), y: FQ.fromString("6303600777975906638489135603832035162597403579231132419668603682813714320189"), z: FQ.fromString("1"));
-let b = Point[G2](x: FQ2(c0: FQ.fromString("8354386281063354380846514761601581551890903075223960300277451572535259255757"),  c1: FQ.fromString("12817910744850178673545201631810578287383306213659719707163696312640286898233")), y: FQ2(c0: FQ.fromString("1043750777202089721256940292455857877321125803534018607036792855662634629182"), c1: FQ.fromString("14670688275443908614830807529097407291208129658300906805757070795362798005528")), z: FQ2(c0: FQ.fromString("1"), c1: FQ.fromString("0")));
-let c = Point[G1](x: FQ.fromString("6809263034014662308505413009873495187093204639932280343977462459945348255622"), y: FQ.fromString("14153678261869246257347753922858340591796051456464133663318953391120555058503"), z: FQ.fromString("1"));
+iterator `...`*[T](a: T, b: T): T =
+  var res: T = T(a)
+  while res <= b:
+    yield res
+    inc res
 
-let pubInput1 = Fr.fromString("5966029082507805980254291345114545245067072315222408966008558171151621124246");
-let pubInput2 = Fr.fromString("4");
-let pubInput3 = Fr.fromString("12857343771181087157409557648182655546684462713036905539892384468792366321123");
-let pubInput4 = Fr.fromString("6");
+let vk = parseFile("../../beacon-light-client/circom/scripts/light_client_recursive/vkey.json");
 
-let vkGamma2 = Point[G2](x: FQ2(c0: FQ.fromString("10857046999023057135944570762232829481370756359578518086990519993285655852781"),  c1: FQ.fromString("11559732032986387107991004021392285783925812861821192530917403151452391805634")), y: FQ2(c0: FQ.fromString("8495653923123431417604973247489272438418190587263600148770280649306958101930"), c1: FQ.fromString("4082367875863433681332203403145435568316851327593401208105741076214120093531")), z: FQ2(c0: FQ.fromString("1"), c1: FQ.fromString("0")));
-let vkDelta2 = Point[G2](x: FQ2(c0: FQ.fromString("10857046999023057135944570762232829481370756359578518086990519993285655852781"),  c1: FQ.fromString("11559732032986387107991004021392285783925812861821192530917403151452391805634")), y: FQ2(c0: FQ.fromString("8495653923123431417604973247489272438418190587263600148770280649306958101930"), c1: FQ.fromString("4082367875863433681332203403145435568316851327593401208105741076214120093531")), z: FQ2(c0: FQ.fromString("1"), c1: FQ.fromString("0")));
-let vkAlpha1 = Point[G1](x: FQ.fromString("20491192805390485299153009773594534940189261866228447918068658471970481763042"), y: FQ.fromString("9383485363053290200918347156157836566562967994039712273449902621266178545958"), z: FQ.fromString("1"));
-let vkBeta2 = Point[G2](x: FQ2(c0: FQ.fromString("6375614351688725206403948262868962793625744043794305715222011528459656738731"),  c1: FQ.fromString("4252822878758300859123897981450591353533073413197771768651442665752259397132")), y: FQ2(c0: FQ.fromString("10505242626370262277552901082094356697409835680220590971873171140371331206856"), c1: FQ.fromString("21847035105528745403288232691147584728191162732299865338377159692350059136679")), z: FQ2(c0: FQ.fromString("1"), c1: FQ.fromString("0")));
+let vkGamma2 = Point[G2](x: FQ2(c0: FQ.fromString(vk["vk_gamma_2"][0][0].str),  c1: FQ.fromString(vk["vk_gamma_2"][0][1].str)), y: FQ2(c0: FQ.fromString(vk["vk_gamma_2"][1][0].str), c1: FQ.fromString(vk["vk_gamma_2"][1][1].str)), z: FQ2(c0: FQ.fromString("1"), c1: FQ.fromString("0")));
+let vkDelta2 = Point[G2](x: FQ2(c0: FQ.fromString(vk["vk_delta_2"][0][0].str),  c1: FQ.fromString(vk["vk_delta_2"][0][1].str)), y: FQ2(c0: FQ.fromString(vk["vk_delta_2"][1][0].str), c1: FQ.fromString(vk["vk_delta_2"][1][1].str)), z: FQ2(c0: FQ.fromString("1"), c1: FQ.fromString("0")));
+let vkAlpha1 = Point[G1](x: FQ.fromString(vk["vk_alpha_1"][0].str), y: FQ.fromString(vk["vk_alpha_1"][1].str), z: FQ.fromString("1"));
+let vkBeta2 = Point[G2](x: FQ2(c0: FQ.fromString(vk["vk_beta_2"][0][0].str),  c1: FQ.fromString(vk["vk_beta_2"][0][1].str)), y: FQ2(c0: FQ.fromString(vk["vk_beta_2"][1][0].str), c1: FQ.fromString(vk["vk_beta_2"][1][1].str)), z: FQ2(c0: FQ.fromString("1"), c1: FQ.fromString("0")));
 
-let ic0 = Point[G1](x: FQ.fromString("706379018155535256962477732371233220466708339901980356433001244491557802555"), y: FQ.fromString("4480393274324694606740273847152739935785341335793427064452769423150137645723"), z: FQ.fromString("1"));
-let ic1 = Point[G1](x: FQ.fromString("17837901911804605285297409986388117208284346058685201952011529585560457604634"), y: FQ.fromString("7414095085265322290660687416786947206302547167465563600132947556765327952157"), z: FQ.fromString("1"));
-let ic2 = Point[G1](x: FQ.fromString("5920610752033984868722983985018269172910549821655947384123617951993592075482"), y: FQ.fromString("11848325982574142771615208364904186208779501862530910563084092857749141690541"), z: FQ.fromString("1"));
-let ic3 = Point[G1](x: FQ.fromString("1196471500819398757358134693372449972176484892277709500161937870737063187627"), y: FQ.fromString("19154594010985705403769425727493565025975631811123970281744913692141993450496"), z: FQ.fromString("1"));
-let ic4 = Point[G1](x: FQ.fromString("15623951096190695614146478577075985704108248409680229837432779925736976456748"), y: FQ.fromString("8964065099173481020202008428540740627298045946699781610238419135482384824157"), z: FQ.fromString("1"));
+let ic0 = Point[G1](x: FQ.fromString(vk["IC"][0][0].str), y: FQ.fromString(vk["IC"][0][1].str), z: FQ.fromString("1"));
+let ic1 = Point[G1](x: FQ.fromString(vk["IC"][1][0].str), y: FQ.fromString(vk["IC"][1][1].str), z: FQ.fromString("1"));
+let ic2 = Point[G1](x: FQ.fromString(vk["IC"][2][0].str), y: FQ.fromString(vk["IC"][2][1].str), z: FQ.fromString("1"));
+let ic3 = Point[G1](x: FQ.fromString(vk["IC"][3][0].str), y: FQ.fromString(vk["IC"][3][1].str), z: FQ.fromString("1"));
+let ic4 = Point[G1](x: FQ.fromString(vk["IC"][4][0].str), y: FQ.fromString(vk["IC"][4][1].str), z: FQ.fromString("1"));
 
+for i in 291...533: 
+    let proof = parseFile(fmt"../../vendor/eth2-light-client-updates/mainnet/proofs/proof{i}.json");
+    let public = parseFile(fmt"../../vendor/eth2-light-client-updates/mainnet/proofs/public{i}.json");
 
-var preparedInputs = ic0;
-preparedInputs = preparedInputs + (ic1 * pubInput1);
-preparedInputs = preparedInputs + (ic2 * pubInput2);
-preparedInputs = preparedInputs + (ic3 * pubInput3);
-preparedInputs = preparedInputs + (ic4 * pubInput4);
+    let a = Point[G1](x: FQ.fromString(proof["pi_a"][0].str), y: FQ.fromString(proof["pi_a"][1].str), z: FQ.fromString("1"));
+    let b = Point[G2](x: FQ2(c0: FQ.fromString(proof["pi_b"][0][0].str),  c1: FQ.fromString(proof["pi_b"][0][1].str)), y: FQ2(c0: FQ.fromString(proof["pi_b"][1][0].str), c1: FQ.fromString(proof["pi_b"][1][1].str)), z: FQ2(c0: FQ.fromString("1"), c1: FQ.fromString("0")));
+    let c = Point[G1](x: FQ.fromString(proof["pi_c"][0].str), y: FQ.fromString(proof["pi_c"][1].str), z: FQ.fromString("1"));
 
-let aBPairing = pairing(-a, b);
+    let pubInput1 = Fr.fromString(public[0].str);
+    let pubInput2 = Fr.fromString(public[1].str);
+    let pubInput3 = Fr.fromString(public[2].str);
+    let pubInput4 = Fr.fromString(public[3].str);
 
-let alphaBetaPairingP = pairing(vkAlpha1, vkBeta2);
-let preparedInputsGammaPairing = pairing(preparedInputs, vkGamma2);
-let proofCVkDeltaPairing = pairing(c, vkDelta2);
+    var preparedInputs = ic0;
+    preparedInputs = preparedInputs + (ic1 * pubInput1);
+    preparedInputs = preparedInputs + (ic2 * pubInput2);
+    preparedInputs = preparedInputs + (ic3 * pubInput3);
+    preparedInputs = preparedInputs + (ic4 * pubInput4);
 
-let result = aBPairing * alphaBetaPairingP * preparedInputsGammaPairing * proofCVkDeltaPairing;
+    let aBPairing = pairing(a, b);
+    let alphaBetaPairingP = pairing(vkAlpha1, vkBeta2);
+    let preparedInputsGammaPairing = pairing(preparedInputs, vkGamma2);
+    let proofCVkDeltaPairing = pairing(c, vkDelta2);
 
-echo result == FQ12.one()
+    let result = alphaBetaPairingP * preparedInputsGammaPairing * proofCVkDeltaPairing;
 
-
-# echo alphaBetaPairingP == result;
-
-echo "Hello world";
+    if aBPairing == result:
+        echo fmt"Ok, {i}";
+    else:
+        echo fmt"Wrong proof, {i}";
