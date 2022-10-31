@@ -166,19 +166,6 @@ func apply_light_client_update(
     if store.finalized_header.slot > store.optimistic_header.slot:
       store.optimistic_header = store.finalized_header
 
-# https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#process_light_client_store_force_update
-func process_light_client_store_force_update*(
-    store: var LightClientStore,
-    current_slot: Slot): void {.discardable, wasmPragma .} =
-  if store.best_valid_update.isSome and
-      current_slot > store.finalized_header.slot + UPDATE_TIMEOUT:
-    # Forced best update when the update timeout has elapsed
-    template best(): auto = store.best_valid_update.get
-    if best.finalized_header.slot <= store.finalized_header.slot:
-      best.finalized_header = best.attested_header
-    apply_light_client_update(store, best)
-    store.best_valid_update.reset()
-
 # https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#process_light_client_update
 proc process_light_client_update* (
     store: var LightClientStore,
@@ -187,12 +174,6 @@ proc process_light_client_update* (
     genesis_validators_root: Eth2Digest): void {.wasmPragma.} =
   validate_light_client_update(
     store, update, current_slot, genesis_validators_root)
-
-  # Update the best update in case we have to force-update to it
-  # if the timeout elapses
-  if store.best_valid_update.isNone or
-      is_better_update(update, store.best_valid_update.get):
-    store.best_valid_update = some(update.toFull)
 
   # Track the maximum number of active participants in the committee signatures
   template sync_aggregate(): auto = update.sync_aggregate
@@ -217,7 +198,6 @@ proc process_light_client_update* (
       (update.finalized_header.slot > store.finalized_header.slot or
        update_has_finalized_next_sync_committee):
     apply_light_client_update(store, update)
-    store.best_valid_update.reset()
 
 # https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#process_light_client_finality_update
 proc process_light_client_finality_update* (

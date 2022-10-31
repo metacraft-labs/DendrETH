@@ -259,9 +259,6 @@ type
       ## Sync committees corresponding to the header
     next_sync_committee*: SyncCommittee
 
-    best_valid_update*: Option[LightClientUpdate]
-      ## Best available header to switch finalized head to if we see nothing else
-
     optimistic_header*: BeaconBlockHeader
       ## Most recent available reasonably-safe header
 
