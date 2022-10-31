@@ -28,3 +28,6 @@
 [submodule "vendor/rapidsnark"]
 	path = vendor/rapidsnark
 	url = https://github.com/iden3/rapidsnark.git
+[submodule "vendor/nim-bncurve"]
+	path = vendor/nim-bncurve
+	url = https://github.com/status-im/nim-bncurve
