@@ -1,10 +1,10 @@
 import
   std/[typetraits, options, tables],
-  ssz_serialization/[merkleization, types, proofs],
+  ssz_serialization/[merkleization, proofs],
   nimcrypto/hash,
   blscurve
 
-export options, merkleization, types, proofs
+export options, merkleization, proofs
 
 type
   Eth2Digest* = MDigest[32 * 8] ## `hash32` from spec
@@ -269,7 +269,7 @@ type
 
   # https://github.com/ethereum/consensus-specs/blob/v1.2.0-rc.1/specs/altair/beacon-chain.md#synccommittee
   SyncCommittee* = object
-    pubkeys*: HashArray[Limit SYNC_COMMITTEE_SIZE, ValidatorPubKey]
+    pubkeys*: array[SYNC_COMMITTEE_SIZE, ValidatorPubKey]
     aggregate_pubkey*: ValidatorPubKey
 
   # https://github.com/ethereum/consensus-specs/blob/v1.2.0-rc.1/specs/altair/beacon-chain.md#syncaggregate
