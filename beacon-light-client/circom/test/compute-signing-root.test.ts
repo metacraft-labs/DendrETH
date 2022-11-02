@@ -1,5 +1,5 @@
 import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
-import { fastestTester } from './circuit_tester';
+import { wasm } from './circuit_tester';
 import { expect } from 'chai';
 import * as update from '../../../vendor/eth2-light-client-updates/mainnet/updates/00290.json';
 import { ssz } from '@chainsafe/lodestar-types';
@@ -9,7 +9,9 @@ import { formatJSONBlockHeader } from '../../solidity/test/utils/format';
 describe('Compute signing root test', () => {
   it('Test1', async () => {
     const block_header = formatJSONBlockHeader(update.attested_header);
-    const headerHash = ssz.phase0.BeaconBlockHeader.hashTreeRoot(block_header);
+    const headerHash = ssz.phase0.BeaconBlockHeader.hashTreeRoot(
+      block_header as any,
+    );
     const fork_data = ssz.phase0.ForkData.defaultValue();
     fork_data.currentVersion = constants.ALTAIR_FORK_VERSION;
     fork_data.genesisValidatorsRoot = constants.GENESIS_VALIDATORS_ROOT;
@@ -25,7 +27,7 @@ describe('Compute signing root test', () => {
 
     const signing_root = ssz.phase0.SigningData.hashTreeRoot(signing_data);
 
-    const circuit = await fastestTester(
+    const circuit = await wasm(
       './scripts/compute_signing_root/compute_signing_root.circom',
     );
 

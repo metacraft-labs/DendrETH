@@ -1,6 +1,6 @@
 pragma circom 2.0.3;
 
-include "hash_tree_root.circom";
+include "sync_committee_hash_tree_root.circom";
 include "compress.circom";
 include "aggregate_bitmask.circom";
 include "is_supermajority.circom";
@@ -16,6 +16,11 @@ template ProofMoreEfficient(N) {
   signal input hash[2][2][K];
   signal output hashTreeRoot[2];
 
+  component bitmaskContainsOnlyBools = BitmaskContainsOnlyBools(N);
+
+  for(var i = 0; i < N; i++) {
+    bitmaskContainsOnlyBools.bitmask[i] <== bitmask[i];
+  }
 
   component isSuperMajority = IsSuperMajority(N);
 

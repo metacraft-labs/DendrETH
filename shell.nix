@@ -1,6 +1,6 @@
 {pkgs}:
 with pkgs; let
-  nodejs = nodejs-16_x;
+  nodejs = nodejs-18_x;
   llvm = llvmPackages_13;
   corepack = callPackage ./libs/nix/corepack-shims {inherit nodejs;};
   nim-wasm = callPackage ./libs/nix/nim-wasm {inherit llvm;};
