@@ -31,3 +31,6 @@
 [submodule "vendor/nim-bncurve"]
 	path = vendor/nim-bncurve
 	url = https://github.com/status-im/nim-bncurve
+[submodule "vendor/nim-terminaltables"]
+	path = vendor/nim-terminaltables
+	url = git@github.com:xmonader/nim-terminaltables.git
