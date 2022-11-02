@@ -2,18 +2,22 @@
   "name": "circom",
   "type": "commonjs",
   "dependencies": {
-    "@chainsafe/lodestar-types": "^0.34.4",
+    "@chainsafe/lodestar-types": "^0.36.0",
     "@chainsafe/ssz": "^0.9.2",
     "@nomiclabs/hardhat-ethers": "^2.0.5",
     "@nomiclabs/hardhat-waffle": "^2.0.3",
     "chai": "^4.3.6",
     "circom_tester": "^0.0.14",
     "circomlib": "2.0.2",
+    "circomlibjs": "^0.0.8",
     "ethereum-waffle": "^4.0.7",
     "ethers": "^5.6.4",
     "hardhat": "^2.9.3",
     "http-server": "^14.1.1",
+<<<<<<< HEAD
     "snarkit2": "https://github.com/fluidex/snarkit2#70142d8bbc5ec79cfa6869205263ff77e8423975",
+=======
+>>>>>>> 820e462 (feat(circom): Validators first level circuit)
     "snarkjs": "0.4.24",
     "ts-node": "^10.9.1"
   }

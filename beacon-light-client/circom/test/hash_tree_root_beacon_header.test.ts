@@ -39,7 +39,7 @@ describe('Hash tree root beacon header test', () => {
         .split(''),
     };
 
-    const hash = ssz.phase0.BeaconBlockHeader.hashTreeRoot(block_header);
+    const hash = ssz.phase0.BeaconBlockHeader.hashTreeRoot(block_header as any);
 
     const circuit = await wasm(
       './scripts/hash_tree_root_beacon_header/hash_tree_root_beacon_header.circom',

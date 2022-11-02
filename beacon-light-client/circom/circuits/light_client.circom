@@ -1,9 +1,10 @@
 pragma circom 2.0.3;
 
-include "hash_tree_root.circom";
+include "sync_commitee_hash_tree_root.circom";
 include "compress.circom";
 include "aggregate_bitmask.circom";
 include "is_supermajority.circom";
+include "bitmask_contains_only_bools.circom";
 include "is_valid_merkle_branch.circom";
 include "hash_tree_root_beacon_header.circom";
 include "compute_domain.circom";
@@ -63,6 +64,12 @@ template LightClient(N) {
 
   for(var i = 253; i < 256; i++) {
     nextHeaderHash[i] = num2bits4.out[255 - i];
+  }
+
+  component bitmaskContainsOnlyBools = BitmaskContainsOnlyBools(N);
+
+  for(var i = 0; i < N; i++) {
+    bitmaskContainsOnlyBools.bitmask[i] <== bitmask[i];
   }
 
   component isSuperMajority = IsSuperMajority(N);
