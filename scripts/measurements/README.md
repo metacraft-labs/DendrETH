@@ -2,7 +2,7 @@
 
 ## How to use
 
-Run the following command
+Run the following command in this dir:
 
 ```bash
 nim c -r sizeCompare.nim
