@@ -45,3 +45,6 @@ jobs:
 
       - name: Run Nim Light Client compiled with clang tests
         run: nix develop -c yarn test
+
+      - name: Run Nim groth16 verifier tests
+        run: nix develop -c make test-groth16-verifier
