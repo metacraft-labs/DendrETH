@@ -10,3 +10,6 @@ evm-simulation: yarn-check
 one-shot-syncing-simulation: yarn-check
 	cd beacon-light-client/circom && \
 	yarn hardhat run scripts/light_client_recursive/verify_updates.ts
+
+test-groth16-verifier:
+	nim c -r tests/nim-groth16-verifier/verifier_test.nim
