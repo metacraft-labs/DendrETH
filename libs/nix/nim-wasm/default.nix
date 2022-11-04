@@ -30,26 +30,23 @@
       --opt:size
       --listCmd
       --d:nimNoLibc
+      --d:useMalloc
       --d:wasm
       --d:noSignalHandler
       --d:nimPreviewFloatRoundtrip
       --d:lightClientEmbedded
-      --d:lightClientWASM
       --gc:destructors
       --threads:off
       --stackTrace:off
       --lineTrace:off
 
       if defined(emcc):
-        --d:useMalloc
         --clang.exe:emcc
         --clang.linkerexe:emcc
         --clang.cpp.exe:emcc
         --clang.cpp.linkerexe:emcc
         --passL:"-Oz -s ALLOW_MEMORY_GROWTH -s WASM=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0"
       else:
-        --d:useMalloc
-
         --passC:"--target=wasm32-unknown-unknown-wasm"
         --passC:"-fuse-ld=wasm-ld"
 

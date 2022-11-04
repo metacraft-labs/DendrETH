@@ -11,7 +11,7 @@ export async function compileNimFileToWasm(nimSourceFilepath: string) {
   console.info(`➤ rm ${outputFileName}`);
   await rm(outputFileName, { force: true });
   const useEmcc = process.env.USE_EMCC === '1' ? '-d:emcc' : '';
-  const command = `nim-wasm c --lib:"./vendor/nim/lib" ${useEmcc} -o:${outputFileName} ${inputFileName}`;
+  const command = `nim-wasm c --lib:"./vendor/nim/lib" --d:lightClientWASM ${useEmcc} -o:${outputFileName} ${inputFileName}`;
   console.info(`➤ ${command}`);
   await exec(command);
   return { outputFileName };
