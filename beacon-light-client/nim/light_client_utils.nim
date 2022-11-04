@@ -393,14 +393,16 @@ proc blsFastAggregateVerify*(
        message: openArray[byte],
        signature: CookedSig
      ): bool =
-  var unwrapped: seq[PublicKey]
+  var unwrapped: array[512, PublicKey]
+  var idx = 0
   for pubkey in publicKeys:
-    let realkey = pubkey.loadWithCache()
+    let realkey = pubkey.load()
     if realkey.isNone:
       return false
-    unwrapped.add PublicKey(realkey.get)
+    unwrapped[idx] = PublicKey(realkey.get)
+    inc idx
 
-  fastAggregateVerify(unwrapped, message, blscurve.Signature(signature))
+  fastAggregateVerify(unwrapped[..idx], message, blscurve.Signature(signature))
 
 proc blsFastAggregateVerify*(
        publicKeys: openArray[ValidatorPubKey],
