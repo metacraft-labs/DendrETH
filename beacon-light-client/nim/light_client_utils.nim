@@ -612,10 +612,19 @@ when defined(lightClientWASM):
   proc wasmQuit(errMsg: cstring, errLength: int):int {. importc, cdecl, exportc, dynlib} =
     discard
 
+when defined(lightClientCosmos):
+  proc panic_on_error(errMsg: cstring, errLength: csize_t) {. importc, cdecl, exportc, dynlib} =
+    discard
+
 template assertLC*(cond: untyped, msg: BlockError) =
   if not cond:
     when defined(lightClientWASM):
       discard wasmQuit($msg, ($msg).len)
+
+    when defined(lightClientCosmos):
+      let errmsg: cstring = $msg
+      panic_on_error(errmsg, errmsg.len.csize_t)
+
     else:
       quit 1
   else: discard
