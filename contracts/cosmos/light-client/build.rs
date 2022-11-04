@@ -19,9 +19,9 @@ fn main() {
     serde_json::from_str(&data).expect("JSON was not well-formatted");
     let links = json["link"].as_array();
     for link in links.unwrap() {
-        let pathString = rem_first_and_last(link.to_string().as_str()).to_string();
-        let path = Path::new(&pathString);
-        let fileName = path.file_name().unwrap();
-        println!("cargo:rustc-link-arg=/code/nimbuild/{}", (fileName.to_str().unwrap()));
+        let path_as_string = rem_first_and_last(link.to_string().as_str()).to_string();
+        let path = Path::new(&path_as_string);
+        let file_name = path.file_name().unwrap();
+        println!("cargo:rustc-link-arg=/code/nimbuild/{}", (file_name.to_str().unwrap()));
     }
 }
