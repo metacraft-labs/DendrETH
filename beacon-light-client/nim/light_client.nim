@@ -124,11 +124,12 @@ proc validate_light_client_update*(
       unsafeAddr store.current_sync_committee
     else:
       unsafeAddr store.next_sync_committee
-  var participant_pubkeys =
-    newSeqOfCap[ValidatorPubKey](num_active_participants)
+  var participant_pubkeys: array[512, ValidatorPubKey]
+  var i = 0
   for idx, bit in sync_aggregate.sync_committee_bits:
     if bit:
-      participant_pubkeys.add(sync_committee.pubkeys[idx])
+      participant_pubkeys[i] = sync_committee.pubkeys[idx]
+      inc i
   let
     fork_version = forkVersionAtEpoch(update.signature_slot.epoch)
     domain = compute_domain(
@@ -136,7 +137,7 @@ proc validate_light_client_update*(
     signing_root = compute_signing_root(update.attested_header, domain)
   assertLC(
     blsFastAggregateVerify(
-      participant_pubkeys, signing_root.data,
+      participant_pubkeys[0 .. num_active_participants-1], signing_root.data,
       sync_aggregate.sync_committee_signature),
     BlockError.UnviableFork
   )
