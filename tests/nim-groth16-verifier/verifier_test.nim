@@ -1,7 +1,6 @@
 import
   std/[unittest, strformat],
-  std/os,
-  ../../libs/nim/nim-groth16-verifier/verify
+  ../../libs/nim/nim-groth16-verifier/verifylib
 
 const root = staticExec("git rev-parse --show-toplevel")
 
