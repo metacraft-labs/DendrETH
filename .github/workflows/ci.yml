@@ -41,10 +41,13 @@ jobs:
         run: nix develop -c yarn format:check
 
       - name: Run Nim Light Client compiled with emsctipten tests
-        run: nix develop -c yarn test-emcc
+        run: nix develop -c yarn test-emcc './tests/test-nim-to-wasm.ts' 'test-nim-light-client.ts'
 
       - name: Run Nim Light Client compiled with clang tests
-        run: nix develop -c yarn test
+        run: nix develop -c yarn test './tests/test-nim-to-wasm.ts' 'test-nim-light-client.ts'
+
+      - name: Run Light Client in Cosmos test
+        run: nix develop -c yarn test './tests/cosmosLightClient/test-nim-light-client-in-cosmos.ts'
 
       - name: Run Nim groth16 verifier tests
         run: nix develop -c make test-groth16-verifier
