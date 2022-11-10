@@ -10,13 +10,15 @@ import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
 import { DirectSecp256k1HdWallet, OfflineSigner } from '@cosmjs/proto-signing';
 import { calculateFee, GasPrice } from '@cosmjs/stargate';
 import * as fs from 'fs';
-import { SSZSpecTypes } from '../../libs/typescript/ts-utils/sszSpecTypes.js';
+
+import { SSZSpecTypes } from '../../libs/typescript/ts-utils/sszSpecTypes';
 import { jsonToSerializedBase64 } from '../../libs/typescript/ts-utils/ssz-utils';
-import { compileNimFileToWasm } from '../../libs/typescript/ts-utils/compile-nim-to-wasm.js';
+import { compileNimFileToWasm } from '../../libs/typescript/ts-utils/compile-nim-to-wasm';
+import { byteArrayToNumber } from '../../libs/typescript/ts-utils/common-utils';
 
 const exec = promisify(exec_);
 function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 describe('Light Client In Cosmos', () => {
@@ -56,7 +58,7 @@ describe('Light Client In Cosmos', () => {
     console.info(`➤ ${startNodeCommand}`);
     exec_(startNodeCommand, { signal });
 
-    await sleep(10000)
+    await sleep(10000);
 
     const addKeyCommand = `bash "${rootDir}/../../contracts/cosmos/light-client/scripts/add_account.sh"`;
     console.info(`➤ ${addKeyCommand}`);
@@ -78,6 +80,8 @@ describe('Light Client In Cosmos', () => {
   }, 360000 /* timeout in milliseconds */);
 
   test('Check "LightClientStore" after initialization', async () => {
+    const expectedHeaderSlot = 2375680;
+
     // The contract
     const wasm = fs.readFileSync(
       rootDir +
@@ -124,17 +128,16 @@ describe('Light Client In Cosmos', () => {
       },
     );
 
-    const expectedStoreDataAfterInitialization = await readFile(
-      rootDir + `/data/store_data_on_initialization.txt`,
-      'utf-8',
+    const headerSlotAfterInitialization = byteArrayToNumber(
+      queryResultAfterInitialization.slice(0, 8),
     );
 
-    expect(String(queryResultAfterInitialization)).toEqual(
-      expectedStoreDataAfterInitialization.trimEnd(),
-    );
+    expect(headerSlotAfterInitialization).toEqual(expectedHeaderSlot);
   }, 300000);
 
   test('Check "LightClientStore" after one update', async () => {
+    const expectedHeaderSlot = 2381376;
+
     const updateData = await jsonToSerializedBase64(
       SSZSpecTypes.LightClientUpdate,
       rootDir +
@@ -167,17 +170,16 @@ describe('Light Client In Cosmos', () => {
       },
     );
 
-    const expectedStoreDataAfterOneUpdate = await readFile(
-      rootDir + `/data/store_data_after_first_update.txt`,
-      'utf-8',
+    const headerSlotAfterOneUpdate = byteArrayToNumber(
+      queryResultAfterOneUpdate.slice(0, 8),
     );
 
-    expect(String(queryResultAfterOneUpdate)).toEqual(
-      expectedStoreDataAfterOneUpdate.trimEnd(),
-    );
+    expect(headerSlotAfterOneUpdate).toEqual(expectedHeaderSlot);
   }, 300000);
 
   test('Check "LightClientStore" after all updates', async () => {
+    const expectedHeaderSlot = 4366496;
+
     const updateFiles = glob(
       rootDir +
         `/../../vendor/eth2-light-client-updates/mainnet/updates/*.json`,
@@ -215,14 +217,11 @@ describe('Light Client In Cosmos', () => {
       },
     );
 
-    const expectedStoreDataAfterAllUpdates = await readFile(
-      rootDir + `/data/store_data_after_all_updates.txt`,
-      'utf-8',
+    const headerSlotAfterAllUpdates = byteArrayToNumber(
+      queryResultAfterAllUpdates.slice(0, 8),
     );
 
-    expect(String(queryResultAfterAllUpdates)).toEqual(
-      expectedStoreDataAfterAllUpdates.trimEnd(),
-    );
+    expect(headerSlotAfterAllUpdates).toEqual(expectedHeaderSlot);
     controller.abort();
   }, 1500000);
 });
