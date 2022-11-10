@@ -15,6 +15,9 @@ import { jsonToSerializedBase64 } from '../../libs/typescript/ts-utils/ssz-utils
 import { compileNimFileToWasm } from '../../libs/typescript/ts-utils/compile-nim-to-wasm.js';
 
 const exec = promisify(exec_);
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 describe('Light Client In Cosmos', () => {
   const controller = new AbortController();
@@ -38,24 +41,24 @@ describe('Light Client In Cosmos', () => {
     let nimFilePath = contractDir + `/lib/nim/light_client_cosmos_wrapper.nim`;
     await compileNimFileToWasm(
       nimFilePath,
-      `--nimcache:${contractDir}/nimbuild --d:lightClientCosmos -o:${contractDir}/nimbuild/light_client.wasm`,
+      `--nimcache:"${contractDir}"/nimbuild --d:lightClientCosmos -o:"${contractDir}"/nimbuild/light_client.wasm`,
     );
 
     let compileContractCommand = `docker run -t --rm -v "${contractDir}":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/rust-optimizer:0.12.8 .`;
     console.info(`➤ ${compileContractCommand}`);
     await exec(compileContractCommand);
 
-    const setupWasmdCommand = `bash ${rootDir}/../../contracts/cosmos/light-client/scripts/setup_wasmd.sh`;
+    const setupWasmdCommand = `bash "${rootDir}/../../contracts/cosmos/light-client/scripts/setup_wasmd.sh"`;
     console.info(`➤ ${setupWasmdCommand}`);
     execSync(setupWasmdCommand);
 
-    const startNodeCommand = `bash ${rootDir}/../../contracts/cosmos/light-client/scripts/start_node.sh`;
+    const startNodeCommand = `bash "${rootDir}/../../contracts/cosmos/light-client/scripts/start_node.sh"`;
     console.info(`➤ ${startNodeCommand}`);
     exec_(startNodeCommand, { signal });
 
-    execSync('sleep 10');
+    await sleep(10000)
 
-    const addKeyCommand = `bash ${rootDir}/../../contracts/cosmos/light-client/scripts/add_account.sh`;
+    const addKeyCommand = `bash "${rootDir}/../../contracts/cosmos/light-client/scripts/add_account.sh"`;
     console.info(`➤ ${addKeyCommand}`);
     execSync(addKeyCommand);
 
