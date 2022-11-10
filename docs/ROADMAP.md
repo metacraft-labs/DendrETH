@@ -21,12 +21,12 @@ The majority of the implementation work is carried out by an young team of block
 
 - [Emil Ivanichkov](https://github.com/EmilIvanichkovv)
 - [Dimo Dimov](https://github.com/Dimo99)
-- [Georgi Georgiev](https://github.com/GeorgiGeorgiev7)
+- [Simeon Armenchev](https://github.com/monyarm)
 - [Yordan Miladinov](https://github.com/ydm)
 
 Former contributors include:
 
-- [Simeon Armenchev](https://github.com/monyarm)
+- [Georgi Georgiev](https://github.com/GeorgiGeorgiev7)
 - [Georgi Chonkov](https://github.com/grc02)
 
 The team is provided with mentorship consisting of frequent planning meetings, code reviews and direct implementation assistance from Zahary Karadjov, [Petar Kirov](https://github.com/PetarKirov) (former CTO of the [Jarvis Network](https://jarvis.network/), a company specializing in DeFi solutions for multiple chains) and [Rafael Belchior](https://github.com/rafaelapb), member of the Blockdaemon team, contributor and mentor at Hyperledger Cactus, and PhD student at [Técnico Lisboa](http://tecnico.ulisboa.pt/) and [INESC-ID](https://www.inesc-id.pt/), focusing on blockchain interoperability research.
@@ -65,11 +65,32 @@ Goals:
 
 - Port the developed zero-knowledge circuit verification logic to WebAssembly to compare its efficiency against the developed direct implementation.
 
+- Develop a zero-knowledge circuit for the Ethereum fork-choice algorithm, providing similar security to an Ethereum full node. Develop succinct solutions for the long-range attack based on chain selection rules based on total participating balance, lower exit activity and penalized lower post-fork block density.
+
+- Develop a compatibility layer for bridge standards such as [TokenBridge](https://docs.tokenbridge.net/) and AMB to facilitate the creation of a trustless bridge between Ethereum and Gnosis Chain.
+
 - Port the developed contracts to all targeted blockchains.
 
 - Attempt to verify the correctness of the developed circuits through formal methods and comprehensive tests.
 
-- Develop supporting frameworks for building high-level applications on top of the developed light client (i.e. libraries for creating and verifying Ethereum merkle proofs).
+Outcomes:
+
+* A prototype for one-shot syncing based on a recursive zero-knowledge circuit was delivered in https://github.com/metacraft-labs/DendrETH/pull/58.
+
+* Groth16 verifiers in [Rust](https://github.com/metacraft-labs/DendrETH/tree/main/beacon-light-client/circom/rust-verifier) and [Nim](https://github.com/metacraft-labs/DendrETH/pull/61) were added to the codebase and work is underway to build verifying smart contracts for Solana and Cosmos.
+
+### 2023
+
+Goals:
+
+- Develop easy-to-use relay node software package capable of:
+  * Monitoring the Ethereum network for light client updates.
+  * Generating corresponding zero-knowledge proofs.
+  * Executing transactions against the deployed smart contract to updates its state.
+
+- Commission a security audit for the entire system.
+
+- If necessary, create a custom Ethereum testnet, using a `hash_tree_root` based on hash function such as Pedersen Hash or Poseidon that is more friendly to zero-knowledge circuits.
 
 Upon implementation of these goals, Blockdaemon commits to operate, promote, and maintain the developed bridges in all official networks. Furthermore, Blockdaemon commits to create and promote several innovative projects backed by academic research, on top of the provided trustless oracle:
 
@@ -80,18 +101,6 @@ Upon implementation of these goals, Blockdaemon commits to operate, promote, and
 2. Integration with [Hyperledger Cactus](This is project would be the first introducing trustless , automatic state migration across chains).
 
    Hyperledger Cactus is the leading open-source, enterprise-grade interoperability project. Cactus aims to promote integration between enterprise systems and different blockchains. Cactus also provides support for developing infrastructure that integrates with Ethereum, and the developed oracle and bridge, including but not limited to: operators, relayers, and products on top of the bridge/oracle. The goal of this investigation is to diminish the entry barrier to enterprises wanting to use Ethereum 2.0. We can extend the current Ethereum connector to support Ethereum 2.0, and facilitate the integration with the developed bridges.
-
-### 2023
-
-Goals:
-
-- Commission a security audit for the entire system.
-
-- Develop a zero-knowledge circuit for the Ethereum fork-choice algorithm, providing similar security to an Ethereum full node. Develop succinct solutions for the long-range attack based on chain selection rules based on total participating balance, lower exit activity and penalized lower post-fork block density.
-
-- If necessary, create a custom Ethereum testnet, using a `hash_tree_root` based on hash function such as Pedersen Hash or Poseidon that is more friendly to zero-knowledge circuits.
-
-- Validate our use cases and produce academic research based on them.
 
 ## Collaboration and Reporting
 
