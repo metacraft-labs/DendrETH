@@ -36,19 +36,21 @@ echo "$RES" >> contracts_stored.log
 
 CODE_ID=$(echo "$RES" | jq -r '.logs[0].events[-1].attributes[0].value')
 
-BOOTSTRAP_DATA=$(cat "${CONTRACT_DIR}/scripts/data/bootstrap.txt")
-INIT='{"bootstrap_data":"'"${BOOTSTRAP_DATA}"'"}'
+# Iteractions with the contract:
 
-wasmd tx wasm instantiate $CODE_ID "$INIT" --from wallet --label "name service" ${TXFLAG} -y --no-admin
+# BOOTSTRAP_DATA=""
+# INIT='{"bootstrap_data":"'"${BOOTSTRAP_DATA}"'"}'
 
-sleep 10
+# wasmd tx wasm instantiate $CODE_ID "$INIT" --from wallet --label "name service" ${TXFLAG} -y --no-admin
 
-CONTRACT=$(wasmd query wasm list-contract-by-code $CODE_ID $NODE --output json | jq -r '.contracts[-1]')
+# sleep 10
 
-UPDATE_DATA=$(cat "${CONTRACT_DIR}/scripts/data/update_00290.txt")
-UPDATE='{"update":{"update_data":"'"${UPDATE_DATA}"'"}}'
-wasmd tx wasm execute $CONTRACT "$UPDATE" --amount 999umlg --from wallet $TXFLAG -y
-sleep 10
+# CONTRACT=$(wasmd query wasm list-contract-by-code $CODE_ID $NODE --output json | jq -r '.contracts[-1]')
 
-NAME_QUERY="{\"store\": {}}"
-wasmd query wasm contract-state smart $CONTRACT "$NAME_QUERY" $NODE --output json
+# UPDATE_DATA=""
+# UPDATE='{"update":{"update_data":"'"${UPDATE_DATA}"'"}}'
+# wasmd tx wasm execute $CONTRACT "$UPDATE" --amount 999umlg --from wallet $TXFLAG -y
+# sleep 10
+
+# NAME_QUERY="{\"store\": {}}"
+# wasmd query wasm contract-state smart $CONTRACT "$NAME_QUERY" $NODE --output json
