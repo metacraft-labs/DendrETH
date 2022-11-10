@@ -132,7 +132,7 @@ proc validate_light_client_update*(
     signing_root = compute_signing_root(update.attested_header, domain)
   assertLC(
     blsFastAggregateVerify(
-      participant_pubkeys[0 .. num_active_participants-1], signing_root.data,
+      toOpenArray(participant_pubkeys, 0, num_active_participants-1), signing_root.data,
       sync_aggregate.sync_committee_signature),
     BlockError.UnviableFork
   )

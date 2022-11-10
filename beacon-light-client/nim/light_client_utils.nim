@@ -402,7 +402,7 @@ proc blsFastAggregateVerify*(
     unwrapped[idx] = PublicKey(realkey.get)
     inc idx
 
-  fastAggregateVerify(unwrapped[..idx], message, blscurve.Signature(signature))
+  fastAggregateVerify(toOpenArray(unwrapped,0, idx-1), message, blscurve.Signature(signature))
 
 proc blsFastAggregateVerify*(
        publicKeys: openArray[ValidatorPubKey],
