@@ -64,7 +64,7 @@ describe('Light Client In Cosmos', () => {
     console.info(`➤ ${addKeyCommand}`);
     execSync(addKeyCommand);
 
-    const getFredAddressCommand = `wasmd keys show fred -a`;
+    const getFredAddressCommand = `wasmd keys show fred -a --keyring-backend test --keyring-dir $HOME/.wasmd_keys`;
     console.info(`➤ ${getFredAddressCommand}`);
     const getAddress = exec(getFredAddressCommand);
     const fredDrres = (await getAddress).stdout;
