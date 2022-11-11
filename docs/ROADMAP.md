@@ -69,7 +69,7 @@ Goals:
 
 - Develop a compatibility layer for bridge standards such as [TokenBridge](https://docs.tokenbridge.net/) and AMB to facilitate the creation of a trustless bridge between Ethereum and Gnosis Chain.
 
-- Develop a succinct solution for the long-range attack problem, based on an one-shot syncing proof that keeps track of the observed minimal validator participation rate in the history. The solution will be based on the assumption that any long-range attack is likely to have a lower participation rate immediately after the forking point because the corrupted validators are likely to be active in both the real and the forged histories while the honest validators will be participating only in the real one. Thus, a client which is not subjected to an eclipse attack will be able to select the chain with higher minimal participation rate. 
+- Develop a succinct solution for the long-range attack problem, based on an one-shot syncing proof that keeps track of the observed minimal validator participation rate in the history. The solution will be based on the assumption that any long-range attack is likely to have a lower participation rate immediately after the forking point because the corrupted validators are likely to be active in both the real and the forged histories while the honest validators will be participating only in the real one. Thus, a client which is not subjected to an eclipse attack will be able to select the chain with higher minimal participation rate.
 
   In practice, clients employing one-shot syncing are likely to develop various heuristics for determining a safe syncing distance based on the demonstrated minimal participation rate. For example, if your client is 6 months behind the head block and you are presented with a proof that the minimal participation rate during this period was 97% (which has been historically true for mainnet), you can have high assurance that this is not a long-range attack because the validators are likely to be corrupted only if they have exited, but exiting 97% of the validators requires more than 6 months. In practice, it's also reasonable to assume that a certain percentage of the validators are non-corruptible which will make the 97% participation rate an even stronger guarantee.
 
@@ -79,18 +79,19 @@ Goals:
 
 Outcomes:
 
-* A prototype for one-shot syncing based on a recursive zero-knowledge circuit was delivered in https://github.com/metacraft-labs/DendrETH/pull/58.
+- A prototype for one-shot syncing based on a recursive zero-knowledge circuit was delivered in https://github.com/metacraft-labs/DendrETH/pull/58.
 
-* Groth16 verifiers in [Rust](https://github.com/metacraft-labs/DendrETH/tree/main/beacon-light-client/circom/rust-verifier) and [Nim](https://github.com/metacraft-labs/DendrETH/pull/61) were added to the codebase and work is underway to build verifying smart contracts for Solana and Cosmos.
+- Groth16 verifiers in [Rust](https://github.com/metacraft-labs/DendrETH/tree/main/beacon-light-client/circom/rust-verifier) and [Nim](https://github.com/metacraft-labs/DendrETH/pull/61) were added to the codebase and work is underway to build verifying smart contracts for Solana and Cosmos.
 
 ### 2023
 
 Goals:
 
 - Develop easy-to-use relay node software package capable of:
-  * Monitoring the Ethereum network for light client updates.
-  * Generating corresponding zero-knowledge proofs.
-  * Executing transactions against the deployed smart contract to updates its state.
+
+  - Monitoring the Ethereum network for light client updates.
+  - Generating corresponding zero-knowledge proofs.
+  - Executing transactions against the deployed smart contract to updates its state.
 
 - Commission a security audit for the entire system.
 
