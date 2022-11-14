@@ -23,6 +23,7 @@ The majority of the implementation work is carried out by an young team of block
 - [Dimo Dimov](https://github.com/Dimo99)
 - [Simeon Armenchev](https://github.com/monyarm)
 - [Yordan Miladinov](https://github.com/ydm)
+- [Kristin Kirkov](https://github.com/kkirkov)
 
 Former contributors include:
 
