@@ -68,9 +68,6 @@ in
         # llvm.lld
         ldc
 
-        # A basic Cosmos SDK app to host WebAssembly smart contracts
-        metacraft-labs.wasmd
-
         rustTargetWasm
         # Developer tool to help you get up and running quickly with a new Rust
         # project by leveraging a pre-existing git repository as a template.
@@ -80,6 +77,9 @@ in
         metacraft-labs.solana
         nim # Compiling Nim 1.6.8 is currently broken on macOS/M1
         nim-wasm
+
+        # A basic Cosmos SDK app to host WebAssembly smart contracts
+        metacraft-labs.wasmd
       ];
 
     shellHook = ''
