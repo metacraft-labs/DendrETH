@@ -49,7 +49,8 @@
         ];
       };
       preOverlays = [
-        mcl-blockchain.overlays.default (import ./libs/nix/overlay.nix)
+        mcl-blockchain.overlays.default
+        (import ./libs/nix/overlay.nix)
         rust-overlay.overlays.default
       ];
       overlay = ./overlay.nix;

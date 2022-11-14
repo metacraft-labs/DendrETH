@@ -33,14 +33,16 @@ with pkgs;
 
     doCheck = false;
 
-    nativeBuildInputs = [
-      rust-bin.stable."1.58.1".default
-      clang_11
-      openssl.dev
-      pkg-config
-    ] ++ lib.optionals (stdenv.isDarwin) [
-      darwin.apple_sdk.frameworks.Security
-    ];
+    nativeBuildInputs =
+      [
+        rust-bin.stable."1.58.1".default
+        clang_11
+        openssl.dev
+        pkg-config
+      ]
+      ++ lib.optionals (stdenv.isDarwin) [
+        darwin.apple_sdk.frameworks.Security
+      ];
 
     buildInputs = [
     ];
