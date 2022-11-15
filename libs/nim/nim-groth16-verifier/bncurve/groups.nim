@@ -196,35 +196,9 @@ proc `+`*[T: G1|G2](p1, p2: Point[T]): Point[T] {.noinit.} =
     result.y = r * (v - x3) - (s1j + s1j)
     result.z = ((p1.z + p2.z).squared() - z1squared - z2squared) * h
 
-proc `-`*[T: G1|G2](p: Point[T]): Point[T] {.inline, noinit.} =
-  if p.isZero():
-    return p
-  else:
-    result.x = p.x
-    result.y = -p.y
-    result.z = p.z
-
 proc `-`*[T: G1|G2](p: AffinePoint[T]): AffinePoint[T] {.inline, noinit.} =
   result.x = p.x
   result.y = -p.y
-
-proc `-`*[T: G1|G2](p1, p2: Point[T]): Point[T] {.inline, noinit.} =
-  result = p1 + (-p2)
-
-proc `==`*[T: G1|G2](p1, p2: Point[T]): bool =
-  if p1.isZero():
-    return p2.isZero()
-  if p2.isZero():
-    return false
-  let z1squared = p1.z.squared()
-  let z2squared = p2.z.squared()
-  if (p1.x * z2squared) != (p2.x * z1squared):
-    return false
-  let z1cubed = p1.z * z1squared
-  let z2cubed = p2.z * z2squared
-  if (p1.y * z2cubed) != (p2.y * z1cubed):
-    return false
-  return true
 
 proc toJacobian*[T: G1|G2](p: AffinePoint[T]): Point[T] {.inline, noinit.} =
   ## Convert affine coordinates' point ``p`` to point.
@@ -259,12 +233,6 @@ proc toAffine*[T: G1|G2](p: Point[T]): Option[AffinePoint[T]] =
       )
     else:
       result = none[AffinePoint[T]]()
-
-proc isOnCurve*[T: G1|G2](p: AffinePoint[T]): bool =
-  when T is G1:
-    result = (p.y.squared() == (p.x.squared() * p.x) + G1B)
-  else:
-    result = (p.y.squared() == (p.x.squared() * p.x) + G2B)
 
 proc mulByQ(p: AffinePoint[G2]): AffinePoint[G2] =
   result.x = TwistMulByQx * p.x.frobeniusMap(1)
