@@ -1,6 +1,6 @@
 import
   verify,
-  std/[json,strformat]
+  std/[json,strformat], marshal
   #../../../vendor/nim-bncurve/bncurve
 
 
@@ -34,6 +34,15 @@ proc prepareInput*(path: string, number: int, ic:IC): Point[G1] =
   var preparedInputs = ic[0];
   for i in 0..(public.len-1):
     let pubInput = Fr.fromString(public[i].str)
+    #echo "prepared input:"
+    #echo $$preparedInputs
+    #echo "ic:"
+    #echo $$ic[i+1]
+    echo "public:"
+    echo public[i]
+    echo "afterFromStringFunc:"
+    echo $$pubInput
+    echo ' '
     preparedInputs = preparedInputs + (ic[i+1] * pubInput)
 
   preparedInputs
