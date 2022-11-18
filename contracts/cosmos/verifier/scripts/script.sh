@@ -16,7 +16,7 @@ TXFLAG="${NODE} --chain-id ${CHAIN_ID} --gas-prices 0.25umlg --gas auto --gas-ad
 ROOT=$(git rev-parse --show-toplevel)
 
 # Path to the contract dir
-CONTRACT_DIR=${ROOT}/verifier
+CONTRACT_DIR=${ROOT}/contracts/cosmos/verifier
 
 # Compile Light Client implemeted in nim.
 nim-wasm c --lib:${LOCAL_NIM_LIB} --nimcache:./nimcache --d:lightClientCosmos \
@@ -34,7 +34,7 @@ echo "$RES" >> contracts_stored.log
 CODE_ID=$(echo "$RES" | jq -r '.logs[0].events[-1].attributes[0].value')
 
 # BOOTSTRAP_DATA=""
-INIT='{"vkey":15, "currentHeader":3}'
+INIT='{"vkey":15, "current_header":3}'
 
 wasmd tx wasm instantiate $CODE_ID "$INIT" --from wallet --label "name service" ${TXFLAG} -y --no-admin
 sleep 8
@@ -45,7 +45,7 @@ NAME_QUERY="{\"store\": {}}"
 wasmd query wasm contract-state smart $CONTRACT "$NAME_QUERY" $NODE --output json
 
 UPDATE_DATA=""
-UPDATE='{"update":{"proofInput":3,"newHeader":4}}'
+UPDATE='{"update":{"proof_input":3,"new_header":4}}'
 wasmd tx wasm execute $CONTRACT "$UPDATE" --amount 999umlg --from wallet $TXFLAG -y
 sleep 8
 

@@ -7,8 +7,8 @@ use thiserror::Error;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, StoreResponse};
-use crate::state::{inter};
-use crate::state::{header};
+use crate::state::{INTER};
+use crate::state::{HEADER};
 
 
 /*
@@ -17,9 +17,18 @@ const CONTRACT_NAME: &str = "crates.io:verifier";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 */
 extern "C" {
-    fn testproc(a:i32, b:i32) -> i32;
-    fn testproc2(a:i32, b:i32) -> bool;
     fn testVerify(vkey:i32, proof:i32, input:i32) -> i32;
+    fn getVerificationKeySize() -> usize;
+    fn testInitializeVKey() -> *mut u8;
+    fn createVerificationKeyWithString() -> *mut u8;
+    fn getProofSize() -> usize;
+    fn createProofWithString() -> *mut u8;
+    fn getHeaderSize() -> usize;
+    fn createOldHeaderWithString() -> *mut u8;
+    fn createNewHeaderWithString() -> *mut u8;
+    // fn getInputSize() -> usize;
+    // fn createInputWithString() -> *mut u8;
+    fn makePairsAndVerifyWithPointers(vk: *const u8, prf: *const u8, oldh: *const u8, newh: *const u8) -> bool;
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -29,13 +38,47 @@ pub fn instantiate(
     _info: MessageInfo,
     _msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
-    inter.save(_deps.storage, &_msg.vkey);
-    header.save(_deps.storage, &_msg.currentHeader);
+    INTER.save(_deps.storage, &_msg.vkey);
+    HEADER.save(_deps.storage, &_msg.current_header);
 
+
+    let keyPointer = unsafe { createVerificationKeyWithString() };
+    let key_bytes = unsafe { Vec::from_raw_parts(keyPointer, getVerificationKeySize(), 0) };
+    _deps.storage.set("key_in_bytes".as_bytes(), &key_bytes);
+    let store = _deps.storage.get("key_in_bytes".as_bytes()).unwrap();
+
+    let proofPointer = unsafe { createProofWithString() };
+    let proof_bytes = unsafe { Vec::from_raw_parts(proofPointer, getProofSize(), 0) };
+    _deps.storage.set("proof_in_bytes".as_bytes(), &proof_bytes);
+    let storePrf = _deps.storage.get("proof_in_bytes".as_bytes()).unwrap();
+
+    let oldHeaderPointer = unsafe { createOldHeaderWithString() };
+    let old_header_bytes = unsafe { Vec::from_raw_parts(oldHeaderPointer, getHeaderSize(), 0) };
+    _deps.storage.set("old_header_in_bytes".as_bytes(), &old_header_bytes);
+    let storeOldHeader = _deps.storage.get("old_header_in_bytes".as_bytes()).unwrap();
+
+    let newHeaderPointer = unsafe { createNewHeaderWithString() };
+    let new_header_bytes = unsafe { Vec::from_raw_parts(newHeaderPointer, getHeaderSize(), 0) };
+    _deps.storage.set("new_header_in_bytes".as_bytes(), &new_header_bytes);
+    let storeNewHeader = _deps.storage.get("new_header_in_bytes".as_bytes()).unwrap();
+
+    // let inputPointer = unsafe { createInputWithString() };
+    // let input_bytes = unsafe { Vec::from_raw_parts(inputPointer, getInputSize(), 0) };
+    // _deps.storage.set("input_in_bytes".as_bytes(), &input_bytes);
+    // let storeInput = _deps.storage.get("input_in_bytes".as_bytes()).unwrap();
+
+
+
+    let mut tok = 2;
+    if unsafe{ makePairsAndVerifyWithPointers(store.as_ptr(), storePrf.as_ptr(), storeOldHeader.as_ptr(), storeNewHeader.as_ptr()) } {
+        tok=1;
+    }
+    // var k = unsafe {makePairsAndVerifyWithPointers(store.as_ptr() ,storePrf.as_ptr() ,storeOldHeader.as_ptr(), storeNewHeader.as_ptr(), storeInput.as_ptr())}
+
+    return Err(ContractError::Std(StdError::generic_err(format!("{:?} ",tok))));
     //    let result = unsafe { testproc(_msg.data1, _msg.data2) };
-    //return Err(ContractError::Std(StdError::generic_err(format!("{:?}", result))));
     //_deps.storage.set("tets".as_bytes(), &result);
-//    inter.save(_deps.storage, &result)?;
+//    INTER.save(_deps.storage, &result)?;
 //    lcs.save(_deps.storage, &result)?;
     //let light_client_store = unsafe {Vec::from_raw_parts("wewe", 4, 0)};
     //let lcs = "2";
@@ -43,7 +86,7 @@ pub fn instantiate(
     //_deps.storage.set("lcs".as_bytes(), &lcs);
     //let mut prev_header_hash1: Item<Uint256> = Item::new("uint256");
     //pub prev_header_hash2: Item<Uint256> = Item::new("uint256");
-    //pub const Vkey: Item<VerificationKey> =  Item::new("VerificationKey")
+    //pub const Vkey: Item<verification_key> =  Item::new("verification_key")
     //_deps.storage.set(prev_header_hash1.as_???, &prev_header_hash1)
     //_deps.storage.set(prev_header_hash2.as_???, &prev_header_hash2)
     //_deps.storage.set(Vkey.as_???, &Vkey)
@@ -60,8 +103,8 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
      match msg {
-        ExecuteMsg::Update { proofInput, newHeader } =>
-          execute_update(deps, _env, info, proofInput, newHeader),
+        ExecuteMsg::Update { proof_input, new_header } =>
+          execute_update(deps, _env, info, proof_input, new_header),
     }
 
     //match _msg {
@@ -74,32 +117,11 @@ pub fn execute_update(
     deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
-    proofInput: i32,
-    newHeader: i32
+    proof_input: i32,
+    new_header: i32
   ) -> Result<Response, ContractError> {
-    //get the verificationKey that we have saved on the contract
-    let verificationKey = inter.load(deps.storage)?;
-    //received proof
-    let proof = proofInput;
-    //preparing inputs
-    let input = unsafe{ testproc(newHeader, header.load(deps.storage)?) };
-    //verify
-    let result = unsafe { testVerify(verificationKey,proof,input)};
-    //if correct new header then save it
-    if (result == 0){
-        header.save(deps.storage, &newHeader);
-    }
 
 
-
-    //let result = unsafe { testproc(sth1, update_data) };
-    //let newInt = update_data;
-    // if (result == 84){
-    //     inter.save(deps.storage, &result)?;
-    // }
-    // else {
-    //     inter.save(deps.storage, &sth1)?;
-    // }
 
     Ok(Response::default())
   }
@@ -119,8 +141,8 @@ pub fn execute_update(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(_deps: Deps, _env: Env, _msg: QueryMsg) -> StdResult<Binary> {
   match _msg {
-    QueryMsg::Store {} => to_binary::<StoreResponse>(&inter.load(_deps.storage)?.into()),
-    QueryMsg::Header {} => to_binary::<StoreResponse>(&header.load(_deps.storage)?.into()),
+    QueryMsg::Store {} => to_binary::<StoreResponse>(&INTER.load(_deps.storage)?.into()),
+    QueryMsg::Header {} => to_binary::<StoreResponse>(&HEADER.load(_deps.storage)?.into()),
   }
 }
 
