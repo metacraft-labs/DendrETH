@@ -3,7 +3,7 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 #[cw_serde]
 pub struct InstantiateMsg {
     pub vkey: i32,
-    pub currentHeader: i32,
+    pub current_header: i32,
 }
 
 #[cw_serde]
@@ -15,8 +15,8 @@ pub enum ExecuteMsg {
     //},
     Update {
         //update_data: i32,
-        proofInput: i32,
-        newHeader: i32,
+        proof_input: i32,
+        new_header: i32,
     },
 }
 
