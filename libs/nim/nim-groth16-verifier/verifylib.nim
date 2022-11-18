@@ -30,20 +30,42 @@ proc createProof*(path: string, number: int): Proof =
 
 proc prepareInput*(path: string, number: int, ic:IC): Point[G1] =
   let public = parseFile(path & fmt"/public{number}.json")
+  let oldHeader = Header(head: Fr.fromString(public[0].str),tail:Fr.fromString(public[1].str))
+  let newHeader = Header(head: Fr.fromString(public[2].str),tail:Fr.fromString(public[3].str))
 
-  var preparedInputs = ic[0];
-  for i in 0..(public.len-1):
-    let pubInput = Fr.fromString(public[i].str)
-    #echo "prepared input:"
-    #echo $$preparedInputs
-    #echo "ic:"
-    #echo $$ic[i+1]
-    echo "public:"
-    echo public[i]
-    echo "afterFromStringFunc:"
-    echo $$pubInput
-    echo ' '
-    preparedInputs = preparedInputs + (ic[i+1] * pubInput)
+  var preparedInputs = Input.data(ic[0])
+  # echo $$preparedInputs
+  preparedInputs = preparedInputs + (ic[1] * oldHeader.head)
+  #echo $$preparedInputs
+  preparedInputs = preparedInputs + (ic[2] * oldHeader.tail)
+  #echo $$preparedInputs
+  preparedInputs = preparedInputs + (ic[3] * newHeader.head)
+  #echo $$preparedInputs
+  preparedInputs = preparedInputs + (ic[4] * newHeader.tail)
+  # echo $$preparedInputs
+  # echo "-----------------------------------------"
+  # echo $$newHeader.head
+  # echo $$newHeader.tail
+  # echo "-----------------------------------------"
+
+  # var preparedInputs2 = ic[0];
+  # echo $$preparedInputs2
+  # for i in 0..(public.len-1):
+  #   let pubInput = Fr.fromString(public[i].str)
+  #   echo $$pubInput
+  #   #echo "prepared input:"
+  #   #echo $$preparedInputs
+  #   #echo "ic:"
+  #   #echo $$ic[i+1]
+  #   # echo "public:"
+  #   # echo public[i]
+  #   # echo "afterFromStringFunc:"
+  #   # echo $$pubInput
+  #   # echo ' '
+  #   preparedInputs2 = preparedInputs2 + (ic[i+1] * pubInput)
+  #   echo $$preparedInputs2
+  # echo "-----------------------------------------"
+
 
   preparedInputs
 
@@ -54,5 +76,6 @@ proc mainVerify*(path: string, number: int): bool =
   let vk = createVerificationKey(path)
   let prf =createProof(path, number)
   let preparedInputs = prepareInput(path, number, vk.ic)
+  echo $$vk
   #var t1: BNU256 = [1'u64,2'u64,3'u64,3'u64]
-  makePairsAndVerify(vk, prf, preparedInputs)
+  makePairsAndVerifyWithPointers(createVerificationKeyWithString(), createProofWithString(), createInputWithString())
