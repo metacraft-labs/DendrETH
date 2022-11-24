@@ -9,6 +9,15 @@
 - Hedera
 - Fantom
 
+## WebAssembly-enabled Blockchains
+
+- Polkadot
+- Cosmos
+- Elrond
+- NEAR
+- EOS
+- Fantom
+
 ## Other blockchains with viable smart contract platforms
 
 ### Algorand
@@ -42,3 +51,7 @@ Suggested programming language: C#, (possibly C++ in the future).
 - https://filecoin.io/blog/posts/introducing-lurk-a-programming-language-for-recursive-zk-snarks/
 - https://github.com/QED-it/zkinterface (a good hub of links to other projects)
 - https://github.com/circify/circ
+
+# Merkle proof verification for the ETH execution state
+
+- https://github.com/KyberNetwork/peace-relay/blob/master/contracts/MerklePatriciaProof.sol
