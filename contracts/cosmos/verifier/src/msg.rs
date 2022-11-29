@@ -2,51 +2,32 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 
 #[cw_serde]
 pub struct InstantiateMsg {
-    pub vkey: i32,
-    pub current_header: i32,
+    pub vkey: Vec<u8>,
+    pub currentHeader: Vec<u8>,
 }
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    //UpdateAndValidation {
-    //    new_header_hash1: Uint256,
-      //  new_header_hash2: Uint256,
-        //Proof??
-    //},
     Update {
-        //update_data: i32,
-        proof_input: i32,
-        new_header: i32,
+        proof: Vec<u8>,
+        newHeader: Vec<u8>,
     },
 }
 
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
-  #[returns(StoreResponse)] Store {},
   #[returns(StoreResponse)] Header {},
 }
 #[cw_serde]
 pub struct StoreResponse {
-  pub res: i32,
+  pub res: Vec<u8>,
 }
 
-impl From<i32> for StoreResponse {
-  fn from(store: i32) -> StoreResponse {
+impl From<Vec<u8>> for StoreResponse {
+  fn from(currentHeader: Vec<u8>) -> StoreResponse {
     StoreResponse {
-      res: store,
+      res: currentHeader,
     }
   }
 }
-// #[cw_serde]
-// pub struct StoreResponse2 {
-//   pub res: i32,
-// }
-
-// impl From<i32> for StoreResponse2 {
-//   fn from(lcs: i32) -> StoreResponse2 {
-//     StoreResponse2 {
-//       res: lcs,
-//     }
-//   }
-// }
