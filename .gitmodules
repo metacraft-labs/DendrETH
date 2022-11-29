@@ -34,3 +34,9 @@
 [submodule "vendor/nim-terminaltables"]
 	path = vendor/nim-terminaltables
 	url = git@github.com:xmonader/nim-terminaltables.git
+[submodule "vendor/nim-confutils"]
+	path = vendor/nim-confutils
+	url = git@github.com:status-im/nim-confutils.git
+[submodule "vendor/nim-faststreams"]
+	path = vendor/nim-faststreams
+	url = git@github.com:status-im/nim-faststreams.git
