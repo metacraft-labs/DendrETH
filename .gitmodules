@@ -34,3 +34,9 @@
 [submodule "vendor/build-artifacts"]
 	path = vendor/build-artifacts
 	url = git@github.com:metacraft-labs/DendrETH-build-artifacts.git
+[submodule "vendor/nim-confutils"]
+	path = vendor/nim-confutils
+	url = git@github.com:status-im/nim-confutils.git
+[submodule "vendor/nim-faststreams"]
+	path = vendor/nim-faststreams
+	url = git@github.com:status-im/nim-faststreams.git
