@@ -3,8 +3,7 @@ import { wasm } from './circuit_tester';
 import { expect } from 'chai';
 import { ssz } from '@chainsafe/lodestar-types';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
-import { sha256 } from 'ethers/lib/utils';
-import { formatHex } from '../../solidity/test/utils/bls';
+import { PointG1 } from '@noble/bls12-381';
 import { readFileSync } from 'fs';
 
 describe('Validator hash tree root test', () => {
@@ -15,22 +14,15 @@ describe('Validator hash tree root test', () => {
     let validators = ssz.phase0.Validators.fromJson(
       validatorsJSON.data.map(x => x.validator),
     );
+    let validator = validators[70];
+    // validator.exitEpoch = 16609;
     const validatorTree = new Tree(
-      ssz.phase0.Validator.toViewDU(validators[0]).node,
+      ssz.phase0.Validator.toViewDU(validator).node,
     );
-
-    let pubkeyHex = bytesToHex(validatorTree.getNode(8n).root);
     let withdrawalCredentialsHex = bytesToHex(validatorTree.getNode(9n).root);
 
     let effectifeBalanceHex = bytesToHex(validatorTree.getNode(10n).root);
-    let slashedHex = bytesToHex(validatorTree.getNode(11n).root);
 
-    let activationEligibilityEpochHex = bytesToHex(
-      validatorTree.getNode(12n).root,
-    );
-    let activationEpochHex = bytesToHex(validatorTree.getNode(13n).root);
-
-    let exitEpochHex = bytesToHex(validatorTree.getNode(14n).root);
     let withdrawableEpochHex = bytesToHex(validatorTree.getNode(15n).root);
 
     const circuit = await wasm(
@@ -38,9 +30,9 @@ describe('Validator hash tree root test', () => {
     );
 
     const input = {
-      pubkey: BigInt('0x' + pubkeyHex)
+      pubkey: BigInt('0x' + PointG1.fromHex(validator.pubkey).toHex(true))
         .toString(2)
-        .padStart(256, '0')
+        .padStart(384, '0')
         .split(''),
       withdrawCredentials: BigInt('0x' + withdrawalCredentialsHex)
         .toString(2)
@@ -50,22 +42,13 @@ describe('Validator hash tree root test', () => {
         .toString(2)
         .padStart(256, '0')
         .split(''),
-      slashed: BigInt('0x' + slashedHex)
-        .toString(2)
-        .padStart(256, '0')
-        .split(''),
-      activationEligibilityEpoch: BigInt('0x' + activationEligibilityEpochHex)
-        .toString(2)
-        .padStart(256, '0')
-        .split(''),
-      activationEpoch: BigInt('0x' + activationEpochHex)
-        .toString(2)
-        .padStart(256, '0')
-        .split(''),
-      exitEpoch: BigInt('0x' + exitEpochHex)
-        .toString(2)
-        .padStart(256, '0')
-        .split(''),
+      slashed: Number(validator.slashed),
+      activationEligibilityEpoch: validator.activationEligibilityEpoch,
+      activationEpoch: validator.activationEpoch,
+      exitEpoch:
+        validator.exitEpoch.toString() === 'Infinity'
+          ? '18446744073709551615'
+          : validator.exitEpoch.toString(),
       withdrawableEpoch: BigInt('0x' + withdrawableEpochHex)
         .toString(2)
         .padStart(256, '0')

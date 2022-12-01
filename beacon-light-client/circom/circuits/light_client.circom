@@ -26,6 +26,7 @@ template LightClient(N) {
   signal input finalized_header_root[256];
   signal input finalized_branch[6][256];
 
+  // Should be harcoded
   signal input fork_version[32];
 
   signal input points[N][2][K];

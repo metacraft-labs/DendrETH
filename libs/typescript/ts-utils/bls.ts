@@ -303,6 +303,16 @@ export function bigint_to_array(n: number, k: number, x: bigint) {
   return ret;
 }
 
+export function array_to_bigint(n: number, array: string[]): bigint {
+  let result: string = '';
+
+  for (let i = array.length - 1; i >= 0; i--) {
+    result += BigInt(array[i]).toString(2).padStart(55, '0');
+  }
+
+  return BigInt('0b' + result);
+}
+
 export async function msg_hash(message: string) {
   let msg = stringToBytes(message);
 

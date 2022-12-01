@@ -2,6 +2,7 @@ contracts/circuits/HelloWorld
 cache
 artifacts
 contracts/*.sol
+<<<<<<< HEAD
 **/input*.json
 # snarkit2 ignores
 !**/data/**/input.json
@@ -9,3 +10,6 @@ circuit_cpp/
 circuit.r1cs
 circuit.sym
 witness.json
+=======
+input*.json
+>>>>>>> 8725164 (Full ethereum consensus)
