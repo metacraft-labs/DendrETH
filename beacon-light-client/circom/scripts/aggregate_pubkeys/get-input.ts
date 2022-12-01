@@ -8,8 +8,10 @@ import { Tree } from '@chainsafe/persistent-merkle-tree';
 import * as validatorsJSON from '../../../../validators.json';
 import { readFileSync, writeFileSync } from 'fs';
 
+const SIZE = 4;
+
 let points: PointG1[] = (validatorsJSON as any).data
-  .slice(0, 64)
+  .slice(0, SIZE)
   .map(x => PointG1.fromHex(x.validator.pubkey.slice(2)));
 
 let validators = ssz.phase0.Validators.fromJson(
@@ -33,7 +35,7 @@ const activationEpoch: string[] = [];
 const exitEpoch: string[] = [];
 const withdrawableEpoch: string[][] = [];
 
-for (let i = 0; i < 64; i++) {
+for (let i = 0; i < SIZE; i++) {
   const validatorTree = new Tree(
     validatorsTree.getNode(ssz.phase0.Validators.getPathInfo([i]).gindex),
   );
@@ -99,7 +101,7 @@ let input = {
   activationEpoch,
   exitEpoch,
   withdrawableEpoch,
-  bitmask: [...Array(64).keys()].map(() => 1),
+  bitmask: [...Array(SIZE).keys()].map(() => 1),
   currentEpoch: Math.floor(beaconState.slot / 32),
 };
 

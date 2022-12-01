@@ -2,12 +2,12 @@ pragma circom 2.0.3;
 
 include "../../../vendor/circom-pairing/circuits/curve.circom";
 include "../../../vendor/circom-pairing/circuits/bn254/groth16.circom";
-include "../../../node_modules/circomlib/circuits/poseidon.circom";
 include "../../../node_modules/circomlib/circuits/bitify.circom";
 include "validators_hash_tree_root.circom";
 include "compress.circom";
 include "bitmask_contains_only_bools.circom";
 include "aggregate_bitmask.circom";
+include "output_commitment.circom";
 
 template AggregatePubKeys(N) {
   var J = 2;
@@ -151,16 +151,45 @@ template AggregatePubKeys(N) {
     aggregateKeys.bitmask[i] <== bitmask[i];
   }
 
-  component poseidon = Poseidon(16);
+  component commitment = OutputCommitment();
 
-  poseidon.inputs[0] <== currentEpoch;
-  poseidon.inputs[1] <== participantsCount;
+  commitment.currentEpoch <== currentEpoch;
+  commitment.participantsCount <== participantsCount;
+
+  for(var i = 0; i < 256; i++) {
+    commitment.hash[i] <== validatorsHashTreeRoot.out[i];
+  }
 
   for(var j = 0; j < J; j++) {
     for(var k = 0; k < K; k++) {
-      poseidon.inputs[2 + j * 7 + k] <== aggregateKeys.out[j][k];
+      commitment.aggregatedKey[j][k] <== aggregateKeys.out[j][k];
     }
   }
 
-  output_commitment <== poseidon.out;
+  for (var i = 0;i < 6;i++) {
+    for (var j = 0;j < 2;j++) {
+      for (var idx = 0;idx < 6;idx++) {
+        commitment.negalfa1xbeta2[i][j][idx] <== 0;
+      }
+    }
+  }
+
+  for (var i = 0;i < 2;i++) {
+    for (var j = 0;j < 2;j++) {
+      for (var idx = 0;idx < 6;idx++) {
+        commitment.gamma2[i][j][idx] <== 0;
+        commitment.delta2[i][j][idx] <== 0;
+      }
+    }
+  }
+
+  for (var i = 0;i < 2;i++) {
+    for (var j = 0;j < 2;j++) {
+      for (var idx = 0;idx < 6;idx++) {
+        commitment.IC[i][j][idx] <== 0;
+      }
+    }
+  }
+
+  output_commitment <== commitment.out;
 }
