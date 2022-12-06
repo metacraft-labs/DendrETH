@@ -30,6 +30,7 @@ template AggregatePubKeysVerify(N) {
   signal input pc[N][2][k];
 
   signal input points[N][J][K];
+  signal input bitmask[N];
 
   signal input hashes[N][256];
 
@@ -38,29 +39,18 @@ template AggregatePubKeysVerify(N) {
 
   signal output output_commitment;
 
-  component ellipticCurveAdd[N - 1];
+  component aggregateKeys = AggregateKeysBitmask(N);
 
-  ellipticCurveAdd[0] = EllipticCurveAdd(55, 7, 0, 4, [35747322042231467, 36025922209447795, 1084959616957103, 7925923977987733, 16551456537884751, 23443114579904617, 1829881462546425]);
-  ellipticCurveAdd[0].aIsInfinity <== 0;
-  ellipticCurveAdd[0].bIsInfinity <== 0;
-
-  for(var j = 0; j < J; j++) {
-    for(var k = 0; k < K; k++) {
-      ellipticCurveAdd[0].a[j][k] <== points[0][j][k];
-      ellipticCurveAdd[0].b[j][k] <== points[1][j][k];
+  for(var i = 0; i < N; i++) {
+    for(var j = 0; j < J; j++) {
+      for(var k = 0; k < K; k++) {
+        aggregateKeys.points[i][j][k] <== points[i][j][k];
+      }
     }
   }
 
-  for(var i = 2; i < N; i++) {
-    ellipticCurveAdd[i - 1] = EllipticCurveAdd(55, 7, 0, 4, [35747322042231467, 36025922209447795, 1084959616957103, 7925923977987733, 16551456537884751, 23443114579904617, 1829881462546425]);
-    ellipticCurveAdd[i - 1].aIsInfinity <== 0;
-    ellipticCurveAdd[i - 1].bIsInfinity <== 0;
-    for(var j = 0; j < J; j++) {
-      for(var k = 0; k < K; k++) {
-        ellipticCurveAdd[i - 1].a[j][k] <== ellipticCurveAdd[i - 2].out[j][k];
-        ellipticCurveAdd[i - 1].b[j][k] <== points[i][j][k];
-      }
-    }
+  for(var i = 0; i < N; i++) {
+    aggregateKeys.bitmask[i] <== bitmask[i];
   }
 
   var participantsSum = 0;
@@ -87,7 +77,7 @@ template AggregatePubKeysVerify(N) {
 
   for(var j = 0; j < J; j++) {
     for(var k = 0; k < K; k++) {
-      commitment.aggregatedKey[j][k] <== ellipticCurveAdd[N - 2].out[j][k];
+      commitment.aggregatedKey[j][k] <== aggregateKeys.out[j][k];
     }
   }
 

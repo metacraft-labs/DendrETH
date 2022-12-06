@@ -2,7 +2,6 @@ import { PointG1 } from '@noble/bls12-381';
 import { bigint_to_array } from '../../../../libs/typescript/ts-utils/bls';
 import * as validators from '../../../../validators.json';
 import { readFileSync, writeFileSync } from 'fs';
-import { poseidon } from 'circomlibjs';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 import * as path from 'path';
