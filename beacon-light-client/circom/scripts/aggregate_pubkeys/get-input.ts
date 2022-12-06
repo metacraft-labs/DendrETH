@@ -89,11 +89,12 @@ let beaconState = ssz.altair.BeaconState.fromJson(beaconStateJson);
 
 let input = {
   points: [
-    points.map(x => [
+    ...points.map(x => [
       bigint_to_array(55, 7, x.toAffine()[0].value),
       bigint_to_array(55, 7, x.toAffine()[1].value),
     ]),
   ],
+  zero: [1, 1, 0, 0],
   withdrawCredentials,
   effectiveBalance,
   slashed,
@@ -101,7 +102,7 @@ let input = {
   activationEpoch,
   exitEpoch,
   withdrawableEpoch,
-  bitmask: [...Array(SIZE).keys()].map(() => 1),
+  bitmask: [1, 1, 0, 0],
   currentEpoch: Math.floor(beaconState.slot / 32),
 };
 

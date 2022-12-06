@@ -2,4 +2,4 @@ contracts/circuits/HelloWorld
 cache
 artifacts
 contracts/*.sol
-
+input.json

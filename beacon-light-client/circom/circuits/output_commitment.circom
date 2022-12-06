@@ -37,7 +37,7 @@ template OutputCommitment() {
   for (var i = 0;i < 6;i++) {
     for (var j = 0;j < 2;j++) {
       for (var idx = 0;idx < 6;idx++) {
-        hasher.ins[vkCounter] <== 0;
+        hasher.ins[vkCounter] <== negalfa1xbeta2[i][j][idx];
         vkCounter++;
       }
     }
@@ -50,13 +50,6 @@ template OutputCommitment() {
         vkCounter++;
         hasher.ins[vkCounter] <== delta2[i][j][idx];
         vkCounter++;
-      }
-    }
-  }
-
-  for (var i = 0;i < 2;i++) {
-    for (var j = 0;j < 2;j++) {
-      for (var idx = 0;idx < 6;idx++) {
         hasher.ins[vkCounter] <== IC[i][j][idx];
         vkCounter++;
       }

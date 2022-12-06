@@ -15,6 +15,9 @@ template ValidatorsHashTreeRoot(N) {
 
   signal input exitEpoch[N][256];
   signal input withdrawableEpoch[N][256];
+
+  signal input zero[N];
+
   signal output out[256];
 
   component pubkeyHashes[N];
@@ -51,7 +54,7 @@ template ValidatorsHashTreeRoot(N) {
 
   for(var i = 0; i < N; i++) {
     for(var j = 0; j < 256; j++) {
-      hashTreeRoot.leaves[i][j] <== validatorHashers[i].out[j];
+      hashTreeRoot.leaves[i][j] <== validatorHashers[i].out[j] * zero[i];
     }
   }
 
