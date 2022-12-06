@@ -4,6 +4,7 @@ include "../../../vendor/circom-pairing/circuits/curve.circom";
 include "../../../vendor/circom-pairing/circuits/bn254/groth16.circom";
 include "output_commitment.circom";
 include "hash_tree_root.circom";
+include "aggregate_bitmask.circom";
 
 template AggregatePubKeysVerify(N) {
   var J = 2;
