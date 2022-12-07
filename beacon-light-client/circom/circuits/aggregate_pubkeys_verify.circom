@@ -155,7 +155,7 @@ template AggregatePubKeysVerify(N) {
     prevCommitments[index].participantsCount <== participantsCount[index];
 
     for(var i = 0; i < 256; i++) {
-      prevCommitments[index].hash[i] <== hashes[i];
+      prevCommitments[index].hash[i] <== hashes[index][i];
     }
 
     for(var j = 0; j < J; j++) {
