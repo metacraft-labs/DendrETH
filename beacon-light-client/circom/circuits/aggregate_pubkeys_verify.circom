@@ -152,7 +152,7 @@ template AggregatePubKeysVerify(N) {
     prevCommitments[index] = OutputCommitment();
 
     prevCommitments[index].currentEpoch <== currentEpoch;
-    prevCommitments[index].participantsCount <== participantsSum;
+    prevCommitments[index].participantsCount <== participantsCount[index];
 
     for(var i = 0; i < 256; i++) {
       prevCommitments[index].hash[i] <== hashTreeRoot.out[i];

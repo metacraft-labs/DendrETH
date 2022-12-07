@@ -8,7 +8,7 @@ import { Tree } from '@chainsafe/persistent-merkle-tree';
 import * as validatorsJSON from '../../../../validators.json';
 import { readFileSync, writeFileSync } from 'fs';
 
-const SIZE = 4;
+const SIZE = 64;
 
 let points: PointG1[] = (validatorsJSON as any).data
   .slice(0, SIZE)
@@ -94,7 +94,10 @@ let input = {
       bigint_to_array(55, 7, x.toAffine()[1].value),
     ]),
   ],
-  zero: [1, 1, 0, 0],
+  zero: [
+    ...[...Array(56).keys()].map(() => 1),
+    ...[...Array(8).keys()].map(() => 0),
+  ],
   withdrawCredentials,
   effectiveBalance,
   slashed,
@@ -102,7 +105,10 @@ let input = {
   activationEpoch,
   exitEpoch,
   withdrawableEpoch,
-  bitmask: [1, 1, 0, 0],
+  bitmask: [
+    ...[...Array(56).keys()].map(() => 1),
+    ...[...Array(8).keys()].map(() => 0),
+  ],
   currentEpoch: Math.floor(beaconState.slot / 32),
 };
 

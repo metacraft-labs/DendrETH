@@ -7,7 +7,7 @@ import { exec } from 'child_process';
 import * as path from 'path';
 import * as vkey from './converted-vkey.json';
 const promiseExec = promisify(exec);
-const proofsDir = path.join(__dirname, `proofs`);
+const proofsDir = 'build/aggregate_pubkeys';
 
 function getAggregatedPoint(points: any[]): string[][] {
   let sum = points
@@ -22,8 +22,8 @@ function getAggregatedPoint(points: any[]): string[][] {
 
 (async () => {
   let points: string[][][] = [];
-  points.push(getAggregatedPoint((validators as any).data.slice(0, 2048)));
-  points.push(getAggregatedPoint((validators as any).data.slice(2048, 4096)));
+  points.push(getAggregatedPoint((validators as any).data.slice(0, 56)));
+  points.push(getAggregatedPoint((validators as any).data.slice(64, 120)));
 
   console.log('Proof convertion...');
   await promiseExec(
@@ -40,7 +40,7 @@ function getAggregatedPoint(points: any[]): string[][] {
     `python ${path.join(
       __dirname,
       '../../utils/proof_converter.py',
-    )} ${proofsDir}/proof${1}.json ${proofsDir}/public${1}.json`,
+    )} ${proofsDir}/proof${0}.json ${proofsDir}/public${0}.json`,
   );
   console.log('Input generation...');
   const proof2 = JSON.parse(readFileSync(`proof.json`).toString());
@@ -49,13 +49,54 @@ function getAggregatedPoint(points: any[]): string[][] {
     negpa: [proof1.negpa, proof2.negpa],
     pb: [proof1.pb, proof2.pb],
     pc: [proof1.pc, proof2.pc],
-    pubInput: ['1', '2'],
-
+    hashes: [
+      [
+        1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0,
+        0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1,
+        1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0,
+        1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0,
+        0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1,
+        1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0,
+        0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0,
+        1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0,
+        0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1,
+        0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0,
+        0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0,
+      ],
+      [
+        1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0,
+        0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1,
+        1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0,
+        1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0,
+        0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1,
+        1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0,
+        0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0,
+        1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0,
+        0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1,
+        0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0,
+        0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0,
+      ],
+    ],
     points,
-    negalfa1xbeta2: [vkey.negalfa1xbeta2, vkey.negalfa1xbeta2],
-    gamma2: [vkey.gamma2, vkey.gamma2],
-    delta2: [vkey.delta2, vkey.delta2],
-    IC: [vkey.IC, vkey.IC],
+    currentEpoch: 160608,
+    participantsCount: [56, 56],
+    bitmask: [1, 1],
+    negalfa1xbeta2: vkey.negalfa1xbeta2,
+    gamma2: vkey.gamma2,
+    delta2: vkey.delta2,
+    IC: vkey.IC,
+    prevNegalfa1xbeta2: [...Array(6).keys()].map(() =>
+      [...Array(2).keys()].map(() => [...Array(6).keys()].map(() => 0)),
+    ),
+    prevGamma2: [...Array(2).keys()].map(() =>
+      [...Array(2).keys()].map(() => [...Array(6).keys()].map(() => 0)),
+    ),
+    prevDelta2: [...Array(2).keys()].map(() =>
+      [...Array(2).keys()].map(() => [...Array(6).keys()].map(() => 0)),
+    ),
+    prevIC: [...Array(2).keys()].map(() =>
+      [...Array(2).keys()].map(() => [...Array(6).keys()].map(() => 0)),
+    ),
   };
 
   writeFileSync(
