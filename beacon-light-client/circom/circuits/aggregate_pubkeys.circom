@@ -99,46 +99,10 @@ template AggregatePubKeys(N) {
     }
 
     validatorsHashTreeRoot.zero[i] <== zero[i];
-
-    activationEligibilityEpochBits[i] = Num2Bits(64);
-    activationEligibilityEpochBits[i].in <== activationEligibilityEpoch[i];
-
-    for(var j = 0; j < 64; j++) {
-      validatorsHashTreeRoot.activationEligibilityEpoch[i][j] <== activationEligibilityEpochBits[i].out[63 - j];
-    }
-
-    for(var j = 64; j < 256; j++) {
-      validatorsHashTreeRoot.activationEligibilityEpoch[i][j] <== 0;
-    }
-
-    activationEpochBits[i] = Num2Bits(64);
-    activationEpochBits[i].in <== activationEpoch[i];
-
-    for(var j = 0; j < 64; j++) {
-      validatorsHashTreeRoot.activationEpoch[i][j] <== activationEpochBits[i].out[63 - j];
-    }
-
-
-    for(var j = 64; j < 256; j++) {
-      validatorsHashTreeRoot.activationEpoch[i][j] <== 0;
-    }
-
-    exitEpochBits[i] = Num2Bits(64);
-    exitEpochBits[i].in <== exitEpoch[i];
-
-    for(var j = 0; j < 64; j++) {
-      validatorsHashTreeRoot.exitEpoch[i][j] <== exitEpochBits[i].out[63 - j];
-    }
-
-    for(var j = 64; j < 256; j++) {
-      validatorsHashTreeRoot.exitEpoch[i][j] <== 0;
-    }
-
-    validatorsHashTreeRoot.slashed[i][0] <== slashed[i];
-
-    for(var j = 1; j < 256; j++) {
-      validatorsHashTreeRoot.slashed[i][j] <== 0;
-    }
+    validatorsHashTreeRoot.activationEligibilityEpoch[i] <== activationEligibilityEpoch[i];
+    validatorsHashTreeRoot.activationEpoch[i] <== activationEpoch[i];
+    validatorsHashTreeRoot.exitEpoch[i] <== exitEpoch[i];
+    validatorsHashTreeRoot.slashed[i] <== slashed[i];
 
     for(var j = 0; j < 256; j++) {
       validatorsHashTreeRoot.withdrawCredentials[i][j] <== withdrawCredentials[i][j];
