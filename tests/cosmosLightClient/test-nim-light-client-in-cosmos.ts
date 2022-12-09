@@ -33,7 +33,7 @@ let rootDir;
 describe('Light Client In Cosmos', () => {
   let contractDirVerifier: string;
   let verifierTool: string;
-  let parseExpectedDataTool: string;
+  let parseDataTool: string;
   let pathToVerifyUtils: string;
   let pathToKey: string;
   let pathToFirstHeader: string;
@@ -63,9 +63,13 @@ describe('Light Client In Cosmos', () => {
       contractDirLightClient + `/lib/nim/light_client_cosmos_wrapper.nim`;
     await compileNimFileToWasm(
       nimFilePathLightClient,
-      `--nimcache:"${contractDirLightClient}"/nimbuild --d:lightClientCosmos -o:"${contractDirLightClient}"/nimbuild/light_client.wasm`,
+      `--nimcache:"${contractDirLightClient}"/nimbuild --d:lightClientCosmos \
+      -o:"${contractDirLightClient}"/nimbuild/light_client.wasm`,
     );
-    let compileContractCommandLightClient = `docker run -t --rm -v "${contractDirLightClient}":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/rust-optimizer:0.12.8 .`;
+    let compileContractCommandLightClient = `docker run -t --rm -v "${contractDirLightClient}":/code \
+      --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
+        --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+          cosmwasm/rust-optimizer:0.12.8 .`;
     console.info(`➤ ${compileContractCommandLightClient}`);
 
     await exec(compileContractCommandLightClient);
@@ -73,7 +77,7 @@ describe('Light Client In Cosmos', () => {
     //Verifier
     contractDirVerifier = rootDir + `/contracts/cosmos/verifier`;
     verifierTool = `${contractDirVerifier}/nimcache/contractInteraction`;
-    parseExpectedDataTool = `${contractDirVerifier}/nimcache/parseExpectedData`;
+    parseDataTool = `${contractDirVerifier}/nimcache/parseData`;
     pathToVerifyUtils =
       rootDir + `/vendor/eth2-light-client-updates/mainnet/proofs/`;
     pathToKey = pathToVerifyUtils + `verification_key.json`;
@@ -82,18 +86,24 @@ describe('Light Client In Cosmos', () => {
     let nimFilePathVerifier = contractDirVerifier + `/lib/nim/verify.nim`;
     await compileNimFileToWasm(
       nimFilePathVerifier,
-      `--nimcache:"${contractDirVerifier}"/nimcache --d:lightClientCosmos -o:"${contractDirVerifier}/nimcache/verifier.wasm"`,
+      `--nimcache:"${contractDirVerifier}"/nimcache --d:lightClientCosmos \
+        -o:"${contractDirVerifier}/nimcache/verifier.wasm"`,
     );
 
-    let compileNimVerifierTool = `nim c -d:nimOldCaseObjects -o:"${contractDirVerifier}/nimcache/" "${rootDir}/contracts/cosmos/verifier/lib/nim/contractInteraction.nim" `;
+    let compileNimVerifierTool = `nim c -d:nimOldCaseObjects -o:"${contractDirVerifier}/nimcache/" \
+     "${rootDir}/contracts/cosmos/verifier/lib/nim/contractInteraction.nim" `;
     console.info(`➤ ${compileNimVerifierTool}`);
     await exec(compileNimVerifierTool);
 
-    let compileParseExpectedDataTool = `nim c -d:nimOldCaseObjects -o:"${contractDirVerifier}/nimcache/" "${rootDir}/tests/cosmosLightClient/helpers/parseExpectedData/parseExpectedData.nim" `;
-    console.info(`➤ ${compileParseExpectedDataTool}`);
-    await exec(compileParseExpectedDataTool);
+    let compileParseDataTool = `nim c -d:nimOldCaseObjects -o:"${contractDirVerifier}/nimcache/" \
+    "${rootDir}/tests/cosmosLightClient/helpers/parseData/parseData.nim" `;
+    console.info(`➤ ${compileParseDataTool}`);
+    await exec(compileParseDataTool);
 
-    let compileContractCommandVerify = `docker run -t --rm -v "${contractDirVerifier}":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/rust-optimizer:0.12.8 .`;
+    let compileContractCommandVerify = `docker run -t --rm -v "${contractDirVerifier}":/code \
+      --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
+        --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+          cosmwasm/rust-optimizer:0.12.8 .`;
     console.info(`➤ ${compileContractCommandVerify}`);
     await exec(compileContractCommandVerify);
 
@@ -111,7 +121,8 @@ describe('Light Client In Cosmos', () => {
     console.info(`➤ ${addKeyCommand}`);
     execSync(addKeyCommand);
 
-    const getFredAddressCommand = `wasmd keys show fred -a --keyring-backend test --keyring-dir $HOME/.wasmd_keys`;
+    const getFredAddressCommand = `wasmd keys show fred -a --keyring-backend test \
+      --keyring-dir $HOME/.wasmd_keys`;
     console.info(`➤ ${getFredAddressCommand}`);
     const getAddress = exec(getFredAddressCommand);
     const fredAddress = (await getAddress).stdout;
@@ -281,67 +292,90 @@ describe('Light Client In Cosmos', () => {
       'Upload Cosmos Light Client contract',
     );
     console.info('Upload succeeded. Receipt:', uploadReceipt);
-    //Initializing the smart contract
-    const getInitCommand =
-      `${verifierTool}  --chain_id=testing --rpc=http://localhost:26657 init --code_id=` +
-      uploadReceipt.codeId.toString() +
-      ` --vKeyPath=` +
-      pathToKey +
-      ` --currentHeaderPath=` +
-      pathToFirstHeader;
-    console.info(`➤ ${getInitCommand}`);
-    const initExec = exec(getInitCommand);
-    _contractAddress = (await initExec).stdout;
+
+    // Instantiating the smart contract
+    const instantiateFee = calculateFee(2_000_000, gasPrice);
+    // Parse the contract specific message that is passed to the contract
+    const parseInitDataCommand = `${parseDataTool} initData --initHeaderPath=${pathToFirstHeader} \
+    --verificationKeyPath=${pathToKey}`;
+    console.info(`➤ ${parseInitDataCommand}`);
+    const updateDataExec = exec(parseInitDataCommand);
+    const initData = (await updateDataExec).stdout.replace(/\s/g, '');
+
+    // Instantiate the contract with the contract specific message
+    const { contractAddress } = await client.instantiate(
+      DendrETHWalletInfo.address,
+      uploadReceipt.codeId,
+      JSON.parse(initData),
+      'My instance',
+      instantiateFee,
+      { memo: 'Create a Cosmos Light Client instance.' },
+    );
+    console.info('Contract instantiated at: ', contractAddress);
+    _contractAddress = contractAddress;
 
     //What is the expected result of the query below
     const getExpectedHeaderCommand =
-      `${parseExpectedDataTool} currentHeader --currentHeaderPath=` +
-      pathToFirstHeader;
+      `${parseDataTool} currentHeader --currentHeaderPath=` + pathToFirstHeader;
     console.info(`➤ ${getExpectedHeaderCommand}`);
     const expectedHeaderExec = execSync(getExpectedHeaderCommand);
     const expectedHeader = (await expectedHeaderExec)
       .toString()
-      .replace(/\s/g, '');
+      .replace(/\s/g, '')
+      .replace('[', '')
+      .replace(']', '');
 
-    // Query contract after initialization
-    const getQueryCommand =
-      `${verifierTool} --chain_id=testing --rpc=http://localhost:26657 query --contract2=` +
-      _contractAddress;
-    console.info(`➤ ${getQueryCommand}`);
-    const headerExec = execSync(getQueryCommand);
-    const header = (await headerExec).toString().split(/:/)[1].split(/}/)[0];
+    // Query contract after Instantiation
+    const queryResultAfterInitialization = await client.queryContractSmart(
+      _contractAddress,
+      {
+        header: {},
+      },
+    );
+    const header = queryResultAfterInitialization.toString().replace(/\s/g, '');
 
     expect(header).toEqual(expectedHeader);
   }, 300000);
 
   test('Check "Verifier" after one update', async () => {
-    //Update
+    // Executing update on the smart contract
     const pathToProof = pathToVerifyUtils + `proof291.json`;
-    const getUpdateCommand =
-      `${verifierTool}  --chain_id=testing --rpc=http://localhost:26657 update --proofPath=` +
-      pathToProof +
-      ` --newHeaderPath=` +
-      pathToFirstHeader +
-      ` --contract=` +
-      _contractAddress;
-    console.info(`➤ ${getUpdateCommand}`);
-    exec(getUpdateCommand);
+    // Parse the contract specific message that is passed to the contract
+    const parseUpdateDataCommand = `${parseDataTool} updateData \
+     --proofPath=${pathToProof} --nextHeaderPath=${pathToFirstHeader}`;
+    console.info(`➤ ${parseUpdateDataCommand}`);
+    const updateDataExec = exec(parseUpdateDataCommand);
+    const updateData = (await updateDataExec).stdout.replace(/\s/g, '');
+
+    // Execute update on the contract with the contract specific message
+    const executeFee = calculateFee(2_000_000, gasPrice);
+    const result = await client.execute(
+      DendrETHWalletInfo.address,
+      _contractAddress,
+      JSON.parse(updateData),
+      executeFee,
+    );
 
     //What is the expected result of the query below
     const getExpectedHeaderCommand =
-      `${parseExpectedDataTool} newHeader --newHeaderPath=` + pathToFirstHeader;
+      `${parseDataTool} newHeader --newHeaderPath=` + pathToFirstHeader;
     console.info(`➤ ${getExpectedHeaderCommand}`);
     const expectedHeaderExec = exec(getExpectedHeaderCommand);
-    const expectedHeader = (await expectedHeaderExec).stdout.replace(/\s/g, '');
+    const expectedHeader = (await expectedHeaderExec).stdout
+      .toString()
+      .replace(/\s/g, '')
+      .replace('[', '')
+      .replace(']', '');
     await sleep(10000);
 
-    // Query contract after update
-    const getQueryCommand =
-      `${verifierTool} --chain_id=testing --rpc=http://localhost:26657 query --contract2=` +
-      _contractAddress;
-    console.info(`➤ ${getQueryCommand}`);
-    const headerExec = exec(getQueryCommand);
-    const header = (await headerExec).stdout.split(/:/)[1].split(/}/)[0];
+    // Query contract after one update
+    const headerSlotAfterOneUpdate = await client.queryContractSmart(
+      _contractAddress,
+      {
+        header: {},
+      },
+    );
+    const header = headerSlotAfterOneUpdate.toString().replace(/\s/g, '');
 
     expect(header).toEqual(expectedHeader);
   }, 300000);
@@ -349,38 +383,46 @@ describe('Light Client In Cosmos', () => {
   test('Check "Verifier" after 20 updates', async () => {
     const updateFiles = glob(pathToVerifyUtils + `proof*.json`);
     const numOfUpdates = 20;
-    for (var updateFile of updateFiles.slice(1, numOfUpdates)) {
-      const newHeaderPath = replaceInTextProof(updateFile);
-      const getUpdateCommand =
-        `${verifierTool}  update --proofPath=` +
-        updateFile +
-        ` --newHeaderPath=` +
-        newHeaderPath +
-        ` --contract=` +
-        _contractAddress;
-      console.info(`➤ ${getUpdateCommand}`);
-      let response = await exec(getUpdateCommand);
-      await sleep(5500);
+    for (var proofFilePath of updateFiles.slice(1, numOfUpdates)) {
+      const newHeaderPath = replaceInTextProof(proofFilePath);
+
+      // Parse the contract specific message that is passed to the contract
+      const parseUpdateDataCommand = `${parseDataTool} updateData \
+      --proofPath=${proofFilePath} --nextHeaderPath=${newHeaderPath}`;
+      console.info(`➤ ${parseUpdateDataCommand}`);
+      const updateDataExec = exec(parseUpdateDataCommand);
+      const updateData = (await updateDataExec).stdout.replace(/\s/g, '');
+
+      // Execute update on the contract with the contract specific message
+      const executeFee = calculateFee(2_000_000, gasPrice);
+      const result = await client.execute(
+        DendrETHWalletInfo.address,
+        _contractAddress,
+        JSON.parse(updateData),
+        executeFee,
+      );
     }
 
     //What is the expected result of the query below
-    const getExpectedHeaderCommand =
-      `${parseExpectedDataTool} newHeader --newHeaderPath=` +
-      pathToVerifyUtils +
-      `public` +
-      (290 + numOfUpdates) +
-      `.json`;
+    const getExpectedHeaderCommand = `${parseDataTool} newHeader --newHeaderPath=${pathToVerifyUtils}public${
+      290 + numOfUpdates
+    }.json`;
     console.info(`➤ ${getExpectedHeaderCommand}`);
     const expectedHeaderExec = exec(getExpectedHeaderCommand);
-    const expectedHeader = (await expectedHeaderExec).stdout.replace(/\s/g, '');
+    const expectedHeader = (await expectedHeaderExec).stdout
+      .toString()
+      .replace(/\s/g, '')
+      .replace('[', '')
+      .replace(']', '');
 
-    // Query contract after updates
-    const getQueryCommand =
-      `${verifierTool} --chain_id=testing --rpc=http://localhost:26657 query --contract2=` +
-      _contractAddress;
-    console.info(`➤ ${getQueryCommand}`);
-    const headerExec = exec(getQueryCommand);
-    const header = (await headerExec).stdout.split(/:/)[1].split(/}/)[0];
+    // Query contract after 20 updates
+    const headerSlotAfter20Update = await client.queryContractSmart(
+      _contractAddress,
+      {
+        header: {},
+      },
+    );
+    const header = headerSlotAfter20Update.toString().replace(/\s/g, '');
 
     expect(header).toEqual(expectedHeader);
     controller.abort();
