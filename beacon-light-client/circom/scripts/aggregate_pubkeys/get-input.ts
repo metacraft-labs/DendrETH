@@ -88,7 +88,10 @@ beaconStateJson.currentEpochParticipation =
   beaconStateJson.current_epoch_participation;
 
 let beaconState = ssz.altair.BeaconState.fromJson(beaconStateJson);
-
+let beaconStateView = ssz.phase0.Validators.toViewDU(validators);
+let beaconStateTree = new Tree(beaconStateView.node);
+console.log(beaconStateTree.getSingleProof(ssz.phase0.BeaconState.getPathInfo(["validators"]).gindex).map(bytesToHex));
+console.log(ssz.phase0.BeaconState.getPathInfo(["validators"]).gindex);
 let input = {
   points: [
     ...points.map(x => [

@@ -1,7 +1,4 @@
 import * as validatorsJSON from '../../../../validators.json';
-import { Fp, PointG1 } from '@noble/bls12-381';
-import { bigint_to_array } from '../../../../libs/typescript/ts-utils/bls';
-import { writeFile } from 'fs';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 const promiseExec = promisify(exec);
@@ -36,6 +33,7 @@ async function startTask(start, end) {
     `yarn ts-node --transpile-only  ./do_smart_stuff.ts ${start} ${end}`,
   );
 }
+
 let totalFiles = validators.data.length / 2048;
 let numberOfChunks = 32;
 let chunkSize = Math.floor(totalFiles / numberOfChunks);

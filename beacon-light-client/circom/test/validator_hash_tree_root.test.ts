@@ -31,8 +31,6 @@ describe('Validator hash tree root test', () => {
       './scripts/validator_hash_tree_root/validator_hash_tree_root.circom',
     );
 
-    console.log(bytesToHex(ssz.UintNum64.serialize(16609)));
-
     const input = {
       pubkey: BigInt('0x' + PointG1.fromHex(validator.pubkey).toHex(true))
         .toString(2)

@@ -1,6 +1,7 @@
 pragma circom 2.0.3;
-include "../../../node_modules/circomlib/circuits/bitify.circom";
+
 include "hash_two.circom";
+include "ssz_num.circom";
 
 template ValidatorHashTreeRoot() {
   signal input pubkey[384];
@@ -46,42 +47,22 @@ template ValidatorHashTreeRoot() {
     }
   }
 
-  component activationEligibilityEpochBits = Num2Bits(64);
+  component activationEligibilityEpochBits = SSZNum(64);
   activationEligibilityEpochBits.in <== activationEligibilityEpoch;
 
-  component activationEpochBits = Num2Bits(64);
+  component activationEpochBits = SSZNum(64);
   activationEpochBits.in <== activationEpoch;
 
-  var idx = 63;
-  for(var i = 56; i >= 0; i -= 8) {
-    for(var j = 0; j < 8; j++) {
-      hashers[2].in[0][idx] <== activationEligibilityEpochBits.out[i + j];
-      hashers[2].in[1][idx] <== activationEpochBits.out[i + j];
-      idx--;
-    }
+  for(var j = 0; j < 256; j++) {
+    hashers[2].in[0][j] <== activationEligibilityEpochBits.out[j];
+    hashers[2].in[1][j] <== activationEpochBits.out[j];
   }
 
-  for(var j = 64; j < 256; j++) {
-    hashers[2].in[0][j] <== 0;
-    hashers[2].in[1][j] <== 0;
-  }
-
-  component exitEpochBits = Num2Bits(64);
+  component exitEpochBits = SSZNum(64);
   exitEpochBits.in <== exitEpoch;
 
-  idx = 63;
-  for(var i = 56; i >= 0; i-=8) {
-    for(var j = 0; j < 8; j++) {
-      hashers[3].in[0][idx] <== exitEpochBits.out[i + j];
-      idx--;
-    }
-  }
-
-  for(var j = 64; j < 256; j++) {
-    hashers[3].in[0][j] <== 0;
-  }
-
   for(var j = 0; j < 256; j++) {
+    hashers[3].in[0][j] <== exitEpochBits.out[j];
     hashers[3].in[1][j] <== withdrawableEpoch[j];
   }
 
