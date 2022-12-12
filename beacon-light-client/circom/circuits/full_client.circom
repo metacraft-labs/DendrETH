@@ -28,6 +28,8 @@ template FullClient() {
 
   // Should be hardcoded
   signal input fork_version[32];
+  signal input GENESIS_VALIDATORS_ROOT[256];
+  signal input DOMAIN_SYNC_COMMITTEE[32];
 
   signal input slot;
   signal input proposer_index[256];
@@ -259,6 +261,11 @@ template FullClient() {
 
   for(var i = 0; i < 32; i++) {
     computeDomain.fork_version[i] <== fork_version[i];
+    computeDomain.DOMAIN_SYNC_COMMITTEE[i] <== DOMAIN_SYNC_COMMITTEE[i];
+  }
+
+  for(var i = 0; i < 256; i++) {
+    computeDomain.GENESIS_VALIDATORS_ROOT[i] <== GENESIS_VALIDATORS_ROOT[i];
   }
 
   component computeSigningRoot = ComputeSigningRoot();
