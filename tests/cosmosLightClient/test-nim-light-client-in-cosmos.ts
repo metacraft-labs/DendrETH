@@ -48,7 +48,17 @@ describe('Light Client In Cosmos', () => {
       'economy stock theory fatal elder harbor betray wasp final emotion task crumble siren bottom lizard educate guess current outdoor pair theory focus wife stone',
     address: '',
   };
+  class gasUsed {
+    description: string;
+    gas: number;
 
+    constructor(description: string, gas: number) {
+      this.description = description;
+      this.gas = gas;
+    }
+  }
+  let gasArrayVerifier: gasUsed[] = [];
+  let gasArrayLightClient: gasUsed[] = [];
   let wallet: OfflineSigner, client: SigningCosmWasmClient;
   let _contractAddress;
   beforeAll(async () => {
@@ -152,6 +162,9 @@ describe('Light Client In Cosmos', () => {
       'Upload Cosmos Light Client contract',
     );
     console.info('Upload succeeded. Receipt:', uploadReceipt);
+    // Gas used
+    let uploadGas = new gasUsed('Upload Light Client', uploadReceipt.gasUsed);
+    gasArrayLightClient.push(uploadGas);
 
     // Instantiate the contract
     const instantiateFee = calculateFee(12_500_000, gasPrice);
@@ -164,7 +177,7 @@ describe('Light Client In Cosmos', () => {
     const msg = {
       bootstrap_data: bootstrapData,
     };
-    const { contractAddress } = await client.instantiate(
+    var initer = await client.instantiate(
       DendrETHWalletInfo.address,
       uploadReceipt.codeId,
       msg,
@@ -172,12 +185,18 @@ describe('Light Client In Cosmos', () => {
       instantiateFee,
       { memo: 'Create a Cosmos Light Clinet instance.' },
     );
-    console.info('Contract instantiated at: ', contractAddress);
-    _contractAddress = contractAddress;
+
+    // Gas Used
+    console.info(`Init Light Client used ` + initer.gasUsed + ` gas`);
+    let initGas = new gasUsed('Init Light Client', initer.gasUsed);
+    gasArrayLightClient.push(initGas);
+
+    console.info('Contract instantiated at: ', initer.contractAddress);
+    _contractAddress = initer.contractAddress;
 
     // Query contract after initialization
     const queryResultAfterInitialization = await client.queryContractSmart(
-      contractAddress,
+      _contractAddress,
       {
         store: {},
       },
@@ -211,6 +230,12 @@ describe('Light Client In Cosmos', () => {
       execMsg,
       executeFee,
     );
+
+    // Gas Used
+    console.info(`Update 1 Light Client used ` + result.gasUsed + ` gas`);
+    let updateGas = new gasUsed('Update 1', result.gasUsed);
+    gasArrayLightClient.push(updateGas);
+
     const wasmEvent = result.logs[0].events.find(e => e.type === 'wasm');
     console.info(
       'The "wasm" event emitted by the contract execution:',
@@ -227,7 +252,6 @@ describe('Light Client In Cosmos', () => {
     const headerSlotAfterOneUpdate = byteArrayToNumber(
       queryResultAfterOneUpdate.slice(0, 8),
     );
-
     expect(headerSlotAfterOneUpdate).toEqual(expectedHeaderSlot);
   }, 300000);
 
@@ -237,6 +261,7 @@ describe('Light Client In Cosmos', () => {
     const updateFiles = glob(
       rootDir + `/vendor/eth2-light-client-updates/mainnet/updates/*.json`,
     );
+    var counter = 1;
     for (var updateFile of updateFiles) {
       const updateData = await jsonToSerializedBase64(
         SSZSpecTypes.LightClientUpdate,
@@ -255,6 +280,14 @@ describe('Light Client In Cosmos', () => {
         execMsg,
         executeFee,
       );
+      // Gas Used
+      counter++;
+      console.info(
+        `Update ` + counter + ` Light Client used ` + result.gasUsed + ` gas`,
+      );
+      let updateGas = new gasUsed(`Update ` + counter, result.gasUsed);
+      gasArrayLightClient.push(updateGas);
+
       const wasmEvent = result.logs[0].events.find(e => e.type === 'wasm');
       console.info(
         'The "wasm" event emitted by the contract execution:',
@@ -273,7 +306,13 @@ describe('Light Client In Cosmos', () => {
     const headerSlotAfterAllUpdates = byteArrayToNumber(
       queryResultAfterAllUpdates.slice(0, 8),
     );
-
+    fs.writeFileSync(
+      'tests/cosmosLightClient/gasLightClient.json',
+      JSON.stringify(gasArrayLightClient),
+      {
+        flag: 'w',
+      },
+    );
     expect(headerSlotAfterAllUpdates).toEqual(expectedHeaderSlot);
   }, 1500000);
 
@@ -292,6 +331,9 @@ describe('Light Client In Cosmos', () => {
       'Upload Cosmos Light Client contract',
     );
     console.info('Upload succeeded. Receipt:', uploadReceipt);
+    let uploadGas = new gasUsed('Upload Verifier', uploadReceipt.gasUsed);
+
+    gasArrayVerifier.push(uploadGas);
 
     // Instantiating the smart contract
     const instantiateFee = calculateFee(2_000_000, gasPrice);
@@ -303,7 +345,7 @@ describe('Light Client In Cosmos', () => {
     const initData = (await updateDataExec).stdout.replace(/\s/g, '');
 
     // Instantiate the contract with the contract specific message
-    const { contractAddress } = await client.instantiate(
+    const initer = await client.instantiate(
       DendrETHWalletInfo.address,
       uploadReceipt.codeId,
       JSON.parse(initData),
@@ -311,8 +353,13 @@ describe('Light Client In Cosmos', () => {
       instantiateFee,
       { memo: 'Create a Cosmos Light Client instance.' },
     );
-    console.info('Contract instantiated at: ', contractAddress);
-    _contractAddress = contractAddress;
+    // Gas Used
+    console.info(`Init used ` + initer.gasUsed + ` gas`);
+    let initGas = new gasUsed('Init Verifier', initer.gasUsed);
+    gasArrayVerifier.push(initGas);
+
+    console.info('Contract instantiated at: ', initer.contractAddress);
+    _contractAddress = initer.contractAddress;
 
     //What is the expected result of the query below
     const getExpectedHeaderCommand =
@@ -332,8 +379,8 @@ describe('Light Client In Cosmos', () => {
         header: {},
       },
     );
-    const header = queryResultAfterInitialization.toString().replace(/\s/g, '');
 
+    const header = queryResultAfterInitialization.toString().replace(/\s/g, '');
     expect(header).toEqual(expectedHeader);
   }, 300000);
 
@@ -356,6 +403,11 @@ describe('Light Client In Cosmos', () => {
       executeFee,
     );
 
+    // Gas Used
+    console.info(`Update 1 Verifier used ` + result.gasUsed + ` gas`);
+    let updateGas = new gasUsed('Update 1', result.gasUsed);
+    gasArrayVerifier.push(updateGas);
+
     //What is the expected result of the query below
     const getExpectedHeaderCommand =
       `${parseDataTool} newHeader --newHeaderPath=` + pathToFirstHeader;
@@ -375,6 +427,7 @@ describe('Light Client In Cosmos', () => {
         header: {},
       },
     );
+
     const header = headerSlotAfterOneUpdate.toString().replace(/\s/g, '');
 
     expect(header).toEqual(expectedHeader);
@@ -383,6 +436,7 @@ describe('Light Client In Cosmos', () => {
   test('Check "Verifier" after 20 updates', async () => {
     const updateFiles = glob(pathToVerifyUtils + `proof*.json`);
     const numOfUpdates = 20;
+    var counter = 1;
     for (var proofFilePath of updateFiles.slice(1, numOfUpdates)) {
       const newHeaderPath = replaceInTextProof(proofFilePath);
 
@@ -401,6 +455,12 @@ describe('Light Client In Cosmos', () => {
         JSON.parse(updateData),
         executeFee,
       );
+
+      // Gas Used
+      counter++;
+      console.info(`Update ` + counter + ` used ` + result.gasUsed + ` gas`);
+      let updateGas = new gasUsed(`Update ` + counter, result.gasUsed);
+      gasArrayVerifier.push(updateGas);
     }
 
     //What is the expected result of the query below
@@ -422,8 +482,15 @@ describe('Light Client In Cosmos', () => {
         header: {},
       },
     );
-    const header = headerSlotAfter20Update.toString().replace(/\s/g, '');
 
+    const header = headerSlotAfter20Update.toString().replace(/\s/g, '');
+    fs.writeFileSync(
+      'tests/cosmosLightClient/gasVerifier.json',
+      JSON.stringify(gasArrayVerifier),
+      {
+        flag: 'w',
+      },
+    );
     expect(header).toEqual(expectedHeader);
     controller.abort();
   }, 1500000);
