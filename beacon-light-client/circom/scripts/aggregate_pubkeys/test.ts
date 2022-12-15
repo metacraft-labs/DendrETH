@@ -10,8 +10,8 @@ import * as validatorsJSON from '../../../../validators.json';
 import { sha256 } from 'ethers/lib/utils';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 
-const SIZE = 4;
-const UPPER_SIZE = 4;
+const SIZE = 64;
+const UPPER_SIZE = 64;
 
 let zeros: string[] = [];
 zeros[0] = ''.padStart(64, '0');
@@ -20,15 +20,19 @@ for (let i = 1; i < 40; i++) {
   zeros[i] = formatHex(sha256('0x' + zeros[i - 1] + zeros[i - 1]));
 }
 
-let points: PointG1[] = (validatorsJSON as any).data
-  .slice(0, SIZE)
-  .map(x => PointG1.fromHex(x.validator.pubkey.slice(2)));
-
 let validators = ssz.phase0.Validators.fromJson(
-  (validatorsJSON as any).data.slice(0, SIZE).map(x => x.validator),
+  (validatorsJSON as any).data.slice(SIZE, 2 * SIZE).map(x => x.validator),
 );
 
-validators[2].exitEpoch = 160609;
+let points: PointG1[] = validators
+  .filter(
+    x =>
+      x.exitEpoch > 160608 &&
+      !x.slashed &&
+      x.activationEpoch < 160608 &&
+      x.activationEligibilityEpoch < 160608,
+  )
+  .map(x => PointG1.fromHex(x.pubkey));
 
 let sum = points.reduce((prev, curr) => prev.add(curr), PointG1.ZERO);
 const sumArr = bigint_to_array(55, 7, sum.toAffine()[0].value);
@@ -65,29 +69,37 @@ hash = formatHex(
   sha256('0x' + hash + BigInt(SIZE).toString(16).padEnd(64, '0')),
 );
 
-
-
-console.log(BigInt(SIZE).toString(16).padEnd(64, '0'));
-let validatorsView = ssz.phase0.Validators.toViewDU(validators);
-const validatorsTree = new Tree(validatorsView.node);
-let arr = validatorsTree.getSingleProof(ssz.phase0.Validators.getPathInfo([0]).gindex).map(bytesToHex);
-console.log(arr[arr.length - 1]);
-console.log(bytesToHex(ssz.phase0.Validators.hashTreeRoot(validators)));
-console.log(hash);
+// console.log(BigInt(SIZE).toString(16).padEnd(64, '0'));
+// let validatorsView = ssz.phase0.Validators.toViewDU(validators);
+// const validatorsTree = new Tree(validatorsView.node);
+// let arr = validatorsTree.getSingleProof(ssz.phase0.Validators.getPathInfo([0]).gindex).map(bytesToHex);
+// console.log(arr[arr.length - 1]);
+// console.log(bytesToHex(ssz.phase0.Validators.hashTreeRoot(validators)));
+// console.log(hash);
 // console.log(
 //   validatorsTree
 //     .getSingleProof(ssz.phase0.Validators.getPathInfo([0]).gindex)
 //     .map(bytesToHex),
 // );
 
+// console.log(bytesToHex(ssz.UintNum64.hashTreeRoot(SIZE)));
 
-console.log(bytesToHex(ssz.UintNum64.hashTreeRoot(SIZE)));
+// console.log(bytesToHex(ssz.UintNum64.serialize(SIZE)));
+console.log(
+  JSON.stringify([
+    160608,
+    points.length,
+    ...BigInt(hashes[0]).toString(2).padStart(256, '0').split(''),
+    ...bigint_to_array(55, 7, sum.toAffine()[0].value),
+    ...bigint_to_array(55, 7, sum.toAffine()[1].value),
+    ...[...Array(144).keys()].map(() => 0),
+  ]),
+);
 
-console.log(bytesToHex(ssz.UintNum64.serialize(SIZE)));
 let r = mimcsponge.multiHash(
   [
     160608,
-    SIZE,
+    points.length,
     ...BigInt(hashes[0]).toString(2).padStart(256, '0').split(''),
     ...bigint_to_array(55, 7, sum.toAffine()[0].value),
     ...bigint_to_array(55, 7, sum.toAffine()[1].value),

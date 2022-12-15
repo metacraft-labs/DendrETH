@@ -22,8 +22,8 @@ function getAggregatedPoint(points: any[]): string[][] {
 
 (async () => {
   let points: string[][][] = [];
-  points.push(getAggregatedPoint((validators as any).data.slice(0, 56)));
-  points.push(getAggregatedPoint((validators as any).data.slice(0, 56)));
+  points.push(getAggregatedPoint((validators as any).data.slice(0, 64)));
+  points.push(getAggregatedPoint((validators as any).data.slice(0, 64)));
 
   console.log('Proof convertion...');
   await promiseExec(

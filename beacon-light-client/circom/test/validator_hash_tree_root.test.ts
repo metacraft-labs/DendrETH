@@ -3,9 +3,7 @@ import { wasm } from './circuit_tester';
 import { expect } from 'chai';
 import { ssz } from '@chainsafe/lodestar-types';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
-import { sha256 } from 'ethers/lib/utils';
-import { Fp, PointG1 } from '@noble/bls12-381';
-import { formatHex } from '../../solidity/test/utils/bls';
+import { PointG1 } from '@noble/bls12-381';
 import { readFileSync } from 'fs';
 
 describe('Validator hash tree root test', () => {
@@ -16,8 +14,8 @@ describe('Validator hash tree root test', () => {
     let validators = ssz.phase0.Validators.fromJson(
       validatorsJSON.data.map(x => x.validator),
     );
-    let validator = validators[0];
-    validator.exitEpoch = 16609;
+    let validator = validators[70];
+    // validator.exitEpoch = 16609;
     const validatorTree = new Tree(
       ssz.phase0.Validator.toViewDU(validator).node,
     );
@@ -47,7 +45,10 @@ describe('Validator hash tree root test', () => {
       slashed: Number(validator.slashed),
       activationEligibilityEpoch: validator.activationEligibilityEpoch,
       activationEpoch: validator.activationEpoch,
-      exitEpoch: validator.exitEpoch.toString() === 'Infinity' ? '18446744073709551615' : validator.exitEpoch.toString(),
+      exitEpoch:
+        validator.exitEpoch.toString() === 'Infinity'
+          ? '18446744073709551615'
+          : validator.exitEpoch.toString(),
       withdrawableEpoch: BigInt('0x' + withdrawableEpochHex)
         .toString(2)
         .padStart(256, '0')

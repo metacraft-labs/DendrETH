@@ -39,12 +39,12 @@ template ValidatorHashTreeRoot() {
     hashers[0].in[1][j] <== withdrawCredentials[j];
   }
 
-  hashers[1].in[1][0] <== slashed;
+  component slashedBits = SSZNum(8);
+  slashedBits.in <== slashed;
+
   for(var j = 0; j < 256; j++) {
     hashers[1].in[0][j] <== effectiveBalance[j];
-    if(j > 0) {
-      hashers[1].in[1][j] <== 0;
-    }
+    hashers[1].in[1][j] <== slashedBits.out[j];
   }
 
   component activationEligibilityEpochBits = SSZNum(64);

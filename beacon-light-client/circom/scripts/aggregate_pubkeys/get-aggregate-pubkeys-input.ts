@@ -4,13 +4,12 @@ import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { ValueOfFields } from '@chainsafe/ssz/lib/view/container';
 import { PointG1 } from '@noble/bls12-381';
 import { writeFile } from 'fs/promises';
-import { parentPort, workerData } from 'worker_threads';
 import {
   bigint_to_array,
   bytesToHex,
 } from '../../../../libs/typescript/ts-utils/bls';
 
-async function getInput(
+export default async function getInput(
   validators: ValueOfFields<{
     pubkey: ByteVectorType;
     withdrawalCredentials: ByteVectorType;
@@ -50,6 +49,10 @@ async function getInput(
         .padStart(256, '0')
         .split(''),
     );
+
+    if(validators[i].slashed) {
+      console.log("WTF", i);
+    }
 
     slashed.push(Number(validators[i].slashed).toString());
 
@@ -102,9 +105,3 @@ async function getInput(
     JSON.stringify(input),
   );
 }
-
-parentPort!.on('message', value => {
-  getInput(value.validators, value.index, value.epoch).then(() => {
-    parentPort!.postMessage(workerData.index);
-  });
-});
