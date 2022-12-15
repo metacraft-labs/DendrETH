@@ -50,10 +50,6 @@ export default async function getInput(
         .split(''),
     );
 
-    if(validators[i].slashed) {
-      console.log("WTF", i);
-    }
-
     slashed.push(Number(validators[i].slashed).toString());
 
     activationEligibilityEpoch.push(
@@ -77,11 +73,28 @@ export default async function getInput(
   }
 
   let input = {
-    points: validators.map(x => [
-      bigint_to_array(55, 7, PointG1.fromHex(x.pubkey).toAffine()[0].value),
-      bigint_to_array(55, 7, PointG1.fromHex(x.pubkey).toAffine()[1].value),
-    ]),
-    zero: [...[...Array(64).keys()].map(() => 1)],
+    points: [
+      ...validators.map(x => [
+        bigint_to_array(55, 7, PointG1.fromHex(x.pubkey).toAffine()[0].value),
+        bigint_to_array(55, 7, PointG1.fromHex(x.pubkey).toAffine()[1].value),
+      ]),
+      ...[...Array(64 - validators.length)].map(() => [
+        bigint_to_array(
+          55,
+          7,
+          PointG1.fromHex(validators[0].pubkey).toAffine()[0].value,
+        ),
+        bigint_to_array(
+          55,
+          7,
+          PointG1.fromHex(validators[0].pubkey).toAffine()[1].value,
+        ),
+      ]),
+    ],
+    zero: [
+      ...[...Array(validators.length).keys()].map(() => 1),
+      ...[...Array(64 - validators.length).keys()].map(() => 0),
+    ],
     withdrawCredentials,
     effectiveBalance,
     slashed,
@@ -89,14 +102,17 @@ export default async function getInput(
     activationEpoch,
     exitEpoch,
     withdrawableEpoch,
-    bitmask: validators.map(x =>
-      Number(
-        x.exitEpoch > epoch &&
-          !x.slashed &&
-          x.activationEpoch < epoch &&
-          x.activationEligibilityEpoch < epoch,
+    bitmask: [
+      ...validators.map(x =>
+        Number(
+          x.exitEpoch > epoch &&
+            !x.slashed &&
+            x.activationEpoch < epoch &&
+            x.activationEligibilityEpoch < epoch,
+        ),
       ),
-    ),
+      ...[...Array(64 - validators.length).keys()].map(() => 0),
+    ],
     currentEpoch: epoch,
   };
 

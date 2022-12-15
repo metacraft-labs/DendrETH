@@ -1,5 +1,4 @@
 import { ssz } from '@chainsafe/lodestar-types';
-import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { PointG1 } from '@noble/bls12-381';
 import { exec as _exec } from 'child_process';
 import { readFileSync, rmSync } from 'fs';
@@ -30,7 +29,194 @@ let beaconStateJson = JSON.parse(
   readFileSync('../../../../beacon_state.json', 'utf-8'),
 ).data;
 
+const epoch = Math.floor(beaconStateJson.slot / 32);
+
+let vkeyFirstLevel = JSON.parse(
+  readFileSync('first-level-converted-vkey.json', 'utf-8'),
+);
+
+let vkeySecondLevel = JSON.parse(
+  readFileSync('second-level-converted-vkey.json', 'utf-8'),
+);
+
 (async () => {
+  // get inputs for validators
+  await getFirstLevelProofs();
+
+  let pairs: any[] = await getSecondLevelProofs();
+
+  await getRecursiveProofs(pairs);
+})();
+
+async function getRecursiveProofs(pairs: any[]) {
+  let len = pairs.length;
+  let n = 2;
+  let level = 1;
+  while (len / n >= 2) {
+    for (let i = 0; i < len / n; i++) {
+      pairs[i] = getRecursiveInput(
+        pairs[i].point.add(pairs[i + 1].point),
+        sha256(formatHex(pairs[i].hash) + formatHex(pairs[i].hash)),
+        pairs[i].participantsCount + pairs[i + 1].participantsCount,
+        './proofs_second_level',
+        i
+      );
+    }
+
+    if ((len / n) % 2 != 0) {
+      pairs[len / n + 1] = JSON.parse(
+        readFileSync(`zeros/input${level}.json`, 'utf-8')
+      );
+    }
+
+    await getProofsFromPairs(
+      pairs.slice(0, len / n),
+      vkeySecondLevel,
+      calculateWitness,
+      generateProofs
+    );
+
+    n *= 2;
+    level++;
+  }
+
+  // fill in the zero-levels
+  while (level < 34) {
+    pairs[1] = JSON.parse(readFileSync(`zeros/input${level}.json`, 'utf-8'));
+
+    await getProofsFromPairs(
+      pairs.slice(0, 2),
+      vkeySecondLevel,
+      calculateWitness,
+      generateProofs
+    );
+
+    level++;
+  }
+}
+
+async function getSecondLevelProofs() {
+  let pairs: any[] = [];
+  for (let i = 0; i < SIZE / 64; i++) {
+    let points: PointG1[] = validators
+      .slice(i * 64, i * 64 + 64)
+      .filter(
+        curr => curr.exitEpoch > epoch &&
+          !curr.slashed &&
+          curr.activationEpoch < epoch &&
+          curr.activationEligibilityEpoch < epoch
+      )
+      .map(x => PointG1.fromHex(x.pubkey));
+
+    const participantsCount = validators
+      .slice(i * 64, i * 64 + 64)
+      .filter(
+        curr => curr.exitEpoch > epoch &&
+          !curr.slashed &&
+          curr.activationEpoch < epoch &&
+          curr.activationEligibilityEpoch < epoch
+      ).length;
+
+    const hashes: string[] = [];
+
+    for (let i = 0; i < 64; i++) {
+      hashes.push(
+        bytesToHex(ssz.phase0.Validator.hashTreeRoot(validators[i * 64 + i]))
+      );
+    }
+
+    let n = 2;
+
+    while (64 / n >= 1) {
+      for (let i = 0; i < 64 / n; i++) {
+        hashes[i] = sha256(
+          '0x' + formatHex(hashes[2 * i]) + formatHex(hashes[2 * i + 1])
+        );
+      }
+
+      n *= 2;
+    }
+
+    pairs.push(
+      await getRecursiveInput(
+        points.reduce((sum, curr) => sum.add(curr), PointG1.ZERO),
+        hashes[0],
+        participantsCount,
+        'proofs_first_level',
+        i
+      )
+    );
+  }
+
+  if (SIZE % 64 != 0) {
+    let points: PointG1[] = validators
+      .slice((SIZE / 64) * 64, (SIZE / 64) * 64 + (SIZE % 64))
+      .filter(
+        curr => curr.exitEpoch > epoch &&
+          !curr.slashed &&
+          curr.activationEpoch < epoch &&
+          curr.activationEligibilityEpoch < epoch
+      )
+      .map(x => PointG1.fromHex(x.pubkey));
+
+    const participantsCount = validators
+      .slice((SIZE / 64) * 64, (SIZE / 64) * 64 + (SIZE % 64))
+      .filter(
+        curr => curr.exitEpoch > epoch &&
+          !curr.slashed &&
+          curr.activationEpoch < epoch &&
+          curr.activationEligibilityEpoch < epoch
+      ).length;
+
+    const hashes: string[] = [];
+
+    for (let i = 0; i < points.length; i++) {
+      hashes.push(
+        bytesToHex(ssz.phase0.Validator.hashTreeRoot(validators[i * 64 + i]))
+      );
+    }
+
+    for (let i = points.length; i < 64; i++) {
+      hashes.push(''.padEnd(64, '0'));
+    }
+
+    let n = 2;
+
+    while (64 / n >= 1) {
+      for (let i = 0; i < 64 / n; i++) {
+        hashes[i] = sha256(
+          '0x' + formatHex(hashes[2 * i]) + formatHex(hashes[2 * i + 1])
+        );
+      }
+
+      n *= 2;
+    }
+
+    pairs.push(
+      await getRecursiveInput(
+        points.reduce((sum, curr) => sum.add(curr), PointG1.ZERO),
+        hashes[0],
+        participantsCount,
+        'proofs_first_level',
+        SIZE / 64
+      )
+    );
+  }
+
+  if (pairs.length % 2 != 0) {
+    pairs.push(JSON.parse(readFileSync('zeros/input0.json', 'utf-8')));
+  }
+
+  await getProofsFromPairs(
+    pairs,
+    vkeyFirstLevel,
+    calculateWitness,
+    generateProofs
+  );
+  return pairs;
+}
+
+async function getFirstLevelProofs() {
   for (let i = 0; i < SIZE / 64; i++) {
     await getInput(
       validators.slice(i * 64, i * 64 + 64),
@@ -38,6 +224,8 @@ let beaconStateJson = JSON.parse(
       Math.floor(beaconStateJson.slot / 32),
     );
   }
+
+  // get incomplete input
   if (SIZE % 64 != 0) {
     await getInput(
       validators.slice((SIZE / 64) * 64, (SIZE / 64) * 64 + (SIZE % 64)),
@@ -46,206 +234,172 @@ let beaconStateJson = JSON.parse(
     );
   }
 
-  // async function calculateWitness(
-  //   witnessCalculatorPath: string,
-  //   inputDir: string,
-  //   witnessDir: string,
-  //   numberOfCalculations: number,
-  // ) {
-  //   let promises: Promise<void>[] = [];
-  //   await new Promise<void>(res => {
-  //     // get witnesses for first level
-  //     let counter = 0;
-  //     async function startTask() {
-  //       if (counter >= numberOfCalculations) {
-  //         return;
-  //       }
+  // calculate the witnesses for the first level
+  await calculateWitness(
+    '../../build/aggregate_pubkeys/aggregate_pubkeys_cpp/aggregate_pubkeys',
+    './inputs_first_level',
+    './witnesses_first_level',
+    SIZE / 64,
+  );
 
-  //       let p = exec(
-  //         `${witnessCalculatorPath} ${inputDir}/input${counter}.json ${witnessDir}/witness${counter}.wtns`,
-  //       );
-  //       p.then(() => {
-  //         if (counter < numberOfCalculations) {
-  //           promises.push(startTask());
-  //           counter++;
-  //         } else {
-  //           res();
-  //         }
-  //       });
-  //     }
+  // generate the proofs for the first level
+  await generateProofs(
+    '../../build/aggregate_pubkeys/aggregate_pubkeys_0.zkey',
+    './witnesses_first_level',
+    './proofs_first_level',
+    SIZE / 64,
+  );
+}
 
-  //     for (let i = 0; i < 8; i++) {
-  //       promises.push(startTask());
-  //       counter++;
-  //     }
-  //   });
+async function getProofsFromPairs(
+  pairs: any[],
+  vkey: any,
+  calculateWitness: (
+    witnessCalculatorPath: string,
+    inputDir: string,
+    witnessDir: string,
+    numberOfCalculations: number,
+  ) => Promise<void>,
+  generateProofs: (
+    proovingKeyPath: string,
+    witnessDir: string,
+    proofDir: string,
+    numberOfCalculations: number,
+  ) => Promise<void>,
+) {
+  for (let i = 0; i < pairs.length; i += 2) {
+    const first = pairs[i];
+    const second = pairs[i + 1];
 
-  //   await Promise.all(promises);
-  // }
+    let input = {
+      participantsCount: [first.participantsCount, second.participantsCount],
+      currentEpoch: 160608,
+      negpa: [first.negpa, second.negpa],
+      pb: [first.pb, second.pb],
+      pc: [first.pc, second.pc],
+      hashes: [first.hash, second.hash],
+      points: [first.point, second.point],
+      negalfa1xbeta2: vkey.negalfa1xbeta2,
+      gamma2: vkey.gamma2,
+      delta2: vkey.delta2,
+      IC: vkey.IC,
+      prevNegalfa1xbeta2: [...Array(6).keys()].map(() =>
+        [...Array(2).keys()].map(() => [...Array(6).keys()].map(() => 0)),
+      ),
+      prevGamma2: [...Array(2).keys()].map(() =>
+        [...Array(2).keys()].map(() => [...Array(6).keys()].map(() => 0)),
+      ),
+      prevDelta2: [...Array(2).keys()].map(() =>
+        [...Array(2).keys()].map(() => [...Array(6).keys()].map(() => 0)),
+      ),
+      prevIC: [...Array(2).keys()].map(() =>
+        [...Array(2).keys()].map(() => [...Array(6).keys()].map(() => 0)),
+      ),
+      bitmask: [first.bitmask, second.bitmask],
+    };
 
-  // await calculateWitness(
-  //   '../../build/aggregate_pubkeys/aggregate_pubkeys_cpp/aggregate_pubkeys',
-  //   './inputs_first_level',
-  //   './witnesses_first_level',
-  //   SIZE / 64,
-  // );
+    await writeFile(
+      `inputs_second_level/input${i}.json`,
+      JSON.stringify(input),
+    );
+  }
 
-  // async function generateProofs(
-  //   proovingKeyPath: string,
-  //   witnessDir: string,
-  //   proofDir: string,
-  //   numberOfCalculations: number,
-  // ) {
-  //   await (async () => {
-  //     for (let i = 0; i < numberOfCalculations; i++) {
-  //       await exec(
-  //         `../../../../vendor/rapidsnark/build/prover ${proovingKeyPath} ${witnessDir}/witness${i}.wtns ${proofDir}/proof${i}.json ${proofDir}/public${i}.json`,
-  //       );
-  //     }
-  //   })();
-  // }
+  await calculateWitness(
+    '../../build/aggregate_pubkeys_verify/aggregate_pubkeys_verify_cpp/aggregate_pubkeys_verify',
+    './inputs_second_level',
+    './witnesses_second_level',
+    SIZE / 128,
+  );
 
-  // await generateProofs(
-  //   '../../build/aggregate_pubkeys/aggregate_pubkeys_0.zkey',
-  //   './witnesses_first_level',
-  //   './proofs_first_level',
-  //   SIZE / 64,
-  // );
+  await generateProofs(
+    '../../build/aggregate_pubkeys_verify/aggregate_pubkeys_verify_0.zkey',
+    './witnesses_second_level',
+    './proofs_second_level',
+    SIZE / 128,
+  );
+}
 
-  // let vkeyFirstLevel = JSON.parse(
-  //   readFileSync('first-level-converted-vkey.json', 'utf-8'),
-  // );
+async function calculateWitness(
+  witnessCalculatorPath: string,
+  inputDir: string,
+  witnessDir: string,
+  numberOfCalculations: number,
+) {
+  let promises: Promise<void>[] = [];
+  await new Promise<void>(res => {
+    // get witnesses for first level
+    let counter = 0;
+    async function startTask() {
+      if (counter >= numberOfCalculations) {
+        return;
+      }
 
-  // let vkeySecondLevel = JSON.parse(
-  //   readFileSync('second-level-converted-vkey.json', 'utf-8'),
-  // );
+      let p = exec(
+        `${witnessCalculatorPath} ${inputDir}/input${counter}.json ${witnessDir}/witness${counter}.wtns`,
+      );
+      p.then(() => {
+        if (counter < numberOfCalculations) {
+          promises.push(startTask());
+          counter++;
+        } else {
+          res();
+        }
+      });
+    }
 
-  // async function getRecursiveInput(
-  //   offset: number,
-  //   proofsDir: string,
-  //   index: number,
-  // ) {
-  //   const epoch = Math.floor(beaconStateJson.slot / 32);
-  //   const SIZE = 64;
-  //   let points: PointG1[] = validators
-  //     .slice(offset, offset + SIZE)
-  //     .filter(
-  //       curr =>
-  //         curr.exitEpoch > epoch &&
-  //         !curr.slashed &&
-  //         curr.activationEpoch < epoch &&
-  //         curr.activationEligibilityEpoch < epoch,
-  //     )
-  //     .map(x => PointG1.fromHex(x.pubkey));
+    for (let i = 0; i < 8; i++) {
+      promises.push(startTask());
+      counter++;
+    }
+  });
 
-  //   let sum = points.reduce((prev, curr) => prev.add(curr), PointG1.ZERO);
+  await Promise.all(promises);
+}
 
-  //   const sumArr = bigint_to_array(55, 7, sum.toAffine()[0].value);
-  //   sumArr.push(...bigint_to_array(55, 7, sum.toAffine()[1].value));
+async function generateProofs(
+  proovingKeyPath: string,
+  witnessDir: string,
+  proofDir: string,
+  numberOfCalculations: number,
+) {
+  await (async () => {
+    for (let i = 0; i < numberOfCalculations; i++) {
+      await exec(
+        `../../../../vendor/rapidsnark/build/prover ${proovingKeyPath} ${witnessDir}/witness${i}.wtns ${proofDir}/proof${i}.json ${proofDir}/public${i}.json`,
+      );
+    }
+  })();
+}
 
-  //   const hashes: string[] = [];
+async function getRecursiveInput(
+  sum: PointG1,
+  hash: string,
+  participantsCount: number,
+  proofsDir: string,
+  index: number,
+) {
+  const sumArr = bigint_to_array(55, 7, sum.toAffine()[0].value);
+  sumArr.push(...bigint_to_array(55, 7, sum.toAffine()[1].value));
 
-  //   for (let i = 0; i < SIZE; i++) {
-  //     hashes.push(
-  //       bytesToHex(ssz.phase0.Validator.hashTreeRoot(validators[offset + i])),
-  //     );
-  //   }
+  await exec(
+    `python ${path.join(
+      __dirname,
+      '../../utils/proof_converter.py',
+    )} ${proofsDir}/proof${index}.json ${proofsDir}/public${index}.json`,
+  );
 
-  //   let n = 2;
+  const proof = JSON.parse(readFileSync(`proof.json`).toString());
+  await rm('proof.json');
 
-  //   while (SIZE / n >= 1) {
-  //     for (let i = 0; i < SIZE / n; i++) {
-  //       hashes[i] = sha256(
-  //         '0x' + formatHex(hashes[2 * i]) + formatHex(hashes[2 * i + 1]),
-  //       );
-  //     }
-
-  //     n *= 2;
-  //   }
-
-  //   await exec(
-  //     `python ${path.join(
-  //       __dirname,
-  //       '../../utils/proof_converter.py',
-  //     )} ${proofsDir}/proof${index}.json ${proofsDir}/public${index}.json`,
-  //   );
-
-  //   const proof = JSON.parse(readFileSync(`proof.json`).toString());
-  //   await rm('proof.json');
-
-  //   return {
-  //     currentEpoch: epoch,
-  //     participantsCount: validators
-  //       .slice(offset, offset + SIZE)
-  //       .filter(
-  //         curr =>
-  //           curr.exitEpoch > epoch &&
-  //           !curr.slashed &&
-  //           curr.activationEpoch < epoch &&
-  //           curr.activationEligibilityEpoch < epoch,
-  //       ).length,
-  //     hash: BigInt(hashes[0]).toString(2).padStart(256, '0').split(''),
-  //     point: [
-  //       bigint_to_array(55, 7, sum.toAffine()[0].value),
-  //       bigint_to_array(55, 7, sum.toAffine()[1].value),
-  //     ],
-  //     ...proof,
-  //   };
-  // }
-
-  // // first level
-  // for (let i = 0; i < SIZE / 128; i++) {
-  //   const first = await getRecursiveInput(i * 64, 'proofs_first_level', i);
-  //   const second = await getRecursiveInput(
-  //     i * 64 + 64,
-  //     'proofs_first_level',
-  //     i,
-  //   );
-
-  //   let input = {
-  //     participantsCount: [first.participantsCount, second.participantsCount],
-  //     currentEpoch: 160608,
-  //     negpa: [first.negpa, second.negpa],
-  //     pb: [first.pb, second.pb],
-  //     pc: [first.pc, second.pc],
-  //     hashes: [first.hash, second.hash],
-  //     points: [first.point, second.point],
-  //     negalfa1xbeta2: vkeyFirstLevel.negalfa1xbeta2,
-  //     gamma2: vkeyFirstLevel.gamma2,
-  //     delta2: vkeyFirstLevel.delta2,
-  //     IC: vkeyFirstLevel.IC,
-  //     prevNegalfa1xbeta2: [...Array(6).keys()].map(() =>
-  //       [...Array(2).keys()].map(() => [...Array(6).keys()].map(() => 0)),
-  //     ),
-  //     prevGamma2: [...Array(2).keys()].map(() =>
-  //       [...Array(2).keys()].map(() => [...Array(6).keys()].map(() => 0)),
-  //     ),
-  //     prevDelta2: [...Array(2).keys()].map(() =>
-  //       [...Array(2).keys()].map(() => [...Array(6).keys()].map(() => 0)),
-  //     ),
-  //     prevIC: [...Array(2).keys()].map(() =>
-  //       [...Array(2).keys()].map(() => [...Array(6).keys()].map(() => 0)),
-  //     ),
-  //     bitmask: [1, 1],
-  //   };
-
-  //   await writeFile(
-  //     `inputs_second_level/input${i}.json`,
-  //     JSON.stringify(input),
-  //   );
-  // }
-
-  // await calculateWitness(
-  //   '../../build/aggregate_pubkeys_verify/aggregate_pubkeys_verify_cpp/aggregate_pubkeys_verify',
-  //   './inputs_second_level',
-  //   './witnesses_second_level',
-  //   SIZE / 128,
-  // );
-
-  // await generateProofs(
-  //   '../../build/aggregate_pubkeys_verify/aggregate_pubkeys_verify_0.zkey',
-  //   './witnesses_second_level',
-  //   './proofs_second_level',
-  //   SIZE / 128,
-  // );
-})();
+  return {
+    currentEpoch: epoch,
+    participantsCount: participantsCount,
+    hash: BigInt(hash).toString(2).padStart(256, '0').split(''),
+    point: [
+      bigint_to_array(55, 7, sum.toAffine()[0].value),
+      bigint_to_array(55, 7, sum.toAffine()[1].value),
+    ],
+    bitmask: 1,
+    ...proof,
+  };
+}
