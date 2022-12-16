@@ -16,36 +16,6 @@ template OutputCommitment() {
 
   signal output out;
 
-
-  log(currentEpoch);
-  log(participantsCount);
-  for(var i = 0; i < 256; i++) {
-    log(hash[i]);
-  }
-
-  for(var i = 0; i < 2; i++) {
-    for(var j = 0; j < 7; j++) {
-      log(aggregatedKey[i][j]);
-    }
-  }
-
-  for(var i = 0; i < 6; i++) {
-    for(var j = 0; j < 2; j++) {
-      for(var k = 0; k < 6; k++) {
-        log(negalfa1xbeta2[i][j][k]);
-      }
-    }
-  }
-
-  for(var i = 0; i < 2; i++) {
-    for(var j = 0; j < 2; j++) {
-      for(var k = 0; k < 6; k++) {
-        log(gamma2[i][j][k]);
-        log(delta2[i][j][k]);
-        log(IC[i][j][k]);
-      }
-    }
-  }
   component hasher = MiMCSponge(416, 220, 1);
   hasher.k <== 123;
 
