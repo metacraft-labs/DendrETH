@@ -52,6 +52,11 @@ template FullClient() {
 
   signal input signature[2][2][K];
 
+  component greaterThan = GreaterEqThan(42);
+  greaterThan.in[0] <== participantsSum * 3;
+  greaterThan.in[1] <== numberOfValidators * 2;
+  greaterThan.out === 1;
+
   component hash_tree_root_beacon = HashTreeRootBeaconHeader();
 
   component sszSlot = SSZNum(64);
@@ -230,7 +235,7 @@ template FullClient() {
 
   component sszNum = SSZNum(64);
 
-  sszNum.in <== slot / 32;
+  sszNum.in <== numberOfValidators;
 
   for(var i = 0; i < 256; i++) {
     hashTwo.in[0][i] <== sszNum.out[i];

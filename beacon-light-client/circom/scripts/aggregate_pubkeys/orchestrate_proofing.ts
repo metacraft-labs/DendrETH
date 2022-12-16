@@ -119,9 +119,9 @@ async function getSecondLevelProofs() {
 
     const hashes: string[] = [];
 
-    for (let i = 0; i < 64; i++) {
+    for (let j = 0; j < 64; j++) {
       hashes.push(
-        bytesToHex(ssz.phase0.Validator.hashTreeRoot(validators[i * 64 + i]))
+        bytesToHex(ssz.phase0.Validator.hashTreeRoot(validators[i * 64 + j]))
       );
     }
 

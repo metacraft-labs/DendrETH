@@ -35,6 +35,7 @@ template AggregatePubKeysVerify(N) {
 
   signal input hashes[N][256];
 
+  // TODO: currentEpoch to be array and to compare every value based on the bitmask so we can have epoch independent proofs for the zeros
   signal input currentEpoch;
   signal input participantsCount[N];
 
