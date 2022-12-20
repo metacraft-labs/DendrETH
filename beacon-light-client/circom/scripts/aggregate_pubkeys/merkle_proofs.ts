@@ -1,14 +1,9 @@
 import { ssz } from '@chainsafe/lodestar-types';
 // import * as everything from '@lodestar/types';
 // import { LeafNode, BranchNode } from '@chainsafe/persistent-merkle-tree';
-import {
-  Tree,
-  ProofType,
-} from '@chainsafe/persistent-merkle-tree';
+import { Tree, ProofType } from '@chainsafe/persistent-merkle-tree';
 import { readFileSync } from 'fs';
-import {
-  bytesToHex,
-} from '../../../../libs/typescript/ts-utils/bls';
+import { bytesToHex } from '../../../../libs/typescript/ts-utils/bls';
 
 console.log(ssz.altair.BeaconState.getPropertyGindex('validators'));
 
