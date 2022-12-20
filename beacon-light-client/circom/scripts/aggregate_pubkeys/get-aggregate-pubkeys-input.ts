@@ -95,13 +95,40 @@ export default async function getInput(
       ...[...Array(validators.length).keys()].map(() => 1),
       ...[...Array(64 - validators.length).keys()].map(() => 0),
     ],
-    withdrawCredentials,
-    effectiveBalance,
-    slashed,
-    activationEligibilityEpoch,
-    activationEpoch,
-    exitEpoch,
-    withdrawableEpoch,
+    withdrawCredentials: [
+      ...withdrawCredentials,
+      ...[...Array(64 - validators.length).keys()].map(() =>
+        ''.padStart(256, '0').split(''),
+      ),
+    ],
+    effectiveBalance: [
+      ...effectiveBalance,
+      ...[...Array(64 - validators.length).keys()].map(() =>
+        ''.padStart(256, '0').split(''),
+      ),
+    ],
+    slashed: [
+      ...slashed,
+      ...[...Array(64 - validators.length).keys()].map(() => 0),
+    ],
+    activationEligibilityEpoch: [
+      ...activationEligibilityEpoch,
+      ...[...Array(64 - validators.length).keys()].map(() => 0),
+    ],
+    activationEpoch: [
+      ...activationEpoch,
+      ...[...Array(64 - validators.length).keys()].map(() => 0),
+    ],
+    exitEpoch: [
+      ...exitEpoch,
+      ...[...Array(64 - validators.length).keys()].map(() => 0),
+    ],
+    withdrawableEpoch: [
+      ...withdrawableEpoch,
+      ...[...Array(64 - validators.length).keys()].map(() =>
+        ''.padStart(256, '0').split(''),
+      ),
+    ],
     bitmask: [
       ...validators.map(x =>
         Number(

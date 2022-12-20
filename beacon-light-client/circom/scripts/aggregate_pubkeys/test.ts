@@ -11,7 +11,7 @@ import { sha256 } from 'ethers/lib/utils';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 
 // for (let I = 64; I < 128; I += 8) {
-  const SIZE = 64;
+  const SIZE = 381;
   const UPPER_SIZE = 64;
 
   let zeros: string[] = [];
@@ -22,7 +22,7 @@ import { Tree } from '@chainsafe/persistent-merkle-tree';
   }
 
   let validators = ssz.phase0.Validators.fromJson(
-    (validatorsJSON as any).data.slice(64, 128).map(x => x.validator),
+    (validatorsJSON as any).data.slice(0, SIZE).map(x => x.validator),
   );
 
   let points: PointG1[] = validators
