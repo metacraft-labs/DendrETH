@@ -1,5 +1,5 @@
 import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
-import { fastestTester } from './circuit_tester';
+import { wasm } from './circuit_tester';
 import { expect } from 'chai';
 import { ssz } from '@chainsafe/lodestar-types';
 import * as constants from '../../solidity/test/utils/constants';
@@ -15,7 +15,7 @@ describe('Compute domain test', () => {
     for (let i = 0; i < 4; i++) domain[i] = constants.DOMAIN_SYNC_COMMITTEE[i];
     for (let i = 0; i < 28; i++) domain[i + 4] = fork_data_root[i];
 
-    const circuit = await fastestTester(
+    const circuit = await wasm(
       './scripts/compute_domain/compute_domain.circom',
     );
 

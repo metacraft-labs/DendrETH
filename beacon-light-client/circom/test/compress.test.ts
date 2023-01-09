@@ -1,6 +1,6 @@
 import { PointG1 } from '@noble/bls12-381';
 import { bigint_to_array } from '../../../libs/typescript/ts-utils/bls';
-import { fastestTester } from './circuit_tester';
+import { wasm } from './circuit_tester';
 import { expect } from 'chai';
 import * as update from '../../../vendor/eth2-light-client-updates/mainnet/updates/00290.json';
 
@@ -9,7 +9,7 @@ describe('Add public keys test', () => {
     let point: PointG1 = update.next_sync_committee.pubkeys.map(x =>
       PointG1.fromHex(x.slice(2)),
     )[0];
-    const circuit = await fastestTester('./scripts/compress/compress.circom');
+    const circuit = await wasm('./scripts/compress/compress.circom');
 
     const result = [
       bigint_to_array(55, 7, point.toAffine()[0].value),

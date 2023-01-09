@@ -1,6 +1,6 @@
 pragma circom 2.0.3;
 
-include "hash_tree_root.circom";
+include "sync_commitee_hash_tree_root.circom";
 include "compress.circom";
 include "aggregate_bitmask.circom";
 include "is_supermajority.circom";
@@ -84,6 +84,12 @@ template LightClientRecursive(N) {
     nextHeaderHash[i] = num2bits4.out[255 - i];
   }
 
+  component bitmaskContainsOnlyBools = BitmaskContainsOnlyBools(N);
+
+  for(var i = 0; i < N; i++) {
+    bitmaskContainsOnlyBools.bitmask[i] <== bitmask[i];
+  }
+
   component isSuperMajority = IsSuperMajority(N);
 
   for(var i = 0; i < N; i++) {
@@ -140,7 +146,7 @@ template LightClientRecursive(N) {
     hashToField.in[i] <== computeSigningRoot.signing_root[i];
   }
 
-  component hasher = HashTreeRoot(N);
+  component hasher = SyncCommiteeHashTreeRoot(N);
   component compress[N];
 
   for(var i = 0; i < N; i++) {

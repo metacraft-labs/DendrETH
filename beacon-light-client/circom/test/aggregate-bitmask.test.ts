@@ -1,6 +1,6 @@
 import { PointG1 } from '@noble/bls12-381';
 import { bigint_to_array } from '../../../libs/typescript/ts-utils/bls';
-import { fastestTester } from './circuit_tester';
+import { wasm } from './circuit_tester';
 import { expect } from 'chai';
 import * as update from '../../../vendor/eth2-light-client-updates/mainnet/updates/00290.json';
 import { BitVectorType } from '@chainsafe/ssz';
@@ -22,7 +22,7 @@ describe('Aggregate bitmask test', () => {
     const expectedResult = bigint_to_array(55, 7, sum.toAffine()[0].value);
     expectedResult.push(...bigint_to_array(55, 7, sum.toAffine()[1].value));
 
-    const circuit = await fastestTester(
+    const circuit = await wasm(
       './scripts/aggregate_bitmask/aggregate_bitmask.circom',
     );
 

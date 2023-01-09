@@ -1,4 +1,4 @@
-import { fastestTester } from './circuit_tester';
+import { wasm } from './circuit_tester';
 import { expect } from 'chai';
 import {
   bigint_to_array,
@@ -8,9 +8,7 @@ import {
 
 describe('Hash to field message test', () => {
   it('Test 1', async () => {
-    const circuit = await fastestTester(
-      './scripts/hash_to_field/hash_to_field.circom',
-    );
+    const circuit = await wasm('./scripts/hash_to_field/hash_to_field.circom');
 
     const witnes = await circuit.calculateWitness({
       in: [
