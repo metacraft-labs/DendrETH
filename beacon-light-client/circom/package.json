@@ -14,10 +14,7 @@
     "ethers": "^5.6.4",
     "hardhat": "^2.9.3",
     "http-server": "^14.1.1",
-<<<<<<< HEAD
     "snarkit2": "https://github.com/fluidex/snarkit2#70142d8bbc5ec79cfa6869205263ff77e8423975",
-=======
->>>>>>> 820e462 (feat(circom): Validators first level circuit)
     "snarkjs": "0.4.24",
     "ts-node": "^10.9.1"
   }
