@@ -150,23 +150,24 @@ template SubtractPubkeys(N) {
     sub[i].bIsInfinity <== 0;
   }
 
-  component hasher = MiMCSponge(429, 220, 1);
+  component hasher = MiMCSponge(430, 220, 1);
   hasher.k <== 123;
 
   hasher.ins[0] <== currentEpoch;
+  hasher.ins[1] <== indexes[N - 1];
 
   for(var i = 0; i < 256; i++) {
-    hasher.ins[1 + i] <== state_root[i];
+    hasher.ins[2 + i] <== state_root[i];
   }
 
   for(var j = 0; j < 2; j++) {
     for(var k = 0; k < 7; k++) {
-      hasher.ins[257 + j * 7 + k] <== aggregatedKey[j][k];
-      hasher.ins[271 + j * 7 + k] <== sub[N-1].out[j][k];
+      hasher.ins[258 + j * 7 + k] <== aggregatedKey[j][k];
+      hasher.ins[272 + j * 7 + k] <== sub[N-1].out[j][k];
     }
   }
 
-  var vkCounter = 285;
+  var vkCounter = 286;
 
   for (var i = 0;i < 6;i++) {
     for (var j = 0;j < 2;j++) {
