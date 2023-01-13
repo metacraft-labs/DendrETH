@@ -19,6 +19,8 @@ template AggregatePubKeysVerify(N) {
   signal input delta2[2][2][k];
   signal input IC[pubInpCount+1][2][k];
 
+  // we should not use prevVerificationKey as it lets mallicious prover the chance to create valid fake proofs with whatever vk he wants and then on the next level he will use the correct proof to concatenate them and everything will be alright
+  // so what we can do is use the same verificationkey for every step of the recursion and just for the initial circuit have hardcoded vk else we
   // prev verification key
   signal input prevNegalfa1xbeta2[6][2][k]; // e(-alfa1, beta2)
   signal input prevGamma2[2][2][k];

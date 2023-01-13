@@ -39,6 +39,7 @@ template SubtractPubkeys(N) {
 
   component validatorHashTreeRoot[N];
   component compress[N];
+  component pedersen[N];
 
   component activationEligibilityEpochBits[N];
   component activationEpochBits[N];
