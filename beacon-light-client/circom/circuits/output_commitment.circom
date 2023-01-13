@@ -4,7 +4,6 @@ include "../../../node_modules/circomlib/circuits/mimcsponge.circom";
 
 template OutputCommitment() {
   signal input currentEpoch;
-  signal input participantsCount;
   signal input hash[256];
   signal input aggregatedKey[2][7];
 
@@ -16,11 +15,10 @@ template OutputCommitment() {
 
   signal output out;
 
-  component hasher = MiMCSponge(416, 220, 1);
+  component hasher = MiMCSponge(415, 220, 1);
   hasher.k <== 123;
 
   hasher.ins[0] <== currentEpoch;
-  hasher.ins[1] <== participantsCount;
 
   for(var i = 0; i < 256; i++) {
     hasher.ins[2 + i] <== hash[i];

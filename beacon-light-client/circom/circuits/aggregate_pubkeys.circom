@@ -3,11 +3,11 @@ pragma circom 2.0.3;
 include "../../../vendor/circom-pairing/circuits/curve.circom";
 include "../../../vendor/circom-pairing/circuits/bn254/groth16.circom";
 include "../../../node_modules/circomlib/circuits/bitify.circom";
+include "../../../node_modules/circomlib/circuits/pedersen.circom";
 include "validators_hash_tree_root.circom";
-include "compress.circom";
+include "hash_tree_root_pedersen.circom";
 include "bitmask_contains_only_bools.circom";
 include "aggregate_bitmask.circom";
-include "output_commitment.circom";
 
 template AggregatePubKeys(N) {
   var J = 2;
@@ -15,18 +15,14 @@ template AggregatePubKeys(N) {
   signal input points[N][J][K];
   signal input zero[N];
 
-  signal input withdrawCredentials[N][256];
+  signal input bitmask[N];
 
-  signal input effectiveBalance[N][256];
   signal input slashed[N];
 
   signal input activationEligibilityEpoch[N];
   signal input activationEpoch[N];
 
   signal input exitEpoch[N];
-  signal input withdrawableEpoch[N][256];
-
-  signal input bitmask[N];
 
   signal input currentEpoch;
 
@@ -35,8 +31,10 @@ template AggregatePubKeys(N) {
   component activationEligibilityEpochLessThan[N];
   component activationEpochLessThan[N];
   component exitEpochGreaterThan[N];
-  component validatorsHashTreeRoot = ValidatorsHashTreeRoot(N);
-  component compress[N];
+
+  component pedersenHashTreeRoot = HashTreeRootPedersen(N);
+  component pedersen[N];
+
   component activationEligibilityEpochBits[N];
   component activationEpochBits[N];
   component exitEpochBits[N];
@@ -86,41 +84,26 @@ template AggregatePubKeys(N) {
     or[4 * i + 3].b <== slashedIsZero[i].out;
     or[4 * i + 3].out === 1;
 
-    compress[i] = Compress();
+    pedersen[i] = Pedersen(18);
 
     for(var j = 0; j < J; j++) {
       for(var k = 0; k < K; k++) {
-        compress[i].point[j][k] <== points[i][j][k];
+        pedersen[i].in[j * 7 + k] <== points[i][j][k];
       }
     }
 
-    for(var j = 0; j < 384; j++) {
-      validatorsHashTreeRoot.pubkeys[i][j] <== compress[i].bits[j];
-    }
+    pedersen[i].in[14] <== activationEligibilityEpoch[i];
+    pedersen[i].in[15] <== activationEpoch[i];
+    pedersen[i].in[16] <== exitEpoch[i];
+    pedersen[i].in[17] <== slashed[i];
 
-    validatorsHashTreeRoot.zero[i] <== zero[i];
-    validatorsHashTreeRoot.activationEligibilityEpoch[i] <== activationEligibilityEpoch[i];
-    validatorsHashTreeRoot.activationEpoch[i] <== activationEpoch[i];
-    validatorsHashTreeRoot.exitEpoch[i] <== exitEpoch[i];
-    validatorsHashTreeRoot.slashed[i] <== slashed[i];
-
-    for(var j = 0; j < 256; j++) {
-      validatorsHashTreeRoot.withdrawCredentials[i][j] <== withdrawCredentials[i][j];
-      validatorsHashTreeRoot.effectiveBalance[i][j] <== effectiveBalance[i][j];
-      validatorsHashTreeRoot.withdrawableEpoch[i][j] <== withdrawableEpoch[i][j];
-    }
+    pedersenHashTreeRoot.leaves[i] <== pedersen[i].out[0] * zero[i];
   }
 
   component bitmaskContainsOnlyBools = BitmaskContainsOnlyBools(N);
 
   for(var i = 0; i < N; i++) {
     bitmaskContainsOnlyBools.bitmask[i] <== bitmask[i];
-  }
-
-  var participantsCount = 0;
-
-  for(var i = 0; i < N; i++) {
-    participantsCount += bitmask[i];
   }
 
   component aggregateKeys = AggregateKeysBitmask(N);
@@ -137,38 +120,16 @@ template AggregatePubKeys(N) {
     aggregateKeys.bitmask[i] <== bitmask[i];
   }
 
-  component commitment = OutputCommitment();
+  component commitment = Pedersen(16);
 
-  commitment.currentEpoch <== currentEpoch;
-  commitment.participantsCount <== participantsCount;
-
-  for(var i = 0; i < 256; i++) {
-    commitment.hash[i] <== validatorsHashTreeRoot.out[i];
-  }
+  commitment.in[0] <== currentEpoch;
+  commitment.in[1] <== pedersenHashTreeRoot.out;
 
   for(var j = 0; j < J; j++) {
     for(var k = 0; k < K; k++) {
-      commitment.aggregatedKey[j][k] <== aggregateKeys.out[j][k];
+      commitment.in[2 + j * 7 +k] <== aggregateKeys.out[j][k];
     }
   }
 
-  for (var i = 0;i < 6;i++) {
-    for (var j = 0;j < 2;j++) {
-      for (var idx = 0;idx < 6;idx++) {
-        commitment.negalfa1xbeta2[i][j][idx] <== 0;
-      }
-    }
-  }
-
-  for (var i = 0;i < 2;i++) {
-    for (var j = 0;j < 2;j++) {
-      for (var idx = 0;idx < 6;idx++) {
-        commitment.gamma2[i][j][idx] <== 0;
-        commitment.delta2[i][j][idx] <== 0;
-        commitment.IC[i][j][idx] <== 0;
-      }
-    }
-  }
-
-  output_commitment <== commitment.out;
+  output_commitment <== commitment.out[0];
 }
