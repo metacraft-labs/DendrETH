@@ -27,6 +27,8 @@ template AggregatePubKeysVerify(N) {
   signal input prevDelta2[2][2][k];
   signal input prevIC[pubInpCount+1][2][k];
 
+  signal input zeroOnFirst;
+
   // proof
   signal input negpa[N][2][k];
   signal input pb[N][2][2][k];
@@ -35,13 +37,43 @@ template AggregatePubKeysVerify(N) {
   signal input points[N][J][K];
   signal input bitmask[N];
 
-  signal input hashes[N][256];
+  signal input hashes[N];
 
-  // TODO: currentEpoch to be array and to compare every value based on the bitmask so we can have epoch independent proofs for the zeros
-  signal input currentEpoch;
-  signal input participantsCount[N];
+  signal input currentEpoch[N];
 
   signal output output_commitment;
+
+
+  component bitmaskContainsOnlyBools = BitmaskContainsOnlyBools(N);
+
+  for(var i = 0; i < N; i++) {
+    bitmaskContainsOnlyBools.bitmask[i] <== bitmask[i];
+  }
+
+
+  component isEqual[N - 1];
+  component xor[N - 1];
+  component not[N - 1];
+  component and[N - 1];
+
+  for (var i = 0; i < N - 1; i++) {
+    isEqual[i] = IsEqual();
+    isEqual[i].in[0] <== currentEpoch[i];
+    isEqual[i].in[1] <== currentEpoch[i+1];
+
+    and[i] = AND();
+    and[i].a <== bitmask[i];
+    and[i].b <== bitmask[i + 1];
+
+    xor[i] = XOR();
+
+    xor[i].a <== and[i].out * isEqual[i].out;
+    xor[i].b <== and[i].out;
+
+    not[i] = NOT();
+    not[i].in <== xor[i].out;
+    not[i].out === 1;
+  }
 
   component aggregateKeys = AggregateKeysBitmask(N);
 
@@ -57,27 +89,16 @@ template AggregatePubKeysVerify(N) {
     aggregateKeys.bitmask[i] <== bitmask[i];
   }
 
-  var participantsSum = 0;
-  for(var i = 0; i < N; i++) {
-    participantsSum += participantsCount[i];
-  }
-
-  component hashTreeRoot = HashTreeRoot(N);
+  component hashTreeRoot = HashTreeRootPedersen(N);
 
   for(var i = 0; i < N; i++) {
-    for(var j = 0; j < 256; j++) {
-      hashTreeRoot.leaves[i][j] <== hashes[i][j];
-    }
+    hashTreeRoot.leaves[i] <== hashes[i];
   }
 
   component commitment = OutputCommitment();
 
   commitment.currentEpoch <== currentEpoch;
-  commitment.participantsCount <== participantsSum;
-
-  for(var i = 0; i < 256; i++) {
-    commitment.hash[i] <== hashTreeRoot.out[i];
-  }
+  commitment.hash <== hashTreeRoot.out;
 
   for(var j = 0; j < J; j++) {
     for(var k = 0; k < K; k++) {
@@ -130,9 +151,9 @@ template AggregatePubKeysVerify(N) {
     for (var i = 0;i < 2;i++) {
       for (var j = 0;j < 2;j++) {
         for (var idx = 0;idx < k;idx++) {
-          groth16Verifier[index].gamma2[i][j][idx] <== gamma2[i][j][idx];
-          groth16Verifier[index].delta2[i][j][idx] <== delta2[i][j][idx];
-          groth16Verifier[index].pb[i][j][idx] <== pb[index][i][j][idx];
+          groth16Verifier[index].gamma2[i][j][idx] <== zeroOnFirst * gamma2[i][j][idx] + (1 - zeroOnFirst) * hardcode;
+          groth16Verifier[index].delta2[i][j][idx] <== zeroOnFirst * delta2[i][j][idx] + (1 - zeroOnFirst) * hardcode;
+          groth16Verifier[index].pb[i][j][idx] <== zeroOnFirst * pb[index][i][j][idx] + (1 - zeroOnFirst) * hardcode;
         }
       }
     }
@@ -155,11 +176,7 @@ template AggregatePubKeysVerify(N) {
     prevCommitments[index] = OutputCommitment();
 
     prevCommitments[index].currentEpoch <== currentEpoch;
-    prevCommitments[index].participantsCount <== participantsCount[index];
-
-    for(var i = 0; i < 256; i++) {
-      prevCommitments[index].hash[i] <== hashes[index][i];
-    }
+    prevCommitments[index].hash <== hashes[index];
 
     for(var j = 0; j < J; j++) {
       for(var k = 0; k < K; k++) {
@@ -170,7 +187,7 @@ template AggregatePubKeysVerify(N) {
     for(var i = 0; i < 6; i++) {
       for(var j = 0; j<2;j++) {
         for(var idx = 0; idx < k; idx++) {
-          prevCommitments[index].negalfa1xbeta2[i][j][idx] <== prevNegalfa1xbeta2[i][j][idx];
+          prevCommitments[index].negalfa1xbeta2[i][j][idx] <== zeroOnFirst * negalfa1xbeta2[i][j][idx];
         }
       }
     }
@@ -178,8 +195,8 @@ template AggregatePubKeysVerify(N) {
     for(var i = 0; i < 2; i++) {
       for(var j = 0; j < 2; j++) {
         for(var idx = 0; idx < k; idx++) {
-          prevCommitments[index].gamma2[i][j][idx] <== prevGamma2[i][j][idx];
-          prevCommitments[index].delta2[i][j][idx] <== prevDelta2[i][j][idx];
+          prevCommitments[index].gamma2[i][j][idx] <== zeroOnFirst * gamma2[i][j][idx];
+          prevCommitments[index].delta2[i][j][idx] <== zeroOnFirst * delta2[i][j][idx];
         }
       }
     }
@@ -187,7 +204,7 @@ template AggregatePubKeysVerify(N) {
     for(var i = 0; i < pubInpCount + 1; i++) {
       for(var j = 0; j < 2; j++) {
         for(var idx = 0; idx < k; idx++) {
-          prevCommitments[index].IC[i][j][idx] <== prevIC[i][j][idx];
+          prevCommitments[index].IC[i][j][idx] <== zeroOnFirst * IC[i][j][idx];
         }
       }
     }

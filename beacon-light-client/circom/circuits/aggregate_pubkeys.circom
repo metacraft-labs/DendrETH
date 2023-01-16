@@ -120,7 +120,7 @@ template AggregatePubKeys(N) {
     aggregateKeys.bitmask[i] <== bitmask[i];
   }
 
-  component commitment = Pedersen(16);
+  component commitment = Pedersen(160);
 
   commitment.in[0] <== currentEpoch;
   commitment.in[1] <== pedersenHashTreeRoot.out;
@@ -129,6 +129,10 @@ template AggregatePubKeys(N) {
     for(var k = 0; k < K; k++) {
       commitment.in[2 + j * 7 +k] <== aggregateKeys.out[j][k];
     }
+  }
+
+  for (var i = 0; i < 144; i++) {
+    commitment.in[16 + i] <== 0;
   }
 
   output_commitment <== commitment.out[0];
