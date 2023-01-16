@@ -18,7 +18,7 @@ template OutputCommitment() {
   component hasher = Pedersen(160);
 
   hasher.in[0] <== currentEpoch;
-  hasher.in[1] <== hash[i];
+  hasher.in[1] <== hash;
 
   for(var j = 0; j < 2; j++) {
     for(var k = 0; k < 7; k++) {
@@ -44,5 +44,5 @@ template OutputCommitment() {
     }
   }
 
-  out <== hasher.outs[0];
+  out <== hasher.out[0];
 }

@@ -8,6 +8,7 @@ include "validators_hash_tree_root.circom";
 include "hash_tree_root_pedersen.circom";
 include "bitmask_contains_only_bools.circom";
 include "aggregate_bitmask.circom";
+include "output_commitment.circom";
 
 template AggregatePubKeys(N) {
   var J = 2;
@@ -120,20 +121,34 @@ template AggregatePubKeys(N) {
     aggregateKeys.bitmask[i] <== bitmask[i];
   }
 
-  component commitment = Pedersen(160);
+  component commitment = OutputCommitment();
 
-  commitment.in[0] <== currentEpoch;
-  commitment.in[1] <== pedersenHashTreeRoot.out;
+  commitment.currentEpoch <== currentEpoch;
+  commitment.hash <== pedersenHashTreeRoot.out;
 
   for(var j = 0; j < J; j++) {
     for(var k = 0; k < K; k++) {
-      commitment.in[2 + j * 7 +k] <== aggregateKeys.out[j][k];
+      commitment.aggregatedKey[j][k] <== aggregateKeys.out[j][k];
     }
   }
 
-  for (var i = 0; i < 144; i++) {
-    commitment.in[16 + i] <== 0;
+  for (var i = 0;i < 6;i++) {
+    for (var j = 0;j < 2;j++) {
+      for (var idx = 0;idx < 6;idx++) {
+        commitment.negalfa1xbeta2[i][j][idx] <== 0;
+      }
+    }
   }
 
-  output_commitment <== commitment.out[0];
+  for (var i = 0;i < 2;i++) {
+    for (var j = 0;j < 2;j++) {
+      for (var idx = 0;idx < 6;idx++) {
+        commitment.gamma2[i][j][idx] <== 0;
+        commitment.delta2[i][j][idx] <== 0;
+        commitment.IC[i][j][idx] <== 0;
+      }
+    }
+  }
+
+  output_commitment <== commitment.out;
 }
