@@ -1,8 +1,8 @@
 import { task } from 'hardhat/config';
 import { getConstructorArgs } from './utils';
 
-task('deploy', 'Deploy the beacon light client contract').setAction(
-  async (_, { run, ethers, network }) => {
+task('deploy', 'Deploy the beacon light client contract').addParam("targetNetwork", "Network to use when updating the light client.", "mainnet").setAction(
+  async (taskArgs, { run, ethers, network }) => {
     await run('compile');
     const [deployer] = await ethers.getSigners();
 
@@ -11,7 +11,7 @@ task('deploy', 'Deploy the beacon light client contract').setAction(
 
     const beaconLightClient = await (
       await ethers.getContractFactory('BeaconLightClient')
-    ).deploy(...getConstructorArgs(network.name));
+    ).deploy(...getConstructorArgs(taskArgs.targetNetwork));
 
     console.log('>>> Waiting for BeaconLightClient deployment...');
 
