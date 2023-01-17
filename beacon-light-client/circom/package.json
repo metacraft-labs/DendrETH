@@ -12,6 +12,7 @@
     "ethereum-waffle": "^4.0.7",
     "ethers": "^5.6.4",
     "hardhat": "^2.9.3",
-    "snarkjs": "0.4.24"
+    "snarkjs": "0.4.24",
+    "snarkit2": "https://github.com/fluidex/snarkit2#70142d8bbc5ec79cfa6869205263ff77e8423975"
   }
 }
