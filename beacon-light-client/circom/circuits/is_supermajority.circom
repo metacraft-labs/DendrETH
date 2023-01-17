@@ -22,7 +22,7 @@ template IsSuperMajority(N) {
 
   component greaterThan = GreaterEqThan(12);
   greaterThan.in[0] <== sum * 3;
-  greaterThan.in[1] <== 1024;
+  greaterThan.in[1] <== 2 * N;
 
   out <== greaterThan.out;
 }
