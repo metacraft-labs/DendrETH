@@ -93,6 +93,8 @@ export default {
       accounts: [optionalConf.USER_PRIVATE_KEY],
     },
     //WIP, faucet claims i'm a robot, and won't give me BNB
+    // despite this I still ended up getting tokens from the faucet, howeever am now getting "Invalid JSON-RPC responsee received"
+    // this will require further research
     "binance-smart-contract": {
       url: `https://data-seed-prebsc-1-s1.binance.org:8545`,
       accounts: [optionalConf.USER_PRIVATE_KEY],
@@ -102,6 +104,24 @@ export default {
       url: `https://eth-rpc-api-testnet.thetatoken.org/rpc`,
       accounts: [optionalConf.USER_PRIVATE_KEY],
     },
+    "polygon": {
+      url: `https://matic-mumbai.chainstacklabs.com/`,
+      accounts: [optionalConf.USER_PRIVATE_KEY],
+    },
+    "ethereum-classic": {
+      url: `https://www.ethercluster.com/mordor`,
+      accounts: [optionalConf.USER_PRIVATE_KEY],
+    },
+    //WIP, faucet is broken, "1010: Invalid Transaction: Transaction has a bad signature"
+    "polkadot": {
+      url:`rpc.pinknode.io/westend`,
+      accounts: [optionalConf.USER_PRIVATE_KEY],
+    },
+    //WIP, can't get private key from testneet wallet
+    "near": {
+      url:`https://rpc.testnet.near.org`,
+      accounts: [optionalConf.USER_PRIVATE_KEY],
+    }
   },
   mocha: {
     timeout: 100000000,
