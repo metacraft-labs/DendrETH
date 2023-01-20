@@ -33,40 +33,34 @@ template AggregatePubKeysVerify(N) {
 
   signal input hashes[N];
 
-  signal input currentEpoch[N];
+  signal input minExitEpochs[N];
+  signal input maxActivationEpochs[N];
+
+  signal input maxActivationEpoch;
+  signal input minExitEpoch;
 
   signal output output_commitment;
+
+
+  component graterThan[N];
+  component lessThan[N];
+  for (var i = 0; i < N; i++) {
+    lessThan[i] = LessEqThan(64);
+    lessThan[i].in[0] <== maxActivationEpochs[i];
+    lessThan[i].in[1] <==  maxActivationEpoch;
+    lessThan[i].out === 1;
+
+    graterThan[i] = GreaterEqThan(64);
+    graterThan[i].in[0] <== minExitEpochs[i];
+    graterThan[i].in[1] <== minExitEpoch;
+    graterThan[i].out === 1;
+  }
 
 
   component bitmaskContainsOnlyBools = BitmaskContainsOnlyBools(N);
 
   for(var i = 0; i < N; i++) {
     bitmaskContainsOnlyBools.bitmask[i] <== bitmask[i];
-  }
-
-
-  component isEqual[N - 1];
-  component xor[N - 1];
-  component not[N - 1];
-  component and[N - 1];
-
-  for (var i = 0; i < N - 1; i++) {
-    isEqual[i] = IsEqual();
-    isEqual[i].in[0] <== currentEpoch[i];
-    isEqual[i].in[1] <== currentEpoch[i+1];
-
-    and[i] = AND();
-    and[i].a <== bitmask[i];
-    and[i].b <== bitmask[i + 1];
-
-    xor[i] = XOR();
-
-    xor[i].a <== and[i].out * isEqual[i].out;
-    xor[i].b <== and[i].out;
-
-    not[i] = NOT();
-    not[i].in <== xor[i].out;
-    not[i].out === 1;
   }
 
   component aggregateKeys = AggregateKeysBitmask(N);
@@ -91,7 +85,8 @@ template AggregatePubKeysVerify(N) {
 
   component commitment = OutputCommitment();
 
-  commitment.currentEpoch <== bitmask[0] * currentEpoch[0];
+  commitment.maxActivationEpoch <== maxActivationEpoch;
+  commitment.minExitEpoch <== minExitEpoch;
   commitment.hash <== hashTreeRoot.out;
 
   for(var j = 0; j < J; j++) {
@@ -397,7 +392,8 @@ template AggregatePubKeysVerify(N) {
 
     prevCommitments[index] = OutputCommitment();
 
-    prevCommitments[index].currentEpoch <== currentEpoch[index];
+    prevCommitments[index].maxActivationEpoch <== maxActivationEpochs[index];
+    prevCommitments[index].minExitEpoch <== minExitEpochs[index];
     prevCommitments[index].hash <== hashes[index];
 
     for(var j = 0; j < J; j++) {

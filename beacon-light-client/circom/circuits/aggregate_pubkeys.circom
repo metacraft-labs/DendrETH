@@ -1,3 +1,6 @@
+
+// TODO: should be included if it is active etc. and if it is not only then it should be skipped
+
 pragma circom 2.0.3;
 
 include "../../../vendor/circom-pairing/circuits/curve.circom";
@@ -9,6 +12,7 @@ include "hash_tree_root_pedersen.circom";
 include "bitmask_contains_only_bools.circom";
 include "aggregate_bitmask.circom";
 include "output_commitment.circom";
+include "xnor.circom";
 
 template AggregatePubKeys(N) {
   var J = 2;
@@ -25,7 +29,11 @@ template AggregatePubKeys(N) {
 
   signal input exitEpoch[N];
 
-  signal input currentEpoch;
+  // should be after currentEpoch will be checked in final circuit
+  signal input minExitEpoch;
+
+  // should be before currentEpoch will be checked in final circuit
+  signal input maxActivationEpoch;
 
   signal output output_commitment;
 
@@ -40,50 +48,50 @@ template AggregatePubKeys(N) {
   component activationEpochBits[N];
   component exitEpochBits[N];
   component slashedIsZero[N];
-  component or[4*N];
   component not[N];
+  component xnor[4*N];
 
   for(var i = 0; i < N; i++) {
     activationEligibilityEpochLessThan[i] = LessThan(64);
 
     activationEligibilityEpochLessThan[i].in[0] <== activationEligibilityEpoch[i];
-    activationEligibilityEpochLessThan[i].in[1] <== currentEpoch;
+    activationEligibilityEpochLessThan[i].in[1] <== maxActivationEpoch;
 
     not[i] = NOT();
     not[i].in <== bitmask[i];
 
-    or[4 * i] = OR();
-    or[4 * i].a <== not[i].out;
-    or[4 * i].b <== activationEligibilityEpochLessThan[i].out;
-    or[4 * i].out === 1;
+    xnor[4 * i] = XNOR();
+    xnor[4 * i].a <== not[i].out;
+    xnor[4 * i].b <== activationEligibilityEpochLessThan[i].out;
+    xnor[4 * i].out === 1;
 
     activationEpochLessThan[i] = LessThan(64);
 
     activationEpochLessThan[i].in[0] <== activationEpoch[i];
-    activationEpochLessThan[i].in[1] <==  currentEpoch;
+    activationEpochLessThan[i].in[1] <==  maxActivationEpoch;
 
-    or[4 * i + 1] = OR();
-    or[4 * i + 1].a <== not[i].out;
-    or[4 * i + 1].b <== activationEpochLessThan[i].out;
-    or[4 * i + 1].out === 1;
+    xnor[4 * i + 1] = XNOR();
+    xnor[4 * i + 1].a <== not[i].out;
+    xnor[4 * i + 1].b <== activationEpochLessThan[i].out;
+    xnor[4 * i + 1].out === 1;
 
     exitEpochGreaterThan[i] = GreaterThan(64);
 
     exitEpochGreaterThan[i].in[0] <== exitEpoch[i];
-    exitEpochGreaterThan[i].in[1] <== currentEpoch;
+    exitEpochGreaterThan[i].in[1] <== minExitEpoch;
 
-    or[4 * i + 2] = OR();
-    or[4 * i + 2].a <== not[i].out;
-    or[4 * i + 2].b <== exitEpochGreaterThan[i].out;
-    or[4 * i + 2].out === 1;
+    xnor[4 * i + 2] = XNOR();
+    xnor[4 * i + 2].a <== not[i].out;
+    xnor[4 * i + 2].b <== exitEpochGreaterThan[i].out;
+    xnor[4 * i + 2].out === 1;
 
     slashedIsZero[i] = IsZero();
     slashedIsZero[i].in <== slashed[i];
 
-    or[4 * i + 3] = OR();
-    or[4 * i + 3].a <== not[i].out;
-    or[4 * i + 3].b <== slashedIsZero[i].out;
-    or[4 * i + 3].out === 1;
+    xnor[4 * i + 3] = XNOR();
+    xnor[4 * i + 3].a <== not[i].out;
+    xnor[4 * i + 3].b <== slashedIsZero[i].out;
+    xnor[4 * i + 3].out === 1;
 
     pedersen[i] = Pedersen(18);
 
@@ -123,7 +131,8 @@ template AggregatePubKeys(N) {
 
   component commitment = OutputCommitment();
 
-  commitment.currentEpoch <== currentEpoch;
+  commitment.maxActivationEpoch <== maxActivationEpoch;
+  commitment.minExitEpoch <== minExitEpoch;
   commitment.hash <== pedersenHashTreeRoot.out;
 
   for(var j = 0; j < J; j++) {
