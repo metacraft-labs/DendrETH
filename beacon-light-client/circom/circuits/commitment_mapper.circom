@@ -72,13 +72,17 @@ template CommitmentMapper(N) {
     pedersenHashTreeRoot.leaves[i] <== pedersen[i].out[0] * zero[i];
   }
 
-  component commitment = Pedersen(257);
+  component commitment = Pedersen(401);
 
   for(var i = 0; i < 256; i++) {
     commitment.in[i] <== validatorsHashTreeRoot.out[i];
   }
 
   commitment.in[256] <== pedersenHashTreeRoot.out;
+
+  for (var i = 0; i < 144; i++) {
+    commitment.in[257 + i] <== 0;
+  }
 
   output_commitment <== commitment.out[0];
 }
