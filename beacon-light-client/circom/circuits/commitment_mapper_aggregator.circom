@@ -43,16 +43,12 @@ template CommitmentMapperAggregator(N) {
     commitment.in[i] <== hashTreeRoot.out[i];
   }
 
-  commitment.in[256] <== hashTreeRoot.out;
-
-  for (var i = 0; i < 144; i++) {
-    commitment.in[257 + i] <== 0;
-  }
+  commitment.in[256] <== hashTreeRootPedersen.out;
 
   for(var i = 0; i < 6; i++) {
     for(var j = 0; j<2;j++) {
       for(var idx = 0; idx < k; idx++) {
-        commitment.in[257 + i * 12 + j * 6 + k] <== zeroOnFirst * negalfa1xbeta2[i][j][idx];
+        commitment.in[257 + i * 12 + j * 6 + idx] <== zeroOnFirst * negalfa1xbeta2[i][j][idx];
       }
     }
   }
@@ -60,8 +56,8 @@ template CommitmentMapperAggregator(N) {
   for(var i = 0; i < 2; i++) {
     for(var j = 0; j < 2; j++) {
       for(var idx = 0; idx < k; idx++) {
-        commitment.in[329 + i * 12 + j * 6 + k] <== zeroOnFirst * gamma2[i][j][idx];
-        commitment.in[353 + i * 12 + j * 6 + k] <== zeroOnFirst * delta2[i][j][idx];
+        commitment.in[329 + i * 12 + j * 6 + idx] <== zeroOnFirst * gamma2[i][j][idx];
+        commitment.in[353 + i * 12 + j * 6 + idx] <== zeroOnFirst * delta2[i][j][idx];
       }
     }
   }
@@ -69,14 +65,14 @@ template CommitmentMapperAggregator(N) {
   for(var i = 0; i < pubInpCount + 1; i++) {
     for(var j = 0; j < 2; j++) {
       for(var idx = 0; idx < k; idx++) {
-        commitment.in[377 + i * 12 + j * 6 + k] <== zeroOnFirst * IC[i][j][idx];
+        commitment.in[377 + i * 12 + j * 6 + idx] <== zeroOnFirst * IC[i][j][idx];
       }
     }
   }
 
   output_commitment <== commitment.out[0];
 
-    var firstGama2[2][2][6] = [
+  var firstGama2[2][2][6] = [
     [
       [
         5896345417453,
