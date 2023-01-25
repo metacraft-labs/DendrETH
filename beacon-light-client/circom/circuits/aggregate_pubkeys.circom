@@ -9,7 +9,6 @@ include "hash_tree_root_pedersen.circom";
 include "bitmask_contains_only_bools.circom";
 include "aggregate_bitmask.circom";
 include "output_commitment.circom";
-include "xnor.circom";
 
 template AggregatePubKeys(N) {
   var J = 2;
@@ -45,12 +44,11 @@ template AggregatePubKeys(N) {
   component activationEpochBits[N];
   component exitEpochBits[N];
   component not[N];
-  component xnor[3*N];
-  component and[N];
+  component xor[4*N];
   component notSlashed[N];
 
   for(var i = 0; i < N; i++) {
-    activationEligibilityEpochLessThan[i] = LessThan(64);
+    activationEligibilityEpochLessThan[i] = LessEqThan(64);
 
     activationEligibilityEpochLessThan[i].in[0] <== activationEligibilityEpoch[i];
     activationEligibilityEpochLessThan[i].in[1] <== maxActivationEpoch;
@@ -58,38 +56,38 @@ template AggregatePubKeys(N) {
     not[i] = NOT();
     not[i].in <== bitmask[i];
 
-    xnor[3 * i] = XNOR();
-    xnor[3 * i].a <== not[i].out;
-    xnor[3 * i].b <== activationEligibilityEpochLessThan[i].out;
-    xnor[3 * i].out === 1;
+    xor[4 * i] = XOR();
+    xor[4 * i].a <== not[i].out;
+    xor[4 * i].b <== activationEligibilityEpochLessThan[i].out;
+    xor[4 * i].out === 1;
 
-    activationEpochLessThan[i] = LessThan(64);
+    activationEpochLessThan[i] = LessEqThan(64);
 
     activationEpochLessThan[i].in[0] <== activationEpoch[i];
     activationEpochLessThan[i].in[1] <==  maxActivationEpoch;
 
-    xnor[3 * i + 1] = XNOR();
-    xnor[3 * i + 1].a <== not[i].out;
-    xnor[3 * i + 1].b <== activationEpochLessThan[i].out;
-    xnor[3 * i + 1].out === 1;
+    xor[4 * i + 1] = XOR();
+    xor[4 * i + 1].a <== not[i].out;
+    xor[4 * i + 1].b <== activationEpochLessThan[i].out;
+    xor[4 * i + 1].out === 1;
 
-    exitEpochGreaterThan[i] = GreaterThan(64);
+    exitEpochGreaterThan[i] = GreaterEqThan(64);
 
     exitEpochGreaterThan[i].in[0] <== exitEpoch[i];
     exitEpochGreaterThan[i].in[1] <== minExitEpoch;
 
-    xnor[3 * i + 2] = XNOR();
-    xnor[3 * i + 2].a <== not[i].out;
-    xnor[3 * i + 2].b <== exitEpochGreaterThan[i].out;
-    xnor[3 * i + 2].out === 1;
+    xor[4 * i + 2] = XOR();
+    xor[4 * i + 2].a <== not[i].out;
+    xor[4 * i + 2].b <== exitEpochGreaterThan[i].out;
+    xor[4 * i + 2].out === 1;
 
     notSlashed[i] = NOT();
     notSlashed[i].in <== slashed[i];
 
-    and[i] = AND();
-    and[i].a <== notSlashed[i].out;
-    and[i].b <== bitmask[i];
-    and[i].out === 1;
+    xor[4 * i + 3] = XOR();
+    xor[4 * i + 3].a <== notSlashed[i].out;
+    xor[4 * i + 3].b <== not[i].out;
+    xor[4 * i + 3].out === 1;
 
     pedersen[i] = Pedersen(18);
 
