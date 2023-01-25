@@ -371,7 +371,5 @@ template CommitmentMapperAggregator(N) {
         }
       }
     }
-
-    output_commitment <== commitment.out[0];
   }
 }
