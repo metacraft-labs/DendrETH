@@ -350,7 +350,7 @@ template CommitmentMapperAggregator(N) {
     for(var i = 0; i < 6; i++) {
       for(var j = 0; j<2;j++) {
         for(var idx = 0; idx < k; idx++) {
-          prevCommitments[index].in[257 + i * 12 + j * 6 + k] <== zeroOnFirst * negalfa1xbeta2[i][j][idx];
+          prevCommitments[index].in[257 + i * 12 + j * 6 + idx] <== zeroOnFirst * negalfa1xbeta2[i][j][idx];
         }
       }
     }
@@ -358,8 +358,8 @@ template CommitmentMapperAggregator(N) {
     for(var i = 0; i < 2; i++) {
       for(var j = 0; j < 2; j++) {
         for(var idx = 0; idx < k; idx++) {
-          prevCommitments[index].in[329 + i * 12 + j * 6 + k] <== zeroOnFirst * gamma2[i][j][idx];
-          prevCommitments[index].in[353 + i * 12 + j * 6 + k] <== zeroOnFirst * delta2[i][j][idx];
+          prevCommitments[index].in[329 + i * 12 + j * 6 + idx] <== zeroOnFirst * gamma2[i][j][idx];
+          prevCommitments[index].in[353 + i * 12 + j * 6 + idx] <== zeroOnFirst * delta2[i][j][idx];
         }
       }
     }
@@ -367,7 +367,7 @@ template CommitmentMapperAggregator(N) {
     for(var i = 0; i < pubInpCount + 1; i++) {
       for(var j = 0; j < 2; j++) {
         for(var idx = 0; idx < k; idx++) {
-          prevCommitments[index].in[377 + i * 12 + j * 6 + k] <== zeroOnFirst * IC[i][j][idx];
+          prevCommitments[index].in[377 + i * 12 + j * 6 + idx] <== zeroOnFirst * IC[i][j][idx];
         }
       }
     }
