@@ -56,7 +56,7 @@ template CommitmentMapper(N) {
       validatorsHashTreeRoot.withdrawableEpoch[i][j] <== withdrawableEpoch[i][j];
     }
 
-    pedersen[i] = Pedersen(18);
+    pedersen[i] = Pedersen(17);
 
     for(var j = 0; j < J; j++) {
       for(var k = 0; k < K; k++) {
@@ -64,10 +64,9 @@ template CommitmentMapper(N) {
       }
     }
 
-    pedersen[i].in[14] <== activationEligibilityEpoch[i];
-    pedersen[i].in[15] <== activationEpoch[i];
-    pedersen[i].in[16] <== exitEpoch[i];
-    pedersen[i].in[17] <== slashed[i];
+    pedersen[i].in[14] <== activationEpoch[i];
+    pedersen[i].in[15] <== exitEpoch[i];
+    pedersen[i].in[16] <== slashed[i];
 
     pedersenHashTreeRoot.leaves[i] <== pedersen[i].out[0] * zero[i];
   }
