@@ -8,6 +8,7 @@ include "validators_hash_tree_root.circom";
 include "hash_tree_root_pedersen.circom";
 include "bitmask_contains_only_bools.circom";
 include "aggregate_bitmask.circom";
+include "xnor.circom";
 include "output_commitment.circom";
 
 template AggregatePubKeys(N) {
@@ -20,7 +21,6 @@ template AggregatePubKeys(N) {
 
   signal input slashed[N];
 
-  signal input activationEligibilityEpoch[N];
   signal input activationEpoch[N];
 
   signal input exitEpoch[N];
@@ -33,63 +33,45 @@ template AggregatePubKeys(N) {
 
   signal output output_commitment;
 
-  component activationEligibilityEpochLessThan[N];
   component activationEpochLessThan[N];
   component exitEpochGreaterThan[N];
 
   component pedersenHashTreeRoot = HashTreeRootPedersen(N);
   component pedersen[N];
 
-  component activationEligibilityEpochBits[N];
-  component activationEpochBits[N];
-  component exitEpochBits[N];
-  component not[N];
-  component xor[4*N];
+  component xnor[N];
+  component and[2 * N];
   component notSlashed[N];
 
   for(var i = 0; i < N; i++) {
-    activationEligibilityEpochLessThan[i] = LessEqThan(64);
-
-    activationEligibilityEpochLessThan[i].in[0] <== activationEligibilityEpoch[i];
-    activationEligibilityEpochLessThan[i].in[1] <== maxActivationEpoch;
-
-    not[i] = NOT();
-    not[i].in <== bitmask[i];
-
-    xor[4 * i] = XOR();
-    xor[4 * i].a <== not[i].out;
-    xor[4 * i].b <== activationEligibilityEpochLessThan[i].out;
-    xor[4 * i].out === 1;
-
     activationEpochLessThan[i] = LessEqThan(64);
 
     activationEpochLessThan[i].in[0] <== activationEpoch[i];
     activationEpochLessThan[i].in[1] <==  maxActivationEpoch;
-
-    xor[4 * i + 1] = XOR();
-    xor[4 * i + 1].a <== not[i].out;
-    xor[4 * i + 1].b <== activationEpochLessThan[i].out;
-    xor[4 * i + 1].out === 1;
 
     exitEpochGreaterThan[i] = GreaterEqThan(64);
 
     exitEpochGreaterThan[i].in[0] <== exitEpoch[i];
     exitEpochGreaterThan[i].in[1] <== minExitEpoch;
 
-    xor[4 * i + 2] = XOR();
-    xor[4 * i + 2].a <== not[i].out;
-    xor[4 * i + 2].b <== exitEpochGreaterThan[i].out;
-    xor[4 * i + 2].out === 1;
+    and[2 * i] = AND();
+    and[2 * i].a <== exitEpochGreaterThan[i].out;
+    and[2 * i].b <== activationEpochLessThan[i].out;
 
     notSlashed[i] = NOT();
     notSlashed[i].in <== slashed[i];
 
-    xor[4 * i + 3] = XOR();
-    xor[4 * i + 3].a <== notSlashed[i].out;
-    xor[4 * i + 3].b <== not[i].out;
-    xor[4 * i + 3].out === 1;
+    and[2 * i + 1] = AND();
+    and[2 * i + 1].a <== and[2 * i].out;
+    and[2 * i + 1].b <== notSlashed[i].out;
 
-    pedersen[i] = Pedersen(18);
+    xnor[i] = XNOR();
+    xnor[i].a <== bitmask[i];
+    xnor[i].b <== and[2 * i + 1].out;
+
+    xnor[i].out === 1;
+
+    pedersen[i] = Pedersen(17);
 
     for(var j = 0; j < J; j++) {
       for(var k = 0; k < K; k++) {
@@ -97,10 +79,9 @@ template AggregatePubKeys(N) {
       }
     }
 
-    pedersen[i].in[14] <== activationEligibilityEpoch[i];
-    pedersen[i].in[15] <== activationEpoch[i];
-    pedersen[i].in[16] <== exitEpoch[i];
-    pedersen[i].in[17] <== slashed[i];
+    pedersen[i].in[14] <== activationEpoch[i];
+    pedersen[i].in[15] <== exitEpoch[i];
+    pedersen[i].in[16] <== slashed[i];
 
     pedersenHashTreeRoot.leaves[i] <== pedersen[i].out[0] * zero[i];
   }
