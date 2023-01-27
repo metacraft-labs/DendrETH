@@ -33,18 +33,18 @@ template IsValidMerkleBranch(N) {
   }
 
   var counter = 0;
-  component isEqual[N+1];
-  for(var i = 0; i < N; i++) {
+  component isEqual[257];
+  for(var i = 0; i < 256; i++) {
     isEqual[i] = IsEqual();
     isEqual[i].in[0] <== root[i];
     isEqual[i].in[1] <== hashers[N-1].out[i];
     counter += isEqual[i].out;
   }
 
-  isEqual[N] = IsEqual();
+  isEqual[256] = IsEqual();
 
-  isEqual[N].in[0] <== N;
-  isEqual[N].in[1] <== counter;
+  isEqual[256].in[0] <== 256;
+  isEqual[256].in[1] <== counter;
 
-  out <== isEqual[N].out;
+  out <== isEqual[256].out;
 }
