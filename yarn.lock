@@ -1405,6 +1405,34 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@ethersproject/providers@npm:5.7.2":
+  version: 5.7.2
+  resolution: "@ethersproject/providers@npm:5.7.2"
+  dependencies:
+    "@ethersproject/abstract-provider": ^5.7.0
+    "@ethersproject/abstract-signer": ^5.7.0
+    "@ethersproject/address": ^5.7.0
+    "@ethersproject/base64": ^5.7.0
+    "@ethersproject/basex": ^5.7.0
+    "@ethersproject/bignumber": ^5.7.0
+    "@ethersproject/bytes": ^5.7.0
+    "@ethersproject/constants": ^5.7.0
+    "@ethersproject/hash": ^5.7.0
+    "@ethersproject/logger": ^5.7.0
+    "@ethersproject/networks": ^5.7.0
+    "@ethersproject/properties": ^5.7.0
+    "@ethersproject/random": ^5.7.0
+    "@ethersproject/rlp": ^5.7.0
+    "@ethersproject/sha2": ^5.7.0
+    "@ethersproject/strings": ^5.7.0
+    "@ethersproject/transactions": ^5.7.0
+    "@ethersproject/web": ^5.7.0
+    bech32: 1.1.4
+    ws: 7.4.6
+  checksum: 1754c731a5ca6782ae9677f4a9cd8b6246c4ef21a966c9a01b133750f3c578431ec43ec254e699969c4a0f87e84463ded50f96b415600aabd37d2056aee58c19
+  languageName: node
+  linkType: hard
+
 "@ethersproject/random@npm:5.6.0":
   version: 5.6.0
   resolution: "@ethersproject/random@npm:5.6.0"
@@ -3932,6 +3960,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"blake-hash@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "blake-hash@npm:2.0.0"
+  dependencies:
+    node-addon-api: ^3.0.0
+    node-gyp: latest
+    node-gyp-build: ^4.2.2
+    readable-stream: ^3.6.0
+  checksum: a0d9a8f3953b986d3b30a741a6c000dedcc9a03b1318f52cc01ae62d18829ba6cb1a4d8cbe74785abfdc952a21db410984523bd457764aca716162cfd3ca8ea4
+  languageName: node
+  linkType: hard
+
 "blake2b-wasm@git+https://github.com/jbaylina/blake2b-wasm.git":
   version: 2.1.0
   resolution: "blake2b-wasm@https://github.com/jbaylina/blake2b-wasm.git#commit=0d5f024b212429c7f50a7f533aa3a2406b5b42b3"
@@ -3948,6 +3988,16 @@ __metadata:
     b4a: ^1.0.1
     nanoassert: ^2.0.0
   checksum: 1839dd0693681228d81f781dd8680a6803a629ca374aed5ac02fa649ce40a67a85eb49eeb2ec6aeb7ef3ef5aa169b3579b50eabf7afa360d190338bc3e8666bd
+  languageName: node
+  linkType: hard
+
+"blake2b@npm:^2.1.3":
+  version: 2.1.4
+  resolution: "blake2b@npm:2.1.4"
+  dependencies:
+    blake2b-wasm: ^2.4.0
+    nanoassert: ^2.0.0
+  checksum: cd598c96d459017714b7f9cb8892ef2b0a94f362e26e6baa46b7b8b189af0006ce25ab1713e3ec1484eb18ce7ebe1eb24e07d01e42ab1147067de2419c7f6158
   languageName: node
   linkType: hard
 
@@ -4445,6 +4495,7 @@ __metadata:
     chai: ^4.3.6
     circom_tester: ^0.0.14
     circomlib: 2.0.2
+    circomlibjs: ^0.1.7
     ethereum-waffle: ^4.0.7
     ethers: ^5.6.4
     hardhat: ^2.9.3
@@ -4519,6 +4570,18 @@ __metadata:
   version: 2.0.2
   resolution: "circomlib@npm:2.0.2"
   checksum: 7bf7fea613ed37c2520e16c74f80404bea1a3ddc4801e3fb68ad90dd49ea295876df8c55a0a11eae4927e0e3f1b56913ac8d8165d07617cc8b32a13f3827f6c9
+  languageName: node
+  linkType: hard
+
+"circomlibjs@npm:^0.1.7":
+  version: 0.1.7
+  resolution: "circomlibjs@npm:0.1.7"
+  dependencies:
+    blake-hash: ^2.0.0
+    blake2b: ^2.1.3
+    ethers: ^5.5.1
+    ffjavascript: ^0.2.45
+  checksum: 843aa422e7a203d06e1ef9ae6bf334d726a8091eda5afcc3a6531727a6ea3acb5c4a2498bf444fda35824064d45c25cb89fe99b02410fc0f7ff2dc6d7101d779
   languageName: node
   linkType: hard
 
@@ -5472,6 +5535,44 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ethers@npm:^5.5.1":
+  version: 5.7.2
+  resolution: "ethers@npm:5.7.2"
+  dependencies:
+    "@ethersproject/abi": 5.7.0
+    "@ethersproject/abstract-provider": 5.7.0
+    "@ethersproject/abstract-signer": 5.7.0
+    "@ethersproject/address": 5.7.0
+    "@ethersproject/base64": 5.7.0
+    "@ethersproject/basex": 5.7.0
+    "@ethersproject/bignumber": 5.7.0
+    "@ethersproject/bytes": 5.7.0
+    "@ethersproject/constants": 5.7.0
+    "@ethersproject/contracts": 5.7.0
+    "@ethersproject/hash": 5.7.0
+    "@ethersproject/hdnode": 5.7.0
+    "@ethersproject/json-wallets": 5.7.0
+    "@ethersproject/keccak256": 5.7.0
+    "@ethersproject/logger": 5.7.0
+    "@ethersproject/networks": 5.7.1
+    "@ethersproject/pbkdf2": 5.7.0
+    "@ethersproject/properties": 5.7.0
+    "@ethersproject/providers": 5.7.2
+    "@ethersproject/random": 5.7.0
+    "@ethersproject/rlp": 5.7.0
+    "@ethersproject/sha2": 5.7.0
+    "@ethersproject/signing-key": 5.7.0
+    "@ethersproject/solidity": 5.7.0
+    "@ethersproject/strings": 5.7.0
+    "@ethersproject/transactions": 5.7.0
+    "@ethersproject/units": 5.7.0
+    "@ethersproject/wallet": 5.7.0
+    "@ethersproject/web": 5.7.1
+    "@ethersproject/wordlists": 5.7.0
+  checksum: b7c08cf3e257185a7946117dbbf764433b7ba0e77c27298dec6088b3bc871aff711462b0621930c56880ff0a7ceb8b1d3a361ffa259f93377b48e34107f62553
+  languageName: node
+  linkType: hard
+
 "ethers@npm:^5.6.4, ethers@npm:^5.6.9, ethers@npm:^5.7.0":
   version: 5.7.1
   resolution: "ethers@npm:5.7.1"
@@ -5709,7 +5810,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ffjavascript@npm:^0.2.35":
+"ffjavascript@npm:^0.2.35, ffjavascript@npm:^0.2.45":
   version: 0.2.57
   resolution: "ffjavascript@npm:0.2.57"
   dependencies:
@@ -8618,6 +8719,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"node-addon-api@npm:^3.0.0":
+  version: 3.2.1
+  resolution: "node-addon-api@npm:3.2.1"
+  dependencies:
+    node-gyp: latest
+  checksum: 2369986bb0881ccd9ef6bacdf39550e07e089a9c8ede1cbc5fc7712d8e2faa4d50da0e487e333d4125f8c7a616c730131d1091676c9d499af1d74560756b4a18
+  languageName: node
+  linkType: hard
+
 "node-environment-flags@npm:1.0.6":
   version: 1.0.6
   resolution: "node-environment-flags@npm:1.0.6"
@@ -8672,6 +8782,17 @@ __metadata:
     node-gyp-build-optional: optional.js
     node-gyp-build-test: build-test.js
   checksum: d888bae0fb88335f69af1b57a2294a931c5042f36e413d8d364c992c9ebfa0b96ffe773179a5a2c8f04b73856e8634e09cce108dbb9804396d3cc8c5455ff2db
+  languageName: node
+  linkType: hard
+
+"node-gyp-build@npm:^4.2.2":
+  version: 4.6.0
+  resolution: "node-gyp-build@npm:4.6.0"
+  bin:
+    node-gyp-build: bin.js
+    node-gyp-build-optional: optional.js
+    node-gyp-build-test: build-test.js
+  checksum: 25d78c5ef1f8c24291f4a370c47ba52fcea14f39272041a90a7894cd50d766f7c8cb8fb06c0f42bf6f69b204b49d9be3c8fc344aac09714d5bdb95965499eb15
   languageName: node
   linkType: hard
 
