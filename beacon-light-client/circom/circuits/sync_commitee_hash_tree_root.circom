@@ -1,7 +1,7 @@
 pragma circom 2.0.3;
 
 include "../../../node_modules/circomlib/circuits/sha256/sha256.circom";
-
+include "hash_tree_root.circom";
 
 template SyncCommiteeHashTreeRoot(N) {
   signal input points[N][384];

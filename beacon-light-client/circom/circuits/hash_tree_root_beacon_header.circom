@@ -10,7 +10,7 @@ template HashTreeRootBeaconHeader() {
   signal input state_root[256];
   signal input body_root[256];
 
-  signal output blockHash[256];
+  signal output out[256];
 
   component merkleRoot = MerkleRoot(8);
 
@@ -41,6 +41,6 @@ template HashTreeRootBeaconHeader() {
   }
 
   for(var i = 0; i < 256; i++) {
-    blockHash[i] <== merkleRoot.root[i];
+    out[i] <== merkleRoot.root[i];
   }
 }
