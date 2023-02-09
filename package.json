@@ -15,6 +15,9 @@
     "type": "git",
     "url": "git+https://github.com/metacraft-labs/DendrETH.git"
   },
+  "resolutions": {
+    "ffjavascript": "0.2.57"
+  },
   "bugs": {
     "url": "https://github.com/metacraft-labs/DendrETH/issues"
   },
@@ -67,6 +70,6 @@
     "hardhat": "^2.10.2",
     "hardhat-gas-reporter": "^1.0.8",
     "r1csfile": "^0.0.40",
-    "snarkjs": "0.4.24"
+    "snarkjs": "github:metacraft-labs/snarkjs"
   }
 }
