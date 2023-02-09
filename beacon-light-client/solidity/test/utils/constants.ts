@@ -8,6 +8,8 @@ export const GENESIS_FORK_VERSION: Uint8Array = hexToBytes('0x00000000');
 
 export const ALTAIR_FORK_VERSION: Uint8Array = hexToBytes('0x01000000');
 
+export const CAPELLA_FORK_VERSION: Uint8Array = hexToBytes('0x03000000');
+
 export const DOMAIN_SYNC_COMMITTEE: Uint8Array = hexToBytes('0x07000000');
 
 export const GENESIS_VALIDATORS_ROOT: Uint8Array = hexToBytes(

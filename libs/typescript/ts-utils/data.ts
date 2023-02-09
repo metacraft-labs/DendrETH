@@ -2,7 +2,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { PointG1, PointG2 } from '@noble/bls12-381';
 import { bigint_to_array, formatHex, hexToBytes, utils } from './bls';
-import { ssz } from '@chainsafe/lodestar-types';
 
 const hashToField = utils.hashToField;
 
@@ -27,6 +26,8 @@ export async function getInputSignature(
   signature: string,
   blockRoot: string,
 ) {
+  const { ssz } = await import('@lodestar/types');
+
   let pubkeyPoint = PointG1.fromHex(formatHex(pubkey));
   pubkeyPoint.assertValidity();
 

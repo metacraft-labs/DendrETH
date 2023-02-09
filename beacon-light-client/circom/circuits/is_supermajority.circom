@@ -8,15 +8,8 @@ template IsSuperMajority(N) {
   signal output out;
 
   var sum = 0;
-  component lessThan[N];
 
   for(var i = 0; i < N; i++) {
-    lessThan[i] = LessEqThan(1);
-    lessThan[i].in[0] <== bitmask[i];
-    lessThan[i].in[1] <== 1;
-
-    lessThan[i].out === 1;
-
     sum += bitmask[i];
   }
 
