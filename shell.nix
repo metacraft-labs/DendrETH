@@ -1,6 +1,6 @@
 {pkgs}:
 with pkgs; let
-  nodejs = nodejs-16_x;
+  nodejs = nodejs-18_x;
   llvm = llvmPackages_13;
   corepack = callPackage ./libs/nix/corepack-shims {inherit nodejs;};
   nim-wasm = callPackage ./libs/nix/nim-wasm {inherit llvm;};
@@ -50,6 +50,8 @@ in
         gmp
         nasm
         libsodium
+
+        redis
 
         # For some reason, this is used by make when compiling the
         # Circom tests on macOS even when we specify CC=clang below:
