@@ -12,4 +12,4 @@ const result = [
 ];
 let input = { point: result };
 
-writeFileSync('scripts/compress/input.json', JSON.stringify(input));
+writeFileSync('input.json', JSON.stringify(input));

@@ -1,0 +1,10 @@
+{
+  "redisHost": "localhost",
+  "redisPort": 6379,
+  "beaconRestApiHost": "192.168.1.116",
+  "beaconRestApiPort": 4000,
+  "rapidSnarkProverPath": "../../../../vendor/rapidsnark/build/prover",
+  "zkeyFilePath": "../../build/light_client/light_client_0.zkey",
+  "witnessGeneratorPath": "../../../build/light_client/light_client_cpp/light_client",
+  "updatePolingTime": 60000
+}

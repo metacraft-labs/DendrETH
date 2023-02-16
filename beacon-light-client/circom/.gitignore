@@ -9,3 +9,4 @@ circuit_cpp/
 circuit.r1cs
 circuit.sym
 witness.json
+relayer_*/
