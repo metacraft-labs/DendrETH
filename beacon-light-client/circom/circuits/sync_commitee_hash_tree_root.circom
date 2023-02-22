@@ -12,6 +12,7 @@ template SyncCommiteeHashTreeRoot(N) {
   component leaves[N];
 
   for(var i = 0; i < N; i++) {
+    // SSZ pubkey
     leaves[i] = Sha256(512);
     for(var j = 0; j < 384; j++) {
       leaves[i].in[j] <== points[i][j];
@@ -30,6 +31,7 @@ template SyncCommiteeHashTreeRoot(N) {
     }
   }
 
+  // SSZ pubkey
   component hash = Sha256(512);
 
   for(var i = 0; i < 384; i++) {

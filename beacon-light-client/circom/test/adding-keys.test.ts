@@ -17,7 +17,7 @@ describe('Add public keys test', () => {
     const circuit = await wasm(
       '../../vendor/circom-pairing/scripts/addfp/addfp.circom',
     );
-    const witnes = await circuit.calculateWitness({
+    const witness = await circuit.calculateWitness({
       a: [
         bigint_to_array(55, 7, a.toAffine()[0].value),
         bigint_to_array(55, 7, a.toAffine()[1].value),
@@ -31,7 +31,7 @@ describe('Add public keys test', () => {
     });
 
     for (let i = 0; i < expectedResult.length; i++) {
-      expect(expectedResult[i]).to.be.eq(witnes[i + 1].toString());
+      expect(expectedResult[i]).to.be.eq(witness[i + 1].toString());
     }
   });
 
@@ -46,7 +46,7 @@ describe('Add public keys test', () => {
     const circuit = await wasm(
       '../../vendor/circom-pairing/scripts/addfp/addfp.circom',
     );
-    const witnes = await circuit.calculateWitness({
+    const witness = await circuit.calculateWitness({
       a: [
         bigint_to_array(55, 7, PointG1.BASE.toAffine()[0].value),
         bigint_to_array(55, 7, PointG1.BASE.toAffine()[1].value),
@@ -59,7 +59,7 @@ describe('Add public keys test', () => {
       ],
     });
     for (let i = 0; i < expectedResult.length; i++) {
-      expect(expectedResult[i]).to.be.eq(witnes[i + 1].toString());
+      expect(expectedResult[i]).to.be.eq(witness[i + 1].toString());
     }
   });
 
@@ -74,7 +74,7 @@ describe('Add public keys test', () => {
     const circuit = await wasm(
       '../../vendor/circom-pairing/scripts/addfp/addfp.circom',
     );
-    const witnes = await circuit.calculateWitness({
+    const witness = await circuit.calculateWitness({
       a: [
         bigint_to_array(55, 7, a.toAffine()[0].value),
         bigint_to_array(55, 7, a.toAffine()[1].value),
@@ -87,7 +87,7 @@ describe('Add public keys test', () => {
       ],
     });
     for (let i = 0; i < expectedResult.length; i++) {
-      expect(expectedResult[i]).to.be.eq(witnes[i + 1].toString());
+      expect(expectedResult[i]).to.be.eq(witness[i + 1].toString());
     }
   });
 });

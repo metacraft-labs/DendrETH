@@ -7,7 +7,7 @@ describe('Expand message test test', () => {
       './scripts/expand_message/expand_message.circom',
     );
 
-    const witnes = await circuit.calculateWitness({
+    const witness = await circuit.calculateWitness({
       in: [
         0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 1,
         0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0,
@@ -26,7 +26,7 @@ describe('Expand message test test', () => {
     let str = '';
 
     for (var i = 1; i <= 2048; i++) {
-      str += witnes[i].toString();
+      str += witness[i].toString();
     }
 
     expect(str).to.be.eq(

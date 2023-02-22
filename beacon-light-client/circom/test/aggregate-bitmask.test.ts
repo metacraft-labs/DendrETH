@@ -35,9 +35,9 @@ describe('Aggregate bitmask test', () => {
       ],
       bitmask: bitmask.toBoolArray().map(x => (x ? 1 : 0)),
     };
-    const witnes = await circuit.calculateWitness(input);
+    const witness = await circuit.calculateWitness(input);
     for (let i = 0; i < expectedResult.length; i++) {
-      expect(expectedResult[i]).to.be.eq(witnes[i + 1].toString());
+      expect(expectedResult[i]).to.be.eq(witness[i + 1].toString());
     }
   });
 });

@@ -21,11 +21,11 @@ template LightClient(N) {
   signal input prevHeaderStateRoot[256];
   signal input prevHeaderStateRootBranch[3][256];
 
-  signal input prevHeaderFinalizedSlotBranch[9][256];
   signal input prevHeaderFinalizedSlot;
+  signal input prevHeaderFinalizedSlotBranch[9][256];
 
-  signal input nextHeaderSlotBranch[3][256];
   signal input nextHeaderSlot;
+  signal input nextHeaderSlotBranch[3][256];
 
   signal input signatureSlot;
 
@@ -143,15 +143,15 @@ template LightClient(N) {
   for(var i = 0; i < N; i++) {
     bitmaskContainsOnlyBools.bitmask[i] <== bitmask[i];
   }
-
+  // Check if a supermajority of the ?validators signed the ???
+  // aka check if there are 2/3 or more 1s in the bitmask
   component isSuperMajority = IsSuperMajority(N);
 
   for(var i = 0; i < N; i++) {
     isSuperMajority.bitmask[i] <== bitmask[i];
   }
-
+  //Check if it returns 1
   isSuperMajority.out === 1;
-
   component computeDomain = ComputeDomain();
 
   for(var i = 0; i < 32; i++) {
@@ -171,7 +171,7 @@ template LightClient(N) {
   for(var i = 0; i < 256; i++) {
     computeSigningRoot.headerHash[i] <== nextHeaderHash[i];
   }
-
+  //out of computeDomain -> input of computeSigningRoot
   for(var i = 0; i < 256; i++) {
     computeSigningRoot.domain[i] <== computeDomain.domain[i];
   }
@@ -275,6 +275,7 @@ template LightClient(N) {
     aggregateKeys.bitmask[i] <== bitmask[i];
   }
 
+  // bls.Verify
   component verify = CoreVerifyPubkeyG1(55, K);
 
   for(var j = 0; j < 2; j++) {

@@ -14,11 +14,11 @@ describe('Is supermajority test', () => {
       bitmask.push(i < 341 ? 1 : 0);
     }
 
-    const witnes = await circuit.calculateWitness({
+    const witness = await circuit.calculateWitness({
       bitmask: bitmask,
     });
 
-    expect(witnes[1]).to.be.eq(0n);
+    expect(witness[1]).to.be.eq(0n);
   });
 
   it('When there is a supermajority', async () => {
@@ -31,10 +31,10 @@ describe('Is supermajority test', () => {
       bitmask.push(i <= 341 ? 1 : 0);
     }
 
-    const witnes = await circuit.calculateWitness({
+    const witness = await circuit.calculateWitness({
       bitmask: bitmask,
     });
 
-    expect(witnes[1]).to.be.eq(1n);
+    expect(witness[1]).to.be.eq(1n);
   });
 });
