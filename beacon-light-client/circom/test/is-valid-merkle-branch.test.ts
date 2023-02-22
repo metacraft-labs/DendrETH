@@ -7,7 +7,7 @@ describe('Is valid merkle branch test', () => {
       './scripts/is_valid_merkle_branch/is_valid_merkle_branch.circom',
     );
 
-    const witnes = await circuit.calculateWitness({
+    const witness = await circuit.calculateWitness({
       branch: [
         [
           0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0,
@@ -109,7 +109,7 @@ describe('Is valid merkle branch test', () => {
       index: 55,
     });
 
-    expect(witnes[1]).to.be.eq(1n);
+    expect(witness[1]).to.be.eq(1n);
   });
 
   it('Test 2', async () => {
@@ -117,7 +117,7 @@ describe('Is valid merkle branch test', () => {
       './scripts/is_valid_merkle_branch/is_valid_merkle_branch.circom',
     );
 
-    const witnes = await circuit.calculateWitness({
+    const witness = await circuit.calculateWitness({
       branch: [
         [
           0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0,
@@ -219,7 +219,7 @@ describe('Is valid merkle branch test', () => {
       index: 55,
     });
 
-    expect(witnes[1]).to.be.eq(1n);
+    expect(witness[1]).to.be.eq(1n);
   });
 
   it('Test 3 negative', async () => {
@@ -227,7 +227,7 @@ describe('Is valid merkle branch test', () => {
       './scripts/is_valid_merkle_branch/is_valid_merkle_branch.circom',
     );
 
-    const witnes = await circuit.calculateWitness({
+    const witness = await circuit.calculateWitness({
       branch: [
         [
           0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0,
@@ -329,6 +329,6 @@ describe('Is valid merkle branch test', () => {
       index: 55,
     });
 
-    expect(witnes[1]).to.be.eq(0n);
+    expect(witness[1]).to.be.eq(0n);
   });
 });

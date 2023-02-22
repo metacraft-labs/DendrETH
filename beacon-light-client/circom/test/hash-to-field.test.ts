@@ -12,7 +12,7 @@ describe('Hash to field message test', () => {
       './scripts/hash_to_field/hash_to_field.circom',
     );
 
-    const witnes = await circuit.calculateWitness({
+    const witness = await circuit.calculateWitness({
       in: [
         0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 1,
         0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0,
@@ -42,7 +42,7 @@ describe('Hash to field message test', () => {
     for (var i = 0; i < 2; i++) {
       for (var j = 0; j < 2; j++) {
         for (var k = 0; k < 7; k++) {
-          expect(witnes[i * 14 + j * 7 + k + 1].toString()).to.be.eq(
+          expect(witness[i * 14 + j * 7 + k + 1].toString()).to.be.eq(
             hash[i][j][k],
           );
         }

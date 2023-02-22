@@ -79,7 +79,7 @@ export async function getProofInput(
 ): Promise<WitnessGeneratorInput> {
   const { ssz } = await import('@lodestar/types');
 
-  let syncCommitteeePubkeys: PointG1[] = prevUpdate.sync_committee.pubkeys.map(
+  let syncCommitteePubkeys: PointG1[] = prevUpdate.sync_committee.pubkeys.map(
     x => PointG1.fromHex(x.slice(2)),
   );
 
@@ -174,39 +174,43 @@ export async function getProofInput(
   );
 
   return {
-    points: syncCommitteeePubkeys.map(x => [
-      bigint_to_array(55, 7, x.toAffine()[0].value),
-      bigint_to_array(55, 7, x.toAffine()[1].value),
-    ]),
+    prevHeaderHash: hexToBits(bytesToHex(prevBlockHeaderHash)),
+    nextHeaderHash: hexToBits(bytesToHex(nextBlockHeaderHash)),
+
+    prevHeaderStateRoot: hexToBits(bytesToHex(prevBlockHeader.stateRoot)),
+    prevHeaderStateRootBranch: prevBlockHeaderStateRootProof,
+
+    prevHeaderFinalizedSlot: prevFinalizedHeader.slot,
+    prevHeaderFinalizedSlotBranch: [
+      ...prevHeaderFinalizedSlotBranch,
+      ...prevHeaderFinalizedBranch,
+    ],
+
+    nextHeaderSlot: nextBlockHeader.slot,
+    nextHeaderSlotBranch: nextHeaderSlotBranch,
+
     signatureSlot: update.signature_slot,
+
     signatureSlotSyncCommitteePeriod: computeSyncCommitteePeriodAt(
       Number(update.signature_slot),
     ),
     finalizedHeaderSlotSyncCommitteePeriod: computeSyncCommitteePeriodAt(
       Number(prevUpdate.finalized_header.beacon.slot),
     ),
-    prevHeaderHash: hexToBits(bytesToHex(prevBlockHeaderHash)),
-    nextHeaderHash: hexToBits(bytesToHex(nextBlockHeaderHash)),
-    prevHeaderStateRoot: hexToBits(bytesToHex(prevBlockHeader.stateRoot)),
-    prevHeaderStateRootBranch: prevBlockHeaderStateRootProof,
-    prevHeaderFinalizedSlotBranch: [
-      ...prevHeaderFinalizedSlotBranch,
-      ...prevHeaderFinalizedBranch,
-    ],
-    prevHeaderFinalizedSlot: prevFinalizedHeader.slot,
-    nextHeaderSlotBranch: nextHeaderSlotBranch,
-    nextHeaderSlot: nextBlockHeader.slot,
+
     finalizedHeaderRoot: hexToBits(bytesToHex(finalizedHeaderHash)),
     finalizedHeaderBranch: [
       ...finalityBranch,
       ...nextBlockHeaderStateRootProof,
     ],
+
     execution_state_root: hexToBits(bytesToHex(executionPayload.state_root)),
     execution_state_root_branch: [
       ...executionPayloadStateProof,
       ...update.finalized_header.execution_branch,
       ...finalizedHeaderBodyRootProof,
     ].map(x => hexToBits(x)),
+
     fork_version: hexToBits(bytesToHex(config.FORK_VERSION), 32),
     GENESIS_VALIDATORS_ROOT: hexToBits(
       bytesToHex(config.GENESIS_VALIDATORS_ROOT),
@@ -215,11 +219,17 @@ export async function getProofInput(
       bytesToHex(config.DOMAIN_SYNC_COMMITTEE),
       32,
     ),
+
+    points: syncCommitteePubkeys.map(x => [
+      bigint_to_array(55, 7, x.toAffine()[0].value),
+      bigint_to_array(55, 7, x.toAffine()[1].value),
+    ]),
     aggregatedKey: hexToBits(prevUpdate.sync_committee.aggregate_pubkey, 384),
     syncCommitteeBranch: [
       ...syncCommitteeBranch,
       ...prevBlockHeaderStateRootProof,
     ],
+
     bitmask: bitmask.toBoolArray().map(x => (x ? '1' : '0')),
     signature: [
       [

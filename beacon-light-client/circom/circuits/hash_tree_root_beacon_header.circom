@@ -1,7 +1,7 @@
 pragma circom 2.0.3;
 
 include "hash_two.circom";
-include "merkle_root.circom";
+include "hash_tree_root.circom";
 
 template HashTreeRootBeaconHeader() {
   signal input slot[256];
@@ -12,35 +12,35 @@ template HashTreeRootBeaconHeader() {
 
   signal output out[256];
 
-  component merkleRoot = MerkleRoot(8);
+  component hashTreeRoot = HashTreeRoot(8);
 
   for(var i = 0; i < 256; i++) {
-    merkleRoot.leaves[0][i] <== slot[i];
+    hashTreeRoot.leaves[0][i] <== slot[i];
   }
 
   for(var i = 0; i < 256; i++) {
-    merkleRoot.leaves[1][i] <== proposer_index[i];
+    hashTreeRoot.leaves[1][i] <== proposer_index[i];
   }
 
   for(var i = 0; i < 256; i++) {
-    merkleRoot.leaves[2][i] <== parent_root[i];
+    hashTreeRoot.leaves[2][i] <== parent_root[i];
   }
 
   for(var i = 0; i < 256; i++) {
-    merkleRoot.leaves[3][i] <== state_root[i];
+    hashTreeRoot.leaves[3][i] <== state_root[i];
   }
 
   for(var i = 0; i < 256; i++) {
-    merkleRoot.leaves[4][i] <== body_root[i];
+    hashTreeRoot.leaves[4][i] <== body_root[i];
   }
 
   for(var i = 5; i < 8; i++) {
     for(var j = 0; j < 256; j++) {
-      merkleRoot.leaves[i][j] <== 0;
+      hashTreeRoot.leaves[i][j] <== 0;
     }
   }
 
   for(var i = 0; i < 256; i++) {
-    out[i] <== merkleRoot.root[i];
+    out[i] <== hashTreeRoot.out[i];
   }
 }
