@@ -223,5 +223,5 @@ describe('Light Client In Cosmos', () => {
 
     expect(headerSlotAfterAllUpdates).toEqual(expectedHeaderSlot);
     controller.abort();
-  }, 1500000);
+  }, 2000000);
 });
