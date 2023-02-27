@@ -4106,7 +4106,7 @@ __metadata:
     ethers: ^5.6.4
     hardhat: ^2.9.3
     snarkit2: "https://github.com/fluidex/snarkit2#70142d8bbc5ec79cfa6869205263ff77e8423975"
-    snarkjs: 0.4.24
+    snarkjs: "github:metacraft-labs/snarkjs"
     ts-node: ^10.9.1
   languageName: unknown
   linkType: soft
@@ -4132,17 +4132,6 @@ __metadata:
   bin:
     calcwit: calcwit.js
   checksum: c1cfd92fafebd0b11086a8a15595431f46593c1c8556f52fc0817535d5391a3a32f0d03dbadedc9a174e67b0335df12b1d6a58e6ae18ef37dacbe849ba4c126d
-  languageName: node
-  linkType: hard
-
-"circom_runtime@npm:0.1.18":
-  version: 0.1.18
-  resolution: "circom_runtime@npm:0.1.18"
-  dependencies:
-    ffjavascript: 0.2.55
-  bin:
-    calcwit: calcwit.js
-  checksum: 77169a1289359b2eb91805c74d82f4623d6b91d795d7319bee1ee6afd5ac24b8bfe675a0d03ba8820599293dcddfbe1621e66e2075516fa6e7c1ec15fa16c661
   languageName: node
   linkType: hard
 
@@ -9059,18 +9048,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"r1csfile@npm:0.0.36":
-  version: 0.0.36
-  resolution: "r1csfile@npm:0.0.36"
-  dependencies:
-    "@iden3/bigarray": 0.0.2
-    "@iden3/binfileutils": 0.0.11
-    fastfile: 0.0.20
-    ffjavascript: 0.2.55
-  checksum: 6b0bdb036b4692f3926d8317169edad1629ff2a790d9244d2958b714427fef5602fee9c81edfe5486f61882adc45cae095c6e5a2329a2a93210e9284f42b33ad
-  languageName: node
-  linkType: hard
-
 "r1csfile@npm:0.0.37":
   version: 0.0.37
   resolution: "r1csfile@npm:0.0.37"
@@ -9776,26 +9753,6 @@ __metadata:
   bin:
     snarkjs: build/cli.cjs
   checksum: 2f5a40d2d312bf93ea4abb1ba949828f6c9647e9616855a2f5759d5d34703bf71a4eec2071b77f45bce54273219d3af2a79eadd689399926063540eb01a94988
-  languageName: node
-  linkType: hard
-
-"snarkjs@npm:0.4.24":
-  version: 0.4.24
-  resolution: "snarkjs@npm:0.4.24"
-  dependencies:
-    "@iden3/binfileutils": 0.0.11
-    bfj: ^7.0.2
-    blake2b-wasm: ^2.4.0
-    circom_runtime: 0.1.18
-    ejs: ^3.1.6
-    fastfile: 0.0.20
-    ffjavascript: 0.2.55
-    js-sha3: ^0.8.0
-    logplease: ^1.2.15
-    r1csfile: 0.0.36
-  bin:
-    snarkjs: build/cli.cjs
-  checksum: 0af3b17c295532439f0ae018f0a0d5a40653be4cfb9450dd31873bc343d3913f8b04c72da3d2e81778c8a44df1247c7e0d5fe4add4b162203b2946d3e2cf2ceb
   languageName: node
   linkType: hard
 

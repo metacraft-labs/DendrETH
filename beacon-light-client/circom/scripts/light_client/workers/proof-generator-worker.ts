@@ -8,6 +8,7 @@ import {
   RELAYER_WITNESSES_FOLDER,
   PROOF_GENERATOR_QUEUE,
   RELAYER_INPUTS_FOLDER,
+  RELAYER_PROOFS_FOLDER,
 } from '../relayer-helper';
 import * as config from '../config.json';
 
@@ -40,18 +41,24 @@ new Worker<ProofInputType>(
       )}`,
     );
 
-    // await exec(
-    //   `${RAPIDSNARK_PROVER_PATH} ${ZKEY_FILE_PATH} ${path.join(
-    //     RELAYER_WITNESSES_FOLDER,
-    //     `witness_${job.data.prevUpdateSlot}_${job.data.updateSlot}.wtns`,
-    //   )} ${path.join(
-    //     RELAYER_PROOFS_FOLDER,
-    //     `proof_${job.data.prevUpdateSlot}_${job.data.updateSlot}.json`,
-    //   )} ${path.join(
-    //     RELAYER_PROOFS_FOLDER,
-    //     `public_${job.data.prevUpdateSlot}_${job.data.updateSlot}.json`,
-    //   )}`,
-    // );
+    await exec(
+      `${config.rapidSnarkProverPath} ${config.zkeyFilePath} ${path.join(
+        __dirname,
+        '..',
+        RELAYER_WITNESSES_FOLDER,
+        `witness_${job.data.prevUpdateSlot}_${job.data.updateSlot}.wtns`,
+      )} ${path.join(
+        __dirname,
+        '..',
+        RELAYER_PROOFS_FOLDER,
+        `proof_${job.data.prevUpdateSlot}_${job.data.updateSlot}.json`,
+      )} ${path.join(
+        __dirname,
+        '..',
+        RELAYER_PROOFS_FOLDER,
+        `public_${job.data.prevUpdateSlot}_${job.data.updateSlot}.json`,
+      )}`,
+    );
 
     // remove witness as it is huge unneeded file
     await rm(
@@ -73,6 +80,6 @@ new Worker<ProofInputType>(
       host: config.redisHost,
       port: config.redisPort,
     },
-    concurrency: 4,
+    concurrency: 1,
   },
 );
