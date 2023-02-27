@@ -314,7 +314,7 @@ template LightClient(N) {
   component bits2num1 = Bits2Num(253);
 
   for(var i = 0; i < 253; i++) {
-    bits2num1.in[i] <== commitment.out[253 - i];
+    bits2num1.in[i] <== commitment.out[252 - i];
   }
 
   component bits2Num2 = Bits2Num(3);
