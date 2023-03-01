@@ -58,10 +58,10 @@ export default {
       url: `https://ropsten.infura.io/v3/${mandatoryConf.INFURA_API_KEY}`,
       accounts: [optionalConf.USER_PRIVATE_KEY],
     },
-    mainnet: {
+    goerli: {
       url: `https://goerli.infura.io/v3/${mandatoryConf.INFURA_API_KEY}`,
       accounts: [optionalConf.USER_PRIVATE_KEY],
-    },
+    }
   },
   mocha: {
     timeout: 100000000,

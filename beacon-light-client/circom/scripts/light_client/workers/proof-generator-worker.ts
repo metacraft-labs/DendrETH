@@ -1,6 +1,6 @@
-import { Worker } from 'bullmq';
+import { Worker, Queue } from 'bullmq';
 import { exec as _exec } from 'child_process';
-import { rm, writeFile } from 'fs/promises';
+import { readFile, rm, writeFile } from 'fs/promises';
 import path from 'path';
 import { promisify } from 'util';
 import {
@@ -9,10 +9,19 @@ import {
   PROOF_GENERATOR_QUEUE,
   RELAYER_INPUTS_FOLDER,
   RELAYER_PROOFS_FOLDER,
+  PUBLISH_ONCHAIN_QUEUE,
+  ProofResultType,
 } from '../relayer-helper';
 import * as config from '../config.json';
 
 const exec = promisify(_exec);
+
+const proofPublishQueue = new Queue<ProofResultType>(PUBLISH_ONCHAIN_QUEUE, {
+  connection: {
+    host: config.redisHost,
+    port: config.redisPort,
+  },
+});
 
 new Worker<ProofInputType>(
   PROOF_GENERATOR_QUEUE,
@@ -70,10 +79,41 @@ new Worker<ProofInputType>(
       ),
     );
 
-    return {
+    const proof = JSON.parse(
+      await readFile(
+        path.join(
+          __dirname,
+          '..',
+          RELAYER_PROOFS_FOLDER,
+          `proof_${job.data.prevUpdateSlot}_${job.data.updateSlot}.json`,
+        ),
+        'utf-8',
+      ),
+    );
+
+    const publicVars = JSON.parse(
+      await readFile(
+        path.join(
+          __dirname,
+          '..',
+          RELAYER_PROOFS_FOLDER,
+          `public_${job.data.prevUpdateSlot}_${job.data.updateSlot}.json`,
+        ),
+        'utf-8',
+      ),
+    );
+
+    await proofPublishQueue.add('proofGenerate', {
       prevUpdateSlot: job.data.prevUpdateSlot,
       updateSlot: job.data.updateSlot,
-    };
+      proofInput: job.data.proofInput,
+      proof: {
+        pi_a: proof.pi_a,
+        pi_b: proof.pi_b,
+        pi_c: proof.pi_c,
+        public: publicVars,
+      },
+    });
   },
   {
     connection: {

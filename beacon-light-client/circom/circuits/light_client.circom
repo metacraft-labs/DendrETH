@@ -18,11 +18,14 @@ template LightClient(N) {
   signal input prevHeaderHash[256];
   signal input nextHeaderHash[256];
 
-  signal input prevHeaderStateRoot[256];
-  signal input prevHeaderStateRootBranch[3][256];
+  signal input prevFinalizedHeaderRoot[256];
+  signal input prevFinalizedHeaderRootBranch[9][256];
+
+  signal input prevHeaderFinalizedStateRoot[256];
+  signal input prevHeaderFinalizedStateRootBranch[3][256];
 
   signal input prevHeaderFinalizedSlot;
-  signal input prevHeaderFinalizedSlotBranch[9][256];
+  signal input prevHeaderFinalizedSlotBranch[3][256];
 
   signal input nextHeaderSlot;
   signal input nextHeaderSlotBranch[3][256];
@@ -51,22 +54,6 @@ template LightClient(N) {
   signal input signature[2][2][K];
 
   signal output output_commitment[2];
-
-  component isValidMerkleBranchPrevHeaderStateRoot = IsValidMerkleBranch(3);
-
-  for(var i = 0; i < 256; i++) {
-    isValidMerkleBranchPrevHeaderStateRoot.leaf[i] <== prevHeaderStateRoot[i];
-    isValidMerkleBranchPrevHeaderStateRoot.root[i] <== prevHeaderHash[i];
-  }
-
-  for(var i = 0; i < 3; i++) {
-    for(var j = 0; j < 256; j++) {
-      isValidMerkleBranchPrevHeaderStateRoot.branch[i][j] <== prevHeaderStateRootBranch[i][j];
-    }
-  }
-
-  isValidMerkleBranchPrevHeaderStateRoot.index <== 11;
-  isValidMerkleBranchPrevHeaderStateRoot.out === 1;
 
   component signatureSlotGreaterThanNext = GreaterThan(64);
   signatureSlotGreaterThanNext.in[0] <== signatureSlot;
@@ -104,21 +91,37 @@ template LightClient(N) {
   component nextHeaderSlotSSZ = SSZNum(64);
   nextHeaderSlotSSZ.in <== nextHeaderSlot;
 
-  component isValidMerkleBranchPrevHeaderSlot = IsValidMerkleBranch(9);
+  component isValidMerkleBranchPrevHeaderSlot = IsValidMerkleBranch(3);
 
   for(var i = 0; i < 256; i++) {
     isValidMerkleBranchPrevHeaderSlot.leaf[i] <== prevHeaderFinalizedSlotSSZ.out[i];
-    isValidMerkleBranchPrevHeaderSlot.root[i] <== prevHeaderStateRoot[i];
+    isValidMerkleBranchPrevHeaderSlot.root[i] <== prevFinalizedHeaderRoot[i];
   }
 
-  for(var i = 0; i < 9; i++) {
+  for(var i = 0; i < 3; i++) {
     for(var j = 0; j < 256; j++) {
       isValidMerkleBranchPrevHeaderSlot.branch[i][j] <== prevHeaderFinalizedSlotBranch[i][j];
     }
   }
 
-  isValidMerkleBranchPrevHeaderSlot.index <== 840;
+  isValidMerkleBranchPrevHeaderSlot.index <== 8;
   isValidMerkleBranchPrevHeaderSlot.out === 1;
+
+  component isValidMerkleBranchPrevHeaderFinalizedStateRoot = IsValidMerkleBranch(3);
+
+  for(var i = 0; i < 256; i++) {
+    isValidMerkleBranchPrevHeaderFinalizedStateRoot.leaf[i] <== prevHeaderFinalizedStateRoot[i];
+    isValidMerkleBranchPrevHeaderFinalizedStateRoot.root[i] <== prevFinalizedHeaderRoot[i];
+  }
+
+  for(var i = 0; i < 3; i++) {
+    for(var j = 0; j < 256; j++) {
+      isValidMerkleBranchPrevHeaderFinalizedStateRoot.branch[i][j] <== prevHeaderFinalizedStateRootBranch[i][j];
+    }
+  }
+
+  isValidMerkleBranchPrevHeaderFinalizedStateRoot.index <== 11;
+  isValidMerkleBranchPrevHeaderFinalizedStateRoot.out === 1;
 
 
   component isValidMerkleBranchNextHeaderSlot = IsValidMerkleBranch(3);
@@ -203,6 +206,23 @@ template LightClient(N) {
     hasher.aggregatedKey[i] <== aggregatedKey[i];
   }
 
+  component isValidMerkleBranchPrevFinality = IsValidMerkleBranch(9);
+
+  for(var i = 0; i < 9; i++) {
+    for(var j = 0; j < 256; j++) {
+      isValidMerkleBranchPrevFinality.branch[i][j] <== prevFinalizedHeaderRootBranch[i][j];
+    }
+  }
+
+  for(var i = 0; i < 256; i++) {
+    isValidMerkleBranchPrevFinality.leaf[i] <== prevFinalizedHeaderRoot[i];
+    isValidMerkleBranchPrevFinality.root[i] <== prevHeaderHash[i];
+  }
+
+  isValidMerkleBranchPrevFinality.index <== 745;
+
+  isValidMerkleBranchPrevFinality.out === 1;
+
   component isValidMerkleBranchFinality = IsValidMerkleBranch(9);
 
   for(var i = 0; i < 9; i++) {
@@ -250,7 +270,7 @@ template LightClient(N) {
   }
 
   for(var i = 0; i < 256; i++) {
-    isValidMerkleBranchSyncCommittee.root[i] <== prevHeaderStateRoot[i];
+    isValidMerkleBranchSyncCommittee.root[i] <== prevHeaderFinalizedStateRoot[i];
   }
 
   component arePeriodsEqual = IsEqual();

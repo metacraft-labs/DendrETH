@@ -7,6 +7,7 @@ export const UPDATE_POLING_QUEUE = 'update_poling';
 export const WITNESS_GENERATOR_QUEUE = 'witness';
 export const INPUT_GENERATOR_QUEUE = 'input';
 export const PROOF_GENERATOR_QUEUE = 'proof';
+export const PUBLISH_ONCHAIN_QUEUE = 'publish_on_chain';
 
 export const EPOCHS_PER_SYNC_COMMITTEE_PERIOD = 256;
 export const SLOTS_PER_EPOCH = 32;
@@ -22,6 +23,13 @@ export type ProofInputType = {
   updateSlot: number;
   proofInput: WitnessGeneratorInput;
 };
+
+export type ProofResultType = {
+  prevUpdateSlot: number;
+  updateSlot: number;
+  proof: Proof;
+  proofInput: WitnessGeneratorInput;
+}
 
 export type State = {
   lastDownloadedUpdate: number;
@@ -83,15 +91,22 @@ export interface SyncAggregate {
   sync_committee_signature: string;
 }
 
+export interface GetUpdate {
+  prevUpdateSlot: number;
+  updateSlot: number;
+}
+
 export interface WitnessGeneratorInput {
+  prevFinalizedHeaderRoot: string[];
+  prevFinalizedHeaderRootBranch: string[][];
+  prevHeaderFinalizedStateRoot: string[];
+  prevHeaderFinalizedStateRootBranch: string[][];
   points: string[][][];
   signatureSlot: string;
   signatureSlotSyncCommitteePeriod: number;
   finalizedHeaderSlotSyncCommitteePeriod: number;
   prevHeaderHash: string[];
   nextHeaderHash: string[];
-  prevHeaderStateRoot: string[];
-  prevHeaderStateRootBranch: string[][];
   prevHeaderFinalizedSlotBranch: string[][];
   prevHeaderFinalizedSlot: number;
   nextHeaderSlotBranch: string[][];

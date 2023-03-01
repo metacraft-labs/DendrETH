@@ -86,7 +86,7 @@ async function extendPrevUpdateWithSyncCommittee(
   signature_slot: number,
 ) {
   const beaconStateSZZ = await fetch(
-    `http://${config.beaconRestApiHost}:${config.beaconRestApiPort}/eth/v2/debug/beacon/states/${prevUpdate.data.attested_header.beacon.slot}`,
+    `http://${config.beaconRestApiHost}:${config.beaconRestApiPort}/eth/v2/debug/beacon/states/${prevUpdate.data.finalized_header.beacon.slot}`,
     {
       headers: {
         Accept: 'application/octet-stream',

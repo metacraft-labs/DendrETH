@@ -19,35 +19,12 @@ contract LightClientUpdateVerifier is Verifier {
       execution_state_root
     );
 
-    uint256 commitment1 = reverseBits(
-      (uint256(commitment) & (((1 << 253) - 1) << 3)) >> 3,
-      253
-    );
-
-    uint256 commitment2 = reverseBits(
-      (uint256(commitment) & ((1 << 3) - 1)),
-      3
-    );
-
     uint256[2] memory input;
 
-    input[0] = prev_header_hash1;
-    input[1] = prev_header_hash2;
+    input[0] = (uint256(commitment) & (((1 << 253) - 1) << 3)) >> 3;
+    input[1] = (uint256(commitment) & ((1 << 3) - 1));
 
     return verifyProof(a, b, c, input);
-  }
-
-  // TODO handle this in circuit
-  function reverseBits(uint256 x, uint256 size) private pure returns (uint256) {
-    require(size <= 256);
-
-    uint256 result = 0;
-    for (uint256 i = 0; i < size; i++) {
-      result = (result << 1) | (x & 1);
-      x = x >> 1;
-    }
-
-    return result;
   }
 
   function hash(

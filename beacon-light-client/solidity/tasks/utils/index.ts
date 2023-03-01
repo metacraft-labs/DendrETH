@@ -1,15 +1,27 @@
-import { hashTreeRootBeaconBlock } from '../../test/utils/format';
+import { bytesToHex } from '../../../../libs/typescript/ts-utils/bls';
+import { getBlockHeaderFromUpdate } from '../../../../libs/typescript/ts-utils/ssz-utils';
+import * as UPDATE0 from '../../../circom/scripts/light_client/relayer_updates/update_237215.json';
 
-export const getConstructorArgs = (network: string) => {
+export const getConstructorArgs = async (network: string) => {
   network = network === 'hardhat' ? 'mainnet' : network;
-  const UPDATE0 = require(`../../../../vendor/eth2-light-client-updates/${network}/updates/00290.json`);
+  const { ssz } = await import('@lodestar/types');
+
+  console.log(
+    'instantiate optimistic',
+    bytesToHex(
+      ssz.phase0.BeaconBlockHeader.hashTreeRoot(
+        await getBlockHeaderFromUpdate(UPDATE0.data.attested_header.beacon),
+      ),
+    ),
+  );
 
   return [
-    parseInt(UPDATE0.attested_header.slot),
-    parseInt(UPDATE0.attested_header.proposer_index),
-    UPDATE0.attested_header.parent_root,
-    UPDATE0.attested_header.body_root,
-    UPDATE0.attested_header.state_root,
-    hashTreeRootBeaconBlock(UPDATE0.attested_header),
+    ssz.phase0.BeaconBlockHeader.hashTreeRoot(
+      await getBlockHeaderFromUpdate(UPDATE0.data.attested_header.beacon),
+    ),
+    ssz.phase0.BeaconBlockHeader.hashTreeRoot(
+      await getBlockHeaderFromUpdate(UPDATE0.data.finalized_header.beacon),
+    ),
+    UPDATE0.data.finalized_header.execution.state_root,
   ];
 };
