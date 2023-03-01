@@ -6,6 +6,6 @@ task('verify-contracts', 'Verify')
   .setAction(async (args, { run, network }) => {
     await run('verify:verify', {
       address: args.lightclient,
-      constructorArguments: getConstructorArgs(network.name),
+      constructorArguments: await getConstructorArgs(network.name),
     });
   });

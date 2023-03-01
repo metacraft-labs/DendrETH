@@ -133,7 +133,7 @@ export async function getProofInput(
   let finalizedHeaderHash =
     ssz.phase0.BeaconBlockHeader.hashTreeRoot(finalizedHeader);
 
-  let finalityBranch = update.finality_branch.map(x => hexToBits(x));
+  let finalityBranchBits = update.finality_branch.map(x => hexToBits(x));
 
   let finalizedHeaderBodyRootProof = getMerkleProof(
     ssz.phase0.BeaconBlockHeader,
@@ -148,11 +148,19 @@ export async function getProofInput(
   let prevFinalizedHeader = ssz.phase0.BeaconBlockHeader.fromJson(
     prevUpdate.finalized_header.beacon,
   );
+
+  let prevFinalizedHeaderBranch = prevUpdate.finality_branch;
   let prevHeaderFinalizedSlotBranch = getMerkleProof(
     ssz.phase0.BeaconBlockHeader,
     ['slot'],
     prevFinalizedHeader,
   ).map(x => hexToBits(x));
+
+  let prevFinalizedHeaderStateProof = getMerkleProof(
+    ssz.phase0.BeaconBlockHeader,
+    ['state_root'],
+    prevFinalizedHeader,
+  );
 
   const executionPayload = ExecutionPayload.fromJson(
     update.finalized_header.execution,
@@ -176,16 +184,27 @@ export async function getProofInput(
   return {
     prevHeaderHash: hexToBits(bytesToHex(prevBlockHeaderHash)),
     nextHeaderHash: hexToBits(bytesToHex(nextBlockHeaderHash)),
+    prevFinalizedHeaderRoot: hexToBits(
+      bytesToHex(
+        ssz.phase0.BeaconBlockHeader.hashTreeRoot(prevFinalizedHeader),
+      ),
+    ),
+    prevFinalizedHeaderRootBranch: [
+      ...prevHeaderFinalizedBranch,
+      ...prevBlockHeaderStateRootProof,
+    ],
+    prevHeaderFinalizedStateRoot: hexToBits(
+      prevUpdate.finalized_header.beacon.state_root,
+    ),
+    prevHeaderFinalizedStateRootBranch: prevFinalizedHeaderStateProof.map(x =>
+      hexToBits(x),
+    ),
 
-    prevHeaderStateRoot: hexToBits(bytesToHex(prevBlockHeader.stateRoot)),
-    prevHeaderStateRootBranch: prevBlockHeaderStateRootProof,
+    // prevHeaderStateRoot: hexToBits(bytesToHex(prevBlockHeader.stateRoot)),
+    // prevHeaderStateRootBranch: prevBlockHeaderStateRootProof,
 
     prevHeaderFinalizedSlot: prevFinalizedHeader.slot,
-    prevHeaderFinalizedSlotBranch: [
-      ...prevHeaderFinalizedSlotBranch,
-      ...prevHeaderFinalizedBranch,
-    ],
-
+    prevHeaderFinalizedSlotBranch: [...prevHeaderFinalizedSlotBranch],
     nextHeaderSlot: nextBlockHeader.slot,
     nextHeaderSlotBranch: nextHeaderSlotBranch,
 
@@ -195,16 +214,17 @@ export async function getProofInput(
       Number(update.signature_slot),
     ),
     finalizedHeaderSlotSyncCommitteePeriod: computeSyncCommitteePeriodAt(
-      Number(prevUpdate.finalized_header.beacon.slot),
+      prevFinalizedHeader.slot,
     ),
-
     finalizedHeaderRoot: hexToBits(bytesToHex(finalizedHeaderHash)),
     finalizedHeaderBranch: [
-      ...finalityBranch,
+      ...finalityBranchBits,
       ...nextBlockHeaderStateRootProof,
     ],
 
-    execution_state_root: hexToBits(bytesToHex(executionPayload.state_root)),
+    execution_state_root: hexToBits(
+      update.finalized_header.execution.state_root,
+    ),
     execution_state_root_branch: [
       ...executionPayloadStateProof,
       ...update.finalized_header.execution_branch,
@@ -225,11 +245,7 @@ export async function getProofInput(
       bigint_to_array(55, 7, x.toAffine()[1].value),
     ]),
     aggregatedKey: hexToBits(prevUpdate.sync_committee.aggregate_pubkey, 384),
-    syncCommitteeBranch: [
-      ...syncCommitteeBranch,
-      ...prevBlockHeaderStateRootProof,
-    ],
-
+    syncCommitteeBranch: [...syncCommitteeBranch],
     bitmask: bitmask.toBoolArray().map(x => (x ? '1' : '0')),
     signature: [
       [
