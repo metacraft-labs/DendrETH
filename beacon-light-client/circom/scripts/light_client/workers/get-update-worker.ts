@@ -7,9 +7,7 @@ import {
   ProofInputType,
   PROOF_GENERATOR_QUEUE,
   RELAYER_INPUTS_FOLDER,
-  RELAYER_UPDATES_FOLDER,
   State,
-  Update,
   UPDATE_POLING_QUEUE,
 } from '../relayer-helper';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
@@ -28,48 +26,287 @@ const proofGenertorQueue = new Queue<ProofInputType>(PROOF_GENERATOR_QUEUE, {
 new Worker<void>(
   UPDATE_POLING_QUEUE,
   async () => {
+    const { ssz } = await import('@lodestar/types');
+
     const state = await getState();
 
-    const update = await getUpdate({ ...state });
+    const currentHeadResult = await (
+      await fetch(
+        `http://${config.beaconRestApiHost}:${config.beaconRestApiPort}/eth/v1/beacon/headers/head`,
+      )
+    ).json();
 
-    if (!update) return;
+    const currentHeadSlot = Number(currentHeadResult.data.header.message.slot);
 
-    const prevUpdate: Update = JSON.parse(
-      await readFile(
-        path.join(
-          __dirname,
-          '..',
-          RELAYER_UPDATES_FOLDER,
-          `update_${state.lastDownloadedUpdate}.json`,
+    if (currentHeadSlot < state.lastDownloadedUpdate + config.slotsJump) {
+      console.log('No new enought slot');
+      return;
+    }
+
+    // get prevHeader
+    const prevBlockHeaderResult = await (
+      await fetch(
+        `http://${config.beaconRestApiHost}:${config.beaconRestApiPort}/eth/v1/beacon/headers/${state.lastDownloadedUpdate}`,
+      )
+    ).json();
+
+    console.log('prevHeaderResult:', prevBlockHeaderResult);
+
+    const prevBlockHeader = ssz.phase0.BeaconBlockHeader.fromJson(
+      prevBlockHeaderResult.data.header.message,
+    );
+
+    let nextBlockSlot = state.lastDownloadedUpdate + config.slotsJump;
+
+    let nextBlockHeaderResult;
+    while (true) {
+      nextBlockHeaderResult = await (
+        await fetch(
+          `http://${config.beaconRestApiHost}:${config.beaconRestApiPort}/eth/v1/beacon/headers/${nextBlockSlot}`,
+        )
+      ).json();
+
+      if (nextBlockHeaderResult.code !== 404) {
+        break;
+      }
+
+      nextBlockSlot++;
+    }
+
+    console.log('nextBlockHeaderResult:', nextBlockHeaderResult);
+
+    const nextBlockHeader = ssz.phase0.BeaconBlockHeader.fromJson(
+      nextBlockHeaderResult.data.header.message,
+    );
+
+    const prevBeaconStateSZZ = await fetch(
+      `http://${config.beaconRestApiHost}:${config.beaconRestApiPort}/eth/v2/debug/beacon/states/${state.lastDownloadedUpdate}`,
+      {
+        headers: {
+          Accept: 'application/octet-stream',
+        },
+      },
+    )
+      .then(response => response.arrayBuffer())
+      .then(buffer => new Uint8Array(buffer));
+
+    const prevBeaconSate =
+      ssz.capella.BeaconState.deserialize(prevBeaconStateSZZ);
+    const prevBeaconStateView =
+      ssz.capella.BeaconState.toViewDU(prevBeaconSate);
+    const prevStateTree = new Tree(prevBeaconStateView.node);
+
+    const prevFinalizedHeaderResult = await (
+      await fetch(
+        `http://${config.beaconRestApiHost}:${
+          config.beaconRestApiPort
+        }/eth/v1/beacon/headers/${
+          '0x' + bytesToHex(prevBeaconSate.finalizedCheckpoint.root)
+        }`,
+      )
+    ).json();
+
+    console.log('prevUpdateFinalizedHeaderResult', prevFinalizedHeaderResult);
+
+    const prevFinalizedHeader = ssz.phase0.BeaconBlockHeader.fromJson(
+      prevFinalizedHeaderResult.data.header.message,
+    );
+
+    const prevUpdateFinalizedSyncCommmitteePeriod =
+      computeSyncCommitteePeriodAt(prevFinalizedHeader.slot);
+    const currentSyncCommitteePeriod = computeSyncCommitteePeriodAt(
+      nextBlockHeader.slot,
+    );
+
+    const prevFinalizedHeaderBeaconStateSZZ = await fetch(
+      `http://${config.beaconRestApiHost}:${config.beaconRestApiPort}/eth/v2/debug/beacon/states/${prevFinalizedHeader.slot}`,
+      {
+        headers: {
+          Accept: 'application/octet-stream',
+        },
+      },
+    )
+      .then(response => response.arrayBuffer())
+      .then(buffer => new Uint8Array(buffer));
+
+    const prevFinalizedBeaconState = ssz.capella.BeaconState.deserialize(
+      prevFinalizedHeaderBeaconStateSZZ,
+    );
+    const prevFinalizedBeaconStateView = ssz.capella.BeaconState.toViewDU(
+      prevFinalizedBeaconState,
+    );
+    const prevFinalizedBeaconStateTree = new Tree(
+      prevFinalizedBeaconStateView.node,
+    );
+
+    const syncCommitteeBranch = prevFinalizedBeaconStateTree
+      .getSingleProof(
+        ssz.capella.BeaconState.getPathInfo([
+          prevUpdateFinalizedSyncCommmitteePeriod === currentSyncCommitteePeriod
+            ? 'current_sync_committee'
+            : 'next_sync_committee',
+        ]).gindex,
+      )
+      .map(x => '0x' + bytesToHex(x));
+
+    const syncCommittee = {
+      pubkeys: prevFinalizedBeaconState[
+        prevUpdateFinalizedSyncCommmitteePeriod === currentSyncCommitteePeriod
+          ? 'currentSyncCommittee'
+          : 'nextSyncCommittee'
+      ].pubkeys.map(x => '0x' + bytesToHex(x)),
+      aggregate_pubkey:
+        '0x' +
+        bytesToHex(
+          prevFinalizedBeaconState[
+            prevUpdateFinalizedSyncCommmitteePeriod ===
+            currentSyncCommitteePeriod
+              ? 'currentSyncCommittee'
+              : 'nextSyncCommittee'
+          ].aggregatePubkey,
         ),
-        'utf8',
-      ),
+    };
+
+    const prevFinalityBranch = prevStateTree
+      .getSingleProof(
+        ssz.capella.BeaconState.getPathInfo(['finalized_checkpoint', 'root'])
+          .gindex,
+      )
+      .map(x => '0x' + bytesToHex(x));
+
+    const nextBeaconStateSZZ = await fetch(
+      `http://${config.beaconRestApiHost}:${config.beaconRestApiPort}/eth/v2/debug/beacon/states/${nextBlockSlot}`,
+      {
+        headers: {
+          Accept: 'application/octet-stream',
+        },
+      },
+    )
+      .then(response => response.arrayBuffer())
+      .then(buffer => new Uint8Array(buffer));
+
+    const nextBeaconSate =
+      ssz.capella.BeaconState.deserialize(nextBeaconStateSZZ);
+    const nextBeaconStateView =
+      ssz.capella.BeaconState.toViewDU(nextBeaconSate);
+    const nextStateTree = new Tree(nextBeaconStateView.node);
+
+    const nextFinalizedHeaderResult = await (
+      await fetch(
+        `http://${config.beaconRestApiHost}:${
+          config.beaconRestApiPort
+        }/eth/v1/beacon/headers/${
+          '0x' + bytesToHex(nextBeaconSate.finalizedCheckpoint.root)
+        }`,
+      )
+    ).json();
+
+    console.log('nextFinalizedHeaderResult', nextFinalizedHeaderResult);
+
+    const finalizedHeader = ssz.phase0.BeaconBlockHeader.fromJson(
+      nextFinalizedHeaderResult.data.header.message,
     );
 
-    await extendPrevUpdateWithSyncCommittee(
-      prevUpdate,
-      Number(update.data.signature_slot),
+    const finalityBranch = nextStateTree
+      .getSingleProof(
+        ssz.capella.BeaconState.getPathInfo(['finalized_checkpoint', 'root'])
+          .gindex,
+      )
+      .map(x => '0x' + bytesToHex(x));
+
+    let signature_slot = nextBlockSlot + 1;
+    let blockHeaderBodyResult;
+
+    while (true) {
+      blockHeaderBodyResult = await (
+        await fetch(
+          `http://${config.beaconRestApiHost}:${config.beaconRestApiPort}/eth/v2/beacon/blocks/${signature_slot}`,
+        )
+      ).json();
+
+      if (blockHeaderBodyResult.code !== 404) {
+        break;
+      }
+
+      signature_slot++;
+    }
+
+    console.log('blockHeaderBodyResult', blockHeaderBodyResult);
+
+    const sync_aggregate =
+      blockHeaderBodyResult.data.message.body.sync_aggregate;
+
+    const finalizedBlockBodyResult = await (
+      await fetch(
+        `http://${config.beaconRestApiHost}:${config.beaconRestApiPort}/eth/v2/beacon/blocks/${finalizedHeader.slot}`,
+      )
+    ).json();
+
+    const finalizedBlockBody = ssz.capella.BeaconBlockBody.fromJson(
+      finalizedBlockBodyResult.data.message.body,
     );
 
-    const proofInput = await getProofInput(
-      prevUpdate.data as any,
-      update.data,
-      ZHEAJIANG_TESNET,
+    const finalizedBlockBodyView =
+      ssz.capella.BeaconBlockBody.toViewDU(finalizedBlockBody);
+    const finalizedBlockBodyTree = new Tree(finalizedBlockBodyView.node);
+
+    const finalizedHeaderExecutionBranch = finalizedBlockBodyTree
+      .getSingleProof(
+        ssz.capella.BeaconBlockBody.getPathInfo(['execution_payload']).gindex,
+      )
+      .map(x => '0x' + bytesToHex(x));
+
+    const finalizedBeaconStateSSZ = await fetch(
+      `http://${config.beaconRestApiHost}:${config.beaconRestApiPort}/eth/v2/debug/beacon/states/${finalizedHeader.slot}`,
+      {
+        headers: {
+          Accept: 'application/octet-stream',
+        },
+      },
+    )
+      .then(response => response.arrayBuffer())
+      .then(buffer => new Uint8Array(buffer));
+
+    const finalizedBeaconState = ssz.capella.BeaconState.deserialize(
+      finalizedBeaconStateSSZ,
     );
+
+    state.lastDownloadedUpdate = nextBlockSlot;
+
+    await writeFile(
+      path.join(__dirname, '..', 'state.json'),
+      JSON.stringify(state),
+    );
+
+    const proofInput = await getProofInput({
+      prevBlockHeader,
+      nextBlockHeader,
+      prevFinalizedHeader,
+      syncCommitteeBranch,
+      syncCommittee,
+      config: ZHEAJIANG_TESNET,
+      prevFinalityBranch,
+      signature_slot: signature_slot,
+      finalizedHeader,
+      finalityBranch,
+      executionPayload: finalizedBeaconState.latestExecutionPayloadHeader,
+      finalizedHeaderExecutionBranch,
+      sync_aggregate,
+    });
 
     await writeFile(
       path.join(
         __dirname,
         '..',
         RELAYER_INPUTS_FOLDER,
-        `input_${prevUpdate.data.attested_header.beacon.slot}_${update.data.attested_header.beacon.slot}.json`,
+        `input_${prevBlockHeader.slot}_${nextBlockHeader.slot}.json`,
       ),
       JSON.stringify(proofInput),
     );
 
     proofGenertorQueue.add('proofGenerate', {
-      prevUpdateSlot: Number(prevUpdate.data.attested_header.beacon.slot),
-      updateSlot: Number(update.data.attested_header.beacon.slot),
+      prevUpdateSlot: Number(prevBlockHeader.slot),
+      updateSlot: Number(nextBlockHeader.slot),
       proofInput: proofInput,
     });
   },
@@ -80,96 +317,6 @@ new Worker<void>(
     },
   },
 );
-
-async function extendPrevUpdateWithSyncCommittee(
-  prevUpdate: Update,
-  signature_slot: number,
-) {
-  const beaconStateSZZ = await fetch(
-    `http://${config.beaconRestApiHost}:${config.beaconRestApiPort}/eth/v2/debug/beacon/states/${prevUpdate.data.finalized_header.beacon.slot}`,
-    {
-      headers: {
-        Accept: 'application/octet-stream',
-      },
-    },
-  )
-    .then(response => response.arrayBuffer())
-    .then(buffer => new Uint8Array(buffer));
-
-  const { ssz } = await import('@lodestar/types');
-  const beaconState = ssz.capella.BeaconState.deserialize(beaconStateSZZ);
-  const beaconStateView = ssz.capella.BeaconState.toViewDU(beaconState);
-  const tree = new Tree(beaconStateView.node);
-
-  const prevUpdateFinalizedSyncCommmitteePeriod = computeSyncCommitteePeriodAt(
-    Number(prevUpdate.data.finalized_header.beacon.slot),
-  );
-  const currentSyncCommitteePeriod =
-    computeSyncCommitteePeriodAt(signature_slot);
-
-  const sync_committee_branch = tree
-    .getSingleProof(
-      ssz.capella.BeaconState.getPathInfo([
-        prevUpdateFinalizedSyncCommmitteePeriod === currentSyncCommitteePeriod
-          ? 'current_sync_committee'
-          : 'next_sync_committee',
-      ]).gindex,
-    )
-    .map(x => '0x' + bytesToHex(x));
-
-  prevUpdate.data['sync_committee_branch'] = sync_committee_branch;
-  prevUpdate.data['sync_committee'] = {
-    pubkeys: beaconState[
-      prevUpdateFinalizedSyncCommmitteePeriod === currentSyncCommitteePeriod
-        ? 'currentSyncCommittee'
-        : 'nextSyncCommittee'
-    ].pubkeys.map(x => '0x' + bytesToHex(x)),
-    aggregate_pubkey:
-      '0x' +
-      bytesToHex(
-        beaconState[
-          prevUpdateFinalizedSyncCommmitteePeriod === currentSyncCommitteePeriod
-            ? 'currentSyncCommittee'
-            : 'nextSyncCommittee'
-        ].aggregatePubkey,
-      ),
-  };
-}
-
-async function getUpdate(state: State): Promise<Update | undefined> {
-  const update = await (
-    await fetch(
-      `http://${config.beaconRestApiHost}:${config.beaconRestApiPort}/eth/v1/beacon/light_client/finality_update`,
-    )
-  )
-    .json()
-    .catch(e => console.log(e));
-
-  const updateSlot = Number(update.data.attested_header.beacon.slot);
-
-  if (state.lastDownloadedUpdate >= updateSlot) {
-    console.log('There is no new header to update');
-    return undefined;
-  }
-
-  state.lastDownloadedUpdate = updateSlot;
-  await writeFile(
-    path.join(__dirname, '..', 'state.json'),
-    JSON.stringify(state),
-  );
-
-  await writeFile(
-    path.join(
-      __dirname,
-      '..',
-      RELAYER_UPDATES_FOLDER,
-      `update_${updateSlot}.json`,
-    ),
-    JSON.stringify(update),
-  );
-
-  return update;
-}
 
 async function getState(): Promise<State> {
   return JSON.parse(

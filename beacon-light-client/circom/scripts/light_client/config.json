@@ -7,7 +7,8 @@
   "zkeyFilePath": "../../../build/light_client/light_client_0.zkey",
   "witnessGeneratorPath": "../../../build/light_client/light_client_cpp/light_client",
   "updatePolingTime": 450000,
-  "lightClientAddress": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
-  "etherJsonRpcProvider": "http://127.0.0.1:8545",
-  "privateKey": "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+  "slotsJump": 32,
+  "lightClientAddress": "0x6b7f6ad5890D5a1C1262227878062574226D3FbD",
+  "etherJsonRpcProvider": "localhost",
+  "privateKey": "privKey"
 }
