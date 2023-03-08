@@ -61,7 +61,7 @@ export default {
     goerli: {
       url: `https://goerli.infura.io/v3/${mandatoryConf.INFURA_API_KEY}`,
       accounts: [optionalConf.USER_PRIVATE_KEY],
-    }
+    },
   },
   mocha: {
     timeout: 100000000,

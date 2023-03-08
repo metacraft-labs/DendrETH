@@ -29,7 +29,7 @@ export type ProofResultType = {
   updateSlot: number;
   proof: Proof;
   proofInput: WitnessGeneratorInput;
-}
+};
 
 export type State = {
   lastDownloadedUpdate: number;

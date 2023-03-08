@@ -14,7 +14,7 @@ const updateQueue = new Queue<void>(UPDATE_POLING_QUEUE, {
 });
 
 updateQueue.add('downloadUpdate', undefined, {
-  repeat: { every: config.updatePolingTime, immediately: true },
+  repeat: { every: config.slotsJump * 12000, immediately: true },
 });
 
 const proofGeneratorEvents = new QueueEvents(PROOF_GENERATOR_QUEUE, {

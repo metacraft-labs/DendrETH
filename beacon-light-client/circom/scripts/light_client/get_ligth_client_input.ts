@@ -12,46 +12,34 @@ import {
   bigint_to_array,
   bytesToHex,
   formatHex,
-  hexToBytes,
 } from '../../../../libs/typescript/ts-utils/bls';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { Config } from '../../../solidity/test/utils/constants';
 import {
   computeSyncCommitteePeriodAt,
-  Data,
+  SyncAggregate,
+  SyncCommittee,
   WitnessGeneratorInput,
 } from './relayer-helper';
+import { ValueOfFields } from '@chainsafe/ssz/lib/view/container';
 
 const ExecutionPayload = new ContainerType({
-  parent_hash: new ByteVectorType(32),
-  fee_recipient: new ByteVectorType(20),
-  state_root: new ByteVectorType(32),
-  receipts_root: new ByteVectorType(32),
-  logs_bloom: new ByteVectorType(256),
-  prev_randao: new ByteVectorType(32),
-  block_number: new UintNumberType(8),
-  gas_limit: new UintNumberType(8),
-  gas_used: new UintNumberType(8),
+  parentHash: new ByteVectorType(32),
+  feeRecipient: new ByteVectorType(20),
+  stateRoot: new ByteVectorType(32),
+  receiptsRoot: new ByteVectorType(32),
+  logsBloom: new ByteVectorType(256),
+  prevRandao: new ByteVectorType(32),
+  blockNumber: new UintNumberType(8),
+  gasLimit: new UintNumberType(8),
+  gasUsed: new UintNumberType(8),
   timestamp: new UintNumberType(8),
-  extra_data: new ByteListType(32),
-  base_fee_per_gas: new UintBigintType(32),
-  block_hash: new ByteVectorType(32),
-  transactions_root: new ByteVectorType(32),
-  withdrawals_root: new ByteVectorType(32),
+  extraData: new ByteListType(32),
+  baseFeePerGas: new UintBigintType(32),
+  blockHash: new ByteVectorType(32),
+  transactionsRoot: new ByteVectorType(32),
+  withdrawalsRoot: new ByteVectorType(32),
 });
-
-async function getBlockHeaderFromUpdate(head) {
-  const { ssz } = await import('@lodestar/types');
-
-  const blockHeader = ssz.phase0.BeaconBlockHeader.defaultValue();
-  blockHeader.slot = Number.parseInt(head.slot);
-  blockHeader.proposerIndex = Number.parseInt(head.proposer_index);
-  blockHeader.parentRoot = hexToBytes(head.parent_root);
-  blockHeader.stateRoot = hexToBytes(head.state_root);
-  blockHeader.bodyRoot = hexToBytes(head.body_root);
-
-  return blockHeader;
-}
 
 function getMerkleProof(
   container: ContainerType<any>,
@@ -72,28 +60,70 @@ function hexToBits(hex: string, numbersOfBits = 256) {
     .split('');
 }
 
-export async function getProofInput(
-  prevUpdate: Data & { sync_committee: any; sync_committee_branch: any },
-  update: Data,
-  config: Config,
-): Promise<WitnessGeneratorInput> {
+type BeaconBlockHeader = ValueOfFields<{
+  slot: UintNumberType;
+  proposerIndex: UintNumberType;
+  parentRoot: ByteVectorType;
+  stateRoot: ByteVectorType;
+  bodyRoot: ByteVectorType;
+}>;
+
+export async function getProofInput({
+  syncCommittee,
+  syncCommitteeBranch,
+  sync_aggregate,
+  prevBlockHeader,
+  nextBlockHeader,
+  finalizedHeader,
+  finalityBranch,
+  finalizedHeaderExecutionBranch,
+  prevFinalizedHeader,
+  prevFinalityBranch,
+  executionPayload,
+  signature_slot,
+  config,
+}: {
+  syncCommittee: SyncCommittee;
+  syncCommitteeBranch: string[];
+  sync_aggregate: SyncAggregate;
+  prevBlockHeader: BeaconBlockHeader;
+  nextBlockHeader: BeaconBlockHeader;
+  finalizedHeader: BeaconBlockHeader;
+  finalityBranch: string[];
+  finalizedHeaderExecutionBranch: string[];
+  prevFinalizedHeader: BeaconBlockHeader;
+  prevFinalityBranch: string[];
+  executionPayload: ValueOfFields<{
+    withdrawalsRoot: ByteVectorType;
+    transactionsRoot: ByteVectorType;
+    blockHash: ByteVectorType;
+    parentHash: ByteVectorType;
+    feeRecipient: ByteVectorType;
+    stateRoot: ByteVectorType;
+    receiptsRoot: ByteVectorType;
+    logsBloom: ByteVectorType;
+    prevRandao: ByteVectorType;
+    blockNumber: UintNumberType;
+    gasLimit: UintNumberType;
+    gasUsed: UintNumberType;
+    timestamp: UintNumberType;
+    extraData: ByteListType;
+    baseFeePerGas: UintBigintType;
+  }>;
+  signature_slot: number;
+  config: Config;
+}): Promise<WitnessGeneratorInput> {
   const { ssz } = await import('@lodestar/types');
 
-  let syncCommitteePubkeys: PointG1[] = prevUpdate.sync_committee.pubkeys.map(
-    x => PointG1.fromHex(x.slice(2)),
+  let syncCommitteePubkeys: PointG1[] = syncCommittee.pubkeys.map(x =>
+    PointG1.fromHex(x.slice(2)),
   );
 
   const SyncCommitteeBits = new BitVectorType(512);
-  let bitmask = SyncCommitteeBits.fromJson(
-    update.sync_aggregate.sync_committee_bits,
-  );
+  let bitmask = SyncCommitteeBits.fromJson(sync_aggregate.sync_committee_bits);
 
   let signature: PointG2 = PointG2.fromSignature(
-    formatHex(update.sync_aggregate.sync_committee_signature),
-  );
-
-  const prevBlockHeader = await getBlockHeaderFromUpdate(
-    prevUpdate.attested_header.beacon,
+    formatHex(sync_aggregate.sync_committee_signature),
   );
 
   const prevBlockHeaderStateRootProof = getMerkleProof(
@@ -105,9 +135,6 @@ export async function getProofInput(
   const prevBlockHeaderHash =
     ssz.phase0.BeaconBlockHeader.hashTreeRoot(prevBlockHeader);
 
-  const nextBlockHeader = await getBlockHeaderFromUpdate(
-    update.attested_header.beacon,
-  );
   const nextBlockHeaderHash =
     ssz.phase0.BeaconBlockHeader.hashTreeRoot(nextBlockHeader);
   const nextBlockHeaderStateRootProof = getMerkleProof(
@@ -122,18 +149,12 @@ export async function getProofInput(
     nextBlockHeader,
   ).map(x => hexToBits(x));
 
-  let syncCommitteeBranch = prevUpdate.sync_committee_branch.map(x =>
-    hexToBits(x),
-  );
-
-  let finalizedHeader = await getBlockHeaderFromUpdate(
-    update.finalized_header.beacon,
-  );
+  let syncCommitteeBranchBits = syncCommitteeBranch.map(x => hexToBits(x));
 
   let finalizedHeaderHash =
     ssz.phase0.BeaconBlockHeader.hashTreeRoot(finalizedHeader);
 
-  let finalityBranchBits = update.finality_branch.map(x => hexToBits(x));
+  let finalityBranchBits = finalityBranch.map(x => hexToBits(x));
 
   let finalizedHeaderBodyRootProof = getMerkleProof(
     ssz.phase0.BeaconBlockHeader,
@@ -141,41 +162,32 @@ export async function getProofInput(
     finalizedHeader,
   );
 
-  let prevHeaderFinalizedBranch = prevUpdate.finality_branch.map(x =>
-    hexToBits(x),
-  );
+  let prevHeaderFinalizedBranch = prevFinalityBranch.map(x => hexToBits(x));
 
-  let prevFinalizedHeader = ssz.phase0.BeaconBlockHeader.fromJson(
-    prevUpdate.finalized_header.beacon,
-  );
-
-  let prevFinalizedHeaderBranch = prevUpdate.finality_branch;
   let prevHeaderFinalizedSlotBranch = getMerkleProof(
     ssz.phase0.BeaconBlockHeader,
     ['slot'],
     prevFinalizedHeader,
   ).map(x => hexToBits(x));
 
+  let prevHeaderFinalizedRoot = hexToBits(
+    bytesToHex(ssz.phase0.BeaconBlockHeader.hashTreeRoot(prevFinalizedHeader)),
+  );
+
   let prevFinalizedHeaderStateProof = getMerkleProof(
     ssz.phase0.BeaconBlockHeader,
     ['state_root'],
     prevFinalizedHeader,
-  );
+  ).map(x => hexToBits(x));
 
-  const executionPayload = ExecutionPayload.fromJson(
-    update.finalized_header.execution,
-  );
   const executionPayloadStateProof = getMerkleProof(
     ExecutionPayload,
-    ['state_root'],
+    ['stateRoot'],
     executionPayload,
   );
 
   let dataView = new DataView(new ArrayBuffer(8));
-  dataView.setBigUint64(
-    0,
-    BigInt(update.finalized_header.beacon.proposer_index),
-  );
+  dataView.setBigUint64(0, BigInt(finalizedHeader.proposerIndex));
   let proposer_index = dataView.getBigUint64(0, true);
   proposer_index = BigInt(
     '0x' + proposer_index.toString(16).padStart(16, '0').padEnd(64, '0'),
@@ -184,21 +196,15 @@ export async function getProofInput(
   return {
     prevHeaderHash: hexToBits(bytesToHex(prevBlockHeaderHash)),
     nextHeaderHash: hexToBits(bytesToHex(nextBlockHeaderHash)),
-    prevFinalizedHeaderRoot: hexToBits(
-      bytesToHex(
-        ssz.phase0.BeaconBlockHeader.hashTreeRoot(prevFinalizedHeader),
-      ),
-    ),
+    prevFinalizedHeaderRoot: prevHeaderFinalizedRoot,
     prevFinalizedHeaderRootBranch: [
       ...prevHeaderFinalizedBranch,
       ...prevBlockHeaderStateRootProof,
     ],
     prevHeaderFinalizedStateRoot: hexToBits(
-      prevUpdate.finalized_header.beacon.state_root,
+      bytesToHex(prevFinalizedHeader.stateRoot),
     ),
-    prevHeaderFinalizedStateRootBranch: prevFinalizedHeaderStateProof.map(x =>
-      hexToBits(x),
-    ),
+    prevHeaderFinalizedStateRootBranch: prevFinalizedHeaderStateProof,
 
     // prevHeaderStateRoot: hexToBits(bytesToHex(prevBlockHeader.stateRoot)),
     // prevHeaderStateRootBranch: prevBlockHeaderStateRootProof,
@@ -208,11 +214,10 @@ export async function getProofInput(
     nextHeaderSlot: nextBlockHeader.slot,
     nextHeaderSlotBranch: nextHeaderSlotBranch,
 
-    signatureSlot: update.signature_slot,
+    signatureSlot: signature_slot.toString(),
 
-    signatureSlotSyncCommitteePeriod: computeSyncCommitteePeriodAt(
-      Number(update.signature_slot),
-    ),
+    signatureSlotSyncCommitteePeriod:
+      computeSyncCommitteePeriodAt(signature_slot),
     finalizedHeaderSlotSyncCommitteePeriod: computeSyncCommitteePeriodAt(
       prevFinalizedHeader.slot,
     ),
@@ -222,12 +227,10 @@ export async function getProofInput(
       ...nextBlockHeaderStateRootProof,
     ],
 
-    execution_state_root: hexToBits(
-      update.finalized_header.execution.state_root,
-    ),
+    execution_state_root: hexToBits(bytesToHex(executionPayload.stateRoot)),
     execution_state_root_branch: [
       ...executionPayloadStateProof,
-      ...update.finalized_header.execution_branch,
+      ...finalizedHeaderExecutionBranch,
       ...finalizedHeaderBodyRootProof,
     ].map(x => hexToBits(x)),
 
@@ -244,8 +247,9 @@ export async function getProofInput(
       bigint_to_array(55, 7, x.toAffine()[0].value),
       bigint_to_array(55, 7, x.toAffine()[1].value),
     ]),
-    aggregatedKey: hexToBits(prevUpdate.sync_committee.aggregate_pubkey, 384),
-    syncCommitteeBranch: [...syncCommitteeBranch],
+    aggregatedKey: hexToBits(syncCommittee.aggregate_pubkey, 384),
+    syncCommitteeBranch: [...syncCommitteeBranchBits],
+
     bitmask: bitmask.toBoolArray().map(x => (x ? '1' : '0')),
     signature: [
       [
