@@ -126,7 +126,8 @@ proc validate_light_client_update*(
       participant_pubkeys[i] = sync_committee.pubkeys[idx]
       inc i
   let
-    fork_version = forkVersionAtEpoch(update.signature_slot.epoch)
+    fork_version_slot = max(update.signature_slot, 1.Slot) - 1
+    fork_version = forkVersionAtEpoch(fork_version_slot.epoch)
     domain = compute_domain(
       DOMAIN_SYNC_COMMITTEE, fork_version, genesis_validators_root)
     signing_root = compute_signing_root(update.attested_header, domain)
