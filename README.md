@@ -30,6 +30,12 @@ also translate in significant reduction in gas costs (currently, our
 code is targeting only the standard WebAssembly run-time instead of
 the full blockchain environments).
 
+## Deployed instances of our smart contracts
+
+| The smart contract is deployed in                                                                     | The targetted network is                     | Circuit Version                                              |
+| ----------------------------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------ |
+| [Goerli/Ethreum](https://goerli.etherscan.io/address/0x6b7f6ad5890D5a1C1262227878062574226D3FbD#code) | [zhejiang](https://zhejiang.ethpandaops.io/) | https://github.com/metacraft-labs/DendrETH/pull/74 (Capella) |
+
 ## Working with the Codebase
 
 ### Pre-requisites
