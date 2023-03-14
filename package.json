@@ -70,6 +70,7 @@
     "hardhat": "^2.10.2",
     "hardhat-gas-reporter": "^1.0.8",
     "r1csfile": "^0.0.40",
+    "redis-commander": "^0.8.0",
     "snarkjs": "github:metacraft-labs/snarkjs"
   }
 }
