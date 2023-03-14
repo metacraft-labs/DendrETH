@@ -6,6 +6,9 @@ task('verify-contracts', 'Verify')
   .setAction(async (args, { run, network }) => {
     await run('verify:verify', {
       address: args.lightclient,
-      constructorArguments: await getConstructorArgs(network.name),
+      constructorArguments: await getConstructorArgs(
+        (network.config as any).beaconApi,
+        23,
+      ),
     });
   });

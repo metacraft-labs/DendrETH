@@ -1,8 +1,9 @@
 import { task } from 'hardhat/config';
 import { getConstructorArgs } from './utils';
 
-task('deploy', 'Deploy the beacon light client contract').setAction(
-  async (_, { run, ethers, network }) => {
+task('deploy', 'Deploy the beacon light client contract')
+  .addParam('slot', 'The slot ')
+  .setAction(async (args, { run, ethers, network }) => {
     await run('compile');
     const [deployer] = await ethers.getSigners();
 
@@ -11,7 +12,12 @@ task('deploy', 'Deploy the beacon light client contract').setAction(
 
     const beaconLightClient = await (
       await ethers.getContractFactory('BeaconLightClient')
-    ).deploy(...(await getConstructorArgs(network.name)));
+    ).deploy(
+      ...(await getConstructorArgs(
+        (network.config as any).beaconApi,
+        args.slot,
+      )),
+    );
 
     console.log('>>> Waiting for BeaconLightClient deployment...');
 
@@ -24,5 +30,4 @@ task('deploy', 'Deploy the beacon light client contract').setAction(
 
     console.log(`>>> ${contract.address}`);
     console.log('>>> Done!');
-  },
-);
+  });
