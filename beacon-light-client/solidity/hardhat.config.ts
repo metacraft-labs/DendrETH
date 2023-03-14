@@ -47,8 +47,9 @@ export default {
   defaultNetwork: 'hardhat',
   networks: {
     local: {
-      url: 'http://127.0.0.1:8545/',
+      url: 'http://127.0.0.1:8545',
       accounts: [mandatoryConf.LOCAL_HARDHAT_PRIVATE_KEY],
+      beaconApi: 'http://192.168.1.116:4000',
     },
     hardhat: {
       blockGasLimit: 30000000,
