@@ -1,14 +1,14 @@
 {
   "redisHost": "localhost",
   "redisPort": 6379,
-  "beaconRestApiHost": "192.168.1.116",
-  "beaconRestApiPort": 4000,
+  "beaconRestApiHost": "unstable.prater.beacon-api.nimbus.team",
+  "beaconRestApiPort": 80,
   "rapidSnarkProverPath": "../../../../../vendor/rapidsnark/build/prover",
   "zkeyFilePath": "../../../build/light_client/light_client_0.zkey",
   "witnessGeneratorPath": "../../../build/light_client/light_client_cpp/light_client",
-  "updatePolingTime": 450000,
   "slotsJump": 32,
-  "lightClientAddress": "0x6b7f6ad5890D5a1C1262227878062574226D3FbD",
-  "etherJsonRpcProvider": "localhost",
-  "privateKey": "privKey"
+  "startingSlot": 5198931,
+  "lightClientAddress": "0xA3418F79c98A3E496A5E97610a97f82daE364619",
+  "etherJsonRpcProvider": "",
+  "privateKey": ""
 }
