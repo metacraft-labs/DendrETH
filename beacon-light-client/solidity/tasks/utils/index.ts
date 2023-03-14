@@ -1,27 +1,26 @@
 import { bytesToHex } from '../../../../libs/typescript/ts-utils/bls';
 import { getBlockHeaderFromUpdate } from '../../../../libs/typescript/ts-utils/ssz-utils';
-import * as UPDATE0 from '../../../circom/scripts/light_client/relayer_updates/update_237215.json';
 
-export const getConstructorArgs = async (network: string) => {
-  network = network === 'hardhat' ? 'mainnet' : network;
+export const getConstructorArgs = async (apiUrl: string, slot: number) => {
+  const blockHeader = await (
+    await fetch(`${apiUrl}/eth/v1/beacon/headers/` + slot)
+  ).json();
+  const finality_checkpoints = await (
+    await fetch(
+      `${apiUrl}/eth/v1/beacon/states/` + slot + `/finality_checkpoints`,
+    )
+  ).json();
+  const block = await (
+    await fetch(`${apiUrl}/eth/v2/beacon/blocks/` + slot)
+  ).json();
+
   const { ssz } = await import('@lodestar/types');
-
-  console.log(
-    'instantiate optimistic',
-    bytesToHex(
-      ssz.phase0.BeaconBlockHeader.hashTreeRoot(
-        await getBlockHeaderFromUpdate(UPDATE0.data.attested_header.beacon),
-      ),
-    ),
-  );
 
   return [
     ssz.phase0.BeaconBlockHeader.hashTreeRoot(
-      await getBlockHeaderFromUpdate(UPDATE0.data.attested_header.beacon),
+      await getBlockHeaderFromUpdate(blockHeader.data.header.message),
     ),
-    ssz.phase0.BeaconBlockHeader.hashTreeRoot(
-      await getBlockHeaderFromUpdate(UPDATE0.data.finalized_header.beacon),
-    ),
-    UPDATE0.data.finalized_header.execution.state_root,
+    finality_checkpoints.data.finalized.root,
+    block.data.message.body.execution_payload.state_root,
   ];
 };
