@@ -32,9 +32,15 @@ the full blockchain environments).
 
 ## Deployed instances of our smart contracts
 
-| The smart contract is deployed in                                                                     | The targetted network is                     | Circuit Version                                              |
-| ----------------------------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------ |
-| [Goerli/Ethreum](https://goerli.etherscan.io/address/0x6b7f6ad5890D5a1C1262227878062574226D3FbD#code) | [zhejiang](https://zhejiang.ethpandaops.io/) | https://github.com/metacraft-labs/DendrETH/pull/74 (Capella) |
+| The smart contract is deployed in                                                                         | The targetted network is                                 | Circuit Version                                              |
+| --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------ |
+| [Goerli/Ethreum](https://goerli.etherscan.io/address/0x6b7f6ad5890D5a1C1262227878062574226D3FbD#code)     | [zhejiang](https://zhejiang.ethpandaops.io/)             | https://github.com/metacraft-labs/DendrETH/pull/74 (Capella) |
+| [Goerli/Ethreum](https://goerli.etherscan.io/address/0xFb3Bb7992A49703D4f3AEAA2FA95AA250aBE2936)          | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | https://github.com/metacraft-labs/DendrETH/pull/74 (Capella) |
+| [Goerli/Optmism](https://goerli-optimism.etherscan.io/address/0x1a2FAA5f49385EebA349fd2616BAbf1Eb4367dcc) | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | https://github.com/metacraft-labs/DendrETH/pull/74 (Capella) |
+| [Goerli/Base](https://goerli.basescan.org/address/0xB94868ba0903883bD2dE3311Fc377f3c50D602eA)             | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | https://github.com/metacraft-labs/DendrETH/pull/74 (Capella) |
+| [Goerli/Arbitrum](https://goerli.arbiscan.io/address/0xA3418F79c98A3E496A5E97610a97f82daE364619)          | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | https://github.com/metacraft-labs/DendrETH/pull/74 (Capella) |
+| [Sepolia/Ethereum](https://sepolia.etherscan.io/address/0xA3418F79c98A3E496A5E97610a97f82daE364619)       | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | https://github.com/metacraft-labs/DendrETH/pull/74 (Capella) |
+| [Mumbai/Polygon](https://mumbai.polygonscan.com/address/0xA3418F79c98A3E496A5E97610a97f82daE364619)       | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | https://github.com/metacraft-labs/DendrETH/pull/74 (Capella) |
 
 ## Working with the Codebase
 
