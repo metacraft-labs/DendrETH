@@ -2,7 +2,6 @@
 pragma solidity 0.8.9;
 
 import '../../utils/LightClientUpdateVerifier.sol';
-import '../../spec/BeaconChain.sol';
 
 contract BeaconLightClient is LightClientUpdateVerifier {
   struct LightClientUpdate {
