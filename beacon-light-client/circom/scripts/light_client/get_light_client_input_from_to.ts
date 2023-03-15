@@ -1,7 +1,7 @@
 import { computeSyncCommitteePeriodAt } from './relayer-helper';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { bytesToHex } from '../../../../libs/typescript/ts-utils/bls';
-import { ZHEAJIANG_TESNET } from '../../../solidity/test/utils/constants';
+import { PRATER } from '../../../solidity/test/utils/constants';
 import { getProofInput } from './get_ligth_client_input';
 
 export async function getInputFromTo(
@@ -24,9 +24,13 @@ export async function getInputFromTo(
     prevBlockHeaderResult.data.header.message,
   );
 
-  let nextBlockSlot = to;
-
   let nextBlockHeaderResult;
+  let blockHeaderBodyResult;
+
+  let nextBlockSlot = to;
+  let signature_slot = nextBlockSlot + 1;
+  let signatureDoesNotExists = 0;
+  // TODO: currently if the next header is not signed by enough validators we need to move over the next next and many bugs could be introduced
   while (true) {
     nextBlockHeaderResult = await (
       await fetch(
@@ -34,8 +38,45 @@ export async function getInputFromTo(
       )
     ).json();
 
+    console.log('slots');
+    console.log(nextBlockSlot);
+    console.log(signature_slot);
+
     if (nextBlockHeaderResult.code !== 404) {
-      break;
+      while (true) {
+        blockHeaderBodyResult = await (
+          await fetch(
+            `http://${config.beaconRestApiHost}:${config.beaconRestApiPort}/eth/v2/beacon/blocks/${signature_slot}`,
+          )
+        ).json();
+
+        if (blockHeaderBodyResult.code !== 404) {
+          const sync_committee_bits =
+            blockHeaderBodyResult.data.message.body.sync_aggregate
+              .sync_committee_bits;
+
+          const length = BigInt(sync_committee_bits)
+            .toString(2)
+            .split('')
+            .filter(x => x == '1').length;
+
+          // Not signed enough
+          if (length * 3 > 1024) {
+            break;
+          }
+        } else {
+          signatureDoesNotExists++;
+        }
+
+        signature_slot++;
+      }
+
+      if (nextBlockSlot + signatureDoesNotExists + 1 == signature_slot) {
+        break;
+      } else {
+        nextBlockSlot = signature_slot - 1 - signatureDoesNotExists;
+        continue;
+      }
     }
 
     nextBlockSlot++;
@@ -180,23 +221,6 @@ export async function getInputFromTo(
     )
     .map(x => '0x' + bytesToHex(x));
 
-  let signature_slot = nextBlockSlot + 1;
-  let blockHeaderBodyResult;
-
-  while (true) {
-    blockHeaderBodyResult = await (
-      await fetch(
-        `http://${config.beaconRestApiHost}:${config.beaconRestApiPort}/eth/v2/beacon/blocks/${signature_slot}`,
-      )
-    ).json();
-
-    if (blockHeaderBodyResult.code !== 404) {
-      break;
-    }
-
-    signature_slot++;
-  }
-
   console.log('blockHeaderBodyResult', blockHeaderBodyResult);
 
   const sync_aggregate = blockHeaderBodyResult.data.message.body.sync_aggregate;
@@ -243,7 +267,7 @@ export async function getInputFromTo(
       prevFinalizedHeader,
       syncCommitteeBranch,
       syncCommittee,
-      config: ZHEAJIANG_TESNET,
+      config: PRATER,
       prevFinalityBranch,
       signature_slot: signature_slot,
       finalizedHeader,

@@ -31,3 +31,6 @@
 [submodule "vendor/nim-terminaltables"]
 	path = vendor/nim-terminaltables
 	url = git@github.com:xmonader/nim-terminaltables.git
+[submodule "vendor/build-artifacts"]
+	path = endor/build-artifacts
+	url = git@github.com:metacraft-labs/DendrETH-build-artifacts.git
