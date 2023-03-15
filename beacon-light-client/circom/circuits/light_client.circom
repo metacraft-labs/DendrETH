@@ -41,8 +41,9 @@ template LightClient(N) {
   signal input execution_state_root[256];
   signal input execution_state_root_branch[11][256];
 
-  // Should be harcoded
   signal input fork_version[32];
+
+  // Should be harcoded
   signal input GENESIS_VALIDATORS_ROOT[256];
   signal input DOMAIN_SYNC_COMMITTEE[32];
 
