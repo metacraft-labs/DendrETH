@@ -147,6 +147,7 @@ template LightClient(N) {
   for(var i = 0; i < N; i++) {
     bitmaskContainsOnlyBools.bitmask[i] <== bitmask[i];
   }
+
   // Check if a supermajority of the ?validators signed the ???
   // aka check if there are 2/3 or more 1s in the bitmask
   component isSuperMajority = IsSuperMajority(N);
