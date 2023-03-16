@@ -1,17 +1,27 @@
-import { bytesToHex } from '../../../../libs/typescript/ts-utils/bls';
+import { checkConfig } from '../../../../libs/typescript/ts-utils/common-utils';
 import { getBlockHeaderFromUpdate } from '../../../../libs/typescript/ts-utils/ssz-utils';
 
-export const getConstructorArgs = async (apiUrl: string, slot: number) => {
+// TODO: should get the finalized header for the slot
+export const getConstructorArgs = async (slot: number) => {
+  const config = {
+    BEACON_REST_API: process.env.BEACON_REST_API,
+  };
+
+  checkConfig(config);
+
   const blockHeader = await (
-    await fetch(`${apiUrl}/eth/v1/beacon/headers/` + slot)
+    await fetch(`${config.BEACON_REST_API}/eth/v1/beacon/headers/` + slot)
   ).json();
+
   const finality_checkpoints = await (
     await fetch(
-      `${apiUrl}/eth/v1/beacon/states/` + slot + `/finality_checkpoints`,
+      `${config.BEACON_REST_API}/eth/v1/beacon/states/` +
+        slot +
+        `/finality_checkpoints`,
     )
   ).json();
   const block = await (
-    await fetch(`${apiUrl}/eth/v2/beacon/blocks/` + slot)
+    await fetch(`${config.BEACON_REST_API}/eth/v2/beacon/blocks/` + slot)
   ).json();
 
   const { ssz } = await import('@lodestar/types');

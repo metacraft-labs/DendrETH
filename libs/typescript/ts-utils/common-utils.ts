@@ -5,3 +5,12 @@ export function byteArrayToNumber(byteArray) {
   }
   return value;
 }
+
+export function checkConfig(config: any) {
+  for (const envVar of Object.keys(config)) {
+    if (!config[envVar]) {
+      console.warn(`$${envVar} environment variable is not set`);
+      process.exit(0);
+    }
+  }
+}

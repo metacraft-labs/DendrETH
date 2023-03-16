@@ -12,12 +12,7 @@ task('deploy', 'Deploy the beacon light client contract')
 
     const beaconLightClient = await (
       await ethers.getContractFactory('BeaconLightClient')
-    ).deploy(
-      ...(await getConstructorArgs(
-        (network.config as any).beaconApi,
-        args.slot,
-      )),
-    );
+    ).deploy(...(await getConstructorArgs(args.slot)));
 
     console.log('>>> Waiting for BeaconLightClient deployment...');
 
