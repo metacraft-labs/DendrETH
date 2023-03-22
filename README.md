@@ -112,6 +112,50 @@ You should see a [Hardhat simulation](https://hardhat.org/hardhat-runner/docs/ge
 sequentially processing all available updates. At the time of this writing, each
 update costs around 330K in gas.
 
+### Run relayer
+
+To run the relayer you need to have a redis instance running
+When you have the redis instance in the .env provide values for connection to redis
+
+```bash
+REDIS_HOST=localhost
+REDIS_PORT=6379
+```
+
+After that you can run the workers for polling updates and for proof generation.
+For the proof generation worker you will need to provide paths to witness generator, rapidsnark and zkey file.
+To do that add in the .env file absolute paths to the files
+
+```bash
+WITNESS_GENERATOR_PATH=build/light_client/light_client_cpp/light_client
+RAPIDSNAKR_PROVER_PATH=/rapidsnark/build/prover
+ZKEY_FILE_PATH=/build/light_client/light_client_0.zkey
+```
+
+To run the polling update worker in the relay folder execure
+
+```
+yarn run pollUpdatesWorker
+```
+
+To run the proof generation worker run
+
+```
+yarn run proofGenerationWorker
+```
+
+To register a repeating job to poll and generate proofs. In `beacon-light-client/solidity` run
+
+```
+yarn hardhat run-update --initialslot 5241519 --slotsjump 32
+```
+
+To register a task to publish update transactions on chain run
+
+```
+yarn hardhat start-publishing --lightclient 0xA3418F79c98A3E496A5E97610a97f82daE364619 --network mumbai
+```
+
 ### One-shot syncing simulation
 
 Our archive of light client updates also includes pre-generated [zero-knowledge
