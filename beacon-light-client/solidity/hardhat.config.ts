@@ -65,11 +65,11 @@ export default {
       accounts: [optionalConf.USER_PRIVATE_KEY],
     },
     sepolia: {
-      url: `https://sepolia.infura.io/v3/${mandatoryConf.INFURA_API_KEY}`,
+      url: `https://eth-sepolia.g.alchemy.com/v2/${optionalConf.ALCHEMY_API_KEY}`,
       accounts: [optionalConf.USER_PRIVATE_KEY],
     },
     goerli: {
-      url: `https://goerli.infura.io/v3/${mandatoryConf.INFURA_API_KEY}`,
+      url: `https://eth-goerli.g.alchemy.com/v2/${optionalConf.ALCHEMY_API_KEY}`,
       accounts: [optionalConf.USER_PRIVATE_KEY],
     },
     optimisticGoerli: {
