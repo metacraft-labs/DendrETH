@@ -27,8 +27,8 @@ type
     of updateData:
       proofPath* {.
         desc: "Path to some header"}: string
-      nextHeaderPath* {.
-        desc: "Path to the verification key"}: string
+      numberOfUpdate* {.
+        desc: "numberOfUpdate"}: string
 
     of currentHeader:
       currentHeaderPath* {.

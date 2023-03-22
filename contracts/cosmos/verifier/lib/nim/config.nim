@@ -40,7 +40,7 @@ type
     of update:
       proofPath* {.
         desc: "Path to the proof"}: string
-      newHeaderPath* {.
+      numberOfUpdate* {.
         desc: "Path to the new header"}: string
       contract* {.
         desc: "Contract Hash"}: string

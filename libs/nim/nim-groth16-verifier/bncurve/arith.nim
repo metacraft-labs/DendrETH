@@ -336,6 +336,26 @@ proc toBytes*(src: BNU512, dst: var openArray[byte]): bool {.noinit.} =
   bigEndian64(addr dst[7 * sizeof(uint64)], unsafeAddr src[0])
   result = true
 
+proc toString*(src: BNU256, lowercase = true): string =
+  ## Convert 256bit integer ``src`` to big-endian hexadecimal representation.
+  var a: array[4 * sizeof(uint64), byte]
+  discard src.toBytes(a)
+  result = a.toHex(lowercase)
+
+proc toString*(src: BNU512, lowercase = true): string =
+  ## Convert 512bit integer ``src`` to big-endian hexadecimal representation.
+  var a: array[8 * sizeof(uint64), byte]
+  discard src.toBytes(a)
+  result = a.toHex(lowercase)
+
+proc `$`*(src: BNU256): string =
+  ## Return hexadecimal string representation of integer ``src``.
+  result = toString(src, false)
+
+proc `$`*(src: BNU512): string =
+  ## Return hexadecimal string representation of integer ``src``.
+  result = toString(src, false)
+
 proc invert*(a: var BNU256, modulo: BNU256) =
   ## Turn integer ``a`` into its multiplicative inverse (mod ``modulo``).
   var u = a
