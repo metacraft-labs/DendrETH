@@ -1,14 +1,18 @@
 import
   std/[os,osproc,strutils],
+  # ../../../../../vendor/nimcrypto/nimcrypto/[sha2, hash, utils],
+  stew/byteutils,
   helpers,
   confutils,
-  config
+  config,
+  std/json
 
-proc init*(pathVerificationKey, pathCurrentHeader, code_id, wallet, node, txflags: string): string =
+proc init*(pathVerificationKey, code_id, wallet, node, txflags: string): string =
   let vkey = createVerificationKey(pathVerificationKey)
-  let currentHeader = createCurrentHeader(pathCurrentHeader)
+  # let currentHeader = createCurrentHeader(pathCurrentHeader)
+  let hex = hexToByteArray[32]("0xc43d94aaea1342f8e551d9a5e6fe95b7ebb013142acf1e2628ad381e5c713316")
 
-  let INIT = "{\"vkey\": " & $vkey & ",\"currentHeader\": " &  $currentHeader & "}"
+  let INIT = "{\"vkey\": " & $vkey & ",\"currentHeaderHash\": " &  $hex & "}"
   discard execCmdEx("wasmd tx wasm instantiate " & code_id & " '" & INIT & "' --from " & wallet & " --label 'Cosmos Verifier' " & txflags & " -y --no-admin")
   discard execCmdEx("sleep 10")
 
@@ -17,11 +21,17 @@ proc init*(pathVerificationKey, pathCurrentHeader, code_id, wallet, node, txflag
   echo CONTRACT
   CONTRACT
 
-proc update*(pathPrf, pathNewHeader, contract, wallet, node, txflags: string): bool =
-  let proof = createProof(pathPrf)
-  let newHeader = createNewHeader(pathNewHeader)
+proc update*(pathPrf, numberOfUpdate, contract, wallet, node, txflags: string): bool =
+  let proof = createProof(pathPrf & "proof" & numberOfUpdate & ".json")
 
-  let UPDATE= "{\"update\":{\"proof\":" & $proof & ",\"newHeader\": " & $newHeader & "}}"
+  let update = parseFile(pathPrf & "update" & numberOfUpdate & ".json")
+
+  let newOptimisticHeader = hexToByteArray[32](update["attested_header_root"].str)
+  let newFinalizedHeader = hexToByteArray[32](update["finalized_header_root"].str)
+  let newExecutionStateRoot = hexToByteArray[32](update["finalized_execution_state_root"].str)
+
+
+  let UPDATE= "{\"update\":{\"proof\":" & $proof & ",\"newOptimisticHeader\": " & $newOptimisticHeader & ",\"newFinalizedHeader\": " & $newFinalizedHeader & ",\"newExecutionStateRoot\": " & $newExecutionStateRoot & "}}"
   echo "Executing:"
   echo "➤ wasmd tx wasm execute " & contract & " '" & UPDATE & "' --amount 999ustake --from " & wallet & " "  & txflags & " -y "
 
@@ -46,10 +56,10 @@ proc execCommand*(): string =
       discard
 
     of StartUpCommand.init:
-      discard init(conf.vKeyPath, conf.currentHeaderPath, conf.code_id, conf.wallet, NODE, TXFLAG)
+      discard init(conf.vKeyPath, conf.code_id, conf.wallet, NODE, TXFLAG)
 
     of StartUpCommand.update:
-      discard update(conf.proofPath, conf.newHeaderPath, conf.contract, conf.wallet, NODE, TXFLAG)
+      discard update(conf.proofPath, conf.numberOfUpdate, conf.contract, conf.wallet, NODE, TXFLAG)
 
     of StartUpCommand.query:
       discard query(conf.contract2, Node, TXFLAG)
