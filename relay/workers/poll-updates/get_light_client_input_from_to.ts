@@ -60,7 +60,7 @@ export async function getInputFromTo(
   const {
     executionPayloadHeader: executionPayload,
     executionPayloadBranch: finalizedHeaderExecutionBranch,
-  } = await beaconApi.getBlockExecutionPayload(finalizedHeader.slot);
+  } = await beaconApi.getBlockExecutionPayloadAndProof(finalizedHeader.slot);
 
   return {
     proofInput: await getProofInput({

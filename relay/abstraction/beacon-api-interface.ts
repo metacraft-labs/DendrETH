@@ -40,8 +40,12 @@ export interface IBeaconApi {
     finalityHeaderBranch: string[];
   }>;
 
-  getBlockExecutionPayload(slot: number): Promise<{
+  getBlockExecutionPayloadAndProof(slot: number): Promise<{
     executionPayloadHeader: ExecutionPayloadHeader;
     executionPayloadBranch: string[];
   }>;
+
+  getFinalizedBlockHeader(slot: number): Promise<BeaconBlockHeader>;
+
+  getExecutionStateRoot(slot: number): Promise<string>;
 }
