@@ -315,7 +315,7 @@ template LightClient(N) {
     }
   }
 
-  component commitment = Sha256(1024);
+  component commitment = Sha256(1280);
 
   for(var i = 0; i < 256; i++) {
     commitment.in[i] <== prevHeaderHash[i];
@@ -331,6 +331,17 @@ template LightClient(N) {
 
   for(var i = 0; i < 256; i++) {
     commitment.in[768 + i] <== execution_state_root[i];
+  }
+
+  for(var i = 0; i < 192; i++) {
+    commitment.in[1024 + i] <== 0;
+  }
+
+  component nextHeaderSlotBits = Num2Bits(64);
+  nextHeaderSlotBits.in <== nextHeaderSlot;
+
+  for(var i = 192; i < 256; i++) {
+    commitment.in[1024 + i] <== nextHeaderSlotBits.out[255 - i];
   }
 
   component bits2num1 = Bits2Num(253);
