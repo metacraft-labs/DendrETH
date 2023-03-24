@@ -3,6 +3,8 @@ pragma solidity 0.8.9;
 
 import '../../utils/LightClientUpdateVerifier.sol';
 
+uint256 constant BUFER_SIZE = 32;
+
 contract BeaconLightClient is LightClientUpdateVerifier {
   struct LightClientUpdate {
     bytes32 attested_header_root;
@@ -13,32 +15,36 @@ contract BeaconLightClient is LightClientUpdateVerifier {
     uint256[2] c;
   }
 
-  bytes32 _optimistic_header_root;
+  bytes32[BUFER_SIZE] public optimistic_headers;
 
-  bytes32 _finalized_header_root;
+  bytes32[BUFER_SIZE] public finalized_headers;
 
-  bytes32 _finalized_execution_state_root;
+  bytes32[BUFER_SIZE] public execution_state_roots;
+
+  uint256 public currentIndex;
 
   constructor(
-    bytes32 __optimistic_header_root,
-    bytes32 __finalized_header_root,
-    bytes32 __execution_state_root
+    bytes32 _optimistic_header_root,
+    bytes32 _finalized_header_root,
+    bytes32 _execution_state_root
   ) {
-    _optimistic_header_root = __optimistic_header_root;
-    _finalized_header_root = __finalized_header_root;
-    _finalized_execution_state_root = __execution_state_root;
+    currentIndex = 0;
+
+    optimistic_headers[currentIndex] = _optimistic_header_root;
+    finalized_headers[currentIndex] = _finalized_header_root;
+    execution_state_roots[currentIndex] = _execution_state_root;
   }
 
   function execution_state_root() public view returns (bytes32) {
-    return _finalized_execution_state_root;
+    return execution_state_roots[currentIndex];
   }
 
   function optimistic_header_root() public view returns (bytes32) {
-    return _optimistic_header_root;
+    return optimistic_headers[currentIndex];
   }
 
   function finalized_header_root() public view returns (bytes32) {
-    return _finalized_header_root;
+    return finalized_headers[currentIndex];
   }
 
   function light_client_update(LightClientUpdate calldata update)
@@ -58,8 +64,10 @@ contract BeaconLightClient is LightClientUpdateVerifier {
       '!proof'
     );
 
-    _optimistic_header_root = update.attested_header_root;
-    _finalized_header_root = update.finalized_header_root;
-    _finalized_execution_state_root = update.finalized_execution_state_root;
+    currentIndex = (currentIndex + 1) % BUFER_SIZE;
+
+    optimistic_headers[currentIndex] = update.attested_header_root;
+    finalized_headers[currentIndex] = update.finalized_header_root;
+    execution_state_roots[currentIndex] = update.finalized_execution_state_root;
   }
 }
