@@ -2976,6 +2976,7 @@ __metadata:
     hardhat-gas-reporter: ^1.0.8
     r1csfile: ^0.0.40
     snarkjs: ^0.4.24
+    solidity-rlp: ^2.0.7
     ts-node: ^10.9.1
   languageName: unknown
   linkType: soft
@@ -10702,6 +10703,13 @@ __metadata:
   bin:
     solcjs: solc.js
   checksum: a11de198bc5d481485a4a4803fb08a81a56dd9ffa7cdc62f8d6d5fc669f72e7cb4b22789004d54481353463421f6e6e3d1dffe7365b6d0ed5f37baee303266db
+  languageName: node
+  linkType: hard
+
+"solidity-rlp@npm:^2.0.7":
+  version: 2.0.7
+  resolution: "solidity-rlp@npm:2.0.7"
+  checksum: 05df8300ed3f1a99eab45177f7dfe95310e0eb1bce7808379285b4a8c5b9f1bb17f3a7ce778a9416889f3b7ecaeb2d365450507f89ca7f4c99e02ac90166e60f
   languageName: node
   linkType: hard
 

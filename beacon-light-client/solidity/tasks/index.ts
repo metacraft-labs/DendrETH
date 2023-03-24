@@ -5,3 +5,4 @@ import './start-publishing';
 import './run-update';
 import './add-jump';
 import './remove-repeat-job';
+import './deploy-oracle-facede';

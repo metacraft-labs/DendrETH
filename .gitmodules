@@ -37,3 +37,6 @@
 [submodule "vendor/build-artifacts"]
 	path = vendor/build-artifacts
 	url = git@github.com:metacraft-labs/DendrETH-build-artifacts.git
+[submodule "beacon-light-client/solidity/hashi"]
+	path = beacon-light-client/solidity/hashi
+	url = git@github.com:gnosis/hashi.git
