@@ -132,22 +132,8 @@ export class BeaconApi implements IBeaconApi {
   }> {
     const { ssz } = await import('@lodestar/types');
 
-    const prevBeaconStateSZZ = await fetch(
-      `${this.beaconRestApi}/eth/v2/debug/beacon/states/${prevSlot}`,
-      {
-        headers: {
-          Accept: 'application/octet-stream',
-        },
-      },
-    )
-      .then(response => response.arrayBuffer())
-      .then(buffer => new Uint8Array(buffer));
-
-    const prevBeaconSate =
-      ssz.capella.BeaconState.deserialize(prevBeaconStateSZZ);
-    const prevBeaconStateView =
-      ssz.capella.BeaconState.toViewDU(prevBeaconSate);
-    const prevStateTree = new Tree(prevBeaconStateView.node);
+    const { beaconState: prevBeaconSate, stateTree: prevStateTree } =
+      await this.getBeaconState(prevSlot);
 
     const prevFinalizedHeaderResult = await (
       await fetch(
@@ -168,26 +154,10 @@ export class BeaconApi implements IBeaconApi {
       )
       .map(x => '0x' + bytesToHex(x));
 
-    const prevFinalizedHeaderBeaconStateSZZ = await fetch(
-      `${this.beaconRestApi}/eth/v2/debug/beacon/states/${finalityHeader.slot}`,
-      {
-        headers: {
-          Accept: 'application/octet-stream',
-        },
-      },
-    )
-      .then(response => response.arrayBuffer())
-      .then(buffer => new Uint8Array(buffer));
-
-    const prevFinalizedBeaconState = ssz.capella.BeaconState.deserialize(
-      prevFinalizedHeaderBeaconStateSZZ,
-    );
-    const prevFinalizedBeaconStateView = ssz.capella.BeaconState.toViewDU(
-      prevFinalizedBeaconState,
-    );
-    const prevFinalizedBeaconStateTree = new Tree(
-      prevFinalizedBeaconStateView.node,
-    );
+    const {
+      beaconState: prevFinalizedBeaconState,
+      stateTree: prevFinalizedBeaconStateTree,
+    } = await this.getBeaconState(finalityHeader.slot);
 
     const prevUpdateFinalizedSyncCommmitteePeriod =
       computeSyncCommitteePeriodAt(finalityHeader.slot);
@@ -241,20 +211,7 @@ export class BeaconApi implements IBeaconApi {
   }> {
     const { ssz } = await import('@lodestar/types');
 
-    const beaconStateResult = await fetch(
-      `${this.beaconRestApi}/eth/v2/debug/beacon/states/${slot}`,
-      {
-        headers: {
-          Accept: 'application/octet-stream',
-        },
-      },
-    )
-      .then(response => response.arrayBuffer())
-      .then(buffer => new Uint8Array(buffer));
-
-    const beaconState = ssz.capella.BeaconState.deserialize(beaconStateResult);
-    const beaconStateView = ssz.capella.BeaconState.toViewDU(beaconState);
-    const stateTree = new Tree(beaconStateView.node);
+    const { beaconState, stateTree } = await this.getBeaconState(slot);
 
     const finalizedHeaderResult = await (
       await fetch(
@@ -319,5 +276,26 @@ export class BeaconApi implements IBeaconApi {
       executionPayloadHeader:
         finalizedBlockBody.executionPayload as any as ExecutionPayloadHeader,
     };
+  }
+
+  private async getBeaconState(slot: number) {
+    const { ssz } = await import('@lodestar/types');
+
+    const beaconStateSZZ = await fetch(
+      `${this.beaconRestApi}/eth/v2/debug/beacon/states/${slot}`,
+      {
+        headers: {
+          Accept: 'application/octet-stream',
+        },
+      },
+    )
+      .then(response => response.arrayBuffer())
+      .then(buffer => new Uint8Array(buffer));
+
+    const beaconState = ssz.capella.BeaconState.deserialize(beaconStateSZZ);
+    const beaconStateView = ssz.capella.BeaconState.toViewDU(beaconState);
+    const stateTree = new Tree(beaconStateView.node);
+
+    return { beaconState, stateTree };
   }
 }
