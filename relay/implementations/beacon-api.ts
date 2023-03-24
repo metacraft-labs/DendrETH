@@ -2,6 +2,7 @@ import { UintNumberType, ByteVectorType } from '@chainsafe/ssz';
 import { ValueOfFields } from '@chainsafe/ssz/lib/view/container';
 import { IBeaconApi } from '../abstraction/beacon-api-interface';
 import {
+  BeaconBlockHeader,
   ExecutionPayloadHeader,
   SyncAggregate,
   SyncCommittee,
@@ -235,7 +236,7 @@ export class BeaconApi implements IBeaconApi {
     return { finalityHeader, finalityHeaderBranch };
   }
 
-  async getBlockExecutionPayload(slot: number): Promise<{
+  async getBlockExecutionPayloadAndProof(slot: number): Promise<{
     executionPayloadHeader: ExecutionPayloadHeader;
     executionPayloadBranch: string[];
   }> {
@@ -276,6 +277,36 @@ export class BeaconApi implements IBeaconApi {
       executionPayloadHeader:
         finalizedBlockBody.executionPayload as any as ExecutionPayloadHeader,
     };
+  }
+
+  async getFinalizedBlockHeader(slot: number): Promise<BeaconBlockHeader> {
+    const { ssz } = await import('@lodestar/types');
+
+    const finality_checkpoints = await (
+      await fetch(
+        `${this.beaconRestApi}/eth/v1/beacon/states/` +
+          slot +
+          `/finality_checkpoints`,
+      )
+    ).json();
+
+    const finalizedHeadResult = await (
+      await fetch(
+        `${this.beaconRestApi}/eth/v1/beacon/headers/${finality_checkpoints.data.finalized.root}`,
+      )
+    ).json();
+
+    return ssz.phase0.BeaconBlockHeader.fromJson(
+      finalizedHeadResult.data.header.message,
+    );
+  }
+
+  async getExecutionStateRoot(slot: number): Promise<string> {
+    const block = await (
+      await fetch(`${this.beaconRestApi}/eth/v2/beacon/blocks/` + slot)
+    ).json();
+
+    return block.data.message.body.execution_payload.state_root;
   }
 
   private async getBeaconState(slot: number) {
