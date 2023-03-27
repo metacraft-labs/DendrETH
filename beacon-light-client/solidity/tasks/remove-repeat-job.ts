@@ -21,5 +21,7 @@ task('remove-repeat-job', 'Run update recuring task')
       },
     });
 
-    updateQueue.removeRepeatableByKey(args.jobkey);
+    console.log(await updateQueue.getRepeatableJobs());
+
+    await updateQueue.removeRepeatableByKey(args.jobkey);
   });
