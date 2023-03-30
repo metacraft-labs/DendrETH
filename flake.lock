@@ -61,8 +61,7 @@
         "nixpkgs": [
           "mcl-blockchain",
           "nixpkgs"
-        ],
-        "rust-overlay": "rust-overlay_2"
+        ]
       }
     },
     "rust-overlay": {
@@ -82,29 +81,6 @@
         "owner": "oxalica",
         "repo": "rust-overlay",
         "rev": "a619538647bd03e3ee1d7b947f7c11ff289b376e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "oxalica",
-        "repo": "rust-overlay",
-        "type": "github"
-      }
-    },
-    "rust-overlay_2": {
-      "inputs": {
-        "flake-utils": [
-          "flake-utils"
-        ],
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1676601131,
-        "narHash": "sha256-iwCg6NimjD4euquhicmSo0wuyP56xUVJUMe0yqUyQms=",
-        "owner": "oxalica",
-        "repo": "rust-overlay",
-        "rev": "d0dc81ffe8ea09dbf3c07db62a1a057f5319e3ce",
         "type": "github"
       },
       "original": {
