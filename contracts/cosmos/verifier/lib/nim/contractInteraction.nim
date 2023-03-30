@@ -1,6 +1,5 @@
 import
   std/[os,osproc,strutils],
-  # ../../../../../vendor/nimcrypto/nimcrypto/[sha2, hash, utils],
   stew/byteutils,
   helpers,
   confutils,
@@ -9,7 +8,6 @@ import
 
 proc init*(pathVerificationKey, code_id, wallet, node, txflags: string): string =
   let vkey = createVerificationKey(pathVerificationKey)
-  # let currentHeader = createCurrentHeader(pathCurrentHeader)
   let hex = hexToByteArray[32]("0xc43d94aaea1342f8e551d9a5e6fe95b7ebb013142acf1e2628ad381e5c713316")
 
   let INIT = "{\"vkey\": " & $vkey & ",\"currentHeaderHash\": " &  $hex & "}"

@@ -3,13 +3,10 @@ when defined(emcc):
 else:
   {.pragma: wasmPragma, cdecl, exportc, dynlib.}
 import
-  ../../../../../libs/nim/nim-groth16-verifier/bncurve/groups,
+  bncurve/group_operations,
   ../../../../../vendor/nimcrypto/nimcrypto/[sha2, hash, utils],
   stew/byteutils,
   sequtils,std/json,std/marshal
-
-
-export groups
 
 type
   IC* = array[5, Point[G1]]
@@ -228,14 +225,3 @@ proc makePairsAndVerify*(vk: ref VerificationKey,
 
 # # var sb: array[32, byte]
 # echo makePairsAndVerifyTest(createVerificationKey(),createProof(),hex2,hex6,hex7,hex8)
-# echo hashHeaders(hex2,hex6,hex7,hex8)
-# echo hashHeaders(hex5,hex6,hex7,hex8)
-
-# echo sb
-
-
-# echo hashHeaders(hex,hex2,hex3,hex4)
-# echo hex
-# echo hex2
-# echo hex3
-# echo hex4
