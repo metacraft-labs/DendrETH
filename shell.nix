@@ -44,7 +44,6 @@ in
         binaryen
 
         metacraft-labs.circom
-        rustup
         nlohmann_json
         python-with-my-packages
         gmp
