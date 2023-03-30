@@ -21,7 +21,6 @@ extern "C" {
         newFinalizedHeader: *const u8,
         newExecutionStateRoot: *const u8
     ) -> bool;
-
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -32,10 +31,7 @@ pub fn instantiate(
     _msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     deps.storage.set("key_in_bytes".as_bytes(), &_msg.vkey);
-    deps.storage
-        .set("current_header_root".as_bytes(), &_msg.currentHeaderHash);
-    // deps.storage.set("finalized_header_root".as_ptr());
-    // deps.storage.set("execution_state_root".as_ptr());
+    deps.storage.set("current_header_root".as_bytes(), &_msg.currentHeaderHash);
 
     Ok(Response::default())
 }
@@ -74,7 +70,6 @@ pub fn execute_update(
     newExecutionStateRoot: Vec<u8>,
 ) -> Result<Response, ContractError> {
     let storedKey = deps.storage.get("key_in_bytes".as_bytes()).unwrap();
-
     let storedCurrentHeaderRoot = deps.storage.get("current_header_root".as_bytes()).unwrap();
     if unsafe {
         makePairsAndVerify(
@@ -86,10 +81,7 @@ pub fn execute_update(
             newExecutionStateRoot.as_ptr()
                 )
     } {
-
-
         deps.storage.set("current_header_root".as_bytes(), &storedCurrentHeaderRoot);
-        // deps.storage.set("execution_state_root".as_bytes(), &newExecutionStateRoot);
     } else {
         return Err(ContractError::Std(StdError::generic_err(format!(
             "{:?} \n{:?} \n{:?} \n{:?} \n{:?}",
@@ -98,10 +90,8 @@ pub fn execute_update(
             &newOptimisticHeader,
             &newFinalizedHeader,
             &newExecutionStateRoot
-
         ))));
     }
-
     Ok(Response::default())
 }
 
