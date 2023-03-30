@@ -21,13 +21,7 @@ extern "C" {
         newFinalizedHeader: *const u8,
         newExecutionStateRoot: *const u8
     ) -> bool;
-    // fn hashHeaders(
-    //         currentHeaderRoot: *const u8,
-    //         newOptimisticHeader: *const u8,
-    //         newFinalizedHeader: *const u8,
-    //         newExecutionStateRoot: *const u8,
-    //         oneMoreElement: *mut u8
-    // ) -> bool;
+
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -82,38 +76,6 @@ pub fn execute_update(
     let storedKey = deps.storage.get("key_in_bytes".as_bytes()).unwrap();
 
     let storedCurrentHeaderRoot = deps.storage.get("current_header_root".as_bytes()).unwrap();
-    // let mut fresh:Vec<u8> = vec! [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-
-    // if unsafe{ hashHeaders(
-    //         storedCurrentHeaderRoot.as_ptr(),
-    //         newOptimisticHeader.as_ptr(),
-    //         newFinalizedHeader.as_ptr(),
-    //         newExecutionStateRoot.as_ptr(),
-    //         fresh.as_ptr() as *mut u8,
-    // )
-    // }   {
-    //          return Err(ContractError::Std(StdError::generic_err(format!(
-    //             "{:?} {:?}",
-    //             "WE IN",fresh))))}
-    //             else {
-    //             return Err(ContractError::Std(StdError::generic_err(format!(
-    //                     "{:?} {:?}",
-    //                     "WE NOT IN",fresh))))}
-
-    /*
-    let a = unsafe {makePairsAndVerify(
-        storedKey.as_ptr(),
-        proof.as_ptr(),
-        storedCurrentHeaderRoot.as_ptr(),
-        newOptimisticHeader.as_ptr(),
-        newFinalizedHeader.as_ptr(),
-        newExecutionStateRoot.as_ptr(),
-        fresh.as_ptr() as *mut u8,)};
-    return Err(ContractError::Std(StdError::generic_err(format!(
-        "{:?} \n{:?}",
-        "Incorrect update",
-        &fresh))));
-         */
     if unsafe {
         makePairsAndVerify(
             storedKey.as_ptr(),
@@ -125,14 +87,7 @@ pub fn execute_update(
                 )
     } {
 
-        // return Err(ContractError::Std(StdError::generic_err(format!(
-        //     "{:?} \n{:?} \n{:?} \n{:?}",
-        //     "Incorrect update",
-        //     &storedCurrentHeaderRoot,
-        //     &storedCurrentOLDHeaderRoot,
-        //     fresh
 
-        // ))));
         deps.storage.set("current_header_root".as_bytes(), &storedCurrentHeaderRoot);
         // deps.storage.set("execution_state_root".as_bytes(), &newExecutionStateRoot);
     } else {

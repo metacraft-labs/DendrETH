@@ -72,9 +72,9 @@ describe('Light Client In Cosmos', () => {
     verifierTool = `${contractDirVerifier}/nimcache/contractInteraction`;
     parseDataTool = `${contractDirVerifier}/nimcache/parseData`;
     pathToVerifyUtils =
-      rootDir + `/vendor/eth2-light-client-updates/mainnet/proofs/`;
-    pathToKey = pathToVerifyUtils + `verification_key.json`;
-    pathToFirstHeader = pathToVerifyUtils + `public291.json`;
+      rootDir + `/vendor/eth2-light-client-updates/prater/capella-updates/`;
+    pathToKey = pathToVerifyUtils + `vkey.json`;
+    pathToFirstHeader = pathToVerifyUtils + `update_5200024_5200056.json`;
 
     let nimFilePathVerifier = contractDirVerifier + `/lib/nim/verify.nim`;
     await compileNimFileToWasm(
@@ -200,36 +200,46 @@ describe('Light Client In Cosmos', () => {
     );
 
     const header = queryResultAfterInitialization.toString().replace(/\s/g, '');
-    expect(header).toEqual(expectedHeader);
+    expect(header).toEqual(
+      '196,61,148,170,234,19,66,248,229,81,217,165,230,254,149,183,235,176,19,20,42,207,30,38,40,173,56,30,92,113,51,22',
+    );
   }, 300000);
 
   test('Check "Verifier" after one update', async () => {
     // Executing update on the smart contract
-    const pathToProof = pathToVerifyUtils + `proof291.json`;
-    // Parse the contract specific message that is passed to the contract
-    const parseUpdateDataCommand = `${parseDataTool} updateData \
-       --proofPath=${pathToProof} --nextHeaderPath=${pathToFirstHeader}`;
-    console.info(`➤ ${parseUpdateDataCommand}`);
-    const updateDataExec = exec(parseUpdateDataCommand);
-    const updateData = (await updateDataExec).stdout.replace(/\s/g, '');
+    const updateFiles = glob(pathToVerifyUtils + `proof*.json`);
+    var newHeaderPath;
+    var counter = 1;
+    for (var proofFilePath of updateFiles.slice(0, 1)) {
+      console.log(proofFilePath);
+      newHeaderPath = replaceInTextProof(proofFilePath);
 
-    // Execute update on the contract with the contract specific message
-    const executeFee = calculateFee(2_000_000, gasPrice);
-    const result = await client.execute(
-      DendrETHWalletInfo.address,
-      _contractAddress,
-      JSON.parse(updateData),
-      executeFee,
-    );
+      // Parse the contract specific message that is passed to the contract
+      const parseUpdateDataCommand = `${parseDataTool} updateData \
+        --proofPath=${proofFilePath} --numberOfUpdate=${newHeaderPath}`;
+      console.info(`➤ ${parseUpdateDataCommand}`);
+      const updateDataExec = exec(parseUpdateDataCommand);
+      const updateData = (await updateDataExec).stdout.replace(/\s/g, '');
 
-    // Gas Used
-    console.info(`Update 1 Verifier used ` + result.gasUsed + ` gas`);
-    let updateGas = new gasUsed('Update 1', result.gasUsed);
-    gasArrayVerifier.push(updateGas);
+      // Execute update on the contract with the contract specific message
+      const executeFee = calculateFee(2_000_000, gasPrice);
+      const result = await client.execute(
+        DendrETHWalletInfo.address,
+        _contractAddress,
+        JSON.parse(updateData),
+        executeFee,
+      );
+
+      // Gas Used
+      counter++;
+      console.info(`Update ` + counter + ` used ` + result.gasUsed + ` gas`);
+      let updateGas = new gasUsed(`Update ` + counter, result.gasUsed);
+      gasArrayVerifier.push(updateGas);
+    }
 
     //What is the expected result of the query below
-    const getExpectedHeaderCommand =
-      `${parseDataTool} newHeader --newHeaderPath=` + pathToFirstHeader;
+    const getExpectedHeaderCommand = `${parseDataTool} newHeader --newHeaderPath=${newHeaderPath}`;
+
     console.info(`➤ ${getExpectedHeaderCommand}`);
     const expectedHeaderExec = exec(getExpectedHeaderCommand);
     const expectedHeader = (await expectedHeaderExec).stdout
@@ -252,65 +262,64 @@ describe('Light Client In Cosmos', () => {
     expect(header).toEqual(expectedHeader);
   }, 300000);
 
-  // test('Check "Verifier" after 20 updates', async () => {
-  //   const updateFiles = glob(pathToVerifyUtils + `proof*.json`);
-  //   const numOfUpdates = 20;
-  //   var counter = 1;
-  //   for (var proofFilePath of updateFiles.slice(1, numOfUpdates)) {
-  //     const newHeaderPath = replaceInTextProof(proofFilePath);
+  test('Check "Verifier" after 20 updates', async () => {
+    const updateFiles = glob(pathToVerifyUtils + `proof*.json`);
+    const numOfUpdates = 20;
+    var newHeaderPath;
+    var counter = 1;
+    for (var proofFilePath of updateFiles.slice(1, numOfUpdates)) {
+      const newHeaderPath = replaceInTextProof(proofFilePath);
 
-  //     // Parse the contract specific message that is passed to the contract
-  //     const parseUpdateDataCommand = `${parseDataTool} updateData \
-  //       --proofPath=${proofFilePath} --nextHeaderPath=${newHeaderPath}`;
-  //     console.info(`➤ ${parseUpdateDataCommand}`);
-  //     const updateDataExec = exec(parseUpdateDataCommand);
-  //     const updateData = (await updateDataExec).stdout.replace(/\s/g, '');
+      // Parse the contract specific message that is passed to the contract
+      const parseUpdateDataCommand = `${parseDataTool} updateData \
+        --proofPath=${proofFilePath} --numberOfUpdate=${newHeaderPath}`;
+      console.info(`➤ ${parseUpdateDataCommand}`);
+      const updateDataExec = exec(parseUpdateDataCommand);
+      const updateData = (await updateDataExec).stdout.replace(/\s/g, '');
 
-  //     // Execute update on the contract with the contract specific message
-  //     const executeFee = calculateFee(2_000_000, gasPrice);
-  //     const result = await client.execute(
-  //       DendrETHWalletInfo.address,
-  //       _contractAddress,
-  //       JSON.parse(updateData),
-  //       executeFee,
-  //     );
+      // Execute update on the contract with the contract specific message
+      const executeFee = calculateFee(2_000_000, gasPrice);
+      const result = await client.execute(
+        DendrETHWalletInfo.address,
+        _contractAddress,
+        JSON.parse(updateData),
+        executeFee,
+      );
 
-  //     // Gas Used
-  //     counter++;
-  //     console.info(`Update ` + counter + ` used ` + result.gasUsed + ` gas`);
-  //     let updateGas = new gasUsed(`Update ` + counter, result.gasUsed);
-  //     gasArrayVerifier.push(updateGas);
-  //   }
+      // Gas Used
+      counter++;
+      console.info(`Update ` + counter + ` used ` + result.gasUsed + ` gas`);
+      let updateGas = new gasUsed(`Update ` + counter, result.gasUsed);
+      gasArrayVerifier.push(updateGas);
+    }
 
-  //   //What is the expected result of the query below
-  //   const getExpectedHeaderCommand = `${parseDataTool} newHeader --newHeaderPath=${pathToVerifyUtils}public${
-  //     290 + numOfUpdates
-  //   }.json`;
-  //   console.info(`➤ ${getExpectedHeaderCommand}`);
-  //   const expectedHeaderExec = exec(getExpectedHeaderCommand);
-  //   const expectedHeader = (await expectedHeaderExec).stdout
-  //     .toString()
-  //     .replace(/\s/g, '')
-  //     .replace('[', '')
-  //     .replace(']', '');
+    //What is the expected result of the query below
+    const getExpectedHeaderCommand = `${parseDataTool} newHeader --newHeaderPath=${newHeaderPath}`;
+    console.info(`➤ ${getExpectedHeaderCommand}`);
+    const expectedHeaderExec = exec(getExpectedHeaderCommand);
+    const expectedHeader = (await expectedHeaderExec).stdout
+      .toString()
+      .replace(/\s/g, '')
+      .replace('[', '')
+      .replace(']', '');
 
-  //   // Query contract after 20 updates
-  //   const headerSlotAfter20Update = await client.queryContractSmart(
-  //     _contractAddress,
-  //     {
-  //       header: {},
-  //     },
-  //   );
+    // Query contract after 20 updates
+    const headerSlotAfter20Update = await client.queryContractSmart(
+      _contractAddress,
+      {
+        header: {},
+      },
+    );
 
-  //   const header = headerSlotAfter20Update.toString().replace(/\s/g, '');
-  //   fs.writeFileSync(
-  //     'tests/cosmosLightClient/gasVerifier.json',
-  //     JSON.stringify(gasArrayVerifier),
-  //     {
-  //       flag: 'w',
-  //     },
-  //   );
-  //   expect(header).toEqual(expectedHeader);
-  //   controller.abort();
-  // }, 1500000);
+    const header = headerSlotAfter20Update.toString().replace(/\s/g, '');
+    fs.writeFileSync(
+      'tests/cosmosLightClient/gasVerifier.json',
+      JSON.stringify(gasArrayVerifier),
+      {
+        flag: 'w',
+      },
+    );
+    expect(header).toEqual(expectedHeader);
+    controller.abort();
+  }, 1500000);
 });
