@@ -1,7 +1,8 @@
 import
-  ../../../../../libs/nim/nim-groth16-verifier/bncurve/groups,
+  bncurve/groups,
   std/json,
-  ../../../../../vendor/nimcrypto/nimcrypto/[sha2, hash, utils]
+  nimcrypto/[sha2, hash, utils],
+  stew/byteutils
 
 
 
@@ -59,12 +60,6 @@ proc createCurrentHeader*(path:string): array[sizeof(Header),byte]  =
   let currentHeader = Header(head: Fr.fromString(public[0].str),tail:Fr.fromString(public[1].str))
   result = cast[var array[sizeof(Header),byte]](currentHeader.unsafeAddr)
 
-
-# proc createNewHeader*(path:string): array[sizeof(Header),byte] =
-#   let public = parseFile(path)
-
-#   let newHeader = Header(head: Fr.fromString(public[2].str),tail:Fr.fromString(public[3].str))
-#   result = cast[var array[sizeof(Header),byte]](newHeader.unsafeAddr)
 
 proc TwoOnPower*(power: int): int =
   var output = 1
@@ -124,10 +119,7 @@ proc headerFromSeq(bigNum: seq): Header =
   # result = cast[var array[sizeof(Header),byte]](newHeader.unsafeAddr)
   Header(head: head.FR, tail: tail.FR)
 
-proc createNewHeader*(path:string): array[sizeof(Header),byte] =
-  # let public = parseFile(path)
-
-  let hex = fromHex("0x51e177b2e6e99ae2b2179f54a471031622713a321d407b56fc3293c0d3d634bb")
-  let head1 = headerFromSeq(hex)
-  # let newHeader = Header(head: Fr.fromString(public[2].str),tail:Fr.fromString(public[3].str))
-  result = cast[var array[sizeof(Header),byte]](head1.unsafeAddr)
+proc getNewHeader*(path:string): array[32,byte] =
+  let update = parseFile(path)
+  let newOptimisticHeader = hexToByteArray[32](update["attested_header_root"].str)
+  newOptimisticHeader
