@@ -2999,6 +2999,7 @@ __metadata:
     "@types/glob": ^7.2.0
     "@types/jest": ^28.1.2
     "@types/node": ^18.0.0
+    bullmq: ^3.7.1
     circom_tester: ^0.0.14
     crypto-js: ^4.1.1
     dotenv: ^16.0.2
@@ -3009,6 +3010,7 @@ __metadata:
     jest: ^28.1.1
     prettier: ^2.6.2
     r1csfile: ^0.0.40
+    redis: ^4.6.5
     redis-commander: ^0.8.0
     snarkjs: "github:metacraft-labs/snarkjs"
     ts-jest: ^28.0.5
