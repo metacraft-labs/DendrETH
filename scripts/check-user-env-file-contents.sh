@@ -14,10 +14,4 @@ check_required_var () {
   fi
 }
 
-check_required_var INFURA_API_KEY \
-  "It's required for deploying and interacting with the Solidity contracts on public testnets. You can obtain such as key by creating an account at https://infura.io"
-
-check_required_var ETHERSCAN_API_KEY \
-  "This is used for Etherscan contract verification. You can obtain such as key by creating an account at https://etherscan.io"
-
 exit $STATUS

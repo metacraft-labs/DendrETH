@@ -1,0 +1,24 @@
+FROM nixos/nix
+
+COPY ./.git ./DendrETH/.git
+COPY ./flake.nix ./DendrETH/flake.nix
+COPY ./relay/shell.nix ./DendrETH/shell.nix
+COPY ./relay ./DendrETH/relay
+COPY ./libs/ ./DendrETH/libs
+COPY ./beacon-light-client/solidity ./DendrETH/beacon-light-client/solidity
+COPY ./package.json ./DendrETH/package.json
+COPY ./yarn.lock ./DendrETH/yarn.lock
+COPY ./tsconfig.json ./DendrETH/tsconfig.json
+COPY ./scripts ./DendrETH/scripts
+COPY ./.yarnrc.yml ./DendrETH/.yarnrc.yml
+
+COPY ./vendor/rapidsnark ./DendrETH/vendor/rapidsnark
+COPY ./vendor/build-artifacts ./DendrETH/vendor/build-artifacts
+
+RUN cd DendrETH && nix --experimental-features 'nix-command flakes' --accept-flake-config develop --command bash -c \
+'yarn install && cd beacon-light-client/solidity && yarn install && yarn hardhat compile && cd ../../relay && yarn install && \
+cd ../vendor/rapidsnark && npm install && git submodule init && git submodule update && npx task createFieldSources && npx task buildProver'
+
+VOLUME relayvolume DendrETH/build
+
+ENTRYPOINT ["./DendrETH/relay/run-relay.sh"]
