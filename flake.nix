@@ -19,28 +19,56 @@
     #   using different versions of their dependencies from nixpkgs
     mcl-blockchain.url = "github:metacraft-labs/nix-blockchain-development";
     nixpkgs.follows = "mcl-blockchain/nixpkgs";
-    flake-utils.follows = "mcl-blockchain/flake-utils";
+    flake-parts = {
+      url = "github:hercules-ci/flake-parts";
+      inputs.nixpkgs-lib.follows = "nixpkgs";
+    };
+
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
   };
 
-  outputs = {
+  outputs = inputs @ {
     self,
+    flake-parts,
     nixpkgs,
     flake-utils,
     mcl-blockchain,
+    rust-overlay,
   }:
-    flake-utils.lib.simpleFlake {
-      inherit self nixpkgs;
-      name = "DendrETH";
-      shell = ./shell.nix;
-      config = {
-        permittedInsecurePackages = [
-          # wasm3 is insecure if used to execute untrusted third-party code
-          # however, since we're using it for development, these problems do not
-          # affect us.
-          # Marked as insecure: https://github.com/NixOS/nixpkgs/pull/192915
-          "wasm3-0.5.0"
-        ];
+    flake-parts.lib.mkFlake {inherit inputs;} {
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
+      ];
+      perSystem = {
+        config,
+        system,
+        pkgs,
+        ...
+      }: {
+        _module.args.pkgs = import nixpkgs {
+          inherit system;
+          overlays = [
+            mcl-blockchain.overlays.default
+            (import ./libs/nix/overlay.nix)
+            rust-overlay.overlays.default
+          ];
+          config.permittedInsecurePackages = [
+            # wasm3 is insecure if used to execute untrusted third-party code
+            # however, since we're using it for development, these problems do not
+            # affect us.
+            # Marked as insecure: https://github.com/NixOS/nixpkgs/pull/192915
+            "wasm3-0.5.0"
+          ];
+        };
+        devShells.default = import ./shell.nix {inherit pkgs;};
+        devShells.container = import ./relay/shell.nix {inherit pkgs;};
       };
-      preOverlays = [mcl-blockchain.overlays.default (import ./libs/nix/overlay.nix)];
     };
 }
