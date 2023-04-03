@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+ZKEY_SH256_SUM='2073fef22678def027a69c075e4ca4ace68461d99f545f55360601660eb30f4b'
+
 cd DendrETH
 
 if [[ -z "$WITNESS_GENERATOR_PATH" ]]; then
@@ -25,7 +27,8 @@ fi
 
 if [ ! -f "$ZKEY_FILE_PATH" ]; then
   echo "Downloading zkey file from http://dendreth.metacraft-labs.com/capella_74.zkey ..."
-  curl http://dendreth.metacraft-labs.com/capella_74.zkey > "$ZKEY_FILE_PATH"
+  curl http://dendreth.metacraft-labs.com/capella_74.zkey > "$ZKEY_FILE_PATH" && \
+  echo "$ZKEY_SH256_SUM $ZKEY_FILE_PATH" | sha256sum -c
   if [ $? -eq 0 ]; then
     echo "Zkey file downloaded successfully to $ZKEY_FILE_PATH"
   else
