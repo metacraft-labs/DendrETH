@@ -30,7 +30,14 @@ export default async function doUpdate(
     beaconApi,
   );
 
-  await proofGeneratorQueue.add('proofGenerate', result);
+  // the task will repeat in case something fails
+  await proofGeneratorQueue.add('proofGenerate', result, {
+    attempts: 10,
+    backoff: {
+      type: 'fixed',
+      delay: 60000,
+    },
+  });
 
   await redis.set(lastDownloadedUpdateKey, result.updateSlot);
 }
