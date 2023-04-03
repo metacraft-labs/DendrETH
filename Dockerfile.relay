@@ -1,4 +1,4 @@
-FROM nixos/nix
+FROM nixos/nix:2.14.1
 
 COPY ./.git ./DendrETH/.git
 COPY ./flake.nix ./DendrETH/flake.nix
