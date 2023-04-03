@@ -51,3 +51,6 @@ jobs:
 
       - name: Run Light Client in Cosmos test
         run: nix develop -c yarn test './tests/cosmosLightClient/test-nim-light-client-in-cosmos.ts'
+
+      - name: Run Verifier in Cosmos test
+        run: nix develop -c yarn test './tests/cosmosLightClient/test-verifier-in-cosmos.ts'
