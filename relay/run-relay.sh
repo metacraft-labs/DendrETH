@@ -53,7 +53,7 @@ if [[ "$REDIS_HOST" == "localhost" ]] && [[ "$REDIS_PORT" == "6379" ]]; then
   echo "Starting local Redis server..."
   mkdir redis-server
   cd redis-server
-  redis-server &
+  redis-server --appendonly yes &
   cd ../
   echo "Local Redis server started"
 else
