@@ -71,6 +71,9 @@ echo "Proof generation task started"
 
 cd ../beacon-light-client/solidity
 
+# compile contracts
+yarn hardhat compile
+
 if [ -z "$INITIAL_SLOT" ]; then
   echo "Error: INITIAL_SLOT environment variable is not set. Exiting..."
   exit 1
