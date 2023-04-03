@@ -39,7 +39,7 @@ else
   echo "Using cached zkey file at $ZKEY_FILE_PATH"
 fi
 
-nix --experimental-features 'nix-command flakes' --accept-flake-config develop --command bash -c '
+nix --experimental-features 'nix-command flakes' --accept-flake-config develop .#devShells.x86_64-linux.container --command bash -c '
 
 if [[ -z "$REDIS_HOST" ]] && [[ -z "$REDIS_PORT" ]]; then
   echo "REDIS_HOST and REDIS_PORT environment variables are not set. Using default values."
