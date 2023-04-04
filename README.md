@@ -41,6 +41,12 @@ the full blockchain environments).
 | [Goerli/Arbitrum](https://goerli.arbiscan.io/address/0xA3418F79c98A3E496A5E97610a97f82daE364619)          | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | https://github.com/metacraft-labs/DendrETH/pull/74 (Capella) |
 | [Sepolia/Ethereum](https://sepolia.etherscan.io/address/0xA3418F79c98A3E496A5E97610a97f82daE364619)       | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | https://github.com/metacraft-labs/DendrETH/pull/74 (Capella) |
 | [Mumbai/Polygon](https://mumbai.polygonscan.com/address/0xA3418F79c98A3E496A5E97610a97f82daE364619)       | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | https://github.com/metacraft-labs/DendrETH/pull/74 (Capella) |
+| [Goerli/Ethreum](https://goerli.etherscan.io/address/0x34cdE0DfCfE9D82b2ACcf04CD117be4c945e1625)          | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | (Capella)                                                    |
+| [Goerli/Optmism](https://goerli-optimism.etherscan.io/address/0x0469b7C40526edfF7f924991487B198F1a15206f) | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | (Capella)                                                    |
+| [Goerli/Base](https://goerli.basescan.org/address/0x7226C2D2f14287d990F567D8247fE2cCBbCEF2f9)             | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | (Capella)                                                    |
+| [Goerli/Arbitrum](https://goerli.arbiscan.io/address/0x59539DC0c928460B400Cf08f6e61A2de95b74E31)          | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | (Capella)                                                    |
+| [Sepolia/Ethereum](https://sepolia.etherscan.io/address/0xea4Fb78626b87BF07239336E679E9823e5030672)       | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | (Capella)                                                    |
+| [Mumbai/Polygon](https://mumbai.polygonscan.com/address/0x59539DC0c928460B400Cf08f6e61A2de95b74E31)       | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | (Capella)                                                    |
 
 ## Working with the Codebase
 
