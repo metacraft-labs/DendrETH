@@ -1,5 +1,5 @@
 import
-  std/[os,osproc,strutils],
+  std/[osproc,strutils],
   stew/byteutils,
   helpers,
   confutils,
@@ -8,9 +8,9 @@ import
 
 proc init*(pathVerificationKey, code_id, wallet, node, txflags: string): string =
   let vkey = createVerificationKey(pathVerificationKey)
-  let hex = hexToByteArray[32]("0xc43d94aaea1342f8e551d9a5e6fe95b7ebb013142acf1e2628ad381e5c713316")
+  let initHeaderHash = hexToByteArray[32]("0xc43d94aaea1342f8e551d9a5e6fe95b7ebb013142acf1e2628ad381e5c713316")
 
-  let INIT = "{\"vkey\": " & $vkey & ",\"currentHeaderHash\": " &  $hex & "}"
+  let INIT = "{\"vkey\": " & $vkey & ",\"currentHeaderHash\": " &  $initHeaderHash & "}"
   discard execCmdEx("wasmd tx wasm instantiate " & code_id & " '" & INIT & "' --from " & wallet & " --label 'Cosmos Verifier' " & txflags & " -y --no-admin")
   discard execCmdEx("sleep 10")
 
@@ -19,10 +19,10 @@ proc init*(pathVerificationKey, code_id, wallet, node, txflags: string): string 
   echo CONTRACT
   CONTRACT
 
-proc update*(pathPrf, numberOfUpdate, contract, wallet, node, txflags: string): bool =
-  let proof = createProof(pathPrf & "proof" & numberOfUpdate & ".json")
+proc update*(pathPrf, updatePath, contract, wallet, node, txflags: string): bool =
+  let proof = createProof(updatePath)
 
-  let update = parseFile(pathPrf & "update" & numberOfUpdate & ".json")
+  let update = parseFile(updatePath)
 
   let newOptimisticHeader = hexToByteArray[32](update["attested_header_root"].str)
   let newFinalizedHeader = hexToByteArray[32](update["finalized_header_root"].str)
@@ -57,10 +57,10 @@ proc execCommand*(): string =
       discard init(conf.vKeyPath, conf.code_id, conf.wallet, NODE, TXFLAG)
 
     of StartUpCommand.update:
-      discard update(conf.proofPath, conf.numberOfUpdate, conf.contract, conf.wallet, NODE, TXFLAG)
+      discard update(conf.proofPath, conf.updatePath, conf.contract, conf.wallet, NODE, TXFLAG)
 
     of StartUpCommand.query:
       discard query(conf.contract2, Node, TXFLAG)
 
-let a = execCommand()
+discard execCommand()
 

@@ -66,7 +66,8 @@ describe('Light Client Verifier In Cosmos', () => {
     pathToFirstHeader = pathToVerifyUtils + `update_5200024_5200056.json`;
     updateFiles = glob(pathToVerifyUtils + `proof*.json`);
 
-    let nimFilePathVerifier = contractDirVerifier + `/lib/nim/verify.nim`;
+    let nimFilePathVerifier =
+      contractDirVerifier + `/lib/nim//verify/verify.nim`;
     await compileNimFileToWasm(
       nimFilePathVerifier,
       `--nimcache:"${contractDirVerifier}"/nimcache --d:lightClientCosmos \
@@ -164,13 +165,13 @@ describe('Light Client Verifier In Cosmos', () => {
   test('Check "Verifier" after one update', async () => {
     console.info("Running 'Check Verifier after one update' test");
 
-    var newHeaderPath;
+    var updatePath;
     for (var proofFilePath of updateFiles.slice(0, 1)) {
-      newHeaderPath = replaceInTextProof(proofFilePath);
+      updatePath = replaceInTextProof(proofFilePath);
 
       // Parse the contract specific message that is passed to the contract
       const parseUpdateDataCommand = `${parseDataTool} updateData \
-      --proofPath=${proofFilePath} --numberOfUpdate=${newHeaderPath}`;
+      --proofPath=${proofFilePath} --updatePath=${updatePath}`;
       console.info(`Parsing data for update 1: \n ➤ ${parseUpdateDataCommand}`);
       const updateDataExec = exec(parseUpdateDataCommand);
       const updateData = (await updateDataExec).stdout.replace(/\s/g, '');
@@ -192,8 +193,8 @@ describe('Light Client Verifier In Cosmos', () => {
     }
 
     //What is the expected result of the query below
-    const getExpectedHeaderCommand = `${parseDataTool} newHeader \
-    --newHeaderPath=${newHeaderPath}`;
+    const getExpectedHeaderCommand = `${parseDataTool} expectedHeaderRootPath \
+    --expectedHeaderRootPath=${updatePath}`;
 
     console.info(
       `Parsing expected new header \n  ╰─➤ ${getExpectedHeaderCommand}`,
@@ -223,14 +224,14 @@ describe('Light Client Verifier In Cosmos', () => {
     console.info("Running 'Check Verifier after 20 updates' test");
 
     const numOfUpdates = 20;
-    var newHeaderPath;
+    var updatePath;
     var updateCounter = 1;
     for (var proofFilePath of updateFiles.slice(1, numOfUpdates)) {
-      newHeaderPath = replaceInTextProof(proofFilePath);
+      updatePath = replaceInTextProof(proofFilePath);
 
       // Parse the contract specific message that is passed to the contract
       const parseUpdateDataCommand = `${parseDataTool} updateData \
-        --proofPath=${proofFilePath} --numberOfUpdate=${newHeaderPath}`;
+        --proofPath=${proofFilePath} --updatePath=${updatePath}`;
       console.info(
         `Parsing data for update ${updateCounter}: \n  ╰─➤ ${parseUpdateDataCommand}`,
       );
@@ -257,7 +258,7 @@ describe('Light Client Verifier In Cosmos', () => {
     }
 
     // What is the expected result of the query below
-    const getExpectedHeaderCommand = `${parseDataTool} newHeader --newHeaderPath=${newHeaderPath}`;
+    const getExpectedHeaderCommand = `${parseDataTool} expectedHeaderRootPath --expectedHeaderRootPath=${updatePath}`;
     console.info(
       `Parsing expected new header \n   ${getExpectedHeaderCommand}`,
     );
