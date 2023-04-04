@@ -3,12 +3,16 @@ with pkgs; let
   nodejs = nodejs-18_x;
   llvm = llvmPackages_13;
   corepack = callPackage ../libs/nix/corepack-shims {inherit nodejs;};
+  python-with-my-packages = python38.withPackages (ps:
+    with ps; [
+      supervisor
+    ]);
 in
   mkShell {
     packages = [
       nodejs
       corepack
-      python38
+      python-with-my-packages
       gmp
       nasm
       libsodium

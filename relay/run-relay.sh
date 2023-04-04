@@ -39,8 +39,6 @@ else
   echo "Using cached zkey file at $ZKEY_FILE_PATH"
 fi
 
-nix --experimental-features 'nix-command flakes' --accept-flake-config develop .#devShells.x86_64-linux.container --command bash -c '
-
 if [[ -z "$REDIS_HOST" ]] && [[ -z "$REDIS_PORT" ]]; then
   echo "REDIS_HOST and REDIS_PORT environment variables are not set. Using default values."
   REDIS_HOST="localhost"
@@ -49,33 +47,34 @@ else
   echo "Using Redis settings from environment variables"
 fi
 
+nix --experimental-features 'nix-command flakes' --accept-flake-config develop .#devShells.x86_64-linux.container --command bash -c '
+# needed in order for the supervisord configuration to be correct
+mkdir -p redis-server
+
+supervisord -c supervisord.conf
+
 if [[ "$REDIS_HOST" == "localhost" ]] && [[ "$REDIS_PORT" == "6379" ]]; then
   echo "Starting local Redis server..."
-  mkdir redis-server
-  cd redis-server
-  redis-server --appendonly yes &
-  cd ../
+  supervisorctl start redis
   echo "Local Redis server started"
 else
   echo "Using remote Redis server at $REDIS_HOST:$REDIS_PORT"
 fi
 
-cd relay
-
 # Run the polling update task
 echo "Starting the polling update task"
-yarn run pollUpdatesWorker > pollUpdatesWorker.log 2>&1 &
+supervisorctl start pollUpdatesWorker
 echo "Polling update task started"
 
 # Run the proof generation task
 echo "Starting the proof generation task"
-yarn run proofGenerationWorker > proofGenerationWorker.log 2>&1 &
+supervisorctl start proofGenerationWorker
 echo "Proof generation task started"
 
-cd ../beacon-light-client/solidity
-
 # compile contracts
+cd beacon-light-client/solidity
 yarn hardhat compile
+cd ../../
 
 if [ -z "$INITIAL_SLOT" ]; then
   echo "Error: INITIAL_SLOT environment variable is not set. Exiting..."
@@ -88,60 +87,55 @@ if [ -z "$SLOTS_JUMP" ]; then
 fi
 
 # Register update polling task
-yarn hardhat run-update --initialslot $INITIAL_SLOT --slotsjump $SLOTS_JUMP &
+supervisorctl start runUpdate
 echo "Registered update polling repeat task"
 
 # Run hardhat tasks for different networks
-
 if [ -n "$LC_GOERLI" ]; then
   echo "Starting light client for Goerli network"
-  yarn hardhat start-publishing --lightclient $LC_GOERLI --network goerli > goerli.log &
+  supervisorctl start goerli
 else
   echo "Skipping Goerli network"
 fi
 
 if [ -n "$LC_OPTIMISTIC_GOERLI" ]; then
   echo "Starting light client for Optimistic Goerli network"
-  yarn hardhat start-publishing --lightclient $LC_OPTIMISTIC_GOERLI --network optimisticGoerli > optimisticGoerli.log &
+  supervisorctl start optimisticGoerli
 else
   echo "Skipping Optimistic Goerli network"
 fi
 
 if [ -n "$LC_BASE_GOERLI" ]; then
   echo "Starting light client for Base Goerli network"
-  yarn hardhat start-publishing --lightclient $LC_BASE_GOERLI --network baseGoerli > baseGoerli.log &
+  supervisorctl start baseGoerli
 else
   echo "Skipping Base Goerli network"
 fi
 
 if [ -n "$LC_ARBITRUM_GOERLI" ]; then
   echo "Starting light client for Arbitrum Goerli network"
-  yarn hardhat start-publishing --lightclient $LC_ARBITRUM_GOERLI --network arbitrumGoerli > arbitrumGoerli.log &
+  supervisorctl start arbitrumGoerli
 else
   echo "Skipping Arbitrum Goerli network"
 fi
 
 if [ -n "$LC_SEPOLIA" ]; then
   echo "Starting light client for Sepolia network"
-  yarn hardhat start-publishing --lightclient $LC_SEPOLIA --network sepolia > sepolia.log &
+  supervisorctl start sepolia
 else
   echo "Skipping Sepolia network"
 fi
 
 if [ -n "$LC_MUMBAI" ]; then
   echo "Starting light client for Mumbai network"
-  yarn hardhat start-publishing --lightclient $LC_MUMBAI --network mumbai > mumbai.log &
+  supervisorctl start mumbai
 else
   echo "Skipping Mumbai network"
 fi
 
 echo "Everything started"
 
-cd ../../relay
-
-yarn ts-node relayer_logger.ts > general_logs.log &
-
-cd ../
+supervisorctl start general_logs
 
 tail -f relay/general_logs.log relay/pollUpdatesWorker.log relay/proofGenerationWorker.log beacon-light-client/solidity/goerli.log beacon-light-client/solidity/optimisticGoerli.log beacon-light-client/solidity/baseGoerli.log beacon-light-client/solidity/arbitrumGoerli.log beacon-light-client/solidity/sepolia.log beacon-light-client/solidity/mumbai.log
 

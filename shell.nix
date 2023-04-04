@@ -9,6 +9,7 @@ with pkgs; let
     with ps; [
       (my-python-packages ps)
       setuptools
+      supervisor
     ]);
 
   rustTargetWasm =
