@@ -5,7 +5,7 @@ with pkgs; let
   corepack = callPackage ./libs/nix/corepack-shims {inherit nodejs;};
   nim-wasm = callPackage ./libs/nix/nim-wasm {inherit llvm;};
   my-python-packages = ps: ps.callPackage ./my-python-packages.nix {};
-  python-with-my-packages = python38.withPackages (ps:
+  python-with-my-packages = python311.withPackages (ps:
     with ps; [
       (my-python-packages ps)
       setuptools
