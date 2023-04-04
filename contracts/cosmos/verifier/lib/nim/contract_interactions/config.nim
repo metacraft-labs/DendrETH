@@ -32,15 +32,13 @@ type
     of init:
       vKeyPath* {.
         desc: "Path to the verification key"}: string
-      currentHeaderPath* {.
-        desc: "Path to the new header"}: string
       codeId*{.
         desc: "Contract ID"}: string
 
     of update:
       proofPath* {.
         desc: "Path to the proof"}: string
-      numberOfUpdate* {.
+      updatePath* {.
         desc: "Path to the new header"}: string
       contract* {.
         desc: "Contract Hash"}: string

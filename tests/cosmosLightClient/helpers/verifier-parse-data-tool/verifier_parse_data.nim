@@ -4,7 +4,7 @@ import
   config,
   std/json,
   stew/byteutils,
-  ../../../../contracts/cosmos/verifier/lib/nim/helpers
+  ../../../../contracts/cosmos/verifier/lib/nim/contract_interactions/helpers
 
 proc execCommand*(): string =
   let conf = ParseDataConf.load()
@@ -22,7 +22,7 @@ proc execCommand*(): string =
     of StartUpCommand.updateData:
       let proof = createProof(conf.proofPath)
 
-      let updateJson = parseFile(conf.numberOfUpdate)
+      let updateJson = parseFile(conf.updatePath)
       let newOptimisticHeader = hexToByteArray[32](updateJson["attested_header_root"].str)
       let newFinalizedHeader = hexToByteArray[32](updateJson["finalized_header_root"].str)
       let newExecutionStateRoot = hexToByteArray[32](updateJson["finalized_execution_state_root"].str)
@@ -31,11 +31,8 @@ proc execCommand*(): string =
 
       echo update
 
-    of StartUpCommand.currentHeader:
-      echo createCurrentHeader(conf.currentHeaderPath)
-
-    of StartUpCommand.newHeader:
-      echo getNewHeader(conf.newHeaderPath)
+    of StartUpCommand.expectedHeaderRootPath:
+      echo getExpectedHeaderRoot(conf.expectedHeaderRootPath)
 
 let a = execCommand()
 
