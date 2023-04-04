@@ -23,4 +23,5 @@ cd ../vendor/rapidsnark && npm install && git submodule init && git submodule up
 
 VOLUME relayvolume DendrETH/build
 
-ENTRYPOINT ["./DendrETH/relay/run-relay.sh"]
+WORKDIR /DendrETH
+ENTRYPOINT ["./relay/run-relay.sh"]

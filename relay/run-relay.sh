@@ -2,8 +2,6 @@
 
 ZKEY_SH256_SUM='2073fef22678def027a69c075e4ca4ace68461d99f545f55360601660eb30f4b'
 
-cd DendrETH
-
 if [[ -z "$WITNESS_GENERATOR_PATH" ]]; then
   echo "WITNESS_GENERATOR_PATH environment variable is not set. Using default value."
   WITNESS_GENERATOR_PATH="/DendrETH/vendor/build-artifacts/light_client_cpp/light_client"
@@ -18,7 +16,7 @@ else
   echo "Using RAPIDSNAKR_PROVER_PATH=$RAPIDSNAKR_PROVER_PATH"
 fi
 
-if [ ! -z "$ZKEY_FILE_PATH" ]; then
+if [[ -z "$ZKEY_FILE_PATH" ]]; then
   echo "ZKEY_FILE_PATH environment variable is not set. Using default value."
   ZKEY_FILE_PATH="/DendrETH/build/light_client.zkey"
 else
