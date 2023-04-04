@@ -6,8 +6,7 @@ type
     noCommand
     initData
     updateData
-    currentHeader
-    newHeader
+    expectedHeaderRootPath
 
 type
   ParseDataConf* = object
@@ -27,13 +26,9 @@ type
     of updateData:
       proofPath* {.
         desc: "Path to some header"}: string
-      numberOfUpdate* {.
-        desc: "numberOfUpdate"}: string
+      updatePath* {.
+        desc: "updatePath"}: string
 
-    of currentHeader:
-      currentHeaderPath* {.
-        desc: "Path to some header"}: string
-
-    of newHeader:
-      newHeaderPath* {.
+    of expectedHeaderRootPath:
+      expectedHeaderRootPath* {.
         desc: "Path to some header"}: string
