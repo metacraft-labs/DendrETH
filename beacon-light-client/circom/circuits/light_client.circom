@@ -315,7 +315,7 @@ template LightClient(N) {
     }
   }
 
-  component commitment = Sha256(1280);
+  component commitment = Sha256(1536);
 
   for(var i = 0; i < 256; i++) {
     commitment.in[i] <== prevHeaderHash[i];
@@ -342,6 +342,10 @@ template LightClient(N) {
 
   for(var i = 192; i < 256; i++) {
     commitment.in[1024 + i] <== nextHeaderSlotBits.out[255 - i];
+  }
+
+  for(var i = 0; i < 256; i++) {
+    commitment.in[1280 + i] <== computeDomain.domain[i];
   }
 
   component bits2num1 = Bits2Num(253);
