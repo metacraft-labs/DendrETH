@@ -58,11 +58,13 @@ describe('Light Client In Cosmos', () => {
     console.info(`➤ ${startNodeCommand}`);
     exec_(startNodeCommand, { signal });
 
-    await sleep(10000);
+    await sleep(10000); // We need some time to make sure the node started
 
     const addKeyCommand = `bash "${rootDir}/../../contracts/cosmos/light-client/scripts/add_account.sh"`;
     console.info(`➤ ${addKeyCommand}`);
     execSync(addKeyCommand);
+
+    await sleep(10000); // We need some time to make sure account is funded
 
     const getFredAddressCommand = `wasmd keys show fred -a --keyring-backend test --keyring-dir $HOME/.wasmd_keys`;
     console.info(`➤ ${getFredAddressCommand}`);
