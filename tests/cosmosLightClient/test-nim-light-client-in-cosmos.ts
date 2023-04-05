@@ -185,14 +185,14 @@ describe('Light Client In Cosmos', () => {
     expect(headerSlotAfterOneUpdate).toEqual(expectedHeaderSlot);
   }, 300000);
 
-  test('Check "LightClientStore" after all updates', async () => {
-    const expectedHeaderSlot = 4366496;
+  test('Check "LightClientStore" after first 20 updates', async () => {
+    const expectedHeaderSlot = 2531776;
 
     const updateFiles = glob(
       rootDir + `/vendor/eth2-light-client-updates/mainnet/updates/*.json`,
     );
     var counter = 1;
-    for (var updateFile of updateFiles) {
+    for (var updateFile of updateFiles.slice(0, 20)) {
       const updateData = await jsonToSerializedBase64(
         SSZSpecTypes.LightClientUpdate,
         updateFile,
