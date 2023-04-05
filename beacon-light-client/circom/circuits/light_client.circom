@@ -41,9 +41,8 @@ template LightClient(N) {
   signal input execution_state_root[256];
   signal input execution_state_root_branch[11][256];
 
+  // Exposed as public via domain
   signal input fork_version[32];
-
-  // Should be harcoded
   signal input GENESIS_VALIDATORS_ROOT[256];
   signal input DOMAIN_SYNC_COMMITTEE[32];
 
@@ -106,7 +105,6 @@ template LightClient(N) {
   }
 
   isValidMerkleBranchPrevHeaderSlot.index <== 8;
-  isValidMerkleBranchPrevHeaderSlot.out === 1;
 
   component isValidMerkleBranchPrevHeaderFinalizedStateRoot = IsValidMerkleBranch(3);
 
@@ -122,7 +120,6 @@ template LightClient(N) {
   }
 
   isValidMerkleBranchPrevHeaderFinalizedStateRoot.index <== 11;
-  isValidMerkleBranchPrevHeaderFinalizedStateRoot.out === 1;
 
 
   component isValidMerkleBranchNextHeaderSlot = IsValidMerkleBranch(3);
@@ -139,7 +136,6 @@ template LightClient(N) {
   }
 
   isValidMerkleBranchNextHeaderSlot.index <== 8;
-  isValidMerkleBranchNextHeaderSlot.out === 1;
 
 
   component bitmaskContainsOnlyBools = BitmaskContainsOnlyBools(N);
@@ -148,15 +144,13 @@ template LightClient(N) {
     bitmaskContainsOnlyBools.bitmask[i] <== bitmask[i];
   }
 
-  // Check if a supermajority of the ?validators signed the ???
-  // aka check if there are 2/3 or more 1s in the bitmask
+  // Check if there is a supermajority in the bitmask
   component isSuperMajority = IsSuperMajority(N);
 
   for(var i = 0; i < N; i++) {
     isSuperMajority.bitmask[i] <== bitmask[i];
   }
-  //Check if it returns 1
-  isSuperMajority.out === 1;
+
   component computeDomain = ComputeDomain();
 
   for(var i = 0; i < 32; i++) {
@@ -176,6 +170,7 @@ template LightClient(N) {
   for(var i = 0; i < 256; i++) {
     computeSigningRoot.headerHash[i] <== nextHeaderHash[i];
   }
+
   //out of computeDomain -> input of computeSigningRoot
   for(var i = 0; i < 256; i++) {
     computeSigningRoot.domain[i] <== computeDomain.domain[i];
@@ -223,8 +218,6 @@ template LightClient(N) {
 
   isValidMerkleBranchPrevFinality.index <== 745;
 
-  isValidMerkleBranchPrevFinality.out === 1;
-
   component isValidMerkleBranchFinality = IsValidMerkleBranch(9);
 
   for(var i = 0; i < 9; i++) {
@@ -240,8 +233,6 @@ template LightClient(N) {
 
   isValidMerkleBranchFinality.index <== 745;
 
-  isValidMerkleBranchFinality.out === 1;
-
   component isValidMerkleBranchExecution = IsValidMerkleBranch(11);
 
   for(var i = 0; i < 256; i++) {
@@ -256,8 +247,6 @@ template LightClient(N) {
   }
 
   isValidMerkleBranchExecution.index <== 3218;
-
-  isValidMerkleBranchExecution.out === 1;
 
   component isValidMerkleBranchSyncCommittee = IsValidMerkleBranch(5);
 
@@ -280,8 +269,6 @@ template LightClient(N) {
   arePeriodsEqual.in[1] <== finalizedHeaderSlotSyncCommitteePeriod;
 
   isValidMerkleBranchSyncCommittee.index <== 55 - arePeriodsEqual.out;
-
-  isValidMerkleBranchSyncCommittee.out === 1;
 
   component aggregateKeys = AggregateKeysBitmask(N);
 

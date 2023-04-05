@@ -46,5 +46,5 @@ template IsValidMerkleBranch(N) {
   isEqual[N].in[0] <== N;
   isEqual[N].in[1] <== counter;
 
-  out <== isEqual[N].out;
+  isEqual[N].out === 1;
 }
