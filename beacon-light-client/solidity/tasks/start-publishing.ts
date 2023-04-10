@@ -4,9 +4,6 @@ import { Redis } from '../../../relay/implementations/redis';
 import { SolidityContract } from '../../../relay/implementations/solidity-contract';
 import { publishProofs } from '../../../relay/on_chain_publisher';
 import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
-import { createClient } from 'redis';
-
-const client = createClient();
 
 task('start-publishing', 'Run relayer')
   .addParam('lightclient', 'The address of the BeaconLightClient contract')

@@ -47,6 +47,11 @@ the full blockchain environments).
 | [Goerli/Arbitrum](https://goerli.arbiscan.io/address/0x59539DC0c928460B400Cf08f6e61A2de95b74E31)          | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | (Capella)                                                    |
 | [Sepolia/Ethereum](https://sepolia.etherscan.io/address/0xea4Fb78626b87BF07239336E679E9823e5030672)       | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | (Capella)                                                    |
 | [Mumbai/Polygon](https://mumbai.polygonscan.com/address/0x59539DC0c928460B400Cf08f6e61A2de95b74E31)       | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | (Capella)                                                    |
+| [Fuji/Avalanche](https://testnet.snowtrace.io/address/0xA3418F79c98A3E496A5E97610a97f82daE364619)         | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | (Capella)                                                    |
+| [Testnet/Fantom](https://testnet.ftmscan.com/address/0xA3418F79c98A3E496A5E97610a97f82daE364619)          | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | (Capella)                                                    |
+| [Alfajores/Celo](https://alfajores.celoscan.io/address/0xA3418F79c98A3E496A5E97610a97f82daE364619)        | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | (Capella)                                                    |
+| [Testnet/BSC](https://testnet.bscscan.com/address/0xA3418F79c98A3E496A5E97610a97f82daE364619)             | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | (Capella)                                                    |
+| [Chiado/Gnosis](https://blockscout.com/gnosis/chiado/address/0xA3418F79c98A3E496A5E97610a97f82daE364619)  | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | (Capella)                                                    |
 
 ## Working with the Codebase
 
