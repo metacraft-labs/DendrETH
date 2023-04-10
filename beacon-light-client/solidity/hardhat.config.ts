@@ -16,6 +16,12 @@ const optionalConf = {
     process.env.POLYGON_MUMBAI_ETHERSCAN_API_KEY,
   ARBITRUM_ETHERSCAN_API_KEY: process.env.ARBITRUM_ETHERSCAN_API_KEY,
   OPTIMISM_ETHERSCAN_API_KEY: process.env.OPTIMISM_ETHERSCAN_API_KEY,
+  AVALANCHE_FUJI_ETHERSCAN_API_KEY:
+    process.env.AVALANCHE_FUJI_ETHERSCAN_API_KEY,
+  FTM_ETHERSCAN_API_KEY: process.env.FTM_ETHERSCAN_API_KEY,
+  CELO_ETHERSCAN_API_KEY: process.env.CELO_ETHERSCAN_API_KEY,
+  BSC_ETHERSCAN_API_KEY: process.env.BSC_ETHERSCAN_API_KEY,
+  CHIADO_ETHERSCAN_API: process.env.CHIADO_ETHERSCAN_API,
 };
 
 const mandatoryConf = {
@@ -89,6 +95,29 @@ export default {
       url: `https://polygon-mumbai.g.alchemy.com/v2/${optionalConf.ALCHEMY_API_KEY}`,
       accounts: [optionalConf.USER_PRIVATE_KEY],
     },
+    avalanche: {
+      url: `https://rpc.ankr.com/avalanche_fuji`,
+      accounts: [optionalConf.USER_PRIVATE_KEY],
+    },
+    fantom: {
+      url: 'https://rpc.testnet.fantom.network',
+      accounts: [optionalConf.USER_PRIVATE_KEY],
+    },
+    celo: {
+      url: 'https://alfajores-forno.celo-testnet.org',
+      accounts: [optionalConf.USER_PRIVATE_KEY],
+    },
+    bsc: {
+      url: 'https://bsc-testnet.public.blastapi.io',
+      accounts: [optionalConf.USER_PRIVATE_KEY],
+    },
+    chiado: {
+      url: 'https://rpc.chiado.gnosis.gateway.fm',
+      accounts: [optionalConf.USER_PRIVATE_KEY],
+      gas: 30000000,
+      gasPrice: 20,
+      gasMultiplier: 10,
+    },
   },
   mocha: {
     timeout: 100000000,
@@ -101,6 +130,11 @@ export default {
       baseGoerli: optionalConf.BASE_ETHERSCAN_API_KEY,
       sepolia: mandatoryConf.ETHERSCAN_API_KEY,
       goerli: mandatoryConf.ETHERSCAN_API_KEY,
+      avalancheFujiTestnet: optionalConf.AVALANCHE_FUJI_ETHERSCAN_API_KEY,
+      ftmTestnet: optionalConf.FTM_ETHERSCAN_API_KEY,
+      celo: optionalConf.CELO_ETHERSCAN_API_KEY,
+      bscTestnet: optionalConf.BSC_ETHERSCAN_API_KEY,
+      chiado: optionalConf.CHIADO_ETHERSCAN_API,
     },
     customChains: [
       {
@@ -117,6 +151,14 @@ export default {
         urls: {
           apiURL: 'https://api-goerli-optimism.etherscan.io/api',
           browserURL: 'https://goerli-optimism.etherscan.io',
+        },
+      },
+      {
+        network: 'celo',
+        chainId: 44787,
+        urls: {
+          apiURL: 'https://api-alfajores.celoscan.io/api',
+          browserURL: 'https://alfajores.celoscan.io',
         },
       },
     ],
