@@ -16,10 +16,11 @@ in
       gmp
       nasm
       libsodium
-
       redis
 
       llvm.clang
+
+      metacraft-labs.rapidsnark
     ];
 
     shellHook = ''

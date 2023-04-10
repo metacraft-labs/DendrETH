@@ -10,7 +10,6 @@ import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
 (async () => {
   const proverConfig = {
     WITNESS_GENERATOR_PATH: process.env.WITNESS_GENERATOR_PATH,
-    RAPIDSNAKR_PROVER_PATH: process.env.RAPIDSNAKR_PROVER_PATH,
     ZKEY_FILE_PATH: process.env.ZKEY_FILE_PATH,
     REDIS_HOST: process.env.REDIS_HOST,
     REDIS_PORT: Number(process.env.REDIS_PORT),
@@ -22,7 +21,6 @@ import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
 
   const prover = new Prover(
     proverConfig.WITNESS_GENERATOR_PATH!,
-    proverConfig.RAPIDSNAKR_PROVER_PATH!,
     proverConfig.ZKEY_FILE_PATH!,
   );
 
