@@ -1,6 +1,5 @@
 FROM nixos/nix:2.14.1
 
-COPY ./.git ./DendrETH/.git
 COPY ./flake.nix ./DendrETH/flake.nix
 COPY ./supervisord.conf ./DendrETH/supervisord.conf
 COPY ./conf.d ./DendrETH/conf.d
@@ -14,12 +13,10 @@ COPY ./tsconfig.json ./DendrETH/tsconfig.json
 COPY ./scripts ./DendrETH/scripts
 COPY ./.yarnrc.yml ./DendrETH/.yarnrc.yml
 
-COPY ./vendor/rapidsnark ./DendrETH/vendor/rapidsnark
 COPY ./vendor/build-artifacts ./DendrETH/vendor/build-artifacts
 
 RUN cd DendrETH && nix --experimental-features 'nix-command flakes' --accept-flake-config develop .#devShells.x86_64-linux.container --command bash -c \
-'yarn install && cd beacon-light-client/solidity && yarn install && yarn hardhat compile && cd ../../relay && yarn install && \
-cd ../vendor/rapidsnark && npm install && git submodule init && git submodule update && npx task createFieldSources && npx task buildProver'
+'yarn install && cd beacon-light-client/solidity && yarn install && yarn hardhat compile && cd ../../relay && yarn install'
 
 VOLUME relayvolume DendrETH/build
 

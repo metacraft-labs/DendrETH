@@ -9,13 +9,6 @@ else
   echo "Using WITNESS_GENERATOR_PATH=$WITNESS_GENERATOR_PATH"
 fi
 
-if [[ -z "$RAPIDSNAKR_PROVER_PATH" ]]; then
-  echo "RAPIDSNAKR_PROVER_PATH environment variable is not set. Using default value."
-  RAPIDSNAKR_PROVER_PATH="/DendrETH/vendor/rapidsnark/build/prover"
-else
-  echo "Using RAPIDSNAKR_PROVER_PATH=$RAPIDSNAKR_PROVER_PATH"
-fi
-
 if [[ -z "$ZKEY_FILE_PATH" ]]; then
   echo "ZKEY_FILE_PATH environment variable is not set. Using default value."
   ZKEY_FILE_PATH="/DendrETH/build/light_client.zkey"

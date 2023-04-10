@@ -134,12 +134,11 @@ REDIS_PORT=6379
 ```
 
 After that you can run the workers for polling updates and for proof generation.
-For the proof generation worker you will need to provide paths to witness generator, rapidsnark and zkey file.
+For the proof generation worker you will need to provide paths to witness generator and zkey file.
 To do that add in the .env file absolute paths to the files
 
 ```bash
 WITNESS_GENERATOR_PATH=build/light_client/light_client_cpp/light_client
-RAPIDSNAKR_PROVER_PATH=/rapidsnark/build/prover
 ZKEY_FILE_PATH=/build/light_client/light_client_0.zkey
 ```
 

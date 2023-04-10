@@ -8,16 +8,13 @@ const exec = promisify(_exec);
 
 export class Prover implements IProver {
   private witnessGeneratorPath: string;
-  private rapidSnarkProverPath: string;
   private zkeyFilePath: string;
 
   constructor(
     witnessGeneratorPath: string,
-    rapidSnarkProverPath: string,
     zkeyFilePath: string,
   ) {
     this.witnessGeneratorPath = witnessGeneratorPath;
-    this.rapidSnarkProverPath = rapidSnarkProverPath;
     this.zkeyFilePath = zkeyFilePath;
   }
 
@@ -41,7 +38,7 @@ export class Prover implements IProver {
     );
 
     await exec(
-      `${this.rapidSnarkProverPath} ${this.zkeyFilePath} ${path.join(
+      `$prover ${this.zkeyFilePath} ${path.join(
         __dirname,
         `witness_${proofInput.prevUpdateSlot}_${proofInput.updateSlot}.wtns`,
       )} ${path.join(
