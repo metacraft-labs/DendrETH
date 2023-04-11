@@ -29,6 +29,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
+
+    nix2container.url = "github:nlewo/nix2container";
   };
 
   outputs = inputs @ {
@@ -38,6 +40,7 @@
     flake-utils,
     mcl-blockchain,
     rust-overlay,
+    ...
   }:
     flake-parts.lib.mkFlake {inherit inputs;} {
       systems = [
@@ -50,8 +53,12 @@
         config,
         system,
         pkgs,
+        inputs',
         ...
-      }: {
+      }: let
+        nix2container = inputs'.nix2container.packages.nix2container;
+        docker-images = import ./libs/nix/docker-images.nix {inherit pkgs nix2container;};
+      in {
         _module.args.pkgs = import nixpkgs {
           inherit system;
           overlays = [
@@ -66,6 +73,9 @@
             # Marked as insecure: https://github.com/NixOS/nixpkgs/pull/192915
             "wasm3-0.5.0"
           ];
+        };
+        packages = {
+          inherit (docker-images) docker-image-yarn docker-image-all;
         };
         devShells.default = import ./shell.nix {inherit pkgs;};
         devShells.container = import ./relay/shell.nix {inherit pkgs;};

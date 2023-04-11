@@ -1,24 +1,39 @@
-FROM nixos/nix:2.14.1
+FROM alpine as yarn-lock
+RUN apk add jq coreutils
+WORKDIR /out
+COPY package.json .yarnrc.yml yarn.lock ./
+WORKDIR /src
+COPY . .
+RUN  :\
+  && cp /out/package.json . \
+  && JQ_EXPR='{ name, packageManager, workspaces, resolutions, dependencies, devDependencies } | with_entries(select(.value != null))' \
+  && find . -name "**package.json" -not -path "./vendor/*" -not -path "./beacon-light-client/circom/*" -print0 \
+      | xargs -0 -n1 sh -c 'x="/out/$1" && mkdir -p "${x%/*}" && jq "'"$JQ_EXPR"'" < "$1" > "$x"' -s
 
-COPY ./flake.nix ./DendrETH/flake.nix
-COPY ./supervisord.conf ./DendrETH/supervisord.conf
-COPY ./conf.d ./DendrETH/conf.d
-COPY ./relay/shell.nix ./DendrETH/relay/shell.nix
-COPY ./relay ./DendrETH/relay
-COPY ./libs/ ./DendrETH/libs
-COPY ./beacon-light-client/solidity ./DendrETH/beacon-light-client/solidity
-COPY ./package.json ./DendrETH/package.json
-COPY ./yarn.lock ./DendrETH/yarn.lock
-COPY ./tsconfig.json ./DendrETH/tsconfig.json
-COPY ./scripts ./DendrETH/scripts
-COPY ./.yarnrc.yml ./DendrETH/.yarnrc.yml
+FROM dendreth-relay-yarn:latest as yarn-installer
+WORKDIR /src
+COPY --from=yarn-lock /out .
+RUN mkdir /tmp
+RUN yarn install
 
-COPY ./vendor/build-artifacts ./DendrETH/vendor/build-artifacts
+FROM dendreth-relay:latest as main
+WORKDIR /DendrETH
+RUN mkdir /tmp
+COPY --from=yarn-lock /out .
+COPY --from=yarn-installer /src .
 
-RUN cd DendrETH && nix --experimental-features 'nix-command flakes' --accept-flake-config develop .#devShells.x86_64-linux.container --command bash -c \
-'yarn install && cd beacon-light-client/solidity && yarn install && yarn hardhat compile && cd ../../relay && yarn install'
+COPY ./supervisord.conf ./supervisord.conf
+COPY ./conf.d ./conf.d
+COPY ./relay ./relay
+COPY ./libs/ ./libs
+COPY ./beacon-light-client/solidity ./beacon-light-client/solidity
+
+COPY ./tsconfig.json ./tsconfig.json
+COPY ./scripts ./scripts
+
+ENV INFURA_API_KEY=asd ETHERSCAN_API_KEY=asd
+RUN cd beacon-light-client/solidity && yarn hardhat compile
 
 VOLUME relayvolume DendrETH/build
 
-WORKDIR /DendrETH
 ENTRYPOINT ["./relay/run-relay.sh"]
