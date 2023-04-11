@@ -1,6 +1,10 @@
 **/.direnv
+**/result
 **/.yarn/cache
 **/node_modules
+**/Dockerfile
+**/Dockerfile.relay
+**/*.nix
 
 **/build
 **/*.ptau

@@ -3,6 +3,13 @@ yarn-check:
 		echo "Please run yarn install"; exit 1; \
 	}
 
+.PHONY: build-relay-image
+build-relay-image:
+	nix run '.#docker-image-yarn.copyToDockerDaemon'
+	nix run '.?submodules=1#docker-image-all.copyToDockerDaemon'
+
+	docker build -t relayimage -f Dockerfile.relay .
+
 evm-simulation: yarn-check
 	cd beacon-light-client/solidity && \
 	yarn hardhat test test/BeaconLightClientReadyProofs.test.ts
