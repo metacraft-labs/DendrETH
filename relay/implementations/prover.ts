@@ -10,10 +10,7 @@ export class Prover implements IProver {
   private witnessGeneratorPath: string;
   private zkeyFilePath: string;
 
-  constructor(
-    witnessGeneratorPath: string,
-    zkeyFilePath: string,
-  ) {
+  constructor(witnessGeneratorPath: string, zkeyFilePath: string) {
     this.witnessGeneratorPath = witnessGeneratorPath;
     this.zkeyFilePath = zkeyFilePath;
   }
@@ -38,7 +35,7 @@ export class Prover implements IProver {
     );
 
     await exec(
-      `$prover ${this.zkeyFilePath} ${path.join(
+      `prover ${this.zkeyFilePath} ${path.join(
         __dirname,
         `witness_${proofInput.prevUpdateSlot}_${proofInput.updateSlot}.wtns`,
       )} ${path.join(

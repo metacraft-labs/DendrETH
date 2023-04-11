@@ -1,17 +1,17 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 ZKEY_SH256_SUM='2073fef22678def027a69c075e4ca4ace68461d99f545f55360601660eb30f4b'
 
 if [[ -z "$WITNESS_GENERATOR_PATH" ]]; then
   echo "WITNESS_GENERATOR_PATH environment variable is not set. Using default value."
-  WITNESS_GENERATOR_PATH="/DendrETH/vendor/build-artifacts/light_client_cpp/light_client"
+  export WITNESS_GENERATOR_PATH="/bin/light_client"
 else
   echo "Using WITNESS_GENERATOR_PATH=$WITNESS_GENERATOR_PATH"
 fi
 
 if [[ -z "$ZKEY_FILE_PATH" ]]; then
   echo "ZKEY_FILE_PATH environment variable is not set. Using default value."
-  ZKEY_FILE_PATH="/DendrETH/build/light_client.zkey"
+  export ZKEY_FILE_PATH="/DendrETH/build/light_client.zkey"
 else
   echo "Using ZKEY_FILE_PATH=$ZKEY_FILE_PATH"
 fi
@@ -38,7 +38,6 @@ else
   echo "Using Redis settings from environment variables"
 fi
 
-nix --experimental-features 'nix-command flakes' --accept-flake-config develop .#devShells.x86_64-linux.container --command bash -c '
 # needed in order for the supervisord configuration to be correct
 mkdir -p redis-server
 
@@ -61,11 +60,6 @@ echo "Polling update task started"
 echo "Starting the proof generation task"
 supervisorctl start proofGenerationWorker
 echo "Proof generation task started"
-
-# compile contracts
-cd beacon-light-client/solidity
-yarn hardhat compile
-cd ../../
 
 if [ -z "$INITIAL_SLOT" ]; then
   echo "Error: INITIAL_SLOT environment variable is not set. Exiting..."
@@ -129,5 +123,3 @@ echo "Everything started"
 supervisorctl start general_logs
 
 tail -f relay/general_logs.log relay/pollUpdatesWorker.log relay/proofGenerationWorker.log beacon-light-client/solidity/goerli.log beacon-light-client/solidity/optimisticGoerli.log beacon-light-client/solidity/baseGoerli.log beacon-light-client/solidity/arbitrumGoerli.log beacon-light-client/solidity/sepolia.log beacon-light-client/solidity/mumbai.log
-
-'
