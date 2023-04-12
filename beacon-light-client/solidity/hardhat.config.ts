@@ -8,7 +8,7 @@ import '@nomiclabs/hardhat-ethers';
 
 import './tasks';
 
-const optionalConf = {
+const conf = {
   USER_PRIVATE_KEY: process.env.USER_PRIVATE_KEY,
   ALCHEMY_API_KEY: process.env.ALCHEMY_API_KEY,
   BASE_ETHERSCAN_API_KEY: process.env.BASE_ETHERSCAN_API_KEY,
@@ -22,9 +22,6 @@ const optionalConf = {
   CELO_ETHERSCAN_API_KEY: process.env.CELO_ETHERSCAN_API_KEY,
   BSC_ETHERSCAN_API_KEY: process.env.BSC_ETHERSCAN_API_KEY,
   CHIADO_ETHERSCAN_API: process.env.CHIADO_ETHERSCAN_API,
-};
-
-const mandatoryConf = {
   LOCAL_HARDHAT_PRIVATE_KEY:
     process.env.LOCAL_HARDHAT_PRIVATE_KEY ||
     '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
@@ -32,18 +29,11 @@ const mandatoryConf = {
   ETHERSCAN_API_KEY: process.env.ETHERSCAN_API_KEY,
 };
 
-for (const envVar of Object.keys(mandatoryConf)) {
-  if (!mandatoryConf[envVar]) {
-    console.warn(`$${envVar} environment variable is not set`);
-    process.exit(0);
-  }
-}
-
-if (!/^0x[0-9a-fA-F]{64}$/.test(optionalConf.USER_PRIVATE_KEY ?? '')) {
+if (!/^0x[0-9a-fA-F]{64}$/.test(conf.USER_PRIVATE_KEY ?? '')) {
   console.warn(
     'Setting $USER_PRIVATE_KEY to $LOCAL_HARDHAT_PRIVATE_KEY as fallback',
   );
-  optionalConf.USER_PRIVATE_KEY = mandatoryConf.LOCAL_HARDHAT_PRIVATE_KEY;
+  conf.USER_PRIVATE_KEY = conf.LOCAL_HARDHAT_PRIVATE_KEY;
 }
 
 export default {
@@ -60,60 +50,60 @@ export default {
   networks: {
     local: {
       url: 'http://127.0.0.1:8545',
-      accounts: [mandatoryConf.LOCAL_HARDHAT_PRIVATE_KEY],
+      accounts: [conf.LOCAL_HARDHAT_PRIVATE_KEY],
     },
     hardhat: {
       blockGasLimit: 30000000,
       allowUnlimitedContractSize: true,
     },
     ropsten: {
-      url: `https://ropsten.infura.io/v3/${mandatoryConf.INFURA_API_KEY}`,
-      accounts: [optionalConf.USER_PRIVATE_KEY],
+      url: `https://ropsten.infura.io/v3/${conf.INFURA_API_KEY}`,
+      accounts: [conf.USER_PRIVATE_KEY],
     },
     sepolia: {
-      url: `https://eth-sepolia.g.alchemy.com/v2/${optionalConf.ALCHEMY_API_KEY}`,
-      accounts: [optionalConf.USER_PRIVATE_KEY],
+      url: `https://eth-sepolia.g.alchemy.com/v2/${conf.ALCHEMY_API_KEY}`,
+      accounts: [conf.USER_PRIVATE_KEY],
     },
     goerli: {
-      url: `https://eth-goerli.g.alchemy.com/v2/${optionalConf.ALCHEMY_API_KEY}`,
-      accounts: [optionalConf.USER_PRIVATE_KEY],
+      url: `https://eth-goerli.g.alchemy.com/v2/${conf.ALCHEMY_API_KEY}`,
+      accounts: [conf.USER_PRIVATE_KEY],
     },
     optimisticGoerli: {
-      url: `https://opt-goerli.g.alchemy.com/v2/${optionalConf.ALCHEMY_API_KEY}`,
-      accounts: [optionalConf.USER_PRIVATE_KEY],
+      url: `https://opt-goerli.g.alchemy.com/v2/${conf.ALCHEMY_API_KEY}`,
+      accounts: [conf.USER_PRIVATE_KEY],
     },
     baseGoerli: {
       url: 'https://base-goerli.rpc.thirdweb.com',
-      accounts: [optionalConf.USER_PRIVATE_KEY],
+      accounts: [conf.USER_PRIVATE_KEY],
     },
     arbitrumGoerli: {
-      url: `https://arb-goerli.g.alchemy.com/v2/${optionalConf.ALCHEMY_API_KEY}`,
-      accounts: [optionalConf.USER_PRIVATE_KEY],
+      url: `https://arb-goerli.g.alchemy.com/v2/${conf.ALCHEMY_API_KEY}`,
+      accounts: [conf.USER_PRIVATE_KEY],
       contractAddress: '0xB94868ba0903883bD2dE3311Fc377f3c50D602eA',
     },
     mumbai: {
-      url: `https://polygon-mumbai.g.alchemy.com/v2/${optionalConf.ALCHEMY_API_KEY}`,
-      accounts: [optionalConf.USER_PRIVATE_KEY],
+      url: `https://polygon-mumbai.g.alchemy.com/v2/${conf.ALCHEMY_API_KEY}`,
+      accounts: [conf.USER_PRIVATE_KEY],
     },
     avalanche: {
       url: `https://rpc.ankr.com/avalanche_fuji`,
-      accounts: [optionalConf.USER_PRIVATE_KEY],
+      accounts: [conf.USER_PRIVATE_KEY],
     },
     fantom: {
       url: 'https://rpc.testnet.fantom.network',
-      accounts: [optionalConf.USER_PRIVATE_KEY],
+      accounts: [conf.USER_PRIVATE_KEY],
     },
     celo: {
       url: 'https://alfajores-forno.celo-testnet.org',
-      accounts: [optionalConf.USER_PRIVATE_KEY],
+      accounts: [conf.USER_PRIVATE_KEY],
     },
     bsc: {
       url: 'https://bsc-testnet.public.blastapi.io',
-      accounts: [optionalConf.USER_PRIVATE_KEY],
+      accounts: [conf.USER_PRIVATE_KEY],
     },
     chiado: {
       url: 'https://rpc.chiado.gnosis.gateway.fm',
-      accounts: [optionalConf.USER_PRIVATE_KEY],
+      accounts: [conf.USER_PRIVATE_KEY],
       gas: 30000000,
       gasPrice: 20,
       gasMultiplier: 10,
@@ -124,17 +114,17 @@ export default {
   },
   etherscan: {
     apiKey: {
-      optimisticGoerli: optionalConf.OPTIMISM_ETHERSCAN_API_KEY,
-      arbitrumGoerli: optionalConf.ARBITRUM_ETHERSCAN_API_KEY,
-      polygonMumbai: optionalConf.POLYGON_MUMBAI_ETHERSCAN_API_KEY,
-      baseGoerli: optionalConf.BASE_ETHERSCAN_API_KEY,
-      sepolia: mandatoryConf.ETHERSCAN_API_KEY,
-      goerli: mandatoryConf.ETHERSCAN_API_KEY,
-      avalancheFujiTestnet: optionalConf.AVALANCHE_FUJI_ETHERSCAN_API_KEY,
-      ftmTestnet: optionalConf.FTM_ETHERSCAN_API_KEY,
-      celo: optionalConf.CELO_ETHERSCAN_API_KEY,
-      bscTestnet: optionalConf.BSC_ETHERSCAN_API_KEY,
-      chiado: optionalConf.CHIADO_ETHERSCAN_API,
+      optimisticGoerli: conf.OPTIMISM_ETHERSCAN_API_KEY,
+      arbitrumGoerli: conf.ARBITRUM_ETHERSCAN_API_KEY,
+      polygonMumbai: conf.POLYGON_MUMBAI_ETHERSCAN_API_KEY,
+      baseGoerli: conf.BASE_ETHERSCAN_API_KEY,
+      sepolia: conf.ETHERSCAN_API_KEY,
+      goerli: conf.ETHERSCAN_API_KEY,
+      avalancheFujiTestnet: conf.AVALANCHE_FUJI_ETHERSCAN_API_KEY,
+      ftmTestnet: conf.FTM_ETHERSCAN_API_KEY,
+      celo: conf.CELO_ETHERSCAN_API_KEY,
+      bscTestnet: conf.BSC_ETHERSCAN_API_KEY,
+      chiado: conf.CHIADO_ETHERSCAN_API,
     },
     customChains: [
       {
