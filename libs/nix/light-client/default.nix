@@ -22,5 +22,6 @@ stdenv.mkDerivation rec {
   installPhase = ''
     mkdir -p $out/bin
     cp ./light_client $out/bin/light_client
+    cp ./light_client.dat $out/bin/light_client.dat
   '';
 }

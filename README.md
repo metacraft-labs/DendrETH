@@ -125,6 +125,18 @@ update costs around 330K in gas.
 
 ### Run relayer
 
+To run the relayer you can execute
+
+```
+make build-relay-image
+```
+Which will build the relayimage for you. To run it
+
+```
+docker run -it --env-file .env -v relayvolume:/DendrETH/build relayimage
+```
+Passing the .env file with needed configurations.
+
 To run the relayer you need to have a redis instance running
 When you have the redis instance in the .env provide values for connection to redis
 
