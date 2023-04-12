@@ -127,56 +127,53 @@ update costs around 330K in gas.
 
 To run the relayer you can execute
 
-```
+```bash
 make build-relay-image
 ```
+
 Which will build the relayimage for you. To run it
 
-```
+```bash
 docker run -it --env-file .env -v relayvolume:/DendrETH/build relayimage
 ```
+
 Passing the .env file with needed configurations.
 
-To run the relayer you need to have a redis instance running
-When you have the redis instance in the .env provide values for connection to redis
+The .env file must contain the following things
+
+For accessing the networks and signing transactions:
 
 ```bash
-REDIS_HOST=localhost
-REDIS_PORT=6379
+USER_PRIVATE_KEY=private_key
+ALCHEMY_API_KEY=api_key
 ```
 
-After that you can run the workers for polling updates and for proof generation.
-For the proof generation worker you will need to provide paths to witness generator and zkey file.
-To do that add in the .env file absolute paths to the files
+For getting light client updates
 
 ```bash
-WITNESS_GENERATOR_PATH=build/light_client/light_client_cpp/light_client
-ZKEY_FILE_PATH=/build/light_client/light_client_0.zkey
+BEACON_REST_API=http://unstable.prater.beacon-api.nimbus.team
 ```
 
-To run the polling update worker in the relay folder execure
+And to configure from which slot should the relayer start generating updates. And what step it should use
 
-```
-yarn run pollUpdatesWorker
-```
-
-To run the proof generation worker run
-
-```
-yarn run proofGenerationWorker
+```bash
+INITIAL_SLOT=5355991
+SLOTS_JUMP=64
 ```
 
-To register a repeating job to poll and generate proofs. In `beacon-light-client/solidity` run
+You can also provide for addresses on different networks if you skip a network transactions won't be broadcasted to it
+
+```bash
+LC_GOERLI=0x34cdE0DfCfE9D82b2ACcf04CD117be4c945e1625
+LC_OPTIMISTIC_GOERLI=0x0469b7C40526edfF7f924991487B198F1a15206f
+LC_BASE_GOERLI=0x7226C2D2f14287d990F567D8247fE2cCBbCEF2f9
+LC_ARBITRUM_GOERLI=0x59539DC0c928460B400Cf08f6e61A2de95b74E31
+LC_SEPOLIA=0xea4Fb78626b87BF07239336E679E9823e5030672
+LC_MUMBAI=0x59539DC0c928460B400Cf08f6e61A2de95b74E31
 
 ```
-yarn hardhat run-update --initialslot 5241519 --slotsjump 32
-```
 
-To register a task to publish update transactions on chain run
-
-```
-yarn hardhat start-publishing --lightclient 0xA3418F79c98A3E496A5E97610a97f82daE364619 --network mumbai
-```
+How the relay works is described in the `relay/run-relay.sh` and the `conf.d/programs.conf` which is supervisor config.
 
 ### One-shot syncing simulation
 
