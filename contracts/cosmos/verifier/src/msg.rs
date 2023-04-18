@@ -3,32 +3,59 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 #[cw_serde]
 pub struct InstantiateMsg {
     pub vkey: Vec<u8>,
-    pub currentHeaderHash: Vec<u8>,
+    pub current_header_hash: Vec<u8>,
 }
 
 #[cw_serde]
 pub enum ExecuteMsg {
     Update {
         proof: Vec<u8>,
-        newOptimisticHeader: Vec<u8>,
-        newFinalizedHeader: Vec<u8>,
-        newExecutionStateRoot: Vec<u8>,
+        new_optimistic_header: Vec<u8>,
+        new_finalized_header: Vec<u8>,
+        new_execution_state_root: Vec<u8>,
     },
 }
 
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
-    #[returns(StoreResponse)]
-    Header {},
+    #[returns(HeaderHash)]
+    LastHeaderHash {},
+
+    #[returns(HeaderHash)]
+    LastFinalizedHeaderHash {},
+
+    #[returns(HeaderHash)]
+    LastExecStateRoot {},
+
+    #[returns(HeaderHash)]
+    HeaderHashBeforeNum {num:i32},
+
+    #[returns(HeaderHash)]
+    AllHeaders {},
+
+    #[returns(HeaderHash)]
+    AllHeadersOrdered {},
+
+    #[returns(HeaderHash)]
+    AllFinalizedHeaders {},
+
+    #[returns(HeaderHash)]
+    AllFinalizedHeadersOrdered {},
+
+    #[returns(HeaderHash)]
+    AllExecStateRoots {},
+
+    #[returns(HeaderHash)]
+    AllExecStateRootsOrdered {},
 }
 #[cw_serde]
-pub struct StoreResponse {
+pub struct HeaderHash {
     pub res: Vec<u8>,
 }
 
-impl From<Vec<u8>> for StoreResponse {
-    fn from(currentHeaderHash: Vec<u8>) -> StoreResponse {
-        StoreResponse { res: currentHeaderHash }
+impl From<Vec<u8>> for HeaderHash {
+    fn from(header_hash: Vec<u8>) -> HeaderHash {
+        HeaderHash { res: header_hash }
     }
 }

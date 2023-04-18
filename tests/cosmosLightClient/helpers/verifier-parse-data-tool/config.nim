@@ -7,6 +7,8 @@ type
     initData
     updateData
     expectedHeaderRootPath
+    expectedFinalizedRootPath
+    expectedExecutionStateRoot
 
 type
   ParseDataConf* = object
@@ -31,4 +33,12 @@ type
 
     of expectedHeaderRootPath:
       expectedHeaderRootPath* {.
+        desc: "Path to some header"}: string
+
+    of expectedFinalizedRootPath:
+      expectedFinalizedRootPath* {.
+        desc: "Path to some header"}: string
+
+    of expectedExecutionStateRoot:
+      expectedExecutionStateRoot* {.
         desc: "Path to some header"}: string

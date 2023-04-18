@@ -154,7 +154,7 @@ describe('Light Client Verifier In Cosmos', () => {
     const queryResultAfterInitialization = await client.queryContractSmart(
       _contractAddress,
       {
-        header: {},
+        last_header_hash: {},
       },
     );
 
@@ -212,7 +212,7 @@ describe('Light Client Verifier In Cosmos', () => {
     const headerSlotAfterOneUpdate = await client.queryContractSmart(
       _contractAddress,
       {
-        header: {},
+        last_header_hash: {},
       },
     );
 
@@ -223,12 +223,13 @@ describe('Light Client Verifier In Cosmos', () => {
   test('Check "Verifier" after 20 updates', async () => {
     console.info("Running 'Check Verifier after 20 updates' test");
 
-    const numOfUpdates = 20;
+    const numOfUpdates = 5;
     var updatePath;
     var updateCounter = 1;
     for (var proofFilePath of updateFiles.slice(1, numOfUpdates)) {
       updatePath = replaceInTextProof(proofFilePath);
 
+      updateCounter++;
       // Parse the contract specific message that is passed to the contract
       const parseUpdateDataCommand = `${parseDataTool} updateData \
         --proofPath=${proofFilePath} --updatePath=${updatePath}`;
@@ -249,7 +250,6 @@ describe('Light Client Verifier In Cosmos', () => {
       );
 
       // Gas Used
-      updateCounter++;
       console.info(
         `Update ` + updateCounter + ` used ` + result.gasUsed + ` gas`,
       );
@@ -269,12 +269,80 @@ describe('Light Client Verifier In Cosmos', () => {
       .replace('[', '')
       .replace(']', '');
     console.info(`Parsed expected new header: \n  ╰─➤ [${expectedHeader}]`);
+    var currentUpdateNum = 1;
+
+    const allHeadersOrdered = await client.queryContractSmart(
+      _contractAddress,
+      {
+        all_headers_ordered: {},
+      },
+    );
+    const allFinalizedHeadersOrdered = await client.queryContractSmart(
+      _contractAddress,
+      {
+        all_finalized_headers_ordered: {},
+      },
+    );
+    const allExecStateRootsOrdered = await client.queryContractSmart(
+      _contractAddress,
+      {
+        all_exec_state_roots_ordered: {},
+      },
+    );
+    //Check if the 3 arrays on the smart contract are correctly filled
+    for (var proofFilePath of updateFiles.slice(1, numOfUpdates)) {
+      updatePath = replaceInTextProof(proofFilePath);
+      currentUpdateNum++;
+      if (numOfUpdates - currentUpdateNum < 32) {
+        let num = numOfUpdates - currentUpdateNum;
+
+        const getExpectedHeaderCommand = `${parseDataTool} expectedHeaderRootPath --expectedHeaderRootPath=${updatePath}`;
+        const expectedHeaderExec = exec(getExpectedHeaderCommand);
+        const expectedHeader = (await expectedHeaderExec).stdout
+          .toString()
+          .replace(/\s/g, '')
+          .replace('[', '')
+          .replace(']', '');
+
+        const getExpectedFinalizedHeaderCommand = `${parseDataTool} expectedFinalizedRootPath --expectedFinalizedRootPath=${updatePath}`;
+        const expectedFinalizedHeaderExec = exec(
+          getExpectedFinalizedHeaderCommand,
+        );
+        const expectedFinalizedHeader = (
+          await expectedFinalizedHeaderExec
+        ).stdout
+          .toString()
+          .replace(/\s/g, '')
+          .replace('[', '')
+          .replace(']', '');
+
+        const getExpectedExecStateRootCommand = `${parseDataTool} expectedExecutionStateRoot --expectedExecutionStateRoot=${updatePath}`;
+        const expectedExecStateRootExec = exec(getExpectedExecStateRootCommand);
+        const expectedExecStateRoot = (await expectedExecStateRootExec).stdout
+          .toString()
+          .replace(/\s/g, '')
+          .replace('[', '')
+          .replace(']', '');
+
+        const header = allHeadersOrdered[num].toString().replace(/\s/g, '');
+        const finalizedHeader = allFinalizedHeadersOrdered[num]
+          .toString()
+          .replace(/\s/g, '');
+        const execStateRootHeader = allExecStateRootsOrdered[num]
+          .toString()
+          .replace(/\s/g, '');
+
+        expect(header).toEqual(expectedHeader);
+        expect(finalizedHeader).toEqual(expectedFinalizedHeader);
+        expect(execStateRootHeader).toEqual(expectedExecStateRoot);
+      }
+    }
 
     // Query contract after 20 updates
     const headerSlotAfter20Update = await client.queryContractSmart(
       _contractAddress,
       {
-        header: {},
+        last_header_hash: {},
       },
     );
 
