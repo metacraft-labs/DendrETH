@@ -40,7 +40,7 @@ import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
         proofGenertorQueue,
         job.data.lastDownloadedUpdateKey,
         job.data.slotsJump,
-        job.data.networkConfig
+        job.data.networkConfig,
       ),
     {
       connection: {
