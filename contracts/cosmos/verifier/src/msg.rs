@@ -10,8 +10,8 @@ pub struct InstantiateMsg {
 pub enum ExecuteMsg {
     Update {
         proof: Vec<u8>,
-        new_optimistic_header: Vec<u8>,
-        new_finalized_header: Vec<u8>,
+        new_optimistic_header_root: Vec<u8>,
+        new_finalized_header_root: Vec<u8>,
         new_execution_state_root: Vec<u8>,
     },
 }
@@ -32,16 +32,16 @@ pub enum QueryMsg {
     HeaderHashBeforeNum {num:i32},
 
     #[returns(HeaderHash)]
-    AllHeaders {},
+    AllHeaderHashes {},
 
     #[returns(HeaderHash)]
-    AllHeadersOrdered {},
+    AllHeaderHashesOrdered {},
 
     #[returns(HeaderHash)]
-    AllFinalizedHeaders {},
+    AllFinalizedHeaderHashes {},
 
     #[returns(HeaderHash)]
-    AllFinalizedHeadersOrdered {},
+    AllFinalizedHeaderHashesOrdered {},
 
     #[returns(HeaderHash)]
     AllExecStateRoots {},

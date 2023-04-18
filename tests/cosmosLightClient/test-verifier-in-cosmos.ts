@@ -97,7 +97,7 @@ describe('Light Client Verifier In Cosmos', () => {
 
   test('Check "Verifier" after initialization', async () => {
     console.info("Running 'Check Verifier after initialization' test");
-    const expectedHeader =
+    const expectedHeaderHash =
       '196,61,148,170,234,19,66,248,229,81,217,165,230,254,149,183,235,176,19,20,42,207,30,38,40,173,56,30,92,113,51,22';
     // Loading the contract
     const wasm = fs.readFileSync(
@@ -158,8 +158,10 @@ describe('Light Client Verifier In Cosmos', () => {
       },
     );
 
-    const header = queryResultAfterInitialization.toString().replace(/\s/g, '');
-    expect(header).toEqual(expectedHeader);
+    const headerHash = queryResultAfterInitialization
+      .toString()
+      .replace(/\s/g, '');
+    expect(headerHash).toEqual(expectedHeaderHash);
   }, 300000);
 
   test('Check "Verifier" after one update', async () => {
@@ -209,21 +211,21 @@ describe('Light Client Verifier In Cosmos', () => {
     await sleep(10000);
 
     // Query contract after one update
-    const headerSlotAfterOneUpdate = await client.queryContractSmart(
+    const headerAfterOneUpdate = await client.queryContractSmart(
       _contractAddress,
       {
         last_header_hash: {},
       },
     );
 
-    const header = headerSlotAfterOneUpdate.toString().replace(/\s/g, '');
+    const header = headerAfterOneUpdate.toString().replace(/\s/g, '');
     expect(header).toEqual(expectedHeader);
   }, 300000);
 
-  test('Check "Verifier" after 20 updates', async () => {
-    console.info("Running 'Check Verifier after 20 updates' test");
+  test('Check "Verifier" after 33 updates', async () => {
+    console.info("Running 'Check Verifier after 33 updates' test");
 
-    const numOfUpdates = 5;
+    const numOfUpdates = 33;
     var updatePath;
     var updateCounter = 1;
     for (var proofFilePath of updateFiles.slice(1, numOfUpdates)) {
@@ -257,32 +259,22 @@ describe('Light Client Verifier In Cosmos', () => {
       gasArrayVerifier.push(updateGas);
     }
 
-    // What is the expected result of the query below
-    const getExpectedHeaderCommand = `${parseDataTool} expectedHeaderRootPath --expectedHeaderRootPath=${updatePath}`;
-    console.info(
-      `Parsing expected new header \n   ${getExpectedHeaderCommand}`,
-    );
-    const expectedHeaderExec = exec(getExpectedHeaderCommand);
-    const expectedHeader = (await expectedHeaderExec).stdout
-      .toString()
-      .replace(/\s/g, '')
-      .replace('[', '')
-      .replace(']', '');
-    console.info(`Parsed expected new header: \n  ╰─➤ [${expectedHeader}]`);
     var currentUpdateNum = 1;
-
-    const allHeadersOrdered = await client.queryContractSmart(
+    //Query for optimistic_header_hash_array
+    const allHeaderHashesOrdered = await client.queryContractSmart(
       _contractAddress,
       {
-        all_headers_ordered: {},
+        all_header_hashes_ordered: {},
       },
     );
-    const allFinalizedHeadersOrdered = await client.queryContractSmart(
+    //Query for finalized_header_hash_array
+    const allFinalizedHeaderHashesOrdered = await client.queryContractSmart(
       _contractAddress,
       {
-        all_finalized_headers_ordered: {},
+        all_finalized_header_hashes_ordered: {},
       },
     );
+    //Query for execution_state_root_array
     const allExecStateRootsOrdered = await client.queryContractSmart(
       _contractAddress,
       {
@@ -295,27 +287,39 @@ describe('Light Client Verifier In Cosmos', () => {
       currentUpdateNum++;
       if (numOfUpdates - currentUpdateNum < 32) {
         let num = numOfUpdates - currentUpdateNum;
-
-        const getExpectedHeaderCommand = `${parseDataTool} expectedHeaderRootPath --expectedHeaderRootPath=${updatePath}`;
-        const expectedHeaderExec = exec(getExpectedHeaderCommand);
-        const expectedHeader = (await expectedHeaderExec).stdout
+        //Check if optimistic_header_hash_array on the smart contract is full with correct values
+        const getExpectedHeaderHashCommand = `${parseDataTool} expectedHeaderRootPath --expectedHeaderRootPath=${updatePath}`;
+        const expectedHeaderHashExec = exec(getExpectedHeaderHashCommand);
+        const expectedHeaderHash = (await expectedHeaderHashExec).stdout
           .toString()
           .replace(/\s/g, '')
           .replace('[', '')
           .replace(']', '');
+        const headerHash = allHeaderHashesOrdered[num]
+          .toString()
+          .replace(/\s/g, '');
 
-        const getExpectedFinalizedHeaderCommand = `${parseDataTool} expectedFinalizedRootPath --expectedFinalizedRootPath=${updatePath}`;
-        const expectedFinalizedHeaderExec = exec(
-          getExpectedFinalizedHeaderCommand,
+        expect(headerHash).toEqual(expectedHeaderHash);
+
+        //Check if finalized_header_hash_array on the smart contract is full with correct values
+        const getExpectedFinalizedHeaderHashCommand = `${parseDataTool} expectedFinalizedRootPath --expectedFinalizedRootPath=${updatePath}`;
+        const expectedFinalizedHeaderHashExec = exec(
+          getExpectedFinalizedHeaderHashCommand,
         );
-        const expectedFinalizedHeader = (
-          await expectedFinalizedHeaderExec
+        const expectedFinalizedHeaderHash = (
+          await expectedFinalizedHeaderHashExec
         ).stdout
           .toString()
           .replace(/\s/g, '')
           .replace('[', '')
           .replace(']', '');
+        const finalizedHeaderHash = allFinalizedHeaderHashesOrdered[num]
+          .toString()
+          .replace(/\s/g, '');
 
+        expect(finalizedHeaderHash).toEqual(expectedFinalizedHeaderHash);
+
+        //Check if execution_state_root_array on the smart contract is full with correct values
         const getExpectedExecStateRootCommand = `${parseDataTool} expectedExecutionStateRoot --expectedExecutionStateRoot=${updatePath}`;
         const expectedExecStateRootExec = exec(getExpectedExecStateRootCommand);
         const expectedExecStateRoot = (await expectedExecStateRootExec).stdout
@@ -323,32 +327,92 @@ describe('Light Client Verifier In Cosmos', () => {
           .replace(/\s/g, '')
           .replace('[', '')
           .replace(']', '');
-
-        const header = allHeadersOrdered[num].toString().replace(/\s/g, '');
-        const finalizedHeader = allFinalizedHeadersOrdered[num]
-          .toString()
-          .replace(/\s/g, '');
-        const execStateRootHeader = allExecStateRootsOrdered[num]
+        const execStateRoot = allExecStateRootsOrdered[num]
           .toString()
           .replace(/\s/g, '');
 
-        expect(header).toEqual(expectedHeader);
-        expect(finalizedHeader).toEqual(expectedFinalizedHeader);
-        expect(execStateRootHeader).toEqual(expectedExecStateRoot);
+        expect(execStateRoot).toEqual(expectedExecStateRoot);
       }
     }
 
-    // Query contract after 20 updates
-    const headerSlotAfter20Update = await client.queryContractSmart(
+    // What is the expected result of the query below
+    const getExpectedHeaderHashCommand = `${parseDataTool} expectedHeaderRootPath --expectedHeaderRootPath=${updatePath}`;
+    console.info(
+      `Parsing expected latest optimistic header hash \n   ${getExpectedHeaderHashCommand}`,
+    );
+    const expectedHeaderHahsExec = exec(getExpectedHeaderHashCommand);
+    const expectedHeaderHash = (await expectedHeaderHahsExec).stdout
+      .toString()
+      .replace(/\s/g, '')
+      .replace('[', '')
+      .replace(']', '');
+    console.info(
+      `Parsed expected latest optimistic header hash: \n  ╰─➤ [${expectedHeaderHash}]`,
+    );
+    // Query contract for optimisticHeaderHash after 33 updates
+    const headerHashAfter20Update = await client.queryContractSmart(
       _contractAddress,
       {
         last_header_hash: {},
       },
     );
 
-    const header = headerSlotAfter20Update.toString().replace(/\s/g, '');
-    expect(header).toEqual(expectedHeader);
+    const getExpectedFinalizedHeaderHashCommand = `${parseDataTool} expectedFinalizedRootPath --expectedFinalizedRootPath=${updatePath}`;
+    console.info(
+      `Parsing expected latest finalized header hash \n   ${getExpectedFinalizedHeaderHashCommand}`,
+    );
+    const expectedFinalizedHeaderHashExec = exec(
+      getExpectedFinalizedHeaderHashCommand,
+    );
+    const expectedFinalizedHeaderHash = (
+      await expectedFinalizedHeaderHashExec
+    ).stdout
+      .toString()
+      .replace(/\s/g, '')
+      .replace('[', '')
+      .replace(']', '');
+    console.info(
+      `Parsed expected latest finalized header hash: \n  ╰─➤ [${expectedFinalizedHeaderHash}]`,
+    );
+    // Query contract for finalizedHeaderHash after 33 updates
+    const finalizedHeaderHashAfter20Update = await client.queryContractSmart(
+      _contractAddress,
+      {
+        last_finalized_header_hash: {},
+      },
+    );
 
+    const getExpectedExecStateRootCommand = `${parseDataTool} expectedExecutionStateRoot --expectedExecutionStateRoot=${updatePath}`;
+    console.info(
+      `Parsing expected latest exec state root \n   ${getExpectedExecStateRootCommand}`,
+    );
+    const expectedExecStateRootExec = exec(getExpectedExecStateRootCommand);
+    const expectedExecStateRoot = (await expectedExecStateRootExec).stdout
+      .toString()
+      .replace(/\s/g, '')
+      .replace('[', '')
+      .replace(']', '');
+    console.info(
+      `Parsed expected latest exec state root: \n  ╰─➤ [${expectedExecStateRoot}]`,
+    );
+    // Query contract for execStateRoot after 33 updates
+    const execStateRootAfter20Update = await client.queryContractSmart(
+      _contractAddress,
+      {
+        last_exec_state_root: {},
+      },
+    );
+
+    const headerHash = headerHashAfter20Update.toString().replace(/\s/g, '');
+    expect(headerHash).toEqual(expectedHeaderHash);
+    const finalizedHeader = finalizedHeaderHashAfter20Update
+      .toString()
+      .replace(/\s/g, '');
+    expect(finalizedHeader).toEqual(expectedFinalizedHeaderHash);
+    const execStateRoot = execStateRootAfter20Update
+      .toString()
+      .replace(/\s/g, '');
+    expect(execStateRoot).toEqual(expectedExecStateRoot);
     fs.writeFileSync(
       'tests/cosmosLightClient/gasVerifier.json',
       JSON.stringify(gasArrayVerifier),

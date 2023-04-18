@@ -29,7 +29,7 @@ proc update*(pathPrf, updatePath, contract, wallet, node, txflags: string): bool
   let newExecutionStateRoot = hexToByteArray[32](update["finalized_execution_state_root"].str)
 
 
-  let UPDATE= "{\"update\":{\"proof\":" & $proof & ",\"new_optimistic_header\": " & $newOptimisticHeader & ",\"new_finalized_header\": " & $newFinalizedHeader & ",\"new_execution_state_root\": " & $newExecutionStateRoot & "}}"
+  let UPDATE= "{\"update\":{\"proof\":" & $proof & ",\"new_optimistic_header_root\": " & $newOptimisticHeader & ",\"new_finalized_header_root\": " & $newFinalizedHeader & ",\"new_execution_state_root\": " & $newExecutionStateRoot & "}}"
   echo "Executing:"
   echo "➤ wasmd tx wasm execute " & contract & " '" & UPDATE & "' --amount 999ustake --from " & wallet & " "  & txflags & " -y "
 
