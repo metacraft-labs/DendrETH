@@ -14,7 +14,7 @@ task('add-jump', 'Add jump task')
   .setAction(async args => {
     const config = {
       REDIS_HOST: process.env.REDIS_HOST,
-      REDIS_PORT: Number(process.env.REDIS_PORT)
+      REDIS_PORT: Number(process.env.REDIS_PORT),
     };
 
     checkConfig(config);
