@@ -27,7 +27,7 @@ proc execCommand*(): string =
       let newFinalizedHeader = hexToByteArray[32](updateJson["finalized_header_root"].str)
       let newExecutionStateRoot = hexToByteArray[32](updateJson["finalized_execution_state_root"].str)
 
-      let update= "{\"update\":{\"proof\":" & $proof & ",\"new_optimistic_header\": " & $newOptimisticHeader & ",\"new_finalized_header\": " & $newFinalizedHeader & ",\"new_execution_state_root\": " & $newExecutionStateRoot & "}}"
+      let update= "{\"update\":{\"proof\":" & $proof & ",\"new_optimistic_header_root\": " & $newOptimisticHeader & ",\"new_finalized_header_root\": " & $newFinalizedHeader & ",\"new_execution_state_root\": " & $newExecutionStateRoot & "}}"
 
       echo update
 
