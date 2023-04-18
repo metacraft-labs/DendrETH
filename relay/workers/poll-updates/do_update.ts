@@ -3,6 +3,7 @@ import { IBeaconApi } from '../../abstraction/beacon-api-interface';
 import { IRedis } from '../../abstraction/redis-interface';
 import { getInputFromTo } from './get_light_client_input_from_to';
 import { ProofInputType } from '../../types/types';
+import { Config } from '../../constants/constants';
 
 export default async function doUpdate(
   redis: IRedis,
@@ -10,6 +11,7 @@ export default async function doUpdate(
   proofGeneratorQueue: Queue<ProofInputType, any, string>,
   lastDownloadedUpdateKey: string,
   slotsJump: number,
+  networkConfig: Config,
 ) {
   const currentHeadSlot = await beaconApi.getCurrentHeadSlot();
 
@@ -28,6 +30,7 @@ export default async function doUpdate(
     lastDownloadedUpdate + slotsJump,
     currentHeadSlot,
     beaconApi,
+    networkConfig,
   );
 
   // the task will repeat in case something fails

@@ -209,14 +209,9 @@ export async function getProofInput({
       ...finalizedHeaderBodyRootProof,
     ].map(x => hexToBits(x)),
 
-    fork_version: hexToBits(bytesToHex(config.FORK_VERSION), 32),
-    GENESIS_VALIDATORS_ROOT: hexToBits(
-      bytesToHex(config.GENESIS_VALIDATORS_ROOT),
-    ),
-    DOMAIN_SYNC_COMMITTEE: hexToBits(
-      bytesToHex(config.DOMAIN_SYNC_COMMITTEE),
-      32,
-    ),
+    fork_version: hexToBits(config.FORK_VERSION, 32),
+    GENESIS_VALIDATORS_ROOT: hexToBits(config.GENESIS_VALIDATORS_ROOT),
+    DOMAIN_SYNC_COMMITTEE: hexToBits(config.DOMAIN_SYNC_COMMITTEE, 32),
 
     points: syncCommitteePubkeys.map(x => [
       bigint_to_array(55, 7, x.toAffine()[0].value),

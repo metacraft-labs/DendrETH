@@ -7,9 +7,9 @@ import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
 
 task('start-publishing', 'Run relayer')
   .addParam('lightclient', 'The address of the BeaconLightClient contract')
+  .addParam('beaconapi', 'The beacon api the contract follows')
   .setAction(async (args, { ethers }) => {
     const config = {
-      BEACON_REST_API: process.env.BEACON_REST_API,
       REDIS_HOST: process.env.REDIS_HOST,
       REDIS_PORT: Number(process.env.REDIS_PORT),
     };
@@ -30,7 +30,7 @@ task('start-publishing', 'Run relayer')
     );
 
     const redis = new Redis(config.REDIS_HOST!, config.REDIS_PORT);
-    const beaconApi = new BeaconApi(config.BEACON_REST_API!);
+    const beaconApi = new BeaconApi(args.beaconapi);
     const contract = new SolidityContract(lightClientContract);
 
     publishProofs(redis, beaconApi, contract);

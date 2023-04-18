@@ -21,7 +21,7 @@ export class BeaconApi implements IBeaconApi {
 
   async getCurrentHeadSlot(): Promise<number> {
     const currentHead = await (
-      await fetch(path.join(this.beaconRestApi, '/eth/v1/beacon/headers/head'))
+      await fetch(this.concatUrl('/eth/v1/beacon/headers/head'))
     ).json();
 
     return Number(currentHead.data.header.message.slot);
@@ -29,9 +29,7 @@ export class BeaconApi implements IBeaconApi {
 
   async getBlockSlot(blockHash: string): Promise<number> {
     const headResult = await (
-      await fetch(
-        path.join(this.beaconRestApi, `/eth/v1/beacon/headers/${blockHash}`),
-      )
+      await fetch(this.concatUrl(`/eth/v1/beacon/headers/${blockHash}`))
     ).json();
 
     return Number(headResult.data.header.message.slot);
@@ -49,9 +47,7 @@ export class BeaconApi implements IBeaconApi {
     const { ssz } = await import('@lodestar/types');
 
     const headResult = await (
-      await fetch(
-        path.join(this.beaconRestApi, `/eth/v1/beacon/headers/${slot}`),
-      )
+      await fetch(this.concatUrl(`/eth/v1/beacon/headers/${slot}`))
     ).json();
 
     return ssz.phase0.BeaconBlockHeader.fromJson(
@@ -77,9 +73,7 @@ export class BeaconApi implements IBeaconApi {
 
     while (slot <= limitSlot) {
       blockHeaderResult = await (
-        await fetch(
-          path.join(this.beaconRestApi, `/eth/v1/beacon/headers/${slot}`),
-        )
+        await fetch(this.concatUrl(`/eth/v1/beacon/headers/${slot}`))
       ).json();
 
       if (blockHeaderResult.code !== 404) {
@@ -104,9 +98,7 @@ export class BeaconApi implements IBeaconApi {
 
     while (slot <= limitSlot) {
       blockHeaderBodyResult = await (
-        await fetch(
-          path.join(this.beaconRestApi, `/eth/v2/beacon/blocks/${slot}`),
-        )
+        await fetch(this.concatUrl(`/eth/v2/beacon/blocks/${slot}`))
       ).json();
 
       if (blockHeaderBodyResult.code !== 404) {
@@ -147,8 +139,7 @@ export class BeaconApi implements IBeaconApi {
 
     const prevFinalizedHeaderResult = await (
       await fetch(
-        path.join(
-          this.beaconRestApi,
+        this.concatUrl(
           `/eth/v1/beacon/headers/${
             '0x' + bytesToHex(prevBeaconSate.finalizedCheckpoint.root)
           }`,
@@ -228,8 +219,7 @@ export class BeaconApi implements IBeaconApi {
 
     const finalizedHeaderResult = await (
       await fetch(
-        path.join(
-          this.beaconRestApi,
+        this.concatUrl(
           `/eth/v1/beacon/headers/${
             '0x' + bytesToHex(beaconState.finalizedCheckpoint.root)
           }`,
@@ -258,9 +248,7 @@ export class BeaconApi implements IBeaconApi {
     const { ssz } = await import('@lodestar/types');
 
     const finalizedBlockBodyResult = await (
-      await fetch(
-        path.join(this.beaconRestApi, `/eth/v2/beacon/blocks/${slot}`),
-      )
+      await fetch(this.concatUrl(`/eth/v2/beacon/blocks/${slot}`))
     ).json();
 
     const finalizedBlockBody = ssz.capella.BeaconBlockBody.fromJson(
@@ -301,17 +289,13 @@ export class BeaconApi implements IBeaconApi {
 
     const finality_checkpoints = await (
       await fetch(
-        path.join(
-          this.beaconRestApi,
-          `/eth/v1/beacon/states/` + slot + `/finality_checkpoints`,
-        ),
+        this.concatUrl(`/eth/v1/beacon/states/${slot}/finality_checkpoints`),
       )
     ).json();
 
     const finalizedHeadResult = await (
       await fetch(
-        path.join(
-          this.beaconRestApi,
+        this.concatUrl(
           `/eth/v1/beacon/headers/${finality_checkpoints.data.finalized.root}`,
         ),
       )
@@ -324,9 +308,7 @@ export class BeaconApi implements IBeaconApi {
 
   async getExecutionStateRoot(slot: number): Promise<string> {
     const block = await (
-      await fetch(
-        path.join(this.beaconRestApi, `/eth/v2/beacon/blocks/` + slot),
-      )
+      await fetch(this.concatUrl(`/eth/v2/beacon/blocks/${slot}`))
     ).json();
 
     return block.data.message.body.execution_payload.state_root;
@@ -336,7 +318,7 @@ export class BeaconApi implements IBeaconApi {
     const { ssz } = await import('@lodestar/types');
 
     const beaconStateSZZ = await fetch(
-      path.join(this.beaconRestApi, `/eth/v2/debug/beacon/states/${slot}`),
+      this.concatUrl(`/eth/v2/debug/beacon/states/${slot}`),
       {
         headers: {
           Accept: 'application/octet-stream',
@@ -351,5 +333,12 @@ export class BeaconApi implements IBeaconApi {
     const stateTree = new Tree(beaconStateView.node);
 
     return { beaconState, stateTree };
+  }
+
+  private concatUrl(urlPath: string): string {
+    const url = new URL(this.beaconRestApi);
+    url.pathname = path.join(url.pathname, urlPath);
+
+    return url.href;
   }
 }

@@ -31,17 +31,16 @@ import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
     updatePollingConfig.REDIS_PORT,
   );
 
-  const beaconApi = new BeaconApi(updatePollingConfig.BEACON_REST_API!);
-
   new Worker<GetUpdate>(
     UPDATE_POLING_QUEUE,
     async job =>
       doUpdate(
         redis,
-        beaconApi,
+        new BeaconApi(job.data.beaconRestApi),
         proofGenertorQueue,
         job.data.lastDownloadedUpdateKey,
         job.data.slotsJump,
+        job.data.networkConfig
       ),
     {
       connection: {
