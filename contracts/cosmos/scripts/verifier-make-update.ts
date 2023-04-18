@@ -18,7 +18,7 @@ var DendrETHWalletInfo = {
 //TODO: Use Dimo's configuration check func
 const _cudosContractAddress = String(process.env['CUDOS_CONTRACT_ADDRESS']);
 const _cudosMnemonic = String(process.env['CUDOS_MNEMONIC']);
-const _cudosPublicAddres = String(process.env['CUDOS_PUBLIC_KEY']);
+const _cudosPublicAddress = String(process.env['CUDOS_PUBLIC_KEY']);
 let client: SigningCosmWasmClient;
 var rpcEndpoint = 'http://localhost:26657';
 
@@ -33,7 +33,7 @@ async function Update() {
   let answer1 = await new Promise(resolve => {
     readline.question('Enter network(cosmosTestnet): ', resolve);
   });
-  const network = answer1;
+  const network = process.argv[2];
 
   switch (network) {
     case 'cosmosTestnet': {
@@ -53,7 +53,7 @@ async function Update() {
         });
         DendrETHWalletInfo.address = answer2;
       } else {
-        DendrETHWalletInfo.address = _cudosPublicAddres;
+        DendrETHWalletInfo.address = _cudosPublicAddress;
       }
 
       wallet = await DirectSecp256k1HdWallet.fromMnemonic(
