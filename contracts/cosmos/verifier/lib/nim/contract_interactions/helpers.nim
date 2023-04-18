@@ -54,3 +54,14 @@ proc getExpectedHeaderRoot*(path:string): array[32,byte] =
   let update = parseFile(path)
   let newOptimisticHeader = hexToByteArray[32](update["attested_header_root"].str)
   newOptimisticHeader
+
+proc getExpectedFinalizedRoot*(path:string): array[32,byte] =
+  let update = parseFile(path)
+  let newFinalizedHeader = hexToByteArray[32](update["finalized_header_root"].str)
+  newFinalizedHeader
+
+proc getExpectedExecutionStateRoot*(path:string): array[32,byte] =
+  let update = parseFile(path)
+  let newExecStateRoot = hexToByteArray[32](update["finalized_execution_state_root"].str)
+  newExecStateRoot
+

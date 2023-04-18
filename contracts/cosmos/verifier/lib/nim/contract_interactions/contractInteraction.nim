@@ -10,7 +10,7 @@ proc init*(pathVerificationKey, code_id, wallet, node, txflags: string): string 
   let vkey = createVerificationKey(pathVerificationKey)
   let initHeaderHash = hexToByteArray[32]("0xc43d94aaea1342f8e551d9a5e6fe95b7ebb013142acf1e2628ad381e5c713316")
 
-  let INIT = "{\"vkey\": " & $vkey & ",\"currentHeaderHash\": " &  $initHeaderHash & "}"
+  let INIT = "{\"vkey\": " & $vkey & ",\"current_header_hash\": " &  $initHeaderHash & "}"
   discard execCmdEx("wasmd tx wasm instantiate " & code_id & " '" & INIT & "' --from " & wallet & " --label 'Cosmos Verifier' " & txflags & " -y --no-admin")
   discard execCmdEx("sleep 10")
 
@@ -29,7 +29,7 @@ proc update*(pathPrf, updatePath, contract, wallet, node, txflags: string): bool
   let newExecutionStateRoot = hexToByteArray[32](update["finalized_execution_state_root"].str)
 
 
-  let UPDATE= "{\"update\":{\"proof\":" & $proof & ",\"newOptimisticHeader\": " & $newOptimisticHeader & ",\"newFinalizedHeader\": " & $newFinalizedHeader & ",\"newExecutionStateRoot\": " & $newExecutionStateRoot & "}}"
+  let UPDATE= "{\"update\":{\"proof\":" & $proof & ",\"new_optimistic_header\": " & $newOptimisticHeader & ",\"new_finalized_header\": " & $newFinalizedHeader & ",\"new_execution_state_root\": " & $newExecutionStateRoot & "}}"
   echo "Executing:"
   echo "➤ wasmd tx wasm execute " & contract & " '" & UPDATE & "' --amount 999ustake --from " & wallet & " "  & txflags & " -y "
 
