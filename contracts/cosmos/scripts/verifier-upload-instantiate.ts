@@ -36,13 +36,13 @@ async function UploadMain() {
     output: process.stdout,
   });
 
-  let answer = await new Promise(resolve => {
-    readline.question('Enter network(cosmosTestnet): ', resolve);
-  });
-  const network = answer;
-
+  // let answer = await new Promise(resolve => {
+  //   readline.question('Enter network(cosmosTestnet): ', resolve);
+  // });
+  const network = process.argv[2];
+  console.log('ARGS: ', process.argv);
   switch (network) {
-    case 'cosmosTestnet': {
+    case 'cudos': {
       console.info('Uploading to Cosmos Testnet');
       DendrETHWalletInfo = {
         mnemonic: String(process.env['KUDOS_MNEMONIC']),
@@ -66,6 +66,7 @@ async function UploadMain() {
           // gasPrice: GasPrice.fromString('7500000000000000000acudos'),
         },
       );
+      uploadFee = 'auto';
       // uploadFee;
       // 15066830000000000000000000acudos:
       // 150668300000000000000000acudos
@@ -73,7 +74,18 @@ async function UploadMain() {
       // 15066830000000acudos
       break;
     }
+    case 'local': {
+      console.info('Uploading to Local Testnet');
+      rpcEndpoint = 'http://localhost:26657';
+      gasPrice = GasPrice.fromString('0.0000025ustake');
+      let cosmos = await setUpCosmosTestnet(rootDir, rpcEndpoint, signal);
+      client = cosmos.client;
+      DendrETHWalletInfo = cosmos.DendrETHWalletInfo;
+      uploadFee = calculateFee(1_500_000, gasPrice);
+      break;
+    }
     default: {
+      console.log('WRONG');
       // console.info('Uploading to Local Testnet');
       // rpcEndpoint = 'http://localhost:26657';
       // gasPrice = GasPrice.fromString('0.0000025ustake');
@@ -88,7 +100,7 @@ async function UploadMain() {
   const uploadReceipt = await client.upload(
     DendrETHWalletInfo.address,
     wasm,
-    'auto',
+    uploadFee,
     'Upload Verifier in Cosmos contract',
   );
   var contractDirVerifier = rootDir + `/contracts/cosmos/verifier`;
@@ -113,7 +125,7 @@ async function UploadMain() {
     uploadReceipt.codeId,
     JSON.parse(initData),
     'My instance',
-    'auto',
+    uploadFee,
     { memo: 'Create a Verifier in Cosmos instance.' },
   );
   var _contractAddress = instantiation.contractAddress;
