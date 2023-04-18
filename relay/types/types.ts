@@ -5,6 +5,7 @@ import {
   UintBigintType,
 } from '@chainsafe/ssz';
 import { ValueOfFields } from '@chainsafe/ssz/lib/view/container';
+import { Config } from '../constants/constants';
 
 export type BeaconBlockHeader = ValueOfFields<{
   slot: UintNumberType;
@@ -112,7 +113,9 @@ export interface UpdateResult {
 
 export interface GetUpdate {
   lastDownloadedUpdateKey: string;
+  beaconRestApi: string;
   slotsJump: number;
+  networkConfig: Config;
 }
 
 export interface WitnessGeneratorInput {

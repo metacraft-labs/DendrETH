@@ -1,4 +1,4 @@
-import { PRATER } from '../../constants/constants';
+import { Config } from '../../constants/constants';
 import { getProofInput } from './get_ligth_client_input';
 import { IBeaconApi } from '../../abstraction/beacon-api-interface';
 
@@ -7,6 +7,7 @@ export async function getInputFromTo(
   to: number,
   headSlot: number,
   beaconApi: IBeaconApi,
+  networkConfig: Config,
 ) {
   const prevBlockHeader = await beaconApi.getExistingBlockHeader(from);
 
@@ -69,7 +70,7 @@ export async function getInputFromTo(
       prevFinalizedHeader,
       syncCommitteeBranch,
       syncCommittee,
-      config: PRATER,
+      config: networkConfig,
       prevFinalityBranch,
       signature_slot: signature_slot,
       finalizedHeader,

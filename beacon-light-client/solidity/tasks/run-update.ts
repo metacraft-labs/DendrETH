@@ -4,6 +4,7 @@ import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
 import { Queue } from 'bullmq';
 import { GetUpdate } from '../../../relay/types/types';
 import { UPDATE_POLING_QUEUE } from '../../../relay/constants/constants';
+import * as networkConfig from '../../../relay/constants/network_config.json';
 
 task('run-update', 'Run update recuring task')
   .addParam(
@@ -15,19 +16,24 @@ task('run-update', 'Run update recuring task')
   )
   .addParam('initialslot', 'the initial slot', undefined, undefined, false)
   .addParam('slotsjump', 'Slots to jump', undefined, undefined, false)
+  .addParam('beaconapi')
   .setAction(async args => {
     const config = {
       REDIS_HOST: process.env.REDIS_HOST,
-      REDIS_PORT: Number(process.env.REDIS_PORT),
+      REDIS_PORT: Number(process.env.REDIS_PORT)
     };
 
     checkConfig(config);
 
     const redis = new Redis(config.REDIS_HOST!, config.REDIS_PORT);
 
-    const lastDownloadedUpdateKey = !args.lightClient
-      ? 'lastDownloadedUpdateKey'
-      : `lastDownloadedUpdateKey:${args.lightClient}`;
+    const lastDownloadedUpdateKey = !args.lightclient
+      ? `lastDownloadedUpdateKey:${args.beaconapi}`
+      : `lastDownloadedUpdateKey:${args.beaconapi}:${args.lightclient}`;
+
+    const downloadUpdate = !args.lightclient
+      ? `downloadUpdate${args.beaconapi}`
+      : `downloadUpdate${args.beaconapi}${args.lightclient}`;
 
     await redis.set(lastDownloadedUpdateKey, args.initialslot);
 
@@ -39,10 +45,12 @@ task('run-update', 'Run update recuring task')
     });
 
     await updateQueue.add(
-      'downloadUpdate',
+      downloadUpdate,
       {
-        lastDownloadedUpdateKey: `lastDownloadedUpdateKey`,
+        lastDownloadedUpdateKey: lastDownloadedUpdateKey,
+        beaconRestApi: args.beaconapi,
         slotsJump: Number(args.slotsjump),
+        networkConfig,
       },
       {
         attempts: 10,
