@@ -1,99 +1,42 @@
-import { exec as _exec } from 'child_process';
-import { readFile, rm, writeFile } from 'fs/promises';
-import path from 'path';
-import { promisify } from 'util';
 import { IProver } from '../abstraction/prover-interface';
-import { ProofInputType, Proof } from '../types/types';
-const exec = promisify(_exec);
+import { ProofInputType, Proof, WitnessGeneratorInput } from '../types/types';
 
 export class Prover implements IProver {
-  private witnessGeneratorPath: string;
-  private zkeyFilePath: string;
+  private proverServerURL: string;
 
-  constructor(witnessGeneratorPath: string, zkeyFilePath: string) {
-    this.witnessGeneratorPath = witnessGeneratorPath;
-    this.zkeyFilePath = zkeyFilePath;
+  constructor(proverServerURL: string) {
+    this.proverServerURL = proverServerURL;
   }
 
   async genProof(proofInput: ProofInputType): Promise<Proof> {
-    await writeFile(
-      path.join(
-        __dirname,
-        `input_${proofInput.prevUpdateSlot}_${proofInput.updateSlot}.json`,
-      ),
-      JSON.stringify(proofInput.proofInput),
-    );
+    console.log('Starting to generate proofs');
 
-    await exec(
-      `${this.witnessGeneratorPath} ${path.join(
-        __dirname,
-        `input_${proofInput.prevUpdateSlot}_${proofInput.updateSlot}.json`,
-      )} ${path.join(
-        __dirname,
-        `witness_${proofInput.prevUpdateSlot}_${proofInput.updateSlot}.wtns`,
-      )}`,
-    );
+    let st = await this.getStatus();
 
-    await exec(
-      `prover ${this.zkeyFilePath} ${path.join(
-        __dirname,
-        `witness_${proofInput.prevUpdateSlot}_${proofInput.updateSlot}.wtns`,
-      )} ${path.join(
-        __dirname,
-        `proof_${proofInput.prevUpdateSlot}_${proofInput.updateSlot}.json`,
-      )} ${path.join(
-        __dirname,
-        `public_${proofInput.prevUpdateSlot}_${proofInput.updateSlot}.json`,
-      )}`,
-    );
+    if (st.status == 'busy') {
+      throw new Error('Proving server is not ready');
+    }
 
-    const proof = JSON.parse(
-      await readFile(
-        path.join(
-          __dirname,
-          `proof_${proofInput.prevUpdateSlot}_${proofInput.updateSlot}.json`,
-        ),
-        'utf-8',
-      ),
-    );
+    console.log('Server is ready sending input');
 
-    const publicVars = JSON.parse(
-      await readFile(
-        path.join(
-          __dirname,
-          `public_${proofInput.prevUpdateSlot}_${proofInput.updateSlot}.json`,
-        ),
-        'utf-8',
-      ),
-    );
+    await this.callInput(proofInput.proofInput);
 
-    // remove files
-    Promise.all([
-      rm(
-        path.join(
-          __dirname,
-          `witness_${proofInput.prevUpdateSlot}_${proofInput.updateSlot}.wtns`,
-        ),
-      ),
-      rm(
-        path.join(
-          __dirname,
-          `input_${proofInput.prevUpdateSlot}_${proofInput.updateSlot}.json`,
-        ),
-      ),
-      rm(
-        path.join(
-          __dirname,
-          `proof_${proofInput.prevUpdateSlot}_${proofInput.updateSlot}.json`,
-        ),
-      ),
-      rm(
-        path.join(
-          __dirname,
-          `public_${proofInput.prevUpdateSlot}_${proofInput.updateSlot}.json`,
-        ),
-      ),
-    ]);
+    console.log('Input send waiting for proof generation');
+
+    st = await this.getStatus();
+
+    while (st.status == 'busy') {
+      st = await this.getStatus();
+
+      // to not overload server with requests
+      await new Promise(r => setTimeout(r, 2000));
+    }
+
+    console.log('Proof successfully generated');
+
+    const proof = JSON.parse(st.proof);
+
+    const publicVars = JSON.parse(st.pubData);
 
     return {
       pi_a: proof.pi_a,
@@ -101,5 +44,38 @@ export class Prover implements IProver {
       pi_c: proof.pi_c,
       public: [...publicVars],
     };
+  }
+
+  async callInput(input: WitnessGeneratorInput) {
+    const rawResponse = await fetch(
+      `${this.proverServerURL}/input/light_client`,
+      {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(input),
+      },
+    );
+
+    if (rawResponse.ok) {
+      return true;
+    } else {
+      throw new Error(rawResponse.status.toString());
+    }
+  }
+
+  async getStatus() {
+    const rawResponse = await fetch(`${this.proverServerURL}/status`, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+    if (!rawResponse.ok) {
+      throw new Error(rawResponse.status.toString());
+    }
+    return rawResponse.json();
   }
 }

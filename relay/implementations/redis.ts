@@ -70,8 +70,6 @@ export class Redis implements IRedis {
       `proof:${prevSlot}:${nextSlot}`,
       JSON.stringify(proof),
     );
-
-    this.redisClient.bgSave();
   }
 
   async subscribeForProofs(

@@ -65,7 +65,7 @@ export default {
       accounts: [conf.USER_PRIVATE_KEY],
     },
     goerli: {
-      url: `https://eth-goerli.g.alchemy.com/v2/${conf.ALCHEMY_API_KEY}`,
+      url: `https://goerli.blockpi.network/v1/rpc/public`,
       accounts: [conf.USER_PRIVATE_KEY],
     },
     optimisticGoerli: {

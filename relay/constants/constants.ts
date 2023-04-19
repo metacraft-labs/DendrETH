@@ -1,5 +1,3 @@
-import { hexToBytes } from '../../libs/typescript/ts-utils/bls';
-
 export type Config = {
   SLOTS_PER_EPOCH: number;
   EPOCHS_PER_SYNC_COMMITTEE_PERIOD: number;
@@ -7,6 +5,7 @@ export type Config = {
   FORK_VERSION: string;
   DOMAIN_SYNC_COMMITTEE: string;
   GENESIS_VALIDATORS_ROOT: string;
+  BEACON_REST_API: string;
 };
 
 export const PRATER: Config = {
@@ -17,6 +16,8 @@ export const PRATER: Config = {
   DOMAIN_SYNC_COMMITTEE: '0x07000000',
   GENESIS_VALIDATORS_ROOT:
     '0x043db0d9a83813551ee2f33450d23797757d430911a9320530ad8a0eabc43efb',
+  BEACON_REST_API:
+    'https://purple-falling-tree.ethereum-goerli.discover.quiknode.pro/',
 };
 
 export const UPDATE_POLING_QUEUE = 'update_poling';

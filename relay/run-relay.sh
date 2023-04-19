@@ -1,34 +1,59 @@
 #!/bin/bash
 
 ZKEY_SH256_SUM='2073fef22678def027a69c075e4ca4ace68461d99f545f55360601660eb30f4b'
+DAT_SHA256_SUM='0e9689a38ca233eeeb93d8c848fba520c2130810c1ec6651d7c788f725ccf840'
 
-if [[ -z "$WITNESS_GENERATOR_PATH" ]]; then
-  echo "WITNESS_GENERATOR_PATH environment variable is not set. Using default value."
-  export WITNESS_GENERATOR_PATH="/bin/light_client"
-else
-  echo "Using WITNESS_GENERATOR_PATH=$WITNESS_GENERATOR_PATH"
-fi
-
-if [[ -z "$ZKEY_FILE_PATH" ]]; then
-  echo "ZKEY_FILE_PATH environment variable is not set. Using default value."
-  export ZKEY_FILE_PATH="/DendrETH/build/light_client.zkey"
-else
-  echo "Using ZKEY_FILE_PATH=$ZKEY_FILE_PATH"
-fi
-
-if [ ! -f "$ZKEY_FILE_PATH" ]; then
+download_zkey_file() {
   echo "Downloading zkey file from http://dendreth.metacraft-labs.com/capella_74.zkey ..."
-  curl http://dendreth.metacraft-labs.com/capella_74.zkey > "$ZKEY_FILE_PATH" && \
-  echo "$ZKEY_SH256_SUM $ZKEY_FILE_PATH" | sha256sum -c
+  curl http://dendreth.metacraft-labs.com/capella_74.zkey > "build/light_client.zkey" && \
+  echo "$ZKEY_SH256_SUM build/light_client.zkey" | sha256sum -c
   if [ $? -eq 0 ]; then
-    echo "Zkey file downloaded successfully to $ZKEY_FILE_PATH"
+    echo "Zkey file downloaded successfully to build/light_client.zkey"
   else
     echo "Failed to download zkey file from http://dendreth.metacraft-labs.com/capella_74.zkey"
     exit 1
   fi
+}
+
+download_dat_file() {
+  echo "Downloading .dat file from https://media.githubusercontent.com/media/metacraft-labs/DendrETH-build-artifacts/master/light_client_cpp/light_client.dat ..."
+  curl -k https://media.githubusercontent.com/media/metacraft-labs/DendrETH-build-artifacts/master/light_client_cpp/light_client.dat > "build/light_client.dat" && \
+  echo "$DAT_SHA256_SUM build/light_client.dat" | sha256sum -c
+  if [ $? -eq 0 ]; then
+    echo ".dat file downloaded successfully to build/light_client.dat"
+  else
+    echo "Failed to download .dat file from https://media.githubusercontent.com/media/metacraft-labs/DendrETH-build-artifacts/master/light_client_cpp/light_client.dat"
+    exit 1
+  fi
+}
+
+if [ ! -f "build/light_client.zkey" ]; then
+  download_zkey_file
 else
-  echo "Using cached zkey file at $ZKEY_FILE_PATH"
+  echo "$ZKEY_SH256_SUM build/light_client.zkey" | sha256sum -c
+  if [ $? -eq 0 ]; then
+    echo "Using cached zkey file at build/light_client.zkey"
+  else
+    echo "Wrong version of light_client.zkey cached downloading again..."
+    download_zkey_file
+  fi
 fi
+
+if [ ! -f "build/light_client.dat" ]; then
+  download_dat_file
+else
+  echo "$DAT_SHA256_SUM build/light_client.dat" | sha256sum -c
+  if [ $? -eq 0 ]; then
+    echo "Using cached zkey file at build/light_client.dat"
+  else
+    echo "Wrong version of light_client.dat cached downloading again..."
+    download_dat_file
+  fi
+fi
+
+cp relay/light_client build/light_client
+
+mv build/light_client.dat light_client.dat
 
 if [[ -z "$REDIS_HOST" ]] && [[ -z "$REDIS_PORT" ]]; then
   echo "REDIS_HOST and REDIS_PORT environment variables are not set. Using default values."
@@ -38,10 +63,50 @@ else
   echo "Using Redis settings from environment variables"
 fi
 
+
+if [[ -z "$PROVER_SERVER_HOST" ]] && [[ -z "$PROVER_SERVER_PORT" ]]; then
+  echo "PROVER_SERVER_HOST and PROVER_SERVER_PORT environment variables are not set. Using default values."
+  PROVER_SERVER_HOST="http://127.0.0.1"
+  PROVER_SERVER_PORT="5000"
+else
+  echo "Using prover server settings from environment variables"
+fi
+
 # needed in order for the supervisord configuration to be correct
 mkdir -p redis-server
 
 supervisord -c supervisord.conf
+
+if [[ "$PROVER_SERVER_HOST" == "http://127.0.0.1" ]]; then
+  echo "Starting local prover server..."
+  supervisorctl start proverserver
+  echo "Prover server started with command"
+
+  max_attempts=300 # 300 attempts * 2s delay = 10 minutes
+  server_started=false
+
+  echo "Waiting for server to start..."
+
+  for ((i=1; i<=$max_attempts; i++)); do
+    response=$(curl -s -o /dev/null -w "%{http_code}" "$PROVER_SERVER_HOST":"$PROVER_SERVER_PORT"/status)
+
+    if [ $response -eq 200 ]; then
+      echo "Server is up and running."
+      server_started=true
+      break
+    fi
+
+    echo "Attempt $i: Server is not responding. Waiting for 2 seconds..."
+    sleep 2
+  done
+
+  if [ $server_started == false ]; then
+    echo "Server failed to start after 5 minutes. Exiting."
+    exit 1
+  fi
+else
+  echo "Using remote prover server at $PROVER_SERVER_HOST:$PROVER_SERVER_PORT"
+fi
 
 if [[ "$REDIS_HOST" == "localhost" ]] && [[ "$REDIS_PORT" == "6379" ]]; then
   echo "Starting local Redis server..."
@@ -122,4 +187,4 @@ echo "Everything started"
 
 supervisorctl start general_logs
 
-tail -f relay/general_logs.log relay/pollUpdatesWorker.log relay/proofGenerationWorker.log beacon-light-client/solidity/goerli.log beacon-light-client/solidity/optimisticGoerli.log beacon-light-client/solidity/baseGoerli.log beacon-light-client/solidity/arbitrumGoerli.log beacon-light-client/solidity/sepolia.log beacon-light-client/solidity/mumbai.log
+tail -f ./prover_server.log relay/general_logs.log relay/pollUpdatesWorker.log relay/proofGenerationWorker.log beacon-light-client/solidity/goerli.log beacon-light-client/solidity/optimisticGoerli.log beacon-light-client/solidity/baseGoerli.log beacon-light-client/solidity/arbitrumGoerli.log beacon-light-client/solidity/sepolia.log beacon-light-client/solidity/mumbai.log

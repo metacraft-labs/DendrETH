@@ -1,4 +1,5 @@
 import { Contract, ethers } from 'ethers';
+import { parseEther } from 'ethers/lib/utils';
 import { ISmartContract } from '../abstraction/smart-contract-abstraction';
 
 export class SolidityContract implements ISmartContract {
@@ -11,7 +12,8 @@ export class SolidityContract implements ISmartContract {
   optimisticHeaderRoot(): Promise<string> {
     return this.lightClientContract.optimistic_header_root();
   }
-  postUpdateOnChain(update: {
+
+  async postUpdateOnChain(update: {
     attested_header_root: string;
     finalized_header_root: string;
     finalized_execution_state_root: string;
@@ -19,6 +21,12 @@ export class SolidityContract implements ISmartContract {
     b: string[][];
     c: string[];
   }): Promise<any> {
-    return this.lightClientContract.light_client_update(update);
+    const nonce = await this.lightClientContract.signer.getTransactionCount();
+    const gasPrice = await this.lightClientContract.signer.getGasPrice();
+
+    return this.lightClientContract.light_client_update(update, {
+      gasPrice: gasPrice,
+      nonce: nonce,
+    });
   }
 }

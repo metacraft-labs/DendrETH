@@ -3024,6 +3024,7 @@ __metadata:
   resolution: "Relay@workspace:relay"
   dependencies:
     ts-node: ^10.9.1
+    yargs: ^17.7.1
   languageName: unknown
   linkType: soft
 
@@ -12134,7 +12135,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yargs@npm:^17.3.1":
+"yargs@npm:^17.3.1, yargs@npm:^17.7.1":
   version: 17.7.1
   resolution: "yargs@npm:17.7.1"
   dependencies:
