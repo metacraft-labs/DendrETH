@@ -6,11 +6,10 @@ import { Redis } from '../../implementations/redis';
 import { Prover } from '../../implementations/prover';
 import { PROOF_GENERATOR_QUEUE } from '../../constants/constants';
 import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
+import yargs from 'yargs';
 
 (async () => {
   const proverConfig = {
-    WITNESS_GENERATOR_PATH: process.env.WITNESS_GENERATOR_PATH,
-    ZKEY_FILE_PATH: process.env.ZKEY_FILE_PATH,
     REDIS_HOST: process.env.REDIS_HOST,
     REDIS_PORT: Number(process.env.REDIS_PORT),
   };
@@ -19,10 +18,14 @@ import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
 
   const redis = new Redis(proverConfig.REDIS_HOST!, proverConfig.REDIS_PORT);
 
-  const prover = new Prover(
-    proverConfig.WITNESS_GENERATOR_PATH!,
-    proverConfig.ZKEY_FILE_PATH!,
-  );
+  const options = yargs.usage('Usage: -prover <prover>').option('prover', {
+    alias: 'prover',
+    describe: 'The prover server url',
+    type: 'string',
+    demandOption: true,
+  }).argv;
+
+  const prover = new Prover(options['prover']);
 
   new Worker<ProofInputType>(
     PROOF_GENERATOR_QUEUE,

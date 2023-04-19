@@ -23,19 +23,22 @@ export default async function doUpdate(
     (await redis.get(lastDownloadedUpdateKey))!,
   );
 
+  console.log('Last downloaded update: ', lastDownloadedUpdate);
+
   if (currentHeadSlot <= lastDownloadedUpdate + slotsJump) {
     console.log('No new enought slot');
     // the job will be retried
     throw new Error('No new enought slot');
   }
 
-
   let nextHeaderSlot = lastDownloadedUpdate + slotsJump;
+
+  console.log('Next supposed header', nextHeaderSlot);
 
   // JUMP to the next closest to the present header
   while (
     nextHeaderSlot + slotsJump < currentHeadSlot &&
-    computeSyncCommitteePeriodAt(nextHeaderSlot) <=
+    computeSyncCommitteePeriodAt(nextHeaderSlot + slotsJump) <=
       computeSyncCommitteePeriodAt(lastDownloadedUpdate) + 1
   ) {
     const { nextBlockHeader } = await findClosestValidBlock(
@@ -46,6 +49,8 @@ export default async function doUpdate(
 
     nextHeaderSlot = nextBlockHeader.slot + slotsJump;
   }
+
+  console.log('Actuall next header', nextHeaderSlot);
 
   const result = await getInputFromTo(
     lastDownloadedUpdate,
