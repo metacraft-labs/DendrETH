@@ -5,8 +5,6 @@ import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
 import { calculateFee, GasPrice } from '@cosmjs/stargate';
 import { DirectSecp256k1HdWallet, OfflineSigner } from '@cosmjs/proto-signing';
 
-const gasPrice = GasPrice.fromString('0.0000025acudos');
-
 const exec = promisify(exec_);
 
 // ender addr and update
@@ -22,39 +20,23 @@ const _cudosPublicAddress = String(process.env['CUDOS_PUBLIC_KEY']);
 let client: SigningCosmWasmClient;
 var rpcEndpoint = 'http://localhost:26657';
 
-let updateNum = '5200120_5200152.json';
+// Need to pass this by name or ...?
+let updateNum = '5200056_5200088.json';
 var wallet;
 async function Update() {
-  const readline = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  let answer1 = await new Promise(resolve => {
-    readline.question('Enter network(cosmosTestnet): ', resolve);
-  });
   const network = process.argv[2];
+  const contractAddress = process.argv[3];
+  console.log('ARGS: ', process.argv);
+  var updateFee;
 
   switch (network) {
     case 'cosmosTestnet': {
-      console.info('Uploading to Cosmos Testnet');
+      console.info('Updating on Cudos Testnet');
       (DendrETHWalletInfo.mnemonic = _cudosMnemonic),
         (rpcEndpoint = 'https://explorer.public-testnet.fl.cudos.org:36657/');
 
-      let answer2 = await new Promise(resolve => {
-        readline.question(
-          'Do we use cudos13k5ktkd6lzvegzwrx8nxmxu5u4pqj7z8tzfszm as address for cosmosTestnet? ',
-          resolve,
-        );
-      });
-      if (!answer2) {
-        let answer2: string = await new Promise(resolve => {
-          readline.question('Enter address: ', resolve);
-        });
-        DendrETHWalletInfo.address = answer2;
-      } else {
-        DendrETHWalletInfo.address = _cudosPublicAddress;
-      }
+      const cudosAddress = process.argv[4];
+      DendrETHWalletInfo.address = cudosAddress;
 
       wallet = await DirectSecp256k1HdWallet.fromMnemonic(
         DendrETHWalletInfo.mnemonic,
@@ -67,13 +49,14 @@ async function Update() {
         wallet,
         {
           gasPrice: GasPrice.fromString('10000000000000acudos'),
-          // gasPrice: GasPrice.fromString('10000000000000000000acudos'),
         },
       );
-
+      // const gasPrice = GasPrice.fromString('0.0000025acudos');
+      updateFee = 'auto';
       break;
     }
-    default: {
+    case 'local': {
+      console.info('Updating on local Testnet');
       DendrETHWalletInfo.mnemonic =
         'economy stock theory fatal elder harbor betray wasp final emotion task crumble siren bottom lizard educate guess current outdoor pair theory focus wife stone';
       const getFredAddressCommand = `wasmd keys show fred -a --keyring-backend test \
@@ -91,6 +74,12 @@ async function Update() {
         rpcEndpoint,
         wallet,
       );
+      const gasPrice = GasPrice.fromString('0.0000025ustake');
+      updateFee = calculateFee(2_000_000, gasPrice);
+      break;
+    }
+    default: {
+      console.log('Incorrect network parameter');
     }
   }
 
@@ -111,12 +100,11 @@ async function Update() {
   console.info(`Parsed update data: \n  ╰─➤ ${updateData}`);
 
   // Execute update on the contract with the contract specific message
-  const executeFee = calculateFee(2_000_000, gasPrice);
   const result = await client.execute(
     DendrETHWalletInfo.address,
-    _cudosContractAddress,
+    contractAddress,
     JSON.parse(updateData),
-    'auto',
+    updateFee,
     'Updating the Verifier',
   );
   console.log(result);
