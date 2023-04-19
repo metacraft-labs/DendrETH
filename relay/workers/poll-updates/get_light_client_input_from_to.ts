@@ -1,6 +1,7 @@
 import { Config } from '../../constants/constants';
 import { getProofInput } from './get_ligth_client_input';
 import { IBeaconApi } from '../../abstraction/beacon-api-interface';
+import { BeaconBlockHeader, SyncAggregate } from '../../types/types';
 
 export async function getInputFromTo(
   from: number,
@@ -11,40 +12,8 @@ export async function getInputFromTo(
 ) {
   const prevBlockHeader = await beaconApi.getExistingBlockHeader(from);
 
-  let nextBlockHeader;
-  let sync_aggregate;
-  let signature_slot;
-  let nextHeaderSlotSearchIndex = to;
-
-  while (true) {
-    nextBlockHeader = await beaconApi.getBlockHeaderOrClosestExisting(
-      nextHeaderSlotSearchIndex,
-      headSlot,
-    );
-
-    const syncAggregateResult =
-      await beaconApi.getBlockSyncAggregateOrClosestExisting(
-        nextBlockHeader.slot + 1,
-        headSlot,
-      );
-
-    const length = BigInt(
-      syncAggregateResult.sync_aggregate.sync_committee_bits,
-    )
-      .toString(2)
-      .split('')
-      .filter(x => x == '1').length;
-
-    // Not signed enough
-    if (length * 3 > 1024) {
-      sync_aggregate = syncAggregateResult.sync_aggregate;
-      signature_slot = syncAggregateResult.slot;
-      break;
-    }
-
-    // this is the next available slot after the nextBlockHeader slot which was not signed by enough validators
-    nextHeaderSlotSearchIndex = syncAggregateResult.slot;
-  }
+  let { signature_slot, nextBlockHeader, sync_aggregate } =
+    await findClosestValidBlock(to, beaconApi, headSlot);
 
   const {
     finalityHeader: prevFinalizedHeader,
@@ -82,4 +51,50 @@ export async function getInputFromTo(
     prevUpdateSlot: prevBlockHeader.slot,
     updateSlot: nextBlockHeader.slot,
   };
+}
+
+export async function findClosestValidBlock(
+  to: number,
+  beaconApi: IBeaconApi,
+  headSlot: number,
+): Promise<{
+  signature_slot: number;
+  nextBlockHeader: BeaconBlockHeader;
+  sync_aggregate: SyncAggregate;
+}> {
+  let nextBlockHeader;
+  let sync_aggregate;
+  let signature_slot;
+  let nextHeaderSlotSearchIndex = to;
+
+  while (true) {
+    nextBlockHeader = await beaconApi.getBlockHeaderOrClosestExisting(
+      nextHeaderSlotSearchIndex,
+      headSlot,
+    );
+
+    const syncAggregateResult =
+      await beaconApi.getBlockSyncAggregateOrClosestExisting(
+        nextBlockHeader.slot + 1,
+        headSlot,
+      );
+
+    const length = BigInt(
+      syncAggregateResult.sync_aggregate.sync_committee_bits,
+    )
+      .toString(2)
+      .split('')
+      .filter(x => x == '1').length;
+
+    // Not signed enough
+    if (length * 3 > 1024) {
+      sync_aggregate = syncAggregateResult.sync_aggregate;
+      signature_slot = syncAggregateResult.slot;
+      break;
+    }
+
+    // this is the next available slot after the nextBlockHeader slot which was not signed by enough validators
+    nextHeaderSlotSearchIndex = syncAggregateResult.slot;
+  }
+  return { signature_slot, nextBlockHeader, sync_aggregate };
 }
