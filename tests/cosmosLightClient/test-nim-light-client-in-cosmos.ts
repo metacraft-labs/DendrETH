@@ -1,21 +1,19 @@
-import { dirname } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import { readFile } from 'fs/promises';
 import glob_ from 'glob';
 const glob = glob_.sync;
 import { promisify } from 'node:util';
-import { exec as exec_, execSync, spawn } from 'node:child_process';
+import { exec as exec_ } from 'node:child_process';
 
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
-import { DirectSecp256k1HdWallet, OfflineSigner } from '@cosmjs/proto-signing';
 import { calculateFee, GasPrice } from '@cosmjs/stargate';
 import * as fs from 'fs';
 
 import { SSZSpecTypes } from '../../libs/typescript/ts-utils/sszSpecTypes';
 import { jsonToSerializedBase64 } from '../../libs/typescript/ts-utils/ssz-utils';
 import { compileNimFileToWasm } from '../../libs/typescript/ts-utils/compile-nim-to-wasm';
-import { byteArrayToNumber } from '../../libs/typescript/ts-utils/common-utils';
-import { stringify } from 'node:querystring';
+import {
+  byteArrayToNumber,
+  appendJsonFile,
+} from '../../libs/typescript/ts-utils/common-utils';
 import { setUpCosmosTestnet } from './helpers/testnet-setup';
 
 const exec = promisify(exec_);
@@ -47,6 +45,9 @@ describe('Light Client In Cosmos', () => {
   let gasArrayLightClient: gasUsed[] = [];
   let client: SigningCosmWasmClient;
   let _contractAddress;
+
+  const gasUsageFile = 'tests/cosmosLightClient/gasLightClient.json';
+
   beforeAll(async () => {
     rootDir = (await exec('git rev-parse --show-toplevel')).stdout.replace(
       /\s/g,
@@ -236,13 +237,9 @@ describe('Light Client In Cosmos', () => {
     const headerSlotAfterAllUpdates = byteArrayToNumber(
       queryResultAfterAllUpdates.slice(0, 8),
     );
-    fs.writeFileSync(
-      'tests/cosmosLightClient/gasLightClient.json',
-      JSON.stringify(gasArrayLightClient),
-      {
-        flag: 'w',
-      },
-    );
+
+    appendJsonFile(gasUsageFile, gasArrayLightClient);
+
     expect(headerSlotAfterAllUpdates).toEqual(expectedHeaderSlot);
     controller.abort();
   }, 1500000);

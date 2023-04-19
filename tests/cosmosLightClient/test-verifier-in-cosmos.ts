@@ -4,12 +4,12 @@ import { promisify } from 'node:util';
 import { exec as exec_, execSync, spawn } from 'node:child_process';
 
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
-import { OfflineSigner } from '@cosmjs/proto-signing';
 import { calculateFee, GasPrice } from '@cosmjs/stargate';
 import * as fs from 'fs';
 
 import { compileNimFileToWasm } from '../../libs/typescript/ts-utils/compile-nim-to-wasm';
 import { setUpCosmosTestnet } from './helpers/testnet-setup';
+import { appendJsonFile } from '../../libs/typescript/ts-utils/common-utils';
 
 const exec = promisify(exec_);
 function sleep(ms) {
@@ -52,6 +52,9 @@ describe('Light Client Verifier In Cosmos', () => {
   let gasArrayVerifier: gasUsed[] = [];
   let client: SigningCosmWasmClient;
   let _contractAddress;
+
+  const gasUsageFile = 'tests/cosmosLightClient/gasVerifier.json';
+
   beforeAll(async () => {
     rootDir = (await exec('git rev-parse --show-toplevel')).stdout.replace(
       /\s/g,
@@ -413,13 +416,8 @@ describe('Light Client Verifier In Cosmos', () => {
       .toString()
       .replace(/\s/g, '');
     expect(execStateRoot).toEqual(expectedExecStateRoot);
-    fs.writeFileSync(
-      'tests/cosmosLightClient/gasVerifier.json',
-      JSON.stringify(gasArrayVerifier),
-      {
-        flag: 'w',
-      },
-    );
+
+    appendJsonFile(gasUsageFile, gasArrayVerifier);
 
     controller.abort();
   }, 2000000);
