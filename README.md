@@ -277,3 +277,8 @@ use cases that we plan to support in the future.
 [18]: https://infura.io
 [19]: https://etherscan.io
 [20]: https://github.com/metacraft-labs/DendrETH/tree/main/beacon-light-client/circom/circuits/light_client_recursive.circom
+
+## Suggested citation
+Please use the following citation if referring to our work:
+
+ @misc{simeon_dimov_ivanichkov_kirkov_kirov_miladinov_belchior_karadjov_2022, title={DendrETH: About A smart contract implementation of the Ethereum light client sync protocol}, url={https://github.com/metacraft-labs/DendrETH}, author={Simeon, Armenchev and Dimov, Dimo and Ivanichkov, Emil and Kirkov, Kristin and Kirov, Petar and Miladinov, Yordan and Belchior, Rafael and Karadjov, Zahary}, year={2022}, month={Jun}} 
