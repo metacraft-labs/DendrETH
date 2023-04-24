@@ -6,9 +6,11 @@ type
     noCommand
     initData
     updateData
+    updateDataForRelayTest
     expectedHeaderRootPath
     expectedFinalizedRootPath
     expectedExecutionStateRoot
+    updateDataForCosmosClass
 
 type
   ParseDataConf* = object
@@ -31,6 +33,12 @@ type
       updatePath* {.
         desc: "updatePath"}: string
 
+    of updateDataForRelayTest:
+      proofPathRelay* {.
+        desc: "Path to some header"}: string
+      updatePathRelay* {.
+        desc: "updatePath"}: string
+
     of expectedHeaderRootPath:
       expectedHeaderRootPath* {.
         desc: "Path to some header"}: string
@@ -42,3 +50,17 @@ type
     of expectedExecutionStateRoot:
       expectedExecutionStateRoot* {.
         desc: "Path to some header"}: string
+
+    of updateDataForCosmosClass:
+      attested_header_root* {.
+        desc: ""}: string
+      finalized_header_root* {.
+        desc: ""}: string
+      finalized_execution_state_root* {.
+        desc: ""}: string
+      a* {.
+        desc: ""}: seq[string]
+      b* {.
+        desc: ""}: seq[string]
+      c* {.
+        desc: ""}: seq[string]
