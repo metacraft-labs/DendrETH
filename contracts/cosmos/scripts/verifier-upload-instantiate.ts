@@ -42,8 +42,8 @@ async function UploadMain() {
     case 'cudos': {
       console.info('Uploading to Cudos Testnet');
       DendrETHWalletInfo = {
-        mnemonic: String(process.env['KUDOS_MNEMONIC']),
-        address: String(process.env['KUDOS_PUBLIC_KEY']),
+        mnemonic: String(process.env['CUDOS_MNEMONIC']),
+        address: String(process.env['CUDOS_PUBLIC_KEY']),
       };
       rpcEndpoint = 'https://explorer.public-testnet.fl.cudos.org:36657/';
       gasPrice = GasPrice.fromString('0.0000025acudos');

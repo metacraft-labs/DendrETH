@@ -21,7 +21,7 @@ let client: SigningCosmWasmClient;
 var rpcEndpoint = 'http://localhost:26657';
 
 // Need to pass this by name or ...?
-let updateNum = '5200056_5200088.json';
+let updateNum = '5200024_5200056.json';
 var wallet;
 async function Update() {
   const network = process.argv[2];
