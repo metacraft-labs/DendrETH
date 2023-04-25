@@ -49,6 +49,8 @@ in
     # Circom tests on macOS even when we specify CC=clang below:
     gcc
 
+    ccls
+
     # Used for building the Nim beacon light client to WebAssembly
     emscripten
 
