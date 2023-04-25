@@ -18,7 +18,7 @@ const _cudosContractAddress = String(process.env['CUDOS_CONTRACT_ADDRESS']);
 const _cudosMnemonic = String(process.env['CUDOS_MNEMONIC']);
 const _cudosPublicAddress = String(process.env['CUDOS_PUBLIC_KEY']);
 let client: SigningCosmWasmClient;
-var rpcEndpoint = 'http://localhost:26657';
+var rpcEndpoint = String(process.env['LOCAL_COSMOS_RPC_ENDPOINT']);
 
 // Need to pass this by name or ...?
 let updateNum = '5200024_5200056.json';
@@ -33,7 +33,7 @@ async function Update() {
     case 'cosmosTestnet': {
       console.info('Updating on Cudos Testnet');
       (DendrETHWalletInfo.mnemonic = _cudosMnemonic),
-        (rpcEndpoint = 'https://explorer.public-testnet.fl.cudos.org:36657/');
+        (rpcEndpoint = String(process.env['CUDOS_RPC_ENDPOINT']));
 
       const cudosAddress = process.argv[4];
       DendrETHWalletInfo.address = cudosAddress;
@@ -51,14 +51,14 @@ async function Update() {
           gasPrice: GasPrice.fromString('10000000000000acudos'),
         },
       );
-      // const gasPrice = GasPrice.fromString('0.0000025acudos');
       updateFee = 'auto';
       break;
     }
     case 'local': {
       console.info('Updating on local Testnet');
-      DendrETHWalletInfo.mnemonic =
-        'economy stock theory fatal elder harbor betray wasp final emotion task crumble siren bottom lizard educate guess current outdoor pair theory focus wife stone';
+      DendrETHWalletInfo.mnemonic = String(
+        process.env['LOCAL_COSMOS_MNEMONIC'],
+      );
       const getFredAddressCommand = `wasmd keys show fred -a --keyring-backend test \
       --keyring-dir $HOME/.wasmd_keys`;
       const getAddress = exec(getFredAddressCommand);

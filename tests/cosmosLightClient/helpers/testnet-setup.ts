@@ -15,8 +15,7 @@ export async function setUpCosmosTestnet(
   signal: AbortSignal,
 ) {
   let DendrETHWalletInfo = {
-    mnemonic:
-      'economy stock theory fatal elder harbor betray wasp final emotion task crumble siren bottom lizard educate guess current outdoor pair theory focus wife stone',
+    mnemonic: String(process.env['LOCAL_COSMOS_MNEMONIC']),
     address: '',
   };
 

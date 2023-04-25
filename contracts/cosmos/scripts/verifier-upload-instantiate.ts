@@ -18,8 +18,7 @@ var gasPrice;
 const controller = new AbortController();
 const { signal } = controller;
 let DendrETHWalletInfo = {
-  mnemonic:
-    'economy stock theory fatal elder harbor betray wasp final emotion task crumble siren bottom lizard educate guess current outdoor pair theory focus wife stone',
+  mnemonic: String(process.env['LOCAL_COSMOS_MNEMONIC']),
   address: '',
 };
 let client: SigningCosmWasmClient;
@@ -45,7 +44,7 @@ async function UploadMain() {
         mnemonic: String(process.env['CUDOS_MNEMONIC']),
         address: String(process.env['CUDOS_PUBLIC_KEY']),
       };
-      rpcEndpoint = 'https://explorer.public-testnet.fl.cudos.org:36657/';
+      rpcEndpoint = String(process.env['CUDOS_RPC_ENDPOINT']);
       gasPrice = GasPrice.fromString('0.0000025acudos');
       wallet = await DirectSecp256k1HdWallet.fromMnemonic(
         DendrETHWalletInfo.mnemonic,
@@ -66,7 +65,7 @@ async function UploadMain() {
     }
     case 'local': {
       console.info('Uploading to Local Testnet');
-      rpcEndpoint = 'http://localhost:26657';
+      rpcEndpoint = String(process.env['LOCAL_COSMOS_RPC_ENDPOINT']);
       gasPrice = GasPrice.fromString('0.0000025ustake');
       let cosmos = await setUpCosmosTestnet(rootDir, rpcEndpoint, signal);
       await sleep(10000);
