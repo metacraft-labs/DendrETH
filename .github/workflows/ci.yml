@@ -54,3 +54,6 @@ jobs:
 
       - name: Run Verifier in Cosmos test
         run: nix develop -c yarn test './tests/cosmosLightClient/test-verifier-in-cosmos.ts'
+
+      - name: Run Verifier in Cosmos - Relayer test
+        run: nix develop -c yarn test './tests/cosmosLightClient/test-verifier-in-cosmos-relay.ts'
