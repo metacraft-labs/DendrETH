@@ -14,6 +14,20 @@ WALLET_NAME="DendrETH-wallet"
 
 CMD=$1; shift
 
+function run_command {
+  echo -e "┌───  \033[1mstart \033[34m$1\033[0m ────╌╌╌"
+  {
+    shift
+    echo ╰─➤
+    echo $* | sed 's/^/  /'
+    echo ""
+    eval "$@"
+    # TODO: If the command fails, pass the exit code to the caller
+  } 2>&1 | fmt -s -w 80 | sed 's/^/│  /'
+  echo -e "└────╼ \033[1mend \033[34m$1\033[0m ────╌╌╌"
+  echo ""
+}
+
 isRunning() {
     s=$(echo $1 |sed 's/./[&]/') # this trick prevents grep from finding itself
     ps aux |grep --silent $s
@@ -82,11 +96,11 @@ start_nodeos() {
 
 # ------------------------------------------------------------------------------
 [ "$CMD" == "stop" ] && {
-	echo "* Stopping nodeos..."
+  echo -e "──────  \033[1m\033[34mStopping nodeos\033[0m ──────"
 	quit "nodeos"
-	echo "* Stopping keosd..."
+  echo -e "──────  \033[1m\033[34mStopping keosd\033[0m ──────"
 	quit "keosd"
-  echo "* Cleaning up..."
+  echo -e "──────  \033[1m\033[34mCleaning up\033[0m ──────"
   cleanup
 	exit 0
 }
@@ -97,19 +111,19 @@ start_nodeos() {
 }
 
 [ $(isRunning keosd) == "N" ] && {
-	echo "* Starting keosd..."
+  echo -e "──────  \033[1m\033[34mStarting keosd\033[0m ──────"
 	start_keosd
 }
 [ $(isRunning nodeos) == "N" ] && {
-	echo "* Starting nodeos..."
+  echo -e "──────  \033[1m\033[34mStarting nodeos\033[0m ──────"
 	start_nodeos
 	sleep 1
 }
 
 # Create the wallet if it doesn't exist
 [ $(walletExists) == "N" ] && {
-    echo "Creating wallet..."
-    cleos wallet create -n ${WALLET_NAME} --file ${EOS_WALLET_DATA}
+    run_command "Creating wallet" \
+      cleos wallet create -n ${WALLET_NAME} --file ${EOS_WALLET_DATA}
 }
 
 # Unlock the wallet
@@ -117,25 +131,25 @@ walletUnlock
 
 # Add keys to the wallet
 [ "$(cleos wallet keys)" == "[]" ] && {
-	echo "* Importing development key..."
 	PK=${EOS_DEVELOPEMENT_KEY}
-	cleos wallet import -n ${WALLET_NAME} --private-key=$PK
+	run_command "Importing development key" \
+	  cleos wallet import -n ${WALLET_NAME} --private-key=$PK
 
-	echo "* Creating keys..."
-	cleos create key --file ${EOS_KEYS_DATA}
+	run_command "Creating keys" \
+	  cleos create key --file ${EOS_KEYS_DATA}
 
-	echo "* Importing private key..."
 	PK=$(head -1 ${EOS_KEYS_DATA} |sed 's/Private key: //')
-	cleos wallet import -n ${WALLET_NAME} --private-key=$PK
+	run_command "Importing private key" \
+	  cleos wallet import -n ${WALLET_NAME} --private-key=$PK
 }
 
 # Creating system account
 cleos get account ${DENDRETH_ACCOUNT_IN_EOS} > /dev/null 2>&1
 [ $? -eq 1 ] && {
-	echo "* Creating system accounts..."
-	acct ${DENDRETH_ACCOUNT_IN_EOS}
+	run_command "Creating system accounts" \
+  	acct ${DENDRETH_ACCOUNT_IN_EOS}
 }
 
 # Set account permission to allow deferred transactions
-echo "* Deferred transaction support..."
-cleos set account permission --add-code ${DENDRETH_ACCOUNT_IN_EOS} active
+run_command "Deferred transaction support" \
+  cleos set account permission --add-code ${DENDRETH_ACCOUNT_IN_EOS} active
