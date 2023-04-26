@@ -4,10 +4,10 @@ with pkgs; let
   llvm = llvmPackages_13;
   corepack = callPackage ./libs/nix/corepack-shims {inherit nodejs;};
   nim-wasm = callPackage ./libs/nix/nim-wasm {inherit llvm;};
-  my-python-packages = ps: ps.callPackage ./my-python-packages.nix {};
-  python-with-my-packages = python311.withPackages (ps:
+  python-packages = ps: ps.callPackage ./libs/nix/python-packages.nix {};
+  python-with-packages = python311.withPackages (ps:
     with ps; [
-      (my-python-packages ps)
+      (python-packages ps)
       setuptools
       supervisor
     ]);
@@ -46,7 +46,7 @@ in
 
         metacraft-labs.circom
         nlohmann_json
-        python-with-my-packages
+        python-with-packages
         gmp
         nasm
         libsodium
