@@ -3,22 +3,19 @@ import { promisify } from 'node:util';
 
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
 import { DirectSecp256k1HdWallet, OfflineSigner } from '@cosmjs/proto-signing';
+import { getRootDir, sleep } from '../ts-utils/common-utils';
+import { cosmosUtils, cosmosWalletInfo } from './cosmos-utils';
 
 const exec = promisify(exec_);
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
 
 export async function setUpCosmosTestnet(
-  rootDir: string,
   rpcEndpoint: string,
   signal: AbortSignal,
 ) {
-  let DendrETHWalletInfo = {
-    mnemonic: String(process.env['LOCAL_COSMOS_MNEMONIC']),
-    address: '',
-  };
-
+  let DendrETHWalletInfo = new cosmosWalletInfo(
+    String(process.env['LOCAL_COSMOS_MNEMONIC']),
+  );
+  const rootDir = await getRootDir();
   const setupWasmdCommand = `bash "${rootDir}/contracts/cosmos/scripts/setup_wasmd.sh"`;
   console.info(`Preparing 'wasmd'. \n  ╰─➤ ${setupWasmdCommand}`);
   execSync(setupWasmdCommand);
@@ -52,5 +49,6 @@ export async function setUpCosmosTestnet(
     rpcEndpoint,
     wallet,
   );
-  return { client, DendrETHWalletInfo };
+  let cosmos = new cosmosUtils(client, DendrETHWalletInfo);
+  return cosmos;
 }

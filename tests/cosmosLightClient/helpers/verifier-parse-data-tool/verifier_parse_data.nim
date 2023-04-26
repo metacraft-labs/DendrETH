@@ -17,7 +17,7 @@ proc execCommand*(): string =
 
     of StartUpCommand.initData:
       let vkey = createVerificationKey(conf.verificationKeyPath)
-      let hex = hexToByteArray[32]("0xc43d94aaea1342f8e551d9a5e6fe95b7ebb013142acf1e2628ad381e5c713316")
+      let hex = hexToByteArray[32](conf.initHeaderRoot)
       let init = "{\"vkey\": " & $vkey & ",\"current_header_hash\": " &  $hex & "}"
       echo init
 

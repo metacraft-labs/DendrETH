@@ -13,15 +13,15 @@ import { compileNimFileToWasm } from '../../libs/typescript/ts-utils/compile-nim
 import {
   byteArrayToNumber,
   appendJsonFile,
+  getRootDir,
 } from '../../libs/typescript/ts-utils/common-utils';
-import { setUpCosmosTestnet } from './helpers/testnet-setup';
+import { setUpCosmosTestnet } from '../../libs/typescript/cosmos-utils/testnet-setup';
 
 const exec = promisify(exec_);
 
 let rootDir;
 
 describe('Light Client In Cosmos', () => {
-  let contractDirVerifier: string;
   const controller = new AbortController();
   const { signal } = controller;
 
@@ -48,10 +48,7 @@ describe('Light Client In Cosmos', () => {
   const gasUsageFile = 'tests/cosmosLightClient/gasLightClient.json';
 
   beforeAll(async () => {
-    rootDir = (await exec('git rev-parse --show-toplevel')).stdout.replace(
-      /\s/g,
-      '',
-    );
+    rootDir = await getRootDir();
 
     let contractDirLightClient = rootDir + `/contracts/cosmos/light-client`;
     let nimFilePathLightClient =
@@ -69,9 +66,9 @@ describe('Light Client In Cosmos', () => {
 
     await exec(compileContractCommandLightClient);
 
-    let cosmos = await setUpCosmosTestnet(rootDir, rpcEndpoint, signal);
+    let cosmos = await setUpCosmosTestnet(rpcEndpoint, signal);
     client = cosmos.client;
-    DendrETHWalletInfo = cosmos.DendrETHWalletInfo;
+    DendrETHWalletInfo = cosmos.walletInfo;
   }, 360000 /* timeout in milliseconds */);
 
   test('Check "LightClientStore" after initialization', async () => {

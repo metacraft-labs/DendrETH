@@ -1,4 +1,12 @@
 import * as fs from 'fs';
+import { promisify } from 'node:util';
+import { exec as exec_ } from 'node:child_process';
+
+const exec = promisify(exec_);
+
+export function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 export function byteArrayToNumber(byteArray) {
   var value = 0;
@@ -27,4 +35,11 @@ export function appendJsonFile(filePath: string, data: any) {
   }
   fileData.push(data);
   fs.writeFileSync(filePath, JSON.stringify(fileData, null, 2));
+}
+
+export async function getRootDir() {
+  return (await exec('git rev-parse --show-toplevel')).stdout.replace(
+    /\s/g,
+    '',
+  );
 }

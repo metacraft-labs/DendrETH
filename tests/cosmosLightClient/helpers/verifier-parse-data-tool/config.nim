@@ -22,8 +22,8 @@ type
       discard
 
     of initData:
-      initHeaderPath* {.
-        desc: "Path to some header"}: string
+      initHeaderRoot* {.
+        desc: "Root of the header to init with"}: string
       verificationKeyPath* {.
         desc: "Path to the verification key"}: string
 

@@ -1,20 +1,27 @@
 import glob_ from 'glob';
 const glob = glob_.sync;
 import { promisify } from 'node:util';
-import { exec as exec_, execSync, spawn } from 'node:child_process';
+import { exec as exec_ } from 'node:child_process';
 
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
-import { calculateFee, GasPrice } from '@cosmjs/stargate';
-import * as fs from 'fs';
+import { GasPrice } from '@cosmjs/stargate';
 
 import { compileNimFileToWasm } from '../../libs/typescript/ts-utils/compile-nim-to-wasm';
-import { setUpCosmosTestnet } from './helpers/testnet-setup';
+import { setUpCosmosTestnet } from '../../libs/typescript/cosmos-utils/testnet-setup';
 import { CosmosContract } from '../../relay/implementations/cosmos-contract';
+import {
+  compileVerifierContract,
+  compileVerifierNimFileToWasm,
+  compileVerifierParseDataTool,
+} from '../../contracts/cosmos/verifier/lib/typescript/verifier-compile-contract-and-tools';
+import { getRootDir, sleep } from '../../libs/typescript/ts-utils/common-utils';
+import {
+  instantiateVerifierContract,
+  uploadVerifierContract,
+} from '../../contracts/cosmos/verifier/lib/typescript/verifier-upload-instantiate';
 
 const exec = promisify(exec_);
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+
 function replaceInTextProof(updateFile) {
   let t = 0;
   const result = updateFile.replace(/proof/g, match =>
@@ -22,113 +29,62 @@ function replaceInTextProof(updateFile) {
   );
   return result;
 }
-let rootDir;
 describe('Light Client Verifier In Cosmos', () => {
   let contractDirVerifier: string;
   let parseDataTool: string;
   let pathToVerifyUtils: string;
-  let pathToKey: string;
-  let pathToFirstHeader: string;
   let updateFiles: string[];
   let cosmosContract: CosmosContract;
 
   let DendrETHWalletInfo;
+  let cosmos;
 
   let controller = new AbortController();
   const { signal } = controller;
 
   const rpcEndpoint = 'http://localhost:26657';
-  const gasPrice = GasPrice.fromString('0.0000025ustake');
 
   let client: SigningCosmWasmClient;
-  let _contractAddress;
 
   beforeAll(async () => {
-    rootDir = (await exec('git rev-parse --show-toplevel')).stdout.replace(
-      /\s/g,
-      '',
-    );
+    const rootDir = await getRootDir();
 
     contractDirVerifier = rootDir + `/contracts/cosmos/verifier`;
     parseDataTool = `${contractDirVerifier}/nimcache/verifier_parse_data`;
     pathToVerifyUtils =
       rootDir + `/vendor/eth2-light-client-updates/prater/capella-updates/`;
-    pathToKey = pathToVerifyUtils + `vkey.json`;
-    pathToFirstHeader = pathToVerifyUtils + `update_5200024_5200056.json`;
     updateFiles = glob(pathToVerifyUtils + `proof*.json`);
 
-    let nimFilePathVerifier =
-      contractDirVerifier + `/lib/nim//verify/verify.nim`;
-    await compileNimFileToWasm(
-      nimFilePathVerifier,
-      `--nimcache:"${contractDirVerifier}"/nimcache --d:lightClientCosmos \
-      -o:"${contractDirVerifier}/nimcache/verifier.wasm"`,
-    );
+    await compileVerifierNimFileToWasm();
+    await compileVerifierParseDataTool();
+    await compileVerifierContract();
 
-    let compileParseDataTool = `nim c -d:nimOldCaseObjects -o:"${contractDirVerifier}/nimcache/" \
-    "${rootDir}/tests/cosmosLightClient/helpers/verifier-parse-data-tool/verifier_parse_data.nim" `;
-    console.info(
-      `Building 'verifier-parse-data' tool \n  ╰─➤ ${compileParseDataTool}`,
-    );
-    await exec(compileParseDataTool);
-
-    let compileContractCommandVerify = `docker run -t --rm -v "${contractDirVerifier}":/code \
-    --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
-    --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-    cosmwasm/rust-optimizer:0.12.8 .`;
-    console.info(
-      `Building the contract \n  ╰─➤ ${compileContractCommandVerify}`,
-    );
-    await exec(compileContractCommandVerify);
-
-    let cosmos = await setUpCosmosTestnet(rootDir, rpcEndpoint, signal);
+    cosmos = await setUpCosmosTestnet(rpcEndpoint, signal);
     client = cosmos.client;
-    DendrETHWalletInfo = cosmos.DendrETHWalletInfo;
+    DendrETHWalletInfo = cosmos.walletInfo;
   }, 360000 /* timeout in milliseconds */);
 
   test('Check "Verifier" after initialization', async () => {
     console.info("Running 'Check Verifier after initialization' test");
     const expectedHeaderHash =
       '196,61,148,170,234,19,66,248,229,81,217,165,230,254,149,183,235,176,19,20,42,207,30,38,40,173,56,30,92,113,51,22';
-    // Loading the contract
-    const wasm = fs.readFileSync(
-      rootDir + `/contracts/cosmos/verifier/artifacts/verifier.wasm`,
-    );
 
-    // Upload the contract
-    const uploadFee = calculateFee(1_500_000, gasPrice);
-    const uploadReceipt = await client.upload(
-      DendrETHWalletInfo.address,
-      wasm,
-      uploadFee,
-      'Upload Verifier in Cosmos contract',
+    const uploadReceipt = await uploadVerifierContract('local', cosmos);
+    console.info(
+      'Upload of `Verifier in Cosmos` succeeded. Receipt:',
+      uploadReceipt,
     );
     console.info(
       'Upload of `Verifier in Cosmos` succeeded. Receipt:',
       uploadReceipt,
     );
 
-    // Instantiating the smart contract
-    const instantiateFee = calculateFee(2_000_000, gasPrice);
-    // Parse the contract specific message that is passed to the contract
-    const parseInitDataCommand = `${parseDataTool} initData \
-      --initHeaderPath=${pathToFirstHeader} \
-      --verificationKeyPath=${pathToKey}`;
-    console.info(
-      `Parsing data for instantiation. \n  ╰─➤ ${parseInitDataCommand}`,
-    );
-    const updateDataExec = exec(parseInitDataCommand);
-    const initData = (await updateDataExec).stdout.replace(/\s/g, '');
-    console.info(`Parsed instantiation data: \n  ╰─➤ ${initData}`);
-
-    // Instantiate the contract with the contract specific message
-    const instantiation = await client.instantiate(
-      DendrETHWalletInfo.address,
-      uploadReceipt.codeId,
-      JSON.parse(initData),
-      'My instance',
-      instantiateFee,
-      { memo: 'Create a Verifier in Cosmos instance.' },
+    const defaultInitHeaderRoot =
+      '0xc43d94aaea1342f8e551d9a5e6fe95b7ebb013142acf1e2628ad381e5c713316';
+    const instantiation = await instantiateVerifierContract(
+      uploadReceipt,
+      defaultInitHeaderRoot,
+      cosmos,
     );
     cosmosContract = new CosmosContract(
       instantiation.contractAddress,
