@@ -86,6 +86,11 @@ template LightClient(N) {
   finalizedHeaderSlotSyncCommitteePeriodGreaterThan.in[1] <== prevHeaderFinalizedSlot - 8192;
   finalizedHeaderSlotSyncCommitteePeriodGreaterThan.out === 1;
 
+  component signaturePeriodNotMoreThanOnePeriodAboveFinalizedPeriod = GreaterEqThan(64);
+  signaturePeriodNotMoreThanOnePeriodAboveFinalizedPeriod.in[0] <== finalizedHeaderSlotSyncCommitteePeriod + 1;
+  signaturePeriodNotMoreThanOnePeriodAboveFinalizedPeriod.in[1] <== signatureSlotSyncCommitteePeriod;
+  signaturePeriodNotMoreThanOnePeriodAboveFinalizedPeriod.out === 1;
+
   component prevHeaderFinalizedSlotSSZ = SSZNum(64);
   prevHeaderFinalizedSlotSSZ.in <== prevHeaderFinalizedSlot;
 
