@@ -44,7 +44,12 @@ export async function drainUpdatesInRedis(
       }
 
       try {
-        await postUpdateOnChain(proofResult, smartContract);
+        await postUpdateOnChain(
+          proofResult,
+          smartContract,
+          beaconApi,
+          lastSlotOnChain,
+        );
         // Slow down broadcasting
         await new Promise(r => setTimeout(r, 2000));
         failedNumber = 0;
@@ -81,6 +86,8 @@ export async function drainUpdatesInRedis(
 export async function postUpdateOnChain(
   proofResult: ProofResultType,
   lightClientContract: ISmartContract,
+  beaconApi: IBeaconApi,
+  lastSlotOnChain: number,
 ) {
   const calldata = await groth16.exportSolidityCallData(
     proofResult.proof,
@@ -121,6 +128,28 @@ export async function postUpdateOnChain(
   });
 
   console.log(transaction);
+
+  const transactionSlot = proofResult.proofInput.nextHeaderSlot;
+
+  const currentHeadSlot = await beaconApi.getCurrentHeadSlot();
+
+  console.log(`Previous slot on the chain ${lastSlotOnChain}`);
+
+  console.log(`Transaction publishing for slot ${transactionSlot}`);
+
+  console.log(`Current slot on the network is ${currentHeadSlot}`);
+
+  console.log(
+    `Prev slot is ${
+      ((currentHeadSlot - lastSlotOnChain) * 12) / 60
+    } minutes behind`,
+  );
+
+  console.log(
+    `Transaction is ${
+      ((currentHeadSlot - transactionSlot) * 12) / 60
+    } minutes behind`,
+  );
 
   await transaction.wait();
 }
