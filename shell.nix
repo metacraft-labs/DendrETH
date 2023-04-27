@@ -1,4 +1,7 @@
-{pkgs}:
+{
+  pkgs,
+  rust-stable,
+}:
 with pkgs; let
   nodejs = nodejs-18_x;
   llvm = llvmPackages_13;
@@ -11,13 +14,6 @@ with pkgs; let
       setuptools
       supervisor
     ]);
-
-  rustTargetWasm =
-    pkgs.rust-bin.stable.latest.default.override
-    {
-      extensions = ["rust-src"];
-      targets = ["wasm32-unknown-unknown"];
-    };
 in
   mkShell {
     packages =
@@ -69,7 +65,7 @@ in
         # llvm.lld
         ldc
 
-        rustTargetWasm
+        rust-stable
         # Developer tool to help you get up and running quickly with a new Rust
         # project by leveraging a pre-existing git repository as a template.
         cargo-generate

@@ -19,27 +19,14 @@
     #   using different versions of their dependencies from nixpkgs
     mcl-blockchain.url = "github:metacraft-labs/nix-blockchain-development";
     nixpkgs.follows = "mcl-blockchain/nixpkgs";
-    flake-parts = {
-      url = "github:hercules-ci/flake-parts";
-      inputs.nixpkgs-lib.follows = "nixpkgs";
-    };
-
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
-    };
-
-    nix2container.url = "github:nlewo/nix2container";
+    flake-parts.follows = "mcl-blockchain/flake-parts";
   };
 
   outputs = inputs @ {
     self,
     flake-parts,
     nixpkgs,
-    flake-utils,
     mcl-blockchain,
-    rust-overlay,
     ...
   }:
     flake-parts.lib.mkFlake {inherit inputs;} {
@@ -56,7 +43,7 @@
         inputs',
         ...
       }: let
-        nix2container = inputs'.nix2container.packages.nix2container;
+        inherit (inputs'.mcl-blockchain.legacyPackages) nix2container rust-stable;
         docker-images = import ./libs/nix/docker-images.nix {inherit pkgs nix2container;};
       in {
         _module.args.pkgs = import nixpkgs {
@@ -64,7 +51,6 @@
           overlays = [
             mcl-blockchain.overlays.default
             (import ./libs/nix/overlay.nix)
-            rust-overlay.overlays.default
           ];
           config.permittedInsecurePackages = [
             # wasm3 is insecure if used to execute untrusted third-party code
@@ -81,7 +67,7 @@
           // pkgs.lib.optionalAttrs pkgs.hostPlatform.isLinux {
             inherit (docker-images) docker-image-all;
           };
-        devShells.default = import ./shell.nix {inherit pkgs;};
+        devShells.default = import ./shell.nix {inherit pkgs rust-stable;};
       };
     };
 }
