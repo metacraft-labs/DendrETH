@@ -1,27 +1,27 @@
 [submodule "vendor/nim"]
 	path = vendor/nim
-	url = git@github.com:metacraft-labs/nim.git
+	url = https://github.com/metacraft-labs/nim.git
 [submodule "vendor/nim-ssz-serialization"]
 	path = vendor/nim-ssz-serialization
-	url = git@github.com:metacraft-labs/nim-ssz-serialization.git
+	url = https://github.com/metacraft-labs/nim-ssz-serialization.git
 [submodule "vendor/nimcrypto"]
 	path = vendor/nimcrypto
-	url = git@github.com:cheatfate/nimcrypto.git
+	url = https://github.com/cheatfate/nimcrypto.git
 [submodule "vendor/nim-blscurve"]
 	path = vendor/nim-blscurve
-	url = git@github.com:metacraft-labs/nim-blscurve.git
+	url = https://github.com/metacraft-labs/nim-blscurve.git
 [submodule "vendor/nim-stew"]
 	path = vendor/nim-stew
-	url = git@github.com:status-im/nim-stew.git
+	url = https://github.com/status-im/nim-stew.git
 [submodule "vendor/nim-serialization"]
 	path = vendor/nim-serialization
-	url = git@github.com:status-im/nim-serialization.git
+	url = https://github.com/status-im/nim-serialization.git
 [submodule "vendor/nim-stint"]
 	path = vendor/nim-stint
-	url = git@github.com:status-im/nim-stint.git
+	url = https://github.com/status-im/nim-stint.git
 [submodule "vendor/eth2-light-client-updates"]
 	path = vendor/eth2-light-client-updates
-	url = git@github.com:metacraft-labs/eth2-light-client-updates.git
+	url = https://github.com/metacraft-labs/eth2-light-client-updates.git
 [submodule "vendor/circom-pairing"]
 	path = vendor/circom-pairing
 	url = https://github.com/metacraft-labs/circom-pairing.git
@@ -30,13 +30,13 @@
 	url = https://github.com/status-im/nim-bncurve
 [submodule "vendor/nim-terminaltables"]
 	path = vendor/nim-terminaltables
-	url = git@github.com:xmonader/nim-terminaltables.git
+	url = https://github.com/xmonader/nim-terminaltables.git
 [submodule "vendor/build-artifacts"]
 	path = vendor/build-artifacts
-	url = git@github.com:metacraft-labs/DendrETH-build-artifacts.git
+	url = https://github.com/metacraft-labs/DendrETH-build-artifacts.git
 [submodule "vendor/nim-confutils"]
 	path = vendor/nim-confutils
-	url = git@github.com:status-im/nim-confutils.git
+	url = https://github.com/status-im/nim-confutils.git
 [submodule "vendor/nim-faststreams"]
 	path = vendor/nim-faststreams
-	url = git@github.com:status-im/nim-faststreams.git
+	url = https://github.com/status-im/nim-faststreams.git
