@@ -3,7 +3,7 @@
   writeShellApplication,
   llvm,
   nim,
-  emscripten-enriched-cache,
+  emscripten,
 }: let
   nimcfg = writeTextFile {
     name = "nim-cfg";
@@ -80,7 +80,7 @@
         --passL:"-Wl,-z,stack-size=5242880"
 
         # Link libraries
-        --passL:"-Wl,-L${emscripten-enriched-cache}/share/emscripten/cache/sysroot/lib/wasm32-emscripten"
+        --passL:"-Wl,-L${emscripten}/share/emscripten/cache/sysroot/lib/wasm32-emscripten"
         --passL:"-Wl,-lstubs,-lc"
         --passL:"-Wl,-ldlmalloc"
 

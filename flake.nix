@@ -50,7 +50,6 @@
           inherit system;
           overlays = [
             mcl-blockchain.overlays.default
-            (import ./libs/nix/overlay.nix)
           ];
           config.permittedInsecurePackages = [
             # wasm3 is insecure if used to execute untrusted third-party code
