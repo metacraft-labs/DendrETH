@@ -5,12 +5,12 @@
 with pkgs; let
   nodejs = nodejs-18_x;
   llvm = llvmPackages_13;
-  corepack = callPackage ./libs/nix/corepack-shims {inherit nodejs;};
-  nim-wasm = callPackage ./libs/nix/nim-wasm {inherit llvm;};
+  emscripten = metacraft-labs.emscripten;
+  nim-wasm = callPackage ./libs/nix/nim-wasm {inherit llvm emscripten;};
   my-python-packages = ps: ps.callPackage ./my-python-packages.nix {};
   python-with-my-packages = python311.withPackages (ps:
     with ps; [
-      (my-python-packages ps)
+      pkgs.metacraft-labs.py-ecc
       setuptools
       supervisor
     ]);
@@ -30,7 +30,7 @@ in
         tmuxinator
         # Node.js dev environment for unit tests
         nodejs
-        corepack
+        metacraft-labs.corepack-shims
 
         # For WebAssembly unit-testing
         wasm3 # wasmer is currently broken on macOS ARM
@@ -53,7 +53,7 @@ in
         gcc
 
         # Used for building the Nim beacon light client to WebAssembly
-        emscripten-enriched-cache
+        emscripten
 
         # Used for Nim compilations and for building node_modules
         # Please note that building native node bindings may require
