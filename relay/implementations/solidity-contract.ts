@@ -21,12 +21,6 @@ export class SolidityContract implements ISmartContract {
     b: string[][];
     c: string[];
   }): Promise<any> {
-    const nonce = await this.lightClientContract.signer.getTransactionCount();
-    const gasPrice = await this.lightClientContract.signer.getGasPrice();
-
-    return this.lightClientContract.light_client_update(update, {
-      gasPrice: gasPrice,
-      nonce: nonce,
-    });
+    return this.lightClientContract.light_client_update(update);
   }
 }
