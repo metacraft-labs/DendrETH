@@ -74,9 +74,13 @@
             "wasm3-0.5.0"
           ];
         };
-        packages = {
-          inherit (docker-images) docker-image-yarn docker-image-all;
-        };
+        packages =
+          {
+            inherit (docker-images) docker-image-yarn;
+          }
+          // pkgs.lib.optionalAttrs pkgs.hostPlatform.isLinux {
+            inherit (docker-images) docker-image-all;
+          };
         devShells.default = import ./shell.nix {inherit pkgs;};
       };
     };
