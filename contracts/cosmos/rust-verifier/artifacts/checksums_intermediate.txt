@@ -1,0 +1,2 @@
+93634fceccfad9b8e13787cc3c3eddf7f66711db7fa5d51aad1d37c244ad15ea  ./target/wasm32-unknown-unknown/release/light_client.wasm
+a786c0599d233672f277666e858565a198c307b66c40a7d6c14b1f7e1fac30e7  ./target/wasm32-unknown-unknown/release/verifier.wasm
