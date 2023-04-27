@@ -78,7 +78,6 @@
           inherit (docker-images) docker-image-yarn docker-image-all;
         };
         devShells.default = import ./shell.nix {inherit pkgs;};
-        devShells.container = import ./relay/shell.nix {inherit pkgs;};
       };
     };
 }
