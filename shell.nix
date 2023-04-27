@@ -32,7 +32,6 @@ in
         # and tailed log files
         tmux
         tmuxinator
-
         # Node.js dev environment for unit tests
         nodejs
         corepack
@@ -84,6 +83,7 @@ in
 
         # A basic Cosmos SDK app to host WebAssembly smart contracts
         metacraft-labs.wasmd
+        metacraft-labs.rapidsnark-server
       ];
 
     shellHook = ''

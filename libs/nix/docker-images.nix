@@ -33,12 +33,7 @@ with pkgs; let
       fish
       redis
       curl
-      strace # TODO: remove
-      binutils # TODO: remove
-
-      # llvm.clang
-
-      metacraft-labs.rapidsnark
+      metacraft-labs.rapidsnark-server
     ];
 
   docker-image-yarn =
