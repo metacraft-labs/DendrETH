@@ -63,10 +63,11 @@
           {
             inherit (docker-images) docker-image-yarn;
           }
-          // pkgs.lib.optionalAttrs pkgs.hostPlatform.isLinux {
+          // pkgs.lib.optionalAttrs (pkgs.hostPlatform.isLinux && pkgs.hostPlatform.isx86_64) {
             inherit (docker-images) docker-image-all;
           };
         devShells.default = import ./shell.nix {inherit pkgs rust-stable;};
+        devShells.light-client = import ./libs/nix/shell-with-light-client.nix {inherit pkgs rust-stable;};
       };
     };
 }
