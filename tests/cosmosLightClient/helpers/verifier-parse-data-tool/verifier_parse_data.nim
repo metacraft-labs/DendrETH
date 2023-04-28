@@ -58,7 +58,7 @@ proc execCommand*(): string =
     of StartUpCommand.expectedExecutionStateRoot:
       echo getExpectedExecutionStateRoot(conf.expectedExecutionStateRoot)
 
-    of StartUpCommand.updateDataForCosmosClass:
+    of StartUpCommand.updateDataForCosmosContractClass:
       var parsedB: seq[seq[string]]
 
       parsedB.add(@[conf.b[0], conf.b[1]])

@@ -16,35 +16,23 @@ import {
   getRootDir,
 } from '../../libs/typescript/ts-utils/common-utils';
 import { setUpCosmosTestnet } from '../../libs/typescript/cosmos-utils/testnet-setup';
+import { gasUsed } from './helpers/helpers';
 
 const exec = promisify(exec_);
 
 let rootDir;
 
 describe('Light Client In Cosmos', () => {
+  let gasArrayLightClient: gasUsed[] = [];
+  let client: SigningCosmWasmClient;
+  let _contractAddress;
+  let DendrETHWalletInfo;
+
   const controller = new AbortController();
   const { signal } = controller;
 
   const rpcEndpoint = 'http://localhost:26657';
   const gasPrice = GasPrice.fromString('0.0000025ustake');
-
-  let DendrETHWalletInfo = {
-    mnemonic: String(process.env['LOCAL_COSMOS_MNEMONIC']),
-    address: '',
-  };
-  class gasUsed {
-    description: string;
-    gas: number;
-
-    constructor(description: string, gas: number) {
-      this.description = description;
-      this.gas = gas;
-    }
-  }
-  let gasArrayLightClient: gasUsed[] = [];
-  let client: SigningCosmWasmClient;
-  let _contractAddress;
-
   const gasUsageFile = 'tests/cosmosLightClient/gasLightClient.json';
 
   beforeAll(async () => {
