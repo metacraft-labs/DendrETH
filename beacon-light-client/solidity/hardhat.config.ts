@@ -65,7 +65,7 @@ export default {
       accounts: [conf.USER_PRIVATE_KEY],
     },
     goerli: {
-      url: `https://goerli.blockpi.network/v1/rpc/public`,
+      url: `https://eth-goerli.g.alchemy.com/v2/${conf.ALCHEMY_API_KEY}`,
       accounts: [conf.USER_PRIVATE_KEY],
     },
     optimisticGoerli: {
@@ -107,6 +107,10 @@ export default {
       gas: 30000000,
       gasPrice: 20,
       gasMultiplier: 10,
+    },
+    evmos: {
+      url: 'https://eth.bd.evmos.dev:8545',
+      accounts: [conf.USER_PRIVATE_KEY],
     },
   },
   mocha: {
