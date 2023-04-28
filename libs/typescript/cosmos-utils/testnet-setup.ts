@@ -2,7 +2,8 @@ import { exec as exec_, execSync } from 'node:child_process';
 import { promisify } from 'node:util';
 
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
-import { DirectSecp256k1HdWallet, OfflineSigner } from '@cosmjs/proto-signing';
+import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
+
 import { getRootDir, sleep } from '../ts-utils/common-utils';
 import { cosmosUtils, cosmosWalletInfo } from './cosmos-utils';
 
@@ -13,7 +14,7 @@ export async function setUpCosmosTestnet(
   signal: AbortSignal,
 ) {
   let DendrETHWalletInfo = new cosmosWalletInfo(
-    String(process.env['LOCAL_COSMOS_MNEMONIC']),
+    String(process.env['COSMOS_LOCAL_MNEMONIC']),
   );
   const rootDir = await getRootDir();
   const setupWasmdCommand = `bash "${rootDir}/contracts/cosmos/scripts/setup_wasmd.sh"`;

@@ -26,7 +26,7 @@ export class CosmosContract implements ISmartContract {
     this.network = network;
   }
 
-  async getClient(rpcEndpoint: string) {
+  async getClient() {
     if (this.client) {
       return this.client;
     }
@@ -44,16 +44,16 @@ export class CosmosContract implements ISmartContract {
   }
 
   async optimisticHeaderRoot(): Promise<string> {
-    let queryResult;
-    const client = await this.getClient(this.rpcEndpoint);
+    let lastHeader;
+    const client = await this.getClient();
     if (client) {
-      queryResult = await client.queryContractSmart(this.contractAddress, {
+      lastHeader = await client.queryContractSmart(this.contractAddress, {
         last_header_hash: {},
       });
     } else {
       console.error('Failed to create client');
     }
-    return queryResult;
+    return lastHeader;
   }
 
   async postUpdateOnChain(update: {
@@ -71,14 +71,12 @@ export class CosmosContract implements ISmartContract {
       rootDir + `/contracts/cosmos/verifier/nimcache/verifier_parse_data`;
 
     const flattedB = update.b.flat();
-    const parseUpdateDataCommand = `${parseDataTool} updateDataForCosmosClass \
+    const parseUpdateDataCommand = `${parseDataTool} updateDataForCosmosContractClass \
   --attested_header_root=${update.attested_header_root} --finalized_header_root=${update.finalized_header_root} --finalized_execution_state_root= ${update.finalized_execution_state_root} \
   --a=${update.a[0]} --a=${update.a[1]} --a=${update.a[2]} \
   --b=${flattedB[0]} --b=${flattedB[1]} --b=${flattedB[2]} --b=${flattedB[3]} --b=${flattedB[4]} --b=${flattedB[5]} \
   --c=${update.c[0]} --c=${update.c[1]} --c=${update.c[2]} `;
-
     const updateDataExec = exec(parseUpdateDataCommand);
-
     const updateData = (await updateDataExec).stdout.replace(/\s/g, '');
 
     var executeFee;
@@ -94,7 +92,7 @@ export class CosmosContract implements ISmartContract {
       }
     }
     let result;
-    const client = await this.getClient(this.rpcEndpoint);
+    const client = await this.getClient();
     if (client) {
       result = await client.execute(
         this.callerAddress,
@@ -125,7 +123,7 @@ async function CreateClientCudos(rpcEndpoint) {
   return client;
 }
 async function CreateClientLocal(rpcEndpoint) {
-  const mnemonic = String(process.env['LOCAL_COSMOS_MNEMONIC']);
+  const mnemonic = String(process.env['COSMOS_LOCAL_MNEMONIC']);
 
   const wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, {
     prefix: 'wasm',

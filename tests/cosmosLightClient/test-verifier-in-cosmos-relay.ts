@@ -3,10 +3,6 @@ const glob = glob_.sync;
 import { promisify } from 'node:util';
 import { exec as exec_ } from 'node:child_process';
 
-import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
-import { GasPrice } from '@cosmjs/stargate';
-
-import { compileNimFileToWasm } from '../../libs/typescript/ts-utils/compile-nim-to-wasm';
 import { setUpCosmosTestnet } from '../../libs/typescript/cosmos-utils/testnet-setup';
 import { CosmosContract } from '../../relay/implementations/cosmos-contract';
 import {
@@ -19,23 +15,16 @@ import {
   instantiateVerifierContract,
   uploadVerifierContract,
 } from '../../contracts/cosmos/verifier/lib/typescript/verifier-upload-instantiate';
+import { replaceInTextProof } from './helpers/helpers';
 
 const exec = promisify(exec_);
 
-function replaceInTextProof(updateFile) {
-  let t = 0;
-  const result = updateFile.replace(/proof/g, match =>
-    ++t === 1 ? 'update' : match,
-  );
-  return result;
-}
 describe('Light Client Verifier In Cosmos', () => {
   let contractDirVerifier: string;
   let parseDataTool: string;
   let pathToVerifyUtils: string;
   let updateFiles: string[];
   let cosmosContract: CosmosContract;
-
   let DendrETHWalletInfo;
   let cosmos;
 
@@ -43,8 +32,6 @@ describe('Light Client Verifier In Cosmos', () => {
   const { signal } = controller;
 
   const rpcEndpoint = 'http://localhost:26657';
-
-  let client: SigningCosmWasmClient;
 
   beforeAll(async () => {
     const rootDir = await getRootDir();
@@ -60,7 +47,6 @@ describe('Light Client Verifier In Cosmos', () => {
     await compileVerifierContract();
 
     cosmos = await setUpCosmosTestnet(rpcEndpoint, signal);
-    client = cosmos.client;
     DendrETHWalletInfo = cosmos.walletInfo;
   }, 360000 /* timeout in milliseconds */);
 

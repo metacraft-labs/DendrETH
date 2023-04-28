@@ -2,9 +2,7 @@ import { exec as exec_, execSync } from 'node:child_process';
 import { promisify } from 'node:util';
 
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
-import { DirectSecp256k1HdWallet, OfflineSigner } from '@cosmjs/proto-signing';
-import { getRootDir, sleep } from '../ts-utils/common-utils';
-import { setUpCosmosTestnet } from './testnet-setup';
+import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
 import { GasPrice } from '@cosmjs/stargate';
 
 const exec = promisify(exec_);
@@ -55,16 +53,14 @@ export async function initCosmosUtils(network: string) {
       return cosmos;
     }
     case 'local': {
-      const rpcEndpoint = String(process.env['COSMOS_LOCAL_TESTNET_ENDPOINT']);
-      // const cosmos = await setUpCosmosTestnet(rpcEndpoint, signal);
-      // return cosmos;
+      const rpcEndpoint = String(process.env['COSMOS_LOCAL_RPC_ENDPOINT']);
       const getFredAddressCommand = `wasmd keys show fred -a --keyring-backend test \
       --keyring-dir $HOME/.wasmd_keys`;
       console.info(`Get funded account data. \n  ╰─➤ ${getFredAddressCommand}`);
       const getAddress = exec(getFredAddressCommand);
       const fredAddress = (await getAddress).stdout;
       const DendrETHWalletInfo = {
-        mnemonic: String(process.env['LOCAL_COSMOS_MNEMONIC']),
+        mnemonic: String(process.env['COSMOS_LOCAL_MNEMONIC']),
         address: fredAddress.trimEnd(),
       };
       let wallet = await DirectSecp256k1HdWallet.fromMnemonic(
@@ -73,11 +69,16 @@ export async function initCosmosUtils(network: string) {
           prefix: 'wasm',
         },
       );
-      // TODO: Implement a way to check if the local testent is working before trying to connect to it
-      let client = await SigningCosmWasmClient.connectWithSigner(
-        rpcEndpoint,
-        wallet,
-      );
+      var client;
+      try {
+        client = await SigningCosmWasmClient.connectWithSigner(
+          rpcEndpoint,
+          wallet,
+        );
+      } catch (e) {
+        console.log(e);
+        console.log('\n ERROR:Testnet is not up!!! \n');
+      }
       let cosmos = new cosmosUtils(client, DendrETHWalletInfo);
       return cosmos;
     }

@@ -1,12 +1,10 @@
 import glob_ from 'glob';
 const glob = glob_.sync;
 import { promisify } from 'node:util';
-import { exec as exec_, execSync, spawn } from 'node:child_process';
+import { exec as exec_ } from 'node:child_process';
 
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
-import { GasPrice } from '@cosmjs/stargate';
 
-import { compileNimFileToWasm } from '../../libs/typescript/ts-utils/compile-nim-to-wasm';
 import { setUpCosmosTestnet } from '../../libs/typescript/cosmos-utils/testnet-setup';
 import {
   appendJsonFile,
@@ -23,43 +21,24 @@ import {
   uploadVerifierContract,
 } from '../../contracts/cosmos/verifier/lib/typescript/verifier-upload-instantiate';
 import { updateVerifierContract } from '../../contracts/cosmos/verifier/lib/typescript/verifier-make-update';
+import { replaceInTextProof, gasUsed } from './helpers/helpers';
 
 const exec = promisify(exec_);
-
-function replaceInTextProof(updateFile) {
-  let t = 0;
-  const result = updateFile.replace(/proof/g, match =>
-    ++t === 1 ? 'update' : match,
-  );
-  return result;
-}
 
 describe('Light Client Verifier In Cosmos', () => {
   let contractDirVerifier: string;
   let parseDataTool: string;
   let pathToVerifyUtils: string;
   let updateFiles: string[];
+  let gasArrayVerifier: gasUsed[] = [];
+  let client: SigningCosmWasmClient;
+  let _contractAddress;
+  let cosmos;
 
   let controller = new AbortController();
   const { signal } = controller;
 
   const rpcEndpoint = 'http://localhost:26657';
-  const gasPrice = GasPrice.fromString('0.0000025ustake');
-
-  let cosmos;
-  class gasUsed {
-    description: string;
-    gas: number;
-
-    constructor(description: string, gas: number) {
-      this.description = description;
-      this.gas = gas;
-    }
-  }
-  let gasArrayVerifier: gasUsed[] = [];
-  let client: SigningCosmWasmClient;
-  let _contractAddress;
-
   const gasUsageFile = 'tests/cosmosLightClient/gasVerifier.json';
 
   beforeAll(async () => {

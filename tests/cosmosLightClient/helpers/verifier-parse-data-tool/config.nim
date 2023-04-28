@@ -10,7 +10,7 @@ type
     expectedHeaderRootPath
     expectedFinalizedRootPath
     expectedExecutionStateRoot
-    updateDataForCosmosClass
+    updateDataForCosmosContractClass
 
 type
   ParseDataConf* = object
@@ -51,16 +51,16 @@ type
       expectedExecutionStateRoot* {.
         desc: "Path to some header"}: string
 
-    of updateDataForCosmosClass:
+    of updateDataForCosmosContractClass:
       attested_header_root* {.
-        desc: ""}: string
+        desc: "attested_header_root"}: string
       finalized_header_root* {.
-        desc: ""}: string
+        desc: "finalized_header_root"}: string
       finalized_execution_state_root* {.
-        desc: ""}: string
+        desc: "finalized_execution_state_root"}: string
       a* {.
-        desc: ""}: seq[string]
+        desc: "proof - point a"}: seq[string]
       b* {.
-        desc: ""}: seq[string]
+        desc: "proof - point b"}: seq[string]
       c* {.
-        desc: ""}: seq[string]
+        desc: "proof - point c"}: seq[string]

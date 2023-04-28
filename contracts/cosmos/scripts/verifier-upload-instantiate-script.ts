@@ -18,7 +18,7 @@ const argv = yargs(process.argv.slice(2))
     network: { type: 'string', demandOption: true },
     initHeaderRoot: { type: 'string' },
     startTestnet: { type: 'boolean', default: false },
-    terminateTestnet: { type: 'boolean', default: true },
+    terminateTestnet: { type: 'boolean', default: false },
   })
   .parseSync();
 
@@ -26,8 +26,8 @@ async function uploadAndInstantiateMain() {
   const network = argv.network;
   let cosmos: cosmosUtils;
   if (network === 'local' && argv.startTestnet) {
-    // This way we provide a way to run the script without starting the testnet separately
-    const rpcEndpoint = String(process.env['COSMOS_LOCAL_TESTNET_ENDPOINT']);
+    // This way we are able to run the script without starting the testnet separately
+    const rpcEndpoint = String(process.env['COSMOS_LOCAL_RPC_ENDPOINT']);
     cosmos = await setUpCosmosTestnet(rpcEndpoint, signal);
   } else {
     const initCosmosUtilsRes = await initCosmosUtils(network);
