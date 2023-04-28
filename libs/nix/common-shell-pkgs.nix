@@ -9,7 +9,7 @@ with pkgs; let
   nim-wasm = callPackage ./nim-wasm {inherit llvm emscripten;};
   python-with-my-packages = python3.withPackages (ps:
     with ps; [
-      pkgs.metacraft-labs.py-ecc
+      py-ecc
       setuptools
       supervisor
     ]);
