@@ -137,8 +137,16 @@ if [ -z "$SLOTS_JUMP" ]; then
 fi
 
 # Register update polling task
-supervisorctl start runUpdate
-echo "Registered update polling repeat task"
+if [ "$PRATTER" = "TRUE" ]; then
+  echo "Starting update polling for Pratter..."
+  yarn hardhat run-update --initialslot "$INITIAL_SLOT" --slotsjump "$SLOTS_JUMP" --follownetwork pratter
+elif [ "$MAINNET" = "TRUE" ]; then
+  echo "Starting update polling for Mainnet..."
+  yarn hardhat run-update --initialslot "$INITIAL_SLOT" --slotsjump "$SLOTS_JUMP" --follownetwork mainnet
+else
+  echo "Neither PRATTER nor MAINNET is set or true."
+  exit 1
+fi
 
 # Run hardhat tasks for different networks
 if [ -n "$LC_GOERLI" ]; then
@@ -181,6 +189,48 @@ if [ -n "$LC_MUMBAI" ]; then
   supervisorctl start mumbai
 else
   echo "Skipping Mumbai network"
+fi
+
+if [ -n "$LC_FUJI" ]; then
+  echo "Starting light client for Fuji network"
+  supervisorctl start fuji
+else
+  echo "Skipping Fuji network"
+fi
+
+if [ -n "$LC_FANTOM" ]; then
+  echo "Starting light client for Fantom network"
+  supervisorctl start fantom
+else
+  echo "Skipping Fantom network"
+fi
+
+if [ -n "$LC_ALFAJORES" ]; then
+  echo "Starting light client for Alfajores network"
+  supervisorctl start alfajores
+else
+  echo "Skipping Alfajores network"
+fi
+
+if [ -n "$LC_BSC" ]; then
+  echo "Starting light client for BSC network"
+  supervisorctl start bsc
+else
+  echo "Skipping BSC network"
+fi
+
+if [ -n "$LC_CHIADO" ]; then
+  echo "Starting light client for Chiado network"
+  supervisorctl start chiado
+else
+  echo "Skipping Chiado network"
+fi
+
+if [ -n "$LC_EVMOS" ]; then
+  echo "Starting light client for EVMOS network"
+  supervisorctl start evmos
+else
+  echo "Skipping EVMOS network"
 fi
 
 echo "Everything started"
