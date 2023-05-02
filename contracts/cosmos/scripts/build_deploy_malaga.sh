@@ -20,7 +20,7 @@ CONTRACT_DIR=${ROOT}/contracts/cosmos/light-client
 
 # Compile Light Client implemeted in nim.
 nim-wasm c --lib:${LOCAL_NIM_LIB} --nimcache:./nimbuild --d:lightClientCosmos \
-        -o:./nimbuild/light_client.wasm ${CONTRACT_DIR}/lib/nim/light_client_cosmos_wrapper.nim \
+        -o:./nimbuild/light_client.wasm ${CONTRACT_DIR}/lib/nim/light_client/light_client_cosmos_wrapper.nim \
 
 # Compile and optimize the cosmwasm smart contract
 echo $(pwd)
