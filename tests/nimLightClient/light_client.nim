@@ -1,1 +1,1 @@
-import ../../beacon-light-client/nim/light_client
+import ../../beacon-light-client/nim/light-client/light_client

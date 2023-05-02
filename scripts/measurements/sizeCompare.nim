@@ -3,7 +3,7 @@ import std/terminal
 
 import nim-terminaltables/src/terminaltables
 
-const lightClientPath = "../../beacon-light-client/nim/light_client.nim"
+const lightClientPath = "../../beacon-light-client/nim/light-client/light_client.nim"
 discard execShellCmd("rm -rf ./scripts/measurements/build/")
 
 const outputDir = "./scripts/measurements/build/"
