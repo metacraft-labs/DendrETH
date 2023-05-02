@@ -5,10 +5,11 @@ DENDRETH_ACCOUNT_IN_EOS="dendreth"
 
 EOS_DEVELOPEMENT_KEY=5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3
 EOS_CONTRACT_DIR=${DENDRETH_DIR}/contracts/eos
-EOS_NODE_DATA_DIR_DIR=${EOS_CONTRACT_DIR}/node-data-dir
+EOS_NODE_DATA_DIR_DIR=${EOS_CONTRACT_DIR}/.node-data-dir
 EOS_WALLET_DATA=${EOS_NODE_DATA_DIR_DIR}/.wallet
 EOS_KEYS_DATA=${EOS_NODE_DATA_DIR_DIR}/.keys
 EOS_LOGS_DIR=${EOS_NODE_DATA_DIR_DIR}/logs
+EOS_GENESIS=${EOS_NODE_DATA_DIR_DIR}/genesis.json
 
 WALLET_NAME="DendrETH-wallet"
 
@@ -55,7 +56,7 @@ acct() {
 
 cleanup() {
   rm ${HOME}/eosio-wallet/./DendrETH-wallet.wallet > /dev/null 2>&1
-  [ -d ${EOS_NODE_DATA_DIR_DIR} ] && rm -rf ${EOS_NODE_DATA_DIR_DIR}
+  [ -d ${EOS_NODE_DATA_DIR_DIR} ] && find ${EOS_NODE_DATA_DIR_DIR} ! -name 'genesis.json'  -type f -exec rm -f {} +
   mkdir -p ${EOS_NODE_DATA_DIR_DIR}
   touch ${EOS_NODE_DATA_DIR_DIR}/.gitkeep
   mkdir -p ${EOS_LOGS_DIR}
@@ -75,22 +76,26 @@ start_keosd() {
 
 start_nodeos() {
   nodeos \
-    -e -p eosio                                      \
-    --data-dir ${EOS_NODE_DATA_DIR_DIR}                  \
-    --config-dir ${EOS_NODE_DATA_DIR_DIR}                \
-    --plugin eosio::producer_plugin                  \
-    --plugin eosio::chain_plugin                     \
-    --plugin eosio::http_plugin                      \
-    --plugin eosio::state_history_plugin             \
-    --plugin eosio::chain_api_plugin                 \
-    --contracts-console                              \
-    --disable-replay-opts                            \
-    --access-control-allow-origin='*'                \
-    --http-validate-host=false                       \
-    --verbose-http-errors                            \
+    -e -p eosio \
+    --data-dir ${EOS_NODE_DATA_DIR_DIR} \
+    --config-dir ${EOS_NODE_DATA_DIR_DIR} \
+    --genesis-json ${EOS_GENESIS} \
+    --plugin eosio::producer_plugin \
+    --plugin eosio::chain_plugin \
+    --plugin eosio::http_plugin \
+    --plugin eosio::state_history_plugin \
+    --plugin eosio::chain_api_plugin \
+    --max-transaction-time 3000000 \
+    --read-only-read-window-time-us 3500000000 \
+    --disable-subjective-billing=true \
+    --contracts-console \
+    --disable-replay-opts \
+    --access-control-allow-origin='*' \
+    --http-validate-host=false \
+    --verbose-http-errors \
     --state-history-dir ${EOS_NODE_DATA_DIR_DIR}/shpdata \
-    --trace-history                                  \
-    --chain-state-history                            \
+    --trace-history \
+    --chain-state-history \
     --replay-blockchain > ${EOS_LOGS_DIR}/nodeos.log 2>&1 &
 }
 
@@ -143,13 +148,24 @@ walletUnlock
 	  cleos wallet import -n ${WALLET_NAME} --private-key=$PK
 }
 
-# Creating system account
+# Creating DendrETH account
 cleos get account ${DENDRETH_ACCOUNT_IN_EOS} > /dev/null 2>&1
 [ $? -eq 1 ] && {
-	run_command "Creating system accounts" \
+	run_command "Creating DendrETH accounts" \
   	acct ${DENDRETH_ACCOUNT_IN_EOS}
 }
 
+# Creating Alica and Bob accounts for testing
+cleos get account alice > /dev/null 2>&1
+[ $? -eq 1 ] && {
+	run_command "Creating DendrETH accounts" \
+  	acct alice
+}
+cleos get account bob > /dev/null 2>&1
+[ $? -eq 1 ] && {
+	run_command "Creating DendrETH accounts" \
+  	acct bob
+}
 # Set account permission to allow deferred transactions
 run_command "Deferred transaction support" \
   cleos set account permission --add-code ${DENDRETH_ACCOUNT_IN_EOS} active
