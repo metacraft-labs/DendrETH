@@ -11,7 +11,7 @@ fn rem_first_and_last(value: &str) -> &str {
 }
 
 fn main() {
-    let mut file = File::open("/code/nimcache/verifier.json").unwrap();
+    let mut file = File::open("/code/nimcache/nim_verifier.json").unwrap();
     let mut data = String::new();
     file.read_to_string(&mut data).unwrap();
 
