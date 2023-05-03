@@ -1,21 +1,20 @@
 import yargs from 'yargs/yargs';
+import { getCosmosTxClient } from '../../../libs/typescript/cosmos-utils/cosmos-utils';
 import {
-  cosmosUtils,
-  initCosmosUtils,
-} from '../../../libs/typescript/cosmos-utils/cosmos-utils';
-import { setUpCosmosTestnet } from '../../../libs/typescript/cosmos-utils/testnet-setup';
+  startCosmosNode,
+  stopCosmosNode,
+} from '../../../libs/typescript/cosmos-utils/testnet-setup';
 import {
   instantiateVerifierContract,
   uploadVerifierContract,
 } from '../verifier/lib/typescript/verifier-upload-instantiate';
 
-const controller = new AbortController();
-const { signal } = controller;
-
 const argv = yargs(process.argv.slice(2))
   .options({
     run: { type: 'boolean', default: false, demandOption: true },
     network: { type: 'string', demandOption: true },
+    mnemonic: { type: 'string', demandOption: true },
+    rpcUrl: { type: 'string', demandOption: true },
     initHeaderRoot: { type: 'string' },
     startTestnet: { type: 'boolean', default: false },
     terminateTestnet: { type: 'boolean', default: false },
@@ -24,19 +23,15 @@ const argv = yargs(process.argv.slice(2))
 
 async function uploadAndInstantiateMain() {
   const network = argv.network;
-  let cosmos: cosmosUtils;
-  if (network === 'local' && argv.startTestnet) {
+  const mnemonic = argv.mnemonic;
+  let rpcUrl = argv.rpcUrl;
+
+  if (network === 'wasm' && argv.startTestnet) {
     // This way we are able to run the script without starting the testnet separately
-    const rpcEndpoint = String(process.env['COSMOS_LOCAL_RPC_ENDPOINT']);
-    cosmos = await setUpCosmosTestnet(rpcEndpoint, signal);
-  } else {
-    const initCosmosUtilsRes = await initCosmosUtils(network);
-    if (!initCosmosUtilsRes) {
-      console.error('Cosmos client and wallet failed to initialize');
-      return;
-    }
-    cosmos = initCosmosUtilsRes;
+    rpcUrl = await startCosmosNode();
   }
+  const cosmos = await getCosmosTxClient(mnemonic, network, rpcUrl);
+
   const uploadReceipt = await uploadVerifierContract(network, cosmos);
   if (!uploadReceipt) {
     console.error('Upload failed');
@@ -50,7 +45,7 @@ async function uploadAndInstantiateMain() {
   await instantiateVerifierContract(uploadReceipt, initHeaderRoot, cosmos);
 
   if (network === 'local' && argv.terminateTestnet === true) {
-    controller.abort();
+    await stopCosmosNode();
   }
 }
 if (argv.run || argv._[0] == 'run') {

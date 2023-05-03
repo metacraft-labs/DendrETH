@@ -1,55 +1,34 @@
 import { exec as exec_, execSync } from 'node:child_process';
 import { promisify } from 'node:util';
 
-import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
-import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
-
-import { getRootDir, sleep } from '../ts-utils/common-utils';
-import { cosmosUtils, cosmosWalletInfo } from './cosmos-utils';
+import {
+  CosmosClientWithWallet,
+  getCosmosContractArtifacts,
+  getCosmosTxClient,
+} from './cosmos-utils';
 
 const exec = promisify(exec_);
 
+export async function startCosmosNode() {
+  const localNodeUrl = 'http://localhost:26657';
+  const { contractDir } = await getCosmosContractArtifacts('verifier');
+  const startNodeCommand = `bash ${contractDir}/../scripts/run_cosmos_node.sh start`;
+  console.info(`Starting Cosmos node. \n  ╰─➤ ${startNodeCommand}`);
+  execSync(startNodeCommand);
+
+  return localNodeUrl;
+}
+
+export async function stopCosmosNode() {
+  const { contractDir } = await getCosmosContractArtifacts('verifier');
+  const stopNodeCommand = `bash ${contractDir}/../scripts/run_cosmos_node.sh stop`;
+  console.info(`Stopping Cosmos node. \n  ╰─➤ ${stopNodeCommand}`);
+  execSync(stopNodeCommand);
+}
+
 export async function setUpCosmosTestnet(
-  rpcEndpoint: string,
-  signal: AbortSignal,
-) {
-  let DendrETHWalletInfo = new cosmosWalletInfo(
-    String(process.env['COSMOS_LOCAL_MNEMONIC']),
-  );
-  const rootDir = await getRootDir();
-  const setupWasmdCommand = `bash "${rootDir}/contracts/cosmos/scripts/setup_wasmd.sh"`;
-  console.info(`Preparing 'wasmd'. \n  ╰─➤ ${setupWasmdCommand}`);
-  execSync(setupWasmdCommand);
-
-  const startNodeCommand = `bash "${rootDir}/contracts/cosmos/scripts/start_node.sh"`;
-  console.info(`Starting Cosmos testnet node. \n  ╰─➤ ${startNodeCommand}`);
-  exec_(startNodeCommand, { signal });
-
-  await sleep(15000); //  Make sure the node has started
-
-  const addKeyCommand = `bash "${rootDir}/contracts/cosmos/scripts/add_account.sh"`;
-  console.info(`Creating and funding account. \n  ╰─➤ ${addKeyCommand}`);
-  execSync(addKeyCommand);
-
-  await sleep(10000); //  Make sure the new account is funded
-
-  const getFredAddressCommand = `wasmd keys show fred -a --keyring-backend test \
-    --keyring-dir $HOME/.wasmd_keys`;
-  console.info(`Get funded account data. \n  ╰─➤ ${getFredAddressCommand}`);
-  const getAddress = exec(getFredAddressCommand);
-  const fredAddress = (await getAddress).stdout;
-  DendrETHWalletInfo.address = fredAddress.trimEnd();
-  let wallet = await DirectSecp256k1HdWallet.fromMnemonic(
-    DendrETHWalletInfo.mnemonic,
-    {
-      prefix: 'wasm',
-    },
-  );
-
-  let client = await SigningCosmWasmClient.connectWithSigner(
-    rpcEndpoint,
-    wallet,
-  );
-  let cosmos = new cosmosUtils(client, DendrETHWalletInfo);
-  return cosmos;
+  mnemonic: string,
+): Promise<CosmosClientWithWallet> {
+  const rpcEndpoint = await startCosmosNode();
+  return getCosmosTxClient(mnemonic, 'wasm', rpcEndpoint);
 }

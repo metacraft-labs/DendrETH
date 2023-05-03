@@ -5,9 +5,10 @@ import { exec as exec_ } from 'node:child_process';
 import { UploadResult } from '@cosmjs/cosmwasm-stargate';
 import { calculateFee, GasPrice } from '@cosmjs/stargate';
 
-import { setUpCosmosTestnet } from '../../../../../libs/typescript/cosmos-utils/testnet-setup';
-import { getRootDir } from '../../../../../libs/typescript/ts-utils/common-utils';
-import { cosmosUtils } from '../../../../../libs/typescript/cosmos-utils/cosmos-utils';
+import {
+  CosmosClientWithWallet as CosmosClientWithWallet,
+  getCosmosContractArtifacts,
+} from '../../../../../libs/typescript/cosmos-utils/cosmos-utils';
 
 const exec = promisify(exec_);
 
@@ -15,13 +16,10 @@ let instantiateFee;
 
 export async function uploadVerifierContract(
   network: string,
-  cosmos: cosmosUtils,
+  cosmos: CosmosClientWithWallet,
 ) {
-  const rootDir = await getRootDir();
-  const contractDir = rootDir + `/contracts/cosmos/verifier`;
-  const wasmContractPath = contractDir + '/artifacts/verifier.wasm';
+  const { wasmContractPath } = await getCosmosContractArtifacts('verifier');
   const contract = fs.readFileSync(wasmContractPath);
-
   const { client, walletInfo: DendrETHWalletInfo } = cosmos;
 
   let uploadFee;
@@ -32,7 +30,7 @@ export async function uploadVerifierContract(
       console.info('Uploading to Cudos network');
       break;
     }
-    case 'local': {
+    case 'wasm': {
       const gasPrice = GasPrice.fromString('0.0000025ustake');
       instantiateFee = calculateFee(2_000_000, gasPrice);
       uploadFee = calculateFee(1_500_000, gasPrice);
@@ -56,10 +54,9 @@ export async function uploadVerifierContract(
 export async function instantiateVerifierContract(
   uploadReceipt: UploadResult,
   initHeaderRoot: string,
-  cosmos: cosmosUtils,
+  cosmos: CosmosClientWithWallet,
 ) {
-  const rootDir = await getRootDir();
-  const contractDir = rootDir + `/contracts/cosmos/verifier`;
+  const { rootDir, contractDir } = await getCosmosContractArtifacts('verifier');
 
   const pathToVerifyUtils =
     rootDir + `/vendor/eth2-light-client-updates/prater/capella-updates/`;
@@ -89,7 +86,7 @@ export async function instantiateVerifierContract(
     instantiateFee,
     { memo: 'Create a `Verifier` instance.' },
   );
-  var contractAddress = instantiation.contractAddress;
+  let contractAddress = instantiation.contractAddress;
   const queryResultAfterInitialization = await client.queryContractSmart(
     contractAddress,
     {

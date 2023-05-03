@@ -43,3 +43,24 @@ export async function getRootDir() {
     '',
   );
 }
+
+export function assertNotNull<T>(
+  value: T | null | undefined,
+  errorMessage?: string,
+): T {
+  if (
+    value === null ||
+    value === undefined ||
+    (typeof value === 'string' && !value.length)
+  ) {
+    throw new Error(errorMessage ?? 'Assertion failed: value is null');
+  }
+  return value;
+}
+
+export function getEnvString(varName: string) {
+  return assertNotNull(
+    process.env[varName],
+    `Env variable '${varName}' is missing.`,
+  );
+}

@@ -1,11 +1,13 @@
 import yargs from 'yargs/yargs';
-import { initCosmosUtils } from '../../../libs/typescript/cosmos-utils/cosmos-utils';
+import { getCosmosTxClient } from '../../../libs/typescript/cosmos-utils/cosmos-utils';
 import { updateVerifierContract } from '../verifier/lib/typescript/verifier-make-update';
 
 const argv = yargs(process.argv.slice(2))
   .options({
     run: { type: 'boolean', default: false, demandOption: true },
-    network: { type: 'string', demandOption: true },
+    network: { type: 'string', demandOption: true, choices: ['wasm', 'cudos'] },
+    mnemonic: { type: 'string', demandOption: true },
+    rpcUrl: { type: 'string', demandOption: true },
     contractAddress: { type: 'string', demandOption: true },
     updateNum: { type: 'string' },
   })
@@ -16,9 +18,11 @@ async function uploadMain() {
   let defaultUpdateFile = '5200024_5200056.json';
 
   const network = argv.network;
+  const mnemonic = argv.mnemonic;
+  const rpcUrl = argv.rpcUrl;
   const contractAddress = argv.contractAddress;
   const updateFile = argv.updateNum || defaultUpdateFile;
-  const cosmos = await initCosmosUtils(network);
+  const cosmos = await getCosmosTxClient(mnemonic, network, rpcUrl);
 
   if (!cosmos) {
     console.error('Cosmos client and wallet failed to initialize');

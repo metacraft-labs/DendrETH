@@ -3,13 +3,12 @@ const glob = glob_.sync;
 import { promisify } from 'node:util';
 import { exec as exec_ } from 'node:child_process';
 
-import { setUpCosmosTestnet } from '../../libs/typescript/cosmos-utils/testnet-setup';
-import { CosmosContract } from '../../relay/implementations/cosmos-contract';
 import {
-  compileVerifierContract,
-  compileVerifierNimFileToWasm,
-  compileVerifierParseDataTool,
-} from '../../contracts/cosmos/verifier/lib/typescript/verifier-compile-contract-and-tools';
+  setUpCosmosTestnet,
+  stopCosmosNode,
+} from '../../libs/typescript/cosmos-utils/testnet-setup';
+import { CosmosContract } from '../../relay/implementations/cosmos-contract';
+import { compileContractMain } from '../../contracts/cosmos/verifier/lib/typescript/verifier-compile-contract-and-tools';
 import { getRootDir, sleep } from '../../libs/typescript/ts-utils/common-utils';
 import {
   instantiateVerifierContract,
@@ -32,6 +31,8 @@ describe('Light Client Verifier In Cosmos', () => {
   const { signal } = controller;
 
   const rpcEndpoint = 'http://localhost:26657';
+  const mnemonic =
+    'economy stock theory fatal elder harbor betray wasp final emotion task crumble siren bottom lizard educate guess current outdoor pair theory focus wife stone';
 
   beforeAll(async () => {
     const rootDir = await getRootDir();
@@ -42,11 +43,9 @@ describe('Light Client Verifier In Cosmos', () => {
       rootDir + `/vendor/eth2-light-client-updates/prater/capella-updates/`;
     updateFiles = glob(pathToVerifyUtils + `proof*.json`);
 
-    await compileVerifierNimFileToWasm();
-    await compileVerifierParseDataTool();
-    await compileVerifierContract();
+    await compileContractMain();
 
-    cosmos = await setUpCosmosTestnet(rpcEndpoint, signal);
+    cosmos = await setUpCosmosTestnet(mnemonic);
     DendrETHWalletInfo = cosmos.walletInfo;
   }, 360000 /* timeout in milliseconds */);
 
@@ -55,7 +54,7 @@ describe('Light Client Verifier In Cosmos', () => {
     const expectedHeaderHash =
       '196,61,148,170,234,19,66,248,229,81,217,165,230,254,149,183,235,176,19,20,42,207,30,38,40,173,56,30,92,113,51,22';
 
-    const uploadReceipt = await uploadVerifierContract('local', cosmos);
+    const uploadReceipt = await uploadVerifierContract('wasm', cosmos);
     console.info(
       'Upload of `Verifier in Cosmos` succeeded. Receipt:',
       uploadReceipt,
@@ -175,6 +174,6 @@ describe('Light Client Verifier In Cosmos', () => {
     const headerHash = headerHashAfter20Update.toString().replace(/\s/g, '');
     expect(headerHash).toEqual(expectedHeaderHash);
 
-    controller.abort();
+    await stopCosmosNode();
   }, 2000000);
 });

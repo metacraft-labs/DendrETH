@@ -2,14 +2,14 @@ import { promisify } from 'node:util';
 import { exec as exec_ } from 'node:child_process';
 
 import { calculateFee, GasPrice } from '@cosmjs/stargate';
-import { cosmosUtils } from '../../../../../libs/typescript/cosmos-utils/cosmos-utils';
+import { CosmosClientWithWallet } from '../../../../../libs/typescript/cosmos-utils/cosmos-utils';
 import { getRootDir } from '../../../../../libs/typescript/ts-utils/common-utils';
 
 const exec = promisify(exec_);
 
 export async function updateVerifierContract(
   network: string,
-  cosmos: cosmosUtils,
+  cosmos: CosmosClientWithWallet,
   contractAddress: string,
   updateFile: string,
 ) {
@@ -28,7 +28,7 @@ export async function updateVerifierContract(
   const updateDataExec = exec(parseUpdateDataCommand);
   const updateData = (await updateDataExec).stdout.replace(/\s/g, '');
 
-  var updateFee;
+  let updateFee;
 
   switch (network) {
     case 'cudos': {
@@ -36,7 +36,7 @@ export async function updateVerifierContract(
       updateFee = 'auto';
       break;
     }
-    case 'local': {
+    case 'wasm': {
       console.info('Updating on local Testnet');
       const gasPrice = GasPrice.fromString('0.0000025ustake');
       updateFee = calculateFee(2_000_000, gasPrice);

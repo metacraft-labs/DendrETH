@@ -2,13 +2,12 @@ import { promisify } from 'node:util';
 import { exec as exec_ } from 'node:child_process';
 
 import { compileNimFileToWasm } from '../../../../../libs/typescript/ts-utils/compile-nim-to-wasm';
-import { getRootDir } from '../../../../../libs/typescript/ts-utils/common-utils';
+import { getCosmosContractArtifacts } from '../../../../../libs/typescript/cosmos-utils/cosmos-utils';
 
 const exec = promisify(exec_);
 
 export async function compileVerifierNimFileToWasm() {
-  const rootDir = await getRootDir();
-  const contractDir = rootDir + `/contracts/cosmos/verifier`;
+  const { contractDir } = await getCosmosContractArtifacts('verifier');
   const nimFilePath = contractDir + `/lib/nim//verify/verify.nim`;
 
   await compileNimFileToWasm(
@@ -19,8 +18,7 @@ export async function compileVerifierNimFileToWasm() {
 }
 
 export async function compileVerifierParseDataTool() {
-  const rootDir = await getRootDir();
-  const contractDir = rootDir + `/contracts/cosmos/verifier`;
+  const { rootDir, contractDir } = await getCosmosContractArtifacts('verifier');
   const compileParseDataTool = `nim c -d:nimOldCaseObjects -o:"${contractDir}/nimcache/" \
   "${rootDir}/tests/cosmosLightClient/helpers/verifier-parse-data-tool/verifier_parse_data.nim" `;
 
@@ -32,18 +30,25 @@ export async function compileVerifierParseDataTool() {
 }
 
 export async function compileVerifierContract() {
-  const rootDir = await getRootDir();
-  const contractDir = rootDir + `/contracts/cosmos/verifier`;
+  const { contractDir, wasmContractPath } = await getCosmosContractArtifacts(
+    'verifier',
+  );
+
   const compileContractCommandVerify = `docker run -t --rm -v "${contractDir}":/code \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  cosmwasm/rust-optimizer:0.12.8 .`;
+  cosmwasm/rust-optimizer:0.12.11 .`;
 
   console.info(`Building the contract \n  ╰─➤ ${compileContractCommandVerify}`);
 
   await exec(compileContractCommandVerify);
   console.info(`Compiling the Verifier contract finished \n`);
-  const contractPath = contractDir + '/artifacts/verifier.wasm';
-  console.info(`The wasm contract file is at:`, contractPath);
-  return contractPath;
+  console.info(`The wasm contract file is at:`, wasmContractPath);
+  return wasmContractPath;
+}
+
+export async function compileContractMain() {
+  await compileVerifierNimFileToWasm();
+  await compileVerifierParseDataTool();
+  await compileVerifierContract();
 }
