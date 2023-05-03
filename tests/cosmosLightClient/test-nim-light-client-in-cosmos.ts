@@ -15,7 +15,10 @@ import {
   appendJsonFile,
   getRootDir,
 } from '../../libs/typescript/ts-utils/common-utils';
-import { setUpCosmosTestnet } from '../../libs/typescript/cosmos-utils/testnet-setup';
+import {
+  setUpCosmosTestnet,
+  stopCosmosNode,
+} from '../../libs/typescript/cosmos-utils/testnet-setup';
 import { gasUsed } from './helpers/helpers';
 
 const exec = promisify(exec_);
@@ -31,7 +34,8 @@ describe('Light Client In Cosmos', () => {
   const controller = new AbortController();
   const { signal } = controller;
 
-  const rpcEndpoint = 'http://localhost:26657';
+  const mnemonic =
+    'economy stock theory fatal elder harbor betray wasp final emotion task crumble siren bottom lizard educate guess current outdoor pair theory focus wife stone';
   const gasPrice = GasPrice.fromString('0.0000025ustake');
   const gasUsageFile = 'tests/cosmosLightClient/gasLightClient.json';
 
@@ -54,7 +58,7 @@ describe('Light Client In Cosmos', () => {
 
     await exec(compileContractCommandLightClient);
 
-    let cosmos = await setUpCosmosTestnet(rpcEndpoint, signal);
+    let cosmos = await setUpCosmosTestnet(mnemonic);
     client = cosmos.client;
     DendrETHWalletInfo = cosmos.walletInfo;
   }, 360000 /* timeout in milliseconds */);
@@ -225,6 +229,7 @@ describe('Light Client In Cosmos', () => {
     appendJsonFile(gasUsageFile, gasArrayLightClient);
 
     expect(headerSlotAfterAllUpdates).toEqual(expectedHeaderSlot);
-    controller.abort();
+
+    await stopCosmosNode();
   }, 1500000);
 });

@@ -123,7 +123,8 @@ async function CreateClientCudos(rpcEndpoint) {
   return client;
 }
 async function CreateClientLocal(rpcEndpoint) {
-  const mnemonic = String(process.env['COSMOS_LOCAL_MNEMONIC']);
+  const mnemonic =
+    'economy stock theory fatal elder harbor betray wasp final emotion task crumble siren bottom lizard educate guess current outdoor pair theory focus wife stone';
 
   const wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, {
     prefix: 'wasm',

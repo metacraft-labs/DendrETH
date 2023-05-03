@@ -14,9 +14,9 @@ async function publishTask() {
   checkConfig(config);
   const network = process.argv[3];
   const contractAddress = process.argv[4];
-  var address;
-  var rpcEndpoint;
-  var prefix;
+  let address;
+  let rpcEndpoint;
+  let prefix;
   switch (network) {
     case 'cudos': {
       address = String(process.env['CUDOS_PUBLIC_KEY']);
