@@ -77,6 +77,17 @@ proc execCommand*(): string =
       let update = "{\"update\":{\"proof\":" & $proof & ",\"new_optimistic_header_root\": " & $newOptimisticHeader & ",\"new_finalized_header_root\": " & $newFinalizedHeader & ",\"new_execution_state_root\": " & $newExecutionStateRoot & "}}"
       echo update
 
+    of StartUpCommand.updateDataEOS:
+      let proof = createProof(conf.proofPathEOS)
+
+      let updateJson = parseFile(conf.updatePathEOS)
+      let newOptimisticHeader = hexToByteArray[32](updateJson["attested_header_root"].str)
+      let newFinalizedHeader = hexToByteArray[32](updateJson["finalized_header_root"].str)
+      let newExecutionStateRoot = hexToByteArray[32](updateJson["finalized_execution_state_root"].str)
+
+      let update= "{\"proof\":" & $proof.toHex() & ",\"new_optimistic_header_root\": " & $newOptimisticHeader.toHex() & ",\"new_finalized_header_root\": " & $newFinalizedHeader.toHex() & ",\"new_execution_state_root\": " & $newExecutionStateRoot.toHex() & "}"
+
+      echo update
 
 let a = execCommand()
 

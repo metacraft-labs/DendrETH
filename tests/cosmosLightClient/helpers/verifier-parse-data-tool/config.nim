@@ -11,6 +11,7 @@ type
     expectedFinalizedRootPath
     expectedExecutionStateRoot
     updateDataForCosmosContractClass
+    updateDataEOS
 
 type
   ParseDataConf* = object
@@ -64,3 +65,9 @@ type
         desc: "proof - point b"}: seq[string]
       c* {.
         desc: "proof - point c"}: seq[string]
+
+    of updateDataEOS:
+      proofPathEOS* {.
+        desc: "Path to some header"}: string
+      updatePathEOS* {.
+        desc: "updatePath"}: string
