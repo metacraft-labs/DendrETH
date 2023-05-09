@@ -43,10 +43,10 @@
         inputs',
         ...
       }: let
-        inherit (inputs'.mcl-blockchain.legacyPackages) nix2container rust-stable;
+        inherit (inputs'.mcl-blockchain.legacyPackages) nix2container rust-stable rustPlatformStable;
         docker-images = import ./libs/nix/docker-images.nix {inherit pkgs nix2container;};
-        wasm = import ./libs/nix/wasm.nix {
-          inherit pkgs rust-stable;
+        nim-packages = import ./libs/nix/nim-programs.nix {
+          inherit pkgs rustPlatformStable;
           lib = pkgs.lib;
         };
       in {
@@ -66,8 +66,8 @@
         packages =
           {
             inherit (docker-images) docker-image-yarn;
-            inherit (wasm) verify-cosmos;
           }
+          // nim-packages
           // pkgs.lib.optionalAttrs (pkgs.hostPlatform.isLinux && pkgs.hostPlatform.isx86_64) {
             inherit (docker-images) docker-image-all;
           };
