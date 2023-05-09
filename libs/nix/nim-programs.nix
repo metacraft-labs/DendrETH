@@ -105,6 +105,15 @@
         fetchSubmodules = true;
       }
     }"
+    "${
+      # json-serialization =
+      fetchFromGitHub {
+        owner = "status-im";
+        repo = "nim-json-serialization";
+        rev = "b06b8ca4b177a7d0f74ac602350316d95c2fddd5";
+        hash = "sha256-8o3GHjCQfBSkfTxj3NDikqf/vehPvHYRFIlwf4Mpdhg=";
+      }
+    }"
   ];
 
   nimDeps = toString (map (x: "--path:${x}") _nimDeps);
@@ -145,6 +154,20 @@
       srcFile = "light_client_cosmos_wrapper";
       src = ../../contracts/cosmos/light-client/lib/nim;
       extraArgs = "--d:lightClientCosmos ${nimDeps} --path:${../../beacon-light-client/nim}";
+    };
+
+    beacon-light-client-wasm = buildNimWasmProgram {
+      name = "beacon-light-client";
+      srcFile = "beacon-light-client/nim/light_client";
+      src = ../..;
+      extraArgs = "${nimDeps}";
+    };
+
+    beacon-light-client-emmc-wasm = buildNimWasmProgram {
+      name = "beacon-light-client-emmc";
+      srcFile = "beacon-light-client/nim/light_client";
+      src = ../..;
+      extraArgs = "-d:emmc ${nimDeps}";
     };
 
     cosmos-verifier-parse-data = buildNimProgram {
@@ -222,5 +245,5 @@
     };
   };
 in {
-  inherit (wasmModules) cosmos-verifier-parse-data cosmos-verifier-contract cosmos-light-client-contract cosmos-groth16-verifier;
+  inherit (wasmModules) cosmos-verifier-parse-data cosmos-verifier-contract cosmos-light-client-contract cosmos-groth16-verifier beacon-light-client-wasm beacon-light-client-emmc-wasm;
 }
