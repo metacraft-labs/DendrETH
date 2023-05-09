@@ -1,21 +1,21 @@
 {
-  nim-wasm,
+  nim,
   runCommand,
   lib,
 }: {
   name,
   src,
   srcFile ? name,
-  outFileName ? "${name}.wasm",
+  outFileName ? "nimcache/",
   buildInputs ? [],
   extraArgs ? "",
 }: let
-  nim2wasm = lib.getExe nim-wasm;
+  nimC = "${nim}/bin/nim";
 in
   runCommand name {
     inherit buildInputs src;
   } ''
     mkdir -p $out/nimcache
     mkdir -p $out/lib
-    ${nim2wasm} c --nimcache:$out/nimcache -o:$out/lib/${outFileName} ${extraArgs} $src/${srcFile}.nim
+    ${nimC} c --nimcache:$out/nimcache -o:$out/${outFileName} ${extraArgs} $src/${srcFile}.nim
   ''
