@@ -9,6 +9,7 @@
 
 # Logs
 logs
+*.log.*
 *.log
 *.log.*
 npm-debug.log*
@@ -164,3 +165,5 @@ target
 
 # ccls cache
 .ccls-cache
+
+redis-server/

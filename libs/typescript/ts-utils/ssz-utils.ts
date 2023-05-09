@@ -1,6 +1,48 @@
 import { Type } from '@chainsafe/ssz';
-import { hexToBytes } from './bls';
+import { formatHex, hexToBytes } from './bls';
 import { readFile } from 'fs/promises';
+import { sha256 } from 'ethers/lib/utils';
+
+export function verifyMerkleProof(
+  branch: string[],
+  hashTreeRoot: string,
+  leaf: string,
+  index: bigint,
+): boolean {
+  let hash = leaf;
+
+  for (const proofElement of branch) {
+    hash = sha256(
+      '0x' +
+        (index % 2n === 0n ? [hash, proofElement] : [proofElement, hash])
+          .map(formatHex)
+          .join(''),
+    );
+
+    index /= 2n;
+  }
+
+  return formatHex(hash) === formatHex(hashTreeRoot);
+}
+
+export function hashTreeRoot(_leaves: string[]) {
+  const leaves = [..._leaves];
+
+  const UPPER_SIZE = leaves.length;
+  let n = 2;
+
+  while (UPPER_SIZE / n >= 1) {
+    for (let i = 0; i < UPPER_SIZE / n; i++) {
+      leaves[i] = sha256(
+        '0x' + formatHex(leaves[2 * i]) + formatHex(leaves[2 * i + 1]),
+      );
+    }
+
+    n *= 2;
+  }
+
+  return leaves[0];
+}
 
 export async function jsonToSerializedBase64<T>(
   sszType: Type<T>,
