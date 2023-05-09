@@ -95,6 +95,16 @@
         hash = "sha256-f3b64XBtAyzYiO1YVuzXkbWDOfG8KrPUuCFbCkvPM2c=";
       }
     }"
+    "${
+      # blscurve =
+      fetchFromGitHub {
+        owner = "status-im";
+        repo = "nim-blscurve";
+        rev = "d93da7af30a9a2160f68d84c5210a12c4d16df00";
+        hash = "sha256-dO2g+ZZ9HS1Fm1ejzwOEQFoFFTJgEjHABuMQyWwxTOI=";
+        fetchSubmodules = true;
+      }
+    }"
   ];
 
   nimDeps = toString (map (x: "--path:${x}") _nimDeps);
@@ -134,7 +144,7 @@
       outFileName = "light_client";
       srcFile = "light_client_cosmos_wrapper";
       src = ../../contracts/cosmos/light-client/lib/nim;
-      extraArgs = "--d:lightClientCosmos ${nimDeps}";
+      extraArgs = "--d:lightClientCosmos ${nimDeps} --path:${../../beacon-light-client/nim}";
     };
 
     cosmos-verifier-parse-data = buildNimProgram {
@@ -142,6 +152,13 @@
       srcFile = "tests/cosmosLightClient/helpers/verifier-parse-data-tool/verifier_parse_data";
       src = ../..;
       extraArgs = "--d:nimOldCaseObjects ${nimDeps}";
+    };
+
+    cosmos-groth16-verifier = buildNimProgram {
+      name = "groth16-verifier";
+      srcFile = "libs/nim/nim-groth16-verifier/verify";
+      src = ../..;
+      extraArgs = "--d:lightClientCosmos ${nimDeps}";
     };
 
     cosmos-verifier-contract = stdenv.mkDerivation rec {
@@ -180,11 +197,11 @@
       cargoDeps = rustPlatformStable.fetchCargoTarball {
         inherit src;
         name = "${name}";
-        sha256 = lib.fakeHash;
+        sha256 = "sha256-BKUpZMIT83kNHMMGmnLEfScCInIegiUG629bsJi1N9E=";
       };
 
       CARGO_REGISTRIES_CRATES_IO_PROTOCOL = "sparse";
-      # NIMCACHE_PARENT = "${wasmModules.cosmos-nim-light-client-wasm}";
+      NIMCACHE_PARENT = "${wasmModules.cosmos-nim-light-client-wasm}";
 
       buildPhase = ''
         echo buildPhase;
@@ -193,7 +210,7 @@
 
       installPhase = ''
         mkdir -p $out/lib
-        cp ./target/wasm32-unknown-unknown/release/light-client.wasm $out/lib
+        cp ./target/wasm32-unknown-unknown/release/light_client.wasm $out/lib
       '';
 
       nativeBuildInputs = with pkgs;
@@ -205,5 +222,5 @@
     };
   };
 in {
-  inherit (wasmModules) cosmos-verifier-parse-data cosmos-verifier-contract cosmos-light-client-contract;
+  inherit (wasmModules) cosmos-verifier-parse-data cosmos-verifier-contract cosmos-light-client-contract cosmos-groth16-verifier;
 }
