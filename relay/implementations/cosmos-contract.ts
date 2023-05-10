@@ -35,6 +35,10 @@ export class CosmosContract implements ISmartContract {
         this.client = await CreateClientCudos(this.rpcEndpoint);
         break;
       }
+      case 'malaga': {
+        this.client = await CreateClientMalaga(this.rpcEndpoint);
+        break;
+      }
       case 'local': {
         this.client = await CreateClientLocal(this.rpcEndpoint);
         break;
@@ -85,6 +89,10 @@ export class CosmosContract implements ISmartContract {
         executeFee = 'auto';
         break;
       }
+      case 'malaga': {
+        executeFee = 'auto';
+        break;
+      }
       case 'local': {
         const gasPrice = GasPrice.fromString('0.0000025ustake');
         executeFee = calculateFee(2_000_000, gasPrice);
@@ -122,6 +130,21 @@ async function CreateClientCudos(rpcEndpoint) {
   );
   return client;
 }
+async function CreateClientMalaga(rpcEndpoint) {
+  const mnemonic = String(process.env['MALAGA_MNEMONIC']);
+  const wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, {
+    prefix: 'wasm',
+  });
+  var client = await SigningCosmWasmClient.connectWithSigner(
+    rpcEndpoint,
+    wallet,
+    {
+      gasPrice: GasPrice.fromString('0.5umlg'),
+    },
+  );
+  return client;
+}
+
 async function CreateClientLocal(rpcEndpoint) {
   const mnemonic =
     'economy stock theory fatal elder harbor betray wasp final emotion task crumble siren bottom lizard educate guess current outdoor pair theory focus wife stone';

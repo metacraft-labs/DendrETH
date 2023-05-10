@@ -30,6 +30,12 @@ export async function uploadVerifierContract(
       console.info('Uploading to Cudos network');
       break;
     }
+    case 'malaga': {
+      uploadFee = 'auto';
+      instantiateFee = 'auto';
+      console.info('Uploading to Malaga network');
+      break;
+    }
     case 'wasm': {
       const gasPrice = GasPrice.fromString('0.0000025ustake');
       instantiateFee = calculateFee(2_000_000, gasPrice);

@@ -44,7 +44,7 @@ async function uploadAndInstantiateMain() {
   const initHeaderRoot = argv.initHeaderRoot || defaultInitHeaderRoot;
   await instantiateVerifierContract(uploadReceipt, initHeaderRoot, cosmos);
 
-  if (network === 'local' && argv.terminateTestnet === true) {
+  if (network === 'wasm' && argv.terminateTestnet === true) {
     await stopCosmosNode();
   }
 }
