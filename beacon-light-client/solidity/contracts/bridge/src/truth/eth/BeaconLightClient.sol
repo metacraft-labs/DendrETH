@@ -57,6 +57,7 @@ contract BeaconLightClient is LightClientUpdateVerifier, ILightClient {
     return executionStateRoots[currentIndex];
   }
 
+  // TODO: fix
   function light_client_update(LightClientUpdate calldata update)
     external
     payable
