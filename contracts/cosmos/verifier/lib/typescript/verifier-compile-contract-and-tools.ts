@@ -29,12 +29,20 @@ export async function compileVerifierParseDataTool() {
   await exec(compileParseDataTool);
 }
 
-export async function compileVerifierContract() {
+export async function compileVerifierContract(patch: string | null) {
   const { contractDir, wasmContractPath } = await getCosmosContractArtifacts(
     'verifier',
   );
 
-  const compileContractCommandVerify = `docker run -t --rm -v "${contractDir}":/code \
+  let dockerPatch = '';
+  if (patch !== null) {
+    dockerPatch = `-v "${contractDir}-${patch}/Cargo.toml":/code/Cargo.toml \
+                   -v "${contractDir}-${patch}/Cargo.lock":/code/Cargo.lock`;
+  }
+
+  const compileContractCommandVerify = `docker run -t --rm \
+  -v "${contractDir}":/code \
+  ${dockerPatch} \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
   cosmwasm/rust-optimizer:0.12.11 .`;
@@ -47,8 +55,8 @@ export async function compileVerifierContract() {
   return wasmContractPath;
 }
 
-export async function compileContractMain() {
+export async function compileContractMain(patch: string | null) {
   await compileVerifierNimFileToWasm();
   await compileVerifierParseDataTool();
-  await compileVerifierContract();
+  await compileVerifierContract(patch);
 }

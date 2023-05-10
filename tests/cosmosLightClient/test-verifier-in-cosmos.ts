@@ -52,7 +52,7 @@ describe('Light Client Verifier In Cosmos', () => {
       rootDir + `/vendor/eth2-light-client-updates/prater/capella-updates/`;
     updateFiles = glob(pathToVerifyUtils + `proof*.json`);
 
-    await compileContractMain();
+    await compileContractMain(null);
 
     cosmos = await setUpCosmosTestnet(mnemonic);
     client = cosmos.client;

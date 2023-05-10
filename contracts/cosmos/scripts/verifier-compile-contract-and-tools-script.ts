@@ -4,9 +4,10 @@ import { compileContractMain } from '../verifier/lib/typescript/verifier-compile
 const argv = yargs(process.argv.slice(2))
   .options({
     run: { type: 'boolean', default: false, demandOption: true },
+    patch: { type: 'string', default: null, demandOption: false },
   })
   .parseSync();
 
 if (argv.run || argv._[0] == 'run') {
-  compileContractMain();
+  compileContractMain(argv.patch);
 }
