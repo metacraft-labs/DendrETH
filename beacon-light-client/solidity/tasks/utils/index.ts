@@ -20,5 +20,10 @@ export const getConstructorArgs = async (
 
   const executioStateRoot = await beaconApi.getExecutionStateRoot(slot);
 
-  return [finalizedHeaderRoot, finalizedHeaderRoot, executioStateRoot];
+  return [
+    finalizedHeaderRoot,
+    finalizedBlockHeader.slot,
+    finalizedHeaderRoot,
+    executioStateRoot,
+  ];
 };

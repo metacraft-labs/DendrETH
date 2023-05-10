@@ -10,7 +10,7 @@ export class SolidityContract implements ISmartContract {
   }
 
   optimisticHeaderRoot(): Promise<string> {
-    return this.lightClientContract.optimistic_header_root();
+    return this.lightClientContract.optimisticHeaderRoot();
   }
 
   async postUpdateOnChain(update: {

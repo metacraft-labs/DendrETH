@@ -59,6 +59,16 @@ the full blockchain environments).
 | [Goerli/Arbitrum](https://goerli.arbiscan.io/address/0x8957ADD38dd03270A908dd8271060d282D9A0A6D)                | [mainnet](http://unstable.mainnet.beacon-api.nimbus.team/) | (Capella)                                                    |
 | [Sepolia/Ethereum](https://sepolia.etherscan.io/address/0x546e8470B9dB3FD344Bd8368b6862b09E37B567d)             | [mainnet](http://unstable.mainnet.beacon-api.nimbus.team/) | (Capella)                                                    |
 | [Mumbai/Polygon](https://mumbai.polygonscan.com/address/0xC6849B859eF75fdd5444132C7ABd43fCe8017bF5)             | [mainnet](http://unstable.mainnet.beacon-api.nimbus.team/) | (Capella)                                                    |
+| [Goerli/Ethereum] (https://goerli.etherscan.io/address/0x5e6d360bF9D30e1D00394Fa280EcCc2267eE6E36)              | [goerli](http://unstable.prater.beacon-api.nimbus.team/)   | https://github.com/metacraft-labs/DendrETH/pull/94 (Capella) |
+| [Goerli/Optimism] (https://goerli-optimism.etherscan.io/address/0x01Dea335aDdC9158656CDd4eE6766f8D4fB3c841)     | [goerli](http://unstable.prater.beacon-api.nimbus.team/)   | https://github.com/metacraft-labs/DendrETH/pull/94 (Capella) |
+| [Goerli/Base] (https://goerli.basescan.org/address/0xa2D89aB06D9a60De7437bF70dFE47Db371343B66)                  | [goerli](http://unstable.prater.beacon-api.nimbus.team/)   | https://github.com/metacraft-labs/DendrETH/pull/94 (Capella) |
+| [Goerli/Arbitrum] (https://goerli.arbiscan.io/address/0x80C0BEA7b714718a2BDA4892cef4D4e74350Eb16)               | [goerli](http://unstable.prater.beacon-api.nimbus.team/)   | https://github.com/metacraft-labs/DendrETH/pull/94 (Capella) |
+| [Sepolia/Ethereum] (https://sepolia.etherscan.io/address/0x17AaC562F78FdD4E6A20Ac8bd6242717b9c0536b)            | [goerli](http://unstable.prater.beacon-api.nimbus.team/)   | https://github.com/metacraft-labs/DendrETH/pull/94 (Capella) |
+| [Mumbai/Polygon] (https://mumbai.polygonscan.com/address/0x2CAAa9c0b76E888a79bb9a1f580B0de442266e08)            | [goerli](http://unstable.prater.beacon-api.nimbus.team/)   | https://github.com/metacraft-labs/DendrETH/pull/94 (Capella) |
+| [Testnet/Fantom] (https://testnet.ftmscan.com/address/0x33ad87Ed8b78f56EF740b5D2Fa32D794ae746932)               | [goerli](http://unstable.prater.beacon-api.nimbus.team/)   | https://github.com/metacraft-labs/DendrETH/pull/94 (Capella) |
+| [Alfajores/Celo] (https://alfajores.celoscan.io/address/0x653B8b5bBb44cBD98C2239E64011eD36fe312877)             | [goerli](http://unstable.prater.beacon-api.nimbus.team/)   | https://github.com/metacraft-labs/DendrETH/pull/94 (Capella) |
+| [Chiado/Gnosis] (https://blockscout.com/gnosis/chiado/address/0xF22061d7bb611b9C6b492d5c25f0980c82184E48)       | [goerli](http://unstable.prater.beacon-api.nimbus.team/)   | https://github.com/metacraft-labs/DendrETH/pull/94 (Capella) |
+| [Testnet/EVMOS] (https://testnet.mintscan.io/evmos-testnet/account/0x0C6A28Ad861f26bF6110C732BFbe9878A1e3826e)  | [goerli](http://unstable.prater.beacon-api.nimbus.team/)   | https://github.com/metacraft-labs/DendrETH/pull/94 (Capella) |
 
 ## Working with the Codebase
 
