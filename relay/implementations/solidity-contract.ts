@@ -14,9 +14,10 @@ export class SolidityContract implements ISmartContract {
   }
 
   async postUpdateOnChain(update: {
-    attested_header_root: string;
-    finalized_header_root: string;
-    finalized_execution_state_root: string;
+    attestedHeaderRoot: string;
+    attestedHeaderSlot: number;
+    finalizedHeaderRoot: string;
+    finalizedExecutionStateRoot: string;
     a: string[];
     b: string[][];
     c: string[];

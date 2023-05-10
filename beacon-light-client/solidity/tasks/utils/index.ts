@@ -1,17 +1,12 @@
-import { checkConfig } from '../../../../libs/typescript/ts-utils/common-utils';
+import { sha256 } from 'ethers/lib/utils';
 import { IBeaconApi } from '../../../../relay/abstraction/beacon-api-interface';
+import { Config } from '../../../../relay/constants/constants';
 
-// TODO: should get the finalized header for the slot
 export const getConstructorArgs = async (
   beaconApi: IBeaconApi,
   slot: number,
+  config: Config,
 ) => {
-  const config = {
-    BEACON_REST_API: process.env.BEACON_REST_API,
-  };
-
-  checkConfig(config);
-
   const { ssz } = await import('@lodestar/types');
 
   const finalizedBlockHeader = await beaconApi.getFinalizedBlockHeader(slot);
@@ -20,10 +15,16 @@ export const getConstructorArgs = async (
 
   const executioStateRoot = await beaconApi.getExecutionStateRoot(slot);
 
+  let result = sha256(
+    config.FORK_VERSION.padEnd(66, '0') +
+      config.GENESIS_VALIDATORS_ROOT.slice(2),
+  );
+
   return [
     finalizedHeaderRoot,
     finalizedBlockHeader.slot,
     finalizedHeaderRoot,
     executioStateRoot,
+    config.DOMAIN_SYNC_COMMITTEE + result.slice(2, 58),
   ];
 };

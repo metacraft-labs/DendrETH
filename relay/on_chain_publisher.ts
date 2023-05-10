@@ -106,18 +106,38 @@ export async function postUpdateOnChain(
   ];
   const c = [argv[6], argv[7]];
 
-  const transaction = await lightClientContract.postUpdateOnChain({
-    attested_header_root:
+  console.log({
+    attestedHeaderRoot:
       '0x' +
       BigInt('0b' + proofResult.proofInput.nextHeaderHash.join(''))
         .toString(16)
         .padStart(64, '0'),
-    finalized_header_root:
+    attestedHeaderSlot: proofResult.proofInput.nextHeaderSlot,
+    finalizedHeaderRoot:
       '0x' +
       BigInt('0b' + proofResult.proofInput.finalizedHeaderRoot.join(''))
         .toString(16)
         .padStart(64, '0'),
-    finalized_execution_state_root:
+    finalizedExecutionStateRoot:
+      '0x' +
+      BigInt('0b' + proofResult.proofInput.execution_state_root.join(''))
+        .toString(16)
+        .padStart(64, '0'),
+  });
+
+  const transaction = await lightClientContract.postUpdateOnChain({
+    attestedHeaderRoot:
+      '0x' +
+      BigInt('0b' + proofResult.proofInput.nextHeaderHash.join(''))
+        .toString(16)
+        .padStart(64, '0'),
+    attestedHeaderSlot: proofResult.proofInput.nextHeaderSlot,
+    finalizedHeaderRoot:
+      '0x' +
+      BigInt('0b' + proofResult.proofInput.finalizedHeaderRoot.join(''))
+        .toString(16)
+        .padStart(64, '0'),
+    finalizedExecutionStateRoot:
       '0x' +
       BigInt('0b' + proofResult.proofInput.execution_state_root.join(''))
         .toString(16)
