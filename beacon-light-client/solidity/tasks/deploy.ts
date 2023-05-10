@@ -2,15 +2,19 @@ import { task } from 'hardhat/config';
 import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
 import { BeaconApi } from '../../../relay/implementations/beacon-api';
 import { getConstructorArgs } from './utils';
+import * as networkConfig from '../../../relay/constants/network_config.json';
+import { Config } from '../../../relay/constants/constants';
 
 task('deploy', 'Deploy the beacon light client contract')
   .addParam('slot', 'The slot ')
+  .addParam('follownetwork', 'The network to follow')
   .setAction(async (args, { run, ethers, network }) => {
-    const config = {
-      BEACON_REST_API: process.env.BEACON_REST_API,
-    };
+    if (!networkConfig[args.follownetwork]) {
+      console.warn('This follownetwork is not specified in networkconfig');
+      return;
+    }
 
-    checkConfig(config);
+    const currentConfig = networkConfig[args.follownetwork] as Config;
 
     await run('compile');
     const [deployer] = await ethers.getSigners();
@@ -18,11 +22,13 @@ task('deploy', 'Deploy the beacon light client contract')
     console.log('Deploying contracts with the account:', deployer.address);
     console.log('Account balance:', (await deployer.getBalance()).toString());
 
-    const beaconApi = new BeaconApi(config.BEACON_REST_API!);
+    const beaconApi = new BeaconApi(currentConfig.BEACON_REST_API);
 
     const beaconLightClient = await (
       await ethers.getContractFactory('BeaconLightClient')
-    ).deploy(...(await getConstructorArgs(beaconApi, args.slot)));
+    ).deploy(
+      ...(await getConstructorArgs(beaconApi, args.slot, currentConfig)),
+    );
 
     console.log('>>> Waiting for BeaconLightClient deployment...');
 

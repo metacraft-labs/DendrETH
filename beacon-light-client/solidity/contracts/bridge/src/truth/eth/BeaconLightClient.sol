@@ -27,11 +27,14 @@ contract BeaconLightClient is LightClientUpdateVerifier, ILightClient {
 
   uint256 public currentIndex;
 
+  bytes32 domain;
+
   constructor(
     bytes32 _optimisticHeaderRoot,
     uint256 _optimisticHeaderSlot,
     bytes32 _finalizedHeaderRoot,
-    bytes32 _executionStateRoot
+    bytes32 _executionStateRoot,
+    bytes32 _domain
   ) {
     currentIndex = 0;
 
@@ -39,6 +42,7 @@ contract BeaconLightClient is LightClientUpdateVerifier, ILightClient {
     optimisticSlots[currentIndex] = _optimisticHeaderSlot;
     finalizedHeaders[currentIndex] = _finalizedHeaderRoot;
     executionStateRoots[currentIndex] = _executionStateRoot;
+    domain = _domain;
   }
 
   function optimisticHeaderRoot() public view returns (bytes32) {
@@ -71,7 +75,8 @@ contract BeaconLightClient is LightClientUpdateVerifier, ILightClient {
         update.attestedHeaderRoot,
         update.attestedHeaderSlot,
         update.finalizedHeaderRoot,
-        update.finalizedExecutionStateRoot
+        update.finalizedExecutionStateRoot,
+        domain
       ),
       '!proof'
     );
