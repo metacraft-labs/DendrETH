@@ -85,7 +85,7 @@ proc execCommand*(): string =
       let newFinalizedHeader = hexToByteArray[32](updateJson["finalized_header_root"].str)
       let newExecutionStateRoot = hexToByteArray[32](updateJson["finalized_execution_state_root"].str)
 
-      let update= "{\"proof\":" & $proof.toHex() & ",\"new_optimistic_header_root\": " & $newOptimisticHeader.toHex() & ",\"new_finalized_header_root\": " & $newFinalizedHeader.toHex() & ",\"new_execution_state_root\": " & $newExecutionStateRoot.toHex() & "}"
+      let update= "'{\"proof\":" & $proof.toHex() & ",\"new_optimistic_header_root\": \"" & $newOptimisticHeader.toHex() & "\" ,\"new_finalized_header_root\": \"" & $newFinalizedHeader.toHex() & "\" ,\"new_execution_state_root\": \"" & $newExecutionStateRoot.toHex() & "\" } '"
 
       echo update
 

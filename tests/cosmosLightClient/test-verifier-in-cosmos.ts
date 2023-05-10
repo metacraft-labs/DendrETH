@@ -19,7 +19,7 @@ import {
   uploadVerifierContract,
 } from '../../contracts/cosmos/verifier/lib/typescript/verifier-upload-instantiate';
 import { updateVerifierContract } from '../../contracts/cosmos/verifier/lib/typescript/verifier-make-update';
-import { replaceInTextProof, gasUsed } from './helpers/helpers';
+import { replaceInTextProof, gasUsed } from '../helpers/helpers';
 import { getCosmosContractArtifacts } from '../../libs/typescript/cosmos-utils/cosmos-utils';
 
 const exec = promisify(exec_);

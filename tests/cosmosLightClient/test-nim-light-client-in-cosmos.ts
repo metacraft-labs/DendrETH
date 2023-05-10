@@ -19,7 +19,7 @@ import {
   setUpCosmosTestnet,
   stopCosmosNode,
 } from '../../libs/typescript/cosmos-utils/testnet-setup';
-import { gasUsed } from './helpers/helpers';
+import { gasUsed } from '../helpers/helpers';
 
 const exec = promisify(exec_);
 
