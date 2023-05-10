@@ -26,8 +26,9 @@ export async function getCosmosTxClient(
   network: string,
   rpcUrl: string,
 ): Promise<CosmosClientWithWallet> {
+  const prefix = network === 'cudos' ? 'cudos' : 'wasm';
   const wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, {
-    prefix: network,
+    prefix: prefix,
   });
   const accounts = await wallet.getAccounts();
   const address = accounts[0].address;
@@ -40,6 +41,12 @@ export async function getCosmosTxClient(
     case 'cudos': {
       client = await SigningCosmWasmClient.connectWithSigner(rpcUrl, wallet, {
         gasPrice: GasPrice.fromString('5000000000000acudos'),
+      });
+      break;
+    }
+    case 'malaga': {
+      client = await SigningCosmWasmClient.connectWithSigner(rpcUrl, wallet, {
+        gasPrice: GasPrice.fromString('0.5umlg'),
       });
       break;
     }

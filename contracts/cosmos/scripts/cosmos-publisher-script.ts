@@ -24,6 +24,12 @@ async function publishTask() {
       prefix = 'cudos';
       break;
     }
+    case 'malaga': {
+      address = String(process.env['MALAGA_ADDRESS']);
+      rpcEndpoint = String(process.env['MALAGA_RPC_ENDPOINT']);
+      prefix = 'wasm';
+      break;
+    }
     default: {
       console.error('Incorrect network!');
     }

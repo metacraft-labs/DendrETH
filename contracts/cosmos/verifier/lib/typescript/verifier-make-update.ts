@@ -36,6 +36,11 @@ export async function updateVerifierContract(
       updateFee = 'auto';
       break;
     }
+    case 'malaga': {
+      console.info('Updating on Malaga Testnet');
+      updateFee = 'auto';
+      break;
+    }
     case 'wasm': {
       console.info('Updating on local Testnet');
       const gasPrice = GasPrice.fromString('0.0000025ustake');

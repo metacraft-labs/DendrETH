@@ -5,7 +5,11 @@ import { updateVerifierContract } from '../verifier/lib/typescript/verifier-make
 const argv = yargs(process.argv.slice(2))
   .options({
     run: { type: 'boolean', default: false, demandOption: true },
-    network: { type: 'string', demandOption: true, choices: ['wasm', 'cudos'] },
+    network: {
+      type: 'string',
+      demandOption: true,
+      choices: ['wasm', 'cudos', 'malaga'],
+    },
     mnemonic: { type: 'string', demandOption: true },
     rpcUrl: { type: 'string', demandOption: true },
     contractAddress: { type: 'string', demandOption: true },
