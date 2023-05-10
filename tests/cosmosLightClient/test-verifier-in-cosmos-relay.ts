@@ -14,7 +14,7 @@ import {
   instantiateVerifierContract,
   uploadVerifierContract,
 } from '../../contracts/cosmos/verifier/lib/typescript/verifier-upload-instantiate';
-import { replaceInTextProof } from './helpers/helpers';
+import { replaceInTextProof } from '../helpers/helpers';
 
 const exec = promisify(exec_);
 
