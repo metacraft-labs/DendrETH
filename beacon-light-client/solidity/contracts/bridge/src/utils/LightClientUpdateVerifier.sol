@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
+
 import './Verifier.sol';
 
 contract LightClientUpdateVerifier is Verifier {
@@ -7,16 +8,18 @@ contract LightClientUpdateVerifier is Verifier {
     uint256[2] memory a,
     uint256[2][2] memory b,
     uint256[2] memory c,
-    bytes32 prev_header_hash,
-    bytes32 next_header_hash,
-    bytes32 finalized_header_root,
-    bytes32 execution_state_root
+    bytes32 prevHeaderHash,
+    bytes32 nextHeaderHash,
+    uint256 nextHeaderSlot,
+    bytes32 finalizedHeaderRoot,
+    bytes32 executionStateRoot
   ) internal view returns (bool) {
     bytes32 commitment = hash(
-      prev_header_hash,
-      next_header_hash,
-      finalized_header_root,
-      execution_state_root
+      prevHeaderHash,
+      nextHeaderHash,
+      nextHeaderSlot,
+      finalizedHeaderRoot,
+      executionStateRoot
     );
 
     uint256[2] memory input;
@@ -30,10 +33,11 @@ contract LightClientUpdateVerifier is Verifier {
   function hash(
     bytes32 a,
     bytes32 b,
-    bytes32 c,
-    bytes32 d
+    uint256 c,
+    bytes32 d,
+    bytes32 e
   ) private pure returns (bytes32) {
-    bytes memory concatenated = abi.encodePacked(a, b, c, d);
+    bytes memory concatenated = abi.encodePacked(a, b, c, d, e);
     return sha256(concatenated);
   }
 }
