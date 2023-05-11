@@ -8,12 +8,13 @@ static constexpr uint32_t VERIFICATION_KEY_LENGTH = 1152;
 static constexpr uint32_t PROOF_LENGTH = 384;
 
 extern "C" {
-bool makePairsAndVerify(std::array<uint8_t, 1152> *vk,
-                        std::array<uint8_t, 384> *prf,
-                        std::array<uint8_t, 32> *currentHeaderHash,
-                        std::array<uint8_t, 32> *newOptimisticHeader,
-                        std::array<uint8_t, 32> *newFinalizedHeader,
-                        std::array<uint8_t, 32> *newExecutionStateRoot);
+bool makePairsAndVerify(
+    std::array<uint8_t, VERIFICATION_KEY_LENGTH> *vk,
+    std::array<uint8_t, PROOF_LENGTH> *prf,
+    std::array<uint8_t, ROOT_LENGTH> *currentHeaderHash,
+    std::array<uint8_t, ROOT_LENGTH> *newOptimisticHeader,
+    std::array<uint8_t, ROOT_LENGTH> *newFinalizedHeader,
+    std::array<uint8_t, ROOT_LENGTH> *newExecutionStateRoot);
 }
 class [[eosio::contract("verifier")]] verifier : public eosio::contract {
 public:
@@ -21,8 +22,8 @@ public:
       : contract(receiver, code, ds) {}
 
   // TODO: Make sure only we can instantiate
-  [[eosio::action]] void instantiate(std::vector<uint8_t> verification_key,
-                                     std::vector<uint8_t> current_header_hash) {
+  [[eosio::action]] void instantiate(const std::vector<uint8_t> &verification_key,
+                                     const std::vector<uint8_t> &current_header_hash) {
     data_index verifier_data(get_self(), get_first_receiver().value);
     auto iterator = verifier_data.find(verifier_name.value);
     check(iterator == verifier_data.end(),
@@ -39,8 +40,10 @@ public:
         std::vector<std::vector<uint8_t>> new_execution_state_roots =
             row.new_execution_state_roots;
         new_optimistic_header_roots.push_back(current_header_hash);
+        std::vector<uint8_t> zeros = {};
+        new_finalized_header_roots.push_back(zeros);
+        new_execution_state_roots.push_back(zeros);
         for (int i = 1; i < 32; i++) {
-          std::vector<uint8_t> zeros = {};
           new_optimistic_header_roots.push_back(zeros);
           new_finalized_header_roots.push_back(zeros);
           new_execution_state_roots.push_back(zeros);
@@ -52,22 +55,22 @@ public:
     }
   }
 
-  [[eosio::action]] void update(std::vector<uint8_t> proof,
-                                std::vector<uint8_t> new_optimistic_header_root,
-                                std::vector<uint8_t> new_finalized_header_root,
-                                std::vector<uint8_t> new_execution_state_root) {
+  [[eosio::action]] void update(const std::vector<uint8_t> &proof,
+                                const std::vector<uint8_t> &new_optimistic_header_root,
+                                const std::vector<uint8_t> &new_finalized_header_root,
+                                const std::vector<uint8_t> &new_execution_state_root) {
     data_index verifier_data(get_self(), get_first_receiver().value);
     auto iterator = verifier_data.find(verifier_name.value);
 
     check(iterator != verifier_data.end(),
           "DendrETH verifier not instantiated");
     // Prepare data for the nim verifier function
-    std::array<uint8_t, 1152> _vk;
-    std::array<uint8_t, 384> _prf;
-    std::array<uint8_t, 32> _current_header_root;
-    std::array<uint8_t, 32> _new_optimistic_header_root;
-    std::array<uint8_t, 32> _new_finalized_header_root;
-    std::array<uint8_t, 32> _new_execution_state_root;
+    std::array<uint8_t, VERIFICATION_KEY_LENGTH> _vk;
+    std::array<uint8_t, PROOF_LENGTH> _prf;
+    std::array<uint8_t, ROOT_LENGTH> _current_header_root;
+    std::array<uint8_t, ROOT_LENGTH> _new_optimistic_header_root;
+    std::array<uint8_t, ROOT_LENGTH> _new_finalized_header_root;
+    std::array<uint8_t, ROOT_LENGTH> _new_execution_state_root;
 
     verifier_data.modify(iterator, verifier_name, [&](auto &row) {
       std::copy(row.vk.begin(), row.vk.end(), _vk.begin());
@@ -107,6 +110,16 @@ public:
           new_execution_state_root;
     });
   }
+  void printhelper(const std::array<uint8_t, 32> &_current_header_root) {
+    eosio::print("[");
+    for (int i = 0; i < 32; i++) {
+      eosio::print(_current_header_root[i]);
+      if (i != 31) {
+        eosio::print(",");
+      }
+    }
+    eosio::print("]");
+  }
 
   [[eosio::action]] void printheader() {
     data_index verifier_data(get_self(), get_first_receiver().value);
@@ -117,14 +130,7 @@ public:
       std::copy(row.new_optimistic_header_roots[row.current_index].begin(),
                 row.new_optimistic_header_roots[row.current_index].end(),
                 _current_header_root.begin());
-      eosio::print("[");
-      for (int i = 0; i < 32; i++) {
-        eosio::print(_current_header_root[i]);
-        if (i != 31) {
-          eosio::print(",");
-        }
-      }
-      eosio::print("]");
+      printhelper(_current_header_root);
     });
   }
 
@@ -138,20 +144,12 @@ public:
         std::copy(row.new_optimistic_header_roots[pos].begin(),
                   row.new_optimistic_header_roots[pos].end(),
                   _current_header_root.begin());
-        eosio::print("[");
-        for (int i = 0; i < 32; i++) {
-          eosio::print(_current_header_root[i]);
-          if (i != 31) {
-            eosio::print(",");
-          }
-        }
-        eosio::print("]");
+        printhelper(_current_header_root);
       }
     });
   }
 
 private:
-  // TODO: think of better name for this
   const name verifier_name = "dendreth"_n;
 
   struct [[eosio::table]] verifierData {
