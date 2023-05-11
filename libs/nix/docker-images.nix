@@ -7,7 +7,7 @@ with pkgs; let
   llvm = llvmPackages_13;
   corepack = metacraft-labs.corepack-shims;
   light-client = callPackage ./light-client {};
-  python-with-my-packages = python38.withPackages (ps:
+  python-with-my-packages = python3.withPackages (ps:
     with ps; [
       supervisor
     ]);
