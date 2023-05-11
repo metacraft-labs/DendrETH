@@ -5,7 +5,7 @@
 with pkgs; let
   nodejs = nodejs-18_x;
   llvm = llvmPackages_13;
-  corepack = callPackage ./corepack-shims {inherit nodejs;};
+  corepack = metacraft-labs.corepack-shims;
   light-client = callPackage ./light-client {};
   python-with-my-packages = python38.withPackages (ps:
     with ps; [
