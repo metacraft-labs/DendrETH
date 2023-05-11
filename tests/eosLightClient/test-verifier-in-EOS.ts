@@ -2,42 +2,41 @@ import glob_ from 'glob';
 const glob = glob_.sync;
 import { promisify } from 'node:util';
 import { exec as exec_ } from 'node:child_process';
-
-import { replaceInTextProof } from '../helpers/helpers';
-import { sleep } from '../../libs/typescript/ts-utils/common-utils';
-import { getRootDir } from '../../libs/typescript/ts-utils/common-utils';
-import { compileVerifierParseDataTool } from '../../contracts/cosmos/verifier/lib/typescript/verifier-compile-contract-and-tools';
+import {
+  compileVerifierParseDataTool,
+  replaceInTextProof,
+} from '../helpers/helpers';
+import { getRootDir, sleep } from '../../libs/typescript/ts-utils/common-utils';
 
 const exec = promisify(exec_);
 
 describe('Verifier in EOS', () => {
   console.info('Verifier in EOS test');
-  var rootDir: string;
-  var contractDir: string;
   let updateFiles: string[];
-  var pathToVerifyUtils: string;
-  var parseDataTool: string;
-  var pathToKey: string;
+  let pathToVerifyUtils: string;
+  let parseDataTool: string;
+  let pathToKey: string;
+  let stopLocalNodeCommand: string;
   const defaultInitHeaderRoot =
     '0xc43d94aaea1342f8e551d9a5e6fe95b7ebb013142acf1e2628ad381e5c713316';
   beforeAll(async () => {
-    rootDir = await getRootDir();
-    contractDir = rootDir + `/contracts/cosmos/verifier`;
+    const rootDir = await getRootDir();
+    parseDataTool = await compileVerifierParseDataTool('eos', 'verifier');
     pathToVerifyUtils =
       rootDir + `/vendor/eth2-light-client-updates/prater/capella-updates/`;
-    parseDataTool = `${contractDir}/nimcache/verifier_parse_data`;
     updateFiles = glob(pathToVerifyUtils + `proof*.json`);
     pathToKey = pathToVerifyUtils + `vkey.json`;
-    compileVerifierParseDataTool();
-    const runTestnetCommand = `bash contracts/eos/scripts/run_eos_testnet.sh stop  \
-    && bash contracts/eos/scripts/run_eos_testnet.sh \
-    && bash contracts/eos/verifier/scripts/build.sh \
-    && bash contracts/eos/verifier/scripts/deploy.sh`;
-    await exec(runTestnetCommand);
+    stopLocalNodeCommand = `bash ${rootDir}/contracts/eos/scripts/run_eos_testnet.sh stop`;
+    const startLocalNodeCommand = `bash ${rootDir}/contracts/eos/scripts/run_eos_testnet.sh`;
+    const buildAndDeployContractCommand = `bash ${rootDir}/contracts/eos/verifier/scripts/build.sh \
+    && bash ${rootDir}/contracts/eos/verifier/scripts/deploy.sh`;
+    await exec(stopLocalNodeCommand);
+    await exec(startLocalNodeCommand);
+    await exec(buildAndDeployContractCommand);
     console.info('Running testnet');
   }, 300000);
   test('Check "Verifier" after initialization', async () => {
-    console.info('Verifier initiolization');
+    console.info('Verifier initialization');
 
     const parseInitDataCommand = `${parseDataTool} initDataEOS \
     --initHeaderRootEOS=${defaultInitHeaderRoot} \
@@ -133,7 +132,7 @@ describe('Verifier in EOS', () => {
       );
       const updateDataExec = exec(parseUpdateDataCommand);
       const updateData = (await updateDataExec).stdout.replace(/\s/g, '');
-      console.info('update' + counter + 'with data:', updateData);
+      console.info('update ' + counter + ' with data:', updateData);
       const updateCommand =
         'cleos push action dendreth update ' +
         updateData +
@@ -169,5 +168,6 @@ describe('Verifier in EOS', () => {
     console.info('Result of full query:', resultall);
 
     expect(result).toEqual(expectedHeader);
+    await exec(stopLocalNodeCommand);
   }, 30000);
 });
