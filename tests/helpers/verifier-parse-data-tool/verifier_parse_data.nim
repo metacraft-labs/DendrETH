@@ -4,7 +4,7 @@ import
   config,
   std/json,
   stew/byteutils,
-  ../../../../contracts/cosmos/verifier/lib/nim/contract_interactions/helpers,
+  ../../../contracts/cosmos/verifier/lib/nim/contract_interactions/helpers,
   bncurve/group_operations
 
 
@@ -88,6 +88,12 @@ proc execCommand*(): string =
       let update= "'{\"proof\":" & $proof.toHex() & ",\"new_optimistic_header_root\": \"" & $newOptimisticHeader.toHex() & "\" ,\"new_finalized_header_root\": \"" & $newFinalizedHeader.toHex() & "\" ,\"new_execution_state_root\": \"" & $newExecutionStateRoot.toHex() & "\" } '"
 
       echo update
+    of StartUpCommand.initDataEOS:
+
+      let vkey = createVerificationKey(conf.verificationKeyPathEOS)
+      let hex = hexToByteArray[32](conf.initHeaderRootEOS)
+      let init = "\'{\"key\":\"dendreth\", \"verification_key\": \"" & $vkey.toHex() & "\" ,\"current_header_hash\": \"" & $hex.toHex() & "\" }\'"
+      echo init
 
 let a = execCommand()
 

@@ -20,7 +20,7 @@ export async function compileVerifierNimFileToWasm() {
 export async function compileVerifierParseDataTool() {
   const { rootDir, contractDir } = await getCosmosContractArtifacts('verifier');
   const compileParseDataTool = `nim c -d:nimOldCaseObjects -o:"${contractDir}/nimcache/" \
-  "${rootDir}/tests/cosmosLightClient/helpers/verifier-parse-data-tool/verifier_parse_data.nim" `;
+  "${rootDir}/tests/helpers/verifier-parse-data-tool/verifier_parse_data.nim" `;
 
   console.info(
     `Building 'verifier-parse-data' tool \n  ╰─➤ ${compileParseDataTool}`,
