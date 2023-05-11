@@ -61,9 +61,10 @@ export class CosmosContract implements ISmartContract {
   }
 
   async postUpdateOnChain(update: {
-    attested_header_root: string;
-    finalized_header_root: string;
-    finalized_execution_state_root: string;
+    attestedHeaderRoot: string;
+    attestedHeaderSlot: number;
+    finalizedHeaderRoot: string;
+    finalizedExecutionStateRoot: string;
     a: string[];
     b: string[][];
     c: string[];
@@ -76,7 +77,7 @@ export class CosmosContract implements ISmartContract {
 
     const flattedB = update.b.flat();
     const parseUpdateDataCommand = `${parseDataTool} updateDataForCosmosContractClass \
-  --attested_header_root=${update.attested_header_root} --finalized_header_root=${update.finalized_header_root} --finalized_execution_state_root= ${update.finalized_execution_state_root} \
+  --attested_header_root=${update.attestedHeaderRoot} --finalized_header_root=${update.finalizedHeaderRoot} --finalized_execution_state_root= ${update.finalizedExecutionStateRoot} \
   --a=${update.a[0]} --a=${update.a[1]} --a=${update.a[2]} \
   --b=${flattedB[0]} --b=${flattedB[1]} --b=${flattedB[2]} --b=${flattedB[3]} --b=${flattedB[4]} --b=${flattedB[5]} \
   --c=${update.c[0]} --c=${update.c[1]} --c=${update.c[2]} `;
