@@ -165,32 +165,77 @@ USER_PRIVATE_KEY=private_key
 ALCHEMY_API_KEY=api_key
 ```
 
-For getting light client updates
-
-```bash
-BEACON_REST_API=http://unstable.prater.beacon-api.nimbus.team
-```
-
-And to configure from which slot should the relayer start generating updates. And what step it should use
+To configure from which slot should the relayer start generating updates. And what step it should use
 
 ```bash
 INITIAL_SLOT=5355991
 SLOTS_JUMP=64
 ```
 
+To configure relayer what network it should follow. Currently the script only supports following one network. You can mannually run the tasks for publishing and updating on a second network.
+
+```bash
+PRATTER=TRUE
+MAINNET=FALSE
+FOLLOW_NETWORK=pratter
+```
+
 You can also provide for addresses on different networks if you skip a network transactions won't be broadcasted to it
 
 ```bash
-LC_GOERLI=0x34cdE0DfCfE9D82b2ACcf04CD117be4c945e1625
-LC_OPTIMISTIC_GOERLI=0x0469b7C40526edfF7f924991487B198F1a15206f
-LC_BASE_GOERLI=0x7226C2D2f14287d990F567D8247fE2cCBbCEF2f9
-LC_ARBITRUM_GOERLI=0x59539DC0c928460B400Cf08f6e61A2de95b74E31
-LC_SEPOLIA=0xea4Fb78626b87BF07239336E679E9823e5030672
-LC_MUMBAI=0x59539DC0c928460B400Cf08f6e61A2de95b74E31
-
+LC_GOERLI=0xf65B59bc947865490eF92D8461e8B5D0eA87c343
+LC_OPTIMISTIC_GOERLI=0xa38f1c6F9F50dbd8d11AdD89c1A218F037498Bc1
+LC_BASE_GOERLI=0x8A72855F61181BC3C281dE9C24EFc2571Fe96a04
+LC_ARBITRUM_GOERLI=0x6d38269d6670f73630FB3d481c58f064B63E123c
+LC_SEPOLIA=0xaf352346cE4c413Cc96f607e4FaBEF5aE523D7Bf
+LC_MUMBAI=0xcbF3850657Ea6bc41E0F847574D90Cf7D690844c
+LC_FANTOM=0x83809AB88743ecfa320163430d769Fdf07278baf
+LC_ALFAJORES=0x85Ba37415962bc0828f7b986a9D52a2760a57317
+LC_CHIADO=0xAa5eeb05D0B080b366CB6feA00d16216B24FB9bE
+LC_EVMOS=0x8E4D36CD13015EA6F384cab3342156b3dC5d0a53
 ```
 
-How the relay works is described in the `relay/run-relay.sh` and the `conf.d/programs.conf` which is supervisor config.
+### How does the relayer work?
+
+We utilize BullMQ for our system.
+
+We have set up a recurring job that repeats itself after a specified time interval (slotsjump) and starts from an initial slot. The job follows a specific network, currently supporting Pratter and Mainnet. To run this job, execute the following command in the `beacon-light-client/solidity` folder:
+
+```
+yarn hardhat run-update --initialslot $INITIAL_SLOT --slotsjump $SLOTS_JUMP --follownetwork pratter
+```
+
+The Update Polling Worker, responsible for executing this recurring job, is run by executing the following command in the `relay` folder:
+
+```
+yarn run pollUpdatesWorker
+```
+
+The Update Polling Worker retrieves updates from the Beacon REST API and saves the lastDownloadedUpdate for the job in Redis. Next time, the job starts from this point and adds a task for the Proof Generation Worker, which is executed using in the in the `relay` folder.
+
+```
+yarn run proofGenerationWorker
+```
+
+The Proof Generation Worker sends a request to the Prover Server, using input from the Update Polling task.
+
+The Prover Server is started with the following command:
+
+```
+proverServer $PORVER_SERVER_PORT ./build/light_client.zkey
+```
+
+The Prover Server requires a path to a build folder containing the .zkey file. The build folder should also include an executable and a .dat file (light_client and light_client.dat) for witness generation. (Refer to Circom proof generation documentation for more details)
+
+Upon completion of proof generation, the generated proof is saved in Redis. The system uses Redis pub/sub to notify that a proof is ready. Multiple instances subscribing to this notification attempt to publish the proof on-chain.
+
+These instances can be executed using:
+
+```
+yarn hardhat start-publishing --lightclient $LC_ADDRESS --network goerli --follownetwork pratter
+```
+
+in the beacon-light-client/solidity folder.
 
 ### One-shot syncing simulation
 
