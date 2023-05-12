@@ -24,3 +24,7 @@ test-groth16-verifier:
 test-solidity-beacon-light-client-verifier:
 	cd beacon-light-client/solidity && \
 	yarn hardhat test test/BeaconLightClientReadyProofs.test.ts
+
+test-circom-circuits:
+	cd beacon-light-client/circom && \
+	./test/run_snarkit2_tests.sh

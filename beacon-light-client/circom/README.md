@@ -3,16 +3,10 @@ which are assembled in the final `light_client` circuit.
 
 ## Tests
 
-There two kind of tests to run the `circom_tester` tests you can execute:
-
-```
-yarn hardhat test
-```
-
 To run the `snarkit2` tests you can execute:
 
 ```
-yarn snarkit2 check .test/${folder_name}/ --witness_type bin --backend native
+./test/run_snarkit2_tests.sh
 ```
 
 ## Building
