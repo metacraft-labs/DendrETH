@@ -55,8 +55,11 @@ jobs:
       - name: Run Verifier in Cosmos test
         run: nix develop -c yarn test './tests/cosmosLightClient/test-verifier-in-cosmos.ts'
 
-      - name: Run Solidity Beacon light client verifier
+      - name: Run Solidity verifier tests
         run: nix develop -c make test-groth16-verifier
+
+      - name: Run circom tests
+        run: nix develop -c make test-circom-circuits
 
       # Disable as slot should be added to the contract update function
       # - name: Run Verifier in Cosmos - Relayer test
