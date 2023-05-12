@@ -2,7 +2,7 @@ import * as path from 'path';
 import { ethers } from 'hardhat';
 import { getFilesInDir, Proof } from './utils';
 import { convertProofToSolidityCalldata } from '../../../libs/typescript/ts-utils/zk-utils';
-import INITIAL_UPDATE from '../../../vendor/eth2-light-client-updates/prater/capella-updates/update_5200024_5200056.json';
+import INITIAL_UPDATE from '../../../vendor/eth2-light-client-updates/prater/capella-updates-94/update_5601823_5609044.json';
 
 describe.only('BeaconLightClientReadyProofs', async function () {
   let proofs: Proof[];
@@ -20,7 +20,7 @@ describe.only('BeaconLightClientReadyProofs', async function () {
       'vendor',
       'eth2-light-client-updates',
       'prater',
-      'capella-updates',
+      'capella-updates-94',
     );
 
     proofs = getFilesInDir(dir, 'proof*.json').map(p =>
@@ -40,9 +40,11 @@ describe.only('BeaconLightClientReadyProofs', async function () {
     blc = await (
       await ethers.getContractFactory('BeaconLightClient')
     ).deploy(
-      INITIAL_UPDATE.attested_header_root,
-      INITIAL_UPDATE.finalized_header_root,
-      INITIAL_UPDATE.finalized_execution_state_root,
+      INITIAL_UPDATE.attestedHeaderRoot,
+      INITIAL_UPDATE.attestedHeaderSlot,
+      INITIAL_UPDATE.finalizedHeaderRoot,
+      INITIAL_UPDATE.finalizedExecutionStateRoot,
+      '0x07000000628941ef21d1fe8c7134720add10bb91e3b02c007e0046d2472c6695',
     );
   });
 
