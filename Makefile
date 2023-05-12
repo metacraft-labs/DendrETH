@@ -20,3 +20,7 @@ one-shot-syncing-simulation: yarn-check
 
 test-groth16-verifier:
 	nim c -r tests/nim-groth16-verifier/verifier_test.nim
+
+test-solidity-beacon-light-client-verifier:
+	cd beacon-light-client/solidity && \
+	yarn hardhat test test/BeaconLightClientReadyProofs.test.ts
