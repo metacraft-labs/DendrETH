@@ -32,22 +32,34 @@ export default async function doUpdate(
   }
 
   let nextHeaderSlot = lastDownloadedUpdate + slotsJump;
+  let signatureSlot = nextHeaderSlot + 1;
+
+  let prevNextHeaderSlot = nextHeaderSlot;
 
   console.log('Next supposed header', nextHeaderSlot);
 
   // JUMP to the next closest to the present header
   while (
     nextHeaderSlot + slotsJump < currentHeadSlot &&
-    computeSyncCommitteePeriodAt(nextHeaderSlot + slotsJump) <=
+    computeSyncCommitteePeriodAt(signatureSlot + slotsJump) <=
       computeSyncCommitteePeriodAt(lastDownloadedUpdate) + 1
   ) {
-    const { nextBlockHeader } = await findClosestValidBlock(
+    prevNextHeaderSlot = nextHeaderSlot;
+    const { nextBlockHeader, signature_slot } = await findClosestValidBlock(
       nextHeaderSlot,
       beaconApi,
       currentHeadSlot,
     );
 
     nextHeaderSlot = nextBlockHeader.slot + slotsJump;
+    signatureSlot = signature_slot;
+  }
+
+  if (
+    computeSyncCommitteePeriodAt(signatureSlot) <=
+    computeSyncCommitteePeriodAt(lastDownloadedUpdate) + 1
+  ) {
+    nextHeaderSlot = prevNextHeaderSlot;
   }
 
   console.log('Actuall next header', nextHeaderSlot);
