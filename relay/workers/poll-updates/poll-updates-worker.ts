@@ -12,7 +12,6 @@ import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
 
 (async () => {
   const updatePollingConfig = {
-    BEACON_REST_API: process.env.BEACON_REST_API,
     REDIS_HOST: process.env.REDIS_HOST,
     REDIS_PORT: Number(process.env.REDIS_PORT),
   };
@@ -31,9 +30,27 @@ import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
     updatePollingConfig.REDIS_PORT,
   );
 
+  const updateQueue = new Queue<GetUpdate>(UPDATE_POLING_QUEUE, {
+    connection: {
+      host: updatePollingConfig.REDIS_HOST!,
+      port: updatePollingConfig.REDIS_PORT,
+    },
+  });
+
+  const activeJobs = await updateQueue.getActive();
+
   new Worker<GetUpdate>(
     UPDATE_POLING_QUEUE,
-    async job =>
+    async job => {
+      for (let activeJob of activeJobs) {
+        if (
+          activeJob.data.beaconRestApi == job.data.beaconRestApi &&
+          activeJob.data.slotsJump == job.data.slotsJump
+        ) {
+          return;
+        }
+      }
+
       doUpdate(
         redis,
         new BeaconApi(job.data.beaconRestApi),
@@ -41,7 +58,8 @@ import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
         job.data.lastDownloadedUpdateKey,
         job.data.slotsJump,
         job.data.networkConfig,
-      ),
+      );
+    },
     {
       connection: {
         host: updatePollingConfig.REDIS_HOST,
