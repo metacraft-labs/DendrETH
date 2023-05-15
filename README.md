@@ -237,6 +237,10 @@ yarn hardhat start-publishing --lightclient $LC_ADDRESS --network goerli --follo
 
 in the beacon-light-client/solidity folder.
 
+#### Diagram of the relayer
+
+![Relayer diagram](relay/relayer-diagram.png)
+
 ### One-shot syncing simulation
 
 Our archive of light client updates also includes pre-generated [zero-knowledge
