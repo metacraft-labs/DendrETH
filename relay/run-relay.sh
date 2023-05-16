@@ -256,6 +256,13 @@ run_network_tasks() {
     echo "Skipping EVMOS network"
   fi
 
+  if [ -n "$LC_MALAGA" ]; then
+    echo "Starting light client for Malaga network"
+    supervisorctl start malaga
+  else
+    echo "Skipping Malaga network"
+  fi
+
   echo "Everything started for $FOLLOW_NETWORK"
 }
 
