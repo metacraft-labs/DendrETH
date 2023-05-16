@@ -16,6 +16,7 @@ const argv = yargs(process.argv.slice(2))
     mnemonic: { type: 'string', demandOption: true },
     rpcUrl: { type: 'string', demandOption: true },
     initHeaderRoot: { type: 'string' },
+    domain: { type: 'string' },
     startTestnet: { type: 'boolean', default: false },
     terminateTestnet: { type: 'boolean', default: false },
   })
@@ -40,9 +41,17 @@ async function uploadAndInstantiateMain() {
   // as default we use root of this header
   // http://unstable.prater.beacon-api.nimbus.team/eth/v1/beacon/headers/5200024
   const defaultInitHeaderRoot =
-    '0xc43d94aaea1342f8e551d9a5e6fe95b7ebb013142acf1e2628ad381e5c713316';
+    '0x4ce76b7478cb0eee4a32c7f25bb561ca1d0f444d1716c8f6f260900ef45f37d2';
+  const defaultDomain =
+    '0x07000000628941ef21d1fe8c7134720add10bb91e3b02c007e0046d2472c6695';
   const initHeaderRoot = argv.initHeaderRoot || defaultInitHeaderRoot;
-  await instantiateVerifierContract(uploadReceipt, initHeaderRoot, cosmos);
+  const domain = argv.domain || defaultDomain;
+  await instantiateVerifierContract(
+    uploadReceipt,
+    initHeaderRoot,
+    domain,
+    cosmos,
+  );
 
   if (network === 'wasm' && argv.terminateTestnet === true) {
     await stopCosmosNode();

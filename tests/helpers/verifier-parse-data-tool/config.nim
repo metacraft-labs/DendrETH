@@ -10,6 +10,7 @@ type
     expectedHeaderRootPath
     expectedFinalizedRootPath
     expectedExecutionStateRoot
+    expectedSlot
     updateDataForCosmosContractClass
     updateDataEOS
     initDataEOS
@@ -26,6 +27,8 @@ type
     of initData:
       initHeaderRoot* {.
         desc: "Root of the header to init with"}: string
+      domain* {.
+        desc: "Domain to init with"}: string
       verificationKeyPath* {.
         desc: "Path to the verification key"}: string
 
@@ -53,6 +56,10 @@ type
       expectedExecutionStateRoot* {.
         desc: "Path to some header"}: string
 
+    of expectedSlot:
+      expectedSlot* {.
+        desc: "Path to some header"}: string
+
     of updateDataForCosmosContractClass:
       attested_header_root* {.
         desc: "attested_header_root"}: string
@@ -66,6 +73,8 @@ type
         desc: "proof - point b"}: seq[string]
       c* {.
         desc: "proof - point c"}: seq[string]
+      attested_header_slot* {.
+        desc: "attested_header_slot"}: string
 
     of updateDataEOS:
       proofPathEOS* {.

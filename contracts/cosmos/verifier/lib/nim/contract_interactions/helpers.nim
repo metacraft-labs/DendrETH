@@ -52,16 +52,20 @@ proc createProof*(path: string): array[sizeof(Proof),byte] =
 
 proc getExpectedHeaderRoot*(path:string): array[32,byte] =
   let update = parseFile(path)
-  let newOptimisticHeader = hexToByteArray[32](update["attested_header_root"].str)
+  let newOptimisticHeader = hexToByteArray[32](update["attestedHeaderRoot"].str)
   newOptimisticHeader
 
 proc getExpectedFinalizedRoot*(path:string): array[32,byte] =
   let update = parseFile(path)
-  let newFinalizedHeader = hexToByteArray[32](update["finalized_header_root"].str)
+  let newFinalizedHeader = hexToByteArray[32](update["finalizedHeaderRoot"].str)
   newFinalizedHeader
 
 proc getExpectedExecutionStateRoot*(path:string): array[32,byte] =
   let update = parseFile(path)
-  let newExecStateRoot = hexToByteArray[32](update["finalized_execution_state_root"].str)
+  let newExecStateRoot = hexToByteArray[32](update["finalizedExecutionStateRoot"].str)
   newExecStateRoot
 
+proc getExpectedSlot*(path:string): JsonNode =
+  let update = parseFile(path)
+  let newSlot = update["attestedHeaderSlot"]
+  newSlot

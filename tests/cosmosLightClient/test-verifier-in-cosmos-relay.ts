@@ -40,7 +40,7 @@ describe('Light Client Verifier In Cosmos', () => {
     contractDirVerifier = rootDir + `/contracts/cosmos/verifier`;
     parseDataTool = `${contractDirVerifier}/nimcache/verifier_parse_data`;
     pathToVerifyUtils =
-      rootDir + `/vendor/eth2-light-client-updates/prater/capella-updates/`;
+      rootDir + `/vendor/eth2-light-client-updates/prater/capella-updates-94/`;
     updateFiles = glob(pathToVerifyUtils + `proof*.json`);
 
     await compileContractMain(null);
@@ -52,8 +52,7 @@ describe('Light Client Verifier In Cosmos', () => {
   test('Check "Verifier" after initialization', async () => {
     console.info("Running 'Check Verifier after initialization' test");
     const expectedHeaderHash =
-      '196,61,148,170,234,19,66,248,229,81,217,165,230,254,149,183,235,176,19,20,42,207,30,38,40,173,56,30,92,113,51,22';
-
+      '76,231,107,116,120,203,14,238,74,50,199,242,91,181,97,202,29,15,68,77,23,22,200,246,242,96,144,14,244,95,55,210';
     const uploadReceipt = await uploadVerifierContract('wasm', cosmos);
     console.info(
       'Upload of `Verifier in Cosmos` succeeded. Receipt:',
@@ -65,10 +64,13 @@ describe('Light Client Verifier In Cosmos', () => {
     );
 
     const defaultInitHeaderRoot =
-      '0xc43d94aaea1342f8e551d9a5e6fe95b7ebb013142acf1e2628ad381e5c713316';
+      '0x4ce76b7478cb0eee4a32c7f25bb561ca1d0f444d1716c8f6f260900ef45f37d2';
+    const defaultDomain =
+      '0x07000000628941ef21d1fe8c7134720add10bb91e3b02c007e0046d2472c6695';
     const instantiation = await instantiateVerifierContract(
       uploadReceipt,
       defaultInitHeaderRoot,
+      defaultDomain,
       cosmos,
     );
     cosmosContract = new CosmosContract(
@@ -93,7 +95,7 @@ describe('Light Client Verifier In Cosmos', () => {
     console.info("Running 'Check Verifier after one update' test");
 
     var updatePath;
-    for (var proofFilePath of updateFiles.slice(0, 1)) {
+    for (var proofFilePath of updateFiles.slice(1, 2)) {
       updatePath = replaceInTextProof(proofFilePath);
 
       // Parse the contract specific message that is passed to the contract
@@ -133,10 +135,10 @@ describe('Light Client Verifier In Cosmos', () => {
   test('Check "Verifier" after 5 updates', async () => {
     console.info("Running 'Check Verifier after 5 updates' test");
 
-    const numOfUpdates = 5;
+    const numOfUpdates = 6;
     var updatePath;
     var updateCounter = 1;
-    for (var proofFilePath of updateFiles.slice(1, numOfUpdates)) {
+    for (var proofFilePath of updateFiles.slice(2, numOfUpdates)) {
       updatePath = replaceInTextProof(proofFilePath);
 
       updateCounter++;

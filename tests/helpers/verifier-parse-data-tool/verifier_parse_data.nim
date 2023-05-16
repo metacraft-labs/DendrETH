@@ -18,18 +18,21 @@ proc execCommand*(): string =
     of StartUpCommand.initData:
       let vkey = createVerificationKey(conf.verificationKeyPath)
       let hex = hexToByteArray[32](conf.initHeaderRoot)
-      let init = "{\"vkey\": " & $vkey & ",\"current_header_hash\": " &  $hex & "}"
+      let domain = hexToByteArray[32](conf.domain)
+
+      let init = "{\"vkey\": " & $vkey & ",\"current_header_hash\": " &  $hex & ",\"current_slot\": " &  $5609069 & ",\"domain\": " &  $domain & "}"
       echo init
 
     of StartUpCommand.updateData:
       let proof = createProof(conf.proofPath)
 
       let updateJson = parseFile(conf.updatePath)
-      let newOptimisticHeader = hexToByteArray[32](updateJson["attested_header_root"].str)
-      let newFinalizedHeader = hexToByteArray[32](updateJson["finalized_header_root"].str)
-      let newExecutionStateRoot = hexToByteArray[32](updateJson["finalized_execution_state_root"].str)
+      let newOptimisticHeader = hexToByteArray[32](updateJson["attestedHeaderRoot"].str)
+      let newFinalizedHeader = hexToByteArray[32](updateJson["finalizedHeaderRoot"].str)
+      let newExecutionStateRoot = hexToByteArray[32](updateJson["finalizedExecutionStateRoot"].str)
+      let slot = updateJson["attestedHeaderSlot"]
 
-      let update= "{\"update\":{\"proof\":" & $proof & ",\"new_optimistic_header_root\": " & $newOptimisticHeader & ",\"new_finalized_header_root\": " & $newFinalizedHeader & ",\"new_execution_state_root\": " & $newExecutionStateRoot & "}}"
+      let update= "{\"update\":{\"proof\":" & $proof & ",\"new_optimistic_header_root\": " & $newOptimisticHeader & ",\"new_finalized_header_root\": " & $newFinalizedHeader & ",\"new_execution_state_root\": " & $newExecutionStateRoot & ",\"new_slot\": " & $slot & "}}"
 
       echo update
 
@@ -41,11 +44,12 @@ proc execCommand*(): string =
       let c = proofJson["pi_c"]
 
       let updateJson = parseFile(conf.updatePathRelay)
-      let newOptimisticHeader = updateJson["attested_header_root"]
-      let newFinalizedHeader = updateJson["finalized_header_root"]
-      let newExecutionStateRoot = updateJson["finalized_execution_state_root"]
+      let newOptimisticHeader = updateJson["attestedHeaderRoot"]
+      let newFinalizedHeader = updateJson["finalizedHeaderRoot"]
+      let newExecutionStateRoot = updateJson["finalizedExecutionStateRoot"]
+      let slot = updateJson["attestedHeaderSlot"]
 
-      let update = "{\"attested_header_root\": " & $newOptimisticHeader & ",\"finalized_header_root\": " & $newFinalizedHeader & ",\"finalized_execution_state_root\": " & $newExecutionStateRoot &  ",\"a\":" & $a &   ",\"b\":" & $b &  ",\"c\":" & $c & "}"
+      let update = "{\"attestedHeaderRoot\": " & $newOptimisticHeader & ",\"finalizedHeaderRoot\": " & $newFinalizedHeader & ",\"finalizedExecutionStateRoot\": " & $newExecutionStateRoot &  ",\"a\":" & $a &   ",\"b\":" & $b &  ",\"c\":" & $c & ",\"attestedHeaderSlot\": " & $slot & "}"
 
       echo update
 
@@ -57,6 +61,9 @@ proc execCommand*(): string =
 
     of StartUpCommand.expectedExecutionStateRoot:
       echo getExpectedExecutionStateRoot(conf.expectedExecutionStateRoot)
+
+    of StartUpCommand.expectedSlot:
+      echo getExpectedSlot(conf.expectedSlot)
 
     of StartUpCommand.updateDataForCosmosContractClass:
       var parsedB: seq[seq[string]]
@@ -74,16 +81,16 @@ proc execCommand*(): string =
 
       let prf = Proof(a:a, b:b, c:c)
       let proof = cast[var array[sizeof(Proof),byte]](prf.unsafeAddr)
-      let update = "{\"update\":{\"proof\":" & $proof & ",\"new_optimistic_header_root\": " & $newOptimisticHeader & ",\"new_finalized_header_root\": " & $newFinalizedHeader & ",\"new_execution_state_root\": " & $newExecutionStateRoot & "}}"
+      let update = "{\"update\":{\"proof\":" & $proof & ",\"new_optimistic_header_root\": " & $newOptimisticHeader & ",\"new_finalized_header_root\": " & $newFinalizedHeader & ",\"new_execution_state_root\": " & $newExecutionStateRoot & ",\"new_slot\": " & $conf.attested_header_slot & "}}"
       echo update
 
     of StartUpCommand.updateDataEOS:
       let proof = createProof(conf.proofPathEOS)
 
       let updateJson = parseFile(conf.updatePathEOS)
-      let newOptimisticHeader = hexToByteArray[32](updateJson["attested_header_root"].str)
-      let newFinalizedHeader = hexToByteArray[32](updateJson["finalized_header_root"].str)
-      let newExecutionStateRoot = hexToByteArray[32](updateJson["finalized_execution_state_root"].str)
+      let newOptimisticHeader = hexToByteArray[32](updateJson["attestedHeaderRoot"].str)
+      let newFinalizedHeader = hexToByteArray[32](updateJson["finalizedHeaderRoot"].str)
+      let newExecutionStateRoot = hexToByteArray[32](updateJson["finalizedExecutionStateRoot"].str)
 
       let update= "'{\"proof\":" & $proof.toHex() & ",\"new_optimistic_header_root\": \"" & $newOptimisticHeader.toHex() & "\" ,\"new_finalized_header_root\": \"" & $newFinalizedHeader.toHex() & "\" ,\"new_execution_state_root\": \"" & $newExecutionStateRoot.toHex() & "\" } '"
 

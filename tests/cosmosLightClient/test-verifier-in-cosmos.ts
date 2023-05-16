@@ -49,7 +49,7 @@ describe('Light Client Verifier In Cosmos', () => {
 
     parseDataTool = `${contractDir}/nimcache/verifier_parse_data`;
     pathToVerifyUtils =
-      rootDir + `/vendor/eth2-light-client-updates/prater/capella-updates/`;
+      rootDir + `/vendor/eth2-light-client-updates/prater/capella-updates-94/`;
     updateFiles = glob(pathToVerifyUtils + `proof*.json`);
 
     await compileContractMain(null);
@@ -61,7 +61,9 @@ describe('Light Client Verifier In Cosmos', () => {
   test('Check "Verifier" after initialization', async () => {
     console.info("Running 'Check Verifier after initialization' test");
     const expectedHeaderHash =
-      '196,61,148,170,234,19,66,248,229,81,217,165,230,254,149,183,235,176,19,20,42,207,30,38,40,173,56,30,92,113,51,22';
+      '76,231,107,116,120,203,14,238,74,50,199,242,91,181,97,202,29,15,68,77,23,22,200,246,242,96,144,14,244,95,55,210';
+    const expectedDomain =
+      '7,0,0,0,98,137,65,239,33,209,254,140,113,52,114,10,221,16,187,145,227,176,44,0,126,0,70,210,71,44,102,149';
 
     const uploadReceipt = await uploadVerifierContract('wasm', cosmos);
     console.info(
@@ -73,10 +75,13 @@ describe('Light Client Verifier In Cosmos', () => {
     gasArrayVerifier.push(uploadGas);
 
     const defaultInitHeaderRoot =
-      '0xc43d94aaea1342f8e551d9a5e6fe95b7ebb013142acf1e2628ad381e5c713316';
+      '0x4ce76b7478cb0eee4a32c7f25bb561ca1d0f444d1716c8f6f260900ef45f37d2';
+    const defaultDomain =
+      '0x07000000628941ef21d1fe8c7134720add10bb91e3b02c007e0046d2472c6695';
     const instantiation = await instantiateVerifierContract(
       uploadReceipt,
       defaultInitHeaderRoot,
+      defaultDomain,
       cosmos,
     );
     // Gas Used
@@ -99,13 +104,20 @@ describe('Light Client Verifier In Cosmos', () => {
       .toString()
       .replace(/\s/g, '');
     expect(headerHash).toEqual(expectedHeaderHash);
+
+    // Query contract for domain
+    const domain = await client.queryContractSmart(_contractAddress, {
+      domain: {},
+    });
+    const domainStripped = domain.toString().replace(/\s/g, '');
+    expect(domainStripped).toEqual(expectedDomain);
   }, 300000);
 
   test('Check "Verifier" after one update', async () => {
     console.info("Running 'Check Verifier after one update' test");
 
     var updatePath;
-    for (var proofFilePath of updateFiles.slice(0, 1)) {
+    for (var proofFilePath of updateFiles.slice(1, 2)) {
       updatePath = replaceInTextProof(proofFilePath);
       const updateNumber = updatePath.substring(
         updatePath.indexOf('update_') + 7,
@@ -154,10 +166,10 @@ describe('Light Client Verifier In Cosmos', () => {
   test('Check "Verifier" after 33 updates', async () => {
     console.info("Running 'Check Verifier after 33 updates' test");
 
-    const numOfUpdates = 33;
+    const numOfUpdates = 34;
     var updatePath;
     var updateCounter = 1;
-    for (var proofFilePath of updateFiles.slice(1, numOfUpdates)) {
+    for (var proofFilePath of updateFiles.slice(2, numOfUpdates)) {
       updatePath = replaceInTextProof(proofFilePath);
       const updateNumber = updatePath.substring(
         updatePath.indexOf('update_') + 7,
@@ -270,7 +282,7 @@ describe('Light Client Verifier In Cosmos', () => {
       `Parsed expected latest optimistic header hash: \n  ╰─➤ [${expectedHeaderHash}]`,
     );
     // Query contract for optimisticHeaderHash after 33 updates
-    const headerHashAfter20Update = await client.queryContractSmart(
+    const headerHashAfter33Update = await client.queryContractSmart(
       _contractAddress,
       {
         last_header_hash: {},
@@ -295,7 +307,7 @@ describe('Light Client Verifier In Cosmos', () => {
       `Parsed expected latest finalized header hash: \n  ╰─➤ [${expectedFinalizedHeaderHash}]`,
     );
     // Query contract for finalizedHeaderHash after 33 updates
-    const finalizedHeaderHashAfter20Update = await client.queryContractSmart(
+    const finalizedHeaderHashAfter33Update = await client.queryContractSmart(
       _contractAddress,
       {
         last_finalized_header_hash: {},
@@ -316,24 +328,41 @@ describe('Light Client Verifier In Cosmos', () => {
       `Parsed expected latest exec state root: \n  ╰─➤ [${expectedExecStateRoot}]`,
     );
     // Query contract for execStateRoot after 33 updates
-    const execStateRootAfter20Update = await client.queryContractSmart(
+    const execStateRootAfter33Update = await client.queryContractSmart(
       _contractAddress,
       {
         last_exec_state_root: {},
       },
     );
 
-    const headerHash = headerHashAfter20Update.toString().replace(/\s/g, '');
+    const getExpectedSlotCommand = `${parseDataTool} expectedSlot --expectedSlot=${updatePath}`;
+    console.info(`Parsing expected latest slot \n   ${getExpectedSlotCommand}`);
+    const expectedSlotExec = exec(getExpectedSlotCommand);
+    const expectedSlot = (await expectedSlotExec).stdout
+      .toString()
+      .replace(/\s/g, '')
+      .replace('[', '')
+      .replace(']', '');
+    console.info(`Parsed expected latest slot: \n  ╰─➤ [${expectedSlot}]`);
+    // Query contract for slot after 33 updates
+    const SlotAfter33Update = await client.queryContractSmart(
+      _contractAddress,
+      {
+        current_slot: {},
+      },
+    );
+
+    const headerHash = headerHashAfter33Update.toString().replace(/\s/g, '');
     expect(headerHash).toEqual(expectedHeaderHash);
-    const finalizedHeader = finalizedHeaderHashAfter20Update
+    const finalizedHeader = finalizedHeaderHashAfter33Update
       .toString()
       .replace(/\s/g, '');
     expect(finalizedHeader).toEqual(expectedFinalizedHeaderHash);
-    const execStateRoot = execStateRootAfter20Update
+    const execStateRoot = execStateRootAfter33Update
       .toString()
       .replace(/\s/g, '');
     expect(execStateRoot).toEqual(expectedExecStateRoot);
-
+    expect(SlotAfter33Update.toString()).toEqual(expectedSlot);
     appendJsonFile(gasUsageFile, gasArrayVerifier);
 
     await stopCosmosNode();
