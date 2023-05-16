@@ -4,6 +4,8 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 pub struct InstantiateMsg {
     pub vkey: Vec<u8>,
     pub current_header_hash: Vec<u8>,
+    pub current_slot: i64,
+    pub domain: Vec<u8>,
 }
 
 #[cw_serde]
@@ -13,6 +15,7 @@ pub enum ExecuteMsg {
         new_optimistic_header_root: Vec<u8>,
         new_finalized_header_root: Vec<u8>,
         new_execution_state_root: Vec<u8>,
+        new_slot: i64,
     },
 }
 
@@ -48,6 +51,12 @@ pub enum QueryMsg {
 
     #[returns(HeaderHash)]
     AllExecStateRootsOrdered {},
+
+    #[returns(HeaderHash)]
+    CurrentSlot {},
+
+    #[returns(HeaderHash)]
+    Domain {},
 }
 #[cw_serde]
 pub struct HeaderHash {

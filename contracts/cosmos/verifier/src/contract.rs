@@ -18,7 +18,9 @@ extern "C" {
         current_header_root: *mut u8,
         new_optimistic_header_root: *const u8,
         new_finalized_header_root: *const u8,
-        new_execution_state_root: *const u8
+        new_execution_state_root: *const u8,
+        current_slot: *const u8,
+        domain: *const u8
     ) -> bool;
 }
 
@@ -45,6 +47,8 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     deps.storage.set("key_in_bytes".as_bytes(), &_msg.vkey);
     deps.storage.set("current_index".as_bytes(), &1_i32.to_ne_bytes());
+    deps.storage.set("current_slot".as_bytes(), &_msg.current_slot.to_ne_bytes());
+    deps.storage.set("domain".as_bytes(), &_msg.domain);
 
     const SIZE_S:usize = 32*32;
     let mut array_optimistic_header_roots: [u8; SIZE_S] = [0 as u8; SIZE_S];
@@ -75,6 +79,7 @@ pub fn execute(
             new_optimistic_header_root,
             new_finalized_header_root,
             new_execution_state_root,
+            new_slot,
         } => execute_update(
             deps,
             _env,
@@ -83,6 +88,7 @@ pub fn execute(
             new_optimistic_header_root,
             new_finalized_header_root,
             new_execution_state_root,
+            new_slot,
         ),
     }
 }
@@ -94,6 +100,7 @@ pub fn execute_update(
     new_optimistic_header_root: Vec<u8>,
     new_finalized_header_root: Vec<u8>,
     new_execution_state_root: Vec<u8>,
+    new_slot: i64,
 ) -> Result<Response, ContractError> {
     let stored_key = deps.storage.get("key_in_bytes".as_bytes()).unwrap();
     let mut current_index = get_current_index_asi32(deps.storage.get("current_index".as_bytes()).unwrap());
@@ -101,6 +108,7 @@ pub fn execute_update(
     let mut optimistic_arr = deps.storage.get("optimistic_header_hash_array".as_bytes()).unwrap();
     let mut finalized_arr = deps.storage.get("finalized_header_hash_array".as_bytes()).unwrap();
     let mut execution_state_arr = deps.storage.get("execution_state_root_array".as_bytes()).unwrap();
+    let domain = deps.storage.get("domain".as_bytes()).unwrap();
 
     let stored_current_header_root = on_index(&optimistic_arr,current_index as usize);
 
@@ -111,8 +119,9 @@ pub fn execute_update(
             stored_current_header_root.as_ptr() as *mut u8,
             new_optimistic_header_root.as_ptr(),
             new_finalized_header_root.as_ptr(),
-            new_execution_state_root.as_ptr()
-                )
+            new_execution_state_root.as_ptr(),
+            new_slot.to_ne_bytes().as_ptr(),
+            domain.as_ptr())
     } {
         if current_index == 32
         {
@@ -132,15 +141,18 @@ pub fn execute_update(
         deps.storage.set("finalized_header_hash_array".as_bytes(), &finalized_arr);
         deps.storage.set("execution_state_root_array".as_bytes(), &execution_state_arr);
         deps.storage.set("current_index".as_bytes(), &current_index.to_ne_bytes());
+        deps.storage.set("current_slot".as_bytes(), &new_slot.to_ne_bytes());
 
     } else {
         return Err(ContractError::Std(StdError::generic_err(format!(
-            "{:?} \n{:?} \n{:?} \n{:?} \n{:?}",
+            "{:?} \n{:?} \n{:?} \n{:?} \n{:?} \n{:?} \n{:?}",
             "Incorrect update",
             &stored_current_header_root,
             &new_optimistic_header_root,
             &new_finalized_header_root,
-            &new_execution_state_root
+            &new_execution_state_root,
+            &new_slot,
+            &domain
         ))));
     }
     Ok(Response::default())
@@ -159,6 +171,8 @@ pub fn query(_deps: Deps, _env: Env, _msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::AllFinalizedHeaderHashesOrdered {} => get_all_finalized_ordered(_deps, _env),
         QueryMsg::AllExecStateRoots {} => get_all_exec_state(_deps, _env),
         QueryMsg::AllExecStateRootsOrdered {} => get_all_exec_state_ordered(_deps, _env),
+        QueryMsg::CurrentSlot {} => get_current_slot(_deps, _env),
+        QueryMsg::Domain {} => get_domain(_deps, _env),
     }
 }
 
@@ -287,6 +301,22 @@ fn get_all_exec_state_ordered(_deps: Deps, _env: Env) -> StdResult<Binary> {
         all_headers_ordered.extend_from_slice(&[on_index(&exec_state_arr, current_index as usize)]);
     }
     to_binary(&all_headers_ordered)
+}
+
+fn get_current_slot(_deps: Deps, _env: Env) -> StdResult<Binary> {
+    let current_slot = _deps.storage.get("current_slot".as_bytes()).unwrap();
+    let mut a: [u8; 4] = [0,0,0,0];
+    for n in 0..4 {
+        a[n] = current_slot[n];
+    }
+    let slot =  i32::from_ne_bytes(a);
+
+    to_binary(&slot)
+}
+
+fn get_domain(_deps: Deps, _env: Env) -> StdResult<Binary> {
+    let domain = _deps.storage.get("domain".as_bytes()).unwrap();
+    to_binary(&domain)
 }
 
 #[cfg(test)]
