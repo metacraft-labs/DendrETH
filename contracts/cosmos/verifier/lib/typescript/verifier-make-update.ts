@@ -17,7 +17,7 @@ export async function updateVerifierContract(
   const contractDir = rootDir + `/contracts/cosmos/verifier`;
 
   const pathToVerifyUtils =
-    rootDir + `/vendor/eth2-light-client-updates/prater/capella-updates/`;
+    rootDir + `/vendor/eth2-light-client-updates/prater/capella-updates-94/`;
 
   const parseDataTool = `${contractDir}/nimcache/verifier_parse_data`;
   const parseUpdateDataCommand = `${parseDataTool} updateData \

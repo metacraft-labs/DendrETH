@@ -60,17 +60,19 @@ export async function uploadVerifierContract(
 export async function instantiateVerifierContract(
   uploadReceipt: UploadResult,
   initHeaderRoot: string,
+  domain: string,
   cosmos: CosmosClientWithWallet,
 ) {
   const { rootDir, contractDir } = await getCosmosContractArtifacts('verifier');
 
   const pathToVerifyUtils =
-    rootDir + `/vendor/eth2-light-client-updates/prater/capella-updates/`;
-  const pathToKey = pathToVerifyUtils + `vkey.json`;
+    rootDir + `/vendor/eth2-light-client-updates/prater/capella-updates-94/`;
+  const pathToKey = pathToVerifyUtils + `vk.json`;
 
   const parseDataTool = `${contractDir}/nimcache/verifier_parse_data`;
   const parseInitDataCommand = `${parseDataTool} initData \
   --initHeaderRoot=${initHeaderRoot} \
+  --domain=${domain} \
   --verificationKeyPath=${pathToKey}`;
 
   console.info(

@@ -3,10 +3,11 @@ import { Redis } from '../../../relay/implementations/redis';
 import { CosmosContract } from '../../../relay/implementations/cosmos-contract';
 import { publishProofs } from '../../../relay/on_chain_publisher';
 import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
+import * as networkConfig from '../../../relay/constants/network_config.json';
+import { Config } from '../../../relay/constants/constants';
 
 async function publishTask() {
   const config = {
-    BEACON_REST_API: process.env.BEACON_REST_API,
     REDIS_HOST: process.env.REDIS_HOST,
     REDIS_PORT: Number(process.env.REDIS_PORT),
   };
@@ -14,6 +15,10 @@ async function publishTask() {
   checkConfig(config);
   const network = process.argv[3];
   const contractAddress = process.argv[4];
+  const followNetwork = process.argv[5];
+
+  const currentNetwork = networkConfig[followNetwork] as Config;
+
   let address;
   let rpcEndpoint;
   let prefix;
@@ -40,7 +45,7 @@ async function publishTask() {
   console.log(`Contract address `, contractAddress);
 
   const redis = new Redis(config.REDIS_HOST!, config.REDIS_PORT);
-  const beaconApi = new BeaconApi(config.BEACON_REST_API!);
+  const beaconApi = new BeaconApi(currentNetwork.BEACON_REST_API!);
   const contract = new CosmosContract(
     contractAddress,
     address,

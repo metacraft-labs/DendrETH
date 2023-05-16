@@ -24,9 +24,9 @@ proc update*(pathPrf, updatePath, contract, wallet, node, txflags: string): bool
 
   let update = parseFile(updatePath)
 
-  let newOptimisticHeader = hexToByteArray[32](update["attested_header_root"].str)
-  let newFinalizedHeader = hexToByteArray[32](update["finalized_header_root"].str)
-  let newExecutionStateRoot = hexToByteArray[32](update["finalized_execution_state_root"].str)
+  let newOptimisticHeader = hexToByteArray[32](update["attestedHeaderRoot"].str)
+  let newFinalizedHeader = hexToByteArray[32](update["finalizedHeaderRoot"].str)
+  let newExecutionStateRoot = hexToByteArray[32](update["finalizedExecutionStateRoot"].str)
 
 
   let UPDATE= "{\"update\":{\"proof\":" & $proof & ",\"new_optimistic_header_root\": " & $newOptimisticHeader & ",\"new_finalized_header_root\": " & $newFinalizedHeader & ",\"new_execution_state_root\": " & $newExecutionStateRoot & "}}"
