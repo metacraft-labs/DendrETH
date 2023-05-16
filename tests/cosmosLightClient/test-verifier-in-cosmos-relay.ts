@@ -15,6 +15,7 @@ import {
   uploadVerifierContract,
 } from '../../contracts/cosmos/verifier/lib/typescript/verifier-upload-instantiate';
 import { replaceInTextProof } from '../helpers/helpers';
+import { readFileSync } from 'fs';
 
 const exec = promisify(exec_);
 
@@ -63,10 +64,13 @@ describe('Light Client Verifier In Cosmos', () => {
       uploadReceipt,
     );
 
-    const defaultInitHeaderRoot =
-      '0x4ce76b7478cb0eee4a32c7f25bb561ca1d0f444d1716c8f6f260900ef45f37d2';
+    const defaultInitHeaderRoot = JSON.parse(
+      readFileSync(replaceInTextProof(updateFiles[0])),
+    ).attestedHeaderRoot;
+
     const defaultDomain =
       '0x07000000628941ef21d1fe8c7134720add10bb91e3b02c007e0046d2472c6695';
+
     const instantiation = await instantiateVerifierContract(
       uploadReceipt,
       defaultInitHeaderRoot,

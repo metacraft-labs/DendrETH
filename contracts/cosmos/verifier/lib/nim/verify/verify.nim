@@ -39,10 +39,14 @@ proc makePairsAndVerify*(vk: ref VerificationKey,
   var zerosSlotBuffer: array[24, byte]
   for i in 0..23:
     zerosSlotBuffer[i] = 0
-  let sha256ofHashes = hashHeaders(currentHeaderHash, newOptimisticHeader, newFinalizedHeader, newExecutionStateRoot, zerosSlotBuffer, reverseSlot, domain)
+
+  let sha256ofHashes = hashHeaders(currentHeaderHash, newOptimisticHeader,
+                                   newFinalizedHeader, newExecutionStateRoot,
+                                   zerosSlotBuffer, reverseSlot, domain)
+
   let header = headerFromSeq(@sha256ofHashes)
 
-  var preparedInputs = Input(data:vk[].ic[0])
+  var preparedInputs = Input(data: vk[].ic[0])
   preparedInputs.data = preparedInputs.data + (vk[].ic[1] * header.head)
   preparedInputs.data = preparedInputs.data + (vk[].ic[2] * header.tail)
 
