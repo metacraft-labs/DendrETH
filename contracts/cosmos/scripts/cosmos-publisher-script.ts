@@ -13,26 +13,23 @@ async function publishTask() {
   };
 
   checkConfig(config);
-  const network = process.argv[3];
-  const contractAddress = process.argv[4];
-  const followNetwork = process.argv[5];
+  const network = process.argv[2];
+  const contractAddress = process.argv[3];
+  const followNetwork = process.argv[4];
 
   const currentNetwork = networkConfig[followNetwork] as Config;
 
   let address;
   let rpcEndpoint;
-  let prefix;
   switch (network) {
     case 'cudos': {
       address = String(process.env['CUDOS_PUBLIC_KEY']);
       rpcEndpoint = String(process.env['CUDOS_RPC_ENDPOINT']);
-      prefix = 'cudos';
       break;
     }
     case 'malaga': {
       address = String(process.env['MALAGA_ADDRESS']);
       rpcEndpoint = String(process.env['MALAGA_RPC_ENDPOINT']);
-      prefix = 'wasm';
       break;
     }
     default: {
@@ -46,11 +43,17 @@ async function publishTask() {
 
   const redis = new Redis(config.REDIS_HOST!, config.REDIS_PORT);
   const beaconApi = new BeaconApi(currentNetwork.BEACON_REST_API!);
+
+  console.log(contractAddress);
+  console.log(address);
+  console.log(rpcEndpoint);
+  console.log(network);
+
   const contract = new CosmosContract(
     contractAddress,
     address,
     rpcEndpoint,
-    prefix,
+    network,
   );
   publishProofs(redis, beaconApi, contract);
 }

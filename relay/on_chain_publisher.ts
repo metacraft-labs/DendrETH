@@ -1,4 +1,3 @@
-import { groth16 } from 'snarkjs';
 import { ProofResultType } from './types/types';
 import { IBeaconApi } from './abstraction/beacon-api-interface';
 import { IRedis } from './abstraction/redis-interface';
@@ -89,23 +88,6 @@ export async function postUpdateOnChain(
   beaconApi: IBeaconApi,
   lastSlotOnChain: number,
 ) {
-  const calldata = await groth16.exportSolidityCallData(
-    proofResult.proof,
-    proofResult.proof.public,
-  );
-
-  const argv: string[] = calldata
-    .replace(/["[\]\s]/g, '')
-    .split(',')
-    .map(x => BigInt(x).toString());
-
-  const a = [argv[0], argv[1]];
-  const b = [
-    [argv[2], argv[3]],
-    [argv[4], argv[5]],
-  ];
-  const c = [argv[6], argv[7]];
-
   console.log({
     attestedHeaderRoot:
       '0x' +
@@ -125,7 +107,7 @@ export async function postUpdateOnChain(
         .padStart(64, '0'),
   });
 
-  const transaction = await lightClientContract.postUpdateOnChain({
+  await lightClientContract.postUpdateOnChain({
     attestedHeaderRoot:
       '0x' +
       BigInt('0b' + proofResult.proofInput.nextHeaderHash.join(''))
@@ -142,12 +124,10 @@ export async function postUpdateOnChain(
       BigInt('0b' + proofResult.proofInput.execution_state_root.join(''))
         .toString(16)
         .padStart(64, '0'),
-    a: a,
-    b: b,
-    c: c,
+    a: proofResult.proof.pi_a,
+    b: proofResult.proof.pi_b,
+    c: proofResult.proof.pi_c,
   });
-
-  console.log(transaction);
 
   const transactionSlot = proofResult.proofInput.nextHeaderSlot;
 
@@ -170,6 +150,4 @@ export async function postUpdateOnChain(
       ((currentHeadSlot - transactionSlot) * 12) / 60
     } minutes behind`,
   );
-
-  await transaction.wait();
 }

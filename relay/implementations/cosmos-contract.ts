@@ -4,6 +4,7 @@ import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
 import { promisify } from 'node:util';
 import { exec as exec_, execSync, spawn } from 'node:child_process';
 import { calculateFee, GasPrice } from '@cosmjs/stargate';
+import { bytesToHex } from '../../libs/typescript/ts-utils/bls';
 
 const exec = promisify(exec_);
 
@@ -57,7 +58,7 @@ export class CosmosContract implements ISmartContract {
     } else {
       console.error('Failed to create client');
     }
-    return lastHeader;
+    return '0x' + bytesToHex(lastHeader);
   }
 
   async postUpdateOnChain(update: {
@@ -90,6 +91,7 @@ export class CosmosContract implements ISmartContract {
     const updateDataExec = exec(parseUpdateDataCommand);
     const updateData = (await updateDataExec).stdout.replace(/\s/g, '');
     console.log(updateData);
+
     var executeFee;
     switch (this.network) {
       case 'cudos': {
@@ -124,7 +126,6 @@ export class CosmosContract implements ISmartContract {
 }
 async function CreateClientCudos(rpcEndpoint) {
   const mnemonic = String(process.env['CUDOS_MNEMONIC']);
-  console.log(mnemonic);
   const wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, {
     prefix: 'cudos',
   });
