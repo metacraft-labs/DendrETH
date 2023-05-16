@@ -145,8 +145,13 @@ pub fn execute_update(
 
     } else {
         return Err(ContractError::Std(StdError::generic_err(format!(
-            "{:?} \n{:?} \n{:?} \n{:?} \n{:?} \n{:?} \n{:?}",
-            "Incorrect update",
+            "Incorrect update \n\
+            stored_current_header_root: {:?} \n\
+            new_optimistic_header_root: {:?} \n\
+            new_finalized_header_root: {:?} \n\
+            new_execution_state_root: {:?} \n\
+            new_slot: {:?} \n\
+            domain: {:?}",
             &stored_current_header_root,
             &new_optimistic_header_root,
             &new_finalized_header_root,
