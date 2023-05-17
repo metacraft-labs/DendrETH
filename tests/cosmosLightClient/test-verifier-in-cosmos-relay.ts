@@ -110,8 +110,7 @@ describe('Light Client Verifier In Cosmos', () => {
       const updateData = (await updateDataExec).stdout.replace(/\s/g, '');
       console.info(`Parsed update data: \n  ╰─➤ ${updateData}`);
       // Execute update on the contract with the contract specific message
-      cosmosContract.postUpdateOnChain(JSON.parse(updateData));
-      await sleep(10000);
+      await cosmosContract.postUpdateOnChain(JSON.parse(updateData));
     }
 
     //What is the expected result of the query below
@@ -157,8 +156,7 @@ describe('Light Client Verifier In Cosmos', () => {
       console.info(`Parsed update data: \n  ╰─➤ ${updateData}`);
 
       // Execute update on the contract with the contract specific message
-      cosmosContract.postUpdateOnChain(JSON.parse(updateData));
-      await sleep(10000);
+      await cosmosContract.postUpdateOnChain(JSON.parse(updateData));
     }
 
     // What is the expected result of the query below
