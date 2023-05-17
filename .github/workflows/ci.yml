@@ -66,3 +66,6 @@ jobs:
 
       # - name: Run Verifier in EOS test
       #   run: nix develop -c yarn test './tests/eosLightClient/test-verifier-in-EOS.ts'
+
+      # - name: Run Verifier in EOS - Relayer test
+      #   run: nix develop -c yarn test './tests/eosLightClient/test-verifier-in-EOS-relay.ts'
