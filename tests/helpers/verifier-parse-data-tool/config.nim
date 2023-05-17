@@ -12,6 +12,7 @@ type
     expectedExecutionStateRoot
     expectedSlot
     updateDataForCosmosContractClass
+    updateDataForEOSContractClass
     updateDataEOS
     initDataEOS
 
@@ -74,6 +75,22 @@ type
       c* {.
         desc: "proof - point c"}: seq[string]
       attested_header_slot* {.
+        desc: "attested_header_slot"}: string
+
+    of updateDataForEOSContractClass:
+      attested_header_rootEOS* {.
+        desc: "attested_header_root"}: string
+      finalized_header_rootEOS* {.
+        desc: "finalized_header_root"}: string
+      finalized_execution_state_rootEOS* {.
+        desc: "finalized_execution_state_root"}: string
+      aEOS* {.
+        desc: "proof - point a"}: seq[string]
+      bEOS* {.
+        desc: "proof - point b"}: seq[string]
+      cEOS* {.
+        desc: "proof - point c"}: seq[string]
+      attested_header_slotEOS* {.
         desc: "attested_header_slot"}: string
 
     of updateDataEOS:

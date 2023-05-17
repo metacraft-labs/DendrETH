@@ -7,19 +7,26 @@ import {
   replaceInTextProof,
 } from '../helpers/helpers';
 import { getRootDir, sleep } from '../../libs/typescript/ts-utils/common-utils';
+import { EOSContract } from '../../relay/implementations/eos-contract';
 import { getDataFromPrintHeaderResult } from '../../libs/typescript/cosmos-utils/cosmos-utils';
 
 const exec = promisify(exec_);
 
 describe('Verifier in EOS', () => {
   console.info('Verifier in EOS test');
-  const eosAccName = 'dendreth';
-  const verifierTableKey = eosAccName;
   let updateFiles: string[];
   let pathToVerifyUtils: string;
   let parseDataTool: string;
   let pathToKey: string;
   let stopLocalNodeCommand: string;
+  let eosContract: EOSContract;
+  let eosAccName: string;
+  let rpcEndpoint: string;
+
+  eosAccName = 'dendreth';
+  const verifierTableKey = eosAccName;
+  rpcEndpoint = 'local';
+
   const defaultInitHeaderRoot =
     '0x4ce76b7478cb0eee4a32c7f25bb561ca1d0f444d1716c8f6f260900ef45f37d2';
   const defaultDomain =
@@ -55,17 +62,18 @@ describe('Verifier in EOS', () => {
     const initData = (await initDataExec).stdout.replace(/\s/g, '');
     console.info(`Parsed instantiation data: \n  ╰─➤ ${initData}`);
     const initCommand =
-      `cleos push action ${eosAccName} instantiate ` +
+      'cleos push action dendreth instantiate ' +
       initData +
-      ` -p ${eosAccName}@active `;
+      ' -p dendreth@active ';
     console.info('initCommand:', initCommand);
     await exec(initCommand);
-    const queryCommand = `cleos push action ${eosAccName} printheader '{\"key\":\"${verifierTableKey}\"}' -p ${eosAccName}@active`;
-    const queryRes = await exec(queryCommand);
-    let result = getDataFromPrintHeaderResult((await queryRes).stdout);
-    console.info('After init query:', result);
+    eosContract = new EOSContract(eosAccName, rpcEndpoint);
+    // Query contract after Instantiation
+    const queryResultAfterInitialization =
+      await eosContract.optimisticHeaderRoot();
+    console.info('After init query:', queryResultAfterInitialization);
 
-    expect(result).toEqual(
+    expect(queryResultAfterInitialization).toEqual(
       '[76,231,107,116,120,203,14,238,74,50,199,242,91,181,97,202,29,15,68,77,23,22,200,246,242,96,144,14,244,95,55,210]',
     );
   }, 30000);
@@ -73,27 +81,21 @@ describe('Verifier in EOS', () => {
   test('Check "Verifier" after 1 update', async () => {
     console.info('Verifier after 1 update');
 
-    let updatePath;
-    for (let proofFilePath of updateFiles.slice(1, 2)) {
+    var updatePath;
+    for (var proofFilePath of updateFiles.slice(1, 2)) {
       updatePath = replaceInTextProof(proofFilePath);
       const updateNumber = updatePath.substring(
         updatePath.indexOf('update_') + 7,
       );
 
-      const parseUpdateDataCommand = `${parseDataTool} updateDataEOS \
-      --proofPathEOS=${pathToVerifyUtils}proof_${updateNumber} \
-      --updatePathEOS=${pathToVerifyUtils}update_${updateNumber}`;
+      const parseUpdateDataCommand = `${parseDataTool} updateDataForRelayTest \
+      --proofPathRelay=${proofFilePath} --updatePathRelay=${updatePath}`;
       console.info(`Parsing data for update: \n ➤ ${parseUpdateDataCommand}`);
       const updateDataExec = exec(parseUpdateDataCommand);
       const updateData = (await updateDataExec).stdout.replace(/\s/g, '');
       console.info('updating with data:', updateData);
-      const updateCommand =
-        `cleos push action ${eosAccName} update ` +
-        updateData +
-        ` -p ${eosAccName}@active`;
-      console.info('updateCommand:', updateCommand);
 
-      await exec(updateCommand);
+      await eosContract.postUpdateOnChain(JSON.parse(updateData));
     }
 
     //What is the expected result of the query below
@@ -110,41 +112,34 @@ describe('Verifier in EOS', () => {
     console.info(`Parsed expected new header: \n  ╰─➤ [${expectedHeader}]`);
     await sleep(10000);
 
-    const queryCommand = `cleos push action ${eosAccName} printheader '{\"key\":\"${verifierTableKey}\"}' -p ${eosAccName}@active`;
-    const queryRes = await exec(queryCommand);
-    let result = getDataFromPrintHeaderResult((await queryRes).stdout);
-    console.info('Result of query:', result);
+    // Query contract after Instantiation
+    const queryResultAfterUpdate = await eosContract.optimisticHeaderRoot();
+    console.info('Result of query:', queryResultAfterUpdate);
 
-    expect(result).toEqual(expectedHeader);
+    expect(queryResultAfterUpdate).toEqual(expectedHeader);
   }, 30000);
 
   test('Check "Verifier" after 33 update', async () => {
     console.info('Verifier after 33 update');
 
-    let updatePath;
-    let counter = 2;
-    for (let proofFilePath of updateFiles.slice(2, 34)) {
+    var updatePath;
+    var counter = 2;
+    for (var proofFilePath of updateFiles.slice(2, 35)) {
       updatePath = replaceInTextProof(proofFilePath);
       const updateNumber = updatePath.substring(
         updatePath.indexOf('update_') + 7,
       );
 
-      const parseUpdateDataCommand = `${parseDataTool} updateDataEOS \
-      --proofPathEOS=${pathToVerifyUtils}proof_${updateNumber} \
-      --updatePathEOS=${pathToVerifyUtils}update_${updateNumber}`;
+      const parseUpdateDataCommand = `${parseDataTool} updateDataForRelayTest \
+      --proofPathRelay=${proofFilePath} --updatePathRelay=${updatePath}`;
       console.info(
-        `Parsing data for update ` +
-          counter +
-          ` : \n ➤ ${parseUpdateDataCommand}`,
+        `Parsing data for update ${counter}: \n  ╰─➤ ${parseUpdateDataCommand}`,
       );
       const updateDataExec = exec(parseUpdateDataCommand);
       const updateData = (await updateDataExec).stdout.replace(/\s/g, '');
       console.info('update ' + counter + ' with data:', updateData);
-      const updateCommand =
-        `cleos push action ${eosAccName} update ` +
-        updateData +
-        ` -p ${eosAccName}@active`;
-      await exec(updateCommand);
+
+      await eosContract.postUpdateOnChain(JSON.parse(updateData));
       counter++;
     }
 
@@ -162,18 +157,15 @@ describe('Verifier in EOS', () => {
     console.info(`Parsed expected new header: \n  ╰─➤ [${expectedHeader}]`);
     await sleep(10000);
 
-    const queryCommand = `cleos push action ${eosAccName} printheader '{\"key\":\"${verifierTableKey}\"}' -p ${eosAccName}@active`;
-    const queryRes = await exec(queryCommand);
-    let result = getDataFromPrintHeaderResult((await queryRes).stdout);
-    console.info('Result of query:', result);
+    const queryResultAfterUpdates = await eosContract.optimisticHeaderRoot();
+    console.info('Result of query:', queryResultAfterUpdates);
 
-    const queryCommandAll = `cleos push action ${eosAccName} printheaders '{\"key\":\"${verifierTableKey}\"}' -p ${eosAccName}@active`;
-    const queryResAll = await exec(queryCommandAll);
-    let resultAll = getDataFromPrintHeaderResult((await queryResAll).stdout);
-    console.info({ queryResAll });
+    const queryCommandall = `cleos push action dendreth printheaders '{\"key\":\"${verifierTableKey}\"}' -p dendreth@active`;
+    const queryResall = await exec(queryCommandall);
+    let resultAll = getDataFromPrintHeaderResult((await queryResall).stdout);
     console.info('Result of full query:', resultAll);
 
-    expect(result).toEqual(expectedHeader);
+    expect(queryResultAfterUpdates).toEqual(expectedHeader);
     await exec(stopLocalNodeCommand);
-  }, 30000);
+  }, 120000);
 });

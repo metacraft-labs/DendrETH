@@ -84,6 +84,26 @@ proc execCommand*(): string =
       let update = "{\"update\":{\"proof\":" & $proof & ",\"new_optimistic_header_root\": " & $newOptimisticHeader & ",\"new_finalized_header_root\": " & $newFinalizedHeader & ",\"new_execution_state_root\": " & $newExecutionStateRoot & ",\"new_slot\": " & $conf.attested_header_slot & "}}"
       echo update
 
+
+    of StartUpCommand.updateDataForEOSContractClass:
+      var parsedB: seq[seq[string]]
+
+      parsedB.add(@[conf.bEOS[0], conf.bEOS[1]])
+      parsedB.add(@[conf.bEOS[2], conf.bEOS[3]])
+      parsedB.add(@[conf.bEOS[4], conf.bEOS[5]])
+
+      let newOptimisticHeader = hexToByteArray[32](conf.attested_header_rootEOS)
+      let newFinalizedHeader = hexToByteArray[32](conf.finalized_header_rootEOS)
+      let newExecutionStateRoot = hexToByteArray[32](conf.finalized_execution_state_rootEOS)
+      let a = Point[G1](x: FQ.fromString(conf.aEOS[0]), y: FQ.fromString(conf.aEOS[1]), z: FQ.fromString("1"))
+      let b = Point[G2](x: FQ2(c0: FQ.fromString(parsedB[0][0]),  c1: FQ.fromString(parsedB[0][1])), y: FQ2(c0: FQ.fromString(parsedB[1][0]), c1: FQ.fromString(parsedB[1][1])), z: FQ2(c0: FQ.fromString("1"), c1: FQ.fromString("0")))
+      let c = Point[G1](x: FQ.fromString(conf.cEOS[0]), y: FQ.fromString(conf.cEOS[1]), z: FQ.fromString("1"))
+
+      let prf = Proof(a:a, b:b, c:c)
+      let proof = cast[var array[sizeof(Proof),byte]](prf.unsafeAddr).toHex()
+      let update = "'{\"key\":\"dendreth\", \"proof\": \"" & $proof & "\",\"new_optimistic_header_root\": \"" & $newOptimisticHeader.toHex() & "\",\"new_finalized_header_root\": \"" & $newFinalizedHeader.toHex() & "\",\"new_execution_state_root\": \"" & $newExecutionStateRoot.toHex() & "\",\"new_slot\": \"" & $conf.attested_header_slotEOS & "\"}'"
+      echo update
+
     of StartUpCommand.updateDataEOS:
       let proof = createProof(conf.proofPathEOS)
 

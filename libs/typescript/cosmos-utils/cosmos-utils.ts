@@ -68,3 +68,9 @@ export async function getCosmosTxClient(
     },
   };
 }
+
+export function getDataFromPrintHeaderResult(result: string) {
+  const noSpaces = result.replace(/\s/g, '');
+  const index = noSpaces.indexOf('>>');
+  return noSpaces.slice(index + 2);
+}
