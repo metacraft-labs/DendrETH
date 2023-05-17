@@ -9,7 +9,11 @@ type
     head*: FR
     tail*: FR
 
-proc concatArrays*(currentHeaderHash: array[32, byte], newOptimisticHeader: array[32, byte], newFinalizedHeader: array[32, byte], newExecutionStateRoot: array[32, byte], zerosSlotBuffer: array[24, byte], currentSlot: array[8, byte], domain: array[32, byte]): array[192, byte] =
+proc concatArrays*(
+    currentHeaderHash: array[32, byte], newOptimisticHeader: array[32, byte],
+    newFinalizedHeader: array[32, byte], newExecutionStateRoot: array[32, byte],
+    zerosSlotBuffer: array[24, byte], currentSlot: array[8, byte],
+    domain: array[32, byte]): array[192, byte] =
   var res: array[192, byte]
   res[0..31] = currentHeaderHash
   res[32..63] = newOptimisticHeader
@@ -21,14 +25,14 @@ proc concatArrays*(currentHeaderHash: array[32, byte], newOptimisticHeader: arra
 
   res
 
-proc hashHeaders*(currentHeaderHash: array[32, byte], newOptimisticHeader: array[32, byte], newFinalizedHeader: array[32, byte], newExecutionStateRoot: array[32, byte], zerosSlotBuffer: array[24, byte], currentSlot: array[8, byte], domain: array[32, byte]): array[32, byte]  =
-  let concat = (concatArrays(currentHeaderHash,
-                         newOptimisticHeader,
-                         newFinalizedHeader,
-                         newExecutionStateRoot,
-                         zerosSlotBuffer,
-                         currentSlot,
-                         domain))
+proc hashHeaders*(
+    currentHeaderHash: array[32, byte], newOptimisticHeader: array[32, byte],
+    newFinalizedHeader: array[32, byte], newExecutionStateRoot: array[32, byte],
+    zerosSlotBuffer: array[24, byte], currentSlot: array[8, byte],
+    domain: array[32, byte]): array[32, byte]  =
+  let concat = (concatArrays(currentHeaderHash, newOptimisticHeader,
+                             newFinalizedHeader, newExecutionStateRoot,
+                             zerosSlotBuffer, currentSlot, domain))
 
 
   let hash = sha2.sha256.digest(concat)
