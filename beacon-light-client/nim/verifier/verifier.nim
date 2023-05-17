@@ -29,12 +29,20 @@ proc makePairsAndVerify*(vk: VerificationKey,
                          currentHeaderHash: var array[32, byte],
                          newOptimisticHeader: array[32, byte],
                          newFinalizedHeader: array[32, byte],
-                         newExecutionStateRoot: array[32, byte]): bool {.wasmPragma.} =
+                         newExecutionStateRoot: array[32, byte],
+                         currentSlot: array[8, byte],
+                         domain: array[32, byte]): bool {.wasmPragma.} =
+  var reverseSlot: array[8, byte]
+  for i in 0..7:
+    reverseSlot[i] = currentSlot[7-i]
+  var zerosSlotBuffer: array[24, byte]
+  for i in 0..23:
+    zerosSlotBuffer[i] = 0
 
-  let sha256ofHashes = hashHeaders(currentHeaderHash,
-                                   newOptimisticHeader,
-                                   newFinalizedHeader,
-                                   newExecutionStateRoot)
+  let sha256ofHashes = hashHeaders(currentHeaderHash, newOptimisticHeader,
+                                   newFinalizedHeader, newExecutionStateRoot,
+                                   zerosSlotBuffer, reverseSlot, domain)
+
   let header = headerFromSeq(@sha256ofHashes)
 
   var preparedInputs = Input(data:vk.ic[0])
