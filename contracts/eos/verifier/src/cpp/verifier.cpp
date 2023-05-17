@@ -25,16 +25,17 @@ public:
 
   // TODO: Make sure only we can instantiate
   [[eosio::action]] void instantiate(
+      name key,
       const std::vector<uint8_t> &verification_key,
       const std::vector<uint8_t> &current_header_hash,
       const uint64_t &current_slot, const std::vector<uint8_t> &domain) {
     data_index verifier_data(get_self(), get_first_receiver().value);
-    auto iterator = verifier_data.find(verifier_name.value);
+    auto iterator = verifier_data.find(key.value);
     check(iterator == verifier_data.end(),
           "DendrETH verifier already instantiated");
     if (iterator == verifier_data.end()) {
-      verifier_data.emplace(verifier_name, [&](auto &row) {
-        row.key = verifier_name;
+      verifier_data.emplace(key, [&](auto &row) {
+        row.key = key;
         row.current_index = 0;
         row.vk = verification_key;
         std::vector<std::vector<uint8_t>> new_optimistic_header_roots =
@@ -62,6 +63,7 @@ public:
   }
 
   [[eosio::action]] void update(
+      name key,
       const std::vector<uint8_t> &proof,
       const std::vector<uint8_t> &new_optimistic_header_root,
       const std::vector<uint8_t> &new_finalized_header_root,
@@ -69,7 +71,7 @@ public:
       const uint64_t &new_slot) {
 
     data_index verifier_data(get_self(), get_first_receiver().value);
-    auto iterator = verifier_data.find(verifier_name.value);
+    auto iterator = verifier_data.find(key.value);
 
     check(iterator != verifier_data.end(),
           "DendrETH verifier not instantiated");
@@ -83,7 +85,7 @@ public:
     std::array<uint8_t, 8> _new_slot;
     std::array<uint8_t, ROOT_LENGTH> _domain;
 
-    verifier_data.modify(iterator, verifier_name, [&](auto &row) {
+    verifier_data.modify(iterator, key, [&](auto &row) {
       std::copy(row.vk.begin(), row.vk.end(), _vk.begin());
       std::copy(proof.begin(), proof.end(), _prf.begin());
       std::copy(row.new_optimistic_header_roots[row.current_index].begin(),
@@ -141,10 +143,10 @@ public:
     eosio::print("]");
   }
 
-  [[eosio::action]] void printheader() {
+  [[eosio::action]] void printheader(name key) {
     data_index verifier_data(get_self(), get_first_receiver().value);
-    auto &result = verifier_data.get(verifier_name.value);
-    verifier_data.modify(result, verifier_name, [&](auto &row) {
+    auto &result = verifier_data.get(key.value);
+    verifier_data.modify(result, key, [&](auto &row) {
       std::array<uint8_t, 32> _current_header_root;
 
       std::copy(row.new_optimistic_header_roots[row.current_index].begin(),
@@ -154,10 +156,10 @@ public:
     });
   }
 
-  [[eosio::action]] void printheaders() {
+  [[eosio::action]] void printheaders(name key) {
     data_index verifier_data(get_self(), get_first_receiver().value);
-    auto &result = verifier_data.get(verifier_name.value);
-    verifier_data.modify(result, verifier_name, [&](auto &row) {
+    auto &result = verifier_data.get(key.value);
+    verifier_data.modify(result, key, [&](auto &row) {
       std::array<uint8_t, 32> _current_header_root;
 
       for (int pos = 0; pos < 32; pos++) {
@@ -170,8 +172,6 @@ public:
   }
 
 private:
-  const name verifier_name = "dendreth"_n;
-
   struct [[eosio::table]] verifierData {
 
     name key;

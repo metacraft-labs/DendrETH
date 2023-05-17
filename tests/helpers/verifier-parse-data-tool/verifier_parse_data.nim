@@ -93,7 +93,7 @@ proc execCommand*(): string =
       let newExecutionStateRoot = hexToByteArray[32](updateJson["finalizedExecutionStateRoot"].str)
       let slot = updateJson["attestedHeaderSlot"]
 
-      let update= "'{\"proof\": \"" & $proof.toHex() & "\" ,\"new_optimistic_header_root\": \"" & $newOptimisticHeader.toHex() & "\" ,\"new_finalized_header_root\": \"" & $newFinalizedHeader.toHex() & "\" ,\"new_execution_state_root\": \"" & $newExecutionStateRoot.toHex()  & "\" ,\"new_slot\": \"" & $slot & "\" } '"
+      let update= "'{\"key\":\"dendreth\", \"proof\": \"" & $proof.toHex() & "\" ,\"new_optimistic_header_root\": \"" & $newOptimisticHeader.toHex() & "\" ,\"new_finalized_header_root\": \"" & $newFinalizedHeader.toHex() & "\" ,\"new_execution_state_root\": \"" & $newExecutionStateRoot.toHex()  & "\" ,\"new_slot\": \"" & $slot & "\" } '"
 
       echo update
     of StartUpCommand.initDataEOS:
@@ -106,4 +106,3 @@ proc execCommand*(): string =
       echo init
 
 let a = execCommand()
-
