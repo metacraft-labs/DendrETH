@@ -8,22 +8,26 @@ static constexpr uint32_t VERIFICATION_KEY_LENGTH = 1152;
 static constexpr uint32_t PROOF_LENGTH = 384;
 
 extern "C" {
-bool makePairsAndVerify(
-    std::array<uint8_t, VERIFICATION_KEY_LENGTH> *vk,
-    std::array<uint8_t, PROOF_LENGTH> *prf,
-    std::array<uint8_t, ROOT_LENGTH> *currentHeaderHash,
-    std::array<uint8_t, ROOT_LENGTH> *newOptimisticHeader,
-    std::array<uint8_t, ROOT_LENGTH> *newFinalizedHeader,
-    std::array<uint8_t, ROOT_LENGTH> *newExecutionStateRoot);
+bool makePairsAndVerify(std::array<uint8_t, VERIFICATION_KEY_LENGTH> *vk,
+                        std::array<uint8_t, PROOF_LENGTH> *prf,
+                        std::array<uint8_t, ROOT_LENGTH> *currentHeaderHash,
+                        std::array<uint8_t, ROOT_LENGTH> *newOptimisticHeader,
+                        std::array<uint8_t, ROOT_LENGTH> *newFinalizedHeader,
+                        std::array<uint8_t, ROOT_LENGTH> *newExecutionStateRoot,
+                        std::array<uint8_t, 8> *currentSlot,
+                        std::array<uint8_t, ROOT_LENGTH> *domain);
 }
+
 class [[eosio::contract("verifier")]] verifier : public eosio::contract {
 public:
   verifier(name receiver, name code, datastream<const char *> ds)
       : contract(receiver, code, ds) {}
 
   // TODO: Make sure only we can instantiate
-  [[eosio::action]] void instantiate(const std::vector<uint8_t> &verification_key,
-                                     const std::vector<uint8_t> &current_header_hash) {
+  [[eosio::action]] void instantiate(
+      const std::vector<uint8_t> &verification_key,
+      const std::vector<uint8_t> &current_header_hash,
+      const uint64_t &current_slot, const std::vector<uint8_t> &domain) {
     data_index verifier_data(get_self(), get_first_receiver().value);
     auto iterator = verifier_data.find(verifier_name.value);
     check(iterator == verifier_data.end(),
@@ -51,14 +55,19 @@ public:
         row.new_optimistic_header_roots = new_optimistic_header_roots;
         row.new_finalized_header_roots = new_finalized_header_roots;
         row.new_execution_state_roots = new_execution_state_roots;
+        row.current_slot = current_slot;
+        row.domain = domain;
       });
     }
   }
 
-  [[eosio::action]] void update(const std::vector<uint8_t> &proof,
-                                const std::vector<uint8_t> &new_optimistic_header_root,
-                                const std::vector<uint8_t> &new_finalized_header_root,
-                                const std::vector<uint8_t> &new_execution_state_root) {
+  [[eosio::action]] void update(
+      const std::vector<uint8_t> &proof,
+      const std::vector<uint8_t> &new_optimistic_header_root,
+      const std::vector<uint8_t> &new_finalized_header_root,
+      const std::vector<uint8_t> &new_execution_state_root,
+      const uint64_t &new_slot) {
+
     data_index verifier_data(get_self(), get_first_receiver().value);
     auto iterator = verifier_data.find(verifier_name.value);
 
@@ -71,6 +80,8 @@ public:
     std::array<uint8_t, ROOT_LENGTH> _new_optimistic_header_root;
     std::array<uint8_t, ROOT_LENGTH> _new_finalized_header_root;
     std::array<uint8_t, ROOT_LENGTH> _new_execution_state_root;
+    std::array<uint8_t, 8> _new_slot;
+    std::array<uint8_t, ROOT_LENGTH> _domain;
 
     verifier_data.modify(iterator, verifier_name, [&](auto &row) {
       std::copy(row.vk.begin(), row.vk.end(), _vk.begin());
@@ -87,10 +98,18 @@ public:
       std::copy(new_execution_state_root.begin(),
                 new_execution_state_root.end(),
                 _new_execution_state_root.begin());
+      std::copy(row.domain.begin(), row.domain.end(), _domain.begin());
+      uint8_t *p = (uint8_t *)&new_slot;
+      for (int i = 0; i < 8; i++) {
+        _new_slot[i] = p[i];
+      }
+      // check(false,
+      //       "Stoped here !!!!!!!!" );
 
       bool result = makePairsAndVerify(
           &_vk, &_prf, &_current_header_root, &_new_optimistic_header_root,
-          &_new_finalized_header_root, &_new_execution_state_root);
+          &_new_finalized_header_root, &_new_execution_state_root, &_new_slot,
+          &_domain);
 
       check(result, "Verification failed. Incorrect update");
       if (row.current_index == 31) {
@@ -108,6 +127,7 @@ public:
           new_finalized_header_root;
       row.new_execution_state_roots[row.current_index] =
           new_execution_state_root;
+      row.current_slot = new_slot;
     });
   }
   void printhelper(const std::array<uint8_t, 32> &_current_header_root) {
@@ -160,6 +180,8 @@ private:
     std::vector<std::vector<uint8_t>> new_optimistic_header_roots;
     std::vector<std::vector<uint8_t>> new_finalized_header_roots;
     std::vector<std::vector<uint8_t>> new_execution_state_roots;
+    uint8_t current_slot;
+    std::vector<uint8_t> domain;
     uint8_t smtElse;
 
     uint64_t primary_key() const { return key.value; }

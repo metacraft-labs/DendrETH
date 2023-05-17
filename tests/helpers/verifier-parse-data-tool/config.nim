@@ -81,8 +81,11 @@ type
         desc: "Path to some header"}: string
       updatePathEOS* {.
         desc: "updatePath"}: string
+
     of initDataEOS:
       initHeaderRootEOS* {.
         desc: "Root of the header to init with"}: string
+      domainEOS* {.
+        desc: "Domain to init with"}: string
       verificationKeyPathEOS* {.
         desc: "Path to the verification key"}: string

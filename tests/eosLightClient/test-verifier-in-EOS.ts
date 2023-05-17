@@ -18,14 +18,17 @@ describe('Verifier in EOS', () => {
   let pathToKey: string;
   let stopLocalNodeCommand: string;
   const defaultInitHeaderRoot =
-    '0xc43d94aaea1342f8e551d9a5e6fe95b7ebb013142acf1e2628ad381e5c713316';
+    '0x4ce76b7478cb0eee4a32c7f25bb561ca1d0f444d1716c8f6f260900ef45f37d2';
+  const defaultDomain =
+    '0x07000000628941ef21d1fe8c7134720add10bb91e3b02c007e0046d2472c6695';
   beforeAll(async () => {
     const rootDir = await getRootDir();
     parseDataTool = await compileVerifierParseDataTool('eos', 'verifier');
+    // await compileVerifierParseDataTool();
     pathToVerifyUtils =
-      rootDir + `/vendor/eth2-light-client-updates/prater/capella-updates/`;
+      rootDir + `/vendor/eth2-light-client-updates/prater/capella-updates-94/`;
     updateFiles = glob(pathToVerifyUtils + `proof*.json`);
-    pathToKey = pathToVerifyUtils + `vkey.json`;
+    pathToKey = pathToVerifyUtils + `vk.json`;
     stopLocalNodeCommand = `bash ${rootDir}/contracts/eos/scripts/run_eos_testnet.sh stop`;
     const startLocalNodeCommand = `bash ${rootDir}/contracts/eos/scripts/run_eos_testnet.sh`;
     const buildAndDeployContractCommand = `bash ${rootDir}/contracts/eos/verifier/scripts/build.sh \
@@ -40,7 +43,8 @@ describe('Verifier in EOS', () => {
 
     const parseInitDataCommand = `${parseDataTool} initDataEOS \
     --initHeaderRootEOS=${defaultInitHeaderRoot} \
-    --verificationKeyPathEOS=${pathToKey}`;
+    --verificationKeyPathEOS=${pathToKey} \
+    --domainEOS=${defaultDomain}`;
     console.info(
       `Parsing data for instantiation. \n  ╰─➤ ${parseInitDataCommand}`,
     );
@@ -60,7 +64,7 @@ describe('Verifier in EOS', () => {
     console.info('After init query:', result);
 
     expect(result).toEqual(
-      '[196,61,148,170,234,19,66,248,229,81,217,165,230,254,149,183,235,176,19,20,42,207,30,38,40,173,56,30,92,113,51,22]',
+      '[76,231,107,116,120,203,14,238,74,50,199,242,91,181,97,202,29,15,68,77,23,22,200,246,242,96,144,14,244,95,55,210]',
     );
   }, 30000);
 
@@ -68,7 +72,7 @@ describe('Verifier in EOS', () => {
     console.info('Verifier after 1 update');
 
     var updatePath;
-    for (var proofFilePath of updateFiles.slice(0, 1)) {
+    for (var proofFilePath of updateFiles.slice(1, 2)) {
       updatePath = replaceInTextProof(proofFilePath);
       const updateNumber = updatePath.substring(
         updatePath.indexOf('update_') + 7,
@@ -85,6 +89,8 @@ describe('Verifier in EOS', () => {
         'cleos push action dendreth update ' +
         updateData +
         ' -p dendreth@active';
+      console.info('updateCommand:', updateCommand);
+
       await exec(updateCommand);
     }
 
@@ -116,7 +122,7 @@ describe('Verifier in EOS', () => {
 
     var updatePath;
     var counter = 2;
-    for (var proofFilePath of updateFiles.slice(1, 33)) {
+    for (var proofFilePath of updateFiles.slice(2, 34)) {
       updatePath = replaceInTextProof(proofFilePath);
       const updateNumber = updatePath.substring(
         updatePath.indexOf('update_') + 7,
