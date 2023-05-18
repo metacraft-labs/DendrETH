@@ -17,7 +17,7 @@
     # * end up with multiple copies of the same package from nixpkgs
     # * be unable to use the binary cache, since the packages there where
     #   using different versions of their dependencies from nixpkgs
-    mcl-blockchain.url = "github:metacraft-labs/nix-blockchain-development";
+    mcl-blockchain.url = "github:metacraft-labs/nix-blockchain-development/build/circom-version";
     nixpkgs.follows = "mcl-blockchain/nixpkgs";
     flake-parts.follows = "mcl-blockchain/flake-parts";
   };
