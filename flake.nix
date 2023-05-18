@@ -43,11 +43,19 @@
         inputs',
         ...
       }: let
-        inherit (inputs'.mcl-blockchain.legacyPackages) nix2container rust-stable rustPlatformStable;
+        inherit (inputs'.mcl-blockchain.legacyPackages) nix2container circom rust-stable rustPlatformStable;
         docker-images = import ./libs/nix/docker-images.nix {inherit pkgs nix2container;};
         light-client = pkgs.callPackage ./libs/nix/light-client/default.nix {};
         nim-packages = import ./libs/nix/nim-programs.nix {
           inherit pkgs rustPlatformStable;
+          lib = pkgs.lib;
+        };
+        ptau = import ./libs/nix/powers_of_tau.nix {
+          inherit pkgs;
+          lib = pkgs.lib;
+        };
+        circom-circuits = import ./libs/nix/circom-circuits.nix {
+          inherit pkgs;
           lib = pkgs.lib;
         };
       in {
@@ -70,6 +78,8 @@
             inherit light-client;
           }
           // nim-packages
+          // ptau
+          // circom-circuits
           // pkgs.lib.optionalAttrs (pkgs.hostPlatform.isLinux && pkgs.hostPlatform.isx86_64) {
             inherit (docker-images) docker-image-all;
           };
