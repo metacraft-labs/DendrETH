@@ -16,6 +16,7 @@ import {
 } from '../../contracts/cosmos/verifier/lib/typescript/verifier-upload-instantiate';
 import { replaceInTextProof } from '../helpers/helpers';
 import { readFileSync } from 'fs';
+import { bytesToHex } from '../../libs/typescript/ts-utils/bls';
 
 const exec = promisify(exec_);
 
@@ -53,7 +54,7 @@ describe('Light Client Verifier In Cosmos', () => {
   test('Check "Verifier" after initialization', async () => {
     console.info("Running 'Check Verifier after initialization' test");
     const expectedHeaderHash =
-      '76,231,107,116,120,203,14,238,74,50,199,242,91,181,97,202,29,15,68,77,23,22,200,246,242,96,144,14,244,95,55,210';
+      '0x4ce76b7478cb0eee4a32c7f25bb561ca1d0f444d1716c8f6f260900ef45f37d2';
     const uploadReceipt = await uploadVerifierContract('wasm', cosmos);
     console.info(
       'Upload of `Verifier in Cosmos` succeeded. Receipt:',
@@ -121,11 +122,20 @@ describe('Light Client Verifier In Cosmos', () => {
       `Parsing expected new header \n  ╰─➤ ${getExpectedHeaderCommand}`,
     );
     const expectedHeaderExec = exec(getExpectedHeaderCommand);
-    const expectedHeader = (await expectedHeaderExec).stdout
-      .toString()
-      .replace(/\s/g, '')
-      .replace('[', '')
-      .replace(']', '');
+    const expectedHeader =
+      '0x' +
+      bytesToHex(
+        new Uint8Array(
+          (await expectedHeaderExec).stdout
+            .toString()
+            .replace(/\s/g, '')
+            .replace('[', '')
+            .replace(']', '')
+            .split(',')
+            .map(Number),
+        ),
+      );
+
     console.info(`Parsed expected new header: \n  ╰─➤ [${expectedHeader}]`);
     // await sleep(10000);
     // Query contract after one update
@@ -165,11 +175,19 @@ describe('Light Client Verifier In Cosmos', () => {
       `Parsing expected latest optimistic header hash \n   ${getExpectedHeaderHashCommand}`,
     );
     const expectedHeaderHahsExec = exec(getExpectedHeaderHashCommand);
-    const expectedHeaderHash = (await expectedHeaderHahsExec).stdout
-      .toString()
-      .replace(/\s/g, '')
-      .replace('[', '')
-      .replace(']', '');
+    const expectedHeaderHash =
+      '0x' +
+      bytesToHex(
+        new Uint8Array(
+          (await expectedHeaderHahsExec).stdout
+            .toString()
+            .replace(/\s/g, '')
+            .replace('[', '')
+            .replace(']', '')
+            .split(',')
+            .map(Number),
+        ),
+      );
     console.info(
       `Parsed expected latest optimistic header hash: \n  ╰─➤ [${expectedHeaderHash}]`,
     );
