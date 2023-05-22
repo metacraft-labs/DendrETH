@@ -6,13 +6,13 @@ set -o errexit -o nounset -o pipefail
 DENDRETH_DIR=$(git rev-parse --show-toplevel)
 DENDRETH_ACCOUNT_IN_EOS="dendreth"
 CONTRACTS_DIR=${DENDRETH_DIR}/contracts/eos
-VERFIER_CONTRACT_DIR=${CONTRACTS_DIR}/verifier
+VERFIER_CONTRACT_DIR=${CONTRACTS_DIR}/verifier-native
 VERFIER_CONTRACT_BUILD_DIR=${VERFIER_CONTRACT_DIR}/build
 
-CPP_FILE=${VERFIER_CONTRACT_DIR}/src/cpp/nativeverifier/nativeverifier.cpp
-INCLUDE_FOLDER=${VERFIER_CONTRACT_DIR}/src/cpp/nativeverifier/include
-WASM_CONTRACT=${VERFIER_CONTRACT_BUILD_DIR}/nativeverifier.wasm
-ABI_FILE=${VERFIER_CONTRACT_BUILD_DIR}/nativeverifier.abi
+CPP_FILE=${VERFIER_CONTRACT_DIR}/src/cpp/verifier-native.cpp
+INCLUDE_FOLDER=${VERFIER_CONTRACT_DIR}/src/cpp/include
+WASM_CONTRACT=${VERFIER_CONTRACT_BUILD_DIR}/verifier-native.wasm
+ABI_FILE=${VERFIER_CONTRACT_BUILD_DIR}/verifier-native.abi
 
 
 function run_command {

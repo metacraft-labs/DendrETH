@@ -10,10 +10,10 @@ static constexpr uint32_t PROOF_LENGTH = 384;
 
 static const char hex_chars[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
-class [[eosio::contract("nativeverifier")]] nativeverifier : public eosio::contract
+class [[eosio::contract("verifier-native")]] verifiernative : public eosio::contract
 {
 public:
-    nativeverifier(name receiver, name code, datastream<const char *> ds)
+    verifiernative(name receiver, name code, datastream<const char *> ds)
         : contract(receiver, code, ds) {}
 
     // TODO: Make sure only we can instantiate
@@ -22,15 +22,10 @@ public:
         const std::vector<uint8_t> &current_header_hash,
         const uint64_t &current_slot, const std::vector<uint8_t> &domain)
     {
-        print("wtf");
-
         data_index verifier_data(get_self(), get_first_receiver().value);
         auto iterator = verifier_data.find(key.value);
         check(iterator == verifier_data.end(),
               "DendrETH verifier already instantiated");
-
-
-        print("hmmmm", "Ok");
 
         if (iterator == verifier_data.end())
         {
@@ -62,9 +57,6 @@ public:
                 row.new_execution_state_roots = new_execution_state_roots;
                 row.current_slot = current_slots;
                 row.domain = domain;
-
-                print("very strange");
-
                 });
         }
     }
@@ -88,19 +80,8 @@ public:
         // Prepare data for the nim verifier function
         char *concateneted = new char[192];
 
-        // std::array<uint8_t, VERIFICATION_KEY_LENGTH> _vk;
-        // std::array<uint8_t, PROOF_LENGTH> _prf;
-        // std::array<uint8_t, ROOT_LENGTH> _current_header_root;
-        // std::array<uint8_t, ROOT_LENGTH> _new_optimistic_header_root;
-        // std::array<uint8_t, ROOT_LENGTH> _new_finalized_header_root;
-        // std::array<uint8_t, ROOT_LENGTH> _new_execution_state_root;
-        // std::array<uint8_t, 8> _new_slot;
-        // std::array<uint8_t, ROOT_LENGTH> _domain;
-
         verifier_data.modify(iterator, key, [&](auto &row)
                              {
-    //   std::copy(row.vk.begin(), row.vk.end(), _vk.begin());
-    //   std::copy(proof.begin(), proof.end(), _prf.begin());
       std::copy(row.new_optimistic_header_roots[row.current_index].begin(),
                 row.new_optimistic_header_roots[row.current_index].end(),
                 concateneted);
@@ -129,8 +110,6 @@ public:
         concatenetedStr += hex_chars[ ( byte & 0x0F ) >> 0 ];
       }
 
-      print("concatened", concatenetedStr);
-
       auto commitment = sha256(concateneted, 192);
       auto commitmentArr = commitment.extract_as_byte_array();
 
@@ -154,9 +133,6 @@ public:
 
       rapid_uint256_basic::tostring256(&first, 10, (char*)(&firstStr[0]), 100);
 
-      print("first, ", firstStr);
-      print("second, ", (uint8_t)(commitmentArr[31] & ((1 << 3) - 1)));
-
       rapid_uint256_basic::tostring256(&first, 16, (char*)(&firstStr[0]), 100);
 
       std::string secondHex;
@@ -172,9 +148,6 @@ public:
       if(firstHex.length() < 64) {
         firstHex.insert(firstHex.begin(), 64 - firstHex.length(), '0');
       }
-
-      print("firstHex", firstHex);
-      print("secondHex", secondHex);
 
       bool result = groth16::verify_groth16_proof({firstHex, secondHex}, proof_a, proof_b, proof_c)==1;
 
@@ -192,49 +165,6 @@ public:
       row.new_execution_state_roots[row.current_index] =
           new_execution_state_root;
       row.current_slot[row.current_index] = new_slot; });
-    }
-    void printhelper(const std::array<uint8_t, 32> &_current_header_root)
-    {
-        eosio::print("[");
-        for (int i = 0; i < 32; i++)
-        {
-            eosio::print(_current_header_root[i]);
-            if (i != 31)
-            {
-                eosio::print(",");
-            }
-        }
-        eosio::print("]");
-    }
-
-    [[eosio::action]] void printheader(name key)
-    {
-        data_index verifier_data(get_self(), get_first_receiver().value);
-        auto &result = verifier_data.get(key.value);
-        verifier_data.modify(result, key, [&](auto &row)
-                             {
-      std::array<uint8_t, 32> _current_header_root;
-
-      std::copy(row.new_optimistic_header_roots[row.current_index].begin(),
-                row.new_optimistic_header_roots[row.current_index].end(),
-                _current_header_root.begin());
-      printhelper(_current_header_root); });
-    }
-
-    [[eosio::action]] void printheaders(name key)
-    {
-        data_index verifier_data(get_self(), get_first_receiver().value);
-        auto &result = verifier_data.get(key.value);
-        verifier_data.modify(result, key, [&](auto &row)
-                             {
-      std::array<uint8_t, 32> _current_header_root;
-
-      for (int pos = 0; pos < 32; pos++) {
-        std::copy(row.new_optimistic_header_roots[pos].begin(),
-                  row.new_optimistic_header_roots[pos].end(),
-                  _current_header_root.begin());
-        printhelper(_current_header_root);
-      } });
     }
 
 private:

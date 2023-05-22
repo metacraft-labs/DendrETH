@@ -42,8 +42,8 @@ describe('Verifier in EOS', () => {
     pathToKey = pathToVerifyUtils + `vk.json`;
     stopLocalNodeCommand = `bash ${rootDir}/contracts/eos/scripts/run_eos_testnet.sh stop`;
     const startLocalNodeCommand = `bash ${rootDir}/contracts/eos/scripts/run_eos_testnet.sh`;
-    const buildAndDeployContractCommand = `bash ${rootDir}/contracts/eos/verifier/scripts/nativeverifier/build.sh \
-    && bash ${rootDir}/contracts/eos/verifier/scripts/nativeverifier/deploy.sh ${eosAccName}`;
+    const buildAndDeployContractCommand = `bash ${rootDir}/contracts/eos/verifier-native/scripts/build.sh \
+    && bash ${rootDir}/contracts/eos/verifier-native/scripts/deploy.sh ${eosAccName}`;
     await exec(stopLocalNodeCommand);
     await exec(startLocalNodeCommand);
     await exec(buildAndDeployContractCommand);
@@ -190,11 +190,6 @@ describe('Verifier in EOS', () => {
 
     const queryResultAfterUpdates = await eosContract.optimisticHeaderRoot();
     console.info('Result of query:', queryResultAfterUpdates);
-
-    const queryCommandall = `cleos push action dendreth printheaders '{\"key\":\"${verifierTableKey}\"}' -p dendreth@active`;
-    const queryResall = await exec(queryCommandall);
-    let resultAll = getDataFromPrintHeaderResult((await queryResall).stdout);
-    console.info('Result of full query:', resultAll);
 
     expect(queryResultAfterUpdates).toEqual(expectedHeader);
     await exec(stopLocalNodeCommand);
