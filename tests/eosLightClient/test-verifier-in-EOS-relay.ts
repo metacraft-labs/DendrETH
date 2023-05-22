@@ -9,6 +9,7 @@ import {
 import { getRootDir, sleep } from '../../libs/typescript/ts-utils/common-utils';
 import { EOSContract } from '../../relay/implementations/eos-contract';
 import { getDataFromPrintHeaderResult } from '../../libs/typescript/cosmos-utils/cosmos-utils';
+import { bytesToHex } from '../../libs/typescript/ts-utils/bls';
 
 const exec = promisify(exec_);
 
@@ -41,13 +42,14 @@ describe('Verifier in EOS', () => {
     pathToKey = pathToVerifyUtils + `vk.json`;
     stopLocalNodeCommand = `bash ${rootDir}/contracts/eos/scripts/run_eos_testnet.sh stop`;
     const startLocalNodeCommand = `bash ${rootDir}/contracts/eos/scripts/run_eos_testnet.sh`;
-    const buildAndDeployContractCommand = `bash ${rootDir}/contracts/eos/verifier/scripts/build.sh \
-    && bash ${rootDir}/contracts/eos/verifier/scripts/deploy.sh`;
+    const buildAndDeployContractCommand = `bash ${rootDir}/contracts/eos/verifier/scripts/nativeverifier/build.sh \
+    && bash ${rootDir}/contracts/eos/verifier/scripts/nativeverifier/deploy.sh ${eosAccName}`;
     await exec(stopLocalNodeCommand);
     await exec(startLocalNodeCommand);
     await exec(buildAndDeployContractCommand);
     console.info('Running testnet');
   }, 300000);
+
   test('Check "Verifier" after initialization', async () => {
     console.info('Verifier initialization');
 
@@ -74,7 +76,14 @@ describe('Verifier in EOS', () => {
     console.info('After init query:', queryResultAfterInitialization);
 
     expect(queryResultAfterInitialization).toEqual(
-      '[76,231,107,116,120,203,14,238,74,50,199,242,91,181,97,202,29,15,68,77,23,22,200,246,242,96,144,14,244,95,55,210]',
+      '0x' +
+        bytesToHex(
+          new Uint8Array([
+            76, 231, 107, 116, 120, 203, 14, 238, 74, 50, 199, 242, 91, 181, 97,
+            202, 29, 15, 68, 77, 23, 22, 200, 246, 242, 96, 144, 14, 244, 95,
+            55, 210,
+          ]),
+        ),
     );
   }, 30000);
 
@@ -106,9 +115,20 @@ describe('Verifier in EOS', () => {
       `Parsing expected new header \n  ╰─➤ ${getExpectedHeaderCommand}`,
     );
     const expectedHeaderExec = exec(getExpectedHeaderCommand);
-    const expectedHeader = (await expectedHeaderExec).stdout
-      .toString()
-      .replace(/\s/g, '');
+    const expectedHeader =
+      '0x' +
+      bytesToHex(
+        new Uint8Array(
+          (await expectedHeaderExec).stdout
+            .toString()
+            .replace(/\s/g, '')
+            .replace('[', '')
+            .replace(']', '')
+            .split(',')
+            .map(Number),
+        ),
+      );
+
     console.info(`Parsed expected new header: \n  ╰─➤ [${expectedHeader}]`);
     await sleep(10000);
 
@@ -151,9 +171,20 @@ describe('Verifier in EOS', () => {
       `Parsing expected new header \n  ╰─➤ ${getExpectedHeaderCommand}`,
     );
     const expectedHeaderExec = exec(getExpectedHeaderCommand);
-    const expectedHeader = (await expectedHeaderExec).stdout
-      .toString()
-      .replace(/\s/g, '');
+    const expectedHeader =
+      '0x' +
+      bytesToHex(
+        new Uint8Array(
+          (await expectedHeaderExec).stdout
+            .toString()
+            .replace(/\s/g, '')
+            .replace('[', '')
+            .replace(']', '')
+            .split(',')
+            .map(Number),
+        ),
+      );
+
     console.info(`Parsed expected new header: \n  ╰─➤ [${expectedHeader}]`);
     await sleep(10000);
 

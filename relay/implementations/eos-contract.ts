@@ -3,6 +3,7 @@ import { promisify } from 'node:util';
 import { exec as exec_ } from 'node:child_process';
 import { compileVerifierParseDataTool } from '../../tests/helpers/helpers';
 import { getDataFromPrintHeaderResult } from '../../libs/typescript/cosmos-utils/cosmos-utils';
+import { formatHex } from '../../libs/typescript/ts-utils/bls';
 
 const exec = promisify(exec_);
 
@@ -19,14 +20,17 @@ export class EOSContract implements ISmartContract {
     let queryCommand: string;
     let verifierTableKey = this.contractAddress;
     if (this.rpcEndpoint == 'local') {
-      queryCommand = `cleos push action ${this.contractAddress} printheader '{\"key\":\"${verifierTableKey}\"}' -p ${this.contractAddress}@active`;
+      queryCommand = `cleos get table ${this.contractAddress} ${verifierTableKey} verifierdata`;
     } else {
-      queryCommand = `cleos --url ${this.rpcEndpoint} push action ${this.contractAddress} printheader '{\"key\":\"${verifierTableKey}\"}' -p ${this.contractAddress}@active`;
+      queryCommand = `cleos --url ${this.rpcEndpoint} get table ${this.contractAddress} ${verifierTableKey} verifierdata`;
     }
-    const queryRes = await exec(queryCommand);
-    let lastHeader = getDataFromPrintHeaderResult((await queryRes).stdout);
 
-    return lastHeader;
+    const queryRes = JSON.parse((await exec(queryCommand)).stdout);
+    const currentIndex = queryRes.rows[0].current_index;
+    let lastHeader = queryRes.rows[0].new_optimistic_header_roots[currentIndex];
+    console.log('lastHeader', lastHeader);
+
+    return '0x' + lastHeader;
   }
 
   async postUpdateOnChain(update: {
@@ -38,36 +42,36 @@ export class EOSContract implements ISmartContract {
     b: string[][];
     c: string[];
   }): Promise<any> {
-    const parseDataTool = await compileVerifierParseDataTool('eos', 'verifier');
+    const updateData = JSON.stringify({
+      key: this.contractAddress,
+      proof_a: update.a.slice(0, 2).map(this.toHex),
+      proof_b: [
+        this.toHex(update.b[0][1]),
+        this.toHex(update.b[0][0]),
+        this.toHex(update.b[1][1]),
+        this.toHex(update.b[1][0]),
+      ],
+      proof_c: update.c.slice(0, 2).map(this.toHex),
+      new_optimistic_header_root: formatHex(update.attestedHeaderRoot),
+      new_finalized_header_root: formatHex(update.finalizedHeaderRoot),
+      new_execution_state_root: formatHex(update.finalizedExecutionStateRoot),
+      new_slot: update.attestedHeaderSlot.toString(),
+    });
 
-    const flattedB = update.b.flat();
-    const parseUpdateDataCommand = `${parseDataTool} updateDataForEOSContractClass \
-  --attested_header_rootEOS=${
-    update.attestedHeaderRoot
-  } --finalized_header_rootEOS=${
-      update.finalizedHeaderRoot
-    } --finalized_execution_state_rootEOS= ${
-      update.finalizedExecutionStateRoot
-    } \
-  --aEOS=${update.a[0]} --aEOS=${update.a[1]} --aEOS=${update.a[2]} \
-  --bEOS=${flattedB[0]} --bEOS=${flattedB[1]} --bEOS=${flattedB[2]} --bEOS=${
-      flattedB[3]
-    } --bEOS=${flattedB[4]} --bEOS=${flattedB[5]} \
-  --cEOS=${update.c[0]} --cEOS=${update.c[1]} --cEOS=${
-      update.c[2]
-    } --attested_header_slotEOS=${update.attestedHeaderSlot.toString()}`;
-    const updateDataExec = exec(parseUpdateDataCommand);
-    const updateData = (await updateDataExec).stdout.replace(/\s/g, '');
     console.info('updating with data:', updateData);
     let updateCommand: string;
     if (this.rpcEndpoint == 'local') {
-      updateCommand = `cleos push action ${this.contractAddress} update ${updateData} -p ${this.contractAddress}@active`;
+      updateCommand = `cleos push action ${this.contractAddress} update '${updateData}' -p ${this.contractAddress}@active`;
     } else {
-      updateCommand = `cleos --url ${this.rpcEndpoint} push action ${this.contractAddress} update ${updateData} -p ${this.contractAddress}@active`;
+      updateCommand = `cleos --url ${this.rpcEndpoint} push action ${this.contractAddress} update '${updateData}' -p ${this.contractAddress}@active`;
     }
     console.info('updateCommand:', updateCommand);
     let result = await exec(updateCommand);
 
     return result;
+  }
+
+  private toHex(number: string) {
+    return BigInt(number).toString(16).padStart(64, '0');
   }
 }
