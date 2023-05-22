@@ -10,6 +10,7 @@ EOS_WALLET_DATA=${EOS_NODE_DATA_DIR_DIR}/.wallet
 EOS_KEYS_DATA=${EOS_NODE_DATA_DIR_DIR}/.keys
 EOS_LOGS_DIR=${EOS_NODE_DATA_DIR_DIR}/logs
 EOS_GENESIS=${EOS_NODE_DATA_DIR_DIR}/genesis.json
+EOS_SYSTEM_SMART_CONTRACT_DIR=${DENDRETH_DIR}/vendor/eos/contracts/contracts
 
 WALLET_NAME="DendrETH-wallet"
 
@@ -76,15 +77,17 @@ start_keosd() {
 
 start_nodeos() {
   nodeos \
-    -e -p eosio \
-    --data-dir ${EOS_NODE_DATA_DIR_DIR} \
-    --config-dir ${EOS_NODE_DATA_DIR_DIR} \
-    --genesis-json ${EOS_GENESIS} \
     --plugin eosio::producer_plugin \
+    --producer-name eosio \
     --plugin eosio::chain_plugin \
     --plugin eosio::http_plugin \
     --plugin eosio::state_history_plugin \
     --plugin eosio::chain_api_plugin \
+    --plugin eosio::producer_api_plugin \
+    -e -p eosio \
+    --data-dir ${EOS_NODE_DATA_DIR_DIR} \
+    --config-dir ${EOS_NODE_DATA_DIR_DIR} \
+    --genesis-json ${EOS_GENESIS} \
     --max-transaction-time 3000000 \
     --read-only-read-window-time-us 3500000000 \
     --disable-subjective-billing=true \
@@ -97,6 +100,28 @@ start_nodeos() {
     --trace-history \
     --chain-state-history \
     --replay-blockchain > ${EOS_LOGS_DIR}/nodeos.log 2>&1 &
+}
+
+enable_special_feature() {
+    curl --request POST \
+    --url http://127.0.0.1:8888/v1/producer/schedule_protocol_feature_activations \
+    -d '{"protocol_features_to_activate": ["0ec7e080177b2c02b278d5088611686b49d739925a92d9bfcacd7fc6b74053bd"]}'
+
+    sleep 5
+}
+
+enable_crypto_primitives() {
+    mkdir -p ${EOS_SYSTEM_SMART_CONTRACT_DIR}/build
+    pushd ${EOS_SYSTEM_SMART_CONTRACT_DIR}/build
+    cmake ..
+    make
+    popd
+
+    curl -X POST http://127.0.0.1:8888/v1/chain/get_activated_protocol_features -d '{}' | jq
+
+    cleos set contract eosio ${EOS_SYSTEM_SMART_CONTRACT_DIR}/eosio.boot/bin eosio.boot.wasm eosio.boot.abi
+    echo "here"
+    cleos push action eosio activate '["6bcb40a24e49c26d0a60513b6aeb8551d264e4717f306b81a37a5afb3b47cedc"]' -p eosio
 }
 
 # ------------------------------------------------------------------------------
@@ -169,3 +194,9 @@ cleos get account bob > /dev/null 2>&1
 # Set account permission to allow deferred transactions
 run_command "Deferred transaction support" \
   cleos set account permission --add-code ${DENDRETH_ACCOUNT_IN_EOS} active
+
+run_command "Enable special feature PREACTIVATE_FEATURE" \
+  enable_special_feature
+
+run_command "Enable feature CRYPTO_PRIMITIVES" \
+  enable_crypto_primitives

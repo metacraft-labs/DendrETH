@@ -40,3 +40,6 @@
 [submodule "vendor/nim-faststreams"]
 	path = vendor/nim-faststreams
 	url = https://github.com/status-im/nim-faststreams.git
+[submodule "vendor/eos"]
+	path = vendor/eos
+	url = https://github.com/EOSIO/eos.git

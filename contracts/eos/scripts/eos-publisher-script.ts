@@ -13,9 +13,9 @@ async function publishTask() {
   };
 
   checkConfig(config);
-  const rpcEndpoint = process.argv[3];
-  const contractAddress = process.argv[4];
-  const followNetwork = process.argv[5];
+  const rpcEndpoint = process.argv[2];
+  const contractAddress = process.argv[3];
+  const followNetwork = process.argv[4];
 
   const currentNetwork = networkConfig[followNetwork] as Config;
 
