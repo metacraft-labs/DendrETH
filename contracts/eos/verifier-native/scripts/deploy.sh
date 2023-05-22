@@ -10,11 +10,11 @@ DENDRETH_DIR=$(git rev-parse --show-toplevel)
 DENDRETH_ACCOUNT_IN_EOS="$1"
 RPC_ENDPOINT=${2:-}
 CONTRACTS_DIR=${DENDRETH_DIR}/contracts/eos
-VERFIER_CONTRACT_DIR=${CONTRACTS_DIR}/verifier
+VERFIER_CONTRACT_DIR=${CONTRACTS_DIR}/verifier-native
 VERFIER_CONTRACT_BUILD_DIR=${VERFIER_CONTRACT_DIR}/build
 
-WASM_CONTRACT=${VERFIER_CONTRACT_BUILD_DIR}/nativeverifier.wasm
-ABI_FILE=${VERFIER_CONTRACT_BUILD_DIR}/nativeverifier.abi
+WASM_CONTRACT=${VERFIER_CONTRACT_BUILD_DIR}/verifier-native.wasm
+ABI_FILE=${VERFIER_CONTRACT_BUILD_DIR}/verifier-native.abi
 
 function run_command {
   echo -e "┌───  \033[1mstart \033[34m$1\033[0m ────╌╌╌"
