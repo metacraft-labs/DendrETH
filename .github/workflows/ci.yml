@@ -59,7 +59,10 @@ jobs:
         run: nix develop -c yarn test './tests/cosmosLightClient/test-verifier-in-cosmos.ts'
 
       - name: Run Solidity verifier tests
-        run: nix develop -c make test-groth16-verifier
+        run: nix develop -c make evm-simulation
+
+      - name: Run one shot syncing simulation
+        run: nix develop -c make one-shot-syncing-simulation
 
       - name: Run circom tests
         run: nix develop -c make test-circom-circuits
