@@ -25,6 +25,9 @@ import { readFileSync } from 'fs';
       console.log(`Verified recursive proof for period: ${i}`);
     } else {
       console.log(`Invalid proof`, '\x1b[31m');
+      process.exit(1);
     }
   }
+
+  process.exit(0);
 })();
