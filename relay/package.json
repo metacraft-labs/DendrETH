@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "ts-node": "^10.9.1",
+    "web3": "^1.10.0",
     "yargs": "^17.7.1"
   }
 }

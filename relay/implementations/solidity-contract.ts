@@ -1,13 +1,34 @@
-import { Contract, ethers } from 'ethers';
+import { BigNumber, Contract, ethers } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import { ISmartContract } from '../abstraction/smart-contract-abstraction';
 import { groth16 } from 'snarkjs';
+import Web3 from 'web3';
+import { FeeHistoryResult } from 'web3-eth';
+
+type Block = {
+  number: number | string;
+  baseFeePerGas: number;
+  gasUsedRatio: number;
+  priorityFeePerGas: number[];
+};
+
+type TransactionSpeed = 'slow' | 'avg' | 'fast';
 
 export class SolidityContract implements ISmartContract {
-  private lightClientContract: Contract;
+  private static historicalBlocks = 20;
 
-  constructor(lightClientContract: Contract) {
+  private lightClientContract: Contract;
+  private web3: Web3;
+  private transactionSpeed: TransactionSpeed;
+
+  constructor(
+    lightClientContract: Contract,
+    rpcEndpoint: string,
+    transactionSpeed: TransactionSpeed = 'fast',
+  ) {
     this.lightClientContract = lightClientContract;
+    this.web3 = new Web3(rpcEndpoint);
+    this.transactionSpeed = transactionSpeed;
   }
 
   optimisticHeaderRoot(): Promise<string> {
@@ -44,15 +65,111 @@ export class SolidityContract implements ISmartContract {
     ];
     const c = [argv[6], argv[7]];
 
-    const transaction = await this.lightClientContract.light_client_update({
-      ...update,
-      a,
-      b,
-      c,
+    const transactionCount =
+      await this.lightClientContract.signer.getTransactionCount('pending');
+
+    const formatedBlocks = SolidityContract.formatFeeHistory(
+      await this.web3.eth.getFeeHistory(
+        SolidityContract.historicalBlocks,
+        'pending',
+        [1, 50, 99],
+      ),
+      false,
+    );
+
+    const slow = SolidityContract.avg(
+      formatedBlocks.map(b => b.priorityFeePerGas[0]),
+    );
+
+    const average = SolidityContract.avg(
+      formatedBlocks.map(b => b.priorityFeePerGas[1]),
+    );
+
+    const fast = SolidityContract.avg(
+      formatedBlocks.map(b => b.priorityFeePerGas[2]),
+    );
+
+    const getPriorityFeePerGas = () => {
+      switch (this.transactionSpeed) {
+        case 'slow':
+          return slow;
+        case 'avg':
+          return average;
+        case 'fast':
+          return fast;
+      }
+    };
+
+    const baseFeePerGas = (await this.web3.eth.getBlock('pending'))
+      .baseFeePerGas!;
+
+    console.log({
+      nonce: transactionCount,
+      maxFeePerGas: BigNumber.from(getPriorityFeePerGas() + baseFeePerGas),
+      maxPriorityFeePerGas: BigNumber.from(getPriorityFeePerGas()),
     });
+
+    const estimateGas =
+      await this.lightClientContract.estimateGas.light_client_update({
+        ...update,
+        a,
+        b,
+        c,
+      });
+
+    const transaction = await this.lightClientContract.light_client_update(
+      {
+        ...update,
+        a,
+        b,
+        c,
+      },
+      {
+        nonce: transactionCount,
+        maxFeePerGas: BigNumber.from(getPriorityFeePerGas() + baseFeePerGas),
+        maxPriorityFeePerGas: BigNumber.from(getPriorityFeePerGas()),
+        gasLimit: estimateGas,
+      },
+    );
 
     console.log(transaction);
 
     await transaction.wait();
+  }
+
+  private static formatFeeHistory(
+    result: FeeHistoryResult,
+    includePending: boolean,
+  ): Block[] {
+    let blockNum = Number(result.oldestBlock);
+
+    const blocks: Block[] = [];
+
+    for (let i = 0; i < SolidityContract.historicalBlocks; i++) {
+      blocks.push({
+        number: blockNum + i,
+        baseFeePerGas: Number(result.baseFeePerGas[i]),
+        gasUsedRatio: Number(result.gasUsedRatio[i]),
+        priorityFeePerGas: result.reward[i].map(x => Number(x)),
+      });
+    }
+
+    if (includePending) {
+      blocks.push({
+        number: 'pending',
+        baseFeePerGas: Number(
+          result.baseFeePerGas[SolidityContract.historicalBlocks],
+        ),
+        gasUsedRatio: NaN,
+        priorityFeePerGas: [],
+      });
+    }
+
+    return blocks;
+  }
+
+  private static avg(arr) {
+    const sum = arr.reduce((a, v) => a + v);
+    return Math.round(sum / arr.length);
   }
 }

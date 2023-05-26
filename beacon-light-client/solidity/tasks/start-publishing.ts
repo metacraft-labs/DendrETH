@@ -6,7 +6,6 @@ import { publishProofs } from '../../../relay/on_chain_publisher';
 import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
 import * as networkConfig from '../../../relay/constants/network_config.json';
 import { Config } from '../../../relay/constants/constants';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 task('start-publishing', 'Run relayer')
   .addParam('lightclient', 'The address of the BeaconLightClient contract')
@@ -18,7 +17,14 @@ task('start-publishing', 'Run relayer')
     undefined,
     true,
   )
-  .setAction(async (args, { ethers }) => {
+  .addParam(
+    'transactionspeed',
+    'The speed you want the transactions to be included in a block',
+    'fast',
+    undefined,
+    true,
+  )
+  .setAction(async (args, { ethers, network }) => {
     const config = {
       REDIS_HOST: process.env.REDIS_HOST,
       REDIS_PORT: Number(process.env.REDIS_PORT),
@@ -52,12 +58,23 @@ task('start-publishing', 'Run relayer')
       publisher,
     );
 
+    if (
+      args.transactionspeed &&
+      !['slow', 'avg', 'fast'].includes(args.transactionspeed)
+    ) {
+      throw new Error('Invalid transaction speed');
+    }
+
     const redis = new Redis(config.REDIS_HOST!, config.REDIS_PORT);
     const beaconApi = new BeaconApi(currentConfig.BEACON_REST_API);
-    const contract = new SolidityContract(lightClientContract);
+    const contract = new SolidityContract(
+      lightClientContract,
+      (network.config as any).url,
+      args.transactionspeed,
+    );
 
     publishProofs(redis, beaconApi, contract);
 
-    // never resolving promise to block the task lets see if it works
+    // never resolving promise to block the task
     return new Promise(() => {});
   });
