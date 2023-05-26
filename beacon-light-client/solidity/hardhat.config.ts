@@ -73,7 +73,7 @@ export default {
       accounts: [conf.USER_PRIVATE_KEY],
     },
     baseGoerli: {
-      url: 'https://base-goerli.rpc.thirdweb.com',
+      url: 'https://base-goerli.public.blastapi.io',
       accounts: [conf.USER_PRIVATE_KEY],
     },
     arbitrumGoerli: {
@@ -82,7 +82,7 @@ export default {
       contractAddress: '0xB94868ba0903883bD2dE3311Fc377f3c50D602eA',
     },
     mumbai: {
-      url: `https://polygon-mumbai.g.alchemy.com/v2/${conf.ALCHEMY_API_KEY}`,
+      url: `https://endpoints.omniatech.io/v1/matic/mumbai/public`,
       accounts: [conf.USER_PRIVATE_KEY],
     },
     avalanche: {
