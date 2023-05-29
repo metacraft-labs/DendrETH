@@ -32,6 +32,11 @@ Former contributors include:
 
 The team is provided with mentorship consisting of frequent planning meetings, code reviews and direct implementation assistance from Zahary Karadjov, [Petar Kirov](https://github.com/PetarKirov) (former CTO of the [Jarvis Network](https://jarvis.network/), a company specializing in DeFi solutions for multiple chains) and [Rafael Belchior](https://github.com/rafaelapb), member of the Blockdaemon team, contributor and mentor at Hyperledger Cactus, and PhD student at [Técnico Lisboa](http://tecnico.ulisboa.pt/) and [INESC-ID](https://www.inesc-id.pt/), focusing on blockchain interoperability research.
 
+### Suggested citation
+Please use the following BibTex entry to cite this work while a paper is not available:
+
+@report{dendreth2023, title = {DendrETH: Ethereum SNARK-Based Beacon Light Client for Multiple Blockchain Ecosystems}, url = {https://github.com/metacraft-labs/DendrETH}, number = {0}, institution = {Metacraft Labs and Blockdaemon}, author = {Ivanichkov, Emil and Dimov, Dimo and Armenchev, Simeon and Miladinov, Yordan and Kirkov, Kristin and Kirov, Petar and Karadjov, Zahary and Belchior, Rafael}, date = {2023}, }
+
 ## Timeline
 
 ### May 2022
