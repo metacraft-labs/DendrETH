@@ -15,108 +15,85 @@
   buildNimWasmProgram = callPackage ./build-nim-wasm-module.nix {inherit nim-wasm;};
   buildNimProgram = callPackage ./build-nim-module.nix {inherit (pkgs) nim;};
 
-  _nimDeps = [
-    "${
-      # bncurve =
+  _nimDeps = {
+    bncurve =
       fetchFromGitHub
       {
         owner = "metacraft-labs";
         repo = "nim-bncurve";
         rev = "8136ebdc515df4a3f269eba5f05c625ae742df83";
         hash = "sha256-SZQ7XBy5Ugh/l/XyvOB5wJWWaOpKD+xscDjjh9c/59k=";
-      }
-    }"
-    "${
-      # nimcrypto =
+      };
+    nimcrypto =
       fetchFromGitHub
       {
         owner = "cheatfate";
         repo = "nimcrypto";
         rev = "24e006df85927f64916e60511620583b11403178";
         hash = "sha256-KHCMS3ElOS0V3cBmsAuRZGivz8bq5WLUKZOHpg7/Kgg=";
-      }
-    }"
-    "${
-      # confutils =
+      };
+    confutils =
       fetchFromGitHub
       {
         owner = "status-im";
         repo = "nim-confutils";
         rev = "a26bfab7e5fb2f9fc018e5d778c169bc05772ee6";
         hash = "sha256-Shf+0HMlWvbB7mqscCR60Cnsd04cUTxo3tSyXcQlOr0=";
-      }
-    }"
-    "${
-      # stew =
+      };
+    stew =
       fetchFromGitHub
       {
         owner = "status-im";
         repo = "nim-stew";
         rev = "06621a2fcddf01b0231aaa6d18531b0a746b3140";
         hash = "sha256-I/Vka8rVjAfQ6le/d7hNebm0J9+oUCtMVBQSkeRtC7Y=";
-      }
-    }"
-    "${
-      # serialization =
+      };
+    serialization =
       fetchFromGitHub
       {
         owner = "status-im";
         repo = "nim-serialization";
         rev = "493d18b8292fc03aa4f835fd825dea1183f97466";
         hash = "sha256-2nwMg2x1uDl3f4VL66w69EbBOhLdbOStOnML6rgmyoc=";
-      }
-    }"
-    "${
-      # faststreams =
+      };
+    faststreams =
       fetchFromGitHub
       {
         owner = "status-im";
         repo = "nim-faststreams";
         rev = "c80701f7d23815fab0b6362569f3195957e57856";
         hash = "sha256-HWcPJWivqZOrcoyvSlsnGpDlzhCdJitEPLsWAExwLtA=";
-      }
-    }"
-    "${
-      # ssz_serialization =
+      };
+    ssz_serialization =
       fetchFromGitHub
       {
         owner = "status-im";
         repo = "nim-ssz-serialization";
         rev = "66097b911158d459e5114fabd0998f0b2870f853";
         hash = "sha256-sIey3Vd7kgP4idwAJP4/Q3/VRnvdt43X4GTQzDrJHFg=";
-      }
-    }"
-    "${
-      # stint =
-      fetchFromGitHub {
-        owner = "status-im";
-        repo = "nim-stint";
-        rev = "27a7608f33a485fb837c9759ddb4a7c874eb7ad2";
-        hash = "sha256-f3b64XBtAyzYiO1YVuzXkbWDOfG8KrPUuCFbCkvPM2c=";
-      }
-    }"
-    "${
-      # blscurve =
-      fetchFromGitHub {
-        owner = "status-im";
-        repo = "nim-blscurve";
-        rev = "d93da7af30a9a2160f68d84c5210a12c4d16df00";
-        hash = "sha256-dO2g+ZZ9HS1Fm1ejzwOEQFoFFTJgEjHABuMQyWwxTOI=";
-        fetchSubmodules = true;
-      }
-    }"
-    "${
-      # json-serialization =
-      fetchFromGitHub {
-        owner = "status-im";
-        repo = "nim-json-serialization";
-        rev = "b06b8ca4b177a7d0f74ac602350316d95c2fddd5";
-        hash = "sha256-8o3GHjCQfBSkfTxj3NDikqf/vehPvHYRFIlwf4Mpdhg=";
-      }
-    }"
-  ];
+      };
+    stint = fetchFromGitHub {
+      owner = "status-im";
+      repo = "nim-stint";
+      rev = "27a7608f33a485fb837c9759ddb4a7c874eb7ad2";
+      hash = "sha256-f3b64XBtAyzYiO1YVuzXkbWDOfG8KrPUuCFbCkvPM2c=";
+    };
+    blscurve = fetchFromGitHub {
+      owner = "status-im";
+      repo = "nim-blscurve";
+      rev = "d93da7af30a9a2160f68d84c5210a12c4d16df00";
+      hash = "sha256-dO2g+ZZ9HS1Fm1ejzwOEQFoFFTJgEjHABuMQyWwxTOI=";
+      fetchSubmodules = true;
+    };
+    json-serialization = fetchFromGitHub {
+      owner = "status-im";
+      repo = "nim-json-serialization";
+      rev = "b06b8ca4b177a7d0f74ac602350316d95c2fddd5";
+      hash = "sha256-8o3GHjCQfBSkfTxj3NDikqf/vehPvHYRFIlwf4Mpdhg=";
+    };
+  };
 
-  nimDeps = toString (map (x: "--path:${x}") _nimDeps);
+  nimDeps = toString (map (x: "--path:${x}") (map (key: lib.getAttr key _nimDeps) (attrNames _nimDeps)));
 
   rust-optimizer = rustPlatformStable.buildRustPackage rec {
     name = "rust-optimizer";
