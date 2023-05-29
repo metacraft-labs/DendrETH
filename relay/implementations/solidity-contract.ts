@@ -68,73 +68,98 @@ export class SolidityContract implements ISmartContract {
     const transactionCount =
       await this.lightClientContract.signer.getTransactionCount('pending');
 
-    const formatedBlocks = SolidityContract.formatFeeHistory(
-      await this.web3.eth.getFeeHistory(
-        SolidityContract.historicalBlocks,
-        'pending',
-        [1, 50, 99],
-      ),
-      false,
-    );
+    try {
+      const formatedBlocks = SolidityContract.formatFeeHistory(
+        await this.web3.eth.getFeeHistory(
+          SolidityContract.historicalBlocks,
+          'pending',
+          [1, 50, 99],
+        ),
+        false,
+      );
 
-    const slow = SolidityContract.avg(
-      formatedBlocks.map(b => b.priorityFeePerGas[0]),
-    );
+      const slow = SolidityContract.avg(
+        formatedBlocks.map(b => b.priorityFeePerGas[0]),
+      );
 
-    const average = SolidityContract.avg(
-      formatedBlocks.map(b => b.priorityFeePerGas[1]),
-    );
+      const average = SolidityContract.avg(
+        formatedBlocks.map(b => b.priorityFeePerGas[1]),
+      );
 
-    const fast = SolidityContract.avg(
-      formatedBlocks.map(b => b.priorityFeePerGas[2]),
-    );
+      const fast = SolidityContract.avg(
+        formatedBlocks.map(b => b.priorityFeePerGas[2]),
+      );
 
-    const getPriorityFeePerGas = () => {
-      switch (this.transactionSpeed) {
-        case 'slow':
-          return slow;
-        case 'avg':
-          return average;
-        case 'fast':
-          return fast;
-      }
-    };
+      const getPriorityFeePerGas = () => {
+        switch (this.transactionSpeed) {
+          case 'slow':
+            return slow;
+          case 'avg':
+            return average;
+          case 'fast':
+            return fast;
+        }
+      };
 
-    const baseFeePerGas = (await this.web3.eth.getBlock('pending'))
-      .baseFeePerGas!;
+      const baseFeePerGas = (await this.web3.eth.getBlock('pending'))
+        .baseFeePerGas!;
 
-    console.log({
-      nonce: transactionCount,
-      maxFeePerGas: BigNumber.from(getPriorityFeePerGas() + baseFeePerGas),
-      maxPriorityFeePerGas: BigNumber.from(getPriorityFeePerGas()),
-    });
-
-    const estimateGas =
-      await this.lightClientContract.estimateGas.light_client_update({
-        ...update,
-        a,
-        b,
-        c,
-      });
-
-    const transaction = await this.lightClientContract.light_client_update(
-      {
-        ...update,
-        a,
-        b,
-        c,
-      },
-      {
+      console.log({
         nonce: transactionCount,
         maxFeePerGas: BigNumber.from(getPriorityFeePerGas() + baseFeePerGas),
         maxPriorityFeePerGas: BigNumber.from(getPriorityFeePerGas()),
-        gasLimit: estimateGas,
-      },
-    );
+      });
 
-    console.log(transaction);
+      const estimateGas =
+        await this.lightClientContract.estimateGas.light_client_update({
+          ...update,
+          a,
+          b,
+          c,
+        });
 
-    await transaction.wait();
+      const transaction = await this.lightClientContract.light_client_update(
+        {
+          ...update,
+          a,
+          b,
+          c,
+        },
+        {
+          nonce: transactionCount,
+          maxFeePerGas: BigNumber.from(getPriorityFeePerGas() + baseFeePerGas),
+          maxPriorityFeePerGas: BigNumber.from(getPriorityFeePerGas()),
+          gasLimit: estimateGas,
+        },
+      );
+
+      console.log(transaction);
+
+      await transaction.wait();
+    } catch (e) {
+      if (e instanceof Error && e.message.includes('eth_feeHistory')) {
+        const transaction = await this.lightClientContract.light_client_update(
+          {
+            ...update,
+            a,
+            b,
+            c,
+          },
+          {
+            nonce: transactionCount,
+            gasPrice: (await this.lightClientContract.provider.getGasPrice())
+              .mul(11)
+              .div(10),
+          },
+        );
+
+        console.log(transaction);
+
+        await transaction.wait();
+      } else {
+        throw e;
+      }
+    }
   }
 
   private static formatFeeHistory(
