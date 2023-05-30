@@ -6,7 +6,7 @@
   ...
 }:
 with ptau; let
-  inherit (pkgs) callPackage fetchFromGitHub runCommand stdenv;
+  inherit (pkgs) callPackage fetchFromGitHub runCommand stdenv writeText;
   inherit (builtins) attrNames filter map readDir;
   inherit (lib) pipe hasSuffix removeSuffix;
 
@@ -35,7 +35,7 @@ with ptau; let
 
   transpile_circuit = circuit:
     stdenv.mkDerivation rec {
-      name = "${circuit}_circuit";
+      name = "${circuit}_cpp";
       src = ../../..;
       buildInputs = [pkgs.metacraft-labs.circom];
       buildPhase = ''
@@ -48,48 +48,103 @@ with ptau; let
       '';
     };
 
-  compile_circuit = circuit: ptau:
+  compile_circuit = circuit:
     stdenv.mkDerivation rec {
-      name = "${circuit}";
-      src = circuits."${circuit}_circuit";
-      sourceRoot = "${circuit}_circuit/lib/circom/${circuit}/${circuit}_cpp";
-      buildInputs = with pkgs; [metacraft-labs.circom snarkjs gnumake nodejs nlohmann_json gmp nasm yarn];
-      preBuild = ''
-        echo "****COMPILING C++ WITNESS GENERATION CODE****";
-      '';
-      postBuild = ''
-        # echo "****VERIFYING WITNESS****"
-        # ./"${circuit}" ../../../scripts/"${circuit}"/input.json witness.wtns
-        # node ${snarkjs}/lib/node_modules/snarkjs/cli.js wej witness.wtns witness.json
-
-        echo "****GENERATING ZKEY 0****"
-        node --trace-gc --trace-gc-ignore-scavenger --max-old-space-size=2048000 --initial-old-space-size=2048000 --no-global-gc-scheduling --no-incremental-marking --max-semi-space-size=1024 --initial-heap-size=2048000 --expose-gc ${snarkjs}/lib/node_modules/snarkjs/cli.js zkey new ../"${circuit}".r1cs "${ptau}" "${circuit}"_0.zkey -v | tee "${circuit}"_zkey0.out
-
-        echo "****CONTRIBUTE TO PHASE 2 CEREMONY****"
-        node ${snarkjs}/lib/node_modules/snarkjs/cli.js zkey contribute -verbose "${circuit}"_0.zkey "${circuit}".zkey -n="First phase2 contribution" -e="some random text 5555" > contribute.out
-
-        echo "****VERIFYING FINAL ZKEY****"
-        node --trace-gc --trace-gc-ignore-scavenger --max-old-space-size=2048000 --initial-old-space-size=2048000 --no-global-gc-scheduling --no-incremental-marking --max-semi-space-size=1024 --initial-heap-size=2048000 --expose-gc  ${snarkjs}/lib/node_modules/snarkjs/cli.js zkey verify -verbose ../"${circuit}".r1cs "${ptau}" "${circuit}".zkey  > "${circuit}"_verify.out
-
-        echo "****EXPORTING VKEY****"
-        node ${snarkjs}/lib/node_modules/snarkjs/cli.js zkey export verificationkey "${circuit}".zkey vkey.json -v
-
-        # echo "****GENERATING PROOF FOR SAMPLE INPUT****"
-        # ${pkgs.metacraft-labs.rapidsnark}/bin/prover "${circuit}".zkey witness.wtns proof.json public.json > proof.out
-
-        # echo "****VERIFYING PROOF FOR SAMPLE INPUT****"
-        # node ${snarkjs}/lib/node_modules/snarkjs/cli.js groth16 verify vkey.json public.json proof.json -v
-
-      '';
+      name = "${circuit}_build";
+      src = circuits."${circuit}_cpp";
+      sourceRoot = "${circuit}_cpp/lib/circom/${circuit}/${circuit}_cpp";
+      buildInputs = with pkgs; [metacraft-labs.circom snarkjs gnumake nlohmann_json gmp nasm];
       installPhase = ''
         mkdir -p $out/bin
-        cp "${circuit}" "${circuit}".dat "${circuit}"_0.zkey "${circuit}".zkey vkey.json ../"${circuit}".r1cs $out/bin
+        cp "${circuit}" "${circuit}".dat ../"${circuit}".r1cs $out/bin
+      '';
+    };
+
+  generate_zkey_0 = circuit: ptau:
+    stdenv.mkDerivation rec {
+      name = "${circuit}_zkey_0";
+      src = circuits."${circuit}_build";
+      buildInputs = with pkgs; [nodejs yarn];
+      buildPhase = ''
+        cd bin
+        node --trace-gc --trace-gc-ignore-scavenger --max-old-space-size=2048000 --initial-old-space-size=2048000 --no-global-gc-scheduling --no-incremental-marking --max-semi-space-size=1024 --initial-heap-size=2048000 --expose-gc ${snarkjs}/lib/node_modules/snarkjs/cli.js zkey new -verbose "${circuit}".r1cs "${ptau}" "${circuit}"_0.zkey -v | tee "${circuit}"_zkey0.out
+      '';
+      installPhase = ''
+        mkdir -p "$out/lib/circom/${circuit}"
+        cp "${circuit}"_0.zkey "${circuit}"_zkey0.out "$out/lib/circom/${circuit}"
+      '';
+    };
+
+  phase_2_ceremony = circuit:
+    stdenv.mkDerivation rec {
+      name = "${circuit}_phase_2_ceremony";
+      src = circuits."${circuit}_zkey_0";
+      buildInputs = with pkgs; [nodejs yarn];
+      buildPhase = ''
+        node ${snarkjs}/lib/node_modules/snarkjs/cli.js zkey contribute -verbose lib/circom/"${circuit}"/"${circuit}"_0.zkey "${circuit}".zkey -n="First phase2 contribution" -e="some random text 5555" | tee contribute.out
+      '';
+      installPhase = ''
+        mkdir -p "$out/lib/circom/${circuit}"
+          cp "${circuit}".zkey contribute.out "$out/lib/circom/${circuit}"
+      '';
+    };
+
+  generate_zkey = circuit: ptau:
+    stdenv.mkDerivation rec {
+      name = "${circuit}_zkey";
+      src = circuits."${circuit}_build";
+      buildInputs = with pkgs; [nodejs yarn];
+      buildPhase = ''
+        cd bin
+        node --trace-gc --trace-gc-ignore-scavenger --max-old-space-size=2048000 --initial-old-space-size=2048000 --no-global-gc-scheduling --no-incremental-marking --max-semi-space-size=1024 --initial-heap-size=2048000 --expose-gc  ${snarkjs}/lib/node_modules/snarkjs/cli.js zkey verify -verbose "${circuit}".r1cs "${ptau}" ${circuits."${circuit}_phase_2_ceremony"}/lib/circom/"${circuit}"/"${circuit}".zkey  | tee "${circuit}"_verify.out
+      '';
+      installPhase = ''
+        mkdir -p "$out/lib/circom/${circuit}"
+        cp "${circuit}"_verify.out "$out/lib/circom/${circuit}"
+      '';
+    };
+
+  generate_vkey = circuit:
+    stdenv.mkDerivation rec {
+      name = "${circuit}_vkey";
+      src = circuits."${circuit}_phase_2_ceremony";
+      buildInputs = with pkgs; [nodejs yarn];
+      buildPhase = ''
+        node ${snarkjs}/lib/node_modules/snarkjs/cli.js zkey export verificationkey "lib/circom/${circuit}/${circuit}".zkey vkey.json -v
+      '';
+      installPhase = ''
+        mkdir -p "$out/lib/circom/${circuit}"
+        cp vkey.json "$out/lib/circom/${circuit}"
       '';
     };
 
   generate_circuit = circuit: ptau: {
-    "${circuit}_circuit" = transpile_circuit circuit;
-    "${circuit}" = compile_circuit circuit ptau;
+    "${circuit}_cpp" = transpile_circuit circuit;
+    "${circuit}_build" = compile_circuit circuit;
+    # "${circuit}_verify_witness" = verify_witness circuit;
+    "${circuit}_zkey_0" = generate_zkey_0 circuit ptau;
+    "${circuit}_phase_2_ceremony" = phase_2_ceremony circuit;
+    "${circuit}_zkey" = generate_zkey circuit ptau;
+    "${circuit}_vkey" = generate_vkey circuit;
+    # "${circuit}_generate_proof" = generate_proof circuit;
+    # "${circuit}_verify_proof" = verify_proof circuit;
+    "${circuit}_full" = stdenv.mkDerivation rec {
+      name = "${circuit}_list";
+      buildInputs = [
+        circuits."${circuit}_cpp"
+        circuits."${circuit}_build"
+        circuits."${circuit}_zkey_0"
+        circuits."${circuit}_phase_2_ceremony"
+        circuits."${circuit}_zkey"
+        circuits."${circuit}_vkey"
+      ];
+
+      dontUnpack = true;
+      installPhase = ''
+        mkdir -p $out
+        touch "$out/${circuit}_list"
+      '';
+    };
   };
 
   generate_circuits = circuits:
