@@ -55,3 +55,11 @@ Suggested programming language: C#, (possibly C++ in the future).
 # Merkle proof verification for the ETH execution state
 
 - https://github.com/KyberNetwork/peace-relay/blob/master/contracts/MerklePatriciaProof.sol
+
+# Prior Art
+
+An EOS-Ethereum bridge based on a PoW Ethereum light client and Solidity EOS light client:
+
+- https://blog.kyber.network/waterloo-a-decentralized-practical-bridge-between-eos-and-ethereum-1c230ac65524
+- https://github.com/KyberNetwork/bridge_eth_smart_contracts
+- https://github.com/KyberNetwork/bridge_eos_smart_contracts
