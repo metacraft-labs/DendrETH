@@ -112,6 +112,10 @@ export default {
       url: 'https://eth.bd.evmos.dev:8545',
       accounts: [conf.USER_PRIVATE_KEY],
     },
+    aurora: {
+      url: 'https://aurora-testnet.rpc.thirdweb.com',
+      accounts: [conf.USER_PRIVATE_KEY],
+    },
   },
   mocha: {
     timeout: 100000000,
