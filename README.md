@@ -46,6 +46,7 @@ the full blockchain environments).
 | [Testnet/EVMOS](https://testnet.mintscan.io/evmos-testnet/account/0x8E4D36CD13015EA6F384cab3342156b3dC5d0a53)                                                                    | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | https://github.com/metacraft-labs/DendrETH/pull/94 (Capella) |
 | [Malaga/Cosmos](https://block-explorer.malaga-420.cosmwasm.com/account/wasm12te4t793yq9jgqnyqauuvhza44ss43fxnsgj8lyxrqru6pc2c6ds68l4es)                                          | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | https://github.com/metacraft-labs/DendrETH/pull/94 (Capella) |
 | [Jungle/EOS](https://local.bloks.io/account/dendreth2222?nodeUrl=http%3A%2F%2Fjungle4.cryptolions.io&systemDomain=eosio&hyperionUrl=https%3A%2F%2Fjungle4history.cryptolions.io) | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | https://github.com/metacraft-labs/DendrETH/pull/94 (Capella) |
+| [Aurora/Near](https://explorer.testnet.aurora.dev/address/0xA3418F79c98A3E496A5E97610a97f82daE364619)                                                                            | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | https://github.com/metacraft-labs/DendrETH/pull/94 (Capella) |
 
 ## Working with the Codebase
 
