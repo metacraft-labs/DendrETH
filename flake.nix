@@ -43,8 +43,13 @@
         inputs',
         ...
       }: let
-        inherit (inputs'.mcl-blockchain.legacyPackages) nix2container rust-stable;
+        inherit (inputs'.mcl-blockchain.legacyPackages) nix2container rust-stable rustPlatformStable;
         docker-images = import ./libs/nix/docker-images.nix {inherit pkgs nix2container;};
+        light-client = pkgs.callPackage ./libs/nix/light-client/default.nix {};
+        nim-packages = import ./libs/nix/nim-programs.nix {
+          inherit pkgs rustPlatformStable;
+          lib = pkgs.lib;
+        };
       in {
         _module.args.pkgs = import nixpkgs {
           inherit system;
@@ -62,7 +67,9 @@
         packages =
           {
             inherit (docker-images) docker-image-yarn;
+            inherit light-client;
           }
+          // nim-packages
           // pkgs.lib.optionalAttrs (pkgs.hostPlatform.isLinux && pkgs.hostPlatform.isx86_64) {
             inherit (docker-images) docker-image-all;
           };

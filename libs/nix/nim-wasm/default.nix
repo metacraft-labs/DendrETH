@@ -1,20 +1,23 @@
 {
   writeTextFile,
-  writeShellApplication,
+  writeShellScriptBin,
+  fetchFromGitHub,
   llvm,
+  binaryen,
   nim,
   emscripten,
+  lib,
 }: let
+  nimLib = fetchFromGitHub {
+    owner = "metacraft-labs";
+    repo = "nim";
+    rev = "dendreth-patch/v1.6.8";
+    hash = "sha256-rm7NtiIjkJH0jewsZ6KuWce9oN29lqeckpUWdKf2/ac=";
+  };
+
   nimcfg = writeTextFile {
     name = "nim-cfg";
     text = ''
-      # We allow the user to override the Nim system library being used.
-      # This makes it easier to introduce patches to the system library
-      # during development, which make take some time to be upstreamed:
-      let localNimLib = getEnv("LOCAL_NIM_LIB")
-      if localNimLib != "":
-        switch("lib", localNimLib)
-
       # By default, the compiler will produce a wasm sitting next to the
       # compiled project main module:
       switch("out", projectName() & ".wasm")
@@ -95,27 +98,32 @@
     destination = "/nim/config.nims";
   };
 in
-  writeShellApplication {
-    name = "nim-wasm";
-    runtimeInputs = [nim llvm.lld llvm.clang-unwrapped];
-    text = ''
-      export XDG_CONFIG_HOME="${nimcfg}"
-      USE_EMCC=0
-      OUTPUT_FILE=""
-      for a in "$@"; do
-        if [[ "$a" == "-d:emcc" ]] ; then
-          USE_EMCC=1
-        fi
-        if [[ "$a" == "-o:"* ]] ; then
-          OUTPUT_FILE="''${a##-o:}"
-        fi
-      done
-      if [[ $USE_EMCC = 1 ]] ; then
-        nim "$@"
-      else
-        nim "$@"
-        # Run optimizations separately when compiling with clang
-        wasm-opt --strip-dwarf -Oz --low-memory-unused --zero-filled-memory --strip-debug --strip-producers "$OUTPUT_FILE" -o "$OUTPUT_FILE" --mvp-features
+  writeShellScriptBin "nim-wasm" ''
+    set -o errexit
+    set -o nounset
+    set -o pipefail
+
+    export PATH="${lib.makeBinPath [nim llvm.lld llvm.clang-unwrapped binaryen]}"
+    export XDG_CONFIG_HOME="${nimcfg}"
+    export CC=clang
+    USE_EMCC=0
+
+    OUTPUT_FILE=""
+    for a in "$@"; do
+      if [[ "$a" == "-d:emcc" ]] ; then
+        USE_EMCC=1
       fi
-    '';
-  }
+      if [[ "$a" == "-o:"* ]] ; then
+        OUTPUT_FILE="''${a##-o:}"
+      fi
+    done
+    if [[ $USE_EMCC = 1 ]] ; then
+      set -x
+      nim --lib:${nimLib}/lib "$@"
+    else
+      set -x
+      nim --lib:${nimLib}/lib "$@"
+      # Run optimizations separately when compiling with clang
+      wasm-opt --strip-dwarf -Oz --low-memory-unused --zero-filled-memory --strip-debug --strip-producers "$OUTPUT_FILE" -o "$OUTPUT_FILE" --mvp-features
+    fi
+  ''
