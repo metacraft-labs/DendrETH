@@ -43,3 +43,6 @@
 [submodule "vendor/eos"]
 	path = vendor/eos
 	url = https://github.com/EOSIO/eos.git
+[submodule "vendor/constantine"]
+	path = vendor/constantine
+	url = git@github.com:metacraft-labs/constantine.git
