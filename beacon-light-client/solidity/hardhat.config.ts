@@ -22,6 +22,7 @@ const conf = {
   CELO_ETHERSCAN_API_KEY: process.env.CELO_ETHERSCAN_API_KEY,
   BSC_ETHERSCAN_API_KEY: process.env.BSC_ETHERSCAN_API_KEY,
   CHIADO_ETHERSCAN_API: process.env.CHIADO_ETHERSCAN_API,
+  GNOSIS_ETHERSCAN_API: process.env.GNOSIS_ETHERSCAN_API,
   LOCAL_HARDHAT_PRIVATE_KEY:
     process.env.LOCAL_HARDHAT_PRIVATE_KEY ||
     '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
@@ -116,6 +117,10 @@ export default {
       url: 'https://aurora-testnet.rpc.thirdweb.com',
       accounts: [conf.USER_PRIVATE_KEY],
     },
+    gnosis: {
+      url: `https://gnosis.api.onfinality.io/public`,
+      accounts: [conf.USER_PRIVATE_KEY],
+    },
   },
   mocha: {
     timeout: 100000000,
@@ -133,6 +138,7 @@ export default {
       celo: conf.CELO_ETHERSCAN_API_KEY,
       bscTestnet: conf.BSC_ETHERSCAN_API_KEY,
       chiado: conf.CHIADO_ETHERSCAN_API,
+      gnosis: conf.GNOSIS_ETHERSCAN_API,
     },
     customChains: [
       {

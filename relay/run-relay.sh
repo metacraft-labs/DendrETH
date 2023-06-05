@@ -242,6 +242,20 @@ run_network_tasks() {
     echo "Skipping BSC network"
   fi
 
+  if [ -n "$LC_AURORA" ]; then
+    echo "Starting light client for Aurora network"
+    supervisorctl start aurora
+  else
+    echo "Skipping Aurora network"
+  fi
+
+  if [ -n "$LC_GNOSIS" ]; then
+    echo "Starting light client for Gnosis network"
+    supervisorctl start gnosis
+  else
+    echo "Skipping Gnosis network"
+  fi
+
   if [ -n "$LC_CHIADO" ]; then
     echo "Starting light client for Chiado network"
     supervisorctl start chiado

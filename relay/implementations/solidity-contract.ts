@@ -66,78 +66,35 @@ export class SolidityContract implements ISmartContract {
     const c = [argv[6], argv[7]];
 
     const transactionCount =
-      await this.lightClientContract.signer.getTransactionCount('pending');
+      await this.lightClientContract.signer.getTransactionCount();
 
-    try {
-      const formatedBlocks = SolidityContract.formatFeeHistory(
-        await this.web3.eth.getFeeHistory(
-          SolidityContract.historicalBlocks,
-          'pending',
-          [1, 50, 99],
-        ),
-        false,
-      );
+    let transactionPromise;
+    let retries = 1;
 
-      const slow = SolidityContract.avg(
-        formatedBlocks.map(b => b.priorityFeePerGas[0]),
-      );
+    while (true) {
+      try {
+        const { priorityFeePerGas, baseFeePerGas } = await this.getGasPrice();
 
-      const average = SolidityContract.avg(
-        formatedBlocks.map(b => b.priorityFeePerGas[1]),
-      );
+        const priorityFeePerGasNumber =
+          BigNumber.from(priorityFeePerGas).mul(retries);
 
-      const fast = SolidityContract.avg(
-        formatedBlocks.map(b => b.priorityFeePerGas[2]),
-      );
-
-      const getPriorityFeePerGas = () => {
-        switch (this.transactionSpeed) {
-          case 'slow':
-            return slow;
-          case 'avg':
-            return average;
-          case 'fast':
-            return fast;
-        }
-      };
-
-      const baseFeePerGas = (await this.web3.eth.getBlock('pending'))
-        .baseFeePerGas!;
-
-      console.log({
-        nonce: transactionCount,
-        maxFeePerGas: BigNumber.from(getPriorityFeePerGas() + baseFeePerGas),
-        maxPriorityFeePerGas: BigNumber.from(getPriorityFeePerGas()),
-      });
-
-      const estimateGas =
-        await this.lightClientContract.estimateGas.light_client_update({
-          ...update,
-          a,
-          b,
-          c,
-        });
-
-      const transaction = await this.lightClientContract.light_client_update(
-        {
-          ...update,
-          a,
-          b,
-          c,
-        },
-        {
+        const transactionData = {
           nonce: transactionCount,
-          maxFeePerGas: BigNumber.from(getPriorityFeePerGas() + baseFeePerGas),
-          maxPriorityFeePerGas: BigNumber.from(getPriorityFeePerGas()),
-          gasLimit: estimateGas,
-        },
-      );
+          // Multiply by 2 in case of base fee spike as the unused gas will be returned
+          maxFeePerGas: priorityFeePerGasNumber.add(baseFeePerGas).mul(2),
+          maxPriorityFeePerGas: priorityFeePerGasNumber,
+        };
 
-      console.log(transaction);
+        console.log(transactionData);
 
-      await transaction.wait();
-    } catch (e) {
-      if (e instanceof Error && e.message.includes('eth_feeHistory')) {
+        const estimateGas =
+          await this.lightClientContract.estimateGas.light_client_update({
+            ...update,
+            a,
+            b,
+            c,
+          });
+
         const transaction = await this.lightClientContract.light_client_update(
           {
             ...update,
@@ -146,20 +103,97 @@ export class SolidityContract implements ISmartContract {
             c,
           },
           {
-            nonce: transactionCount,
-            gasPrice: (await this.lightClientContract.provider.getGasPrice())
-              .mul(11)
-              .div(10),
+            nonce: transactionData.nonce,
+            maxFeePerGas: transactionData.maxFeePerGas,
+            maxPriorityFeePerGas: transactionData.maxPriorityFeePerGas,
+            gasLimit: estimateGas,
           },
         );
 
         console.log(transaction);
 
-        await transaction.wait();
-      } else {
-        throw e;
+        transactionPromise = transaction.wait();
+      } catch (e) {
+        if (e instanceof Error && e.message.includes('eth_feeHistory')) {
+          const transaction =
+            await this.lightClientContract.light_client_update(
+              {
+                ...update,
+                a,
+                b,
+                c,
+              },
+              {
+                nonce: transactionCount,
+                gasPrice: (
+                  await this.lightClientContract.provider.getGasPrice()
+                )
+                  .mul(10 + retries)
+                  .div(10),
+              },
+            );
+
+          console.log(transaction);
+
+          transactionPromise = transaction.wait();
+        } else {
+          throw e;
+        }
       }
+
+      const r = await Promise.race([
+        new Promise(r => setTimeout(r, 120000, 'unresolved')),
+        transactionPromise,
+      ]);
+
+      if (r === 'unresolved') {
+        console.log(
+          'Transaction failed to be included in a block for 2 minutes retry with bumped fee',
+        );
+        retries++;
+        continue;
+      }
+
+      break;
     }
+  }
+
+  private async getGasPrice() {
+    const formatedBlocks = SolidityContract.formatFeeHistory(
+      await this.web3.eth.getFeeHistory(
+        SolidityContract.historicalBlocks,
+        'pending',
+        [1, 50, 99],
+      ),
+      false,
+    );
+
+    const slow = SolidityContract.avg(
+      formatedBlocks.map(b => b.priorityFeePerGas[0]),
+    );
+
+    const average = SolidityContract.avg(
+      formatedBlocks.map(b => b.priorityFeePerGas[1]),
+    );
+
+    const fast = SolidityContract.avg(
+      formatedBlocks.map(b => b.priorityFeePerGas[2]),
+    );
+
+    const getPriorityFeePerGas = () => {
+      switch (this.transactionSpeed) {
+        case 'slow':
+          return slow;
+        case 'avg':
+          return average;
+        case 'fast':
+          return fast;
+      }
+    };
+
+    const baseFeePerGas = (await this.web3.eth.getBlock('pending'))
+      .baseFeePerGas!;
+    return { priorityFeePerGas: getPriorityFeePerGas(), baseFeePerGas };
   }
 
   private static formatFeeHistory(
