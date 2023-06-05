@@ -20,7 +20,7 @@ task('start-publishing', 'Run relayer')
   .addParam(
     'transactionspeed',
     'The speed you want the transactions to be included in a block',
-    'fast',
+    'avg',
     undefined,
     true,
   )
