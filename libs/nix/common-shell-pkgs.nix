@@ -4,7 +4,7 @@
 }:
 with pkgs; let
   nodejs = nodejs-18_x;
-  llvm = llvmPackages_13;
+  llvm = llvmPackages_14;
   emscripten = metacraft-labs.emscripten;
   nim-wasm = callPackage ./nim-wasm {inherit llvm emscripten;};
   python-with-my-packages = python3.withPackages (ps:
