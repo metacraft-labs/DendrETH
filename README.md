@@ -319,6 +319,12 @@ At the moment, there are multiple test suites of interest:
   yarn hardhat test
   ```
 
+## Suggested citation
+Please use the following BibTex entry to cite this work while a paper is not available:
+
+@report{dendreth2023, title = {DendrETH: Ethereum SNARK-Based Beacon Light Client for Multiple Blockchain Ecosystems}, url = {https://github.com/metacraft-labs/DendrETH}, number = {0}, institution = {Metacraft Labs and Blockdaemon}, author = {Ivanichkov, Emil and Dimov, Dimo and Armenchev, Simeon and Miladinov, Yordan and Kirkov, Kristin and Kirov, Petar and Karadjov, Zahary and Belchior, Rafael}, date = {2023}, }
+
+
 ## License
 
 All code within this repository is [licensed under GPLv3][16].
