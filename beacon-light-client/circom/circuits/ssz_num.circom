@@ -1,4 +1,4 @@
-pragma circom 2.0.3;
+pragma circom 2.1.5;
 
 include "../../../node_modules/circomlib/circuits/bitify.circom";
 
@@ -7,13 +7,12 @@ template SSZNum(N) {
 
   signal output out[256];
 
-  component num2bits = Num2Bits(N);
-  num2bits.in <== in;
+  signal num2bits[N] <== Num2Bits(N)(in);
 
   var idx = N - 1;
   for(var i = N - 8; i >= 0; i -= 8) {
     for(var j = 0; j < 8; j++) {
-      out[idx] <== num2bits.out[i + j];
+      out[idx] <== num2bits[i + j];
       idx--;
     }
   }

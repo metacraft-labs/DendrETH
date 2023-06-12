@@ -1,4 +1,4 @@
-pragma circom 2.0.3;
+pragma circom 2.1.5;
 
 include "../../../node_modules/circomlib/circuits/bitify.circom";
 
@@ -8,17 +8,15 @@ template NumbersTo256Bits() {
 
   signal output out[256];
 
-  component num2bits1 = Num2Bits(253);
-  num2bits1.in <== first;
+  signal num2bits1[253] <== Num2Bits(253)(first);
 
-  component num2bits2 = Num2Bits(3);
-  num2bits2.in <== second;
+  signal num2bits2[3] <== Num2Bits(3)(second);
 
   for(var i = 0; i < 253; i++) {
-    out[i] <== num2bits1.out[252 - i];
+    out[i] <== num2bits1[252 - i];
   }
 
   for(var i = 253; i < 256; i++) {
-    out[i] <== num2bits2.out[255 - i];
+    out[i] <== num2bits2[255 - i];
   }
 }

@@ -1,4 +1,4 @@
-pragma circom 2.0.3;
+pragma circom 2.1.5;
 
 include "../../../node_modules/circomlib/circuits/sha256/sha256.circom";
 include "../../../node_modules/circomlib/circuits/bitify.circom";
@@ -31,12 +31,7 @@ template ExpandMessage() {
     b_0Sha.in[i] <== BIG_SIG_DST[i - 792];
   }
 
-
-  var b_0[256];
-
-  for(var i = 0; i < 256; i++) {
-    b_0[i] = b_0Sha.out[i];
-  }
+  var b_0[256] = b_0Sha.out;
 
   component prevSha256[8];
 

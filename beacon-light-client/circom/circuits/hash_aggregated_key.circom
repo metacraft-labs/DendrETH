@@ -22,5 +22,3 @@ template hashAggregatedKey(){
 
 
 }
-
-component main = hashAggregatedKey();

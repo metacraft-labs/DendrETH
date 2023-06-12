@@ -1,4 +1,4 @@
-pragma circom 2.0.3;
+pragma circom 2.1.5;
 
 include "hash_two.circom";
 include "hash_tree_root.circom";
@@ -12,35 +12,16 @@ template HashTreeRootBeaconHeader() {
 
   signal output out[256];
 
-  component hashTreeRoot = HashTreeRoot(8);
+  signal zerosArr[3][256];
 
-  for(var i = 0; i < 256; i++) {
-    hashTreeRoot.leaves[0][i] <== slot[i];
-  }
-
-  for(var i = 0; i < 256; i++) {
-    hashTreeRoot.leaves[1][i] <== proposer_index[i];
-  }
-
-  for(var i = 0; i < 256; i++) {
-    hashTreeRoot.leaves[2][i] <== parent_root[i];
-  }
-
-  for(var i = 0; i < 256; i++) {
-    hashTreeRoot.leaves[3][i] <== state_root[i];
-  }
-
-  for(var i = 0; i < 256; i++) {
-    hashTreeRoot.leaves[4][i] <== body_root[i];
-  }
-
-  for(var i = 5; i < 8; i++) {
+  for(var i = 0; i < 3; i++) {
     for(var j = 0; j < 256; j++) {
-      hashTreeRoot.leaves[i][j] <== 0;
+      zerosArr[i][j] <== 0;
     }
   }
 
-  for(var i = 0; i < 256; i++) {
-    out[i] <== hashTreeRoot.out[i];
-  }
+  signal hashTreeRoot[256] <== HashTreeRoot(8)([slot, proposer_index,
+  parent_root, state_root, body_root, zerosArr[0], zerosArr[1], zerosArr[2]]);
+
+  out <== hashTreeRoot;
 }

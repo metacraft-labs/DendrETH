@@ -1,4 +1,4 @@
-pragma circom 2.0.3;
+pragma circom 2.1.5;
 
 include "hash_two.circom";
 
@@ -9,25 +9,22 @@ template ComputeDomain() {
   signal input GENESIS_VALIDATORS_ROOT[256];
   signal input DOMAIN_SYNC_COMMITTEE[32];
 
-  component hashTwo = HashTwo();
+  signal concated_fork_version[256];
 
   for(var i = 0; i < 32; i++) {
-    hashTwo.in[0][i] <== fork_version[i];
+    concated_fork_version[i] <== fork_version[i];
   }
-
   for(var i = 32; i < 256; i++) {
-    hashTwo.in[0][i] <== 0;
+    concated_fork_version[i] <== 0;
   }
 
-  for(var i = 0; i < 256; i++) {
-    hashTwo.in[1][i] <== GENESIS_VALIDATORS_ROOT[i];
-  }
+  signal hashTwo[256] <== HashTwo()([concated_fork_version,GENESIS_VALIDATORS_ROOT]);
 
   for(var i = 0; i < 32; i++) {
     domain[i] <== DOMAIN_SYNC_COMMITTEE[i];
   }
 
   for(var i = 32; i < 256; i++) {
-    domain[i] <== hashTwo.out[i - 32];
+    domain[i] <== hashTwo[i - 32];
   }
 }

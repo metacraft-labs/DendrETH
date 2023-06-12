@@ -1,4 +1,4 @@
-pragma circom 2.0.3;
+pragma circom 2.1.5;
 
 include "sync_commitee_hash_tree_root.circom";
 include "compress.circom";
@@ -55,137 +55,47 @@ template LightClient(N) {
 
   signal output output_commitment[2];
 
-  component signatureSlotGreaterThanNext = GreaterThan(64);
-  signatureSlotGreaterThanNext.in[0] <== signatureSlot;
-  signatureSlotGreaterThanNext.in[1] <== nextHeaderSlot;
-  signatureSlotGreaterThanNext.out === 1;
+  signal signatureSlotGreaterThanNext <== GreaterThan(64)([signatureSlot,nextHeaderSlot]);
+  signatureSlotGreaterThanNext === 1;
 
-  component nextHeaderSlotGreaterThanPrevFinalized = GreaterThan(64);
-  nextHeaderSlotGreaterThanPrevFinalized.in[0] <== nextHeaderSlot;
-  nextHeaderSlotGreaterThanPrevFinalized.in[1] <== prevHeaderFinalizedSlot;
-  nextHeaderSlotGreaterThanPrevFinalized.out === 1;
+  signal nextHeaderSlotGreaterThanPrevFinalized <== GreaterThan(64)([nextHeaderSlot,prevHeaderFinalizedSlot]);
+  nextHeaderSlotGreaterThanPrevFinalized === 1;
 
-  component signatureSlotSyncCommitteePeriodLessThan = LessEqThan(64);
-  signatureSlotSyncCommitteePeriodLessThan.in[0] <== signatureSlotSyncCommitteePeriod * 8192;
-  signatureSlotSyncCommitteePeriodLessThan.in[1] <== signatureSlot;
-  signatureSlotSyncCommitteePeriodLessThan.out === 1;
+  signal signatureSlotSyncCommitteePeriodLessThan <== LessEqThan(64)([signatureSlotSyncCommitteePeriod * 8192,signatureSlot]);
+  signatureSlotSyncCommitteePeriodLessThan === 1;
 
-  component signatureSlotSyncCommitteePeriodGreaterThan = GreaterEqThan(64);
-  signatureSlotSyncCommitteePeriodGreaterThan.in[0] <== signatureSlotSyncCommitteePeriod * 8192;
-  signatureSlotSyncCommitteePeriodGreaterThan.in[1] <== signatureSlot - 8192;
-  signatureSlotSyncCommitteePeriodGreaterThan.out === 1;
+  signal signatureSlotSyncCommitteePeriodGreaterThan <== GreaterEqThan(64)([signatureSlotSyncCommitteePeriod * 8192,signatureSlot - 8192]);
+  signatureSlotSyncCommitteePeriodGreaterThan === 1;
 
-  component finalizedHeaderSlotSyncCommitteePeriodLessThan = LessEqThan(64);
-  finalizedHeaderSlotSyncCommitteePeriodLessThan.in[0] <== finalizedHeaderSlotSyncCommitteePeriod * 8192;
-  finalizedHeaderSlotSyncCommitteePeriodLessThan.in[1] <== prevHeaderFinalizedSlot;
-  finalizedHeaderSlotSyncCommitteePeriodLessThan.out === 1;
+  signal finalizedHeaderSlotSyncCommitteePeriodLessThan <== LessEqThan(64)([finalizedHeaderSlotSyncCommitteePeriod * 8192,prevHeaderFinalizedSlot]);
+  finalizedHeaderSlotSyncCommitteePeriodLessThan === 1;
 
-  component finalizedHeaderSlotSyncCommitteePeriodGreaterThan = GreaterEqThan(64);
-  finalizedHeaderSlotSyncCommitteePeriodGreaterThan.in[0] <== finalizedHeaderSlotSyncCommitteePeriod * 8192;
-  finalizedHeaderSlotSyncCommitteePeriodGreaterThan.in[1] <== prevHeaderFinalizedSlot - 8192;
-  finalizedHeaderSlotSyncCommitteePeriodGreaterThan.out === 1;
+  signal finalizedHeaderSlotSyncCommitteePeriodGreaterThan <== GreaterEqThan(64)([finalizedHeaderSlotSyncCommitteePeriod * 8192,prevHeaderFinalizedSlot - 8192]);
+  finalizedHeaderSlotSyncCommitteePeriodGreaterThan === 1;
 
-  component signaturePeriodNotMoreThanOnePeriodAboveFinalizedPeriod = GreaterEqThan(64);
-  signaturePeriodNotMoreThanOnePeriodAboveFinalizedPeriod.in[0] <== finalizedHeaderSlotSyncCommitteePeriod + 1;
-  signaturePeriodNotMoreThanOnePeriodAboveFinalizedPeriod.in[1] <== signatureSlotSyncCommitteePeriod;
-  signaturePeriodNotMoreThanOnePeriodAboveFinalizedPeriod.out === 1;
+  signal signaturePeriodNotMoreThanOnePeriodAboveFinalizedPeriod <== GreaterEqThan(64)([finalizedHeaderSlotSyncCommitteePeriod+1,signatureSlotSyncCommitteePeriod]);
+  signaturePeriodNotMoreThanOnePeriodAboveFinalizedPeriod === 1;
 
-  component prevHeaderFinalizedSlotSSZ = SSZNum(64);
-  prevHeaderFinalizedSlotSSZ.in <== prevHeaderFinalizedSlot;
+  signal prevHeaderFinalizedSlotSSZ[256] <== SSZNum(64)(prevHeaderFinalizedSlot);
 
-  component nextHeaderSlotSSZ = SSZNum(64);
-  nextHeaderSlotSSZ.in <== nextHeaderSlot;
+  signal nextHeaderSlotSSZ[256] <== SSZNum(64)(nextHeaderSlot);
 
-  component isValidMerkleBranchPrevHeaderSlot = IsValidMerkleBranch(3);
+  IsValidMerkleBranch(3)(prevHeaderFinalizedSlotBranch,prevHeaderFinalizedSlotSSZ,prevFinalizedHeaderRoot,8);
 
-  for(var i = 0; i < 256; i++) {
-    isValidMerkleBranchPrevHeaderSlot.leaf[i] <== prevHeaderFinalizedSlotSSZ.out[i];
-    isValidMerkleBranchPrevHeaderSlot.root[i] <== prevFinalizedHeaderRoot[i];
-  }
+  IsValidMerkleBranch(3)(prevHeaderFinalizedStateRootBranch,prevHeaderFinalizedStateRoot,prevFinalizedHeaderRoot,11);
 
-  for(var i = 0; i < 3; i++) {
-    for(var j = 0; j < 256; j++) {
-      isValidMerkleBranchPrevHeaderSlot.branch[i][j] <== prevHeaderFinalizedSlotBranch[i][j];
-    }
-  }
+  IsValidMerkleBranch(3)(nextHeaderSlotBranch,nextHeaderSlotSSZ,nextHeaderHash,8);
 
-  isValidMerkleBranchPrevHeaderSlot.index <== 8;
-
-  component isValidMerkleBranchPrevHeaderFinalizedStateRoot = IsValidMerkleBranch(3);
-
-  for(var i = 0; i < 256; i++) {
-    isValidMerkleBranchPrevHeaderFinalizedStateRoot.leaf[i] <== prevHeaderFinalizedStateRoot[i];
-    isValidMerkleBranchPrevHeaderFinalizedStateRoot.root[i] <== prevFinalizedHeaderRoot[i];
-  }
-
-  for(var i = 0; i < 3; i++) {
-    for(var j = 0; j < 256; j++) {
-      isValidMerkleBranchPrevHeaderFinalizedStateRoot.branch[i][j] <== prevHeaderFinalizedStateRootBranch[i][j];
-    }
-  }
-
-  isValidMerkleBranchPrevHeaderFinalizedStateRoot.index <== 11;
-
-
-  component isValidMerkleBranchNextHeaderSlot = IsValidMerkleBranch(3);
-
-  for(var i = 0; i < 256; i++) {
-    isValidMerkleBranchNextHeaderSlot.leaf[i] <== nextHeaderSlotSSZ.out[i];
-    isValidMerkleBranchNextHeaderSlot.root[i] <== nextHeaderHash[i];
-  }
-
-  for(var i = 0; i < 3; i++) {
-    for(var j = 0; j < 256; j++) {
-      isValidMerkleBranchNextHeaderSlot.branch[i][j] <== nextHeaderSlotBranch[i][j];
-    }
-  }
-
-  isValidMerkleBranchNextHeaderSlot.index <== 8;
-
-
-  component bitmaskContainsOnlyBools = BitmaskContainsOnlyBools(N);
-
-  for(var i = 0; i < N; i++) {
-    bitmaskContainsOnlyBools.bitmask[i] <== bitmask[i];
-  }
+  BitmaskContainsOnlyBools(N)(bitmask);
 
   // Check if there is a supermajority in the bitmask
-  component isSuperMajority = IsSuperMajority(N);
+  IsSuperMajority(N)(bitmask);
 
-  for(var i = 0; i < N; i++) {
-    isSuperMajority.bitmask[i] <== bitmask[i];
-  }
+  signal computeDomain[256] <== ComputeDomain()(fork_version,GENESIS_VALIDATORS_ROOT,DOMAIN_SYNC_COMMITTEE);
 
-  component computeDomain = ComputeDomain();
+  signal computeSigningRoot[256] <== ComputeSigningRoot()(nextHeaderHash,computeDomain);
 
-  for(var i = 0; i < 32; i++) {
-    computeDomain.fork_version[i] <== fork_version[i];
-  }
-
-  for (var i = 0; i < 256; i++) {
-    computeDomain.GENESIS_VALIDATORS_ROOT[i] <== GENESIS_VALIDATORS_ROOT[i];
-  }
-
-  for (var i = 0; i < 32; i++) {
-    computeDomain.DOMAIN_SYNC_COMMITTEE[i] <== DOMAIN_SYNC_COMMITTEE[i];
-  }
-
-  component computeSigningRoot = ComputeSigningRoot();
-
-  for(var i = 0; i < 256; i++) {
-    computeSigningRoot.headerHash[i] <== nextHeaderHash[i];
-  }
-
-  //out of computeDomain -> input of computeSigningRoot
-  for(var i = 0; i < 256; i++) {
-    computeSigningRoot.domain[i] <== computeDomain.domain[i];
-  }
-
-  component hashToField = HashToField(K);
-
-  for(var i = 0; i < 256; i++) {
-    hashToField.in[i] <== computeSigningRoot.signing_root[i];
-  }
+  signal hashToField[2][2][K] <== HashToField(K)(computeSigningRoot);
 
   component hasher = SyncCommiteeHashTreeRoot(N);
   component compress[N];
@@ -208,104 +118,20 @@ template LightClient(N) {
     hasher.aggregatedKey[i] <== aggregatedKey[i];
   }
 
-  component isValidMerkleBranchPrevFinality = IsValidMerkleBranch(9);
+  IsValidMerkleBranch(9)(prevFinalizedHeaderRootBranch, prevFinalizedHeaderRoot, prevHeaderHash, 745);
 
-  for(var i = 0; i < 9; i++) {
-    for(var j = 0; j < 256; j++) {
-      isValidMerkleBranchPrevFinality.branch[i][j] <== prevFinalizedHeaderRootBranch[i][j];
-    }
-  }
+  IsValidMerkleBranch(9)(finalizedHeaderBranch, finalizedHeaderRoot, nextHeaderHash, 745);
 
-  for(var i = 0; i < 256; i++) {
-    isValidMerkleBranchPrevFinality.leaf[i] <== prevFinalizedHeaderRoot[i];
-    isValidMerkleBranchPrevFinality.root[i] <== prevHeaderHash[i];
-  }
+  IsValidMerkleBranch(11)(execution_state_root_branch, execution_state_root, finalizedHeaderRoot, 3218);
 
-  isValidMerkleBranchPrevFinality.index <== 745;
+  signal arePeriodsEqual <== IsEqual()([signatureSlotSyncCommitteePeriod,finalizedHeaderSlotSyncCommitteePeriod]);
 
-  component isValidMerkleBranchFinality = IsValidMerkleBranch(9);
+  IsValidMerkleBranch(5)(syncCommitteeBranch,hasher.out,prevHeaderFinalizedStateRoot,55-arePeriodsEqual);
 
-  for(var i = 0; i < 9; i++) {
-    for(var j = 0; j < 256; j++) {
-      isValidMerkleBranchFinality.branch[i][j] <== finalizedHeaderBranch[i][j];
-    }
-  }
-
-  for(var i = 0; i < 256; i++) {
-    isValidMerkleBranchFinality.leaf[i] <== finalizedHeaderRoot[i];
-    isValidMerkleBranchFinality.root[i] <== nextHeaderHash[i];
-  }
-
-  isValidMerkleBranchFinality.index <== 745;
-
-  component isValidMerkleBranchExecution = IsValidMerkleBranch(11);
-
-  for(var i = 0; i < 256; i++) {
-    isValidMerkleBranchExecution.leaf[i] <== execution_state_root[i];
-    isValidMerkleBranchExecution.root[i] <== finalizedHeaderRoot[i];
-  }
-
-  for(var i = 0; i < 11; i++) {
-    for(var j = 0; j < 256; j++) {
-      isValidMerkleBranchExecution.branch[i][j] <== execution_state_root_branch[i][j];
-    }
-  }
-
-  isValidMerkleBranchExecution.index <== 3218;
-
-  component isValidMerkleBranchSyncCommittee = IsValidMerkleBranch(5);
-
-  for(var i = 0; i < 5; i++) {
-    for(var j = 0; j < 256; j++) {
-      isValidMerkleBranchSyncCommittee.branch[i][j] <== syncCommitteeBranch[i][j];
-    }
-  }
-
-  for(var i = 0; i < 256; i++) {
-    isValidMerkleBranchSyncCommittee.leaf[i] <== hasher.out[i];
-  }
-
-  for(var i = 0; i < 256; i++) {
-    isValidMerkleBranchSyncCommittee.root[i] <== prevHeaderFinalizedStateRoot[i];
-  }
-
-  component arePeriodsEqual = IsEqual();
-  arePeriodsEqual.in[0] <== signatureSlotSyncCommitteePeriod;
-  arePeriodsEqual.in[1] <== finalizedHeaderSlotSyncCommitteePeriod;
-
-  isValidMerkleBranchSyncCommittee.index <== 55 - arePeriodsEqual.out;
-
-  component aggregateKeys = AggregateKeysBitmask(N,K);
-
-  for(var i = 0; i < N; i++) {
-    for(var j = 0; j < 2; j++) {
-      for(var k = 0; k < K; k++) {
-        aggregateKeys.points[i][j][k] <== points[i][j][k];
-      }
-    }
-  }
-
-  for(var i = 0; i < N; i++) {
-    aggregateKeys.bitmask[i] <== bitmask[i];
-  }
+  signal aggregateKeys[2][K] <== AggregateKeysBitmask(N,K)(points,bitmask);
 
   // bls.Verify
-  component verify = CoreVerifyPubkeyG1(55, K);
-
-  for(var j = 0; j < 2; j++) {
-    for(var k = 0; k < K; k++) {
-      verify.pubkey[j][k] <== aggregateKeys.out[j][k];
-    }
-  }
-
-  for(var i = 0; i < 2; i++) {
-    for(var j = 0; j < 2; j++) {
-      for(var k = 0; k < K; k++) {
-        verify.signature[i][j][k] <== signature[i][j][k];
-        verify.hash[i][j][k] <== hashToField.out[i][j][k];
-      }
-    }
-  }
+  CoreVerifyPubkeyG1(55, K)(aggregateKeys, signature, hashToField);
 
   component commitment = Sha256(1536);
 
@@ -329,15 +155,14 @@ template LightClient(N) {
     commitment.in[1024 + i] <== 0;
   }
 
-  component nextHeaderSlotBits = Num2Bits(64);
-  nextHeaderSlotBits.in <== nextHeaderSlot;
+  signal nextHeaderSlotBits[64] <== Num2Bits(64)(nextHeaderSlot);
 
   for(var i = 192; i < 256; i++) {
-    commitment.in[1024 + i] <== nextHeaderSlotBits.out[255 - i];
+    commitment.in[1024 + i] <== nextHeaderSlotBits[255 - i];
   }
 
   for(var i = 0; i < 256; i++) {
-    commitment.in[1280 + i] <== computeDomain.domain[i];
+    commitment.in[1280 + i] <== computeDomain[i];
   }
 
   component bits2num1 = Bits2Num(253);
