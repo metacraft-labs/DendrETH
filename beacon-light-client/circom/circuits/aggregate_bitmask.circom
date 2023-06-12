@@ -2,9 +2,8 @@ pragma circom 2.0.3;
 
 include "../../../vendor/circom-pairing/circuits/curve.circom";
 
-template AggregateKeysBitmask(N) {
+template AggregateKeysBitmask(N,K) {
   var J = 2;
-  var K = 7;
   signal input points[N][J][K];
   signal input bitmask[N];
 
