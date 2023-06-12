@@ -1,4 +1,5 @@
-pragma circom 2.0.3;
+pragma circom 2.1.5;
+
 
 include "../../circuits/hash_to_field.circom";
 
