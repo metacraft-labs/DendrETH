@@ -3,8 +3,7 @@ pragma circom 2.0.3;
 include "expand_message.circom";
 include "../../../vendor/circom-pairing/circuits/bigint.circom";
 
-template HashToField() {
-  var K = 7;
+template HashToField(K) {
   signal input in[256];
   signal output out[2][2][K];
 
