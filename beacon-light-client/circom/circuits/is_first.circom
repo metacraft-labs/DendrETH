@@ -1,6 +1,7 @@
-pragma circom 2.0.3;
+pragma circom 2.1.5;
 
 include "../../../node_modules/circomlib/circuits/comparators.circom";
+// include "../../../node_modules/circomlib/circuits/gates.circom";
 
 template IsFirst() {
   signal input firstHash[2];
@@ -8,18 +9,11 @@ template IsFirst() {
 
   signal output out;
 
-  component isEqual1 = IsEqual();
-  isEqual1.in[0] <== firstHash[0];
-  isEqual1.in[1] <== secondHash[0];
+  signal isEqual1 <== IsEqual()([firstHash[0],secondHash[0]]);
 
-  component isEqual2 = IsEqual();
-  isEqual2.in[0] <== firstHash[1];
-  isEqual2.in[1] <== secondHash[1];
+  signal isEqual2 <== IsEqual()([firstHash[1],secondHash[1]]);
 
-  component and = AND();
+  signal and <== AND()(isEqual1,isEqual2);
 
-  and.a <== isEqual1.out;
-  and.b <== isEqual2.out;
-
-  out <== and.out;
+  out <== and;
 }

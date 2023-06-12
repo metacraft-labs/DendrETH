@@ -1,4 +1,4 @@
-pragma circom 2.0.3;
+pragma circom 2.1.5;
 
 include "../../../node_modules/circomlib/circuits/comparators.circom";
 
@@ -11,9 +11,7 @@ template IsSuperMajority(N) {
     sum += bitmask[i];
   }
   // check if 1s are more then 2/3 of the bitmask
-  component greaterThan = GreaterEqThan(252);
-  greaterThan.in[0] <== sum * 3;
-  greaterThan.in[1] <== 2 * N;
+  signal greaterThan <== GreaterEqThan(252)([sum * 3, 2 * N]);
 
-  greaterThan.out === 1;
+  greaterThan === 1;
 }

@@ -1,7 +1,8 @@
-pragma circom 2.0.3;
+pragma circom 2.1.5;
 
 include "../../../node_modules/circomlib/circuits/sha256/sha256.circom";
 include "hash_tree_root.circom";
+include "hash_aggregated_key.circom";
 
 template SyncCommiteeHashTreeRoot(N) {
   signal input points[N][384];
@@ -10,9 +11,9 @@ template SyncCommiteeHashTreeRoot(N) {
   signal output out[256];
 
   component leaves[N];
+  signal hashTreeRootInput[N][256];
 
   for(var i = 0; i < N; i++) {
-    // SSZ pubkey
     leaves[i] = Sha256(512);
     for(var j = 0; j < 384; j++) {
       leaves[i].in[j] <== points[i][j];
@@ -21,35 +22,16 @@ template SyncCommiteeHashTreeRoot(N) {
     for(var j = 384; j < 512; j++) {
       leaves[i].in[j] <== 0;
     }
-  }
 
-  component hashTreeRoot = HashTreeRoot(N);
-
-  for(var i = 0; i < N; i++) {
     for(var j = 0; j < 256; j++) {
-      hashTreeRoot.leaves[i][j] <== leaves[i].out[j];
+      hashTreeRootInput[i][j] <== leaves[i].out[j];
     }
   }
 
-  // SSZ pubkey
-  component hash = Sha256(512);
+  signal hashTreeRoot[256] <== HashTreeRoot(N)(hashTreeRootInput);
+  signal hashKey[256] <== hashAggregatedKey()(aggregatedKey);
 
-  for(var i = 0; i < 384; i++) {
-    hash.in[i] <== aggregatedKey[i];
-  }
+  signal hasher[256] <== HashTwo()([hashTreeRoot,hashKey]);
 
-  for(var i = 384; i < 512; i++) {
-    hash.in[i] <== 0;
-  }
-
-  component hasher = HashTwo();
-
-  for(var i = 0; i < 256; i++) {
-    hasher.in[0][i] <== hashTreeRoot.out[i];
-    hasher.in[1][i] <== hash.out[i];
-  }
-
-  for(var i = 0; i < 256; i++) {
-    out[i] <== hasher.out[i];
-  }
+  out <== hasher;
 }
