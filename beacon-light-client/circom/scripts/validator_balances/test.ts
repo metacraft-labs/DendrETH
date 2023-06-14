@@ -12,7 +12,7 @@ import { verifyMerkleProof } from '../../../../libs/typescript/ts-utils/ssz-util
   );
 
   const beaconStateSZZ = await fetch(
-    `http://unstable.prater.beacon-api.nimbus.team/eth/v2/debug/beacon/states/5794336`,
+    `http://testing.mainnet.beacon-api.nimbus.team/eth/v2/debug/beacon/states/6616005`,
     {
       headers: {
         Accept: 'application/octet-stream',
@@ -24,8 +24,19 @@ import { verifyMerkleProof } from '../../../../libs/typescript/ts-utils/ssz-util
 
   const beaconState = ssz.capella.BeaconState.deserialize(beaconStateSZZ);
 
-  console.log(beaconState.balances.length);
-  console.log(beaconState.validators.length);
+  console.log(
+    BigInt(
+      '0x' +
+        bytesToHex(
+          ssz.phase0.Validator.hashTreeRoot(beaconState.validators[0]),
+        ),
+    )
+      .toString(2)
+      .padStart(256, '0')
+      .split('')
+      .map(x => `"${x.toString()}"`)
+      .join(','),
+  );
 
   // const beaconStateView = ssz.capella.BeaconState.toViewDU(beaconState);
   // const beaconStateTree = new Tree(beaconStateView.node);
