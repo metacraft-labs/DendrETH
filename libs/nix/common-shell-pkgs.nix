@@ -45,6 +45,8 @@ in
 
     redis
 
+    b3sum
+
     # For some reason, this is used by make when compiling the
     # Circom tests on macOS even when we specify CC=clang below:
     gcc

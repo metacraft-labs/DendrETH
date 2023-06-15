@@ -6,6 +6,8 @@ import { publishProofs } from '../../../relay/on_chain_publisher';
 import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
 import * as networkConfig from '../../../relay/constants/network_config.json';
 import { Config } from '../../../relay/constants/constants';
+import { Contract, ethers } from 'ethers';
+import hashi_abi from './hashi_abi.json';
 
 task('start-publishing', 'Run relayer')
   .addParam('lightclient', 'The address of the BeaconLightClient contract')
@@ -21,6 +23,13 @@ task('start-publishing', 'Run relayer')
     'transactionspeed',
     'The speed you want the transactions to be included in a block',
     'avg',
+    undefined,
+    true,
+  )
+  .addParam(
+    'hashi',
+    'The address of the Hashi adapter contract',
+    undefined,
     undefined,
     true,
   )
@@ -65,6 +74,12 @@ task('start-publishing', 'Run relayer')
       throw new Error('Invalid transaction speed');
     }
 
+    let hashiAdapterContract: ethers.Contract | undefined;
+
+    if (args.hashi) {
+      hashiAdapterContract = new Contract(args.hashi, hashi_abi, publisher);
+    }
+
     const redis = new Redis(config.REDIS_HOST!, config.REDIS_PORT);
     const beaconApi = new BeaconApi(currentConfig.BEACON_REST_API);
     const contract = new SolidityContract(
@@ -73,7 +88,14 @@ task('start-publishing', 'Run relayer')
       args.transactionspeed,
     );
 
-    publishProofs(redis, beaconApi, contract);
+    publishProofs(
+      redis,
+      beaconApi,
+      contract,
+      hashiAdapterContract,
+      (network.config as any).url,
+      args.transactionspeed,
+    );
 
     // never resolving promise to block the task
     return new Promise(() => {});
