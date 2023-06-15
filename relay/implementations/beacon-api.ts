@@ -19,6 +19,63 @@ export class BeaconApi implements IBeaconApi {
     this.beaconRestApi = beaconRestApi;
   }
 
+  async getHashiAdapterInfo(slot: number): Promise<{
+    blockNumber: number;
+    blockHash: string;
+    blockNumberProof: string[];
+    blockHashProof: string[];
+  }> {
+    const currentBlock = await (
+      await fetch(this.concatUrl(`/eth/v2/beacon/blocks/${slot}`))
+    ).json();
+
+    const { ssz } = await import('@lodestar/types');
+
+    const beaconBlock = ssz.capella.BeaconBlockBody.fromJson(
+      currentBlock.data.message.body,
+    );
+
+    const beaconBlockView = ssz.capella.BeaconBlockBody.toViewDU(beaconBlock);
+    let beaconBlockTree = new Tree(beaconBlockView.node);
+
+    const beaconBlockHeader = await this.getExistingBlockHeader(slot);
+
+    const beaconBlockHeaderView =
+      ssz.phase0.BeaconBlockHeader.toViewDU(beaconBlockHeader);
+    const beaconBlockHeaderTree = new Tree(beaconBlockHeaderView.node);
+
+    const bodyRootProof = beaconBlockHeaderTree
+      .getSingleProof(
+        ssz.phase0.BeaconBlockHeader.getPathInfo(['body_root']).gindex,
+      )
+      .map(bytesToHex);
+
+    const blockNumberProof = beaconBlockTree
+      .getSingleProof(
+        ssz.capella.BeaconBlockBody.getPathInfo([
+          'executionPayload',
+          'blockNumber',
+        ]).gindex,
+      )
+      .map(bytesToHex);
+
+    const blockHashProof = beaconBlockTree
+      .getSingleProof(
+        ssz.capella.BeaconBlockBody.getPathInfo([
+          'executionPayload',
+          'blockHash',
+        ]).gindex,
+      )
+      .map(bytesToHex);
+
+    return {
+      blockNumber: beaconBlock.executionPayload.blockNumber,
+      blockHash: bytesToHex(beaconBlock.executionPayload.blockHash),
+      blockNumberProof: [...blockNumberProof, ...bodyRootProof],
+      blockHashProof: [...blockHashProof, ...bodyRootProof],
+    };
+  }
+
   async getCurrentHeadSlot(): Promise<number> {
     const currentHead = await (
       await fetch(this.concatUrl('/eth/v1/beacon/headers/head'))

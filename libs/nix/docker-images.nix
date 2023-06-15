@@ -33,6 +33,7 @@ with pkgs; let
       fish
       redis
       curl
+      b3sum
       metacraft-labs.rapidsnark-server
     ];
 

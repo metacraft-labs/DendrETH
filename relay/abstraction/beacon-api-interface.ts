@@ -6,6 +6,13 @@ import {
 } from '../types/types';
 
 export interface IBeaconApi {
+  getHashiAdapterInfo(slot: number): Promise<{
+    blockNumber: number;
+    blockHash: string;
+    blockNumberProof: string[];
+    blockHashProof: string[];
+  }>;
+
   getCurrentHeadSlot(): Promise<number>;
 
   getBlockSlot(blockHash: string): Promise<number>;

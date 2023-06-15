@@ -2,6 +2,12 @@ import { ProofResultType } from './types/types';
 import { IBeaconApi } from './abstraction/beacon-api-interface';
 import { IRedis } from './abstraction/redis-interface';
 import { ISmartContract } from './abstraction/smart-contract-abstraction';
+import { Contract } from 'ethers';
+import {
+  TransactionSpeed,
+  publishTransaction,
+} from './implementations/publish_evm_transaction';
+import Web3 from 'web3';
 
 let isDrainRunning = false;
 
@@ -9,12 +15,29 @@ export async function publishProofs(
   redis: IRedis,
   beaconApi: IBeaconApi,
   smartContract: ISmartContract,
+  hashiAdapterContract: Contract | undefined,
+  rpcEndpoint: string,
+  transactionSpeed: TransactionSpeed = 'avg',
 ) {
-  await drainUpdatesInRedis(redis, beaconApi, smartContract);
+  await drainUpdatesInRedis(
+    redis,
+    beaconApi,
+    smartContract,
+    hashiAdapterContract,
+    rpcEndpoint,
+    transactionSpeed,
+  );
 
   await redis.subscribeForProofs(async () => {
     try {
-      drainUpdatesInRedis(redis, beaconApi, smartContract);
+      drainUpdatesInRedis(
+        redis,
+        beaconApi,
+        smartContract,
+        hashiAdapterContract,
+        rpcEndpoint,
+        transactionSpeed,
+      );
     } catch (e) {
       console.log('error happened');
       console.log(e);
@@ -26,6 +49,9 @@ export async function drainUpdatesInRedis(
   redis: IRedis,
   beaconApi: IBeaconApi,
   smartContract: ISmartContract,
+  hashiAdapterContract: Contract | undefined,
+  rpcEndpoint: string,
+  transactionSpeed: TransactionSpeed = 'avg',
 ) {
   if (isDrainRunning) {
     console.log('Publishing transactions is already running');
@@ -56,19 +82,22 @@ export async function drainUpdatesInRedis(
           smartContract,
           beaconApi,
           lastSlotOnChain,
+          hashiAdapterContract,
+          rpcEndpoint,
+          transactionSpeed,
         );
         // Slow down broadcasting
         await new Promise(r => setTimeout(r, 2000));
         failedNumber = 0;
       } catch (error) {
         if (failedNumber > 10) {
-          console.log('ERROR occured in publishing transaction');
+          console.log('ERROR occurred in publishing transaction');
           console.log(error);
           console.log('STOPPING');
           isDrainRunning = false;
           return;
         }
-        console.log('ERROR occured in publishing transaction');
+        console.log('ERROR occurred in publishing transaction');
         console.log(error);
         console.log('will retry');
         failedNumber++;
@@ -76,14 +105,14 @@ export async function drainUpdatesInRedis(
       }
     } catch (error) {
       if (failedNumber > 10) {
-        console.log('error occured while fetching header');
+        console.log('error occurred while fetching header');
         console.log(error);
         console.log('STOPPING');
         isDrainRunning = false;
         return;
       }
 
-      console.log('error occured while fetching header');
+      console.log('error occurred while fetching header');
       console.log(error);
       console.log('will retry');
       failedNumber++;
@@ -97,6 +126,9 @@ export async function postUpdateOnChain(
   lightClientContract: ISmartContract,
   beaconApi: IBeaconApi,
   lastSlotOnChain: number,
+  hashiAdapterContract: Contract | undefined,
+  rpcEndpoint: string,
+  transactionSpeed: TransactionSpeed = 'avg',
 ) {
   const update = {
     attestedHeaderRoot:
@@ -125,6 +157,28 @@ export async function postUpdateOnChain(
     b: proofResult.proof.pi_b,
     c: proofResult.proof.pi_c,
   });
+
+  if (hashiAdapterContract) {
+    const hashiInfo = await beaconApi.getHashiAdapterInfo(
+      proofResult.proofInput.nextHeaderSlot,
+    );
+
+    await publishTransaction(
+      hashiAdapterContract,
+      'storeBlockHeader',
+      [
+        (await hashiAdapterContract.provider.getNetwork()).chainId,
+        proofResult.proofInput.nextHeaderSlot,
+        hashiInfo.blockNumber,
+        hashiInfo.blockNumberProof.map(x => '0x' + x),
+        '0x' + hashiInfo.blockHash,
+        hashiInfo.blockHashProof.map(x => '0x' + x),
+      ],
+      new Web3(rpcEndpoint),
+      transactionSpeed,
+      true,
+    );
+  }
 
   const transactionSlot = proofResult.proofInput.nextHeaderSlot;
 
