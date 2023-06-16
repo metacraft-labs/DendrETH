@@ -8,6 +8,7 @@ import {
   publishTransaction,
 } from './implementations/publish_evm_transaction';
 import Web3 from 'web3';
+import { sleep } from '../libs/typescript/ts-utils/common-utils';
 
 let isDrainRunning = false;
 
@@ -19,30 +20,34 @@ export async function publishProofs(
   rpcEndpoint: string,
   transactionSpeed: TransactionSpeed = 'avg',
 ) {
-  await drainUpdatesInRedis(
-    redis,
-    beaconApi,
-    smartContract,
-    hashiAdapterContract,
-    rpcEndpoint,
-    transactionSpeed,
-  );
+  try {
+    await drainUpdatesInRedis(
+      redis,
+      beaconApi,
+      smartContract,
+      hashiAdapterContract,
+      rpcEndpoint,
+      transactionSpeed,
+    );
 
-  await redis.subscribeForProofs(async () => {
-    try {
-      drainUpdatesInRedis(
-        redis,
-        beaconApi,
-        smartContract,
-        hashiAdapterContract,
-        rpcEndpoint,
-        transactionSpeed,
-      );
-    } catch (e) {
-      console.log('error happened');
-      console.log(e);
-    }
-  });
+    await redis.subscribeForProofs(async () => {
+      try {
+        await drainUpdatesInRedis(
+          redis,
+          beaconApi,
+          smartContract,
+          hashiAdapterContract,
+          rpcEndpoint,
+          transactionSpeed,
+        );
+      } catch (e) {
+        console.error('Error while draining updates in Redis', e);
+      }
+    });
+  } catch (error) {
+    console.error('Error occurred while publishing proofs: ', error);
+    throw error;
+  }
 }
 
 export async function drainUpdatesInRedis(
@@ -87,36 +92,21 @@ export async function drainUpdatesInRedis(
           transactionSpeed,
         );
         // Slow down broadcasting
-        await new Promise(r => setTimeout(r, 2000));
+        await sleep(2000);
         failedNumber = 0;
       } catch (error) {
-        if (failedNumber > 10) {
-          console.log('ERROR occurred in publishing transaction');
-          console.log(error);
-          console.log('STOPPING');
-          isDrainRunning = false;
-          return;
-        }
-        console.log('ERROR occurred in publishing transaction');
-        console.log(error);
-        console.log('will retry');
-        failedNumber++;
-        await new Promise(r => setTimeout(r, 10000));
+        [failedNumber, isDrainRunning] = (await handleFailure(
+          error,
+          'publishing transaction',
+          failedNumber,
+        )) as any[];
       }
     } catch (error) {
-      if (failedNumber > 10) {
-        console.log('error occurred while fetching header');
-        console.log(error);
-        console.log('STOPPING');
-        isDrainRunning = false;
-        return;
-      }
-
-      console.log('error occurred while fetching header');
-      console.log(error);
-      console.log('will retry');
-      failedNumber++;
-      await new Promise(r => setTimeout(r, 10000));
+      [failedNumber, isDrainRunning] = (await handleFailure(
+        error,
+        'fetching header',
+        failedNumber,
+      )) as any[];
     }
   }
 }
@@ -201,4 +191,27 @@ export async function postUpdateOnChain(
       ((currentHeadSlot - transactionSlot) * 12) / 60
     } minutes behind`,
   );
+}
+
+async function handleFailure(
+  error: any,
+  scopeError: string,
+  failedNumber: number,
+): Promise<[number, boolean]> {
+  if (failedNumber > 10) {
+    log(error, `ERROR occurred in ${scopeError}`, 'STOPPING');
+    isDrainRunning = false;
+    return [failedNumber, isDrainRunning];
+  }
+  log(error, 'ERROR occurred in ${scopeError}', 'will retry');
+  failedNumber++;
+  await sleep(10000);
+
+  return [failedNumber, isDrainRunning];
+}
+
+function log(error: any, firstMessage: string, secondMessage: string): void {
+  console.log(firstMessage);
+  console.log(error);
+  console.log(secondMessage);
 }
