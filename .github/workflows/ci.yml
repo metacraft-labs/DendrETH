@@ -40,6 +40,9 @@ jobs:
       - name: Install Node.js dependencies
         run: nix develop -c yarn format:check
 
+      - name: Run Verifier in EOS - Relayer test
+        run: nix develop -c yarn test './tests/eosLightClient/test-verifier-in-EOS-relay.ts'
+
       - name: Run Nim Light Client compiled with emsctipten tests
         run: nix develop -c yarn test-emcc './tests/test-nim-to-wasm.ts' 'test-nim-light-client.ts'
 
@@ -66,6 +69,3 @@ jobs:
 
       # - name: Run Verifier in EOS test
       #   run: nix develop -c yarn test './tests/eosLightClient/test-verifier-in-EOS.ts'
-
-      - name: Run Verifier in EOS - Relayer test
-        run: nix develop -c yarn test './tests/eosLightClient/test-verifier-in-EOS-relay.ts'
