@@ -111,16 +111,15 @@ enable_special_feature() {
 }
 
 enable_crypto_primitives() {
-    mkdir -p ${EOS_SYSTEM_SMART_CONTRACT_DIR}/build
-    pushd ${EOS_SYSTEM_SMART_CONTRACT_DIR}/build
-    cmake ..
+    mkdir -p ${EOS_CONTRACT_DIR}/build
+    pushd ${EOS_CONTRACT_DIR}/build
+    cmake ${EOS_SYSTEM_SMART_CONTRACT_DIR}
     make
     popd
 
     curl -X POST http://127.0.0.1:8888/v1/chain/get_activated_protocol_features -d '{}' | jq
 
     cleos set contract eosio ${EOS_SYSTEM_SMART_CONTRACT_DIR}/eosio.boot/bin eosio.boot.wasm eosio.boot.abi
-    echo "here"
     cleos push action eosio activate '["6bcb40a24e49c26d0a60513b6aeb8551d264e4717f306b81a37a5afb3b47cedc"]' -p eosio
 }
 
