@@ -1,6 +1,7 @@
 import { BigNumber, Contract } from 'ethers';
 import Web3 from 'web3';
 import { FeeHistoryResult } from 'web3-eth';
+import { groth16 } from 'snarkjs';
 
 type Block = {
   number: number | string;
@@ -102,6 +103,38 @@ export async function publishTransaction(
 
     break;
   }
+}
+
+export async function getSolidityProof(update: {
+  a: string[];
+  b: string[][];
+  c: string[];
+}): Promise<{
+  a: string[];
+  b: string[][];
+  c: string[];
+}> {
+  const calldata = await groth16.exportSolidityCallData(
+    {
+      pi_a: update.a,
+      pi_b: update.b,
+      pi_c: update.c,
+    },
+    [],
+  );
+
+  const argv: string[] = calldata
+    .replace(/["[\]\s]/g, '')
+    .split(',')
+    .map(x => BigInt(x).toString());
+
+  const a = [argv[0], argv[1]];
+  const b = [
+    [argv[2], argv[3]],
+    [argv[4], argv[5]],
+  ];
+  const c = [argv[6], argv[7]];
+  return { a, b, c };
 }
 
 async function getGasPrice(web3: Web3, transactionSpeed: TransactionSpeed) {

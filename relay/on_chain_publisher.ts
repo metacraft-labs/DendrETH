@@ -5,6 +5,7 @@ import { ISmartContract } from './abstraction/smart-contract-abstraction';
 import { Contract } from 'ethers';
 import {
   TransactionSpeed,
+  getSolidityProof,
   publishTransaction,
 } from './implementations/publish_evm_transaction';
 import Web3 from 'web3';
@@ -141,21 +142,20 @@ export async function postUpdateOnChain(
 
   console.log(update);
 
-  await lightClientContract.postUpdateOnChain({
-    ...update,
-    a: proofResult.proof.pi_a,
-    b: proofResult.proof.pi_b,
-    c: proofResult.proof.pi_c,
-  });
-
   if (hashiAdapterContract) {
     const hashiInfo = await beaconApi.getHashiAdapterInfo(
       proofResult.proofInput.nextHeaderSlot,
     );
 
+    const solidityProof = await getSolidityProof({
+      a: proofResult.proof.pi_a,
+      b: proofResult.proof.pi_b,
+      c: proofResult.proof.pi_c,
+    });
+
     await publishTransaction(
       hashiAdapterContract,
-      'storeBlockHeader',
+      'storeBlockHeader(uint32,uint64,uint256,bytes32[],bytes32,bytes32[],(bytes32,uint256,bytes32,bytes32,uint256[2],uint256[2][2],uint256[2]))',
       [
         (await hashiAdapterContract.provider.getNetwork()).chainId,
         proofResult.proofInput.nextHeaderSlot,
@@ -163,11 +163,19 @@ export async function postUpdateOnChain(
         hashiInfo.blockNumberProof.map(x => '0x' + x),
         '0x' + hashiInfo.blockHash,
         hashiInfo.blockHashProof.map(x => '0x' + x),
+        { ...update, ...solidityProof },
       ],
       new Web3(rpcEndpoint),
       transactionSpeed,
       true,
     );
+  } else {
+    await lightClientContract.postUpdateOnChain({
+      ...update,
+      a: proofResult.proof.pi_a,
+      b: proofResult.proof.pi_b,
+      c: proofResult.proof.pi_c,
+    });
   }
 
   const transactionSlot = proofResult.proofInput.nextHeaderSlot;
@@ -203,7 +211,7 @@ async function handleFailure(
     isDrainRunning = false;
     return [failedNumber, isDrainRunning];
   }
-  log(error, 'ERROR occurred in ${scopeError}', 'will retry');
+  log(error, `ERROR occurred in ${scopeError}`, 'will retry');
   failedNumber++;
   await sleep(10000);
 
