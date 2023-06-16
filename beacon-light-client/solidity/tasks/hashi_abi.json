@@ -69,6 +69,11 @@
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "InvalidUpdate",
+    "type": "error"
+  },
+  {
     "anonymous": false,
     "inputs": [
       {
@@ -197,6 +202,86 @@
         "internalType": "bytes32[]",
         "name": "_blockHashProof",
         "type": "bytes32[]"
+      }
+    ],
+    "name": "storeBlockHeader",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "_chainId",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "_slot",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_blockNumber",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "_blockNumberProof",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "_blockHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "_blockHashProof",
+        "type": "bytes32[]"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "attestedHeaderRoot",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "attestedHeaderSlot",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "finalizedHeaderRoot",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "finalizedExecutionStateRoot",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint256[2]",
+            "name": "a",
+            "type": "uint256[2]"
+          },
+          {
+            "internalType": "uint256[2][2]",
+            "name": "b",
+            "type": "uint256[2][2]"
+          },
+          {
+            "internalType": "uint256[2]",
+            "name": "c",
+            "type": "uint256[2]"
+          }
+        ],
+        "internalType": "struct LightClientUpdate",
+        "name": "update",
+        "type": "tuple"
       }
     ],
     "name": "storeBlockHeader",
