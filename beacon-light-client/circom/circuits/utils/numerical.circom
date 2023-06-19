@@ -42,8 +42,11 @@ template DivisionVerification() {
   signal input quotient;
   signal input remainder;
 
+
   dividend === divisor * quotient + remainder;
 
+  // Constraints also the fact that divisor is not zero
+  // cause if divisor is zero remainder can't be less than that
   component lessThan = LessThanBitsCheck(252);
   lessThan.in[0] <== remainder;
   lessThan.in[1] <== divisor;
@@ -78,7 +81,7 @@ template Pow(N){
     for (var i=0; i < N; i++) {
         intermediary[i] <== i == 0 ? 1 : (intermediary[i-1] * base);
     }
-    
+
     component selector = Selector(N);
     for (var i = 0; i < N; i++) {
         selector.in[i] <== intermediary[i];
