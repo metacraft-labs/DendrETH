@@ -34,3 +34,7 @@ test-solidity-beacon-light-client-verifier:
 
 test-circom-circuits:
 	./beacon-light-client/circom/test/run_snarkit2_tests.sh --force_recompile
+
+test-plonky2-circuits:
+	cd beacon-light-client/plonky2/circuits && \
+	cargo test --release
