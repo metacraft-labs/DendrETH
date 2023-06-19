@@ -11,7 +11,6 @@ import { writeFileSync } from 'fs';
 import { BitVectorType } from '@chainsafe/ssz';
 import * as path from 'path';
 import { getFilesInDir } from '../../../../libs/typescript/ts-utils/data';
-import * as constants from '../../../solidity/test/utils/constants';
 
 export async function getProof(vkey, proof, originator, prevUpdate, update) {
   let points: PointG1[] = prevUpdate.next_sync_committee.pubkeys.map(x =>

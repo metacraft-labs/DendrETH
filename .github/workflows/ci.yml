@@ -128,7 +128,17 @@ jobs:
       - name: Run circom tests
         run: nix develop -c make test-circom-circuits
 
-  Run_Verifier_In_Cosmos_Relay_Tests:
+      - name: Run plonky2 circuit tests
+        run: nix develop -c make test-plonky2-circuits
+
+      - name: Run Verifier in Cosmos - Relayer test
+        run: nix develop -c yarn test './tests/cosmosLightClient/test-verifier-in-cosmos-relay.ts'
+
+      # - name: Run Verifier in EOS test
+      #   run: nix develop -c yarn test './tests/eosLightClient/test-verifier-in-EOS.ts'
+
+  SolidityVerifierTests:
+    needs: Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

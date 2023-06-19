@@ -6,6 +6,7 @@ import {
   ExecutionPayloadHeader,
   SyncAggregate,
   SyncCommittee,
+  Validator,
 } from '../types/types';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { bytesToHex } from '../../libs/typescript/ts-utils/bls';
@@ -375,6 +376,22 @@ export class BeaconApi implements IBeaconApi {
     ).json();
 
     return block.data.message.body.execution_payload.state_root;
+  }
+
+  async getValidators(
+    state_id: number | string = 'head',
+  ): Promise<Validator[]> {
+    const { ssz } = await import('@lodestar/types');
+
+    const validators = await (
+      await this.fetchWithFallback(
+        `/eth/v1/beacon/states/${state_id}/validators`,
+      )
+    ).json();
+
+    return ssz.phase0.Validators.fromJson(
+      validators.data.map(x => x.validator),
+    );
   }
 
   private async getBeaconState(slot: number) {

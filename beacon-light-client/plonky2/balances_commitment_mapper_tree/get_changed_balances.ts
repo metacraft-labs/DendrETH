@@ -1,10 +1,13 @@
 import { writeFileSync, readFileSync, existsSync } from 'fs';
 import { sleep } from '../../../libs/typescript/ts-utils/common-utils';
+import { Tree } from '@chainsafe/persistent-merkle-tree';
 
 (async () => {
   const { ssz } = await import('@lodestar/types');
 
   let prevSlot = 0;
+
+  let map: Map<number, number> = new Map();
 
   while (true) {
     const beaconStateSZZ = await fetch(
@@ -31,15 +34,31 @@ import { sleep } from '../../../libs/typescript/ts-utils/common-utils';
         'binary',
       );
 
-      await sleep(12000);
+      await sleep(384000);
       continue;
     }
 
-    console.log(beaconState.slot);
+    const prevMapSize = map.size;
+    console.log('Prev map size', prevMapSize);
+
+    beaconState.balances.forEach(balance => {
+      if(map.has(balance)) {
+        map[balance] = map[balance] + 1;
+      }
+      else {
+        map.set(balance, 1);
+      }
+    });
+
+    console.log('Balances size', beaconState.balances.length);
+
+    console.log('Map size', map.size);
+
+    console.log('Map change', map.size - prevMapSize);
 
     if (prevSlot >= beaconState.slot) {
       console.log('Waiting for the next epoch.');
-      await sleep(12000);
+      await sleep(384000);
       continue;
     }
 
@@ -67,11 +86,6 @@ import { sleep } from '../../../libs/typescript/ts-utils/common-utils';
 
     console.log('#changedBalances', changedBalances.length);
 
-    console.log(
-      'changed indices',
-      changedBalances.map(({ index }) => index),
-    );
-
     writeFileSync(
       'prev_beacon_state.ssz',
       Buffer.from(beaconStateSZZ),
@@ -81,6 +95,6 @@ import { sleep } from '../../../libs/typescript/ts-utils/common-utils';
     prevSlot = beaconState.slot;
 
     // wait for the next slot
-    await sleep(12000);
+    await sleep(384000);
   }
 })();

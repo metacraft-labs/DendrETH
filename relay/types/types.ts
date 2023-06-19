@@ -151,3 +151,14 @@ export interface Proof {
   pi_c: string[];
   public: string[];
 }
+
+export interface Validator {
+  pubkey: Uint8Array;
+  withdrawalCredentials: Uint8Array;
+  effectiveBalance: number;
+  slashed: boolean;
+  activationEligibilityEpoch: number;
+  activationEpoch: number;
+  exitEpoch: number;
+  withdrawableEpoch: number;
+}

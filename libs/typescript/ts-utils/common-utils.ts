@@ -64,3 +64,13 @@ export function getEnvString(varName: string) {
     `Env variable '${varName}' is missing.`,
   );
 }
+
+export function splitIntoBatches<T>(array: T[], batchSize: number): T[][] {
+  const batches: T[][] = [];
+
+  for (let i = 0; i < array.length; i += batchSize) {
+    batches.push(array.slice(i, i + batchSize));
+  }
+
+  return batches;
+}
