@@ -1828,6 +1828,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@mevitae/redis-work-queue@npm:^0.0.4":
+  version: 0.0.4
+  resolution: "@mevitae/redis-work-queue@npm:0.0.4"
+  dependencies:
+    ioredis: ^5.3.2
+    uuid: ^9.0.0
+  checksum: 407a39650942359ce9504e3c8a12b617d16cb09c7e958490add21f03d7704db973e8c14b846f4737e56df916998f21901e0b3c35f7fd9e0e9c39cb61c1aac943
+  languageName: node
+  linkType: hard
+
 "@morgan-stanley/ts-mocking-bird@npm:^0.6.2":
   version: 0.6.4
   resolution: "@morgan-stanley/ts-mocking-bird@npm:0.6.4"
@@ -3081,6 +3091,7 @@ __metadata:
     "@cosmjs/stargate": ^0.30.0
     "@iden3/binfileutils": ^0.0.11
     "@lodestar/types": 1.4.1
+    "@mevitae/redis-work-queue": ^0.0.4
     "@noble/bls12-381": ^1.3.0
     "@nomiclabs/hardhat-ethers": ^2.1.1
     "@nomiclabs/hardhat-etherscan": ^3.1.0
@@ -3090,6 +3101,7 @@ __metadata:
     "@types/node": ^18.0.0
     bullmq: ^3.7.1
     circom_tester: ^0.0.14
+    circomlibjs: ^0.1.7
     crypto-js: ^4.1.1
     dotenv: ^16.0.2
     ethers: ^5.7.0
@@ -3106,6 +3118,7 @@ __metadata:
     ts-jest: ^28.0.5
     ts-node: ^10.9.1
     typescript: ^4.7.4
+    uuid: ^9.0.0
     yargs: ^17.7.1
   languageName: unknown
   linkType: soft
@@ -3828,6 +3841,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"blake-hash@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "blake-hash@npm:2.0.0"
+  dependencies:
+    node-addon-api: ^3.0.0
+    node-gyp: latest
+    node-gyp-build: ^4.2.2
+    readable-stream: ^3.6.0
+  checksum: a0d9a8f3953b986d3b30a741a6c000dedcc9a03b1318f52cc01ae62d18829ba6cb1a4d8cbe74785abfdc952a21db410984523bd457764aca716162cfd3ca8ea4
+  languageName: node
+  linkType: hard
+
 "blake2b-wasm@git+https://github.com/jbaylina/blake2b-wasm.git":
   version: 2.1.0
   resolution: "blake2b-wasm@https://github.com/jbaylina/blake2b-wasm.git#commit=0d5f024b212429c7f50a7f533aa3a2406b5b42b3"
@@ -3844,6 +3869,16 @@ __metadata:
     b4a: ^1.0.1
     nanoassert: ^2.0.0
   checksum: 1839dd0693681228d81f781dd8680a6803a629ca374aed5ac02fa649ce40a67a85eb49eeb2ec6aeb7ef3ef5aa169b3579b50eabf7afa360d190338bc3e8666bd
+  languageName: node
+  linkType: hard
+
+"blake2b@npm:^2.1.3":
+  version: 2.1.4
+  resolution: "blake2b@npm:2.1.4"
+  dependencies:
+    blake2b-wasm: ^2.4.0
+    nanoassert: ^2.0.0
+  checksum: cd598c96d459017714b7f9cb8892ef2b0a94f362e26e6baa46b7b8b189af0006ce25ab1713e3ec1484eb18ce7ebe1eb24e07d01e42ab1147067de2419c7f6158
   languageName: node
   linkType: hard
 
@@ -4583,6 +4618,18 @@ __metadata:
   version: 2.0.2
   resolution: "circomlib@npm:2.0.2"
   checksum: 7bf7fea613ed37c2520e16c74f80404bea1a3ddc4801e3fb68ad90dd49ea295876df8c55a0a11eae4927e0e3f1b56913ac8d8165d07617cc8b32a13f3827f6c9
+  languageName: node
+  linkType: hard
+
+"circomlibjs@npm:^0.1.7":
+  version: 0.1.7
+  resolution: "circomlibjs@npm:0.1.7"
+  dependencies:
+    blake-hash: ^2.0.0
+    blake2b: ^2.1.3
+    ethers: ^5.5.1
+    ffjavascript: ^0.2.45
+  checksum: 843aa422e7a203d06e1ef9ae6bf334d726a8091eda5afcc3a6531727a6ea3acb5c4a2498bf444fda35824064d45c25cb89fe99b02410fc0f7ff2dc6d7101d779
   languageName: node
   linkType: hard
 
@@ -5881,7 +5928,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ethers@npm:^5.6.4, ethers@npm:^5.6.9, ethers@npm:^5.7.0":
+"ethers@npm:^5.5.1, ethers@npm:^5.6.4, ethers@npm:^5.6.9, ethers@npm:^5.7.0":
   version: 5.7.2
   resolution: "ethers@npm:5.7.2"
   dependencies:
@@ -7450,6 +7497,23 @@ __metadata:
     redis-parser: ^3.0.0
     standard-as-callback: ^2.1.0
   checksum: 6c98cb8f8772ad4bb2b6b7a0a224e4a63f4759f9a28e84205f18788552f08221d51f391c10892dca01a1b10b2804d0a7e6082b0b7decd65538a5fb6b0f4f1f82
+  languageName: node
+  linkType: hard
+
+"ioredis@npm:^5.3.2":
+  version: 5.3.2
+  resolution: "ioredis@npm:5.3.2"
+  dependencies:
+    "@ioredis/commands": ^1.1.1
+    cluster-key-slot: ^1.1.0
+    debug: ^4.3.4
+    denque: ^2.1.0
+    lodash.defaults: ^4.2.0
+    lodash.isarguments: ^3.1.0
+    redis-errors: ^1.2.0
+    redis-parser: ^3.0.0
+    standard-as-callback: ^2.1.0
+  checksum: 9a23559133e862a768778301efb68ae8c2af3c33562174b54a4c2d6574b976e85c75a4c34857991af733e35c48faf4c356e7daa8fb0a3543d85ff1768c8754bc
   languageName: node
   linkType: hard
 
@@ -9764,7 +9828,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-addon-api@npm:^3.1.0":
+"node-addon-api@npm:^3.0.0, node-addon-api@npm:^3.1.0":
   version: 3.2.1
   resolution: "node-addon-api@npm:3.2.1"
   dependencies:
@@ -9844,7 +9908,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-gyp-build@npm:^4.2.0, node-gyp-build@npm:^4.3.0":
+"node-gyp-build@npm:^4.2.0, node-gyp-build@npm:^4.2.2, node-gyp-build@npm:^4.3.0":
   version: 4.6.0
   resolution: "node-gyp-build@npm:4.6.0"
   bin:

@@ -1,5 +1,7 @@
+import { hexToBytes } from '../../libs/typescript/ts-utils/bls';
+import { bitsToBytes } from '../../libs/typescript/ts-utils/hex-utils';
 import { IRedis } from '../abstraction/redis-interface';
-import { ProofResultType } from '../types/types';
+import { ProofResultType, Validator } from '../types/types';
 import { createClient, RedisClientType } from 'redis';
 
 export class Redis implements IRedis {
@@ -18,6 +20,101 @@ export class Redis implements IRedis {
     await this.waitForConnection();
 
     this.pubSub.publish('proofs_channel', 'proof');
+  }
+
+  async getValidatorsBatched(ssz, batchSize = 1000) {
+    await this.waitForConnection();
+
+    const keys = await this.redisClient.keys('validator:*');
+
+    if (keys.length === 0) {
+      return [];
+    }
+
+    let allValidators: Validator[] = new Array(keys.length);
+
+    for (let i = 0; i < keys.length; i += batchSize) {
+      const batchKeys = keys.slice(i, i + batchSize);
+      const batchValidators = await this.redisClient.mGet(batchKeys);
+
+      for (let j = 0; j < batchValidators.length; j++) {
+        const redisValidatorJSON = JSON.parse(batchValidators[j]!);
+        try {
+          let validatorJSON: Validator = {
+            pubkey: hexToBytes(bitsToBytes(redisValidatorJSON.pubkey)),
+            withdrawalCredentials: hexToBytes(
+              bitsToBytes(redisValidatorJSON.withdrawalCredentials),
+            ),
+            effectiveBalance:
+              ssz.phase0.Validator.fields.effectiveBalance.deserialize(
+                hexToBytes(
+                  bitsToBytes(redisValidatorJSON.effectiveBalance),
+                ).slice(0, 8),
+              ),
+
+            slashed: ssz.phase0.Validator.fields.slashed.deserialize(
+              hexToBytes(bitsToBytes(redisValidatorJSON.slashed)).slice(0, 1),
+            ),
+            activationEligibilityEpoch:
+              ssz.phase0.Validator.fields.activationEligibilityEpoch.deserialize(
+                hexToBytes(
+                  bitsToBytes(redisValidatorJSON.activationEligibilityEpoch),
+                ).slice(0, 8),
+              ),
+            activationEpoch:
+              ssz.phase0.Validator.fields.activationEpoch.deserialize(
+                hexToBytes(
+                  bitsToBytes(redisValidatorJSON.activationEpoch),
+                ).slice(0, 8),
+              ),
+            exitEpoch: ssz.phase0.Validator.fields.exitEpoch.deserialize(
+              hexToBytes(bitsToBytes(redisValidatorJSON.exitEpoch)).slice(0, 8),
+            ),
+            withdrawableEpoch:
+              ssz.phase0.Validator.fields.withdrawableEpoch.deserialize(
+                hexToBytes(
+                  bitsToBytes(redisValidatorJSON.withdrawableEpoch),
+                ).slice(0, 8),
+              ),
+          };
+
+          const index = Number(batchKeys[j].split(':')[1]);
+
+          allValidators[index] = validatorJSON;
+        } catch (e) {
+          console.log(e);
+          continue;
+        }
+      }
+
+      console.log(`Loaded batch, ${i / batchSize}/${keys.length / batchSize}`);
+    }
+
+    return allValidators;
+  }
+
+  async saveValidators(
+    validatorsWithIndices: { index: number; validator: string }[],
+  ) {
+    await this.waitForConnection();
+    const result: [string, string][] = validatorsWithIndices.map(vi => [
+      `validator:${vi.index}`,
+      vi.validator,
+    ]);
+
+    await this.redisClient.mSet(result);
+  }
+
+  async saveValidatorProof(depth: bigint, index: bigint): Promise<void> {
+    await this.waitForConnection();
+
+    await this.redisClient.set(
+      `proof:${depth.toString()}:${index.toString()}`,
+      JSON.stringify({
+        needsChange: true,
+        proof: [],
+      }),
+    );
   }
 
   async getNextProof(slot: number): Promise<ProofResultType | null> {

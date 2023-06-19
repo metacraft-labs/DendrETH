@@ -1,94 +1,234 @@
-import { writeFileSync, readFileSync, existsSync } from 'fs';
-import { sleep } from '../../../libs/typescript/ts-utils/common-utils';
+import {
+  sleep,
+  splitIntoBatches,
+} from '../../../libs/typescript/ts-utils/common-utils';
+import { Redis as RedisLocal } from '../../../relay/implementations/redis';
+import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
+import { Validator } from '../../../relay/types/types';
+import { hexToBits } from '../../../libs/typescript/ts-utils/hex-utils';
+import Redis from 'ioredis';
+const {
+  KeyPrefix,
+  WorkQueue,
+  Item,
+} = require('@mevitae/redis-work-queue/dist/WorkQueue');
+import { BeaconApi } from '../../../relay/implementations/beacon-api';
 
 (async () => {
   const { ssz } = await import('@lodestar/types');
 
-  let prevSlot = 0;
+  const redis = new RedisLocal('127.0.0.1', 6379);
+
+  const db = new Redis('redis://127.0.0.1:6379');
+
+  const work_queue = new WorkQueue(new KeyPrefix('validator_proofs'));
+
+  const beaconApi = new BeaconApi([
+    'http://unstable.prater.beacon-api.nimbus.team',
+  ]);
+
+  console.log('Loading validators');
+
+  let prevValidators = await redis.getValidatorsBatched(ssz);
+
+  console.log('Loaded all batches');
 
   while (true) {
-    const beaconStateSZZ = await fetch(
-      `https://floral-chaotic-sea.discover.quiknode.pro/c1133f4fcc19bbe54fa6e4caf0c05ac79ec7d300/eth/v2/debug/beacon/states/head`,
-      {
-        headers: {
-          Accept: 'application/octet-stream',
-        },
-      },
-    )
-      .then(response => response.arrayBuffer())
-      .then(buffer => new Uint8Array(buffer));
+    const timeBefore = Date.now();
 
-    const beaconState = ssz.capella.BeaconState.deserialize(beaconStateSZZ);
+    const validators = (await beaconApi.getValidators()).slice(0, 100);
 
-    if (!existsSync('prev_beacon_state.ssz')) {
-      console.log('prev_beacon_state.ssz does not exist. Creating it.');
+    if (prevValidators.length === 0) {
+      console.log('prev validators are empty. Saving to redis');
 
-      prevSlot = beaconState.slot;
+      const before = Date.now();
 
-      writeFileSync(
-        'prev_beacon_state.ssz',
-        Buffer.from(beaconStateSZZ),
-        'binary',
+      await saveValidatorsInBatches(
+        validators.map((validator, index) => ({
+          index,
+          validator,
+        })),
       );
 
+      const after = Date.now();
+
+      console.log('Saved validators to redis');
+      console.log('Time taken', after - before, 'ms');
+
+      prevValidators = validators;
+
       await sleep(384000);
       continue;
     }
 
-    console.log(beaconState.slot);
+    const changedValidators = validators
+      .map((validator, index) => ({ validator, index }))
+      .filter(hasValidatorChanged(prevValidators));
 
-    if (prevSlot >= beaconState.slot) {
-      console.log('Waiting for the next epoch.');
-      await sleep(384000);
-      continue;
-    }
-
-    const prevBeaconStateSSZ = new Uint8Array(
-      readFileSync('prev_beacon_state.ssz'),
-    );
-
-    const prevBeaconState =
-      ssz.capella.BeaconState.deserialize(prevBeaconStateSSZ);
-
-    const validators = beaconState.validators;
-    const prevValidators = prevBeaconState.validators;
-
-    const validatorsWithIndies = validators.map((validator, index) => ({
-      validator,
-      index,
-    }));
-
-    const changedValidators = validatorsWithIndies.filter(
-      ({ validator, index }) =>
-        prevValidators[index] === undefined ||
-        validator.pubkey.some(
-          (byte, i) => byte !== prevValidators[index].pubkey[i],
-        ) ||
-        validator.withdrawalCredentials.some(
-          (byte, i) => byte !== prevValidators[index].withdrawalCredentials[i],
-        ) ||
-        validator.effectiveBalance !== prevValidators[index].effectiveBalance ||
-        validator.slashed !== prevValidators[index].slashed ||
-        validator.activationEligibilityEpoch !==
-          prevValidators[index].activationEligibilityEpoch ||
-        validator.activationEpoch !== prevValidators[index].activationEpoch ||
-        validator.exitEpoch !== prevValidators[index].exitEpoch ||
-        validator.withdrawableEpoch !== prevValidators[index].withdrawableEpoch,
-    );
-
-    // TODO: push the changed validators to the tree
+    await saveValidatorsInBatches(changedValidators);
 
     console.log('#changedValidators', changedValidators.length);
 
-    writeFileSync(
-      'prev_beacon_state.ssz',
-      Buffer.from(beaconStateSZZ),
-      'binary',
-    );
+    prevValidators = validators;
 
-    prevSlot = beaconState.slot;
+    const timeAfter = Date.now();
 
     // wait for the next epoch
-    await sleep(384000);
+    if (timeAfter - timeBefore < 384000) {
+      await sleep(384000 - (timeBefore - timeAfter));
+    }
+  }
+
+  async function saveValidatorsInBatches(
+    validators: { index: number; validator: Validator }[],
+    batchSize = 200,
+  ) {
+    const validatorBatches = splitIntoBatches(validators, batchSize);
+
+    // Save each batch
+    for (let i = 0; i < validatorBatches.length; i++) {
+      await redis.saveValidators(
+        validatorBatches[i].map(vi => ({
+          index: vi.index,
+          validator: convertValidatorToProof(vi.validator),
+        })),
+      );
+
+      for (const vi of validatorBatches[i]) {
+        const buffer = new ArrayBuffer(8);
+        const dataView = new DataView(buffer);
+        dataView.setBigUint64(0, BigInt(vi.index), false);
+        await work_queue.addItem(db, new Item(buffer));
+      }
+
+      if (i % 25 == 0) {
+        console.log('Saved 25 batches and added first level of proofs');
+      }
+    }
+
+    if (validators.length > 0) {
+      await addInnerLevelProofs(validators);
+    }
+  }
+
+  async function addInnerLevelProofs(
+    validators: { index: number; validator: Validator }[],
+  ) {
+    for (let j = 0n; j < 40n; j++) {
+      console.log('Added inner level of proofs', j);
+
+      let prev_index = 2199023255552n;
+      for (let i = 0; i < validators.length; i++) {
+        let validator_index = BigInt(validators[i].index);
+
+        if (validator_index / 2n ** (j + 1n) == prev_index / 2n ** (j + 1n)) {
+          continue;
+        }
+
+        const { first, second } = calculateIndexes(validator_index, j);
+
+        const buffer = new ArrayBuffer(24);
+        const dataView = new DataView(buffer);
+
+        dataView.setBigUint64(0, BigInt(j), false);
+        dataView.setBigUint64(8, first, false);
+        dataView.setBigUint64(16, second, false);
+
+        await redis.saveValidatorProof(first, second);
+
+        await work_queue.addItem(db, new Item(buffer));
+
+        prev_index = first;
+      }
+    }
+  }
+
+  function calculateIndexes(validator_index: bigint, depth: bigint) {
+    let first: bigint, second: bigint;
+
+    if (validator_index % 2n == 0n) {
+      first = validator_index;
+      second = validator_index + 1n;
+    } else {
+      first = validator_index - 1n;
+      second = validator_index;
+    }
+
+    for (let k = 1n; k <= depth; k++) {
+      if (first % 2n ** (k + 1n) == 0n) {
+        second = first + 2n ** k;
+      } else {
+        second = first;
+        first = first - 2n ** k;
+      }
+    }
+    return { first, second };
+  }
+
+  function convertValidatorToProof(validator: Validator): string {
+    return JSON.stringify({
+      pubkey: hexToBits(bytesToHex(validator.pubkey), 381),
+      withdrawalCredentials: hexToBits(
+        bytesToHex(validator.withdrawalCredentials),
+      ),
+      effectiveBalance: hexToBits(
+        bytesToHex(
+          ssz.phase0.Validator.fields.effectiveBalance.hashTreeRoot(
+            validator.effectiveBalance,
+          ),
+        ),
+      ),
+      slashed: hexToBits(
+        bytesToHex(
+          ssz.phase0.Validator.fields.slashed.hashTreeRoot(validator.slashed),
+        ),
+      ),
+      activationEligibilityEpoch: hexToBits(
+        bytesToHex(
+          ssz.phase0.Validator.fields.activationEligibilityEpoch.hashTreeRoot(
+            validator.activationEligibilityEpoch,
+          ),
+        ),
+      ),
+      activationEpoch: hexToBits(
+        bytesToHex(
+          ssz.phase0.Validator.fields.activationEpoch.hashTreeRoot(
+            validator.activationEpoch,
+          ),
+        ),
+      ),
+      exitEpoch: hexToBits(
+        bytesToHex(
+          ssz.phase0.Validator.fields.exitEpoch.hashTreeRoot(
+            validator.exitEpoch,
+          ),
+        ),
+      ),
+      withdrawableEpoch: hexToBits(
+        bytesToHex(
+          ssz.phase0.Validator.fields.withdrawableEpoch.hashTreeRoot(
+            validator.withdrawableEpoch,
+          ),
+        ),
+      ),
+    });
+  }
+
+  function hasValidatorChanged(prevValidators) {
+    return ({ validator, index }) =>
+      prevValidators[index] === undefined ||
+      validator.pubkey.some(
+        (byte, i) => byte !== prevValidators[index].pubkey[i],
+      ) ||
+      validator.withdrawalCredentials.some(
+        (byte, i) => byte !== prevValidators[index].withdrawalCredentials[i],
+      ) ||
+      validator.effectiveBalance !== prevValidators[index].effectiveBalance ||
+      validator.slashed !== prevValidators[index].slashed ||
+      validator.activationEligibilityEpoch !==
+        prevValidators[index].activationEligibilityEpoch ||
+      validator.activationEpoch !== prevValidators[index].activationEpoch ||
+      validator.exitEpoch !== prevValidators[index].exitEpoch ||
+      validator.withdrawableEpoch !== prevValidators[index].withdrawableEpoch;
   }
 })();

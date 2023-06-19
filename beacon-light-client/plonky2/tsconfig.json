@@ -4,6 +4,6 @@
     "./hardhat.config.ts"
   ],
   "compilerOptions": {
-    "moduleResolution": "nodenext"
+    "moduleResolution": "nodenext",
   }
 }
