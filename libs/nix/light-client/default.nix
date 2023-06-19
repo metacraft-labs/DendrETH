@@ -1,22 +1,35 @@
 {
+  pkgs,
   lib,
   stdenv,
-  gmp,
   autoPatchelfHook,
+  fetchgit,
 }:
 stdenv.mkDerivation rec {
-  pname = "light-client-patched";
-  version = "dev";
+  pname = "light-client";
+  version = "dev-23-03-23";
 
-  src = ../../../vendor/build-artifacts/light_client_cpp;
+  src = fetchgit {
+    url = "https://github.com/metacraft-labs/DendrETH-build-artifacts";
+    rev = "24a97aae330fc12007fe51d4918293f5fdc2e62b";
+    hash = "sha256-Yn8hsvdxb5H4gSy3IsXi9inu0m3WdijK1CZep6HNDbU=";
+    fetchLFS = true;
+  };
 
-  nativeBuildInputs = [
+  # sourceRoot = "source/light_client_cpp";
+
+  patchPhase = ''
+    cd light_client_cpp;
+    rm -rf *.o light_client
+  '';
+
+  nativeBuildInputs = with pkgs; [
+    gcc
+    gnumake
+    nasm
     autoPatchelfHook
-  ];
-
-  buildInputs = [
-    stdenv.cc.cc.lib
     gmp
+    nlohmann_json
   ];
 
   installPhase = ''

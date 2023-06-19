@@ -9,6 +9,7 @@
     "beacon-light-client/solidity",
     "relay"
   ],
+  "private":true,
   "directories": {
     "doc": "docs"
   },
