@@ -3,7 +3,11 @@ import { BeaconApi } from '../../../../relay/implementations/beacon-api';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { bytesToHex } from '../../../../libs/typescript/ts-utils/bls';
 import { sha256 } from 'ethers/lib/utils';
-import { verifyMerkleProof } from '../../../../libs/typescript/ts-utils/ssz-utils';
+import {
+  verifyMerkleProof,
+  hashTreeRoot,
+} from '../../../../libs/typescript/ts-utils/ssz-utils';
+import { get } from 'node:http';
 
 (async () => {
   const { ssz } = await import('@lodestar/types');
@@ -28,6 +32,22 @@ import { verifyMerkleProof } from '../../../../libs/typescript/ts-utils/ssz-util
     BigInt(
       '0x' +
         bytesToHex(
+          ssz.phase0.Validator.fields.exitEpoch.hashTreeRoot(
+            beaconState.validators[0].exitEpoch,
+          ),
+        ),
+    )
+      .toString(2)
+      .padStart(256, '0')
+      .split('')
+      .map(x => `"${x.toString()}"`)
+      .join(','),
+  );
+
+  console.log(
+    BigInt(
+      '0x' +
+        bytesToHex(
           ssz.phase0.Validator.hashTreeRoot(beaconState.validators[0]),
         ),
     )
@@ -40,6 +60,8 @@ import { verifyMerkleProof } from '../../../../libs/typescript/ts-utils/ssz-util
 
   // const beaconStateView = ssz.capella.BeaconState.toViewDU(beaconState);
   // const beaconStateTree = new Tree(beaconStateView.node);
+
+  // beaconStateTree.getProof()
 
   // console.log(beaconState.slot);
 

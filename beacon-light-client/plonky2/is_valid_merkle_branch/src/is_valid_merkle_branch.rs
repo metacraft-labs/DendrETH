@@ -1,89 +1,65 @@
 use plonky2::{
     field::extension::Extendable,
     hash::hash_types::RichField,
-    iop::witness::{PartialWitness, WitnessWrite},
+    iop::target::{BoolTarget, Target},
     plonk::circuit_builder::CircuitBuilder,
 };
 
-use plonky2_sha256::circuit::{array_to_bits, make_circuits, Sha256Targets};
+use plonky2_sha256::circuit::make_circuits;
 
-use sha2::{Digest, Sha256};
+pub struct IsValidMerkleBranchTargets {
+    pub leaf: [BoolTarget; 256],
+    pub branch: Vec<[BoolTarget; 256]>,
+    pub index: Target,
+    pub root: [BoolTarget; 256],
+}
 
 pub fn is_valid_merkle_branch<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    pw: &mut PartialWitness<F>,
-    root: &Vec<bool>,
-    leaf: &Vec<bool>,
-    branch: &[Vec<bool>],
-    index: &u64,
-) {
-    let mut leaf = leaf.clone();
+    depth: usize,
+) -> IsValidMerkleBranchTargets {
+    let index = builder.add_virtual_target();
 
-    let mut index = index.clone();
+    let leaf: [BoolTarget; 256] = [builder.add_virtual_bool_target_safe(); 256];
+    let mut branch: Vec<[BoolTarget; 256]> = Vec::new();
 
-    for (i, sibling) in branch.iter().enumerate() {
-        let is_right = index % 2 == 1;
-        let mut lhs = leaf.clone();
-        let mut rhs = sibling.clone();
-
-        if is_right {
-            std::mem::swap(&mut lhs, &mut rhs);
-        }
-
-        let hasher = make_circuits(builder, 512);
-
-        for i in 0..256 {
-            pw.set_bool_target(hasher.message[i], lhs[i]);
-        }
-
-        for i in 0..256 {
-            pw.set_bool_target(hasher.message[i + 256], rhs[i]);
-        }
-
-        leaf = hash_values(lhs, rhs);
-
-        // constraint the root
-        if i == branch.len() - 1 {
-            assert_hasher(root, builder, hasher)
-        }
-
-        index /= 2;
+    for _i in 0..depth {
+        branch.push([builder.add_virtual_bool_target_safe(); 256]);
     }
-}
 
-fn hash_values(lhs: Vec<bool>, rhs: Vec<bool>) -> Vec<bool> {
-    let bytes: Vec<u8> = [lhs, rhs]
-        .concat()
-        .chunks(8)
-        .map(|chunk| {
-            let mut byte = 0u8;
-            for (i, &bit) in chunk.iter().enumerate() {
-                if bit {
-                    byte |= 1u8 << (7 - i);
-                }
-            }
-            byte
-        })
-        .collect();
+    let root: [BoolTarget; 256] = [builder.add_virtual_bool_target_safe(); 256];
 
-    let mut hasher = Sha256::default();
-    hasher.update(&bytes);
+    let indexes = builder.split_le(index, depth);
 
-    let finalized = hasher.finalize();
+    let mut hashers = Vec::new();
+    hashers.push(make_circuits(builder, 512));
 
-    return array_to_bits(finalized.as_slice());
-}
+    for i in 0..depth {
+        hashers.push(make_circuits(builder, 512));
 
-fn assert_hasher<F: RichField + Extendable<D>, const D: usize>(
-    result: &Vec<bool>,
-    builder: &mut CircuitBuilder<F, D>,
-    hasher: Sha256Targets,
-) {
-    for i in 0..256 {
-        if result[i] {
-            builder.assert_one(hasher.digest[i].target);
+        let current: [BoolTarget; 256] = if i == 0 {
+            leaf
         } else {
-            builder.assert_zero(hasher.digest[i].target);
+            hashers[i - 1].digest.clone().try_into().unwrap()
+        };
+
+        for j in 0..256 {
+            let el1 = builder._if(indexes[i], branch[i][j].target, current[j].target);
+            builder.connect(hashers[i].message[i].target, el1);
+
+            let el2 = builder._if(indexes[i], current[j].target, branch[i][j].target);
+            builder.connect(hashers[i].message[i + 256].target, el2);
         }
+    }
+
+    for i in 0..256 {
+        builder.connect(hashers[depth - 1].digest[i].target, root[i].target)
+    }
+
+    IsValidMerkleBranchTargets {
+        leaf: leaf,
+        branch: branch,
+        index: index,
+        root: root,
     }
 }

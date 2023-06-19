@@ -117,9 +117,12 @@ template ValidatorBalances(N) {
   signal output commitment;
 
   signal currentEpoch <-- slot \ 32;
+  // signal currentEpochRemainder <-- slot % 32;
+  // slot === currentEpoch * 32 + currentEpochRemainder;
 
   signal epochHighestSlot <== currentEpoch * 32;
 
+  // Should be LessThanOrEqualBitsCheck(64)([slot, epochHighestSlot + 32])
   signal slotLessThan <== LessThanBitsCheck(64)([slot, epochHighestSlot]);
 
   signal slotBits[256] <== SSZNum(64)(slot);

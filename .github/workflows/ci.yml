@@ -61,6 +61,9 @@ jobs:
       - name: Run circom tests
         run: nix develop -c make test-circom-circuits
 
+      - name: Run plonky2 circuit tests
+        run: nix develop -c make test-plonky2-circuits
+
       - name: Run Verifier in Cosmos - Relayer test
         run: nix develop -c yarn test './tests/cosmosLightClient/test-verifier-in-cosmos-relay.ts'
 
