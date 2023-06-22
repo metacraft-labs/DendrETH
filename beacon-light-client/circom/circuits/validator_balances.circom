@@ -1,46 +1,15 @@
 pragma circom 2.1.5;
 
 include "../../../node_modules/circomlib/circuits/bitify.circom";
-include "utils.circom";
 include "hash_tree_root.circom";
 include "hash_two.circom";
 include "validator_hash_tree_root.circom";
 include "is_valid_merkle_branch_out.circom";
 include "is_valid_merkle_branch.circom";
 include "ssz_num.circom";
-
-template DivisionVerification() {
-  signal input dividend;
-  signal input divisor;
-  signal input quotient;
-  signal input remainder;
-
-  dividend === divisor * quotient + remainder;
-}
-
-template Selector(N) {
-    signal input in[N];
-    signal input index;
-    signal output out;
-
-    signal sums[N + 1];
-    sums[0] <== 0;
-
-    component eqs[N];
-
-    // For each item, check whether its index equals the input index.
-    for (var i = 0; i < N; i ++) {
-        eqs[i] = IsEqual();
-        eqs[i].in[0] <== i;
-        eqs[i].in[1] <== index;
-
-        // eqs[i].out is 1 if the index matches. As such, at most one input to
-        sums[i + 1] <== sums[i] + eqs[i].out * in[i];
-    }
-
-    // Returns 0 + 0 + ... + item
-    out <== sums[N];
-}
+include "./utils/arrays.circom";
+include "./utils/bits.circom";
+include "./utils/numerical.circom";
 
 template CalculateBalancesSum(N) {
   signal input balances[(N \ 4) + 1][256];
