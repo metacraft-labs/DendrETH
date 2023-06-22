@@ -13,8 +13,7 @@ include "is_first.circom";
 include "../../../vendor/circom-pairing/circuits/bls_signature.circom";
 include "../../../vendor/circom-pairing/circuits/bn254/groth16.circom";
 
-template LightClientRecursive(N) {
-  var K = 7;
+template LightClientRecursive(N, K) {
   var pubInpCount = 4;
 
   // BN254 facts

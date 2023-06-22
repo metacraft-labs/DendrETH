@@ -13,8 +13,7 @@ include "hash_tree_root_beacon_header.circom";
 include "ssz_num.circom";
 include "../../../vendor/circom-pairing/circuits/bls_signature.circom";
 
-template LightClient(N) {
-  var K = 7;
+template LightClient(N, K) {
   signal input prevHeaderHash[256];
   signal input nextHeaderHash[256];
 
