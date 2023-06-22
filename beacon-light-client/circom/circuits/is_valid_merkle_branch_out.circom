@@ -1,8 +1,9 @@
-pragma circom 2.0.3;
+pragma circom 2.1.5;
 
 include "hash_two.circom";
 include "../../../node_modules/circomlib/circuits/comparators.circom";
-include "utils.circom";
+include "./utils/arrays.circom";
+include "./utils/bits.circom";
 
 template IsValidMerkleBranchOut(N) {
   signal input branch[N][256];

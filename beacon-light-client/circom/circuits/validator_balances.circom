@@ -9,7 +9,7 @@ include "is_valid_merkle_branch_out.circom";
 include "is_valid_merkle_branch.circom";
 include "ssz_num.circom";
 include "./utils/arrays.circom";
-include "./utils/verification.circom";
+include "./utils/numerical.circom";
 
 template CalculateBalancesSum(N) {
   signal input balances[(N \ 4) + 1][256];
@@ -86,6 +86,7 @@ template ValidatorBalances(N) {
   signal output commitment;
 
   signal currentEpoch <-- slot \ 32;
+
 
   signal epochHighestSlot <== currentEpoch * 32;
 
