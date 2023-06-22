@@ -1,4 +1,4 @@
-pragma circom 2.0.3;
+pragma circom 2.1.5;
 
 include "hash_two.circom";
 include "ssz_num.circom";
