@@ -2,7 +2,7 @@ pragma circom 2.1.5;
 
 include "hash_two.circom";
 include "../../../node_modules/circomlib/circuits/comparators.circom";
-include "utils.circom";
+include "utils/arrays.circom";
 
 template IsValidMerkleBranchOut(N) {
   signal input branch[N][256];
@@ -32,7 +32,6 @@ template IsValidMerkleBranchOut(N) {
       hashers[i].in[1][j] <== (branch[i][j] - current[j]) * isZero[i].out + current[j];
     }
   }
-
 
   out <== IsEqualArrays(256)([root, hashers[N - 1].out]);
 }
