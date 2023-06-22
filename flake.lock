@@ -130,6 +130,33 @@
         "type": "github"
       }
     },
+    "barretenberg": {
+      "inputs": {
+        "flake-utils": [
+          "mcl-blockchain",
+          "noir",
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "mcl-blockchain",
+          "noir",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1683909802,
+        "narHash": "sha256-2CL8NYKLYwwy6n0RyldvH86ULgrSvfzHrgq2Qf0ZUkE=",
+        "owner": "AztecProtocol",
+        "repo": "barretenberg",
+        "rev": "97c9bc72aebab850b4a647d6e6cc50085226eafb",
+        "type": "github"
+      },
+      "original": {
+        "owner": "AztecProtocol",
+        "repo": "barretenberg",
+        "type": "github"
+      }
+    },
     "blank": {
       "locked": {
         "lastModified": 1625557891,
@@ -2957,14 +2984,15 @@
         "flake-utils": "flake-utils_23",
         "nix2container": "nix2container_8",
         "nixpkgs": "nixpkgs_29",
+        "noir": "noir",
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1685115983,
-        "narHash": "sha256-JHiEFsgAG0UbmGz0gWC5HUqXE38FD58VyT7LURGgQlA=",
+        "lastModified": 1687302923,
+        "narHash": "sha256-pUOGIovbPHuq7YwAI0R0vlsO+N8J8CO8p5yLCuaVOxw=",
         "owner": "metacraft-labs",
         "repo": "nix-blockchain-development",
-        "rev": "2ca15a8fd676c207e99e8f41eebfe9383d663771",
+        "rev": "02670cb49bb545bdd0ea7b1afa86352835e8e0a2",
         "type": "github"
       },
       "original": {
@@ -5126,6 +5154,44 @@
         "owner": "input-output-hk",
         "repo": "cardano-node",
         "rev": "7f00e3ea5a61609e19eeeee4af35241571efdf5c",
+        "type": "github"
+      }
+    },
+    "noir": {
+      "inputs": {
+        "barretenberg": "barretenberg",
+        "crane": [
+          "mcl-blockchain",
+          "crane"
+        ],
+        "flake-compat": [
+          "mcl-blockchain",
+          "flake-compat"
+        ],
+        "flake-utils": [
+          "mcl-blockchain",
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "mcl-blockchain",
+          "nixpkgs"
+        ],
+        "rust-overlay": [
+          "mcl-blockchain",
+          "rust-overlay"
+        ]
+      },
+      "locked": {
+        "lastModified": 1685480426,
+        "narHash": "sha256-vdfrdnRgzUiF58NbkM7cVAu9/wyFkqjwffXgx8bUmw4=",
+        "owner": "noir-lang",
+        "repo": "noir",
+        "rev": "eae624bc68c41c97199580e41d83f69af5cd0c52",
+        "type": "github"
+      },
+      "original": {
+        "owner": "noir-lang",
+        "repo": "noir",
         "type": "github"
       }
     },
