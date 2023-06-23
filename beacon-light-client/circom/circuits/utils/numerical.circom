@@ -32,6 +32,7 @@ template DivisionVerification() {
   signal input quotient;
   signal input remainder;
 
+  //TODO: Needs additional constraint
   dividend === divisor * quotient + remainder;
 }
 
