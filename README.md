@@ -320,10 +320,18 @@ At the moment, there are multiple test suites of interest:
   ```
 
 ## Suggested citation
-Please use the following BibTex entry to cite this work while a paper is not available:
 
-@report{dendreth2023, title = {DendrETH: Ethereum SNARK-Based Beacon Light Client for Multiple Blockchain Ecosystems}, url = {https://github.com/metacraft-labs/DendrETH}, number = {0}, institution = {Metacraft Labs and Blockdaemon}, author = {Ivanichkov, Emil and Dimov, Dimo and Armenchev, Simeon and Miladinov, Yordan and Kirkov, Kristin and Kirov, Petar and Karadjov, Zahary and Belchior, Rafael}, date = {2023}, }
+Please use the following BibTex entry to cite this work while an official paper is not available:
 
+@report{dendreth2023,
+author = {Armenchev, Simeon and Belchior, Rafael and Dimov, Dimo and Ivanichkov, Emil and Karadjov, Zahary and Kirkov, Kristin and Kirov, Petar and Miladinov, Yordan},
+title = {DendrETH: A smart contract implementation of the Ethereum light client sync protocol},
+year = {2023},
+institution = {Metacraft Labs and Blockdaemon},
+number = {0},
+url = {https://github.com/metacraft-labs/DendrETH},
+note = {Accessed: 21-June-2023}
+}
 
 ## License
 
