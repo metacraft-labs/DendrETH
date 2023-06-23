@@ -42,7 +42,7 @@ template DivisionVerification() {
   signal input quotient;
   signal input remainder;
 
-  //TODO: Needs additional constraint
+  //TODO: Needs additional corebase nstraint
   dividend === divisor * quotient + remainder;
 }
 
@@ -66,5 +66,3 @@ template Pow(N){
 
     out <== selector.out;
 }
-
-component main = Pow(256);
