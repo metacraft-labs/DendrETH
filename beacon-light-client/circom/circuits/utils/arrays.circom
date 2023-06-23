@@ -27,16 +27,6 @@ template Selector(N) {
     out <== sums[N];
 }
 
-template RangeCheck(n) {
-  signal input in[3];
-  signal output out;
-
-  signal first <== LessThanBitsCheck(64)([in[0], in[1]]);
-  signal second <== LessThanBitsCheck(64)([in[1], in[2]]);
-
-  out <== first * second;
-}
-
 template IsEqualArrays(N) {
   signal input in[2][N];
   signal output out;
