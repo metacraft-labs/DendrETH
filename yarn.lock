@@ -3101,6 +3101,7 @@ __metadata:
     r1csfile: ^0.0.40
     redis: ^4.6.5
     redis-commander: ^0.8.0
+    snarkit2: ^0.2.0
     snarkjs: "github:metacraft-labs/snarkjs"
     ts-jest: ^28.0.5
     ts-node: ^10.9.1
@@ -11467,6 +11468,27 @@ __metadata:
   bin:
     snarkit2: ./dist/cli.js
   checksum: e64e60e2f2639e18ee49977349236b187ed978dc6a14104c11dd0e055c52dfff89f916d3b75804aa294d2b91291e603acb7e6ced1bae430e2d4a9956218b3a65
+  languageName: node
+  linkType: hard
+
+"snarkit2@npm:^0.2.0":
+  version: 0.2.0
+  resolution: "snarkit2@npm:0.2.0"
+  dependencies:
+    "@iden3/binfileutils": ^0.0.8
+    chai: ^4.3.4
+    commander: ^7.2.0
+    ffiasm: ^0.1.1
+    ffjavascript: ^0.2.35
+    r1csfile: 0.0.16
+    shelljs: ^0.8.4
+    snarkjs: ^0.3.60
+    systeminformation: ^5.6.10
+    tmp-promise: ^3.0.2
+    walk-sync: ^2.2.0
+  bin:
+    snarkit2: dist/cli.js
+  checksum: bad701f7208ca91cf10626fb0662746ecfdbe79f871b3f47014600c0a40d14bd8ace1e544b77c97bb323b2d369607d9dba472d25b7a3db0516786833b05cfb28
   languageName: node
   linkType: hard
 
