@@ -44,7 +44,7 @@ template DivisionVerification() {
 
   dividend === divisor * quotient + remainder;
 
-  component lessThan = LessThan(252);
+  component lessThan = LessThanBitsCheck(252);
   lessThan.in[0] <== remainder;
   lessThan.in[1] <== divisor;
   lessThan.out === 1;
@@ -58,8 +58,6 @@ template DivisionBy() {
 
     quotient <-- dividend \ divisor;
     remainder <-- dividend % divisor;
-
-    quotient * divisor + remainder === dividend;
 
     component divisionVerification = DivisionVerification();
     divisionVerification.divisor <== divisor;
