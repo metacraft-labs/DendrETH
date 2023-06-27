@@ -67,6 +67,9 @@ jobs:
       # - name: Run Verifier in EOS test
       #   run: nix develop -c yarn test './tests/eosLightClient/test-verifier-in-EOS.ts'
 
+      - name: Run Verify given proof - test using bncurve and constantine
+        run: nix develop -c nim c -r 'tests/verify_proof/verify_given_proof_test.nim'
+
   SolidityVerifierTests:
     needs: Tests
     runs-on: ubuntu-latest
