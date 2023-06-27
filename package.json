@@ -74,6 +74,7 @@
     "r1csfile": "^0.0.40",
     "redis": "^4.6.5",
     "redis-commander": "^0.8.0",
+    "snarkit2": "^0.2.0",
     "snarkjs": "github:metacraft-labs/snarkjs",
     "yargs": "^17.7.1"
   }

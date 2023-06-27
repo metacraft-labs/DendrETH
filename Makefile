@@ -26,5 +26,4 @@ test-solidity-beacon-light-client-verifier:
 	yarn hardhat test test/BeaconLightClientReadyProofs.test.ts
 
 test-circom-circuits:
-	cd beacon-light-client/circom && \
-	./test/run_snarkit2_tests.sh
+	./beacon-light-client/circom/test/run_snarkit2_tests.sh --force_recompile
