@@ -43,13 +43,30 @@ template DivisionVerification() {
   signal input remainder;
 
   dividend === divisor * quotient + remainder;
-  
+
   component lessThan = LessThan(252);
   lessThan.in[0] <== remainder;
   lessThan.in[1] <== divisor;
   lessThan.out === 1;
 }
 
+template DivisionBy() {
+    signal input divisor;
+    signal input dividend;
+    signal output quotient;
+    signal output remainder;
+
+    quotient <-- dividend \ divisor;
+    remainder <-- dividend % divisor;
+
+    quotient * divisor + remainder === dividend;
+
+    component divisionVerification = DivisionVerification();
+    divisionVerification.divisor <== divisor;
+    divisionVerification.dividend <== dividend;
+    divisionVerification.quotient <== quotient;
+    divisionVerification.remainder <== remainder;
+}
 
 
 template Pow(N){
