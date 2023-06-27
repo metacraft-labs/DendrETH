@@ -119,45 +119,47 @@ You should see a [Hardhat simulation](https://hardhat.org/hardhat-runner/docs/ge
 sequentially processing all available updates. At the time of this writing, each
 update costs around 330K in gas.
 
-### Run relayer
+### Running the DendrETH relay node
 
-To run the relayer you can execute
+The DendrETH relay node efficiently generates proofs and publishes updates for
+all blockchains supported by the DendrETH project. To simplify the process of
+running a relay, we provide up-to-date Docker images.
+
+> You can also build a custom image yourself by executing the
+> `make dendreth-relay-node` command within the development environment
+> provided by this repository.
+
+To run the relay node, please follow these steps:
+
+1. Ensure that you have Docker installed on your system.
+2. Open a terminal or command prompt.
+3. Execute the following command:
 
 ```bash
-make build-relay-image
+docker run --env-file .env -v relay-node-data:/DendrETH/data metacraft/dendreth-relay-node
 ```
 
-Which will build the relayimage for you. To run it
+This command assumes that you want to store all runtime data in a local directory
+called `relay-node-data`. If you prefer to use a different directory, please modify
+the command accordingly.
 
-You can also pull the image from docker hub
+The provided `.env` file must supply the following variables:
 
-```
-docker pull dimaranti/dendreth
-```
-
-```bash
-docker run -it --env-file .env -v relayvolume:/DendrETH/build relayimage
-```
-
-Passing the .env file with needed configurations.
-
-The .env file must contain the following things
-
-For accessing the networks and signing transactions:
+#### For accessing the networks and signing transactions:
 
 ```bash
 USER_PRIVATE_KEY=private_key
 ALCHEMY_API_KEY=api_key
 ```
 
-To configure from which slot should the relayer start generating updates. And what step it should use
+#### To configure the starting point and frequency of updates:
 
 ```bash
 INITIAL_SLOT=5355991
 SLOTS_JUMP=64
 ```
 
-To configure relayer what network it should follow. Currently the script only supports following one network. You can mannually run the tasks for publishing and updating on a second network.
+#### To configure which networks should be followed:
 
 ```bash
 PRATTER=TRUE
@@ -165,7 +167,10 @@ MAINNET=FALSE
 FOLLOW_NETWORK=pratter
 ```
 
-You can also provide for addresses on different networks if you skip a network transactions won't be broadcasted to it
+Currently the scripts within the container support following a single network.
+You can manually run the tasks for publishing updates on a second network.
+
+#### To specify the deployed instances of the DendrETH smart contracts:
 
 ```bash
 LC_GOERLI=0xf65B59bc947865490eF92D8461e8B5D0eA87c343
@@ -180,52 +185,8 @@ LC_CHIADO=0xAa5eeb05D0B080b366CB6feA00d16216B24FB9bE
 LC_EVMOS=0x8E4D36CD13015EA6F384cab3342156b3dC5d0a53
 ```
 
-And also it needs to contain the hashi adapter addresses
-
-Sample `.env`
-
-```
-USER_PRIVATE_KEY=private_key
-ALCHEMY_API_KEY=api_key
-REDIS_HOST=localhost
-REDIS_PORT=6379
-PROVER_SERVER_HOST=http://127.0.0.1
-PROVER_SERVER_PORT=5000
-INITIAL_SLOT=5860953
-SLOTS_JUMP=32
-PRATTER=TRUE
-MAINNET=FALSE
-LC_GOERLI=0xf65B59bc947865490eF92D8461e8B5D0eA87c343
-LC_OPTIMISTIC_GOERLI=
-LC_BASE_GOERLI=
-LC_ARBITRUM_GOERLI=
-LC_SEPOLIA=
-LC_MUMBAI=
-LC_FUJI=
-LC_FANTOM=
-LC_ALFAJORES=
-LC_BSC=
-LC_AURORA=
-LC_GNOSIS=
-LC_CHIADO=
-LC_EVMOS=
-LC_MALAGA=
-GOERLI_HASHI=0x4169ea397fe83F55e732E11390807b3722374f78
-OPTIMISTIC_HASHI=''
-BASE_HASHI=''
-ARBITRUM_HASHI=''
-SEPOLIA_HASHI=''
-MUMBAI_HASHI=''
-FANTOM_HASHI=''
-ALFAJORES_HASHI=''
-CHIADO_HASHI=''
-EVMOS_HASHI=''
-MALAGA_HASHI=''
-AURORA_HASHI=''
-GNOSIS_HASHI=''
-FUJI_HASHI=''
-BSC_HASHI=''
-```
+If you skip some of these variables, the relay node won't publish updates for
+the particular network.
 
 ### How does the relayer work?
 

@@ -34,6 +34,6 @@ COPY ./scripts ./scripts
 ENV INFURA_API_KEY=asd ETHERSCAN_API_KEY=asd
 RUN cd beacon-light-client/solidity && yarn hardhat compile
 
-VOLUME relayvolume DendrETH/build
+VOLUME relayvolume DendrETH/data
 
 ENTRYPOINT ["./relay/run-relay.sh"]

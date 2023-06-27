@@ -3,12 +3,15 @@ yarn-check:
 		echo "Please run yarn install"; exit 1; \
 	}
 
-.PHONY: build-relay-image
-build-relay-image:
+.PHONY: dendreth-relay-node
+dendreth-relay-node:
 	nix run '.#docker-image-yarn.copyToDockerDaemon'
 	nix run '.?submodules=1#docker-image-all.copyToDockerDaemon'
 
-	docker build -t relayimage -f Dockerfile.relay .
+	docker build -t metacraft/dendeth-relay-node -f Dockerfile.relay .
+
+publish-dendreth-relay-node: dendreth-relay-node
+	docker push metacraft/dendeth-relay-node
 
 evm-simulation: yarn-check
 	cd beacon-light-client/solidity && \
