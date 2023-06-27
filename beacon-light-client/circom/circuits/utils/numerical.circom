@@ -42,9 +42,15 @@ template DivisionVerification() {
   signal input quotient;
   signal input remainder;
 
-  //TODO: Needs additional corebase nstraint
   dividend === divisor * quotient + remainder;
+  
+  component lessThan = LessThan(252);
+  lessThan.in[0] <== remainder;
+  lessThan.in[1] <== divisor;
+  lessThan.out === 1;
 }
+
+
 
 template Pow(N){
     signal input base;
