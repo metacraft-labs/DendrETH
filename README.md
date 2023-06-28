@@ -188,6 +188,9 @@ LC_EVMOS=0x8E4D36CD13015EA6F384cab3342156b3dC5d0a53
 If you skip some of these variables, the relay node won't publish updates for
 the particular network.
 
+For a full list of supported ENV variables, please see the provided
+[example .env file](.env.example).
+
 ### How does the relayer work?
 
 We utilize BullMQ for our system.
