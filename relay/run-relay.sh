@@ -11,12 +11,12 @@ calculate_checksum() {
 download_zkey_file() {
   echo "Downloading zkey file from http://dendreth.metacraft-labs.com/capella_94.zkey ..."
 
-  curl http://dendreth.metacraft-labs.com/capella_94.zkey > "build/light_client.zkey"
+  curl http://dendreth.metacraft-labs.com/capella_94.zkey > "data/light_client.zkey"
 
-  CALCULATED_ZKEY_SUM=$(calculate_checksum build/light_client.zkey)
+  CALCULATED_ZKEY_SUM=$(calculate_checksum data/light_client.zkey)
 
   if [ "$ZKEY_B3SUM_SUM" = "$CALCULATED_ZKEY_SUM" ]; then
-    echo "Zkey file downloaded successfully to build/light_client.zkey"
+    echo "Zkey file downloaded successfully to data/light_client.zkey"
   else
     echo "Failed to download zkey file from http://dendreth.metacraft-labs.com/capella_94.zkey"
     exit 1
@@ -26,47 +26,46 @@ download_zkey_file() {
 download_dat_file() {
   echo "Downloading .dat file from https://media.githubusercontent.com/media/metacraft-labs/DendrETH-build-artifacts/master/light_client_cpp/light_client.dat ..."
 
-  curl -k https://media.githubusercontent.com/media/metacraft-labs/DendrETH-build-artifacts/master/light_client_cpp/light_client.dat > "build/light_client.dat"
+  curl -k https://media.githubusercontent.com/media/metacraft-labs/DendrETH-build-artifacts/master/light_client_cpp/light_client.dat > "datalight_client.dat"
 
-  CALCULATED_DAT_SUM=$(calculate_checksum build/light_client.dat)
+  CALCULATED_DAT_SUM=$(calculate_checksum data/light_client.dat)
 
   if [ "$DAT_B3SUM_SUM" = "$CALCULATED_DAT_SUM" ]; then
-    echo ".dat file downloaded successfully to build/light_client.dat"
+    echo ".dat file downloaded successfully to data/light_client.dat"
   else
     echo "Failed to download .dat file from https://media.githubusercontent.com/media/metacraft-labs/DendrETH-build-artifacts/master/light_client_cpp/light_client.dat"
     exit 1
   fi
 }
 
-if [ ! -f "build/light_client.zkey" ]; then
+if [ ! -f "data/light_client.zkey" ]; then
   download_zkey_file
 else
-  CALCULATED_ZKEY_SUM=$(calculate_checksum build/light_client.zkey)
+  CALCULATED_ZKEY_SUM=$(calculate_checksum data/light_client.zkey)
   echo $CALCULATED_ZKEY_SUM
   if [ "$ZKEY_B3SUM_SUM" = "$CALCULATED_ZKEY_SUM" ]; then
-    echo "Using cached zkey file at build/light_client.zkey"
+    echo "Using cached zkey file at data/light_client.zkey"
   else
     echo "Wrong version of light_client.zkey cached downloading again..."
     download_zkey_file
   fi
 fi
 
-if [ ! -f "build/light_client.dat" ]; then
+if [ ! -f "data/light_client.dat" ]; then
   download_dat_file
 else
-  CALCULATED_DAT_SUM=$(calculate_checksum build/light_client.dat)
+  CALCULATED_DAT_SUM=$(calculate_checksum data/light_client.dat)
   echo $CALCULATED_DAT_SUM
   if [ "$DAT_B3SUM_SUM" = "$CALCULATED_DAT_SUM" ]; then
-    echo "Using cached .dat file at build/light_client.dat"
+    echo "Using cached .dat file at data/light_client.dat"
   else
     echo "Wrong version of light_client.dat cached downloading again..."
     download_dat_file
   fi
 fi
 
-cp relay/light_client build/light_client
-
-cp build/light_client.dat light_client.dat
+cp relay/light_client data/light_client
+cp data/light_client.dat light_client.dat
 
 if [[ -z "$REDIS_HOST" ]] && [[ -z "$REDIS_PORT" ]]; then
   echo "REDIS_HOST and REDIS_PORT environment variables are not set. Using default values."
