@@ -25,8 +25,28 @@ export function verifyMerkleProof(
   return formatHex(hash) === formatHex(hashTreeRoot);
 }
 
-export function hashTreeRoot(_leaves: string[]) {
-  const leaves = [..._leaves];
+function nearestUpperPowerOfTwo(num) {
+  let power = Math.ceil(Math.log2(num));
+  return Math.pow(2, power);
+}
+
+export function hashTreeRoot(_leaves: string[], treeDepth: number): string {
+  const zero_hashes: string[] = [];
+
+  zero_hashes[0] = '0x' + '0'.repeat(64);
+
+  for (let height = 0; height < treeDepth - 1; height++) {
+    zero_hashes[height + 1] = sha256(
+      '0x' + formatHex(zero_hashes[height]) + formatHex(zero_hashes[height]),
+    );
+  }
+
+  const leavesLength = _leaves.length;
+  const treeLeaves = nearestUpperPowerOfTwo(leavesLength);
+  const leaves = [
+    ..._leaves,
+    ...Array(treeLeaves - leavesLength).fill('0x' + '0'.repeat(64)),
+  ];
 
   const UPPER_SIZE = leaves.length;
   let n = 2;
@@ -41,7 +61,15 @@ export function hashTreeRoot(_leaves: string[]) {
     n *= 2;
   }
 
-  return leaves[0];
+  let subtreeRoot = leaves[0];
+
+  for (let i = Math.log2(treeLeaves); i < treeDepth; i++) {
+    subtreeRoot = sha256(
+      '0x' + formatHex(subtreeRoot) + formatHex(zero_hashes[i]),
+    );
+  }
+
+  return subtreeRoot;
 }
 
 export async function jsonToSerializedBase64<T>(

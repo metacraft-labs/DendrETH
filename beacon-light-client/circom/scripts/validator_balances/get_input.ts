@@ -23,7 +23,8 @@ function getValidatorTree(validator, ssz): Tree {
   return new Tree(validatorView.node);
 }
 
-function calculateValidatorsAccumulator(
+// TODO: fix so it matches the test in beacon-light-client/solidity
+export function calculateValidatorsAccumulator(
   validatorsPubkeys: Uint8Array[],
   eth1DepositIndexes: BigInt[],
 ) {
@@ -41,7 +42,7 @@ function calculateValidatorsAccumulator(
     );
   }
 
-  const validatorsAccumulator = hexToBytes(hashTreeRoot(leaves));
+  const validatorsAccumulator = hexToBytes(hashTreeRoot(leaves, leaves.length));
 
   return bytesToBinaryArray(validatorsAccumulator);
 }
