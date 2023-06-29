@@ -14,109 +14,172 @@ env:
   ETHERSCAN_API_KEY: '${{ secrets.ETHERSCAN_API_KEY }}'
 
 jobs:
-  Tests:
+  EOS_Relayer_Test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
 
-      - uses: cachix/install-nix-action@v20
+      - name: Use local my-action
+        uses: ./.github/actions/setup
         with:
-          nix_path: nixpkgs=channel:nixos-22.11
-          install_url: https://releases.nixos.org/nix/nix-2.15.0/install
-
-      - uses: cachix/cachix-action@v12
-        with:
-          name: nix-blockchain-development
-          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-      - name: Build Nix dev shell
-        run: ./scripts/build-nix-shell.sh
-
-      - name: Install Node.js dependencies
-        run: nix develop -c yarn install --immutable
-
-      - name: Install Node.js dependencies
-        run: nix develop -c yarn format:check
+          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       - name: Run Verifier in EOS - Relayer test
         run: nix develop -c yarn test './tests/eosLightClient/test-verifier-in-EOS-relay.ts'
 
-      - name: Run Nim Light Client compiled with emsctipten tests
-        run: nix develop -c yarn test-emcc './tests/test-nim-to-wasm.ts' 'test-nim-light-client.ts'
-
-      - name: Run Nim Light Client compiled with clang tests
-        run: nix develop -c yarn test './tests/test-nim-to-wasm.ts' 'test-nim-light-client.ts'
-
-      - name: Run Nim groth16 verifier tests
-        run: nix develop -c make test-groth16-verifier
-
-      - name: Run Light Client in Cosmos test
-        run: nix develop -c yarn test './tests/cosmosLightClient/test-nim-light-client-in-cosmos.ts'
-
-      - name: Run Verifier in Cosmos test
-        run: nix develop -c yarn test './tests/cosmosLightClient/test-verifier-in-cosmos.ts'
-
-      - name: Run circom tests
-        run: nix develop -c make test-circom-circuits
-
-      - name: Run Verifier in Cosmos - Relayer test
-        run: nix develop -c yarn test './tests/cosmosLightClient/test-verifier-in-cosmos-relay.ts'
+  Solidity_Validators_Accumulator_Test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name:
+        uses: ./.github/actions/setup
+        with:
+          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       - name: Run Solidity Validators accumulator tests
         run: nix develop -c make test-validator-accumulator
 
-      # - name: Run Verifier in EOS test
-      #   run: nix develop -c yarn test './tests/eosLightClient/test-verifier-in-EOS.ts'
+  Nim_Light_Client_Compiled_with_Emsctipten_Tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Use local my-action
+        uses: ./.github/actions/setup
+        with:
+          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+      - name: Run Nim Light Client compiled with emsctipten tests
+        run: nix develop -c yarn test-emcc './tests/test-nim-to-wasm.ts' 'test-nim-light-client.ts'
+
+  Nim_Light_Client_Clang_Test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Use local my-action
+        uses: ./.github/actions/setup
+        with:
+          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+      - name: Run Nim Light Client compiled with clang tests
+        run: nix develop -c yarn test './tests/test-nim-to-wasm.ts' 'test-nim-light-client.ts'
+
+  Nim_Groth16_Verifier_Tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Use local my-action
+        uses: ./.github/actions/setup
+        with:
+          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+      - name: Run Nim groth16 verifier tests
+        run: nix develop -c make test-groth16-verifier
+
+  Run_Light_Client_In_Cosmos_Test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Use local my-action
+        uses: ./.github/actions/setup
+        with:
+          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+      - name: Run Light Client in Cosmos test
+        run: nix develop -c yarn test './tests/cosmosLightClient/test-nim-light-client-in-cosmos.ts'
+
+  Run_Verifier_In_Cosmos_Test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Use local my-action
+        uses: ./.github/actions/setup
+        with:
+          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+      - name: Run Verifier in Cosmos test
+        run: nix develop -c yarn test './tests/cosmosLightClient/test-verifier-in-cosmos.ts'
+
+  Run_Circom_Tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Use local my-action
+        uses: ./.github/actions/setup
+        with:
+          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+      - name: Run circom tests
+        run: nix develop -c make test-circom-circuits
+
+  Run_Verifier_In_Cosmos_Relay_Tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Use local my-action
+        uses: ./.github/actions/setup
+        with:
+          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+      - name: Run Verifier in Cosmos - Relayer test
+        run: nix develop -c yarn test './tests/cosmosLightClient/test-verifier-in-cosmos-relay.ts'
+
+  Run_Verify_Given_Proof:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Use local my-action
+        uses: ./.github/actions/setup
+        with:
+          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       - name: Run Verify given proof - test using bncurve and constantine
         run: nix develop -c nim c -r 'tests/verify_proof/verify_given_proof_test.nim'
 
-  SolidityVerifierTests:
-    needs: Tests
+  Solidity_Verifier_Tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-
-      - uses: cachix/install-nix-action@v20
+      - name: Use local my-action
+        uses: ./.github/actions/setup
         with:
-          nix_path: nixpkgs=channel:nixos-22.11
-          install_url: https://releases.nixos.org/nix/nix-2.15.0/install
-
-      - uses: cachix/cachix-action@v12
-        with:
-          name: nix-blockchain-development
-          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-      - name: Install Node.js dependencies
-        run: nix develop -c yarn install --immutable
+          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       - name: Run Solidity verifier tests
         run: nix develop -c make evm-simulation
 
-  OneShotSyncingSimulation:
-    needs: Tests
+  OneShot_Syncing_Simulation:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-
-      - uses: cachix/install-nix-action@v20
+      - name: Use local my-action
+        uses: ./.github/actions/setup
         with:
-          nix_path: nixpkgs=channel:nixos-22.11
-          install_url: https://releases.nixos.org/nix/nix-2.15.0/install
-
-      - uses: cachix/cachix-action@v12
-        with:
-          name: nix-blockchain-development
-          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-      - name: Install Node.js dependencies
-        run: nix develop -c yarn install --immutable
+          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       - name: Run one shot syncing simulation
         run: nix develop -c make one-shot-syncing-simulation
