@@ -2,6 +2,8 @@ pragma circom 2.1.5;
 
 include "hash_two.circom";
 include "../../../node_modules/circomlib/circuits/comparators.circom";
+include "../../../node_modules/circomlib/circuits/bitify.circom";
+
 include "utils/arrays.circom";
 include "utils/numerical.circom";
 
@@ -15,27 +17,14 @@ template IsValidMerkleBranchOut(N) {
 
   component hashers[N];
   component isZero[N];
-  component pow[N];
-  component divisionByTwo[N];
-  component divisionByPow[N];
-
+  component idx2Bits;  
+  idx2Bits = Num2Bits(N+1);
+  idx2Bits.in <== index;
   for(var i = 0; i < N; i++) {
     hashers[i] = HashTwo();
     isZero[i] = IsZero();
 
-    pow[i] = Pow(256);
-    pow[i].base <== 2;
-    pow[i].power <== i;
-
-    divisionByPow[i] = DivisionBy();
-    divisionByPow[i].dividend <== index;
-    divisionByPow[i].divisor <== pow[i].out;
-
-    divisionByTwo[i] = DivisionBy();
-    divisionByTwo[i].dividend <== divisionByPow[i].quotient;
-    divisionByTwo[i].divisor <== 2;
-
-    isZero[i].in <== divisionByTwo[i].remainder;
+    isZero[i].in <== idx2Bits.out[i];
 
     var current[256];
 
