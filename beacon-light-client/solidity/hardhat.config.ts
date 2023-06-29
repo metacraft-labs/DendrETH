@@ -39,13 +39,26 @@ if (!/^0x[0-9a-fA-F]{64}$/.test(conf.USER_PRIVATE_KEY ?? '')) {
 
 export default {
   solidity: {
-    version: '0.8.9',
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 200,
+    compilers: [
+      {
+        version: '0.8.9',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
       },
-    },
+      {
+        version: '0.8.18',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
+    ],
   },
   defaultNetwork: 'hardhat',
   networks: {
@@ -54,8 +67,10 @@ export default {
       accounts: [conf.LOCAL_HARDHAT_PRIVATE_KEY],
     },
     hardhat: {
-      blockGasLimit: 30000000,
-      allowUnlimitedContractSize: true,
+      forking: {
+        url: 'https://eth.llamarpc.com',
+        blockNumber: 17578101,
+      },
     },
     ropsten: {
       url: `https://ropsten.infura.io/v3/${conf.INFURA_API_KEY}`,
@@ -118,7 +133,7 @@ export default {
       accounts: [conf.USER_PRIVATE_KEY],
     },
     gnosis: {
-      url: `https://gnosis.api.onfinality.io/public`,
+      url: `https://rpc.gnosis.gateway.fm`,
       accounts: [conf.USER_PRIVATE_KEY],
     },
   },

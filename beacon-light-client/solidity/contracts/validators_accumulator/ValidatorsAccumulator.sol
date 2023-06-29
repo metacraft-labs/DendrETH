@@ -1,11 +1,3 @@
-`validatorsAccumulator` is a Merkle tree accumulator that contains the public keys of validators and their corresponding Eth1 deposit indexes.
-The purpose of storing the Eth1 deposit index is to ascertain whether a particular validator is already a participant in the beacon chain.
-
-A Merkle tree accumulator is a binary tree of hashes, which is used for efficiently proving membership of an element in a set. In this context, the set comprises of validators.
-
-This is a sample solidity implementation of the `validatorsAccumulator`
-
-```
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
@@ -128,11 +120,3 @@ contract ValidatorsAccumulator {
     }
   }
 }
-
-```
-
-In the deposit function, each validator's public key and their Eth1 deposit index are packed together and hashed to form a node. This node represents the validator in the Merkle tree.
-
-The node is then inserted into the Merkle tree at the appropriate level, based on the current number of validators. The path to insert the node is determined using the binary representation of the total validator count. The leftmost branch is taken for every 0, and the rightmost branch for every 1.
-
-The get_validators_accumulator function calculates and returns the Merkle root of the validatorsAccumulator. This root is a single hash that effectively represents all the validators in the accumulator.

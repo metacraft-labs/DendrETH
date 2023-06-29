@@ -10,6 +10,10 @@ build-relay-image:
 
 	docker build -t relayimage -f Dockerfile.relay .
 
+test-validator-accumulator: yarn-check
+	cd beacon-light-client/solidity && \
+	yarn hardhat test test/ValidatorAccumulator.test.ts
+
 evm-simulation: yarn-check
 	cd beacon-light-client/solidity && \
 	yarn hardhat test test/BeaconLightClientReadyProofs.test.ts
