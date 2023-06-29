@@ -1,6 +1,6 @@
 import
   std/unittest,
-  # ../../libs/nim/verify-utils/verify_given_proof_constantine,
+  ../../libs/nim/verify-utils/verify_given_proof_constantine,
   ../../libs/nim/verify-utils/verify_given_proof
 
 suite "description for this stuff":
@@ -14,9 +14,8 @@ suite "description for this stuff":
   test "check verifyProof for bncurve":
     assert verifyProof(pathToKey, pathToProof, pathToLastUpdate,
                        pathToNewUpdate, domain)
-#Will me added with another PR
-  # test "check verifyProof for constantine":
-  #   assert verifyProofConstantine(pathToKey, pathToProof, pathToLastUpdate,
-  #                                 pathToNewUpdate, domain)
+  test "check verifyProof for constantine":
+    assert verifyProofConstantine(pathToKey, pathToProof, pathToLastUpdate,
+                                  pathToNewUpdate, domain)
 
 
