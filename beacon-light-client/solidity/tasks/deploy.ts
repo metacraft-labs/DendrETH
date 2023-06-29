@@ -22,7 +22,7 @@ task('deploy', 'Deploy the beacon light client contract')
     console.log('Deploying contracts with the account:', deployer.address);
     console.log('Account balance:', (await deployer.getBalance()).toString());
 
-    const beaconApi = new BeaconApi(currentConfig.BEACON_REST_API);
+    const beaconApi = new BeaconApi([currentConfig.BEACON_REST_API]);
 
     const beaconLightClient = await (
       await ethers.getContractFactory('BeaconLightClient')

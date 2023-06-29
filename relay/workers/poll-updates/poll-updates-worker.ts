@@ -53,7 +53,7 @@ import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
 
       doUpdate(
         redis,
-        new BeaconApi(job.data.beaconRestApi),
+        new BeaconApi([job.data.beaconRestApi]),
         proofGenertorQueue,
         job.data.lastDownloadedUpdateKey,
         job.data.slotsJump,
