@@ -1,12 +1,15 @@
 import
   std/[os,osproc,strutils],
   confutils,
-  config,
   std/json,
-  stew/byteutils,
-  ../../../contracts/cosmos/verifier/lib/nim/contract_interactions/helpers,
+  stew/byteutils
+
+import
   bncurve/group_operations
 
+import
+  config,
+  ../../../../contracts/cosmos/verifier/lib/nim/contract_interactions/helpers
 
 proc execCommand*(): string =
   let conf = ParseDataConf.load()
@@ -33,7 +36,6 @@ proc execCommand*(): string =
       let slot = updateJson["attestedHeaderSlot"]
 
       let update= "{\"update\":{\"proof\":" & $proof & ",\"new_optimistic_header_root\": " & $newOptimisticHeader & ",\"new_finalized_header_root\": " & $newFinalizedHeader & ",\"new_execution_state_root\": " & $newExecutionStateRoot & ",\"new_slot\": " & $slot & "}}"
-
       echo update
 
     of StartUpCommand.updateDataForRelayTest:
@@ -50,7 +52,6 @@ proc execCommand*(): string =
       let slot = updateJson["attestedHeaderSlot"]
 
       let update = "{\"attestedHeaderRoot\": " & $newOptimisticHeader & ",\"finalizedHeaderRoot\": " & $newFinalizedHeader & ",\"finalizedExecutionStateRoot\": " & $newExecutionStateRoot &  ",\"a\":" & $a &   ",\"b\":" & $b &  ",\"c\":" & $c & ",\"attestedHeaderSlot\": " & $slot & "}"
-
       echo update
 
     of StartUpCommand.expectedHeaderRootPath:
@@ -75,12 +76,29 @@ proc execCommand*(): string =
       let newOptimisticHeader = hexToByteArray[32](conf.attested_header_root)
       let newFinalizedHeader = hexToByteArray[32](conf.finalized_header_root)
       let newExecutionStateRoot = hexToByteArray[32](conf.finalized_execution_state_root)
-      let a = Point[G1](x: FQ.fromString(conf.a[0]), y: FQ.fromString(conf.a[1]), z: FQ.fromString("1"))
-      let b = Point[G2](x: FQ2(c0: FQ.fromString(parsedB[0][0]),  c1: FQ.fromString(parsedB[0][1])), y: FQ2(c0: FQ.fromString(parsedB[1][0]), c1: FQ.fromString(parsedB[1][1])), z: FQ2(c0: FQ.fromString("1"), c1: FQ.fromString("0")))
-      let c = Point[G1](x: FQ.fromString(conf.c[0]), y: FQ.fromString(conf.c[1]), z: FQ.fromString("1"))
+
+      let fq0 = FQ.fromString("0")
+      let fq1 = FQ.fromString("1")
+
+      let aX = FQ.fromString(conf.a[0])
+      let aY = FQ.fromString(conf.a[1])
+      let a = Point[G1](x: aX, y: aY, z: fq1)
+
+      let b00 = FQ.fromString(parsedB[0][0])
+      let b01 = FQ.fromString(parsedB[0][1])
+      let b10 = FQ.fromString(parsedB[1][0])
+      let b11 = FQ.fromString(parsedB[1][1])
+      let bX = FQ2(c0: b00,  c1: b01)
+      let bY = FQ2(c0: b10,  c1: b11)
+      let b = Point[G2](x: bX, y: bY, z: FQ2(c0: fq1, c1: fq0))
+
+      let cX = FQ.fromString(conf.c[0])
+      let cY = FQ.fromString(conf.c[1])
+      let c = Point[G1](x: cX, y: cY, z: fq1)
 
       let prf = Proof(a:a, b:b, c:c)
       let proof = cast[var array[sizeof(Proof),byte]](prf.unsafeAddr)
+
       let update = "{\"update\":{\"proof\":" & $proof & ",\"new_optimistic_header_root\": " & $newOptimisticHeader & ",\"new_finalized_header_root\": " & $newFinalizedHeader & ",\"new_execution_state_root\": " & $newExecutionStateRoot & ",\"new_slot\": " & $conf.attested_header_slot & "}}"
       echo update
 
@@ -95,12 +113,29 @@ proc execCommand*(): string =
       let newOptimisticHeader = hexToByteArray[32](conf.attested_header_rootEOS)
       let newFinalizedHeader = hexToByteArray[32](conf.finalized_header_rootEOS)
       let newExecutionStateRoot = hexToByteArray[32](conf.finalized_execution_state_rootEOS)
-      let a = Point[G1](x: FQ.fromString(conf.aEOS[0]), y: FQ.fromString(conf.aEOS[1]), z: FQ.fromString("1"))
-      let b = Point[G2](x: FQ2(c0: FQ.fromString(parsedB[0][0]),  c1: FQ.fromString(parsedB[0][1])), y: FQ2(c0: FQ.fromString(parsedB[1][0]), c1: FQ.fromString(parsedB[1][1])), z: FQ2(c0: FQ.fromString("1"), c1: FQ.fromString("0")))
-      let c = Point[G1](x: FQ.fromString(conf.cEOS[0]), y: FQ.fromString(conf.cEOS[1]), z: FQ.fromString("1"))
+
+      let fq0 = FQ.fromString("0")
+      let fq1 = FQ.fromString("1")
+
+      let aX = FQ.fromString(conf.aEOS[0])
+      let aY = FQ.fromString(conf.aEOS[1])
+      let a = Point[G1](x: aX, y: aY, z: fq1)
+
+      let b00 = FQ.fromString(parsedB[0][0])
+      let b01 = FQ.fromString(parsedB[0][1])
+      let b10 = FQ.fromString(parsedB[1][0])
+      let b11 = FQ.fromString(parsedB[1][1])
+      let bX = FQ2(c0: b00,  c1: b01)
+      let bY = FQ2(c0: b10,  c1: b11)
+      let b = Point[G2](x: bX, y: bY, z: FQ2(c0: fq1, c1: fq0))
+
+      let cX = FQ.fromString(conf.cEOS[0])
+      let cY = FQ.fromString(conf.cEOS[1])
+      let c = Point[G1](x: cX, y: cY, z: fq1)
 
       let prf = Proof(a:a, b:b, c:c)
       let proof = cast[var array[sizeof(Proof),byte]](prf.unsafeAddr).toHex()
+
       let update = "'{\"key\":\"dendreth\", \"proof\": \"" & $proof & "\",\"new_optimistic_header_root\": \"" & $newOptimisticHeader.toHex() & "\",\"new_finalized_header_root\": \"" & $newFinalizedHeader.toHex() & "\",\"new_execution_state_root\": \"" & $newExecutionStateRoot.toHex() & "\",\"new_slot\": \"" & $conf.attested_header_slotEOS & "\"}'"
       echo update
 
@@ -114,7 +149,6 @@ proc execCommand*(): string =
       let slot = updateJson["attestedHeaderSlot"]
 
       let update= "'{\"key\":\"dendreth\", \"proof\": \"" & $proof.toHex() & "\" ,\"new_optimistic_header_root\": \"" & $newOptimisticHeader.toHex() & "\" ,\"new_finalized_header_root\": \"" & $newFinalizedHeader.toHex() & "\" ,\"new_execution_state_root\": \"" & $newExecutionStateRoot.toHex()  & "\" ,\"new_slot\": \"" & $slot & "\" } '"
-
       echo update
     of StartUpCommand.initDataEOS:
 
