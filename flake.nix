@@ -19,19 +19,55 @@
     #   using different versions of their dependencies from nixpkgs
     mcl-blockchain.url = "github:metacraft-labs/nix-blockchain-development";
     nixpkgs.follows = "mcl-blockchain/nixpkgs";
-    flake-utils.follows = "mcl-blockchain/flake-utils";
+    flake-parts.follows = "mcl-blockchain/flake-parts";
   };
 
-  outputs = {
+  outputs = inputs @ {
     self,
+    flake-parts,
     nixpkgs,
-    flake-utils,
     mcl-blockchain,
+    ...
   }:
-    flake-utils.lib.simpleFlake {
-      inherit self nixpkgs;
-      name = "DendrETH";
-      shell = ./shell.nix;
-      preOverlays = [mcl-blockchain.overlays.default (import ./libs/nix/overlay.nix)];
+    flake-parts.lib.mkFlake {inherit inputs;} {
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
+      ];
+      perSystem = {
+        config,
+        system,
+        pkgs,
+        inputs',
+        ...
+      }: let
+        inherit (inputs'.mcl-blockchain.legacyPackages) nix2container rust-stable;
+        docker-images = import ./libs/nix/docker-images.nix {inherit pkgs nix2container;};
+      in {
+        _module.args.pkgs = import nixpkgs {
+          inherit system;
+          overlays = [
+            mcl-blockchain.overlays.default
+          ];
+          config.permittedInsecurePackages = [
+            # wasm3 is insecure if used to execute untrusted third-party code
+            # however, since we're using it for development, these problems do not
+            # affect us.
+            # Marked as insecure: https://github.com/NixOS/nixpkgs/pull/192915
+            "wasm3-0.5.0"
+          ];
+        };
+        packages =
+          {
+            inherit (docker-images) docker-image-yarn;
+          }
+          // pkgs.lib.optionalAttrs (pkgs.hostPlatform.isLinux && pkgs.hostPlatform.isx86_64) {
+            inherit (docker-images) docker-image-all;
+          };
+        devShells.default = import ./shell.nix {inherit pkgs rust-stable;};
+        devShells.light-client = import ./libs/nix/shell-with-light-client.nix {inherit pkgs rust-stable;};
+      };
     };
 }

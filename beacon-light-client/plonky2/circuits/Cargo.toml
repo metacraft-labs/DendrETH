@@ -1,0 +1,11 @@
+[package]
+name = "circuits"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+plonky2 = { git = "https://github.com/polymerdao/plonky2", rev = "4cb0b48df1d227d5461a4c28ed025aaea64e2e62" }
+plonky2_sha256 = { git = "https://github.com/polymerdao/plonky2-sha256", branch = "main" }
+sha2 = "0.9"

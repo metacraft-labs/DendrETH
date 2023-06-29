@@ -1,0 +1,7 @@
+# Build results
+/.node-data-dir
+!.node-data-dir/.gitkeep
+!.node-data-dir/logs/.gitkeep
+!.node-data-dir/genesis.json
+
+!.node-data-dir/logs/.gitkeep

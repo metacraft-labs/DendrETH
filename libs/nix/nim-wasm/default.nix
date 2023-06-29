@@ -3,6 +3,7 @@
   writeShellApplication,
   llvm,
   nim,
+  emscripten,
 }: let
   nimcfg = writeTextFile {
     name = "nim-cfg";
@@ -29,26 +30,23 @@
       --opt:size
       --listCmd
       --d:nimNoLibc
+      --d:useMalloc
       --d:wasm
       --d:noSignalHandler
       --d:nimPreviewFloatRoundtrip
       --d:lightClientEmbedded
-      --d:lightClientWASM
       --gc:destructors
       --threads:off
       --stackTrace:off
       --lineTrace:off
 
       if defined(emcc):
-        --d:useMalloc
         --clang.exe:emcc
         --clang.linkerexe:emcc
         --clang.cpp.exe:emcc
         --clang.cpp.linkerexe:emcc
         --passL:"-Oz -s ALLOW_MEMORY_GROWTH -s WASM=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0"
       else:
-        --d:useMalloc
-
         --passC:"--target=wasm32-unknown-unknown-wasm"
         --passC:"-fuse-ld=wasm-ld"
 
@@ -74,10 +72,6 @@
         --passC:"-Werror"
         --passC:"-Wall"
 
-        # --passL:"--target=wasm32-unknown-unknown-wasm"
-        # --passL:"-nostdlib"
-        # --passL:"-Wl,--no-entry,-L/nix/store/cxgpscy3p231hii96c311haz3lqcf47g-emscripten-3.0.0/share/emscripten/cache/sysroot/lib/wasm32-emscripten,-lGL,-lal,-lstubs,-lc,-lcompiler_rt,-lc++-noexcept,-lc++abi-noexcept,-ldlmalloc,-lstandalonewasm-memgrow,-lc_rt-optz,-lsockets,--import-undefined,-z,stack-size=5242880,--initial-memory=16777216,--max-memory=2147483648,--global-base=1024"
-
         # General LLD options: https://man.archlinux.org/man/extra/lld/ld.lld.1.en
         --passL:"--target=wasm32-unknown-unknown-wasm"
         --passL:"-nostdlib"
@@ -86,10 +80,9 @@
         --passL:"-Wl,-z,stack-size=5242880"
 
         # Link libraries
-        --passL:"-Wl,-L/nix/store/cxgpscy3p231hii96c311haz3lqcf47g-emscripten-3.0.0/share/emscripten/cache/sysroot/lib/wasm32-emscripten"
+        --passL:"-Wl,-L${emscripten}/share/emscripten/cache/sysroot/lib/wasm32-emscripten"
         --passL:"-Wl,-lstubs,-lc"
         --passL:"-Wl,-ldlmalloc"
-        --passL:"-Wl,-lc_rt-optz"
 
         # Wasm specific LLD options: https://lld.llvm.org/WebAssembly.html
         --passL:"-Wl,--export-dynamic"

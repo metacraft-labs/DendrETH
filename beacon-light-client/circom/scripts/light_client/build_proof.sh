@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-PHASE1=../../../../../../pot28_final.ptau
+PHASE1=../../build/pot28_final.ptau
 CIRCUIT_NAME=light_client
 BUILD_DIR=../../build/"$CIRCUIT_NAME"
 
@@ -21,16 +21,16 @@ echo $PWD
 echo "****COMPILING CIRCUIT****"
 start=`date +%s`
 #circom "$CIRCUIT_NAME".circom --O0 --c --output "$BUILD_DIR"
-circom "$CIRCUIT_NAME".circom --O1 --r1cs --sym --c --output "$BUILD_DIR"
+circom "$CIRCUIT_NAME".circom --O2 --r1cs --sym --c --output "$BUILD_DIR"
 end=`date +%s`
 echo "DONE ($((end-start))s)"
 
-# echo "****COMPILING C++ WITNESS GENERATION CODE****"
-# start=`date +%s`
-# cd "$BUILD_DIR"/"$CIRCUIT_NAME"_cpp
-# make
-# end=`date +%s`
-# echo "DONE ($((end-start))s)"
+echo "****COMPILING C++ WITNESS GENERATION CODE****"
+start=`date +%s`
+cd "$BUILD_DIR"/"$CIRCUIT_NAME"_cpp
+make
+end=`date +%s`
+echo "DONE ($((end-start))s)"
 
 # echo "****VERIFYING WITNESS****"
 # start=`date +%s`
@@ -41,7 +41,7 @@ echo "DONE ($((end-start))s)"
 # cd ..
 # snarkjs wej witness.wtns witness.json
 
-cd "$BUILD_DIR"
+cd ..
 
 echo "****GENERATING ZKEY 0****"
 start=`date +%s`
@@ -61,8 +61,8 @@ echo "DONE ($((end-start))s)"
 # end=`date +%s`
 # echo "DONE ($((end-start))s)"
 
-# echo "****EXPORTING VKEY****"
-# start=`date +%s`
-# yarn snarkjs zkey export verificationkey "$CIRCUIT_NAME"_0.zkey vkey.json -v
-# end=`date +%s`
-# echo "DONE ($((end-start))s)"
+echo "****EXPORTING VKEY****"
+start=`date +%s`
+yarn snarkjs zkey export verificationkey "$CIRCUIT_NAME"_0.zkey vkey.json -v
+end=`date +%s`
+echo "DONE ($((end-start))s)"

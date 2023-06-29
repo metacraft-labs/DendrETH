@@ -34,8 +34,9 @@ describe('calling Nim functions compiled to Wasm', () => {
   beforeAll(async () => {
     await Promise.all(
       filesToTest.map(async nimFilePath => {
-        const wasmFilePath = (await compileNimFileToWasm(nimFilePath))
-          .outputFileName;
+        const wasmFilePath = (
+          await compileNimFileToWasm(nimFilePath, '--d:lightClientWASM')
+        ).outputFileName;
         const exports = await loadWasm<{}>({
           from: {
             filepath: wasmFilePath,

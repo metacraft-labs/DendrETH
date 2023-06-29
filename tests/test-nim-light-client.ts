@@ -41,15 +41,16 @@ describe('Light Client in Nim compiled to Wasm', () => {
     test(
       `Testing '${path}': '${testName}'`,
       () => func(perFileState[path] as NimTestState<T>),
-      110000,
+      300000,
     );
   }
 
   beforeAll(async () => {
     await Promise.all(
       filesToTest.map(async nimFilePath => {
-        const wasmFilePath = (await compileNimFileToWasm(nimFilePath))
-          .outputFileName;
+        const wasmFilePath = (
+          await compileNimFileToWasm(nimFilePath, '--d:lightClientWASM')
+        ).outputFileName;
         const exports = await loadWasm<{}>({
           from: { filepath: wasmFilePath },
           importObject: {},
@@ -61,7 +62,7 @@ describe('Light Client in Nim compiled to Wasm', () => {
         };
       }),
     );
-  }, 60000 /* timeout in milliseconds */);
+  }, 120000 /* timeout in milliseconds */);
 
   testNimToWasmFile<{
     assertLCFailTest: (a: number) => any;

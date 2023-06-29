@@ -8,7 +8,7 @@ from nimcrypto/hash import MDigest, fromHex
 
 import light_client_utils
 import ./helpers/helpers
-from ../../beacon-light-client/nim/light_client import initialize_light_client_store
+from ../../beacon-light-client/nim/light-client/light_client import initialize_light_client_store
 
 proc initializeLightClientStoreTest(
     dataRoot: pointer,

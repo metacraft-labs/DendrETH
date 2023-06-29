@@ -1,0 +1,18 @@
+{
+  "name": "Relay",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "pollUpdatesWorker": "yarn ts-node workers/poll-updates/poll-updates-worker.ts",
+    "proofGenerationWorker": "yarn ts-node workers/prover/prover-worker.ts"
+  },
+  "type": "commonjs",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "ts-node": "^10.9.1",
+    "web3": "^1.10.0",
+    "yargs": "^17.7.1"
+  }
+}

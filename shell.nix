@@ -1,60 +1,12 @@
-{pkgs}:
+{
+  pkgs,
+  rust-stable,
+}:
 with pkgs; let
-  nodejs = nodejs-18_x;
-  llvm = llvmPackages_13;
-  corepack = callPackage ./libs/nix/corepack-shims {inherit nodejs;};
-  nim-wasm = callPackage ./libs/nix/nim-wasm {inherit llvm;};
+  shell-pkgs = import ./libs/nix/common-shell-pkgs.nix {inherit pkgs rust-stable;};
 in
   mkShell {
-    packages = [
-      # For priting the direnv banner
-      figlet
-
-      # For formatting Nix files
-      alejandra
-
-      # For an easy way to launch all required blockchain simulations
-      # and tailed log files
-      tmux
-      tmuxinator
-
-      # Node.js dev environment for unit tests
-      nodejs
-      corepack
-
-      # For WebAssembly unit-testing
-      wasm3 # wasmer is currently broken on macOS ARM
-
-      # Foor finalization of the output and it also provides a
-      # 15% size reduction of the generated .wasm files.
-      binaryen
-
-      metacraft-labs.circom
-      nlohmann_json
-      python38
-      gmp
-      nasm
-      libsodium
-
-      # For some reason, this is used by make when compiling the
-      # Circom tests on macOS even when we specify CC=clang below:
-      gcc
-
-      # Used for building the Nim beacon light client to WebAssembly
-      emscripten-enriched-cache
-
-      # Used for Nim compilations and for building node_modules
-      # Please note that building native node bindings may require
-      # other build tools such as gyp, ninja, cmake, gcc, etc, but
-      # we currently don't seem to have such dependencies
-      llvm.clang
-
-      # llvm.llvm
-      # llvm.lld
-      ldc
-      nim
-      nim-wasm
-    ];
+    packages = shell-pkgs;
 
     shellHook = ''
       set -e

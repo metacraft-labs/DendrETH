@@ -1,6 +1,6 @@
-pragma circom 2.0.3;
+pragma circom 2.1.5;
 
 include "../../circuits/aggregate_bitmask.circom";
 
-component main = AggregateKeysBitmask(512);
+component main = AggregateKeysBitmask(512,7);
 

@@ -1,0 +1,39 @@
+FROM alpine as yarn-lock
+RUN apk add jq coreutils
+WORKDIR /out
+COPY package.json .yarnrc.yml yarn.lock ./
+WORKDIR /src
+COPY . .
+RUN  :\
+  && cp /out/package.json . \
+  && JQ_EXPR='{ name, packageManager, workspaces, resolutions, dependencies, devDependencies } | with_entries(select(.value != null))' \
+  && find . -name "**package.json" -not -path "./vendor/*" -not -path "./beacon-light-client/circom/*" -print0 \
+      | xargs -0 -n1 sh -c 'x="/out/$1" && mkdir -p "${x%/*}" && jq "'"$JQ_EXPR"'" < "$1" > "$x"' -s
+
+FROM dendreth-relay-yarn:latest as yarn-installer
+WORKDIR /src
+COPY --from=yarn-lock /out .
+RUN mkdir /tmp
+RUN yarn install
+
+FROM dendreth-relay:latest as main
+WORKDIR /DendrETH
+RUN mkdir /tmp
+COPY --from=yarn-lock /out .
+COPY --from=yarn-installer /src .
+
+COPY ./supervisord.conf ./supervisord.conf
+COPY ./conf.d ./conf.d
+COPY ./relay ./relay
+COPY ./libs/ ./libs
+COPY ./beacon-light-client/solidity ./beacon-light-client/solidity
+
+COPY ./tsconfig.json ./tsconfig.json
+COPY ./scripts ./scripts
+
+ENV INFURA_API_KEY=asd ETHERSCAN_API_KEY=asd
+RUN cd beacon-light-client/solidity && yarn hardhat compile
+
+VOLUME relayvolume DendrETH/build
+
+ENTRYPOINT ["./relay/run-relay.sh"]

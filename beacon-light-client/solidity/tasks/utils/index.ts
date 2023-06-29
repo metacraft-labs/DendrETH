@@ -1,15 +1,30 @@
-import { hashTreeRootBeaconBlock } from '../../test/utils/format';
+import { sha256 } from 'ethers/lib/utils';
+import { IBeaconApi } from '../../../../relay/abstraction/beacon-api-interface';
+import { Config } from '../../../../relay/constants/constants';
 
-export const getConstructorArgs = (network: string) => {
-  network = network === 'hardhat' ? 'mainnet' : network;
-  const UPDATE0 = require(`../../../../vendor/eth2-light-client-updates/${network}/updates/00290.json`);
+export const getConstructorArgs = async (
+  beaconApi: IBeaconApi,
+  slot: number,
+  config: Config,
+) => {
+  const { ssz } = await import('@lodestar/types');
+
+  const finalizedBlockHeader = await beaconApi.getFinalizedBlockHeader(slot);
+  const finalizedHeaderRoot =
+    ssz.phase0.BeaconBlockHeader.hashTreeRoot(finalizedBlockHeader);
+
+  const executioStateRoot = await beaconApi.getExecutionStateRoot(slot);
+
+  let result = sha256(
+    config.FORK_VERSION.padEnd(66, '0') +
+      config.GENESIS_VALIDATORS_ROOT.slice(2),
+  );
 
   return [
-    parseInt(UPDATE0.attested_header.slot),
-    parseInt(UPDATE0.attested_header.proposer_index),
-    UPDATE0.attested_header.parent_root,
-    UPDATE0.attested_header.body_root,
-    UPDATE0.attested_header.state_root,
-    hashTreeRootBeaconBlock(UPDATE0.attested_header),
+    finalizedHeaderRoot,
+    finalizedBlockHeader.slot,
+    finalizedHeaderRoot,
+    executioStateRoot,
+    config.DOMAIN_SYNC_COMMITTEE + result.slice(2, 58),
   ];
 };

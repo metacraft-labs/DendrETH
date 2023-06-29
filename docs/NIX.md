@@ -41,7 +41,7 @@ To install Nix on any Linux distribution or macOS, simply run the following
 command:
 
 ```bash
-curl https://nixos.org/nix/install | sh
+sh <(curl -L https://nixos.org/nix/install) --daemon
 ```
 
 DendrETH is taking advantage of some experimental Nix features such as the

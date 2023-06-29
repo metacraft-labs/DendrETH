@@ -2,4 +2,11 @@ contracts/circuits/HelloWorld
 cache
 artifacts
 contracts/*.sol
-
+**/input*.json
+# snarkit2 ignores
+!**/data/**/input.json
+circuit_cpp/
+circuit.r1cs
+circuit.sym
+witness.json
+relayer_*/
