@@ -17,7 +17,7 @@ task('verify-contracts', 'Verify')
 
     const currentConfig = networkConfig[args.follownetwork] as Config;
 
-    const beaconApi = new BeaconApi(currentConfig.BEACON_REST_API!);
+    const beaconApi = new BeaconApi([currentConfig.BEACON_REST_API!]);
 
     await run('verify:verify', {
       address: args.lightclient,
