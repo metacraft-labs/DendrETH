@@ -58,7 +58,7 @@ describe('Light Client In Cosmos', () => {
 
     await exec(compileContractCommandLightClient);
 
-    let cosmos = await setUpCosmosTestnet(mnemonic);
+    let cosmos = await setUpCosmosTestnet(mnemonic, 'light-client');
     client = cosmos.client;
     DendrETHWalletInfo = cosmos.walletInfo;
   }, 360000 /* timeout in milliseconds */);
@@ -230,6 +230,6 @@ describe('Light Client In Cosmos', () => {
 
     expect(headerSlotAfterAllUpdates).toEqual(expectedHeaderSlot);
 
-    await stopCosmosNode();
+    await stopCosmosNode('light-client');
   }, 1500000);
 });

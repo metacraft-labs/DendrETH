@@ -17,8 +17,9 @@ let instantiateFee;
 export async function uploadVerifierContract(
   network: string,
   cosmos: CosmosClientWithWallet,
+  target: string,
 ) {
-  const { wasmContractPath } = await getCosmosContractArtifacts('verifier');
+  const { wasmContractPath } = await getCosmosContractArtifacts(target);
   const contract = fs.readFileSync(wasmContractPath);
   const { client, walletInfo: DendrETHWalletInfo } = cosmos;
 
@@ -62,8 +63,9 @@ export async function instantiateVerifierContract(
   initHeaderRoot: string,
   domain: string,
   cosmos: CosmosClientWithWallet,
+  target: string,
 ) {
-  const { rootDir, contractDir } = await getCosmosContractArtifacts('verifier');
+  const { rootDir, contractDir } = await getCosmosContractArtifacts(target);
 
   const pathToVerifyUtils =
     rootDir + `/vendor/eth2-light-client-updates/prater/capella-updates-94/`;

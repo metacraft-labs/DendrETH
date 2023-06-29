@@ -45,9 +45,9 @@ describe('Light Client Verifier In Cosmos', () => {
       rootDir + `/vendor/eth2-light-client-updates/prater/capella-updates-94/`;
     updateFiles = glob(pathToVerifyUtils + `proof*.json`);
 
-    await compileContractMain(null);
+    await compileContractMain(null, 'verifier');
 
-    cosmos = await setUpCosmosTestnet(mnemonic);
+    cosmos = await setUpCosmosTestnet(mnemonic, 'verifier');
     DendrETHWalletInfo = cosmos.walletInfo;
   }, 360000 /* timeout in milliseconds */);
 
@@ -55,7 +55,11 @@ describe('Light Client Verifier In Cosmos', () => {
     console.info("Running 'Check Verifier after initialization' test");
     const expectedHeaderHash =
       '0x4ce76b7478cb0eee4a32c7f25bb561ca1d0f444d1716c8f6f260900ef45f37d2';
-    const uploadReceipt = await uploadVerifierContract('wasm', cosmos);
+    const uploadReceipt = await uploadVerifierContract(
+      'wasm',
+      cosmos,
+      'verifier',
+    );
     console.info(
       'Upload of `Verifier in Cosmos` succeeded. Receipt:',
       uploadReceipt,
@@ -77,6 +81,7 @@ describe('Light Client Verifier In Cosmos', () => {
       defaultInitHeaderRoot,
       defaultDomain,
       cosmos,
+      'verifier',
     );
     cosmosContract = new CosmosContract(
       instantiation.contractAddress,
@@ -196,6 +201,6 @@ describe('Light Client Verifier In Cosmos', () => {
     const headerHash = headerHashAfter20Update.toString().replace(/\s/g, '');
     expect(headerHash).toEqual(expectedHeaderHash);
 
-    await stopCosmosNode();
+    await stopCosmosNode('verifier');
   }, 2000000);
 });
