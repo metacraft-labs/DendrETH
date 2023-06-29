@@ -1,10 +1,15 @@
 import yargs from 'yargs/yargs';
 import { getCosmosTxClient } from '../../../libs/typescript/cosmos-utils/cosmos-utils';
-import { updateVerifierContract } from '../verifier/lib/typescript/verifier-make-update';
+import { updateVerifierContract } from '../verifier/typescript/verifier-make-update';
 
 const argv = yargs(process.argv.slice(2))
   .options({
     run: { type: 'boolean', default: false, demandOption: true },
+    target: {
+      type: 'string',
+      demandOption: true,
+      choices: ['verifier-bncurve', 'verifier-constantine'],
+    },
     network: {
       type: 'string',
       demandOption: true,
@@ -21,6 +26,7 @@ async function uploadMain() {
   // as default we will use the first update file we have
   let defaultUpdateFile = '5200024_5200056.json';
 
+  const target = argv.target;
   const network = argv.network;
   const mnemonic = argv.mnemonic;
   const rpcUrl = argv.rpcUrl;
@@ -33,7 +39,13 @@ async function uploadMain() {
     return;
   }
 
-  await updateVerifierContract(network, cosmos, contractAddress, updateFile);
+  await updateVerifierContract(
+    network,
+    cosmos,
+    contractAddress,
+    updateFile,
+    target,
+  );
 }
 if (argv.run || argv._[0] == 'run') {
   uploadMain();

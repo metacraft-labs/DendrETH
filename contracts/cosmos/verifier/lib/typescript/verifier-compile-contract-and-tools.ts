@@ -6,9 +6,9 @@ import { getCosmosContractArtifacts } from '../../../../../libs/typescript/cosmo
 
 const exec = promisify(exec_);
 
-export async function compileVerifierNimFileToWasm() {
-  const { contractDir } = await getCosmosContractArtifacts('verifier');
-  const nimFilePath = contractDir + `/lib/nim//verify/verify.nim`;
+export async function compileVerifierNimFileToWasm(target: string) {
+  const { contractDir } = await getCosmosContractArtifacts(target);
+  const nimFilePath = contractDir + `/lib/nim/verify/verify.nim`;
 
   await compileNimFileToWasm(
     nimFilePath,
@@ -17,10 +17,10 @@ export async function compileVerifierNimFileToWasm() {
   );
 }
 
-export async function compileVerifierParseDataTool() {
-  const { rootDir, contractDir } = await getCosmosContractArtifacts('verifier');
+export async function compileVerifierParseDataTool(target: string) {
+  const { rootDir, contractDir } = await getCosmosContractArtifacts(target);
   const compileParseDataTool = `nim c -d:nimOldCaseObjects -o:"${contractDir}/nimcache/" \
-  "${rootDir}/tests/helpers/verifier-parse-data-tool/verifier_parse_data.nim" `;
+  "${rootDir}/tests/helpers/verifier-parse-data-tool/"${target}"/verifier_parse_data.nim" `;
 
   console.info(
     `Building 'verifier-parse-data' tool \n  ╰─➤ ${compileParseDataTool}`,
@@ -29,9 +29,12 @@ export async function compileVerifierParseDataTool() {
   await exec(compileParseDataTool);
 }
 
-export async function compileVerifierContract(patch: string | null) {
+export async function compileVerifierContract(
+  patch: string | null,
+  target: string,
+) {
   const { contractDir, wasmContractPath } = await getCosmosContractArtifacts(
-    'verifier',
+    target,
   );
 
   let dockerPatch = '';
@@ -55,8 +58,11 @@ export async function compileVerifierContract(patch: string | null) {
   return wasmContractPath;
 }
 
-export async function compileContractMain(patch: string | null) {
-  await compileVerifierNimFileToWasm();
-  await compileVerifierParseDataTool();
-  await compileVerifierContract(patch);
+export async function compileContractMain(
+  patch: string | null,
+  target: string,
+) {
+  await compileVerifierNimFileToWasm(target);
+  await compileVerifierParseDataTool(target);
+  await compileVerifierContract(patch, target);
 }

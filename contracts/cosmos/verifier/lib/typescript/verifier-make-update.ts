@@ -12,9 +12,10 @@ export async function updateVerifierContract(
   cosmos: CosmosClientWithWallet,
   contractAddress: string,
   updateFile: string,
+  target: string,
 ) {
   const rootDir = await getRootDir();
-  const contractDir = rootDir + `/contracts/cosmos/verifier`;
+  const contractDir = rootDir + `/contracts/cosmos/` + target;
 
   const pathToVerifyUtils =
     rootDir + `/vendor/eth2-light-client-updates/prater/capella-updates-94/`;

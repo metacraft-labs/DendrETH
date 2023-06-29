@@ -34,9 +34,10 @@ async function getDirs(
 export async function compileVerifierParseDataTool(
   protocol: 'cosmos' | 'eos',
   contract: 'verifier' | 'light-client',
+  target: 'verifier' | 'constantine',
 ) {
   const { rootDir } = await getDirs(protocol, contract);
-  const toolDir = `${rootDir}/tests/helpers/verifier-parse-data-tool`;
+  const toolDir = `${rootDir}/tests/helpers/verifier-parse-data-tool/${target}`;
   const binaryPath = `${toolDir}/build/verifier_parse_data`;
   const compileParseDataTool = `nim c -d:nimOldCaseObjects \
   -o:${binaryPath} \

@@ -52,9 +52,9 @@ describe('Light Client Verifier In Cosmos', () => {
       rootDir + `/vendor/eth2-light-client-updates/prater/capella-updates-94/`;
     updateFiles = glob(pathToVerifyUtils + `proof*.json`);
 
-    await compileContractMain(null);
+    await compileContractMain(null, 'verifier');
 
-    cosmos = await setUpCosmosTestnet(mnemonic);
+    cosmos = await setUpCosmosTestnet(mnemonic, 'verifier');
     client = cosmos.client;
   }, 360000 /* timeout in milliseconds */);
 
@@ -65,7 +65,11 @@ describe('Light Client Verifier In Cosmos', () => {
     const expectedDomain =
       '7,0,0,0,98,137,65,239,33,209,254,140,113,52,114,10,221,16,187,145,227,176,44,0,126,0,70,210,71,44,102,149';
 
-    const uploadReceipt = await uploadVerifierContract('wasm', cosmos);
+    const uploadReceipt = await uploadVerifierContract(
+      'wasm',
+      cosmos,
+      'verifier',
+    );
     console.info(
       'Upload of `Verifier in Cosmos` succeeded. Receipt:',
       uploadReceipt,
@@ -83,6 +87,7 @@ describe('Light Client Verifier In Cosmos', () => {
       defaultInitHeaderRoot,
       defaultDomain,
       cosmos,
+      'verifier',
     );
     // Gas Used
     console.info(`Instantiation used ` + instantiation.gasUsed + ` gas`);
@@ -127,6 +132,7 @@ describe('Light Client Verifier In Cosmos', () => {
         cosmos,
         _contractAddress,
         updateNumber,
+        'verifier',
       );
 
       // Gas Used logger
@@ -181,6 +187,7 @@ describe('Light Client Verifier In Cosmos', () => {
         cosmos,
         _contractAddress,
         updateNumber,
+        'verifier',
       );
 
       // Gas Used
@@ -365,6 +372,6 @@ describe('Light Client Verifier In Cosmos', () => {
     expect(SlotAfter33Update.toString()).toEqual(expectedSlot);
     appendJsonFile(gasUsageFile, gasArrayVerifier);
 
-    await stopCosmosNode();
+    await stopCosmosNode('verifier');
   }, 2000000);
 });

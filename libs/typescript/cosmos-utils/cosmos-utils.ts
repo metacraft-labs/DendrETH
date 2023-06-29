@@ -6,7 +6,7 @@ import { getRootDir } from '../ts-utils/common-utils';
 export async function getCosmosContractArtifacts(contract: string) {
   const rootDir = await getRootDir();
   const contractDir = `${rootDir}/contracts/cosmos/${contract}`;
-  const wasmContractPath = `${contractDir}/artifacts/${contract}.wasm`;
+  const wasmContractPath = `${contractDir}/artifacts/verifier.wasm`;
 
   return { rootDir, contractDir, wasmContractPath };
 }

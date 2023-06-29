@@ -7,11 +7,16 @@ import {
 import {
   instantiateVerifierContract,
   uploadVerifierContract,
-} from '../verifier/lib/typescript/verifier-upload-instantiate';
+} from '../verifier/typescript/verifier-upload-instantiate';
 
 const argv = yargs(process.argv.slice(2))
   .options({
     run: { type: 'boolean', default: false, demandOption: true },
+    target: {
+      type: 'string',
+      demandOption: true,
+      choices: ['verifier-bncurve', 'verifier-constantine'],
+    },
     network: { type: 'string', demandOption: true },
     mnemonic: { type: 'string', demandOption: true },
     rpcUrl: { type: 'string', demandOption: true },
@@ -23,17 +28,18 @@ const argv = yargs(process.argv.slice(2))
   .parseSync();
 
 async function uploadAndInstantiateMain() {
+  const target = argv.target;
   const network = argv.network;
   const mnemonic = argv.mnemonic;
   let rpcUrl = argv.rpcUrl;
 
   if (network === 'wasm' && argv.startTestnet) {
     // This way we are able to run the script without starting the testnet separately
-    rpcUrl = await startCosmosNode();
+    rpcUrl = await startCosmosNode(target);
   }
   const cosmos = await getCosmosTxClient(mnemonic, network, rpcUrl);
 
-  const uploadReceipt = await uploadVerifierContract(network, cosmos);
+  const uploadReceipt = await uploadVerifierContract(network, cosmos, target);
   if (!uploadReceipt) {
     console.error('Upload failed');
     return;
@@ -51,10 +57,11 @@ async function uploadAndInstantiateMain() {
     initHeaderRoot,
     domain,
     cosmos,
+    target,
   );
 
   if (network === 'wasm' && argv.terminateTestnet === true) {
-    await stopCosmosNode();
+    await stopCosmosNode(target);
   }
 }
 if (argv.run || argv._[0] == 'run') {

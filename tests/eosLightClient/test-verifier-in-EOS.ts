@@ -26,7 +26,11 @@ describe('Verifier in EOS', () => {
     '0x07000000628941ef21d1fe8c7134720add10bb91e3b02c007e0046d2472c6695';
   beforeAll(async () => {
     const rootDir = await getRootDir();
-    parseDataTool = await compileVerifierParseDataTool('eos', 'verifier');
+    parseDataTool = await compileVerifierParseDataTool(
+      'eos',
+      'verifier',
+      'verifier',
+    );
     // await compileVerifierParseDataTool();
     pathToVerifyUtils =
       rootDir + `/vendor/eth2-light-client-updates/prater/capella-updates-94/`;
