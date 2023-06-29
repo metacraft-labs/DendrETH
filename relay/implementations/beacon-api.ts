@@ -28,9 +28,7 @@ export class BeaconApi implements IBeaconApi {
     blockHashProof: string[];
   }> {
     const currentBlock = await (
-      await this.fetchWithFallback(
-        this.concatUrl(`/eth/v2/beacon/blocks/${slot}`),
-      )
+      await this.fetchWithFallback(`/eth/v2/beacon/blocks/${slot}`)
     ).json();
 
     const { ssz } = await import('@lodestar/types');
@@ -82,9 +80,7 @@ export class BeaconApi implements IBeaconApi {
 
   async getCurrentHeadSlot(): Promise<number> {
     const currentHead = await (
-      await this.fetchWithFallback(
-        this.concatUrl('/eth/v1/beacon/headers/head'),
-      )
+      await this.fetchWithFallback('/eth/v1/beacon/headers/head')
     ).json();
 
     return Number(currentHead.data.header.message.slot);
@@ -92,9 +88,7 @@ export class BeaconApi implements IBeaconApi {
 
   async getBlockSlot(blockHash: string): Promise<number> {
     const headResult = await (
-      await this.fetchWithFallback(
-        this.concatUrl(`/eth/v1/beacon/headers/${blockHash}`),
-      )
+      await this.fetchWithFallback(`/eth/v1/beacon/headers/${blockHash}`)
     ).json();
 
     return Number(headResult.data.header.message.slot);
@@ -112,9 +106,7 @@ export class BeaconApi implements IBeaconApi {
     const { ssz } = await import('@lodestar/types');
 
     const headResult = await (
-      await this.fetchWithFallback(
-        this.concatUrl(`/eth/v1/beacon/headers/${slot}`),
-      )
+      await this.fetchWithFallback(`/eth/v1/beacon/headers/${slot}`)
     ).json();
 
     return ssz.phase0.BeaconBlockHeader.fromJson(
@@ -140,9 +132,7 @@ export class BeaconApi implements IBeaconApi {
 
     while (slot <= limitSlot) {
       blockHeaderResult = await (
-        await this.fetchWithFallback(
-          this.concatUrl(`/eth/v1/beacon/headers/${slot}`),
-        )
+        await this.fetchWithFallback(`/eth/v1/beacon/headers/${slot}`)
       ).json();
 
       if (blockHeaderResult.code !== 404) {
@@ -167,9 +157,7 @@ export class BeaconApi implements IBeaconApi {
 
     while (slot <= limitSlot) {
       blockHeaderBodyResult = await (
-        await this.fetchWithFallback(
-          this.concatUrl(`/eth/v2/beacon/blocks/${slot}`),
-        )
+        await this.fetchWithFallback(`/eth/v2/beacon/blocks/${slot}`)
       ).json();
 
       if (blockHeaderBodyResult.code !== 404) {
@@ -210,11 +198,9 @@ export class BeaconApi implements IBeaconApi {
 
     const prevFinalizedHeaderResult = await (
       await this.fetchWithFallback(
-        this.concatUrl(
-          `/eth/v1/beacon/headers/${
-            '0x' + bytesToHex(prevBeaconSate.finalizedCheckpoint.root)
-          }`,
-        ),
+        `/eth/v1/beacon/headers/${
+          '0x' + bytesToHex(prevBeaconSate.finalizedCheckpoint.root)
+        }`,
       )
     ).json();
 
@@ -290,11 +276,9 @@ export class BeaconApi implements IBeaconApi {
 
     const finalizedHeaderResult = await (
       await this.fetchWithFallback(
-        this.concatUrl(
-          `/eth/v1/beacon/headers/${
-            '0x' + bytesToHex(beaconState.finalizedCheckpoint.root)
-          }`,
-        ),
+        `/eth/v1/beacon/headers/${
+          '0x' + bytesToHex(beaconState.finalizedCheckpoint.root)
+        }`,
       )
     ).json();
 
@@ -319,9 +303,7 @@ export class BeaconApi implements IBeaconApi {
     const { ssz } = await import('@lodestar/types');
 
     const finalizedBlockBodyResult = await (
-      await this.fetchWithFallback(
-        this.concatUrl(`/eth/v2/beacon/blocks/${slot}`),
-      )
+      await this.fetchWithFallback(`/eth/v2/beacon/blocks/${slot}`)
     ).json();
 
     const finalizedBlockBody = ssz.capella.BeaconBlockBody.fromJson(
@@ -362,15 +344,13 @@ export class BeaconApi implements IBeaconApi {
 
     const finality_checkpoints = await (
       await this.fetchWithFallback(
-        this.concatUrl(`/eth/v1/beacon/states/${slot}/finality_checkpoints`),
+        `/eth/v1/beacon/states/${slot}/finality_checkpoints`,
       )
     ).json();
 
     const finalizedHeadResult = await (
       await this.fetchWithFallback(
-        this.concatUrl(
-          `/eth/v1/beacon/headers/${finality_checkpoints.data.finalized.root}`,
-        ),
+        `/eth/v1/beacon/headers/${finality_checkpoints.data.finalized.root}`,
       )
     ).json();
 
@@ -381,9 +361,7 @@ export class BeaconApi implements IBeaconApi {
 
   async getExecutionStateRoot(slot: number): Promise<string> {
     const block = await (
-      await this.fetchWithFallback(
-        this.concatUrl(`/eth/v2/beacon/blocks/${slot}`),
-      )
+      await this.fetchWithFallback(`/eth/v2/beacon/blocks/${slot}`)
     ).json();
 
     return block.data.message.body.execution_payload.state_root;
@@ -393,7 +371,7 @@ export class BeaconApi implements IBeaconApi {
     const { ssz } = await import('@lodestar/types');
 
     const beaconStateSZZ = await this.fetchWithFallback(
-      this.concatUrl(`/eth/v2/debug/beacon/states/${slot}`),
+      `/eth/v2/debug/beacon/states/${slot}`,
       {
         headers: {
           Accept: 'application/octet-stream',
@@ -420,19 +398,23 @@ export class BeaconApi implements IBeaconApi {
   }
 
   private async fetchWithFallback(
-    input: RequestInfo | URL,
+    subUrl: string,
     init?: RequestInit,
   ): Promise<Response> {
     let retries = 0;
     while (true) {
       try {
-        return await fetch(input, init);
+        return await fetch(this.concatUrl(subUrl), init);
       } catch (error) {
+        retries++;
         if (retries >= this.beaconRestApis.length) {
+          console.log('All beacon rest apis failed');
           throw error;
         }
 
-        retries++;
+        console.log('Beacon rest api failed:', error);
+
+        console.log('Retrying with the next one');
 
         this.nextApi();
       }

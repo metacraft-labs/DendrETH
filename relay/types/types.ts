@@ -113,7 +113,7 @@ export interface UpdateResult {
 
 export interface GetUpdate {
   lastDownloadedUpdateKey: string;
-  beaconRestApi: string;
+  beaconRestApis: string[];
   slotsJump: number;
   networkConfig: Config;
 }

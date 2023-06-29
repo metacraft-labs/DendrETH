@@ -81,7 +81,7 @@ task('start-publishing', 'Run relayer')
     }
 
     const redis = new Redis(config.REDIS_HOST!, config.REDIS_PORT);
-    const beaconApi = new BeaconApi([currentConfig.BEACON_REST_API]);
+    const beaconApi = new BeaconApi(currentConfig.BEACON_REST_API);
     const contract = new SolidityContract(
       lightClientContract,
       (network.config as any).url,

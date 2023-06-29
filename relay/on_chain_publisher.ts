@@ -17,8 +17,8 @@ export async function publishProofs(
   redis: IRedis,
   beaconApi: IBeaconApi,
   smartContract: ISmartContract,
-  hashiAdapterContract: Contract | undefined,
-  rpcEndpoint: string,
+  hashiAdapterContract?: Contract | undefined,
+  rpcEndpoint?: string,
   transactionSpeed: TransactionSpeed = 'avg',
 ) {
   try {
@@ -56,7 +56,7 @@ export async function drainUpdatesInRedis(
   beaconApi: IBeaconApi,
   smartContract: ISmartContract,
   hashiAdapterContract: Contract | undefined,
-  rpcEndpoint: string,
+  rpcEndpoint?: string,
   transactionSpeed: TransactionSpeed = 'avg',
 ) {
   if (isDrainRunning) {
@@ -118,7 +118,7 @@ export async function postUpdateOnChain(
   beaconApi: IBeaconApi,
   lastSlotOnChain: number,
   hashiAdapterContract: Contract | undefined,
-  rpcEndpoint: string,
+  rpcEndpoint?: string,
   transactionSpeed: TransactionSpeed = 'avg',
 ) {
   const update = {
@@ -165,7 +165,7 @@ export async function postUpdateOnChain(
         hashiInfo.blockHashProof.map(x => '0x' + x),
         { ...update, ...solidityProof },
       ],
-      new Web3(rpcEndpoint),
+      new Web3(rpcEndpoint!),
       transactionSpeed,
       true,
     );
