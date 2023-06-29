@@ -65,7 +65,7 @@ import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
         host: updatePollingConfig.REDIS_HOST,
         port: updatePollingConfig.REDIS_PORT,
       },
-      concurrency: 5,
+      concurrency: 1,
     },
   );
 })();
