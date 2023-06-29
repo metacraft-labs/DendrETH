@@ -38,12 +38,12 @@ task('run-update', 'Run update recuring task')
     const redis = new Redis(config.REDIS_HOST!, config.REDIS_PORT);
 
     const lastDownloadedUpdateKey = !args.lightclient
-      ? `lastDownloadedUpdateKey:${currentConfig.BEACON_REST_API}`
-      : `lastDownloadedUpdateKey:${currentConfig.BEACON_REST_API}:${args.lightclient}`;
+      ? `lastDownloadedUpdateKey:${args.follownetwork}`
+      : `lastDownloadedUpdateKey:${args.follownetwork}:${args.lightclient}`;
 
     const downloadUpdate = !args.lightclient
-      ? `downloadUpdate${currentConfig.BEACON_REST_API}`
-      : `downloadUpdate${currentConfig.BEACON_REST_API}${args.lightclient}`;
+      ? `downloadUpdate${args.follownetwork}`
+      : `downloadUpdate${args.follownetwork}${args.lightclient}`;
 
     await redis.set(lastDownloadedUpdateKey, args.initialslot);
 
@@ -58,7 +58,7 @@ task('run-update', 'Run update recuring task')
       downloadUpdate,
       {
         lastDownloadedUpdateKey: lastDownloadedUpdateKey,
-        beaconRestApi: currentConfig.BEACON_REST_API,
+        beaconRestApis: currentConfig.BEACON_REST_API,
         slotsJump: Number(args.slotsjump),
         networkConfig: currentConfig,
       },

@@ -55,6 +55,7 @@ async function publishTask() {
     rpcEndpoint,
     network,
   );
+
   publishProofs(redis, beaconApi, contract);
 }
 

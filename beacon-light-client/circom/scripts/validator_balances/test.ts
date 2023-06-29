@@ -7,9 +7,9 @@ import { verifyMerkleProof } from '../../../../libs/typescript/ts-utils/ssz-util
 
 (async () => {
   const { ssz } = await import('@lodestar/types');
-  const beaconApi = new BeaconApi(
+  const beaconApi = new BeaconApi([
     'http://unstable.prater.beacon-api.nimbus.team/',
-  );
+  ]);
 
   const beaconStateSZZ = await fetch(
     `http://testing.mainnet.beacon-api.nimbus.team/eth/v2/debug/beacon/states/6616005`,

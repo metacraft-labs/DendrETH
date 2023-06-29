@@ -10,6 +10,8 @@
 **/*.ptau
 **/*.wtns
 
+**/*.log
+
 **/artifacts
 **/cache
 **/.yarn
