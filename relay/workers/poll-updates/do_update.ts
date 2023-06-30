@@ -25,13 +25,16 @@ export default async function doUpdate(
 
   console.log('Last downloaded update: ', lastDownloadedUpdate);
 
-  if (currentHeadSlot <= lastDownloadedUpdate + slotsJump) {
+  const initialUpdate =
+    lastDownloadedUpdate - (lastDownloadedUpdate % slotsJump);
+
+  if (currentHeadSlot <= initialUpdate + slotsJump) {
     console.log('No new enought slot');
     // the job will be retried
     throw new Error('No new enought slot');
   }
 
-  let nextHeaderSlot = lastDownloadedUpdate + slotsJump;
+  let nextHeaderSlot = initialUpdate + slotsJump;
   let signatureSlot = nextHeaderSlot + 1;
 
   let prevNextHeaderSlot = nextHeaderSlot;

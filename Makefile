@@ -8,7 +8,7 @@ dendreth-relay-node:
 	nix run '.#docker-image-yarn.copyToDockerDaemon'
 	nix run '.?submodules=1#docker-image-all.copyToDockerDaemon'
 
-	docker build -t metacraft/dendeth-relay-node -f Dockerfile.relay .
+	docker build -t metacraft/dendreth-relay-node -f Dockerfile.relay .
 
 publish-dendreth-relay-node: dendreth-relay-node
 	docker push metacraft/dendeth-relay-node

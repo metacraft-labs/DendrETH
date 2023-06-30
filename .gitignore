@@ -167,3 +167,5 @@ target
 .ccls-cache
 
 redis-server/
+
+data/
