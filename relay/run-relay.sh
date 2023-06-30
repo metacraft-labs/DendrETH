@@ -26,7 +26,7 @@ download_zkey_file() {
 download_dat_file() {
   echo "Downloading .dat file from https://media.githubusercontent.com/media/metacraft-labs/DendrETH-build-artifacts/master/light_client_cpp/light_client.dat ..."
 
-  curl -k https://media.githubusercontent.com/media/metacraft-labs/DendrETH-build-artifacts/master/light_client_cpp/light_client.dat > "datalight_client.dat"
+  curl -k https://media.githubusercontent.com/media/metacraft-labs/DendrETH-build-artifacts/master/light_client_cpp/light_client.dat > "data/light_client.dat"
 
   CALCULATED_DAT_SUM=$(calculate_checksum data/light_client.dat)
 
@@ -64,7 +64,9 @@ else
   fi
 fi
 
-cp relay/light_client data/light_client
+# rapidnskark prover server searches for the witness generator exe in build directory
+mkdir -p build
+cp relay/light_client build/light_client
 cp data/light_client.dat light_client.dat
 
 if [[ -z "$REDIS_HOST" ]] && [[ -z "$REDIS_PORT" ]]; then
@@ -292,4 +294,4 @@ fi
 
 supervisorctl start general_logs
 
-tail -f ./prover_server.log relay/general_logs.log relay/pollUpdatesWorker.log relay/proofGenerationWorker.log beacon-light-client/solidity/goerli.log beacon-light-client/solidity/optimisticGoerli.log beacon-light-client/solidity/baseGoerli.log beacon-light-client/solidity/arbitrumGoerli.log beacon-light-client/solidity/sepolia.log beacon-light-client/solidity/mumbai.log
+tail -f ./prover_server.log relay/general_logs.log relay/pollUpdatesWorker.log relay/proofGenerationWorker.log beacon-light-client/solidity/goerli.log beacon-light-client/solidity/optimisticGoerli.log beacon-light-client/solidity/baseGoerli.log beacon-light-client/solidity/arbitrumGoerli.log beacon-light-client/solidity/sepolia.log beacon-light-client/solidity/mumbai.log beacon-light-client/solidity/gnosis.log
