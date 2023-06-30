@@ -37,7 +37,7 @@ describe('Verifier in EOS', () => {
     parseDataTool = await compileVerifierParseDataTool(
       'eos',
       'verifier',
-      'verifier',
+      'verifier-bncurve',
     );
     // await compileVerifierParseDataTool();
     pathToVerifyUtils =

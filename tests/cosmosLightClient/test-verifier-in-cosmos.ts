@@ -13,12 +13,12 @@ import {
   appendJsonFile,
   sleep,
 } from '../../libs/typescript/ts-utils/common-utils';
-import { compileContractMain } from '../../contracts/cosmos/verifier/lib/typescript/verifier-compile-contract-and-tools';
+import { compileContractMain } from '../../contracts/cosmos/verifier/typescript/verifier-compile-contract-and-tools';
 import {
   instantiateVerifierContract,
   uploadVerifierContract,
-} from '../../contracts/cosmos/verifier/lib/typescript/verifier-upload-instantiate';
-import { updateVerifierContract } from '../../contracts/cosmos/verifier/lib/typescript/verifier-make-update';
+} from '../../contracts/cosmos/verifier/typescript/verifier-upload-instantiate';
+import { updateVerifierContract } from '../../contracts/cosmos/verifier/typescript/verifier-make-update';
 import { replaceInTextProof, gasUsed } from '../helpers/helpers';
 import { getCosmosContractArtifacts } from '../../libs/typescript/cosmos-utils/cosmos-utils';
 
@@ -44,7 +44,7 @@ describe('Light Client Verifier In Cosmos', () => {
 
   beforeAll(async () => {
     const { rootDir, contractDir } = await getCosmosContractArtifacts(
-      'verifier',
+      'verifier-bncurve',
     );
 
     parseDataTool = `${contractDir}/nimcache/verifier_parse_data`;
@@ -52,9 +52,9 @@ describe('Light Client Verifier In Cosmos', () => {
       rootDir + `/vendor/eth2-light-client-updates/prater/capella-updates-94/`;
     updateFiles = glob(pathToVerifyUtils + `proof*.json`);
 
-    await compileContractMain(null, 'verifier');
+    await compileContractMain(null, 'verifier-bncurve');
 
-    cosmos = await setUpCosmosTestnet(mnemonic, 'verifier');
+    cosmos = await setUpCosmosTestnet(mnemonic, 'verifier-bncurve');
     client = cosmos.client;
   }, 360000 /* timeout in milliseconds */);
 
@@ -68,7 +68,7 @@ describe('Light Client Verifier In Cosmos', () => {
     const uploadReceipt = await uploadVerifierContract(
       'wasm',
       cosmos,
-      'verifier',
+      'verifier-bncurve',
     );
     console.info(
       'Upload of `Verifier in Cosmos` succeeded. Receipt:',
@@ -87,7 +87,7 @@ describe('Light Client Verifier In Cosmos', () => {
       defaultInitHeaderRoot,
       defaultDomain,
       cosmos,
-      'verifier',
+      'verifier-bncurve',
     );
     // Gas Used
     console.info(`Instantiation used ` + instantiation.gasUsed + ` gas`);
@@ -132,7 +132,7 @@ describe('Light Client Verifier In Cosmos', () => {
         cosmos,
         _contractAddress,
         updateNumber,
-        'verifier',
+        'verifier-bncurve',
       );
 
       // Gas Used logger
@@ -187,7 +187,7 @@ describe('Light Client Verifier In Cosmos', () => {
         cosmos,
         _contractAddress,
         updateNumber,
-        'verifier',
+        'verifier-bncurve',
       );
 
       // Gas Used
@@ -372,6 +372,6 @@ describe('Light Client Verifier In Cosmos', () => {
     expect(SlotAfter33Update.toString()).toEqual(expectedSlot);
     appendJsonFile(gasUsageFile, gasArrayVerifier);
 
-    await stopCosmosNode('verifier');
+    await stopCosmosNode('verifier-bncurve');
   }, 2000000);
 });

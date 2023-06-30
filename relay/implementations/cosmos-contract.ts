@@ -74,7 +74,8 @@ export class CosmosContract implements ISmartContract {
       await exec('git rev-parse --show-toplevel')
     ).stdout.replace(/\s/g, '');
     const parseDataTool =
-      rootDir + `/contracts/cosmos/verifier/nimcache/verifier_parse_data`;
+      rootDir +
+      `/contracts/cosmos/verifier/verifier-bncurve/nimcache/verifier_parse_data`;
 
     const flattedB = update.b.flat();
     const parseUpdateDataCommand = `${parseDataTool} updateDataForCosmosContractClass \

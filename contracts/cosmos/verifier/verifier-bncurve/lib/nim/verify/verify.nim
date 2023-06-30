@@ -6,7 +6,7 @@ import
   verify_helpers
 
 type
-  IC* = array[5, Point[G1]]
+  IC* = array[3, Point[G1]]
 
   VerificationKey* = object
     alpha*: Point[G1]
@@ -55,7 +55,6 @@ proc makePairsAndVerify*(vk: ref VerificationKey,
   let preparedInputsGammaPairing = pairing(preparedInputs.data, vk[].gamma)
   let proofCVkDeltaPairing = pairing(prf[].c, vk[].delta)
   let sum = alphaBetaPairingP * preparedInputsGammaPairing * proofCVkDeltaPairing;
-
 
   if aBPairing == sum:
     currentHeaderHash = newOptimisticHeader

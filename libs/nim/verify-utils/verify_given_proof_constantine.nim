@@ -10,7 +10,7 @@ import # constantine imports
   constantine/math/config/type_bigint
 
 import
-  ../../../contracts/cosmos/verifier-constantine/lib/nim/verify/verify_helpers
+  ../../../contracts/cosmos/verifier/verifier-constantine/lib/nim/verify/verify_helpers
 
 type
   IC* = array[3, ECP_ShortW_Aff[Fp[BN254_Snarks], G1]]

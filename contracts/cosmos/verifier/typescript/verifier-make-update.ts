@@ -2,8 +2,8 @@ import { promisify } from 'node:util';
 import { exec as exec_ } from 'node:child_process';
 
 import { calculateFee, GasPrice } from '@cosmjs/stargate';
-import { CosmosClientWithWallet } from '../../../../../libs/typescript/cosmos-utils/cosmos-utils';
-import { getRootDir } from '../../../../../libs/typescript/ts-utils/common-utils';
+import { CosmosClientWithWallet } from '../../../../libs/typescript/cosmos-utils/cosmos-utils';
+import { getRootDir } from '../../../../libs/typescript/ts-utils/common-utils';
 
 const exec = promisify(exec_);
 
@@ -15,7 +15,7 @@ export async function updateVerifierContract(
   target: string,
 ) {
   const rootDir = await getRootDir();
-  const contractDir = rootDir + `/contracts/cosmos/` + target;
+  const contractDir = rootDir + `/contracts/cosmos/verifier/` + target;
 
   const pathToVerifyUtils =
     rootDir + `/vendor/eth2-light-client-updates/prater/capella-updates-94/`;

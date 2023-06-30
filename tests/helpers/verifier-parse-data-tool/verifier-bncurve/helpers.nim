@@ -1,9 +1,9 @@
 import
-  stew/byteutils,
-  std/[strutils,json]
+  std/json,
+  stew/byteutils
 
 import
-  ../../../contracts/cosmos/verifier/verifier-bncurve/lib/nim/verify/verify_helpers
+  bncurve/group_operations
 
 type
   IC* = array[3, Point[G1]]
@@ -17,10 +17,14 @@ type
     a*, c*: Point[G1]
     b*: Point[G2]
 
+  Header* = object
+    head*: Fr
+    tail*: Fr
+
   Input* = object
     data*: Point[G1]
 
-proc createVerificationKey*(path: string): VerificationKey =
+proc createVerificationKey*(path: string): array[sizeof(VerificationKey),byte] =
   let vk = parseFile(path)
 
   let fq0 = FQ.fromString("0")
@@ -63,9 +67,10 @@ proc createVerificationKey*(path: string): VerificationKey =
     icArr[counter] = ic
     counter+=1
 
-  VerificationKey(alpha:vkAlpha1, beta:vkBeta2, gamma:vkGamma2, delta:vkDelta2, ic:icArr)
+  let vk1 = VerificationKey(alpha:vkAlpha1, beta:vkBeta2, gamma:vkGamma2, delta:vkDelta2, ic:icArr)
+  result = cast[var array[sizeof(VerificationKey),byte]](vk1.unsafeAddr)
 
-proc createProof*(path: string): Proof =
+proc createProof*(path: string): array[sizeof(Proof),byte] =
   let proof = parseFile(path)
 
   let fq0 = FQ.fromString("0")
@@ -87,55 +92,25 @@ proc createProof*(path: string): Proof =
   let c1 = FQ.fromString(proof["pi_c"][1].str)
   let c = Point[G1](x: c0, y: c1, z: fq1)
 
-  Proof(a:a, b:b, c:c)
+  let prf = Proof(a:a, b:b, c:c)
+  result = cast[var array[sizeof(Proof),byte]](prf.unsafeAddr)
 
-proc createHeader*(pathCurrentHeader: string, updatePath: string, domain: string): Header =
-  let currentHeaderHashJSON = parseFile(pathCurrentHeader)
-  let updateJson = parseFile(updatePath)
+proc getExpectedHeaderRoot*(path:string): array[32,byte] =
+  let update = parseFile(path)
+  let newOptimisticHeader = hexToByteArray[32](update["attestedHeaderRoot"].str)
+  newOptimisticHeader
 
-  let currentHeaderHash = hexToByteArray[32](currentHeaderHashJSON["attestedHeaderRoot"].str)
-  let newOptimisticHeader = hexToByteArray[32](updateJson["attestedHeaderRoot"].str)
-  let newFinalizedHeader = hexToByteArray[32](updateJson["finalizedHeaderRoot"].str)
-  let newExecutionStateRoot = hexToByteArray[32](updateJson["finalizedExecutionStateRoot"].str)
-  var slot = updateJson["attestedHeaderSlot"].getInt().toHex()
-  var currentSlot = hexToByteArray[8](slot)
-  var domain = hexToByteArray[32](domain)
+proc getExpectedFinalizedRoot*(path:string): array[32,byte] =
+  let update = parseFile(path)
+  let newFinalizedHeader = hexToByteArray[32](update["finalizedHeaderRoot"].str)
+  newFinalizedHeader
 
-  var zerosSlotBuffer: array[24, byte]
-  for i in 0..23:
-    zerosSlotBuffer[i] = 0
-  let sha256ofHashes = hashHeaders(currentHeaderHash,
-                                   newOptimisticHeader,
-                                   newFinalizedHeader,
-                                   newExecutionStateRoot,
-                                   zerosSlotBuffer,
-                                   currentSlot,
-                                   domain)
+proc getExpectedExecutionStateRoot*(path:string): array[32,byte] =
+  let update = parseFile(path)
+  let newExecStateRoot = hexToByteArray[32](update["finalizedExecutionStateRoot"].str)
+  newExecStateRoot
 
-  headerFromSeq(@sha256ofHashes)
-
-proc makePairsAndVerify*(vk: VerificationKey,
-                         prf: Proof,
-                         header: Header): bool =
-  var preparedInputs = Input(data:vk.ic[0])
-  preparedInputs.data = preparedInputs.data + (vk.ic[1] * header.head)
-  preparedInputs.data = preparedInputs.data + (vk.ic[2] * header.tail)
-
-  let aBPairing = pairing(prf.a, prf.b)
-  let alphaBetaPairingP = pairing(vk.alpha, vk.beta)
-  let preparedInputsGammaPairing = pairing(preparedInputs.data, vk.gamma)
-  let proofCVkDeltaPairing = pairing(prf.c, vk.delta)
-  let sum = alphaBetaPairingP * preparedInputsGammaPairing * proofCVkDeltaPairing;
-
-  aBPairing == sum
-
-proc verifyProof*(pathToKey:string,
-                  pathToProof:string,
-                  pathToLastUpdate:string,
-                  pathToNewUpdate:string,
-                  domain:string): bool =
-  let vkey = createVerificationKey(pathToKey)
-  let proof = createProof(pathToProof)
-  let header = createHeader(pathToLastUpdate,pathToNewUpdate,domain)
-
-  makePairsAndVerify(vkey,proof,header)
+proc getExpectedSlot*(path:string): JsonNode =
+  let update = parseFile(path)
+  let newSlot = update["attestedHeaderSlot"]
+  newSlot
