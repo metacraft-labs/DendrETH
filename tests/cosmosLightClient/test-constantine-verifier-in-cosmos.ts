@@ -13,12 +13,12 @@ import {
   appendJsonFile,
   sleep,
 } from '../../libs/typescript/ts-utils/common-utils';
-import { compileContractMain } from '../../contracts/cosmos/verifier/lib/typescript/verifier-compile-contract-and-tools';
+import { compileContractMain } from '../../contracts/cosmos/verifier/typescript/verifier-compile-contract-and-tools';
 import {
   instantiateVerifierContract,
   uploadVerifierContract,
-} from '../../contracts/cosmos/verifier/lib/typescript/verifier-upload-instantiate';
-import { updateVerifierContract } from '../../contracts/cosmos/verifier/lib/typescript/verifier-make-update';
+} from '../../contracts/cosmos/verifier/typescript/verifier-upload-instantiate';
+import { updateVerifierContract } from '../../contracts/cosmos/verifier/typescript/verifier-make-update';
 import { replaceInTextProof, gasUsed } from '../helpers/helpers';
 import { getCosmosContractArtifacts } from '../../libs/typescript/cosmos-utils/cosmos-utils';
 

@@ -8,12 +8,12 @@ import {
   stopCosmosNode,
 } from '../../libs/typescript/cosmos-utils/testnet-setup';
 import { CosmosContract } from '../../relay/implementations/cosmos-contract';
-import { compileContractMain } from '../../contracts/cosmos/verifier/lib/typescript/verifier-compile-contract-and-tools';
+import { compileContractMain } from '../../contracts/cosmos/verifier/typescript/verifier-compile-contract-and-tools';
 import { getRootDir, sleep } from '../../libs/typescript/ts-utils/common-utils';
 import {
   instantiateVerifierContract,
   uploadVerifierContract,
-} from '../../contracts/cosmos/verifier/lib/typescript/verifier-upload-instantiate';
+} from '../../contracts/cosmos/verifier/typescript/verifier-upload-instantiate';
 import { replaceInTextProof } from '../helpers/helpers';
 import { readFileSync } from 'fs';
 import { bytesToHex } from '../../libs/typescript/ts-utils/bls';
@@ -39,15 +39,16 @@ describe('Light Client Verifier In Cosmos', () => {
   beforeAll(async () => {
     const rootDir = await getRootDir();
 
-    contractDirVerifier = rootDir + `/contracts/cosmos/verifier`;
+    contractDirVerifier =
+      rootDir + `/contracts/cosmos/verifier/verifier-bncurve`;
     parseDataTool = `${contractDirVerifier}/nimcache/verifier_parse_data`;
     pathToVerifyUtils =
       rootDir + `/vendor/eth2-light-client-updates/prater/capella-updates-94/`;
     updateFiles = glob(pathToVerifyUtils + `proof*.json`);
 
-    await compileContractMain(null, 'verifier');
+    await compileContractMain(null, 'verifier-bncurve');
 
-    cosmos = await setUpCosmosTestnet(mnemonic, 'verifier');
+    cosmos = await setUpCosmosTestnet(mnemonic, 'verifier-bncurve');
     DendrETHWalletInfo = cosmos.walletInfo;
   }, 360000 /* timeout in milliseconds */);
 
@@ -58,7 +59,7 @@ describe('Light Client Verifier In Cosmos', () => {
     const uploadReceipt = await uploadVerifierContract(
       'wasm',
       cosmos,
-      'verifier',
+      'verifier-bncurve',
     );
     console.info(
       'Upload of `Verifier in Cosmos` succeeded. Receipt:',
@@ -81,7 +82,7 @@ describe('Light Client Verifier In Cosmos', () => {
       defaultInitHeaderRoot,
       defaultDomain,
       cosmos,
-      'verifier',
+      'verifier-bncurve',
     );
     cosmosContract = new CosmosContract(
       instantiation.contractAddress,
@@ -201,6 +202,6 @@ describe('Light Client Verifier In Cosmos', () => {
     const headerHash = headerHashAfter20Update.toString().replace(/\s/g, '');
     expect(headerHash).toEqual(expectedHeaderHash);
 
-    await stopCosmosNode('verifier');
+    await stopCosmosNode('verifier-bncurve');
   }, 2000000);
 });

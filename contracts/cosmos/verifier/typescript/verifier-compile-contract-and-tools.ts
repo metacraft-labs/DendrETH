@@ -1,8 +1,8 @@
 import { promisify } from 'node:util';
 import { exec as exec_ } from 'node:child_process';
 
-import { compileNimFileToWasm } from '../../../../../libs/typescript/ts-utils/compile-nim-to-wasm';
-import { getCosmosContractArtifacts } from '../../../../../libs/typescript/cosmos-utils/cosmos-utils';
+import { compileNimFileToWasm } from '../../../../libs/typescript/ts-utils/compile-nim-to-wasm';
+import { getCosmosContractArtifacts } from '../../../../libs/typescript/cosmos-utils/cosmos-utils';
 
 const exec = promisify(exec_);
 
@@ -45,6 +45,7 @@ export async function compileVerifierContract(
 
   const compileContractCommandVerify = `docker run -t --rm \
   -v "${contractDir}":/code \
+  -v "${contractDir}"/../src:/code/src \
   ${dockerPatch} \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \

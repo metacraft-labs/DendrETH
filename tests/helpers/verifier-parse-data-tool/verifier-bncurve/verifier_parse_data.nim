@@ -1,5 +1,5 @@
 import
-  std/[os,osproc,strutils],
+  std/[os,strutils],
   confutils,
   std/json,
   stew/byteutils
@@ -9,7 +9,7 @@ import
 
 import
   config,
-  ../../../../contracts/cosmos/verifier/lib/nim/contract_interactions/helpers
+  ./helpers
 
 proc execCommand*(): string =
   let conf = ParseDataConf.load()

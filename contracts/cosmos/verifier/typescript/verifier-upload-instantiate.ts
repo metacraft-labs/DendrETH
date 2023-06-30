@@ -8,7 +8,7 @@ import { calculateFee, GasPrice } from '@cosmjs/stargate';
 import {
   CosmosClientWithWallet as CosmosClientWithWallet,
   getCosmosContractArtifacts,
-} from '../../../../../libs/typescript/cosmos-utils/cosmos-utils';
+} from '../../../../libs/typescript/cosmos-utils/cosmos-utils';
 
 const exec = promisify(exec_);
 
@@ -49,12 +49,14 @@ export async function uploadVerifierContract(
       break;
     }
   }
+
   const uploadReceipt = await client.upload(
     DendrETHWalletInfo.address,
     contract,
     uploadFee,
     'Upload `Verifier` contract',
   );
+
   return uploadReceipt;
 }
 

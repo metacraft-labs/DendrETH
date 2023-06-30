@@ -3,10 +3,8 @@ import
   stew/byteutils
 
 import
-  constantine/math/pairings/pairings_bn,
   constantine/math/elliptic/[ec_shortweierstrass_affine, ec_shortweierstrass_projective],
   constantine/math/io/[io_ec, io_fields, io_bigints],
-  constantine/math/elliptic/ec_scalar_mul,
   constantine/math/config/type_bigint,
   constantine/math/arithmetic,
   constantine/math/config/curves,

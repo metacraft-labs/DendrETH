@@ -5,7 +5,12 @@ import { getRootDir } from '../ts-utils/common-utils';
 
 export async function getCosmosContractArtifacts(contract: string) {
   const rootDir = await getRootDir();
-  const contractDir = `${rootDir}/contracts/cosmos/${contract}`;
+  var contractDir;
+  if (contract == 'light-client') {
+    contractDir = `${rootDir}/contracts/cosmos/${contract}`;
+  } else {
+    contractDir = `${rootDir}/contracts/cosmos/verifier/${contract}`;
+  }
   const wasmContractPath = `${contractDir}/artifacts/verifier.wasm`;
 
   return { rootDir, contractDir, wasmContractPath };

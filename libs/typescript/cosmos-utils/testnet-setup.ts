@@ -12,7 +12,12 @@ const exec = promisify(exec_);
 export async function startCosmosNode(target: string) {
   const localNodeUrl = 'http://localhost:26657';
   const { contractDir } = await getCosmosContractArtifacts(target);
-  const startNodeCommand = `bash ${contractDir}/../scripts/run_cosmos_node.sh start`;
+  var startNodeCommand;
+  if (target == 'light-client') {
+    startNodeCommand = `bash ${contractDir}/../scripts/run_cosmos_node.sh start`;
+  } else {
+    startNodeCommand = `bash ${contractDir}/../../scripts/run_cosmos_node.sh start`;
+  }
   console.info(`Starting Cosmos node. \n  ╰─➤ ${startNodeCommand}`);
   execSync(startNodeCommand);
 
@@ -21,7 +26,12 @@ export async function startCosmosNode(target: string) {
 
 export async function stopCosmosNode(target: string) {
   const { contractDir } = await getCosmosContractArtifacts(target);
-  const stopNodeCommand = `bash ${contractDir}/../scripts/run_cosmos_node.sh stop`;
+  var stopNodeCommand;
+  if (target == 'light-client') {
+    stopNodeCommand = `bash ${contractDir}/../scripts/run_cosmos_node.sh stop`;
+  } else {
+    stopNodeCommand = `bash ${contractDir}/../../scripts/run_cosmos_node.sh stop`;
+  }
   console.info(`Stopping Cosmos node. \n  ╰─➤ ${stopNodeCommand}`);
   execSync(stopNodeCommand);
 }
