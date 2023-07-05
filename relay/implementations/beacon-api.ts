@@ -408,7 +408,16 @@ export class BeaconApi implements IBeaconApi {
     let retries = 0;
     while (true) {
       try {
-        return await fetch(this.concatUrl(subUrl), init);
+        const result = await fetch(this.concatUrl(subUrl), init);
+        if (result.status === 429) {
+          console.log('Rate limit exceeded');
+
+          console.log('Retrying with the next one');
+          this.nextApi();
+          continue;
+        }
+
+        return result;
       } catch (error) {
         retries++;
         if (retries >= this.beaconRestApis.length) {

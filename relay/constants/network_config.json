@@ -6,7 +6,7 @@
     "FORK_VERSION": "0x03001020",
     "DOMAIN_SYNC_COMMITTEE": "0x07000000",
     "GENESIS_VALIDATORS_ROOT": "0x043db0d9a83813551ee2f33450d23797757d430911a9320530ad8a0eabc43efb",
-    "BEACON_REST_API": ["https://purple-falling-tree.ethereum-goerli.discover.quiknode.pro/d713736b8470338a3cc2d45ed723d53e63b2032c", "https://unstable.prater.beacon-api.nimbus.team"]
+    "BEACON_REST_API": ["http://unstable.prater.beacon-api.nimbus.team","https://purple-falling-tree.ethereum-goerli.discover.quiknode.pro/d713736b8470338a3cc2d45ed723d53e63b2032c"]
   },
   "mainnet": {
     "SLOTS_PER_EPOCH": 32,
