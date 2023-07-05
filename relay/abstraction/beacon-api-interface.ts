@@ -6,6 +6,8 @@ import {
 } from '../types/types';
 
 export interface IBeaconApi {
+  getBeaconRestApis(): string[];
+
   getHashiAdapterInfo(slot: number): Promise<{
     blockNumber: number;
     blockHash: string;

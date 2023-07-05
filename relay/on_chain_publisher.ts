@@ -1,4 +1,4 @@
-import { ProofResultType } from './types/types';
+import { GetUpdate, ProofResultType } from './types/types';
 import { IBeaconApi } from './abstraction/beacon-api-interface';
 import { IRedis } from './abstraction/redis-interface';
 import { ISmartContract } from './abstraction/smart-contract-abstraction';
@@ -9,14 +9,19 @@ import {
   publishTransaction,
 } from './implementations/publish_evm_transaction';
 import Web3 from 'web3';
-import { sleep } from '../libs/typescript/ts-utils/common-utils';
+import { checkConfig, sleep } from '../libs/typescript/ts-utils/common-utils';
+import { Queue } from 'bullmq';
+import { Config, UPDATE_POLING_QUEUE } from './constants/constants';
+import crypto from 'crypto'
 
 let isDrainRunning = false;
+let triedToPublishCount = 0;
 
 export async function publishProofs(
   redis: IRedis,
   beaconApi: IBeaconApi,
   smartContract: ISmartContract,
+  networkConfig: Config,
   hashiAdapterContract?: Contract | undefined,
   rpcEndpoint?: string,
   transactionSpeed: TransactionSpeed = 'avg',
@@ -26,6 +31,7 @@ export async function publishProofs(
       redis,
       beaconApi,
       smartContract,
+      networkConfig,
       hashiAdapterContract,
       rpcEndpoint,
       transactionSpeed,
@@ -37,6 +43,7 @@ export async function publishProofs(
           redis,
           beaconApi,
           smartContract,
+          networkConfig,
           hashiAdapterContract,
           rpcEndpoint,
           transactionSpeed,
@@ -55,6 +62,7 @@ export async function drainUpdatesInRedis(
   redis: IRedis,
   beaconApi: IBeaconApi,
   smartContract: ISmartContract,
+  networkConfig: Config,
   hashiAdapterContract: Contract | undefined,
   rpcEndpoint?: string,
   transactionSpeed: TransactionSpeed = 'avg',
@@ -78,9 +86,56 @@ export async function drainUpdatesInRedis(
       const proofResult = await redis.getNextProof(lastSlotOnChain);
 
       if (proofResult == null) {
+        // We should get here either the first time when relayer is started and proof is still generated or when the contract is stuck
+        // to measure that we will see if a proof is generated which will mean this function gets called again we know we are stuck then we add a task to poll update for the contract
+
+        if (triedToPublishCount > 0) {
+          console.log('Requesting a proof');
+          const config = {
+            REDIS_HOST: process.env.REDIS_HOST,
+            REDIS_PORT: Number(process.env.REDIS_PORT),
+            SLOTS_JUMP: process.env.SLOTS_JUMP,
+          };
+
+          checkConfig(config);
+
+          const updateQueue = new Queue<GetUpdate>(UPDATE_POLING_QUEUE, {
+            connection: {
+              host: config.REDIS_HOST!,
+              port: Number(config.REDIS_PORT),
+            },
+          });
+
+          await updateQueue.add(
+            crypto.randomUUID(),
+            {
+              from: lastSlotOnChain,
+              beaconRestApis: beaconApi.getBeaconRestApis(),
+              slotsJump: Number(config.SLOTS_JUMP),
+              networkConfig: networkConfig,
+            },
+            {
+              attempts: 10,
+              backoff: {
+                type: 'fixed',
+                delay: 15000,
+              },
+            },
+          );
+
+          triedToPublishCount = 0;
+
+          isDrainRunning = false;
+          return;
+        }
+
+        triedToPublishCount++;
+
         isDrainRunning = false;
         return;
       }
+
+      triedToPublishCount = 0;
 
       try {
         await postUpdateOnChain(

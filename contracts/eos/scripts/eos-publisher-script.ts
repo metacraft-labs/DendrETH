@@ -26,7 +26,7 @@ async function publishTask() {
   const redis = new Redis(config.REDIS_HOST!, config.REDIS_PORT);
   const beaconApi = new BeaconApi(currentNetwork.BEACON_REST_API!);
   const contract = new EOSContract(contractAddress, rpcEndpoint);
-  publishProofs(redis, beaconApi, contract);
+  publishProofs(redis, beaconApi, contract, currentNetwork);
 }
 
 publishTask();

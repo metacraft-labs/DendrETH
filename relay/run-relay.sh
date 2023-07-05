@@ -87,7 +87,8 @@ else
 fi
 
 # needed in order for the supervisord configuration to be correct
-mkdir -p redis-server
+# cp -r data/redis-server redis-server
+mkdir redis-server
 
 supervisord -c supervisord.conf
 

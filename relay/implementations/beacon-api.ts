@@ -21,6 +21,10 @@ export class BeaconApi implements IBeaconApi {
     this.currentApiIndex = 0;
   }
 
+  getBeaconRestApis(): string[] {
+    return this.beaconRestApis;
+  }
+
   async getHashiAdapterInfo(slot: number): Promise<{
     blockNumber: number;
     blockHash: string;

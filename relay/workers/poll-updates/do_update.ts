@@ -13,15 +13,16 @@ export default async function doUpdate(
   redis: IRedis,
   beaconApi: IBeaconApi,
   proofGeneratorQueue: Queue<ProofInputType, any, string>,
-  lastDownloadedUpdateKey: string,
+  lastDownloadedUpdateKey: string | undefined,
+  from: number | undefined,
   slotsJump: number,
   networkConfig: Config,
 ) {
   const currentHeadSlot = await beaconApi.getCurrentHeadSlot();
 
-  const lastDownloadedUpdate = Number.parseInt(
-    (await redis.get(lastDownloadedUpdateKey))!,
-  );
+  const lastDownloadedUpdate = lastDownloadedUpdateKey
+    ? Number.parseInt((await redis.get(lastDownloadedUpdateKey))!)
+    : from!;
 
   console.log('Last downloaded update: ', lastDownloadedUpdate);
 
@@ -84,5 +85,7 @@ export default async function doUpdate(
     },
   });
 
-  await redis.set(lastDownloadedUpdateKey, result.updateSlot);
+  if (lastDownloadedUpdateKey) {
+    await redis.set(lastDownloadedUpdateKey, result.updateSlot);
+  }
 }
