@@ -29,7 +29,7 @@ task('start-publishing', 'Run relayer')
   .addParam(
     'hashi',
     'The address of the Hashi adapter contract',
-    undefined,
+    '',
     undefined,
     true,
   )
@@ -92,6 +92,7 @@ task('start-publishing', 'Run relayer')
       redis,
       beaconApi,
       contract,
+      networkConfig[args.follownetwork],
       hashiAdapterContract,
       (network.config as any).url,
       args.transactionspeed,

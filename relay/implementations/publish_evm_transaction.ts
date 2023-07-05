@@ -172,7 +172,7 @@ function formatFeeHistory(
 
   const blocks: Block[] = [];
 
-  for (let i = 0; i < historicalBlocks; i++) {
+  for (let i = 0; i < result.reward.length; i++) {
     blocks.push({
       number: blockNum + i,
       baseFeePerGas: Number(result.baseFeePerGas[i]),

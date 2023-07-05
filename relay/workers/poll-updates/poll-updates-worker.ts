@@ -33,11 +33,21 @@ import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
   new Worker<GetUpdate>(
     UPDATE_POLING_QUEUE,
     async job => {
-      doUpdate(
+      if (
+        job.data.from === undefined &&
+        job.data.lastDownloadedUpdateKey === undefined
+      ) {
+        throw new Error(
+          'Either from or lastDownloadedUpdateKey must be provided',
+        );
+      }
+
+      await doUpdate(
         redis,
         new BeaconApi(job.data.beaconRestApis),
         proofGenertorQueue,
         job.data.lastDownloadedUpdateKey,
+        job.data.from,
         job.data.slotsJump,
         job.data.networkConfig,
       );

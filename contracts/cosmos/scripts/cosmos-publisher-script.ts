@@ -56,7 +56,7 @@ async function publishTask() {
     network,
   );
 
-  publishProofs(redis, beaconApi, contract);
+  publishProofs(redis, beaconApi, contract, currentNetwork);
 }
 
 publishTask();
