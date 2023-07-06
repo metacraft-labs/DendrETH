@@ -3,8 +3,7 @@ import { Redis } from '../../../relay/implementations/redis';
 import { EOSContract } from '../../../relay/implementations/eos-contract';
 import { publishProofs } from '../../../relay/on_chain_publisher';
 import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
-import * as networkConfig from '../../../relay/constants/network_config.json';
-import { Config } from '../../../relay/constants/constants';
+import { getNetworkConfig } from '../../../relay/utils/get_current_network_config';
 
 async function publishTask() {
   const config = {
@@ -17,7 +16,12 @@ async function publishTask() {
   const contractAddress = process.argv[3];
   const followNetwork = process.argv[4];
 
-  const currentNetwork = networkConfig[followNetwork] as Config;
+  if (followNetwork !== 'mainnet' && followNetwork !== 'pratter') {
+    console.warn('This follownetwork is not specified in networkconfig');
+    return;
+  }
+
+  const currentNetwork = getNetworkConfig(followNetwork);
 
   console.log('Account balance:');
 

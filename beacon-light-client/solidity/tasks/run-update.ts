@@ -4,10 +4,9 @@ import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
 import { Queue } from 'bullmq';
 import { GetUpdate } from '../../../relay/types/types';
 import {
-  Config,
   UPDATE_POLING_QUEUE,
 } from '../../../relay/constants/constants';
-import * as networkConfig from '../../../relay/constants/network_config.json';
+import { getNetworkConfig } from '../../../relay/utils/get_current_network_config';
 
 task('run-update', 'Run update recuring task')
   .addParam(
@@ -28,12 +27,12 @@ task('run-update', 'Run update recuring task')
 
     checkConfig(config);
 
-    if (!networkConfig[args.follownetwork]) {
+    if(args.follownetwork !== 'pratter' && args.follownetwork !== 'mainnet') {
       console.warn('This follownetwork is not specified in networkconfig');
       return;
     }
 
-    const currentConfig = networkConfig[args.follownetwork] as Config;
+    const currentConfig = getNetworkConfig(args.follownetwork);
 
     const redis = new Redis(config.REDIS_HOST!, config.REDIS_PORT);
 

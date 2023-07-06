@@ -1,20 +1,18 @@
 import { task } from 'hardhat/config';
-import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
 import { BeaconApi } from '../../../relay/implementations/beacon-api';
 import { getConstructorArgs } from './utils';
-import * as networkConfig from '../../../relay/constants/network_config.json';
-import { Config } from '../../../relay/constants/constants';
+import { getNetworkConfig } from '../../../relay/utils/get_current_network_config';
 
 task('deploy', 'Deploy the beacon light client contract')
   .addParam('slot', 'The slot ')
   .addParam('follownetwork', 'The network to follow')
-  .setAction(async (args, { run, ethers, network }) => {
-    if (!networkConfig[args.follownetwork]) {
+  .setAction(async (args, { run, ethers }) => {
+    if (args.follownetwork !== 'pratter' && args.follownetwork !== 'mainnet') {
       console.warn('This follownetwork is not specified in networkconfig');
       return;
     }
 
-    const currentConfig = networkConfig[args.follownetwork] as Config;
+    const currentConfig = getNetworkConfig(args.follownetwork);
 
     await run('compile');
     const [deployer] = await ethers.getSigners();

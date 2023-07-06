@@ -4,10 +4,9 @@ import { Redis } from '../../../relay/implementations/redis';
 import { SolidityContract } from '../../../relay/implementations/solidity-contract';
 import { publishProofs } from '../../../relay/on_chain_publisher';
 import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
-import * as networkConfig from '../../../relay/constants/network_config.json';
-import { Config } from '../../../relay/constants/constants';
 import { Contract, ethers } from 'ethers';
 import hashi_abi from './hashi_abi.json';
+import { getNetworkConfig } from '../../../relay/utils/get_current_network_config';
 
 task('start-publishing', 'Run relayer')
   .addParam('lightclient', 'The address of the BeaconLightClient contract')
@@ -41,12 +40,12 @@ task('start-publishing', 'Run relayer')
 
     checkConfig(config);
 
-    if (!networkConfig[args.follownetwork]) {
+    if (args.follownetwork !== 'pratter' && args.follownetwork !== 'mainnet') {
       console.warn('This follownetwork is not specified in networkconfig');
       return;
     }
 
-    const currentConfig = networkConfig[args.follownetwork] as Config;
+    const currentConfig = getNetworkConfig(args.follownetwork);
 
     let publisher;
 
@@ -92,7 +91,7 @@ task('start-publishing', 'Run relayer')
       redis,
       beaconApi,
       contract,
-      networkConfig[args.follownetwork],
+      currentConfig[args.follownetwork],
       hashiAdapterContract,
       (network.config as any).url,
       args.transactionspeed,
