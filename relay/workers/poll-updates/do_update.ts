@@ -49,6 +49,9 @@ export default async function doUpdate(
     nextHeaderSlot = nextHeaderSlot + slotsJump;
   }
 
+  // round down
+  nextHeaderSlot = nextHeaderSlot - (nextHeaderSlot % slotsJump);
+
   console.log('Actuall next header', nextHeaderSlot);
 
   const result = await getInputFromTo(
