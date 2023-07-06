@@ -12,7 +12,7 @@ import Web3 from 'web3';
 import { checkConfig, sleep } from '../libs/typescript/ts-utils/common-utils';
 import { Queue } from 'bullmq';
 import { Config, UPDATE_POLING_QUEUE } from './constants/constants';
-import crypto from 'crypto'
+import crypto from 'crypto';
 
 let isDrainRunning = false;
 let triedToPublishCount = 0;
@@ -105,6 +105,32 @@ export async function drainUpdatesInRedis(
               port: Number(config.REDIS_PORT),
             },
           });
+
+          const jobs = await updateQueue.getJobs();
+
+          if (
+            jobs.some(async x => {
+              if (x.data.lastDownloadedUpdateKey) {
+                const lastDownloadSlot = await redis.get(
+                  x.data.lastDownloadedUpdateKey,
+                );
+
+                return Number(lastDownloadSlot) === lastSlotOnChain;
+              }
+
+              return false;
+            })
+          ) {
+            console.log('Already have a job for this slot');
+            isDrainRunning = false;
+            return;
+          }
+
+          if (jobs.some(x => x.data.from === lastSlotOnChain)) {
+            console.log('Already have a job for this slot');
+            isDrainRunning = false;
+            return;
+          }
 
           await updateQueue.add(
             crypto.randomUUID(),
