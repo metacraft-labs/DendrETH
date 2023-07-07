@@ -25,30 +25,14 @@ import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
     },
   });
 
-  const redis = new Redis(
-    updatePollingConfig.REDIS_HOST!,
-    updatePollingConfig.REDIS_PORT,
-  );
-
   new Worker<GetUpdate>(
     UPDATE_POLING_QUEUE,
     async job => {
-      if (
-        job.data.from === undefined &&
-        job.data.lastDownloadedUpdateKey === undefined
-      ) {
-        throw new Error(
-          'Either from or lastDownloadedUpdateKey must be provided',
-        );
-      }
-
       await doUpdate(
-        redis,
-        new BeaconApi(job.data.beaconRestApis),
+        new BeaconApi(job.data.networkConfig.BEACON_REST_API),
         proofGenertorQueue,
-        job.data.lastDownloadedUpdateKey,
         job.data.from,
-        job.data.slotsJump,
+        job.data.to,
         job.data.networkConfig,
       );
     },

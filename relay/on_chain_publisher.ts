@@ -13,25 +13,35 @@ import { checkConfig, sleep } from '../libs/typescript/ts-utils/common-utils';
 import { Queue } from 'bullmq';
 import { Config, UPDATE_POLING_QUEUE } from './constants/constants';
 import crypto from 'crypto';
+import { getSlotOnChain } from './utils/smart_contract_utils';
+import { addUpdate } from './utils/orchestrator';
 
 let isDrainRunning = false;
-let triedToPublishCount = 0;
 
 export async function publishProofs(
   redis: IRedis,
   beaconApi: IBeaconApi,
   smartContract: ISmartContract,
   networkConfig: Config,
+  slotsJump: number,
   hashiAdapterContract?: Contract | undefined,
   rpcEndpoint?: string,
   transactionSpeed: TransactionSpeed = 'avg',
 ) {
+  const config = {
+    REDIS_HOST: process.env.REDIS_HOST,
+    REDIS_PORT: Number(process.env.REDIS_PORT),
+  };
+
+  checkConfig(config);
+
+  askForUpdates(config, smartContract, beaconApi, slotsJump, networkConfig);
+
   try {
     await drainUpdatesInRedis(
       redis,
       beaconApi,
       smartContract,
-      networkConfig,
       hashiAdapterContract,
       rpcEndpoint,
       transactionSpeed,
@@ -43,7 +53,6 @@ export async function publishProofs(
           redis,
           beaconApi,
           smartContract,
-          networkConfig,
           hashiAdapterContract,
           rpcEndpoint,
           transactionSpeed,
@@ -62,7 +71,6 @@ export async function drainUpdatesInRedis(
   redis: IRedis,
   beaconApi: IBeaconApi,
   smartContract: ISmartContract,
-  networkConfig: Config,
   hashiAdapterContract: Contract | undefined,
   rpcEndpoint?: string,
   transactionSpeed: TransactionSpeed = 'avg',
@@ -75,93 +83,15 @@ export async function drainUpdatesInRedis(
   let failedNumber = 0;
   while (true) {
     try {
-      const header_root_on_chain = await smartContract.optimisticHeaderRoot();
-
-      console.log('header on chain', header_root_on_chain);
-
-      const lastSlotOnChain = await beaconApi.getBlockSlot(
-        header_root_on_chain,
-      );
+      const lastSlotOnChain = await getSlotOnChain(smartContract, beaconApi);
 
       const proofResult = await redis.getNextProof(lastSlotOnChain);
 
       if (proofResult == null) {
-        // We should get here either the first time when relayer is started and proof is still generated or when the contract is stuck
-        // to measure that we will see if a proof is generated which will mean this function gets called again we know we are stuck then we add a task to poll update for the contract
-
-        if (triedToPublishCount > 0) {
-          console.log('Requesting a proof');
-          const config = {
-            REDIS_HOST: process.env.REDIS_HOST,
-            REDIS_PORT: Number(process.env.REDIS_PORT),
-            SLOTS_JUMP: process.env.SLOTS_JUMP,
-          };
-
-          checkConfig(config);
-
-          const updateQueue = new Queue<GetUpdate>(UPDATE_POLING_QUEUE, {
-            connection: {
-              host: config.REDIS_HOST!,
-              port: Number(config.REDIS_PORT),
-            },
-          });
-
-          const jobs = await updateQueue.getJobs();
-
-          if (
-            jobs.some(async x => {
-              if (x.data.lastDownloadedUpdateKey) {
-                const lastDownloadSlot = await redis.get(
-                  x.data.lastDownloadedUpdateKey,
-                );
-
-                return Number(lastDownloadSlot) === lastSlotOnChain;
-              }
-
-              return false;
-            })
-          ) {
-            console.log('Already have a job for this slot');
-            isDrainRunning = false;
-            return;
-          }
-
-          if (jobs.some(x => x.data.from === lastSlotOnChain)) {
-            console.log('Already have a job for this slot');
-            isDrainRunning = false;
-            return;
-          }
-
-          await updateQueue.add(
-            crypto.randomUUID(),
-            {
-              from: lastSlotOnChain,
-              beaconRestApis: beaconApi.getBeaconRestApis(),
-              slotsJump: Number(config.SLOTS_JUMP),
-              networkConfig: networkConfig,
-            },
-            {
-              attempts: 10,
-              backoff: {
-                type: 'fixed',
-                delay: 15000,
-              },
-            },
-          );
-
-          triedToPublishCount = 0;
-
-          isDrainRunning = false;
-          return;
-        }
-
-        triedToPublishCount++;
-
+        console.log('No proof to publish');
         isDrainRunning = false;
         return;
       }
-
-      triedToPublishCount = 0;
 
       try {
         await postUpdateOnChain(
@@ -303,4 +233,45 @@ function log(error: any, firstMessage: string, secondMessage: string): void {
   console.log(firstMessage);
   console.log(error);
   console.log(secondMessage);
+}
+
+async function askForUpdates(
+  config: { REDIS_HOST: string | undefined; REDIS_PORT: number },
+  smartContract: ISmartContract,
+  beaconApi: IBeaconApi,
+  slotsJump: number,
+  networkConfig: Config,
+) {
+  const updateQueue = new Queue<GetUpdate>(UPDATE_POLING_QUEUE, {
+    connection: {
+      host: config.REDIS_HOST!,
+      port: Number(config.REDIS_PORT),
+    },
+  });
+
+  while (true) {
+    try {
+      let before = Date.now();
+
+      const optimisticSlot = await getSlotOnChain(smartContract, beaconApi);
+      const headSlot = await beaconApi.getCurrentHeadSlot();
+
+      // Loop through
+      while (
+        await addUpdate(
+          optimisticSlot,
+          slotsJump,
+          headSlot,
+          updateQueue,
+          networkConfig,
+          beaconApi
+        )
+      ) {}
+
+      let after = Date.now();
+      await sleep(12000 * slotsJump - (after - before));
+    } catch (e) {
+      console.error('Error while fetching update', e);
+    }
+  }
 }
