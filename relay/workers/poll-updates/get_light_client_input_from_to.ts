@@ -6,11 +6,12 @@ import { BeaconBlockHeader, SyncAggregate } from '../../types/types';
 export async function getInputFromTo(
   from: number,
   to: number,
-  headSlot: number,
   beaconApi: IBeaconApi,
   networkConfig: Config,
 ) {
   const prevBlockHeader = await beaconApi.getExistingBlockHeader(from);
+
+  const headSlot = await beaconApi.getCurrentHeadSlot();
 
   let { signature_slot, nextBlockHeader, sync_aggregate } =
     await findClosestValidBlock(to, beaconApi, headSlot);

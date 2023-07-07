@@ -87,7 +87,6 @@ else
 fi
 
 # needed in order for the supervisord configuration to be correct
-# cp -r data/redis-server redis-server
 mkdir redis-server
 
 supervisord -c supervisord.conf
@@ -141,29 +140,9 @@ echo "Starting the proof generation task"
 supervisorctl start proofGenerationWorker
 echo "Proof generation task started"
 
-if [ -z "$INITIAL_SLOT" ]; then
-  echo "Error: INITIAL_SLOT environment variable is not set. Exiting..."
-  exit 1
-fi
-
 if [ -z "$SLOTS_JUMP" ]; then
   echo "Error: SLOTS_JUMP environment variable is not set. Exiting..."
   exit 1
-fi
-
-# Register update polling task
-if [ "$PRATTER" = "TRUE" ]; then
-  echo "Starting update polling for Pratter..."
-  cd beacon-light-client/solidity
-  yarn hardhat run-update --initialslot "$INITIAL_SLOT" --slotsjump "$SLOTS_JUMP" --follownetwork pratter
-  cd ../../
-fi
-
-if [ "$MAINNET" = "TRUE" ]; then
-  echo "Starting update polling for Mainnet..."
-  cd beacon-light-client/solidity
-  yarn hardhat run-update --initialslot "$INITIAL_SLOT" --slotsjump "$SLOTS_JUMP" --follownetwork mainnet
-  cd ../../
 fi
 
 if [[ "$PRATTER" != "TRUE" && "$MAINNET" != "TRUE" ]]; then
@@ -292,6 +271,8 @@ if [[ "$MAINNET" == "TRUE" ]]; then
   export FOLLOW_NETWORK="mainnet"
   run_network_tasks
 fi
+
+supervisorctl start cleaner
 
 supervisorctl start general_logs
 

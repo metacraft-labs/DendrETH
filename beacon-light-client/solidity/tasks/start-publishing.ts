@@ -25,6 +25,7 @@ task('start-publishing', 'Run relayer')
     undefined,
     true,
   )
+  .addParam('slotsjump', 'The number of slots to jump')
   .addParam(
     'hashi',
     'The address of the Hashi adapter contract',
@@ -80,6 +81,7 @@ task('start-publishing', 'Run relayer')
     }
 
     const redis = new Redis(config.REDIS_HOST!, config.REDIS_PORT);
+
     const beaconApi = new BeaconApi(currentConfig.BEACON_REST_API);
     const contract = new SolidityContract(
       lightClientContract,
@@ -91,7 +93,8 @@ task('start-publishing', 'Run relayer')
       redis,
       beaconApi,
       contract,
-      currentConfig[args.follownetwork],
+      currentConfig,
+      Number(args.slotsjump),
       hashiAdapterContract,
       (network.config as any).url,
       args.transactionspeed,

@@ -96,11 +96,10 @@ export async function getBlockHeaderFromUpdate(head) {
   return blockHeader;
 }
 
-const EPOCHS_PER_SYNC_COMMITTEE_PERIOD = 256;
-const SLOTS_PER_EPOCH = 32;
+export const SLOTS_PER_PERIOD = 8192;
 
 export function computeSyncCommitteePeriodAt(slot: number) {
   return Math.floor(
-    slot / (EPOCHS_PER_SYNC_COMMITTEE_PERIOD * SLOTS_PER_EPOCH),
+    slot / (SLOTS_PER_PERIOD),
   );
 }

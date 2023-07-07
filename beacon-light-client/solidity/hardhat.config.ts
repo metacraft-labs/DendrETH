@@ -85,7 +85,7 @@ export default {
       accounts: [conf.USER_PRIVATE_KEY],
     },
     optimisticGoerli: {
-      url: `https://opt-goerli.g.alchemy.com/v2/${conf.ALCHEMY_API_KEY}`,
+      url: `https://optimism-goerli.blockpi.network/v1/rpc/public`,
       accounts: [conf.USER_PRIVATE_KEY],
     },
     baseGoerli: {

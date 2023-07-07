@@ -28,6 +28,8 @@ COPY ./relay ./relay
 COPY ./libs/ ./libs
 COPY ./beacon-light-client/solidity ./beacon-light-client/solidity
 
+COPY ./contracts/cosmos ./contracts/cosmos
+
 COPY ./tsconfig.json ./tsconfig.json
 COPY ./scripts ./scripts
 

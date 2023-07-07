@@ -15,6 +15,7 @@ async function publishTask() {
   const network = process.argv[2];
   const contractAddress = process.argv[3];
   const followNetwork = process.argv[4];
+  const slotsJump = Number(process.argv[5]);
 
   if (followNetwork !== 'mainnet' && followNetwork !== 'pratter') {
     console.warn('This follownetwork is not specified in networkconfig');
@@ -60,7 +61,7 @@ async function publishTask() {
     network,
   );
 
-  publishProofs(redis, beaconApi, contract, currentNetwork);
+  publishProofs(redis, beaconApi, contract, currentNetwork, slotsJump);
 }
 
 publishTask();
