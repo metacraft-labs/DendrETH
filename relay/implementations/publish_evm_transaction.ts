@@ -84,8 +84,6 @@ export async function publishTransaction(
 
         transactionPromise = transaction.wait();
       } else {
-        console.log('yes it was here');
-        console.log(e);
         throw e;
       }
     }

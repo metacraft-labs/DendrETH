@@ -70,6 +70,11 @@
   },
   {
     "inputs": [],
+    "name": "InvalidSlot",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "InvalidUpdate",
     "type": "error"
   },
@@ -184,42 +189,9 @@
         "type": "uint64"
       },
       {
-        "internalType": "uint256",
-        "name": "_blockNumber",
-        "type": "uint256"
-      },
-      {
         "internalType": "bytes32[]",
-        "name": "_blockNumberProof",
+        "name": "_slotProof",
         "type": "bytes32[]"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "_blockHash",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "bytes32[]",
-        "name": "_blockHashProof",
-        "type": "bytes32[]"
-      }
-    ],
-    "name": "storeBlockHeader",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint32",
-        "name": "_chainId",
-        "type": "uint32"
-      },
-      {
-        "internalType": "uint64",
-        "name": "_slot",
-        "type": "uint64"
       },
       {
         "internalType": "uint256",
@@ -282,6 +254,54 @@
         "internalType": "struct LightClientUpdate",
         "name": "update",
         "type": "tuple"
+      }
+    ],
+    "name": "storeBlockHeader",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "_chainId",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "_slot",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "_slotProof",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "_finalizedBlockHeader",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_blockNumber",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "_blockNumberProof",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "_blockHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "_blockHashProof",
+        "type": "bytes32[]"
       }
     ],
     "name": "storeBlockHeader",

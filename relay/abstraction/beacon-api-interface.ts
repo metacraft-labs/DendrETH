@@ -9,6 +9,7 @@ export interface IBeaconApi {
   getBeaconRestApis(): string[];
 
   getHashiAdapterInfo(slot: number): Promise<{
+    slotProof: string[];
     blockNumber: number;
     blockHash: string;
     blockNumberProof: string[];
