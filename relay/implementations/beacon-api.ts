@@ -26,6 +26,7 @@ export class BeaconApi implements IBeaconApi {
   }
 
   async getHashiAdapterInfo(slot: number): Promise<{
+    slotProof: string[];
     blockNumber: number;
     blockHash: string;
     blockNumberProof: string[];
@@ -74,7 +75,12 @@ export class BeaconApi implements IBeaconApi {
       )
       .map(bytesToHex);
 
+    const slotProof = beaconBlockHeaderTree
+      .getSingleProof(ssz.phase0.BeaconBlockHeader.getPathInfo(['slot']).gindex)
+      .map(bytesToHex);
+
     return {
+      slotProof: slotProof,
       blockNumber: beaconBlock.executionPayload.blockNumber,
       blockHash: bytesToHex(beaconBlock.executionPayload.blockHash),
       blockNumberProof: [...blockNumberProof, ...bodyRootProof],

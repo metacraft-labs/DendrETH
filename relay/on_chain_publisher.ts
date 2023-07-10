@@ -154,9 +154,14 @@ export async function postUpdateOnChain(
   console.log(update);
 
   if (hashiAdapterContract) {
-    const hashiInfo = await beaconApi.getHashiAdapterInfo(
-      proofResult.proofInput.nextHeaderSlot,
+    const finalizedHeaderSlot = await beaconApi.getBlockSlot(
+      '0x' +
+        BigInt(
+          '0b' + proofResult.proofInput.finalizedHeaderRoot.join(''),
+        ).toString(16),
     );
+
+    const hashiInfo = await beaconApi.getHashiAdapterInfo(finalizedHeaderSlot);
 
     const solidityProof = await getSolidityProof({
       a: proofResult.proof.pi_a,
@@ -166,10 +171,11 @@ export async function postUpdateOnChain(
 
     await publishTransaction(
       hashiAdapterContract,
-      'storeBlockHeader(uint32,uint64,uint256,bytes32[],bytes32,bytes32[],(bytes32,uint256,bytes32,bytes32,uint256[2],uint256[2][2],uint256[2]))',
+      'storeBlockHeader(uint32,uint64,bytes32[],uint256,bytes32[],bytes32,bytes32[],(bytes32,uint256,bytes32,bytes32,uint256[2],uint256[2][2],uint256[2]))',
       [
         (await hashiAdapterContract.provider.getNetwork()).chainId,
-        proofResult.proofInput.nextHeaderSlot,
+        finalizedHeaderSlot,
+        hashiInfo.slotProof.map(x => '0x' + x),
         hashiInfo.blockNumber,
         hashiInfo.blockNumberProof.map(x => '0x' + x),
         '0x' + hashiInfo.blockHash,
@@ -264,7 +270,7 @@ async function askForUpdates(
           headSlot,
           updateQueue,
           networkConfig,
-          beaconApi
+          beaconApi,
         )
       ) {}
 
