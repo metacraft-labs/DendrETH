@@ -68,22 +68,17 @@ proc makePairsAndVerify*(vk: VerificationKey,
   ic0Prj += ic2Prj
   affine(preparedInputs.data,ic0Prj)
 
-  var aBPairing: Fp12[BN254_Snarks]
-  pairing_bn[BN254_Snarks](aBPairing,prf.a,prf.b)
-  var alphaBetaPairing: Fp12[BN254_Snarks]
-  pairing_bn[BN254_Snarks](alphaBetaPairing,vk.alpha,vk.beta)
-  var preparedInputsGammaPairing: Fp12[BN254_Snarks]
-  pairing_bn[BN254_Snarks](preparedInputsGammaPairing,preparedInputs.data,vk.gamma)
-  var proofCVkDeltaPairing: Fp12[BN254_Snarks]
-  pairing_bn[BN254_Snarks](proofCVkDeltaPairing,prf.c,vk.delta)
+  var negPrfA: ECP_ShortW_Aff[Fp[BN254_Snarks], G1]
+  neg(negPrfA, prf.a)
 
   var sum:Fp12[BN254_Snarks]
-  prod(sum, alphaBetaPairing, preparedInputsGammaPairing)
-  prod(sum, sum, proofCVkDeltaPairing)
+  pairing_bn[4, BN254_Snarks](sum,
+                              [negPrfA, vk.alpha, preparedInputs.data, prf.c],
+                              [prf.b, vk.beta, vk.gamma, vk.delta])
 
-  if (sum == aBPairing).bool:
+  if isOne(sum).bool:
     currentHeaderHash = newOptimisticHeader
     return true
   else:
     return false
-  (sum == aBPairing).bool
+  isOne(sum).bool

@@ -2,143 +2,143 @@
   [
     {
       "description": "Upload Verifier",
-      "gas": 1379696
+      "gas": 1378889
     },
     {
       "description": "Init Verifier",
-      "gas": 405516
+      "gas": 391408
     },
     {
       "description": "Update 1",
-      "gas": 1402942
+      "gas": 871846
     },
     {
       "description": "Update 2",
-      "gas": 1403123
+      "gas": 872028
     },
     {
       "description": "Update 3",
-      "gas": 1402902
+      "gas": 871806
     },
     {
       "description": "Update 4",
-      "gas": 1402962
+      "gas": 871866
     },
     {
       "description": "Update 5",
-      "gas": 1403022
+      "gas": 871927
     },
     {
       "description": "Update 6",
-      "gas": 1402982
+      "gas": 871886
     },
     {
       "description": "Update 7",
-      "gas": 1402891
+      "gas": 871796
     },
     {
       "description": "Update 8",
-      "gas": 1403012
+      "gas": 871917
     },
     {
       "description": "Update 9",
-      "gas": 1402921
+      "gas": 871826
     },
     {
       "description": "Update 10",
-      "gas": 1403174
+      "gas": 872078
     },
     {
       "description": "Update 11",
-      "gas": 1402952
+      "gas": 871856
     },
     {
       "description": "Update 12",
-      "gas": 1403133
+      "gas": 872038
     },
     {
       "description": "Update 13",
-      "gas": 1402952
+      "gas": 871856
     },
     {
       "description": "Update 14",
-      "gas": 1403073
+      "gas": 871977
     },
     {
       "description": "Update 15",
-      "gas": 1402892
+      "gas": 871796
     },
     {
       "description": "Update 16",
-      "gas": 1402922
+      "gas": 871826
     },
     {
       "description": "Update 17",
-      "gas": 1403123
+      "gas": 872027
     },
     {
       "description": "Update 18",
-      "gas": 1403013
+      "gas": 871917
     },
     {
       "description": "Update 19",
-      "gas": 1403083
+      "gas": 871987
     },
     {
       "description": "Update 20",
-      "gas": 1402932
+      "gas": 871836
     },
     {
       "description": "Update 21",
-      "gas": 1403063
+      "gas": 871967
     },
     {
       "description": "Update 22",
-      "gas": 1402982
+      "gas": 871886
     },
     {
       "description": "Update 23",
-      "gas": 1402881
+      "gas": 871785
     },
     {
       "description": "Update 24",
-      "gas": 1403134
+      "gas": 872038
     },
     {
       "description": "Update 25",
-      "gas": 1403043
+      "gas": 871947
     },
     {
       "description": "Update 26",
-      "gas": 1403063
+      "gas": 871967
     },
     {
       "description": "Update 27",
-      "gas": 1402952
+      "gas": 871856
     },
     {
       "description": "Update 28",
-      "gas": 1403033
+      "gas": 871937
     },
     {
       "description": "Update 29",
-      "gas": 1403164
+      "gas": 872068
     },
     {
       "description": "Update 30",
-      "gas": 1402932
+      "gas": 871836
     },
     {
       "description": "Update 31",
-      "gas": 1403153
+      "gas": 872058
     },
     {
       "description": "Update 32",
-      "gas": 1403073
+      "gas": 871977
     },
     {
       "description": "Update 33",
-      "gas": 1402821
+      "gas": 871725
     }
   ]
 ]
