@@ -28,6 +28,22 @@ const conf = {
     '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
   INFURA_API_KEY: process.env.INFURA_API_KEY,
   ETHERSCAN_API_KEY: process.env.ETHERSCAN_API_KEY,
+  ETHEREUM_MAINNET_RPC: process.env.ETHEREUM_MAINNET_RPC || '',
+  ROPSTEN_RPC: process.env.ROPSTEN_RPC || '',
+  SEPOLIA_RPC: process.env.SEPOLIA_RPC || '',
+  GOERLI_RPC: process.env.GOERLI_RPC || '',
+  OPTIMISTIC_GOERLI_RPC: process.env.OPTIMISTIC_GOERLI_RPC || '',
+  BASE_GOERLI_RPC: process.env.BASE_GOERLI_RPC || '',
+  ARBITRUM_GOERLI_RPC: process.env.ARBITRUM_GOERLI_RPC || '',
+  MUMBAI_RPC: process.env.MUMBAI_RPC || '',
+  AVALANCHE_RPC: process.env.AVALANCHE_RPC || '',
+  FANTOM_RPC: process.env.FANTOM_RPC || '',
+  CELO_RPC: process.env.CELO_RPC || '',
+  BSC_RPC: process.env.BSC_RPC || '',
+  CHIADO_RPC: process.env.CHIADO_RPC || '',
+  GNOSIS_RPC: process.env.GNOSIS_RPC || '',
+  EVMOS_RPC: process.env.EVMOS_RPC || '',
+  AURORA_RPC: process.env.AURORA_RPC || '',
 };
 
 if (!/^0x[0-9a-fA-F]{64}$/.test(conf.USER_PRIVATE_KEY ?? '')) {
@@ -68,72 +84,71 @@ export default {
     },
     hardhat: {
       forking: {
-        url: 'https://eth.llamarpc.com',
+        url: conf.ETHEREUM_MAINNET_RPC,
         blockNumber: 17578101,
       },
     },
     ropsten: {
-      url: `https://ropsten.infura.io/v3/${conf.INFURA_API_KEY}`,
+      url: conf.ROPSTEN_RPC,
       accounts: [conf.USER_PRIVATE_KEY],
     },
     sepolia: {
-      url: `https://eth-sepolia.g.alchemy.com/v2/${conf.ALCHEMY_API_KEY}`,
+      url: conf.SEPOLIA_RPC,
       accounts: [conf.USER_PRIVATE_KEY],
     },
     goerli: {
-      url: `https://eth-goerli.g.alchemy.com/v2/${conf.ALCHEMY_API_KEY}`,
+      url: conf.GOERLI_RPC,
       accounts: [conf.USER_PRIVATE_KEY],
     },
     optimisticGoerli: {
-      url: `https://optimism-goerli.blockpi.network/v1/rpc/public`,
+      url: conf.OPTIMISTIC_GOERLI_RPC,
       accounts: [conf.USER_PRIVATE_KEY],
     },
     baseGoerli: {
-      url: 'https://base-goerli.public.blastapi.io',
+      url: conf.BASE_GOERLI_RPC,
       accounts: [conf.USER_PRIVATE_KEY],
     },
     arbitrumGoerli: {
-      url: `https://arb-goerli.g.alchemy.com/v2/${conf.ALCHEMY_API_KEY}`,
+      url: conf.ARBITRUM_GOERLI_RPC,
       accounts: [conf.USER_PRIVATE_KEY],
-      contractAddress: '0xB94868ba0903883bD2dE3311Fc377f3c50D602eA',
     },
     mumbai: {
-      url: `https://endpoints.omniatech.io/v1/matic/mumbai/public`,
+      url: conf.MUMBAI_RPC,
       accounts: [conf.USER_PRIVATE_KEY],
     },
     avalanche: {
-      url: `https://rpc.ankr.com/avalanche_fuji`,
+      url: conf.AVALANCHE_RPC,
       accounts: [conf.USER_PRIVATE_KEY],
     },
     fantom: {
-      url: 'https://rpc.testnet.fantom.network',
+      url: conf.FANTOM_RPC,
       accounts: [conf.USER_PRIVATE_KEY],
     },
     celo: {
-      url: 'https://alfajores-forno.celo-testnet.org',
+      url: conf.CELO_RPC,
       accounts: [conf.USER_PRIVATE_KEY],
     },
     bsc: {
-      url: 'https://bsc-testnet.public.blastapi.io',
+      url: conf.BSC_RPC,
       accounts: [conf.USER_PRIVATE_KEY],
     },
     chiado: {
-      url: 'https://rpc.chiado.gnosis.gateway.fm',
+      url: conf.CHIADO_RPC,
       accounts: [conf.USER_PRIVATE_KEY],
       gas: 30000000,
       gasPrice: 20,
       gasMultiplier: 10,
     },
     evmos: {
-      url: 'https://eth.bd.evmos.dev:8545',
+      url: conf.EVMOS_RPC,
       accounts: [conf.USER_PRIVATE_KEY],
     },
     aurora: {
-      url: 'https://aurora-testnet.rpc.thirdweb.com',
+      url: conf.AURORA_RPC,
       accounts: [conf.USER_PRIVATE_KEY],
     },
     gnosis: {
-      url: `https://rpc.gnosis.gateway.fm`,
+      url: conf.GNOSIS_RPC,
       accounts: [conf.USER_PRIVATE_KEY],
     },
   },
