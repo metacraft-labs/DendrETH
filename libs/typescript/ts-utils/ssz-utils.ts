@@ -99,7 +99,5 @@ export async function getBlockHeaderFromUpdate(head) {
 export const SLOTS_PER_PERIOD = 8192;
 
 export function computeSyncCommitteePeriodAt(slot: number) {
-  return Math.floor(
-    slot / (SLOTS_PER_PERIOD),
-  );
+  return Math.floor(slot / SLOTS_PER_PERIOD);
 }

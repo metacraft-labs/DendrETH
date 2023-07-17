@@ -5,7 +5,7 @@ inputs:
     description: 'Cachix Cache Authentication Token'
     required: true
 runs:
-  using: "composite"
+  using: 'composite'
   steps:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@v4
