@@ -1,5 +1,5 @@
 [package]
-name = "second_level_proof"
+name = "commitment_mapper_builder"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,10 +8,9 @@ edition = "2021"
 [dependencies]
 circuits = { path = "../circuits" }
 plonky2 = { git = "https://github.com/polymerdao/plonky2", rev = "4cb0b48df1d227d5461a4c28ed025aaea64e2e62" }
-plonky2_sha256 = { git = "https://github.com/polymerdao/plonky2-sha256", branch = "main" }
 redis = "0.22"
-redis-work-queue = "0.1.3"
-anyhow = "1.0.71"
 serde = "1.0.164"
 serde_json = "1.0.96"
+anyhow = "1.0.71"
+redis-work-queue = "0.1.3"
 futures-lite = "1"

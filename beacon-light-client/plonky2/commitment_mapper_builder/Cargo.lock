@@ -285,6 +285,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "commitment_mapper_builder"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "circuits",
+ "futures-lite",
+ "plonky2",
+ "redis",
+ "redis-work-queue",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "concurrent-queue"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -455,20 +469,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e51093e27b0797c359783294ca4f0a911c270184cb10f85783b118614a1501be"
 dependencies = [
  "instant",
-]
-
-[[package]]
-name = "first_level_proof"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "circuits",
- "futures-lite",
- "plonky2",
- "redis",
- "redis-work-queue",
- "serde",
- "serde_json",
 ]
 
 [[package]]
