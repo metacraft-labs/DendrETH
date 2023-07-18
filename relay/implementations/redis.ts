@@ -105,15 +105,19 @@ export class Redis implements IRedis {
     await this.redisClient.mSet(result);
   }
 
-  async saveValidatorProof(depth: bigint, index: bigint): Promise<void> {
+  async saveValidatorProof(
+    depth: bigint,
+    index: bigint,
+    proof: { needsChange: boolean; proof: number[] } = {
+      needsChange: true,
+      proof: [],
+    },
+  ): Promise<void> {
     await this.waitForConnection();
 
     await this.redisClient.set(
       `proof:${depth.toString()}:${index.toString()}`,
-      JSON.stringify({
-        needsChange: true,
-        proof: [],
-      }),
+      JSON.stringify(proof),
     );
   }
 

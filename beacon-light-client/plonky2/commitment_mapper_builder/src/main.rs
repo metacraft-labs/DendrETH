@@ -11,7 +11,7 @@ use plonky2::{
         circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs,
     },
 };
-use redis::{aio::Connection, AsyncCommands};
+use redis::{aio::Connection, AsyncCommands, RedisError};
 use redis_work_queue::{KeyPrefix, WorkQueue};
 use serde::{Deserialize, Serialize};
 
@@ -26,7 +26,7 @@ mod validator;
 
 use validator::Validator;
 
-const VALIDATOR_REGISTRY_LIMIT: u64 = 1099511627776;
+const VALIDATOR_REGISTRY_LIMIT: usize = 1099511627776;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -71,21 +71,21 @@ async fn fetch_proof(con: &mut Connection, depth: usize, index: usize) -> Result
             return Err(anyhow::anyhow!("Not able to complete, try again"));
         }
 
-        let mut proof_str: String = con
+        let mut proof_result: Result<String, RedisError> = con
             .get(format!("validator_proof:{}:{}", depth, index))
-            .await?;
+            .await;
 
-        if proof_str.is_empty() {
+        if proof_result.is_err() {
             // get the zeroth proof
-            proof_str = con
+            proof_result = con
                 .get(format!(
                     "validator_proof:{}:{}",
                     depth, VALIDATOR_REGISTRY_LIMIT
                 ))
-                .await?;
+                .await;
         }
 
-        let proof = serde_json::from_str::<ValidatorProof>(&proof_str)?;
+        let proof = serde_json::from_str::<ValidatorProof>(&proof_result?)?;
 
         if proof.needs_change {
             // Wait a bit and try again
@@ -197,6 +197,7 @@ async fn async_main() -> Result<()> {
                         inner_circuit_data,
                         &inner_circuits[proof_indexes[0]].0,
                         &inner_circuits[proof_indexes[0]].1,
+                        proof_indexes[2] == VALIDATOR_REGISTRY_LIMIT && proof_indexes[0] == 0,
                     )?;
 
                     match save_validator_proof(
@@ -233,6 +234,7 @@ fn handle_inner_level_proof(
     inner_circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     inner_circuit_targets: &InnerCircuitTargets,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    is_zero: bool,
 ) -> Result<Vec<u8>> {
     let inner_proof1 =
         ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
@@ -262,6 +264,8 @@ fn handle_inner_level_proof(
         inner_circuit_targets.verifier_circuit_target.circuit_digest,
         inner_circuit_data.verifier_only.circuit_digest,
     );
+
+    pw.set_bool_target(inner_circuit_targets.is_zero, is_zero);
 
     Ok(circuit_data.prove(pw)?.to_bytes())
 }
