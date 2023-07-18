@@ -102,6 +102,8 @@ pub fn hash_tree_root_validator_sha256<F: RichField + Extendable<D>, const D: us
 
 #[cfg(test)]
 mod test {
+    use std::println;
+
     use anyhow::Result;
     use plonky2::{
         field::goldilocks_field::GoldilocksField,
@@ -309,8 +311,12 @@ mod test {
             }
         }
 
+        builder.register_public_inputs(&targets.hash_tree_root.map(|x| x.target));
+
         let data = builder.build::<C>();
         let proof = data.prove(pw).unwrap();
+
+        println!("public outputs {:?}", proof.public_inputs);
 
         data.verify(proof)
     }

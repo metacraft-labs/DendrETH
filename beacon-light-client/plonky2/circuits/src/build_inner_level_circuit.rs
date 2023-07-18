@@ -1,6 +1,7 @@
 use plonky2::{
+    field::{goldilocks_field::GoldilocksField, types::Field},
     hash::poseidon::PoseidonHash,
-    iop::target::Target,
+    iop::target::{BoolTarget, Target},
     plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::{CircuitConfig, CircuitData, VerifierCircuitTarget},
@@ -14,6 +15,7 @@ pub struct InnerCircuitTargets {
     pub proof1: ProofWithPublicInputsTarget<2>,
     pub proof2: ProofWithPublicInputsTarget<2>,
     pub verifier_circuit_target: VerifierCircuitTarget,
+    pub is_zero: BoolTarget,
 }
 
 pub fn build_inner_circuit(
@@ -53,13 +55,30 @@ pub fn build_inner_circuit(
 
     builder.verify_proof::<C>(&pt2, &verifier_circuit_target, &inner_circuit_data.common);
 
-    let poseidon_hash = &pt1.public_inputs[0..4];
+    let is_zero = builder.add_virtual_bool_target_safe();
+    let one = builder.constant(GoldilocksField::from_canonical_u64(1));
 
-    let sha256_hash = &pt1.public_inputs[4..260];
+    let is_one = builder.sub(one, is_zero.target);
 
-    let poseidon_hash2 = &pt2.public_inputs[0..4];
+    let poseidon_hash: &[Target] = &pt1.public_inputs[0..4]
+        .iter()
+        .map(|x| builder.mul(*x, is_one))
+        .collect::<Vec<Target>>();
 
-    let sha256_hash2 = &pt2.public_inputs[4..260];
+    let sha256_hash = &pt1.public_inputs[4..260]
+        .iter()
+        .map(|x| builder.mul(*x, is_one))
+        .collect::<Vec<Target>>();
+
+    let poseidon_hash2 = &pt2.public_inputs[0..4]
+        .iter()
+        .map(|x| builder.mul(*x, is_one))
+        .collect::<Vec<Target>>();
+
+    let sha256_hash2 = &pt2.public_inputs[4..260]
+        .iter()
+        .map(|x| builder.mul(*x, is_one))
+        .collect::<Vec<Target>>();
 
     let hasher = make_circuits(&mut builder, 512);
 
@@ -93,6 +112,7 @@ pub fn build_inner_circuit(
             proof1: pt1,
             proof2: pt2,
             verifier_circuit_target: verifier_circuit_target,
+            is_zero,
         },
         data,
     )
