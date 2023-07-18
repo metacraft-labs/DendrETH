@@ -11,7 +11,7 @@ import { Redis as RedisLocal } from '../../../relay/implementations/redis';
 
   const proofs_queue = new WorkQueue(new KeyPrefix('validator_proofs'));
 
-  const db = new Redis('redis://localhost:6379');
+  const db = new Redis('redis://127.0.0.1:6379');
 
   while ((await proofs_queue.queueLen(db)) > 0) {
     let item = await proofs_queue.lease(db, 30);
@@ -23,20 +23,22 @@ import { Redis as RedisLocal } from '../../../relay/implementations/redis';
 
   console.log('done');
 
-  const redis = new RedisLocal('localhost', 6379);
+  const redis = new RedisLocal('127.0.0.1', 6379);
+
+  console.log('Saved validators to redis');
 
   await redis.saveValidators([
     {
       index: Number(validator_registry_limit),
       validator: JSON.stringify({
-        pubkey: Array(384).fill(false),
-        withdrawalCredentials: Array(256).fill(false),
-        effectiveBalance: Array(256).fill(false),
-        slashed: Array(256).fill(false),
-        activationEligibilityEpoch: Array(256).fill(false),
-        activationEpoch: Array(256).fill(false),
-        exitEpoch: Array(256).fill(false),
-        withdrawableEpoch: Array(256).fill(false),
+        pubkey: Array(384).fill(0),
+        withdrawalCredentials: Array(256).fill(0),
+        effectiveBalance: Array(256).fill(0),
+        slashed: Array(256).fill(0),
+        activationEligibilityEpoch: Array(256).fill(0),
+        activationEpoch: Array(256).fill(0),
+        exitEpoch: Array(256).fill(0),
+        withdrawableEpoch: Array(256).fill(0),
       }),
     },
   ]);
@@ -55,7 +57,7 @@ import { Redis as RedisLocal } from '../../../relay/implementations/redis';
     console.log('Added first task to queue');
   }
 
-  for (let i = 0; i < 41; i++) {
+  for (let i = 0; i < 40; i++) {
     const buffer = new ArrayBuffer(24);
     const dataView = new DataView(buffer);
 

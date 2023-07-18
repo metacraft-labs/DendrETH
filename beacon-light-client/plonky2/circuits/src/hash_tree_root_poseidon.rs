@@ -62,7 +62,7 @@ mod tests {
         field::{goldilocks_field::GoldilocksField, types::Field},
         hash::{
             hashing::hash_n_to_hash_no_pad,
-            poseidon::{PoseidonHash, PoseidonPermutation},
+            poseidon::{PoseidonHash, PoseidonPermutation}, merkle_tree::MerkleTree,
         },
         iop::witness::{PartialWitness, WitnessWrite},
         plonk::{
@@ -94,6 +94,7 @@ mod tests {
 
         let data = builder.build::<C>();
         let proof = data.prove(pw).unwrap();
+
 
         let result = hash_n_to_hash_no_pad::<F, PoseidonPermutation>(&vec![
             F::from_canonical_u32(1),

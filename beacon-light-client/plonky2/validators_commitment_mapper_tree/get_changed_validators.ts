@@ -36,7 +36,7 @@ import { BeaconApi } from '../../../relay/implementations/beacon-api';
   while (true) {
     const timeBefore = Date.now();
 
-    const validators = (await beaconApi.getValidators()).slice(0, 100);
+    const validators = (await beaconApi.getValidators()).slice(0, 10);
 
     if (prevValidators.length === 0) {
       console.log('prev validators are empty. Saving to redis');
