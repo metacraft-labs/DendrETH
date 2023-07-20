@@ -1,8 +1,9 @@
 import { hexToBytes } from '../../libs/typescript/ts-utils/bls';
 import { bitsToBytes } from '../../libs/typescript/ts-utils/hex-utils';
 import { IRedis } from '../abstraction/redis-interface';
-import { ProofResultType, Validator } from '../types/types';
+import { ProofResultType, Validator, ValidatorProof } from '../types/types';
 import { createClient, RedisClientType } from 'redis';
+import validator_commitment_constants from '../../beacon-light-client/plonky2/constants/validator_commitment_constants.json';
 
 export class Redis implements IRedis {
   private redisClient: RedisClientType;
@@ -25,7 +26,9 @@ export class Redis implements IRedis {
   async getValidatorsBatched(ssz, batchSize = 1000) {
     await this.waitForConnection();
 
-    const keys = await this.redisClient.keys('validator:*');
+    const keys = await this.redisClient.keys(
+      `${validator_commitment_constants.validatorKey}:*`,
+    );
 
     if (keys.length === 0) {
       return [];
@@ -98,7 +101,7 @@ export class Redis implements IRedis {
   ) {
     await this.waitForConnection();
     const result: [string, string][] = validatorsWithIndices.map(vi => [
-      `validator:${vi.index}`,
+      `${validator_commitment_constants.validatorKey}:${vi.index}`,
       vi.validator,
     ]);
 
@@ -108,15 +111,19 @@ export class Redis implements IRedis {
   async saveValidatorProof(
     depth: bigint,
     index: bigint,
-    proof: { needsChange: boolean; proof: number[] } = {
+    proof: ValidatorProof = {
       needsChange: true,
       proof: [],
+      poseidonHash: [],
+      sha256Hash: [],
     },
   ): Promise<void> {
     await this.waitForConnection();
 
     await this.redisClient.set(
-      `proof:${depth.toString()}:${index.toString()}`,
+      `${
+        validator_commitment_constants.validatorProofKey
+      }:${depth.toString()}:${index.toString()}`,
       JSON.stringify(proof),
     );
   }

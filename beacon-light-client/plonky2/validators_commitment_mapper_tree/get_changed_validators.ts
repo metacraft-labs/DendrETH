@@ -14,6 +14,8 @@ const {
 } = require('@mevitae/redis-work-queue/dist/WorkQueue');
 import { BeaconApi } from '../../../relay/implementations/beacon-api';
 
+import validator_commitment_constants from '../constants/validator_commitment_constants.json';
+
 (async () => {
   const { ssz } = await import('@lodestar/types');
 
@@ -21,7 +23,9 @@ import { BeaconApi } from '../../../relay/implementations/beacon-api';
 
   const db = new Redis('redis://127.0.0.1:6379');
 
-  const work_queue = new WorkQueue(new KeyPrefix('validator_proofs'));
+  const work_queue = new WorkQueue(
+    new KeyPrefix(`${validator_commitment_constants.validatorProofsQueue}`),
+  );
 
   const beaconApi = new BeaconApi([
     'http://unstable.prater.beacon-api.nimbus.team',
@@ -36,7 +40,7 @@ import { BeaconApi } from '../../../relay/implementations/beacon-api';
   while (true) {
     const timeBefore = Date.now();
 
-    const validators = (await beaconApi.getValidators()).slice(0, 10);
+    const validators = (await beaconApi.getValidators()).slice(0, 16384);
 
     if (prevValidators.length === 0) {
       console.log('prev validators are empty. Saving to redis');

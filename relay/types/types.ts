@@ -162,3 +162,10 @@ export interface Validator {
   exitEpoch: number;
   withdrawableEpoch: number;
 }
+
+export interface ValidatorProof {
+  needsChange: boolean;
+  proof: number[];
+  poseidonHash: number[];
+  sha256Hash: number[];
+}

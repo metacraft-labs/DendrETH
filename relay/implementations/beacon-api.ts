@@ -394,7 +394,7 @@ export class BeaconApi implements IBeaconApi {
     );
   }
 
-  private async getBeaconState(slot: number) {
+  public async getBeaconState(slot: number) {
     const { ssz } = await import('@lodestar/types');
 
     const beaconStateSZZ = await this.fetchWithFallback(

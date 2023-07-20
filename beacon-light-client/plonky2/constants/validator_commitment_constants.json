@@ -1,0 +1,5 @@
+{
+  "validatorKey": "validator",
+  "validatorProofKey": "validator_proof",
+  "validatorProofsQueue": "validator_proof_queue"
+}
