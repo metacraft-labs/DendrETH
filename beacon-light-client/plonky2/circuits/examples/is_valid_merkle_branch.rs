@@ -10,12 +10,13 @@ use serde::Deserialize;
 use std::fs::File;
 use std::io::BufReader;
 use std::println;
+use std::time::Instant;
 
 #[derive(Debug, Deserialize)]
 struct RawMerkleProof {
-    root: Vec<String>,
-    leaf: Vec<String>,
-    branch: Vec<Vec<String>>,
+    root: Vec<u64>,
+    leaf: Vec<u64>,
+    branch: Vec<Vec<u64>>,
     index: u64,
 }
 
@@ -30,23 +31,25 @@ struct MerkleProof {
 fn main() -> Result<()> {
     let input_file = File::open("is_valid_merkle_branch_input.json")?;
     let reader = BufReader::new(input_file);
+    println!("Read");
     let raw_merkle_proof: RawMerkleProof = serde_json::from_reader(reader)?;
+    println!("Parsed");
 
     let merkle_proof = MerkleProof {
         root: raw_merkle_proof
             .root
             .into_iter()
-            .map(|s| s == "1")
+            .map(|s| s == 1)
             .collect(),
         leaf: raw_merkle_proof
             .leaf
             .into_iter()
-            .map(|s| s == "1")
+            .map(|s| s == 1)
             .collect(),
         branch: raw_merkle_proof
             .branch
             .into_iter()
-            .map(|v| v.into_iter().map(|s| s == "1").collect())
+            .map(|v| v.into_iter().map(|s| s == 1).collect())
             .collect(),
         index: raw_merkle_proof.index,
     };
@@ -84,8 +87,13 @@ fn create_proof(merkle_proof: MerkleProof) -> std::result::Result<(), anyhow::Er
             pw.set_bool_target(hasher.branch[i][j], merkle_proof.branch[i][j]);
         }
     }
+    let start = Instant::now();
 
     let proof = data.prove(pw).unwrap();
+
+    let duration = start.elapsed();
+
+    println!("Duration {:?}", duration);
 
     println!("Proof size: {}", proof.to_bytes().len());
 
