@@ -1259,21 +1259,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 
 [[package]]
-name = "second_level_proof"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "circuits",
- "futures-lite",
- "plonky2",
- "plonky2_sha256",
- "redis",
- "redis-work-queue",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "serde"
 version = "1.0.171"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1557,6 +1542,21 @@ name = "version_check"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
+
+[[package]]
+name = "view_proof"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "circuits",
+ "futures-lite",
+ "plonky2",
+ "plonky2_sha256",
+ "redis",
+ "redis-work-queue",
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "waker-fn"

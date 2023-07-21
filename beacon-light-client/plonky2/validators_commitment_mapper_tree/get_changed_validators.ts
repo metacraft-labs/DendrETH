@@ -14,6 +14,8 @@ const {
 } = require('@mevitae/redis-work-queue/dist/WorkQueue');
 import { BeaconApi } from '../../../relay/implementations/beacon-api';
 
+import validator_commitment_constants from '../constants/validator_commitment_constants.json';
+
 (async () => {
   const { ssz } = await import('@lodestar/types');
 
@@ -21,11 +23,65 @@ import { BeaconApi } from '../../../relay/implementations/beacon-api';
 
   const db = new Redis('redis://127.0.0.1:6379');
 
-  const work_queue = new WorkQueue(new KeyPrefix('validator_proofs'));
+  const work_queue = new WorkQueue(
+    new KeyPrefix(`${validator_commitment_constants.validatorProofsQueue}`),
+  );
 
   const beaconApi = new BeaconApi([
     'http://unstable.prater.beacon-api.nimbus.team',
   ]);
+
+  // handle zeros validators
+  if (await redis.isZeroValidatorEmpty()) {
+    console.log('Adding tasks about zeros');
+    await redis.saveValidators([
+      {
+        index: Number(validator_commitment_constants.validatorRegistryLimit),
+        validator: JSON.stringify({
+          pubkey: Array(384).fill(0),
+          withdrawalCredentials: Array(256).fill(0),
+          effectiveBalance: Array(256).fill(0),
+          slashed: Array(256).fill(0),
+          activationEligibilityEpoch: Array(256).fill(0),
+          activationEpoch: Array(256).fill(0),
+          exitEpoch: Array(256).fill(0),
+          withdrawableEpoch: Array(256).fill(0),
+        }),
+      },
+    ]);
+
+    const buffer = new ArrayBuffer(8);
+    const dataView = new DataView(buffer);
+
+    dataView.setBigUint64(
+      0,
+      BigInt(validator_commitment_constants.validatorRegistryLimit),
+      false,
+    );
+
+    await work_queue.addItem(db, new Item(buffer));
+
+    for (let i = 0; i < 40; i++) {
+      const buffer = new ArrayBuffer(24);
+      const dataView = new DataView(buffer);
+
+      dataView.setBigUint64(0, BigInt(i), false);
+      dataView.setBigUint64(
+        8,
+        BigInt(validator_commitment_constants.validatorRegistryLimit),
+        false,
+      );
+      dataView.setBigUint64(
+        16,
+        BigInt(validator_commitment_constants.validatorRegistryLimit),
+        false,
+      );
+
+      await work_queue.addItem(db, new Item(buffer));
+
+      console.log('Added zeros tasks');
+    }
+  }
 
   console.log('Loading validators');
 
@@ -36,7 +92,7 @@ import { BeaconApi } from '../../../relay/implementations/beacon-api';
   while (true) {
     const timeBefore = Date.now();
 
-    const validators = (await beaconApi.getValidators()).slice(0, 10);
+    const validators = (await beaconApi.getValidators()).slice(0, 100);
 
     if (prevValidators.length === 0) {
       console.log('prev validators are empty. Saving to redis');

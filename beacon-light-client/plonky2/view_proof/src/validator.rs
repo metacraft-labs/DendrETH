@@ -53,8 +53,6 @@ mod bool_vec_as_int_vec {
     }
 }
 
-pub const VALIDATOR_REGISTRY_LIMIT: usize = 1099511627776;
-
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Validator {
