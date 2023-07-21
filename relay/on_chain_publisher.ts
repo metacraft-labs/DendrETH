@@ -157,7 +157,10 @@ export async function postUpdateOnChain(
     const finalizedHeaderSlot = await beaconApi.getBlockSlot(
       '0x' +
         BigInt(
-          '0b' + proofResult.proofInput.finalizedHeaderRoot.join(''),
+          '0b' +
+            proofResult.proofInput.finalizedHeaderRoot
+              .join('')
+              .padStart(64, '0'),
         ).toString(16),
     );
 
