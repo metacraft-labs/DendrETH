@@ -5,11 +5,14 @@ const {
 } = require('@mevitae/redis-work-queue/dist/WorkQueue');
 import Redis from 'ioredis';
 import { Redis as RedisLocal } from '../../../relay/implementations/redis';
+import validator_commitment_constants from '../constants/validator_commitment_constants.json';
 
 (async () => {
   const validator_registry_limit = 1099511627776n;
 
-  const proofs_queue = new WorkQueue(new KeyPrefix('validator_proofs'));
+  const proofs_queue = new WorkQueue(
+    new KeyPrefix(`${validator_commitment_constants.validatorProofsQueue}`),
+  );
 
   const db = new Redis('redis://127.0.0.1:6379');
 

@@ -12,25 +12,68 @@ import { Tree } from '@chainsafe/persistent-merkle-tree';
     'http://unstable.prater.beacon-api.nimbus.team',
   ]);
 
-  const validators = (await beaconApi.getValidators()).slice(0, 10);
+  const { beaconState } = await beaconApi.getBeaconState(6104200);
 
-  console.log(bytesToHex(ssz.phase0.Validators.hashTreeRoot([])));
+  const hasher = new ListCompositeType(ssz.phase0.Validator, 4);
 
-  console.log(bytesToHex(ssz.phase0.Validators.hashTreeRoot(validators)));
-
-  const validatorsView = ssz.phase0.Validators.toViewDU(validators);
-  const validatorsTree = new Tree(validatorsView.node);
-
-  const pathInfo = validatorsTree.getSingleProof(
-    ssz.phase0.Validators.getPathInfo([0]).gindex,
+  const hasherResult = bytesToHex(
+    hasher.hashTreeRoot(beaconState.validators.slice(7172, 7176)),
   );
 
-  const lengthBuf = Buffer.alloc(32);
-  lengthBuf.writeUIntLE(10, 0, 6);
+  console.log(hasherResult);
 
-  console.log('10 as hex', bytesToHex(new Uint8Array(lengthBuf)));
+  // console.log('------------------------------------------------------');
 
-  console.log(pathInfo.map(bytesToHex));
+  // const result = bytesToHex(
+  //   ssz.phase0.Validators.hashTreeRoot(
+  //     beaconState.validators.slice(4096, 6144),
+  //   ),
+  // );
+
+  // console.log(result);
+
+  // console.log('-------------------------------------');
+
+  // const balancesView = ssz.capella.BeaconState.fields.balances.toViewDU(
+  //   beaconState.balances,
+  // );
+
+  // const balancesTree = new Tree(balancesView.node);
+
+  // console.log(
+  //   balancesTree
+  //     .getSingleProof(
+  //       ssz.capella.BeaconState.fields.balances.getPathInfo([0]).gindex,
+  //     )
+  //     .map(bytesToHex),
+  // );
+
+  // console.log(
+  //   'merkle length',
+  //   balancesTree.getSingleProof(
+  //     ssz.capella.BeaconState.fields.balances.getPathInfo([0]).gindex,
+  //   ).length,
+  // );
+
+  // console.log('balances length', beaconState.balances.length);
+
+  // console.log(bytesToHex(ssz.phase0.Validators.hashTreeRoot([])));
+
+  // console.log(bytesToHex(ssz.phase0.Validators.hashTreeRoot(validators)));
+
+  // const validatorsView = ssz.phase0.Validators.toViewDU(validators);
+  // const validatorsTree = new Tree(validatorsView.node);
+
+  // const pathInfo = validatorsTree.getSingleProof(
+  //   ssz.phase0.Validators.getPathInfo([0]).gindex,
+  // );
+
+  // const lengthBuf = Buffer.alloc(32);
+  // lengthBuf.writeUIntLE(10, 0, 6);
+
+  // console.log('10 as hex', bytesToHex(new Uint8Array(lengthBuf)));
+
+  // console.log(pathInfo.map(bytesToHex));
 
   // const hasher = new ListCompositeType(ssz.phase0.Validator, 549755813888);
 
