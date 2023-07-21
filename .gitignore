@@ -167,3 +167,6 @@ target
 .ccls-cache
 
 redis-server/
+
+*.plonky2_targets
+*.plonky2_circuit

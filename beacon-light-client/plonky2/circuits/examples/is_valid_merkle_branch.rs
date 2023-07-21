@@ -1,16 +1,23 @@
 use anyhow::Result;
+use circuits::generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer};
 use circuits::is_valid_merkle_branch::is_valid_merkle_branch;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use plonky2::iop::witness::{PartialWitness, WitnessWrite};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::plonk::circuit_data::CircuitConfig;
+use plonky2::plonk::circuit_data::{CircuitConfig, CircuitData};
 use plonky2::plonk::config::PoseidonGoldilocksConfig;
 use serde::Deserialize;
 use std::fs::File;
 use std::io::BufReader;
+use std::marker::PhantomData;
 use std::println;
 use std::time::Instant;
+
+use jemallocator::Jemalloc;
+
+#[global_allocator]
+static GLOBAL: Jemalloc = Jemalloc;
 
 #[derive(Debug, Deserialize)]
 struct RawMerkleProof {
@@ -36,16 +43,8 @@ fn main() -> Result<()> {
     println!("Parsed");
 
     let merkle_proof = MerkleProof {
-        root: raw_merkle_proof
-            .root
-            .into_iter()
-            .map(|s| s == 1)
-            .collect(),
-        leaf: raw_merkle_proof
-            .leaf
-            .into_iter()
-            .map(|s| s == 1)
-            .collect(),
+        root: raw_merkle_proof.root.into_iter().map(|s| s == 1).collect(),
+        leaf: raw_merkle_proof.leaf.into_iter().map(|s| s == 1).collect(),
         branch: raw_merkle_proof
             .branch
             .into_iter()
@@ -69,8 +68,11 @@ fn create_proof(merkle_proof: MerkleProof) -> std::result::Result<(), anyhow::Er
 
     let hasher = is_valid_merkle_branch(&mut builder, merkle_proof.branch.len());
     println!("Building circuit");
-
+    let start = Instant::now();
     let data = builder.build::<C>();
+    let duration = start.elapsed();
+
+    println!("Duration {:?}", duration);
 
     println!("Building proof");
 
@@ -87,6 +89,39 @@ fn create_proof(merkle_proof: MerkleProof) -> std::result::Result<(), anyhow::Er
             pw.set_bool_target(hasher.branch[i][j], merkle_proof.branch[i][j]);
         }
     }
+
+    let gate_serializer = DendrETHGateSerializer;
+    // let common_data_bytes = data
+    //     .common
+    //     .to_bytes(&gate_serializer)
+    //     .map_err(|_| anyhow::Error::msg("CommonCircuitData serialization failed."))?;
+
+    // println!(
+    //     "Common circuit data length: {} bytes",
+    //     common_data_bytes.len()
+    // );
+
+    let generator_serializer = DendrETHGeneratorSerializer {
+        _phantom: PhantomData::<PoseidonGoldilocksConfig>,
+    };
+
+    let bytes = data.to_bytes(&gate_serializer, &generator_serializer);
+
+    match bytes {
+        Ok(bytes) => {
+            println!("Circuit size: {:?}", bytes.len());
+            let start = Instant::now();
+            let circuit_data_deserialize =
+                CircuitData::<F, C, D>::from_bytes(&bytes, &gate_serializer, &generator_serializer);
+            let elapsed = start.elapsed();
+
+            println!("Deserialize duration {:?}", elapsed);
+        }
+        Err(e) => {
+            println!("Error: {:?}", e.to_string());
+        }
+    }
+
     let start = Instant::now();
 
     let proof = data.prove(pw).unwrap();

@@ -2,5 +2,8 @@
   "validatorKey": "validator",
   "validatorProofKey": "validator_proof",
   "validatorProofsQueue": "validator_proof_queue",
-  "validatorRegistryLimit": 1099511627776
+  "validatorRegistryLimit": 1099511627776,
+  "validatorBalanceInputKey": "validator_balance_input",
+  "balanceVerificationQueue": "balance_verification_queue",
+  "balanceVerificationProofKey": "balance_verification_proof"
 }

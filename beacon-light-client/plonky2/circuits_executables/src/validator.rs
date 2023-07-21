@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-mod bool_vec_as_int_vec {
+pub mod bool_vec_as_int_vec {
     use std::fmt;
 
     use serde::{
@@ -50,6 +50,76 @@ mod bool_vec_as_int_vec {
         }
 
         deserializer.deserialize_seq(BoolVecVisitor)
+    }
+
+    // New functions for Vec<Vec<bool>>
+    pub fn serialize_nested<S>(x: &Vec<Vec<bool>>, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq = s.serialize_seq(Some(x.len()))?;
+        for vec in x {
+            let bool_as_int_vec: Vec<i32> = vec.iter().map(|&x| x as i32).collect();
+            seq.serialize_element(&bool_as_int_vec)?;
+        }
+        seq.end()
+    }
+
+    pub fn deserialize_nested<'de, D>(deserializer: D) -> Result<Vec<Vec<bool>>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct BoolVecVecVisitor;
+
+        impl<'de> Visitor<'de> for BoolVecVecVisitor {
+            type Value = Vec<Vec<bool>>;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a sequence of sequences of 0s or 1s")
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+            where
+                A: SeqAccess<'de>,
+            {
+                let mut bool_vec_vec = Vec::new();
+                while let Some(inner_vec) = seq.next_element::<Vec<i32>>()? {
+                    let mut bool_vec = Vec::new();
+                    for value in inner_vec {
+                        match value {
+                            0 => bool_vec.push(false),
+                            1 => bool_vec.push(true),
+                            _ => return Err(de::Error::custom("expected 0 or 1")),
+                        }
+                    }
+                    bool_vec_vec.push(bool_vec);
+                }
+                Ok(bool_vec_vec)
+            }
+        }
+
+        deserializer.deserialize_seq(BoolVecVecVisitor)
+    }
+}
+
+pub mod bool_vec_as_int_vec_nested {
+    use serde::{Deserializer, Serializer};
+
+    use super::bool_vec_as_int_vec; // Import the parent module
+
+    // Nested versions of the functions
+    pub fn serialize<S>(x: &Vec<Vec<bool>>, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        bool_vec_as_int_vec::serialize_nested(x, s)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<Vec<bool>>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        bool_vec_as_int_vec::deserialize_nested(deserializer)
     }
 }
 

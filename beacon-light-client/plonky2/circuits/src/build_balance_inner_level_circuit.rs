@@ -1,7 +1,7 @@
 use plonky2::{
     field::{goldilocks_field::GoldilocksField, types::Field},
     hash::poseidon::PoseidonHash,
-    iop::target::{BoolTarget, Target},
+    iop::target::{Target},
     plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::{CircuitConfig, CircuitData, VerifierCircuitTarget},
@@ -10,16 +10,9 @@ use plonky2::{
     },
 };
 
-use crate::sha256::make_circuits;
+use crate::{sha256::make_circuits, build_inner_level_circuit::InnerCircuitTargets};
 
-pub struct InnerCircuitTargets {
-    pub proof1: ProofWithPublicInputsTarget<2>,
-    pub proof2: ProofWithPublicInputsTarget<2>,
-    pub verifier_circuit_target: VerifierCircuitTarget,
-    pub is_zero: BoolTarget,
-}
-
-pub fn build_inner_circuit(
+pub fn build_balance_inner_circuit(
     inner_circuit_data: &CircuitData<
         plonky2::field::goldilocks_field::GoldilocksField,
         PoseidonGoldilocksConfig,
@@ -61,22 +54,22 @@ pub fn build_inner_circuit(
 
     let is_one = builder.sub(one, is_zero.target);
 
-    let poseidon_hash: &[Target] = &pt1.public_inputs[0..4]
+    let poseidon_hash: &[Target] = &pt1.public_inputs[262..266]
         .iter()
         .map(|x| builder.mul(*x, is_one))
         .collect::<Vec<Target>>();
 
-    let sha256_hash = &pt1.public_inputs[4..260]
+    let sha256_hash = &pt1.public_inputs[1..257]
         .iter()
         .map(|x| builder.mul(*x, is_one))
         .collect::<Vec<Target>>();
 
-    let poseidon_hash2 = &pt2.public_inputs[0..4]
+    let poseidon_hash2 = &pt2.public_inputs[262..266]
         .iter()
         .map(|x| builder.mul(*x, is_one))
         .collect::<Vec<Target>>();
 
-    let sha256_hash2 = &pt2.public_inputs[4..260]
+    let sha256_hash2 = &pt2.public_inputs[1..257]
         .iter()
         .map(|x| builder.mul(*x, is_one))
         .collect::<Vec<Target>>();
@@ -96,7 +89,24 @@ pub fn build_inner_circuit(
             .collect(),
     );
 
-    builder.register_public_inputs(&hash.elements);
+    let sum1 = pt1.public_inputs[0];
+
+    let sum2 = pt2.public_inputs[0];
+
+    let sum = builder.add(sum1, sum2);
+
+    let zero = builder.zero();
+
+    let actual_sum = builder._if(is_zero, zero, sum);
+
+    let withdrawal_credentials1 = &pt1.public_inputs[257..262];
+    let withdrawal_credentials2 = &pt2.public_inputs[257..262];
+
+    for i in 0..5 {
+        builder.connect(withdrawal_credentials1[i], withdrawal_credentials2[i]);
+    }
+
+    builder.register_public_input(actual_sum);
 
     builder.register_public_inputs(
         &hasher
@@ -105,6 +115,10 @@ pub fn build_inner_circuit(
             .map(|x| x.target)
             .collect::<Vec<Target>>(),
     );
+
+    builder.register_public_inputs(withdrawal_credentials1);
+
+    builder.register_public_inputs(&hash.elements);
 
     let data = builder.build::<C>();
 

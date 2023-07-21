@@ -1,28 +1,29 @@
-use std::{print, println, thread, time::Duration};
 use anyhow::Result;
-use plonky2::{
-    field::goldilocks_field::GoldilocksField,
-    plonk::{
-        circuit_data::CircuitData, config::PoseidonGoldilocksConfig,
-    },
-};
-use redis_work_queue::{KeyPrefix, WorkQueue};
 use circuits::{
     build_first_level_circuit::build_first_level_circuit,
     build_inner_level_circuit::{build_inner_circuit, InnerCircuitTargets},
 };
+use circuits_executables::{
+    crud::{fetch_proofs, fetch_validator, save_validator_proof, ValidatorProof},
+    provers::{self, handle_inner_level_proof},
+    validator::VALIDATOR_REGISTRY_LIMIT,
+    validator_commitment_constants,
+};
 use futures_lite::future;
+use plonky2::{
+    field::goldilocks_field::GoldilocksField,
+    plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig},
+};
+use redis_work_queue::{KeyPrefix, WorkQueue};
+use std::{print, println, thread, time::Duration};
 
-mod validator;
-mod validator_commitment_constants;
-mod provers;
-mod crud;
-
-use validator_commitment_constants::get_validator_commitment_constants;
 use provers::handle_first_level_proof;
+use validator_commitment_constants::get_validator_commitment_constants;
 
-use crate::{provers::handle_inner_level_proof, crud::{fetch_validator, save_validator_proof, fetch_proofs}, validator::VALIDATOR_REGISTRY_LIMIT};
+use jemallocator::Jemalloc;
 
+#[global_allocator]
+static GLOBAL: Jemalloc = Jemalloc;
 
 fn main() -> Result<()> {
     future::block_on(async_main())
@@ -99,7 +100,7 @@ async fn async_main() -> Result<()> {
 
             println!("Got indexes: {:?}", proof_indexes);
 
-            match fetch_proofs(&mut con, &proof_indexes).await {
+            match fetch_proofs::<ValidatorProof>(&mut con, &proof_indexes).await {
                 Err(err) => {
                     print!("Error: {}", err);
                     continue;

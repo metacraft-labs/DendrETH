@@ -2,9 +2,8 @@ use plonky2::{
     field::extension::Extendable, hash::hash_types::RichField, iop::target::BoolTarget,
     plonk::circuit_builder::CircuitBuilder,
 };
-use plonky2_sha256::circuit::{make_circuits, Sha256Targets};
 
-use crate::utils::create_bool_target_array;
+use crate::{utils::create_bool_target_array, sha256::{Sha256Targets, make_circuits}};
 
 pub struct HashTreeRootTargets {
     pub leaves: Vec<[BoolTarget; 256]>,

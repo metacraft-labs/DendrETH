@@ -1,7 +1,12 @@
 import { hexToBytes } from '../../libs/typescript/ts-utils/bls';
 import { bitsToBytes } from '../../libs/typescript/ts-utils/hex-utils';
 import { IRedis } from '../abstraction/redis-interface';
-import { ProofResultType, Validator, ValidatorProof } from '../types/types';
+import {
+  BalanceProof,
+  ProofResultType,
+  Validator,
+  ValidatorProof,
+} from '../types/types';
 import { createClient, RedisClientType } from 'redis';
 import validator_commitment_constants from '../../beacon-light-client/plonky2/constants/validator_commitment_constants.json';
 
@@ -100,7 +105,7 @@ export class Redis implements IRedis {
     await this.waitForConnection();
 
     const result = await this.redisClient.get(
-      `${validator_commitment_constants.validatorKey}:{validator_commitment_constants.validatorRegistryLimit}`,
+      `${validator_commitment_constants.validatorKey}:${validator_commitment_constants.validatorRegistryLimit}`,
     );
 
     return result == null;
@@ -113,6 +118,19 @@ export class Redis implements IRedis {
     const result: [string, string][] = validatorsWithIndices.map(vi => [
       `${validator_commitment_constants.validatorKey}:${vi.index}`,
       vi.validator,
+    ]);
+
+    await this.redisClient.mSet(result);
+  }
+
+  async saveValidatorBalancesInput(
+    inputsWithIndices: { index: number; input: string }[],
+  ) {
+    await this.waitForConnection();
+
+    const result: [string, string][] = inputsWithIndices.map(ii => [
+      `${validator_commitment_constants.validatorBalanceInputKey}:${ii.index}`,
+      ii.input,
     ]);
 
     await this.redisClient.mSet(result);
@@ -133,6 +151,28 @@ export class Redis implements IRedis {
     await this.redisClient.set(
       `${
         validator_commitment_constants.validatorProofKey
+      }:${depth.toString()}:${index.toString()}`,
+      JSON.stringify(proof),
+    );
+  }
+
+  async saveBalanceProof(
+    depth: bigint,
+    index: bigint,
+    proof: BalanceProof = {
+      needsChange: true,
+      rangeTotalValue: 0,
+      validatorsCommitment: [],
+      proof: [],
+      balancesHash: [],
+      withdrawalCredentials: [],
+    },
+  ): Promise<void> {
+    await this.waitForConnection();
+
+    await this.redisClient.set(
+      `${
+        validator_commitment_constants.balanceVerificationProofKey
       }:${depth.toString()}:${index.toString()}`,
       JSON.stringify(proof),
     );
