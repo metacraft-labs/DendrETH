@@ -5,8 +5,7 @@ use plonky2::{
     plonk::circuit_builder::CircuitBuilder,
 };
 
-use plonky2_sha256::circuit::make_circuits;
-
+use crate::sha256::make_circuits;
 use crate::utils::create_bool_target_array;
 
 pub struct IsValidMerkleBranchTargets {

@@ -169,3 +169,12 @@ export interface ValidatorProof {
   poseidonHash: number[];
   sha256Hash: number[];
 }
+
+export interface BalanceProof {
+  needsChange: boolean;
+  rangeTotalValue: number;
+  validatorsCommitment: number[];
+  proof: number[];
+  balancesHash: number[];
+  withdrawalCredentials: number[];
+}

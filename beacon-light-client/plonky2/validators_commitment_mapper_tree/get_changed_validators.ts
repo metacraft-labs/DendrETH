@@ -16,6 +16,8 @@ import { BeaconApi } from '../../../relay/implementations/beacon-api';
 
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
 
+const TAKE = 64;
+
 (async () => {
   const { ssz } = await import('@lodestar/types');
 
@@ -28,7 +30,7 @@ import validator_commitment_constants from '../constants/validator_commitment_co
   );
 
   const beaconApi = new BeaconApi([
-    'http://unstable.prater.beacon-api.nimbus.team',
+    'http://unstable.mainnet.beacon-api.nimbus.team',
   ]);
 
   // handle zeros validators
@@ -92,7 +94,7 @@ import validator_commitment_constants from '../constants/validator_commitment_co
   while (true) {
     const timeBefore = Date.now();
 
-    const validators = (await beaconApi.getValidators()).slice(0, 100);
+    const validators = (await beaconApi.getValidators()).slice(0, TAKE);
 
     if (prevValidators.length === 0) {
       console.log('prev validators are empty. Saving to redis');
@@ -190,7 +192,7 @@ import validator_commitment_constants from '../constants/validator_commitment_co
         dataView.setBigUint64(8, first, false);
         dataView.setBigUint64(16, second, false);
 
-        await redis.saveValidatorProof(first, second);
+        await redis.saveValidatorProof(j + 1n, first);
 
         await work_queue.addItem(db, new Item(buffer));
 

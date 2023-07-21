@@ -4,7 +4,6 @@ use plonky2::{
     iop::target::BoolTarget,
     plonk::circuit_builder::CircuitBuilder,
 };
-use plonky2_sha256::split_base::CircuitBuilderSplit;
 
 use crate::{
     validator_hash_tree_root::{hash_tree_root_validator_sha256, Validator},
@@ -33,7 +32,7 @@ pub fn validator_commitment<F: RichField + Extendable<D>, const D: usize>(
             builder.le_sum(validator.pubkey[189..252].iter()),
             builder.le_sum(validator.pubkey[252..315].iter()),
             builder.le_sum(validator.pubkey[315..378].iter()),
-            builder.le_sum(validator.pubkey[378..381].iter()),
+            builder.le_sum(validator.pubkey[378..384].iter()),
         ],
         withdrawal_credentials: [
             builder.le_sum(validator.withdrawal_credentials[0..63].iter()),
@@ -328,6 +327,8 @@ mod test {
         }
 
         builder.register_public_inputs(&targets.sha256_hash_tree_root.map(|x| x.target));
+
+        builder.register_public_inputs(&targets.poseidon_hash_tree_root.elements);
 
         let data = builder.build::<C>();
         let proof = data.prove(pw).unwrap();

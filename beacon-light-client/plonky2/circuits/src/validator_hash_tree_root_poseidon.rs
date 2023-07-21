@@ -10,6 +10,7 @@ use plonky2::{
 
 use crate::hash_tree_root_poseidon::hash_tree_root_poseidon;
 
+#[derive(Clone, Copy, Debug)]
 pub struct ValidatorPoseidon {
     pub pubkey: [Target; 7],
     pub withdrawal_credentials: [Target; 5],
@@ -21,6 +22,40 @@ pub struct ValidatorPoseidon {
     pub withdrawable_epoch: [Target; 2],
 }
 
+impl ValidatorPoseidon {
+    pub fn new<F: RichField + Extendable<D>, const D: usize>(
+        builder: &mut CircuitBuilder<F, D>,
+    ) -> ValidatorPoseidon {
+        ValidatorPoseidon {
+            pubkey: [
+                builder.add_virtual_target(),
+                builder.add_virtual_target(),
+                builder.add_virtual_target(),
+                builder.add_virtual_target(),
+                builder.add_virtual_target(),
+                builder.add_virtual_target(),
+                builder.add_virtual_target(),
+            ],
+            withdrawal_credentials: [
+                builder.add_virtual_target(),
+                builder.add_virtual_target(),
+                builder.add_virtual_target(),
+                builder.add_virtual_target(),
+                builder.add_virtual_target(),
+            ],
+            effective_balance: [builder.add_virtual_target(), builder.add_virtual_target()],
+            slashed: [builder.add_virtual_target()],
+            activation_eligibility_epoch: [
+                builder.add_virtual_target(),
+                builder.add_virtual_target(),
+            ],
+            activation_epoch: [builder.add_virtual_target(), builder.add_virtual_target()],
+            exit_epoch: [builder.add_virtual_target(), builder.add_virtual_target()],
+            withdrawable_epoch: [builder.add_virtual_target(), builder.add_virtual_target()],
+        }
+    }
+}
+
 pub struct ValidatorPoseidonHashTreeRootTargets {
     pub validator: ValidatorPoseidon,
     pub hash_tree_root: HashOutTarget,
@@ -29,30 +64,7 @@ pub struct ValidatorPoseidonHashTreeRootTargets {
 pub fn hash_tree_root_validator_poseidon<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
 ) -> ValidatorPoseidonHashTreeRootTargets {
-    let validator = ValidatorPoseidon {
-        pubkey: [
-            builder.add_virtual_target(),
-            builder.add_virtual_target(),
-            builder.add_virtual_target(),
-            builder.add_virtual_target(),
-            builder.add_virtual_target(),
-            builder.add_virtual_target(),
-            builder.add_virtual_target(),
-        ],
-        withdrawal_credentials: [
-            builder.add_virtual_target(),
-            builder.add_virtual_target(),
-            builder.add_virtual_target(),
-            builder.add_virtual_target(),
-            builder.add_virtual_target(),
-        ],
-        effective_balance: [builder.add_virtual_target(), builder.add_virtual_target()],
-        slashed: [builder.add_virtual_target()],
-        activation_eligibility_epoch: [builder.add_virtual_target(), builder.add_virtual_target()],
-        activation_epoch: [builder.add_virtual_target(), builder.add_virtual_target()],
-        exit_epoch: [builder.add_virtual_target(), builder.add_virtual_target()],
-        withdrawable_epoch: [builder.add_virtual_target(), builder.add_virtual_target()],
-    };
+    let validator = ValidatorPoseidon::new(builder);
 
     let leaves = vec![
         builder.hash_n_to_hash_no_pad::<PoseidonHash>(validator.pubkey.to_vec()),
