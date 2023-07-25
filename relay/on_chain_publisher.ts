@@ -155,13 +155,7 @@ export async function postUpdateOnChain(
 
   if (hashiAdapterContract) {
     const finalizedHeaderSlot = await beaconApi.getBlockSlot(
-      '0x' +
-        BigInt(
-          '0b' +
-            proofResult.proofInput.finalizedHeaderRoot
-              .join('')
-              .padStart(64, '0'),
-        ).toString(16),
+      update.finalizedHeaderRoot,
     );
 
     const hashiInfo = await beaconApi.getHashiAdapterInfo(finalizedHeaderSlot);
