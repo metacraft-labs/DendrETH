@@ -11,7 +11,7 @@ dendreth-relay-node:
 	docker build -t metacraft/dendreth-relay-node -f Dockerfile.relay .
 
 publish-dendreth-relay-node: dendreth-relay-node
-	docker push metacraft/dendeth-relay-node
+	docker push metacraft/dendreth-relay-node
 
 test-validator-accumulator: yarn-check
 	cd beacon-light-client/solidity && \
