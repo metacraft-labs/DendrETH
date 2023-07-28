@@ -1,12 +1,13 @@
 {
   pkgs,
   rust-stable,
+  rust-nightly,
 }:
 with pkgs; let
   shell-pkgs = import ./libs/nix/common-shell-pkgs.nix {inherit pkgs rust-stable;};
 in
   mkShell {
-    packages = shell-pkgs;
+    packages = [rust-nightly] ++ shell-pkgs;
 
     nativeBuildInputs = [pkg-config openssl];
 
