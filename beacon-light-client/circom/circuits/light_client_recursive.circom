@@ -136,7 +136,7 @@ template LightClientRecursive(N, K) {
     computeSigningRoot.domain[i] <== computeDomain.domain[i];
   }
 
-  component hashToField = HashToField();
+  component hashToField = HashToField(K);
 
   for(var i = 0; i < 256; i++) {
     hashToField.in[i] <== computeSigningRoot.signing_root[i];
@@ -183,7 +183,7 @@ template LightClientRecursive(N, K) {
 
   isValidMerkleBranch.out === 1;
 
-  component aggregateKeys = AggregateKeysBitmask(N);
+  component aggregateKeys = AggregateKeysBitmask(N,K);
 
   for(var i = 0; i < N; i++) {
     for(var j = 0; j < 2; j++) {
