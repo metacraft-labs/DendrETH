@@ -66,11 +66,6 @@ template VerifierPedersen(pubInpCount, k) {
     for (var i = 0; i < 2; i++) {
         commitment.in[cummulative_index + i] <== nextHeaderHashNum[i];
     }
-    cummulative_index += 2;
-
-    for (var i = 0; i < 2; i++) {
-        commitment.in[cummulative_index + i] <== prevHeaderHashNum[i];
-    }
 
     out[0] <== commitment.out[0];
     out[1] <== commitment.out[1];
