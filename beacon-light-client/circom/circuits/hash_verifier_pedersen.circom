@@ -5,7 +5,6 @@ include "../../../node_modules/circomlib/circuits/pedersen.circom";
 template VerifierPedersen(pubInpCount, k) {
     signal input originator[2];
     signal input nextHeaderHashNum[2];
-    signal input prevHeaderHashNum[2];
 
     // Verification Key
     signal input negalfa1xbeta2[6][2][k]; // e(-alfa1, beta2)
@@ -15,7 +14,7 @@ template VerifierPedersen(pubInpCount, k) {
 
     signal output out[2];
 
-    component commitment = Pedersen(186); // 186
+    component commitment = Pedersen(184); 
 
     var negalfa1xbeta2_index = 6 * 2 * k;
     var gamma2_index =  2 * 2 * k;

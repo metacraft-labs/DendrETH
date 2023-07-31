@@ -12,6 +12,7 @@ include "hash_to_field.circom";
 include "is_first.circom";
 include "../../../vendor/circom-pairing/circuits/bls_signature.circom";
 include "../../../vendor/circom-pairing/circuits/bn254/groth16.circom";
+include "hash_verifier_pedersen.circom";
 
 template LightClientRecursive(N, K) {
   var pubInpCount = 4;
@@ -51,6 +52,8 @@ template LightClientRecursive(N, K) {
 
   signal input bitmask[N];
   signal input signature[2][2][K];
+
+  signal output out[2]; // Pedersen Hash of public inputs & verification key
 
   var prevHeaderHash[256];
   var nextHeaderHash[256];
@@ -260,4 +263,14 @@ template LightClientRecursive(N, K) {
   firstORcorrect.b <== groth16Verifier.out;
 
   firstORcorrect.out === 1;
+
+  component verifierPedersen = VerifierPedersen(pubInpCount, k);
+  verifierPedersen.originator <== originator;
+  verifierPedersen.nextHeaderHashNum <== nextHeaderHashNum;
+  verifierPedersen.negalfa1xbeta2 <== negalfa1xbeta2;
+  verifierPedersen.gamma2 <== gamma2;
+  verifierPedersen.delta2 <== delta2;
+  verifierPedersen.IC <== IC;
+
+  out <== verifierPedersen.out;
 }
