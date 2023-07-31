@@ -170,6 +170,20 @@ jobs:
       - name: Run Verify given proof - test using bncurve and constantine
         run: nix develop -c nim c -r 'tests/verify_proof/verify_given_proof_test.nim'
 
+  Run_Verify_Given_Proof_ffJS:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Use local my-action
+        uses: ./.github/actions/setup
+        with:
+          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+      - name: Run Verify given proof - test using ffJavascript
+        run: nix develop -c yarn test ./tests/verify_proof/verify_given_proof_test.ts
+
   Solidity_Verifier_Tests:
     runs-on: ubuntu-latest
     steps:
@@ -213,6 +227,7 @@ jobs:
       - Run_Circom_Tests
       - Run_Verifier_In_Cosmos_Relay_Tests
       - Run_Verify_Given_Proof
+      - Run_Verify_Given_Proof_ffJS
       - Solidity_Verifier_Tests
       - OneShot_Syncing_Simulation
 
