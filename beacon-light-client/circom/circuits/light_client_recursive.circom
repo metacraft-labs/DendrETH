@@ -92,8 +92,6 @@ template LightClientRecursive(N, K) {
     isSuperMajority.bitmask[i] <== bitmask[i];
   }
 
-  isSuperMajority.out === 1;
-
   component hash_tree_root_beacon = HashTreeRootBeaconHeader();
 
   for(var i = 0; i < 256; i++) {
@@ -117,7 +115,7 @@ template LightClientRecursive(N, K) {
   }
 
   for(var i = 0; i < 256; i++) {
-    hash_tree_root_beacon.blockHash[i] === prevHeaderHash[i];
+    hash_tree_root_beacon.out[i] === prevHeaderHash[i];
   }
 
   component computeDomain = ComputeDomain();
@@ -180,8 +178,6 @@ template LightClientRecursive(N, K) {
   }
 
   isValidMerkleBranch.index <== 55;
-
-  isValidMerkleBranch.out === 1;
 
   component aggregateKeys = AggregateKeysBitmask(N,K);
 
