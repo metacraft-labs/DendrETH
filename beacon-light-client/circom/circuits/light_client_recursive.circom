@@ -127,9 +127,9 @@ template LightClientRecursive(N, K) {
   computeDomain.GENESIS_VALIDATORS_ROOT <== GENESIS_VALIDATORS_ROOT;
   computeDomain.DOMAIN_SYNC_COMMITTEE <== DOMAIN_SYNC_COMMITTEE;
 
-  computeSigningRoot.domain <== computeDomain.domain;
-
   component computeSigningRoot = ComputeSigningRoot();
+
+  computeSigningRoot.domain <== computeDomain.domain;
 
   for(var i = 0; i < 256; i++) {
     computeSigningRoot.headerHash[i] <== nextHeaderHash[i];
