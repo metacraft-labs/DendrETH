@@ -120,6 +120,14 @@ export async function getProof(vkey, proof, originator, prevUpdate, update) {
       .toString(2)
       .padStart(32, '0')
       .split(''),
+    GENESIS_VALIDATORS_ROOT: BigInt(constants.pratter.GENESIS_VALIDATORS_ROOT)
+      .toString(2)
+      .padStart(256, '0')
+      .split(''),
+    DOMAIN_SYNC_COMMITTEE: BigInt(constants.pratter.DOMAIN_SYNC_COMMITTEE)
+      .toString(2)
+      .padStart(32, '0')
+      .split(''),
     aggregatedKey: BigInt(prevUpdate.next_sync_committee.aggregate_pubkey)
       .toString(2)
       .split(''),
@@ -146,8 +154,6 @@ export async function getProof(vkey, proof, originator, prevUpdate, update) {
       ],
     ],
   };
-  console.log("ORIGINATOR: ", input.originator)
-  console.log("NEXT HEADER: ", input.nextHeaderHashNum)
   return input;
 }
 

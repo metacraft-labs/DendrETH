@@ -44,7 +44,10 @@ template LightClientRecursive(N, K) {
   signal input state_root[256];
   signal input body_root[256];
 
+  // Exposed as public via domain
   signal input fork_version[32];
+  signal input GENESIS_VALIDATORS_ROOT[256];
+  signal input DOMAIN_SYNC_COMMITTEE[32];
 
   signal input points[N][2][K];
   signal input aggregatedKey[384];
@@ -120,18 +123,16 @@ template LightClientRecursive(N, K) {
 
   component computeDomain = ComputeDomain();
 
-  for(var i = 0; i < 32; i++) {
-    computeDomain.fork_version[i] <== fork_version[i];
-  }
+  computeDomain.fork_version <== fork_version;
+  computeDomain.GENESIS_VALIDATORS_ROOT <== GENESIS_VALIDATORS_ROOT;
+  computeDomain.DOMAIN_SYNC_COMMITTEE <== DOMAIN_SYNC_COMMITTEE;
+
+  computeSigningRoot.domain <== computeDomain.domain;
 
   component computeSigningRoot = ComputeSigningRoot();
 
   for(var i = 0; i < 256; i++) {
     computeSigningRoot.headerHash[i] <== nextHeaderHash[i];
-  }
-
-  for(var i = 0; i < 256; i++) {
-    computeSigningRoot.domain[i] <== computeDomain.domain[i];
   }
 
   component hashToField = HashToField(K);
