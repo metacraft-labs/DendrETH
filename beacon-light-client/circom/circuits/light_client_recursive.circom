@@ -140,7 +140,7 @@ template LightClientRecursive(N, K) {
     hashToField.in[i] <== computeSigningRoot.signing_root[i];
   }
 
-  component hasher = HashTreeRoot(N);
+  component hasher = SyncCommiteeHashTreeRoot(N);
   component compress[N];
 
   for(var i = 0; i < N; i++) {
