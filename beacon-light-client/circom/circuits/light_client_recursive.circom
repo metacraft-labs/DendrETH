@@ -1,6 +1,6 @@
 pragma circom 2.1.5;
 
-include "hash_tree_root.circom";
+include "sync_commitee_hash_tree_root.circom";
 include "compress.circom";
 include "aggregate_bitmask.circom";
 include "is_supermajority.circom";
