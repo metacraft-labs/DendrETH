@@ -18,16 +18,16 @@
   };
 in
   craneLib.buildPackage rec {
-    pname = "commitment_mapper_builder";
+    pname = "circuits_executables";
     version = "0.1.0";
 
     inherit cargoArtifacts;
     src = src-path;
-    cargoLock = "${src-path}/commitment_mapper_builder/Cargo.lock";
-    cargoToml = "${src-path}/commitment_mapper_builder/Cargo.toml";
+    cargoLock = "${src-path}/circuits_executables/Cargo.lock";
+    cargoToml = "${src-path}/circuits_executables/Cargo.toml";
 
     postUnpack = ''
-      cd $sourceRoot/commitment_mapper_builder
+      cd $sourceRoot/circuits_executables
       sourceRoot="."
     '';
   }
