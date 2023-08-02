@@ -8,7 +8,11 @@ import { sleep } from '../../../libs/typescript/ts-utils/common-utils';
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
 
 (async () => {
-  const first_level_proofs = new WorkQueue(new KeyPrefix(`${validator_commitment_constants.balanceVerificationQueue}:${1}`));
+  const first_level_proofs = new WorkQueue(
+    new KeyPrefix(
+      `${validator_commitment_constants.balanceVerificationQueue}:${1}`,
+    ),
+  );
   const db = new Redis('redis://127.0.0.1:6379');
 
   while (true) {
