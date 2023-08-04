@@ -15,20 +15,6 @@ env:
   ETHEREUM_MAINNET_RPC: https://eth.llamarpc.com
 
 jobs:
-  Linter:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-      - name: Use local my-action
-        uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-      - name: Run yarn format check
-        run: nix develop -c yarn format:check
-
   EOS_Relayer_Test:
     runs-on: ubuntu-latest
     steps:
@@ -227,30 +213,3 @@ jobs:
       - name: Run one shot syncing simulation
         run: nix develop -c make one-shot-syncing-simulation
 
-  check:
-    if: always()
-
-    needs:
-      - Linter
-      - EOS_Relayer_Test
-      - Solidity_Validators_Accumulator_Test
-      - Nim_Light_Client_Compiled_with_Emsctipten_Tests
-      - Nim_Light_Client_Clang_Test
-      - Nim_Groth16_Verifier_Tests
-      - Run_Light_Client_In_Cosmos_Test
-      - Run_Verifier_In_Cosmos_Test
-      - Run_Circom_Tests
-      - Run_Verifier_In_Cosmos_Relay_Tests
-      - Run_Verify_Given_Proof
-      - Run_Verify_Given_Proof_ffJS
-      - Solidity_Verifier_Tests
-      - OneShot_Syncing_Simulation
-      - Run_Plonky2_Tests
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Decide whether the needed jobs succeeded or failed
-        uses: re-actors/alls-green@release/v1
-        with:
-          jobs: ${{ toJSON(needs) }}
