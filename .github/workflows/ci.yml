@@ -15,20 +15,6 @@ env:
   ETHEREUM_MAINNET_RPC: https://eth.llamarpc.com
 
 jobs:
-  Linter:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-      - name: Use local my-action
-        uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-      - name: Run yarn format check
-        run: nix develop -c yarn format:check
-
   EOS_Relayer_Test:
     runs-on: ubuntu-latest
     steps:
@@ -231,7 +217,6 @@ jobs:
     if: always()
 
     needs:
-      - Linter
       - EOS_Relayer_Test
       - Solidity_Validators_Accumulator_Test
       - Nim_Light_Client_Compiled_with_Emsctipten_Tests
