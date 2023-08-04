@@ -15,6 +15,20 @@ env:
   ETHEREUM_MAINNET_RPC: https://eth.llamarpc.com
 
 jobs:
+  Run_Plonky2_Tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Use local my-action
+        uses: ./.github/actions/setup
+        with:
+          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+      - name: Run plonky2 circuit tests
+        run: nix develop -c make test-plonky2-circuits
   # Linter:
     # runs-on: ubuntu-latest
     # steps:
@@ -155,21 +169,7 @@ jobs:
 
   #     - name: Run circom tests
   #       run: nix develop -c make test-circom-circuits
-
-  Run_Plonky2_Tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-
-      - name: Use local my-action
-        uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-      - name: Run plonky2 circuit tests
-        run: nix develop -c make test-plonky2-circuits
+  
 
   # Run_Verify_Given_Proof:
   #   runs-on: ubuntu-latest
@@ -231,6 +231,7 @@ jobs:
     if: always()
 
     needs:
+      - Run_Plonky2_Tests
       # - Linter
       # - EOS_Relayer_Test
       # - Solidity_Validators_Accumulator_Test
@@ -245,7 +246,7 @@ jobs:
       # - Run_Verify_Given_Proof_ffJS
       # - Solidity_Verifier_Tests
       # - OneShot_Syncing_Simulation
-      - Run_Plonky2_Tests
+      
 
     runs-on: ubuntu-latest
 
