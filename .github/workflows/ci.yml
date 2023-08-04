@@ -9,11 +9,11 @@ on:
       - main
 
 env:
+  CARGO_NET_GIT_FETCH_WITH_CLI: true
   INFURA_API_KEY: '${{ secrets.INFURA_API_KEY }}'
   USER_PRIVATE_KEY: '${{ secrets.USER_PRIVATE_KEY }}'
   ETHERSCAN_API_KEY: '${{ secrets.ETHERSCAN_API_KEY }}'
   ETHEREUM_MAINNET_RPC: https://eth.llamarpc.com
-
 jobs:
   Linter:
     runs-on: ubuntu-latest
