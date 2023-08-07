@@ -75,7 +75,11 @@ async fn async_main() -> Result<()> {
         )
         .get_matches();
 
-    let level = matches.value_of("circuit_level").unwrap().parse::<usize>().unwrap();
+    let level = matches
+        .value_of("circuit_level")
+        .unwrap()
+        .parse::<usize>()
+        .unwrap();
 
     let redis_connection = matches.value_of("redis_connection").unwrap();
 
@@ -120,6 +124,8 @@ async fn async_main() -> Result<()> {
 
     println!("level {}", level);
 
+    let start: Instant = Instant::now();
+
     process_queue(
         &mut con,
         &queue,
@@ -127,6 +133,7 @@ async fn async_main() -> Result<()> {
         inner_circuit_data.as_ref(),
         &targets,
         level,
+        start,
     )
     .await
 }
@@ -155,14 +162,20 @@ async fn process_queue(
     inner_circuit_data: Option<&CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>>,
     targets: &Targets,
     level: usize,
+    start: Instant,
 ) -> Result<()> {
-    loop {
+    let ten_minutes = Duration::from_secs(10 * 60);
+    while start.elapsed() < ten_minutes {
         let job = match queue
-            .lease(con, Option::None, Duration::from_secs(30))
+            .lease(con, Some(Duration::from_secs(20)), Duration::from_secs(30))
             .await?
         {
             Some(job) => job,
-            None => continue,
+            None => {
+                println!("No jobs left in queue");
+
+                return Ok(());
+            }
         };
 
         if job.data.is_empty() {
@@ -212,6 +225,8 @@ async fn process_queue(
             }
         }
     }
+
+    Ok(())
 }
 
 async fn process_first_level_job(
