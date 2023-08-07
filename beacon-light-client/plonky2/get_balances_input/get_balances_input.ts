@@ -37,6 +37,13 @@ let TAKE;
       default: 6379,
       description: 'Sets a custom redis connection',
     })
+    .option('beacon-node', {
+      alias: 'beacon-node',
+      describe: 'The beacon node url',
+      type: 'string',
+      default: 'http://unstable.mainnet.beacon-api.nimbus.team',
+      description: 'Sets a custom beacon node url',
+    })
     .option('take', {
       alias: 'take',
       describe: 'The number of validators to take',
@@ -65,9 +72,7 @@ let TAKE;
     );
   }
 
-  const beaconApi = new BeaconApi([
-    'http://unstable.mainnet.beacon-api.nimbus.team',
-  ]);
+  const beaconApi = new BeaconApi([options['beacon-node']]);
 
   const { beaconState } = await beaconApi.getBeaconState(6953401);
 
