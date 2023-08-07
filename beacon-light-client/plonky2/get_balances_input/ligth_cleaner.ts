@@ -26,7 +26,9 @@ import yargs from 'yargs';
       description: 'Sets a custom redis connection',
     }).argv;
 
-  const db = new Redis(`redis://${options['redis-host']}:${options['redis-port']}`);
+  const db = new Redis(
+    `redis://${options['redis-host']}:${options['redis-port']}`,
+  );
   const queues: any[] = [];
 
   for (let i = 0; i < 39; i++) {

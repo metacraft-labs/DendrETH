@@ -11,9 +11,11 @@ system="$(get_host_system)"
 
 set -x
 
-if [[ -n "${GITHUB_ENV:-}" ]]; then
-  git config --global url."git@github.com:".insteadOf https://github.com/
-  git config --global url."git://".insteadOf https://
-fi
+rustup override set nightly-2023-06-12
+
+# if [[ -n "${GITHUB_ENV:-}" ]]; then
+#   git config --global url."git@github.com:".insteadOf https://github.com/
+#   git config --global url."git://".insteadOf https://
+# fi
 
 nix build --json --print-build-logs ".#devShells.$system.default"
