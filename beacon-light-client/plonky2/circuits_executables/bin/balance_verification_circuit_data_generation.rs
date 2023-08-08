@@ -95,9 +95,6 @@ pub async fn async_main() -> Result<()> {
             inner_level_targets
                 .write_target_verifier_circuit(&targets.verifier_circuit_target)
                 .unwrap();
-            inner_level_targets
-                .write_target_bool(targets.is_zero)
-                .unwrap();
 
             write_to_file(&format!("{}.plonky2_targets", i), &inner_level_targets).unwrap();
         }
@@ -180,6 +177,10 @@ fn write_first_level_circuit(
 
     validator_balance_verification_targets_bytes
         .write_target_vec(&validators_balance_verification_targets.withdrawal_credentials)
+        .unwrap();
+
+    validator_balance_verification_targets_bytes
+        .write_target_bool_vec(&validators_balance_verification_targets.validator_is_zero)
         .unwrap();
 
     write_to_file(
