@@ -6,7 +6,7 @@ use std::{
 
 use anyhow::Result;
 use circuits::{
-    build_inner_level_circuit::InnerCircuitTargets,
+    build_balance_inner_level_circuit::BalanceInnerCircuitTargets,
     generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
     validator_hash_tree_root_poseidon::ValidatorPoseidon,
 };
@@ -16,9 +16,9 @@ use circuits_executables::{
         BalanceProof,
     },
     provers::{
-        handle_inner_level_proof, set_boolean_pw_values, set_pw_values, set_validator_pw_values,
+        handle_balance_inner_level_proof, set_boolean_pw_values, set_pw_values,
+        set_validator_pw_values,
     },
-    validator::VALIDATOR_REGISTRY_LIMIT,
     validator_commitment_constants::get_validator_commitment_constants,
 };
 use futures_lite::future;
@@ -45,8 +45,9 @@ enum Targets {
         Option<Vec<Vec<BoolTarget>>>,
         Option<Vec<ValidatorPoseidon>>,
         Option<Vec<Target>>,
+        Option<Vec<BoolTarget>>,
     ),
-    InnerLevel(Option<InnerCircuitTargets>),
+    InnerLevel(Option<BalanceInnerCircuitTargets>),
 }
 
 fn main() -> Result<()> {
@@ -165,6 +166,7 @@ async fn process_queue(
     start: Instant,
 ) -> Result<()> {
     let ten_minutes = Duration::from_secs(10 * 60);
+
     while start.elapsed() < ten_minutes {
         let job = match queue
             .lease(con, Some(Duration::from_secs(20)), Duration::from_secs(30))
@@ -181,6 +183,7 @@ async fn process_queue(
         if job.data.is_empty() {
             println!("Skipping empty data job");
             queue.complete(con, &job).await?;
+
             continue;
         }
 
@@ -191,6 +194,7 @@ async fn process_queue(
                 balances_targets,
                 validators_targets,
                 withdrawal_credentials_targets,
+                validator_is_zero,
             ) => {
                 match process_first_level_job(
                     con,
@@ -200,10 +204,14 @@ async fn process_queue(
                     &balances_targets,
                     &validators_targets,
                     &withdrawal_credentials_targets,
+                    &validator_is_zero,
                 )
                 .await
                 {
-                    Err(_err) => continue,
+                    Err(_err) => {
+                        println!("Error processing first level job {:?}", _err);
+                        continue;
+                    }
                     Ok(_) => {}
                 };
             }
@@ -237,6 +245,7 @@ async fn process_first_level_job(
     balances_targets: &Option<Vec<Vec<BoolTarget>>>,
     validators_targets: &Option<Vec<ValidatorPoseidon>>,
     withdrawal_credentials_targets: &Option<Vec<Target>>,
+    validator_is_zero: &Option<Vec<BoolTarget>>,
 ) -> Result<()> {
     let balance_input_index = u64::from_be_bytes(job.data[0..8].try_into().unwrap()) as usize;
 
@@ -273,6 +282,12 @@ async fn process_first_level_job(
         validator_balance_input.withdrawal_credentials,
     );
 
+    set_boolean_pw_values(
+        &mut pw,
+        &validator_is_zero.as_ref().unwrap(),
+        validator_balance_input.validator_is_zero,
+    );
+
     let proof = circuit_data.prove(pw)?;
 
     match save_balance_proof(con, proof, 0, balance_input_index).await {
@@ -299,7 +314,7 @@ async fn process_inner_level_job(
     job: Item,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     inner_circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    inner_circuit_targets: &Option<InnerCircuitTargets>,
+    inner_circuit_targets: &Option<BalanceInnerCircuitTargets>,
     level: usize,
 ) -> Result<()> {
     let proof_indexes = job
@@ -318,13 +333,12 @@ async fn process_inner_level_job(
         Ok(proofs) => {
             let start = Instant::now();
 
-            let proof = handle_inner_level_proof(
+            let proof = handle_balance_inner_level_proof(
                 proofs.0,
                 proofs.1,
                 &inner_circuit_data,
                 &inner_circuit_targets.as_ref().unwrap(),
                 &circuit_data,
-                proof_indexes[2] == VALIDATOR_REGISTRY_LIMIT && proof_indexes[0] == 0,
             )?;
 
             match save_balance_proof(con, proof, level, proof_indexes[1]).await {
@@ -370,12 +384,16 @@ fn get_first_level_targets() -> Result<Targets, anyhow::Error> {
             withdrawable_epoch: target_buffer.read_target_vec().unwrap().try_into().unwrap(),
         });
     }
+
     let withdrawal_credentials = target_buffer.read_target_vec().unwrap();
+
+    let validator_is_zero = target_buffer.read_target_bool_vec().unwrap();
 
     Ok(Targets::FirstLevel(
         Some(balances_targets),
         Some(validators_targets),
         Some(withdrawal_credentials),
+        Some(validator_is_zero),
     ))
 }
 
@@ -390,12 +408,10 @@ fn get_inner_level_targets(level: usize) -> Result<Targets> {
         .read_target_proof_with_public_inputs()
         .unwrap();
     let verifier_circuit_target = target_buffer.read_target_verifier_circuit().unwrap();
-    let is_zero = target_buffer.read_target_bool().unwrap();
 
-    Ok(Targets::InnerLevel(Some(InnerCircuitTargets {
+    Ok(Targets::InnerLevel(Some(BalanceInnerCircuitTargets {
         proof1: proof1,
         proof2: proof2,
         verifier_circuit_target: verifier_circuit_target,
-        is_zero: is_zero,
     })))
 }

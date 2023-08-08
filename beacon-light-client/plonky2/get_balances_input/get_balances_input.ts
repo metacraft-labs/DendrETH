@@ -98,24 +98,16 @@ let TAKE;
     );
   }
 
-  const batchSize = 100;
-  for (let i = 0; i <= TAKE / CIRCUIT_SIZE / batchSize; i++) {
-    let batch: any[] = [];
-    for (
-      let j = i * batchSize;
-      j < i * batchSize + batchSize && j < TAKE / CIRCUIT_SIZE;
-      j++
-    ) {
-      batch.push({
-        index: j * CIRCUIT_SIZE,
+  if (await redis.isZeroValidatorEmpty()) {
+    console.log('Adding tasks about zeros');
+    await redis.saveValidatorBalancesInput([
+      {
+        index: Number(validator_commitment_constants.validatorRegistryLimit),
         input: JSON.stringify({
-          balances: balances.slice(
-            j * (CIRCUIT_SIZE / 4),
-            (j + 1) * (CIRCUIT_SIZE / 4),
-          ),
-          validators: validators
-            .slice(j * CIRCUIT_SIZE, (j + 1) * CIRCUIT_SIZE)
-            .map(v => convertValidator(v, ssz)),
+          balances: Array(CIRCUIT_SIZE / 4)
+            .fill('')
+            .map(() => ''.padStart(256, '0').split('').map(Number)),
+          validators: Array(CIRCUIT_SIZE).fill(getZeroValidator()),
           withdrawalCredentials: bigint_to_array(
             63,
             5,
@@ -125,6 +117,85 @@ let TAKE;
               ),
             ),
           ),
+          validatorIsZero: Array(CIRCUIT_SIZE).fill(0),
+        }),
+      },
+    ]);
+
+    const buffer = new ArrayBuffer(8);
+    const dataView = new DataView(buffer);
+
+    dataView.setBigUint64(
+      0,
+      BigInt(validator_commitment_constants.validatorRegistryLimit),
+      false,
+    );
+
+    await queues[0].addItem(db, new Item(buffer));
+
+    for (let i = 0; i < 38; i++) {
+      const buffer = new ArrayBuffer(24);
+      const dataView = new DataView(buffer);
+
+      dataView.setBigUint64(0, BigInt(i), false);
+      dataView.setBigUint64(
+        8,
+        BigInt(validator_commitment_constants.validatorRegistryLimit),
+        false,
+      );
+      dataView.setBigUint64(
+        16,
+        BigInt(validator_commitment_constants.validatorRegistryLimit),
+        false,
+      );
+
+      await queues[i + 1].addItem(db, new Item(buffer));
+
+      console.log('Added zeros tasks');
+    }
+  }
+
+  const batchSize = 100;
+  for (let i = 0; i <= TAKE / CIRCUIT_SIZE / batchSize; i++) {
+    let batch: any[] = [];
+    for (
+      let j = i * batchSize;
+      j < i * batchSize + batchSize && j < TAKE / CIRCUIT_SIZE;
+      j++
+    ) {
+      let size =
+        (j + 1) * CIRCUIT_SIZE <= validators.length
+          ? CIRCUIT_SIZE
+          : validators.length - j * CIRCUIT_SIZE;
+
+      let array = new Array(size).fill(1);
+
+      batch.push({
+        index: j * CIRCUIT_SIZE,
+        input: JSON.stringify({
+          balances: balances.slice(
+            j * (CIRCUIT_SIZE / 4),
+            (j + 1) * (CIRCUIT_SIZE / 4),
+          ),
+          validators: [
+            ...validators
+              .slice(j * CIRCUIT_SIZE, (j + 1) * CIRCUIT_SIZE)
+              .map(v => convertValidator(v, ssz)),
+            ...Array(
+              (j + 1) * CIRCUIT_SIZE -
+                Math.min((j + 1) * CIRCUIT_SIZE, validators.length),
+            ).fill(getZeroValidator()),
+          ],
+          withdrawalCredentials: bigint_to_array(
+            63,
+            5,
+            computeNumberFromLittleEndianBits(
+              hexToBits(
+                '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
+              ),
+            ),
+          ),
+          validatorIsZero: array.concat(new Array(CIRCUIT_SIZE - size).fill(0)),
         }),
       });
     }
@@ -183,6 +254,19 @@ let TAKE;
 
   process.exit(0);
 })();
+
+function getZeroValidator() {
+  return {
+    pubkey: ''.padStart(7, '0').split(''),
+    withdrawalCredentials: ''.padStart(5, '0').split(''),
+    effectiveBalance: ''.padStart(2, '0').split(''),
+    slashed: ['0'],
+    activationEligibilityEpoch: ''.padStart(2, '0').split(''),
+    activationEpoch: ''.padStart(2, '0').split(''),
+    exitEpoch: ''.padStart(2, '0').split(''),
+    withdrawableEpoch: ''.padStart(2, '0').split(''),
+  };
+}
 
 function convertValidator(validator, ssz): any {
   return {

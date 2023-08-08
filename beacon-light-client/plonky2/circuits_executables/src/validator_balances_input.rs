@@ -1,4 +1,4 @@
-use crate::validator::bool_vec_as_int_vec_nested;
+use crate::validator::{bool_vec_as_int_vec_nested, bool_vec_as_int_vec};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 fn from_str<'de, D>(deserializer: D) -> Result<Vec<u64>, D::Error>
@@ -48,6 +48,8 @@ pub struct ValidatorBalancesInput {
     pub balances: Vec<Vec<bool>>,
     #[serde(serialize_with = "to_string", deserialize_with = "from_str")]
     pub withdrawal_credentials: Vec<u64>,
+    #[serde(with = "bool_vec_as_int_vec")]
+    pub validator_is_zero: Vec<bool>,
 }
 
 #[cfg(test)]
@@ -70,6 +72,7 @@ mod tests {
             }],
             balances: vec![vec![true, false, true], vec![false, true, false]],
             withdrawal_credentials: vec![28, 29, 30],
+            validator_is_zero: vec![false, false, false],
         };
 
         // Serialize
