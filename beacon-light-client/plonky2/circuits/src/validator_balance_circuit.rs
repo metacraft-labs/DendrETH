@@ -19,6 +19,7 @@ pub struct ValidatorBalanceVerificationTargets {
     pub range_balances_root: [BoolTarget; 256],
     pub range_validator_commitment: HashOutTarget,
     pub validators: Vec<ValidatorPoseidon>,
+    pub validator_is_zero: Vec<BoolTarget>,
     pub balances: Vec<[BoolTarget; 256]>,
     pub withdrawal_credentials: [Target; 5],
 }
@@ -54,12 +55,29 @@ pub fn validator_balance_verification<F: RichField + Extendable<D>, const D: usi
 
     let hash_tree_root_poseidon_targets = hash_tree_root_poseidon(builder, validators_len);
 
+    let validator_is_zero: Vec<BoolTarget> = (0..validators_len)
+        .map(|_| builder.add_virtual_bool_target_safe())
+        .collect();
+
+    let zero_hash = builder.zero();
+
     for i in 0..validators_len {
+        let mut elements = [zero_hash; 4];
+
+        for (j, _) in validators_leaves[i].hash_tree_root.elements.iter().enumerate() {
+            elements[j] = builder._if(
+                validator_is_zero[i],
+                zero_hash,
+                validators_leaves[i].hash_tree_root.elements[j],
+            );
+        }
+
         builder.connect_hashes(
             hash_tree_root_poseidon_targets.leaves[i],
-            validators_leaves[i].hash_tree_root,
+            HashOutTarget { elements },
         );
     }
+
 
     let withdrawal_credentials = [
         builder.add_virtual_target(),
@@ -93,12 +111,15 @@ pub fn validator_balance_verification<F: RichField + Extendable<D>, const D: usi
 
         let balance_sum = builder.le_sum(reversed_bits);
         let zero = builder.zero();
+
+        // TODO: check if the validator is active and only add the balance if it is
         let current = builder._if(all_equal[5], balance_sum, zero);
 
         sums.push(builder.add(sums[i], current));
     }
 
     ValidatorBalanceVerificationTargets {
+        validator_is_zero: validator_is_zero,
         range_total_value: sums[validators_len],
         range_balances_root: balances_hash_tree_root_targets.hash_tree_root,
         range_validator_commitment: hash_tree_root_poseidon_targets.hash_tree_root,

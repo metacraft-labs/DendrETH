@@ -1,4 +1,5 @@
 use circuits::{
+    build_balance_inner_level_circuit::BalanceInnerCircuitTargets,
     build_inner_level_circuit::InnerCircuitTargets, validator_commitment::ValidatorCommitment,
 };
 use plonky2::{
@@ -8,7 +9,9 @@ use plonky2::{
         witness::{PartialWitness, WitnessWrite},
     },
     plonk::{
-        circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs,
+        circuit_data::{CircuitData, VerifierCircuitTarget},
+        config::PoseidonGoldilocksConfig,
+        proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
     },
 };
 
@@ -16,13 +19,16 @@ use crate::{validator::Validator, validator_balances_input};
 
 use anyhow::Result;
 
-pub fn handle_inner_level_proof(
+pub fn handle_generic_inner_level_proof(
     proof1_bytes: Vec<u8>,
     proof2_bytes: Vec<u8>,
     inner_circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    inner_circuit_targets: &InnerCircuitTargets,
+    proof1_target: &ProofWithPublicInputsTarget<2>,
+    proof2_target: &ProofWithPublicInputsTarget<2>,
+    verifier_circuit_target: &VerifierCircuitTarget,
+    is_zero_target: Option<BoolTarget>,
+    is_zero: Option<bool>,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    is_zero: bool,
 ) -> Result<ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>> {
     let inner_proof1 =
         ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
@@ -38,24 +44,65 @@ pub fn handle_inner_level_proof(
 
     let mut pw = PartialWitness::new();
 
-    pw.set_proof_with_pis_target(&inner_circuit_targets.proof1, &inner_proof1);
-    pw.set_proof_with_pis_target(&inner_circuit_targets.proof2, &inner_proof2);
+    pw.set_proof_with_pis_target(proof1_target, &inner_proof1);
+    pw.set_proof_with_pis_target(proof2_target, &inner_proof2);
 
     pw.set_cap_target(
-        &inner_circuit_targets
-            .verifier_circuit_target
-            .constants_sigmas_cap,
+        &verifier_circuit_target.constants_sigmas_cap,
         &inner_circuit_data.verifier_only.constants_sigmas_cap,
     );
 
     pw.set_hash_target(
-        inner_circuit_targets.verifier_circuit_target.circuit_digest,
+        verifier_circuit_target.circuit_digest,
         inner_circuit_data.verifier_only.circuit_digest,
     );
 
-    pw.set_bool_target(inner_circuit_targets.is_zero, is_zero);
+    if let (Some(target), Some(value)) = (is_zero_target, is_zero) {
+        pw.set_bool_target(target, value);
+    }
 
     Ok(circuit_data.prove(pw)?)
+}
+
+pub fn handle_inner_level_proof(
+    proof1_bytes: Vec<u8>,
+    proof2_bytes: Vec<u8>,
+    inner_circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    inner_circuit_targets: &InnerCircuitTargets,
+    circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    is_zero: bool,
+) -> Result<ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>> {
+    handle_generic_inner_level_proof(
+        proof1_bytes,
+        proof2_bytes,
+        inner_circuit_data,
+        &inner_circuit_targets.proof1,
+        &inner_circuit_targets.proof2,
+        &inner_circuit_targets.verifier_circuit_target,
+        Some(inner_circuit_targets.is_zero),
+        Some(is_zero),
+        circuit_data,
+    )
+}
+
+pub fn handle_balance_inner_level_proof(
+    proof1_bytes: Vec<u8>,
+    proof2_bytes: Vec<u8>,
+    inner_circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    inner_circuit_targets: &BalanceInnerCircuitTargets,
+    circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+) -> Result<ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>> {
+    handle_generic_inner_level_proof(
+        proof1_bytes,
+        proof2_bytes,
+        inner_circuit_data,
+        &inner_circuit_targets.proof1,
+        &inner_circuit_targets.proof2,
+        &inner_circuit_targets.verifier_circuit_target,
+        None,
+        None,
+        circuit_data,
+    )
 }
 
 pub fn handle_first_level_proof(

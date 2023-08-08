@@ -111,6 +111,16 @@ export class Redis implements IRedis {
     return result == null;
   }
 
+  async isZeroBalanceEmpty() {
+    await this.waitForConnection();
+
+    const result = await this.redisClient.get(
+      `${validator_commitment_constants.validatorBalanceInputKey}:${validator_commitment_constants.validatorRegistryLimit}`,
+    );
+
+    return result == null;
+  }
+
   async saveValidators(
     validatorsWithIndices: { index: number; validator: string }[],
   ) {

@@ -1,9 +1,9 @@
 use anyhow::Result;
 use circuits::{
     build_first_level_circuit::build_first_level_circuit,
-    build_inner_level_circuit::{build_inner_circuit, InnerCircuitTargets},
+    build_inner_level_circuit::{build_inner_circuit, InnerCircuitTargets}, build_balance_inner_level_circuit::{build_balance_inner_circuit, BalanceInnerCircuitTargets}, build_validator_balance_circuit::build_validator_balance_circuit,
 };
-use circuits_executables::crud::{ValidatorProof, fetch_proof};
+use circuits_executables::crud::{ValidatorProof, fetch_proof, BalanceProof};
 use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
@@ -22,35 +22,31 @@ async fn async_main() -> Result<()> {
         .get_async_connection()
         .await?;
 
-    let (_, first_level_circuit_data) = build_first_level_circuit();
+    let (_, first_level_circuit_data) = build_validator_balance_circuit(8);
 
     let mut inner_circuits: Vec<(
-        InnerCircuitTargets,
+        BalanceInnerCircuitTargets,
         CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     )> = Vec::new();
 
-    inner_circuits.push(build_inner_circuit(&first_level_circuit_data));
+    inner_circuits.push(build_balance_inner_circuit(&first_level_circuit_data));
 
-    for i in 1..4 {
-        inner_circuits.push(build_inner_circuit(&inner_circuits[i - 1].1));
+    for i in 1..7 {
+        inner_circuits.push(build_balance_inner_circuit(&inner_circuits[i - 1].1));
     }
 
-    let proof = fetch_proof::<ValidatorProof>(&mut con, 3, 0).await?;
+    let proof = fetch_proof::<BalanceProof>(&mut con, 7, 0).await?;
 
     println!("Up to here");
     let plonky2_proof =
         ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
             proof.proof,
-            &inner_circuits[2].1.common,
+            &inner_circuits[6].1.common,
         )?;
 
     print!("public inputs, {:?}", plonky2_proof.public_inputs);
 
-    inner_circuits[2].1.verify(plonky2_proof)?;
-
-    println!("written poseidon hash {:?}", proof.poseidon_hash);
-
-    println!("written sha256 hash {:?}", proof.sha256_hash);
+    inner_circuits[6].1.verify(plonky2_proof)?;
 
     Ok(())
 }
