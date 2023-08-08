@@ -8,7 +8,7 @@ import {
 } from './publish_evm_transaction';
 
 export class SolidityContract implements ISmartContract {
-  private lightClientContract: Contract;
+  private lightClientContract: Contract;  
   private web3: Web3;
   private transactionSpeed: TransactionSpeed;
 
@@ -24,6 +24,10 @@ export class SolidityContract implements ISmartContract {
 
   optimisticHeaderRoot(): Promise<string> {
     return this.lightClientContract.optimisticHeaderRoot();
+  }
+
+  optimisticHeaderSlot(): Promise<number> {
+    return this.lightClientContract.optimisticHeaderSlot();
   }
 
   async postUpdateOnChain(update: {
