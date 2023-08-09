@@ -199,3 +199,23 @@ export function groupBy<T, K extends string | number | symbol>(
     return result;
   }, {} as Record<K, T[]>);
 }
+/**
+ * Executes a function repeatedly while a given condition is true.
+ * @param cond A function that takes the result of the repeated function as an
+ *  argument and returns a boolean value.
+ * @param f The function to execute repeatedly.
+ * @param time The amount of time to wait between each execution of the function.
+ * @return The final result of the repeated function.
+ */
+export async function loopWhile<T>(
+  cond: (r: T) => boolean,
+  f: () => Promise<T>,
+  time: number,
+): Promise<T> {
+  let r = await f();
+  while (cond(r)) {
+    await sleep(time);
+    r = await f();
+  }
+  return r;
+}
