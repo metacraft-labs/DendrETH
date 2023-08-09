@@ -8,7 +8,7 @@ import {
 } from './publish_evm_transaction';
 
 export class SolidityContract implements ISmartContract {
-  private lightClientContract: Contract;  
+  private lightClientContract: Contract;
   private web3: Web3;
   private transactionSpeed: TransactionSpeed;
 
