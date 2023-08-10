@@ -45,6 +45,8 @@ pub fn build_validator_balance_circuit(
             .elements,
     );
 
+    builder.register_public_inputs(&validator_balance_verification_targets.current_epoch);
+
     let data = builder.build::<C>();
 
     (validator_balance_verification_targets, data)

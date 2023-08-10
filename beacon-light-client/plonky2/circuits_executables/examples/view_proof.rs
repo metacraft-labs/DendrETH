@@ -24,29 +24,29 @@ async fn async_main() -> Result<()> {
 
     let (_, first_level_circuit_data) = build_validator_balance_circuit(8);
 
-    let mut inner_circuits: Vec<(
-        BalanceInnerCircuitTargets,
-        CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    )> = Vec::new();
+    // let mut inner_circuits: Vec<(
+    //     BalanceInnerCircuitTargets,
+    //     CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    // )> = Vec::new();
 
-    inner_circuits.push(build_balance_inner_circuit(&first_level_circuit_data));
+    // inner_circuits.push(build_balance_inner_circuit(&first_level_circuit_data));
 
-    for i in 1..7 {
-        inner_circuits.push(build_balance_inner_circuit(&inner_circuits[i - 1].1));
-    }
+    // for i in 1..7 {
+    //     inner_circuits.push(build_balance_inner_circuit(&inner_circuits[i - 1].1));
+    // }
 
-    let proof = fetch_proof::<BalanceProof>(&mut con, 7, 0).await?;
+    let proof = fetch_proof::<BalanceProof>(&mut con, 0, 992).await?;
 
     println!("Up to here");
     let plonky2_proof =
         ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
             proof.proof,
-            &inner_circuits[6].1.common,
+            &first_level_circuit_data.common,
         )?;
 
     print!("public inputs, {:?}", plonky2_proof.public_inputs);
 
-    inner_circuits[6].1.verify(plonky2_proof)?;
+    first_level_circuit_data.verify(plonky2_proof)?;
 
     Ok(())
 }

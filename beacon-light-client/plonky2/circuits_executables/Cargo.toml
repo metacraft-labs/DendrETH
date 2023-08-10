@@ -28,3 +28,7 @@ path = "bin/commitment_mapper.rs"
 [[bin]]
 name = "balance_verification_circuit_data_generation"
 path = "bin/balance_verification_circuit_data_generation.rs"
+
+[[bin]]
+name = "final_layer"
+path = "bin/final_layer.rs"

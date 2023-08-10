@@ -7,7 +7,7 @@ use crate::{
 };
 use anyhow::Result;
 use plonky2::{
-    field::goldilocks_field::GoldilocksField,
+    field::{goldilocks_field::GoldilocksField, types::Field64},
     plonk::{config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs},
 };
 use redis::{aio::Connection, AsyncCommands, RedisError};
@@ -30,6 +30,7 @@ pub struct BalanceProof {
     pub validators_commitment: Vec<u64>,
     pub balances_hash: Vec<u64>,
     pub withdrawal_credentials: Vec<u64>,
+    pub current_epoch: Vec<u64>,
     pub proof: Vec<u8>,
 }
 
@@ -106,10 +107,11 @@ pub async fn save_balance_proof(
 ) -> Result<()> {
     let balance_proof = serde_json::to_string(&BalanceProof {
         needs_change: false,
-        range_total_value: proof.public_inputs[0].0,
-        balances_hash: proof.public_inputs[1..257].iter().map(|x| x.0).collect(),
-        withdrawal_credentials: proof.public_inputs[257..262].iter().map(|x| x.0).collect(),
-        validators_commitment: proof.public_inputs[262..266].iter().map(|x| x.0).collect(),
+        range_total_value: proof.public_inputs[0].0 % GoldilocksField::ORDER,
+        balances_hash: proof.public_inputs[1..257].iter().map(|x| x.0 % GoldilocksField::ORDER).collect(),
+        withdrawal_credentials: proof.public_inputs[257..262].iter().map(|x| x.0 % GoldilocksField::ORDER).collect(),
+        validators_commitment: proof.public_inputs[262..266].iter().map(|x| x.0 % GoldilocksField::ORDER).collect(),
+        current_epoch: proof.public_inputs[266..268].iter().map(|x| x.0 % GoldilocksField::ORDER).collect(),
         proof: proof.to_bytes(),
     })?;
 
