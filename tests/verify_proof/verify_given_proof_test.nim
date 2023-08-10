@@ -1,5 +1,7 @@
 import
-  std/unittest,
+  std/unittest
+
+import
   ../../libs/nim/verify-utils/verify_given_proof_constantine,
   ../../libs/nim/verify-utils/verify_given_proof
 
