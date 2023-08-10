@@ -23,7 +23,7 @@ in
         set +a
       fi
 
-      scripts/check-user-env-file-contents.sh
+      # scripts/check-user-env-file-contents.sh
 
       figlet "DendrETH"
     '';

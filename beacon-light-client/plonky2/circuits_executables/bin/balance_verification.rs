@@ -46,6 +46,7 @@ enum Targets {
         Option<Vec<ValidatorPoseidon>>,
         Option<Vec<Target>>,
         Option<Vec<BoolTarget>>,
+        Option<[Target; 2]>,
     ),
     InnerLevel(Option<BalanceInnerCircuitTargets>),
 }
@@ -195,6 +196,7 @@ async fn process_queue(
                 validators_targets,
                 withdrawal_credentials_targets,
                 validator_is_zero,
+                current_epoch_target,
             ) => {
                 match process_first_level_job(
                     con,
@@ -205,6 +207,7 @@ async fn process_queue(
                     &validators_targets,
                     &withdrawal_credentials_targets,
                     &validator_is_zero,
+                    &current_epoch_target,
                 )
                 .await
                 {
@@ -246,6 +249,7 @@ async fn process_first_level_job(
     validators_targets: &Option<Vec<ValidatorPoseidon>>,
     withdrawal_credentials_targets: &Option<Vec<Target>>,
     validator_is_zero: &Option<Vec<BoolTarget>>,
+    current_epoch_target: &Option<[Target; 2]>,
 ) -> Result<()> {
     let balance_input_index = u64::from_be_bytes(job.data[0..8].try_into().unwrap()) as usize;
 
@@ -286,6 +290,12 @@ async fn process_first_level_job(
         &mut pw,
         &validator_is_zero.as_ref().unwrap(),
         validator_balance_input.validator_is_zero,
+    );
+
+    set_pw_values(
+        &mut pw,
+        current_epoch_target.as_ref().unwrap(),
+        validator_balance_input.current_epoch,
     );
 
     let proof = circuit_data.prove(pw)?;
@@ -389,11 +399,14 @@ fn get_first_level_targets() -> Result<Targets, anyhow::Error> {
 
     let validator_is_zero = target_buffer.read_target_bool_vec().unwrap();
 
+    let current_epoch: [Target; 2] = target_buffer.read_target_vec().unwrap().try_into().unwrap();
+
     Ok(Targets::FirstLevel(
         Some(balances_targets),
         Some(validators_targets),
         Some(withdrawal_credentials),
         Some(validator_is_zero),
+        Some(current_epoch),
     ))
 }
 

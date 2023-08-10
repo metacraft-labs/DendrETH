@@ -12,6 +12,7 @@ const {
 } = require('@mevitae/redis-work-queue/dist/WorkQueue');
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
 import yargs from 'yargs';
+import { computeEpochAt } from '../../../libs/typescript/ts-utils/ssz-utils';
 
 const CIRCUIT_SIZE = 8;
 let TAKE;
@@ -78,6 +79,10 @@ let TAKE;
 
   const validators = beaconState.validators.slice(0, TAKE);
 
+  for (let i = 0; i < 8; i++) {
+    validators[i].exitEpoch = computeEpochAt(beaconState.slot) + 1;
+  }
+
   const balancesView = ssz.capella.BeaconState.fields.balances.toViewDU(
     beaconState.balances,
   );
@@ -117,6 +122,7 @@ let TAKE;
               ),
             ),
           ),
+          currentEpoch: bigint_to_array(63, 2, BigInt(0)),
           validatorIsZero: Array(CIRCUIT_SIZE).fill(0),
         }),
       },
@@ -192,6 +198,19 @@ let TAKE;
             computeNumberFromLittleEndianBits(
               hexToBits(
                 '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
+              ),
+            ),
+          ),
+          currentEpoch: bigint_to_array(
+            63,
+            2,
+            computeNumberFromLittleEndianBits(
+              hexToBits(
+                bytesToHex(
+                  ssz.phase0.Validator.fields.activationEpoch.hashTreeRoot(
+                    computeEpochAt(beaconState.slot),
+                  ),
+                ),
               ),
             ),
           ),
@@ -368,6 +387,7 @@ function computeNumberFromLittleEndianBits(bits) {
   for (let i = 0; i < bits.length; i++) {
     sum += BigInt(bits[i]) * 2n ** BigInt(i);
   }
+
   return sum;
 }
 

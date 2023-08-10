@@ -90,6 +90,13 @@ pub fn build_balance_inner_circuit(
         builder.connect(withdrawal_credentials1[i], withdrawal_credentials2[i]);
     }
 
+    let current_epoch1 = &pt1.public_inputs[266..268];
+    let current_epoch2 = &pt2.public_inputs[266..268];
+
+    for i in 0..2 {
+        builder.connect(current_epoch1[i], current_epoch2[i]);
+    }
+
     builder.register_public_input(sum);
 
     builder.register_public_inputs(
@@ -103,6 +110,8 @@ pub fn build_balance_inner_circuit(
     builder.register_public_inputs(withdrawal_credentials1);
 
     builder.register_public_inputs(&hash.elements);
+
+    builder.register_public_inputs(current_epoch1);
 
     let data = builder.build::<C>();
 
