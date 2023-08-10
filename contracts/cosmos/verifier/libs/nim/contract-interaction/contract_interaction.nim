@@ -1,10 +1,11 @@
 import
-  std/[osproc,strutils],
+  std/[osproc,strutils,json],
   stew/byteutils,
-  helpers,
-  confutils,
+  confutils
+
+import
   config,
-  std/json
+  helpers
 
 proc init*(pathVerificationKey, code_id, wallet, node, txflags: string): string =
   let vkey = createVerificationKey(pathVerificationKey)
