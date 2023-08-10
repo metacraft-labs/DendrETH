@@ -48,6 +48,8 @@ pub struct ValidatorBalancesInput {
     pub balances: Vec<Vec<bool>>,
     #[serde(serialize_with = "to_string", deserialize_with = "from_str")]
     pub withdrawal_credentials: Vec<u64>,
+    #[serde(serialize_with = "to_string", deserialize_with = "from_str")]
+    pub current_epoch: Vec<u64>,
     #[serde(with = "bool_vec_as_int_vec")]
     pub validator_is_zero: Vec<bool>,
 }
@@ -72,6 +74,7 @@ mod tests {
             }],
             balances: vec![vec![true, false, true], vec![false, true, false]],
             withdrawal_credentials: vec![28, 29, 30],
+            current_epoch: vec![31, 32],
             validator_is_zero: vec![false, false, false],
         };
 

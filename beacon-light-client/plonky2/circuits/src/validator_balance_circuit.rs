@@ -1,3 +1,4 @@
+
 use plonky2::{
     field::extension::Extendable,
     hash::hash_types::{HashOutTarget, RichField},
@@ -6,9 +7,10 @@ use plonky2::{
 };
 
 use crate::{
+    is_active_validator::is_active_validator,
     hash_tree_root::hash_tree_root,
     hash_tree_root_poseidon::hash_tree_root_poseidon,
-    utils::create_bool_target_array,
+    utils::{create_bool_target_array, to_mixed_endian},
     validator_hash_tree_root_poseidon::{
         hash_tree_root_validator_poseidon, ValidatorPoseidon, ValidatorPoseidonHashTreeRootTargets,
     },
@@ -22,6 +24,7 @@ pub struct ValidatorBalanceVerificationTargets {
     pub validator_is_zero: Vec<BoolTarget>,
     pub balances: Vec<[BoolTarget; 256]>,
     pub withdrawal_credentials: [Target; 5],
+    pub current_epoch: [Target; 2],
 }
 
 pub fn validator_balance_verification<F: RichField + Extendable<D>, const D: usize>(
@@ -64,7 +67,12 @@ pub fn validator_balance_verification<F: RichField + Extendable<D>, const D: usi
     for i in 0..validators_len {
         let mut elements = [zero_hash; 4];
 
-        for (j, _) in validators_leaves[i].hash_tree_root.elements.iter().enumerate() {
+        for (j, _) in validators_leaves[i]
+            .hash_tree_root
+            .elements
+            .iter()
+            .enumerate()
+        {
             elements[j] = builder._if(
                 validator_is_zero[i],
                 zero_hash,
@@ -78,7 +86,6 @@ pub fn validator_balance_verification<F: RichField + Extendable<D>, const D: usi
         );
     }
 
-
     let withdrawal_credentials = [
         builder.add_virtual_target(),
         builder.add_virtual_target(),
@@ -86,6 +93,8 @@ pub fn validator_balance_verification<F: RichField + Extendable<D>, const D: usi
         builder.add_virtual_target(),
         builder.add_virtual_target(),
     ];
+
+    let current_epoch = [builder.add_virtual_target(), builder.add_virtual_target()];
 
     let mut sums: Vec<Target> = Vec::new();
 
@@ -107,13 +116,36 @@ pub fn validator_balance_verification<F: RichField + Extendable<D>, const D: usi
         // the balance shouldn't be more than 63 bits anyway
         let bits = &balances_leaves[i / 4][((i % 4) * 64)..(((i % 4) * 64) + 63)];
 
-        let reversed_bits = bits.chunks(8).map(|chunk| chunk.iter().rev()).flatten();
+        let reversed_bits = to_mixed_endian(bits);
 
         let balance_sum = builder.le_sum(reversed_bits);
         let zero = builder.zero();
 
-        // TODO: check if the validator is active and only add the balance if it is
-        let current = builder._if(all_equal[5], balance_sum, zero);
+        let range_check_targets = is_active_validator(builder);
+
+        builder.connect(
+            range_check_targets.activation_epoch[0],
+            validators_leaves[i].validator.activation_epoch[0],
+        );
+        builder.connect(
+            range_check_targets.activation_epoch[1],
+            validators_leaves[i].validator.activation_epoch[1],
+        );
+        builder.connect(
+            range_check_targets.exit_epoch[0],
+            validators_leaves[i].validator.exit_epoch[0],
+        );
+        builder.connect(
+            range_check_targets.exit_epoch[1],
+            validators_leaves[i].validator.exit_epoch[1],
+        );
+
+        builder.connect(range_check_targets.current_epoch[0], current_epoch[0]);
+        builder.connect(range_check_targets.current_epoch[1], current_epoch[1]);
+
+        let is_valid = builder.and(all_equal[5], range_check_targets.result);
+
+        let current = builder._if(is_valid, balance_sum, zero);
 
         sums.push(builder.add(sums[i], current));
     }
@@ -126,5 +158,6 @@ pub fn validator_balance_verification<F: RichField + Extendable<D>, const D: usi
         validators: validators_leaves.iter().map(|v| v.validator).collect(),
         balances: balances_leaves,
         withdrawal_credentials: withdrawal_credentials,
+        current_epoch,
     }
 }

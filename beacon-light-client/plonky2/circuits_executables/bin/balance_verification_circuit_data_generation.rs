@@ -183,6 +183,10 @@ fn write_first_level_circuit(
         .write_target_bool_vec(&validators_balance_verification_targets.validator_is_zero)
         .unwrap();
 
+    validator_balance_verification_targets_bytes
+        .write_target_vec(&validators_balance_verification_targets.current_epoch)
+        .unwrap();
+
     write_to_file(
         &format!("{}.plonky2_targets", 0),
         &validator_balance_verification_targets_bytes,

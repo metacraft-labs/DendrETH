@@ -5,7 +5,7 @@ use plonky2::{
 use plonky2_u32::gadgets::arithmetic_u32::U32Target;
 use sha2::{Digest, Sha256};
 
-use crate::biguint::BigUintTarget;
+use crate::biguint::{BigUintTarget};
 
 pub fn hash_bit_array(validator_pubkey: Vec<&str>) -> Vec<String> {
     // Concatenate the array into a single binary string
@@ -120,4 +120,8 @@ pub fn uint32_to_bits<F: RichField + Extendable<D>, const D: usize>(
         }
     }
     bits.map(|x| x.unwrap())
+}
+
+pub fn to_mixed_endian(bits: &[BoolTarget]) -> impl Iterator<Item = &BoolTarget> {
+    bits.chunks(8).map(|chunk| chunk.iter().rev()).flatten()
 }
