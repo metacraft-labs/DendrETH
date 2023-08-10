@@ -11,6 +11,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@effect/schema": "^0.33.0",
+    "discord.js": "^14.12.1",
     "ts-node": "^10.9.1",
     "web3": "^1.10.0",
     "yargs": "^17.7.1"
