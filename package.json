@@ -49,7 +49,7 @@
     "clean:untracked_artifacts": "git clean -fdx -e .env -e .direnv -e .yarn -e .vscode $EXCL_NM -- $(git rev-parse --show-toplevel)",
     "format:check": "prettier --check . && alejandra -q --exclude ./node_modules --check .",
     "format:write": "prettier --write . && alejandra -q --exclude ./node_modules .",
-    "test": "jest --verbose --silent",
+    "test": "jest --verbose --silent -i",
     "test-emcc": "USE_EMCC=1 jest --verbose --silent"
   },
   "dependencies": {
