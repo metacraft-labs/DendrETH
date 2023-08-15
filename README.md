@@ -49,6 +49,22 @@ the full blockchain environments).
 | [Aurora/Near](https://explorer.testnet.aurora.dev/address/0xA3418F79c98A3E496A5E97610a97f82daE364619)                                                                            | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | https://github.com/metacraft-labs/DendrETH/pull/94 (Capella) |
 | [Gnosis/Gnosis](https://gnosisscan.io/address/0xb676a5e81168a24496ad13de79f2675c66684d23)                                                                                        | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | https://github.com/metacraft-labs/DendrETH/pull/94 (Capella) |
 
+## Gas Usage
+
+### EVM(ETH) blockchain
+
+|                   | Deployment | Update(Min) | Update(Max) |
+| ----------------- | ---------- | ----------- | ----------- |
+| BeaconLightClient | 1399127    | 266717      | 357029      |
+
+### COSMOS blockchain
+
+|                               | Deployment | Initialize | Update   |
+| ----------------------------- | ---------- | ---------- | -------- |
+| NIM-WASM Light Client         | 1308702    | 2991395    | 11706455 |
+| ZK-Verifier using nim-bncurve | 1302849    | 447436     | 1812337  |
+| ZK-Verifier using constantine | 1378889    | 391408     | 871846   |
+
 ## Working with the Codebase
 
 ### Pre-requisites
