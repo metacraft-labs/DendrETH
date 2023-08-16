@@ -1,11 +1,13 @@
 use plonky2::{
-    field::extension::Extendable, hash::hash_types::RichField, iop::target::BoolTarget,
+    field::extension::Extendable, hash::hash_types::RichField, iop::target::{BoolTarget, Target},
     plonk::circuit_builder::CircuitBuilder,
 };
 use plonky2_u32::gadgets::arithmetic_u32::U32Target;
 use sha2::{Digest, Sha256};
 
 use crate::biguint::{BigUintTarget};
+
+pub const ETH_SHA256_BIT_SIZE: usize = 256;
 
 pub fn hash_bit_array(validator_pubkey: Vec<&str>) -> Vec<String> {
     // Concatenate the array into a single binary string
@@ -44,8 +46,8 @@ pub fn hash_bit_array(validator_pubkey: Vec<&str>) -> Vec<String> {
 
 pub fn create_bool_target_array<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-) -> [BoolTarget; 256] {
-    (0..256)
+) -> [BoolTarget; ETH_SHA256_BIT_SIZE] {
+    (0..ETH_SHA256_BIT_SIZE)
         .map(|_| builder.add_virtual_bool_target_safe())
         .collect::<Vec<_>>()
         .try_into()
@@ -124,4 +126,16 @@ pub fn uint32_to_bits<F: RichField + Extendable<D>, const D: usize>(
 
 pub fn to_mixed_endian(bits: &[BoolTarget]) -> impl Iterator<Item = &BoolTarget> {
     bits.chunks(8).map(|chunk| chunk.iter().rev()).flatten()
+}
+
+pub fn epoch_to_mixed_endian<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    current_epoch: [Target; 2],
+) -> Vec<BoolTarget> {
+    let mut combined = builder.split_le(current_epoch[0], 63);
+    combined.extend(builder.split_le(current_epoch[1], 1));
+
+    let current_epoch_bits_ref = to_mixed_endian(&combined);
+
+    current_epoch_bits_ref.cloned().collect()
 }

@@ -41,7 +41,7 @@ mod test {
     use anyhow::Result;
     use plonky2::iop::witness::{PartialWitness, WitnessWrite};
 
-    use crate::build_first_level_circuit::build_first_level_circuit;
+    use crate::{build_first_level_circuit::build_first_level_circuit, utils::ETH_SHA256_BIT_SIZE};
 
     #[test]
     fn test_validator_hash_tree_root() -> Result<()> {
@@ -196,7 +196,7 @@ mod test {
             );
         }
 
-        for i in 0..256 {
+        for i in 0..ETH_SHA256_BIT_SIZE {
             pw.set_bool_target(
                 validator_commitment.validator.withdrawal_credentials[i],
                 withdraw_credentials[i] == "1",
@@ -229,7 +229,7 @@ mod test {
 
         let proof = data.prove(pw).unwrap();
 
-        for i in 0..256 {
+        for i in 0..ETH_SHA256_BIT_SIZE {
             assert_eq!(
                 proof.public_inputs[i + 4].to_string(),
                 validator_hash_tree_root[i].to_string()
