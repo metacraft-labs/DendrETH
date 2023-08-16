@@ -1,6 +1,7 @@
 use anyhow::Result;
 use circuits::generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer};
 use circuits::is_valid_merkle_branch::is_valid_merkle_branch;
+use circuits::utils::ETH_SHA256_BIT_SIZE;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use plonky2::iop::witness::{PartialWitness, WitnessWrite};
@@ -79,13 +80,13 @@ fn create_proof(merkle_proof: MerkleProof) -> std::result::Result<(), anyhow::Er
     let mut pw = PartialWitness::new();
     pw.set_target(hasher.index, F::from_canonical_u64(merkle_proof.index));
 
-    for i in 0..256 {
+    for i in 0..ETH_SHA256_BIT_SIZE {
         pw.set_bool_target(hasher.root[i], merkle_proof.root[i]);
         pw.set_bool_target(hasher.leaf[i], merkle_proof.leaf[i]);
     }
 
     for i in 0..merkle_proof.branch.len() {
-        for j in 0..256 {
+        for j in 0..ETH_SHA256_BIT_SIZE {
             pw.set_bool_target(hasher.branch[i][j], merkle_proof.branch[i][j]);
         }
     }

@@ -3,27 +3,30 @@ use plonky2::{
     plonk::circuit_builder::CircuitBuilder,
 };
 
-use crate::{utils::create_bool_target_array, sha256::{Sha256Targets, make_circuits}};
+use crate::{
+    sha256::{make_circuits, Sha256Targets},
+    utils::{create_bool_target_array, ETH_SHA256_BIT_SIZE},
+};
 
 pub struct HashTreeRootTargets {
-    pub leaves: Vec<[BoolTarget; 256]>,
-    pub hash_tree_root: [BoolTarget; 256],
+    pub leaves: Vec<[BoolTarget; ETH_SHA256_BIT_SIZE]>,
+    pub hash_tree_root: [BoolTarget; ETH_SHA256_BIT_SIZE],
 }
 
 pub fn hash_tree_root<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     leaves_len: usize,
 ) -> HashTreeRootTargets {
-    let leaves: Vec<[BoolTarget; 256]> = (0..leaves_len)
+    let leaves: Vec<[BoolTarget; ETH_SHA256_BIT_SIZE]> = (0..leaves_len)
         .map(|_| create_bool_target_array(builder))
         .collect();
 
     let mut hashers: Vec<Sha256Targets> = Vec::new();
 
     for i in 0..(leaves_len / 2) {
-        hashers.push(make_circuits(builder, 512));
+        hashers.push(make_circuits(builder, 2 * ETH_SHA256_BIT_SIZE as u64));
 
-        for j in 0..256 {
+        for j in 0..ETH_SHA256_BIT_SIZE {
             builder.connect(hashers[i].message[j].target, leaves[i * 2][j].target);
             builder.connect(
                 hashers[i].message[j + 256].target,
@@ -34,15 +37,15 @@ pub fn hash_tree_root<F: RichField + Extendable<D>, const D: usize>(
 
     let mut k = 0;
     for i in leaves_len / 2..leaves_len - 1 {
-        hashers.push(make_circuits(builder, 512));
+        hashers.push(make_circuits(builder, 2 * ETH_SHA256_BIT_SIZE as u64));
 
-        for j in 0..256 {
+        for j in 0..ETH_SHA256_BIT_SIZE {
             builder.connect(
                 hashers[i].message[j].target,
                 hashers[k * 2].digest[j].target,
             );
             builder.connect(
-                hashers[i].message[j + 256].target,
+                hashers[i].message[j + ETH_SHA256_BIT_SIZE].target,
                 hashers[k * 2 + 1].digest[j].target,
             );
         }
@@ -68,7 +71,10 @@ mod tests {
         },
     };
 
-    use crate::{hash_tree_root::hash_tree_root, utils::hash_bit_array};
+    use crate::{
+        hash_tree_root::hash_tree_root,
+        utils::{hash_bit_array, ETH_SHA256_BIT_SIZE},
+    };
 
     #[test]
     fn test_hash_tree_root() -> Result<()> {
@@ -352,7 +358,7 @@ mod tests {
 
         let mut pw: PartialWitness<F> = PartialWitness::new();
 
-        for i in 0..256 {
+        for i in 0..ETH_SHA256_BIT_SIZE {
             pw.set_bool_target(targets.leaves[0][i], pubkey_binary_result[i] == "1");
             pw.set_bool_target(targets.leaves[1][i], withdraw_credentials[i] == "1");
             pw.set_bool_target(targets.leaves[2][i], effective_balance[i] == "1");
@@ -363,7 +369,7 @@ mod tests {
             pw.set_bool_target(targets.leaves[7][i], withdrawable_epoch[i] == "1");
         }
 
-        for i in 0..256 {
+        for i in 0..ETH_SHA256_BIT_SIZE {
             if validator_hash_tree_root[i] == "1" {
                 builder.assert_one(targets.hash_tree_root[i].target);
             } else {
@@ -485,14 +491,14 @@ mod tests {
             "1",
         ];
 
-        for i in 0..256 {
+        for i in 0..ETH_SHA256_BIT_SIZE {
             pw.set_bool_target(targets.leaves[0][i], first[i] == "1");
             pw.set_bool_target(targets.leaves[1][i], second[i] == "1");
             pw.set_bool_target(targets.leaves[2][i], third[i] == "1");
             pw.set_bool_target(targets.leaves[3][i], fourth[i] == "1");
         }
 
-        for i in 0..256 {
+        for i in 0..ETH_SHA256_BIT_SIZE {
             if hash_tree_root[i] == "1" {
                 builder.assert_one(targets.hash_tree_root[i].target);
             } else {
