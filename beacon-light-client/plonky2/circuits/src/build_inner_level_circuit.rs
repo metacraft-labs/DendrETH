@@ -10,7 +10,7 @@ use plonky2::{
     },
 };
 
-use crate::sha256::make_circuits;
+use crate::{sha256::make_circuits, utils::ETH_SHA256_BIT_SIZE};
 
 pub struct InnerCircuitTargets {
     pub proof1: ProofWithPublicInputsTarget<2>,
@@ -83,9 +83,9 @@ pub fn build_inner_circuit(
 
     let hasher = make_circuits(&mut builder, 512);
 
-    for i in 0..256 {
+    for i in 0..ETH_SHA256_BIT_SIZE {
         builder.connect(hasher.message[i].target, sha256_hash[i]);
-        builder.connect(hasher.message[i + 256].target, sha256_hash2[i]);
+        builder.connect(hasher.message[i + ETH_SHA256_BIT_SIZE].target, sha256_hash2[i]);
     }
 
     let hash = builder.hash_n_to_hash_no_pad::<PoseidonHash>(

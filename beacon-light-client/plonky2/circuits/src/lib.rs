@@ -15,3 +15,4 @@ pub mod validator_hash_tree_root;
 pub mod validator_hash_tree_root_poseidon;
 pub mod build_balance_inner_level_circuit;
 pub mod is_active_validator;
+pub mod build_final_circuit;

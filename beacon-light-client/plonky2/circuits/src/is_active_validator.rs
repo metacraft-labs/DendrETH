@@ -5,7 +5,7 @@ use plonky2::{
     plonk::circuit_builder::CircuitBuilder,
 };
 
-use crate::utils::to_mixed_endian;
+use crate::utils::{epoch_to_mixed_endian};
 
 pub struct IsActiveValidatorTargets {
     pub activation_epoch: [Target; 2],
@@ -46,18 +46,6 @@ pub fn is_active_validator<F: RichField + Extendable<D>, const D: usize>(
         exit_epoch,
         result: builder.and(le1, BoolTarget::new_unsafe(lt)),
     }
-}
-
-fn epoch_to_mixed_endian<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    current_epoch: [Target; 2],
-) -> Vec<BoolTarget> {
-    let mut combined = builder.split_le(current_epoch[0], 63);
-    combined.extend(builder.split_le(current_epoch[1], 1));
-
-    let current_epoch_bits_ref = to_mixed_endian(&combined);
-
-    current_epoch_bits_ref.cloned().collect()
 }
 
 fn is_less_than_or_equal_epoch<F: RichField + Extendable<D>, const D: usize>(
