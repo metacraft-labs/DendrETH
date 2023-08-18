@@ -3,6 +3,9 @@ import { ethers } from 'hardhat';
 import { getFilesInDir, Proof } from './utils';
 import { convertProofToSolidityCalldata } from '../../../libs/typescript/ts-utils/zk-utils';
 import INITIAL_UPDATE from '../../../vendor/eth2-light-client-updates/prater/capella-updates-94/update_5601823_5609044.json';
+import { getGenericLogger } from '../../../libs/typescript/ts-utils/logger';
+
+const logger = getGenericLogger();
 
 describe.only('BeaconLightClientReadyProofs', async function () {
   let proofs: Proof[];
@@ -49,11 +52,11 @@ describe.only('BeaconLightClientReadyProofs', async function () {
   });
 
   it('Importing real data', async function () {
-    console.log(' >>> Begin importing of real updates');
+    logger.info(' >>> Begin importing of real updates');
     for (let i = 1; i < updates.length; i++) {
       const proof = await convertProofToSolidityCalldata(proofs[i], publics[i]);
 
-      console.log(` >>> Importing update ${i}...`);
+      logger.info(` >>> Importing update ${i}...`);
 
       const transaction = await blc.light_client_update(
         { ...proof, ...updates[i] },
@@ -64,7 +67,7 @@ describe.only('BeaconLightClientReadyProofs', async function () {
 
       const result = await transaction.wait();
 
-      console.log(` >>> Successfully imported update ${i}!`);
+      logger.info(` >>> Successfully imported update ${i}!`);
     }
   });
 });

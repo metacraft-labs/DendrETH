@@ -9,6 +9,11 @@ import doUpdate from './do_update';
 import { Redis } from '../../implementations/redis';
 import { BeaconApi } from '../../implementations/beacon-api';
 import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
+import { getGenericLogger } from '../../../libs/typescript/ts-utils/logger';
+import { initPrometheusSetup } from '../../../libs/typescript/ts-utils/prometheus-utils';
+
+const logger = getGenericLogger();
+initPrometheusSetup();
 
 (async () => {
   const updatePollingConfig = {

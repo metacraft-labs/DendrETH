@@ -12,7 +12,10 @@ import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { bytesToHex } from '../../libs/typescript/ts-utils/bls';
 import { computeSyncCommitteePeriodAt } from '../../libs/typescript/ts-utils/ssz-utils';
 import path from 'path';
+import { getGenericLogger } from '../../libs/typescript/ts-utils/logger';
+import { prometheusTiming } from '../../libs/typescript/ts-utils/prometheus-utils';
 
+const logger = getGenericLogger();
 export class BeaconApi implements IBeaconApi {
   private beaconRestApis: string[];
   private currentApiIndex: number;
@@ -90,9 +93,13 @@ export class BeaconApi implements IBeaconApi {
   }
 
   async getCurrentHeadSlot(): Promise<number> {
-    const currentHead = await (
-      await this.fetchWithFallback('/eth/v1/beacon/headers/head')
-    ).json();
+    logger.info('Getting CurrentHeadSlot..');
+
+    const currentHead = await prometheusTiming(
+      async () =>
+        (await this.fetchWithFallback('/eth/v1/beacon/headers/head')).json(),
+      'getCurrentHeadSlot',
+    );
 
     return Number(currentHead.data.header.message.slot);
   }
@@ -102,6 +109,7 @@ export class BeaconApi implements IBeaconApi {
       await this.fetchWithFallback(`/eth/v1/beacon/headers/${blockHash}`)
     ).json();
 
+    logger.info('Got CurrentHeadSlot..');
     return Number(headResult.data.header.message.slot);
   }
 
@@ -205,7 +213,10 @@ export class BeaconApi implements IBeaconApi {
     const { ssz } = await import('@lodestar/types');
 
     const { beaconState: prevBeaconSate, stateTree: prevStateTree } =
-      await this.getBeaconState(prevSlot);
+      await prometheusTiming(
+        async () => await this.getBeaconState(prevSlot),
+        'getPrevBeaconState',
+      );
 
     const prevFinalizedHeaderResult = await (
       await this.fetchWithFallback(
@@ -229,7 +240,10 @@ export class BeaconApi implements IBeaconApi {
     const {
       beaconState: prevFinalizedBeaconState,
       stateTree: prevFinalizedBeaconStateTree,
-    } = await this.getBeaconState(finalityHeader.slot);
+    } = await prometheusTiming(
+      async () => await this.getBeaconState(finalityHeader.slot),
+      'getPrevFinalizedBeaconState',
+    );
 
     const prevUpdateFinalizedSyncCommmitteePeriod =
       computeSyncCommitteePeriodAt(finalityHeader.slot);
@@ -283,7 +297,10 @@ export class BeaconApi implements IBeaconApi {
   }> {
     const { ssz } = await import('@lodestar/types');
 
-    const { beaconState, stateTree } = await this.getBeaconState(slot);
+    const { beaconState, stateTree } = await prometheusTiming(
+      async () => await this.getBeaconState(slot),
+      'getBeaconState',
+    );
 
     const finalizedHeaderResult = await (
       await this.fetchWithFallback(
@@ -378,23 +395,8 @@ export class BeaconApi implements IBeaconApi {
     return block.data.message.body.execution_payload.state_root;
   }
 
-  async getValidators(
-    state_id: number | string = 'head',
-  ): Promise<Validator[]> {
-    const { ssz } = await import('@lodestar/types');
-
-    const validators = await (
-      await this.fetchWithFallback(
-        `/eth/v1/beacon/states/${state_id}/validators`,
-      )
-    ).json();
-
-    return ssz.phase0.Validators.fromJson(
-      validators.data.map(x => x.validator),
-    );
-  }
-
-  public async getBeaconState(slot: number) {
+  async getBeaconState(slot: number) {
+    logger.info('Getting Beacon State..');
     const { ssz } = await import('@lodestar/types');
 
     const beaconStateSZZ = await this.fetchWithFallback(
@@ -412,6 +414,7 @@ export class BeaconApi implements IBeaconApi {
     const beaconStateView = ssz.capella.BeaconState.toViewDU(beaconState);
     const stateTree = new Tree(beaconStateView.node);
 
+    logger.info('Got Beacon State');
     return { beaconState, stateTree };
   }
 
@@ -433,9 +436,9 @@ export class BeaconApi implements IBeaconApi {
       try {
         const result = await fetch(this.concatUrl(subUrl), init);
         if (result.status === 429) {
-          console.log('Rate limit exceeded');
+          logger.warn('Rate limit exceeded');
 
-          console.log('Retrying with the next one');
+          logger.warn('Retrying with the next one');
           this.nextApi();
           continue;
         }
@@ -444,13 +447,13 @@ export class BeaconApi implements IBeaconApi {
       } catch (error) {
         retries++;
         if (retries >= this.beaconRestApis.length) {
-          console.log('All beacon rest apis failed');
+          logger.error('All beacon rest apis failed');
           throw error;
         }
 
-        console.log('Beacon rest api failed:', error);
+        logger.error(`Beacon rest api failed: ${error}`);
 
-        console.log('Retrying with the next one');
+        logger.error('Retrying with the next one');
 
         this.nextApi();
       }

@@ -7,6 +7,10 @@ import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
 import { Contract, ethers } from 'ethers';
 import hashi_abi from './hashi_abi.json';
 import { getNetworkConfig } from '../../../relay/utils/get_current_network_config';
+import { getGenericLogger } from '../../../libs/typescript/ts-utils/logger';
+import { initPrometheusSetup } from '../../../libs/typescript/ts-utils/prometheus-utils';
+
+const logger = getGenericLogger();
 
 task('start-publishing', 'Run relayer')
   .addParam('lightclient', 'The address of the BeaconLightClient contract')
@@ -33,6 +37,13 @@ task('start-publishing', 'Run relayer')
     undefined,
     true,
   )
+  .addParam(
+    'prometheusport',
+    'Port No. (3000-3005) for Node Express server where Prometheus is listening.',
+    '',
+    undefined,
+    true,
+  )
   .setAction(async (args, { ethers, network }) => {
     const config = {
       REDIS_HOST: process.env.REDIS_HOST,
@@ -42,8 +53,23 @@ task('start-publishing', 'Run relayer')
     checkConfig(config);
 
     if (args.follownetwork !== 'pratter' && args.follownetwork !== 'mainnet') {
-      console.warn('This follownetwork is not specified in networkconfig');
+      logger.warn('This follownetwork is not specified in networkconfig');
       return;
+    }
+
+    if (args.prometheusport) {
+      console.log(`Initializing Prometheus on port ${args.prometheusport}`);
+
+      let networkName: string = '';
+      for (let i = 0; i < process.argv.length; i++) {
+        const arg = process.argv[i];
+        if (arg === '--network' && i + 1 < process.argv.length) {
+          networkName = process.argv[i + 1];
+          break;
+        }
+      }
+
+      initPrometheusSetup(args.prometheusport, networkName);
     }
 
     const currentConfig = getNetworkConfig(args.follownetwork);
@@ -56,10 +82,12 @@ task('start-publishing', 'Run relayer')
       publisher = new ethers.Wallet(args.privatekey, ethers.provider);
     }
 
-    console.log('Publishing updates with the account:', publisher.address);
-    console.log('Account balance:', (await publisher.getBalance()).toString());
+    logger.info(`Publishing updates with the account: ${publisher.address}`);
+    logger.info(
+      `Account balance: ${(await publisher.getBalance()).toString()}`,
+    );
 
-    console.log(`Contract address ${args.lightclient}`);
+    logger.info(`Contract address ${args.lightclient}`);
 
     const lightClientContract = await ethers.getContractAt(
       'BeaconLightClient',

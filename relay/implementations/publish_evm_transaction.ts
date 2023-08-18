@@ -2,6 +2,9 @@ import { BigNumber, Contract } from 'ethers';
 import Web3 from 'web3';
 import { FeeHistoryResult } from 'web3-eth';
 import { groth16 } from 'snarkjs';
+import { getGenericLogger } from '../../libs/typescript/ts-utils/logger';
+
+const logger = getGenericLogger();
 
 type Block = {
   number: number | string;
@@ -44,7 +47,7 @@ export async function publishTransaction(
         maxPriorityFeePerGas: priorityFeePerGasNumber,
       };
 
-      console.log(transactionData);
+      logger.info(transactionData);
 
       let estimateGas;
       let transaction;
@@ -68,7 +71,7 @@ export async function publishTransaction(
         });
       }
 
-      console.log(transaction);
+      logger.info(transaction);
 
       transactionPromise = transaction.wait();
     } catch (e) {
@@ -80,7 +83,7 @@ export async function publishTransaction(
             .div(10),
         });
 
-        console.log(transaction);
+        logger.info(transaction);
 
         transactionPromise = transaction.wait();
       } else {
@@ -94,7 +97,7 @@ export async function publishTransaction(
     ]);
 
     if (r === 'unresolved') {
-      console.log(
+      logger.info(
         'Transaction failed to be included in a block for 2 minutes retry with bumped fee',
       );
       retries++;

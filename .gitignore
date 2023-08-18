@@ -155,6 +155,9 @@ result
 # Nim
 nimcache/
 
+# Data
+data/
+
 # Circom related
 *.ptau
 build

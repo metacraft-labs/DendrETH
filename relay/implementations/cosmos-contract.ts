@@ -5,7 +5,9 @@ import { promisify } from 'node:util';
 import { exec as exec_, execSync, spawn } from 'node:child_process';
 import { calculateFee, GasPrice } from '@cosmjs/stargate';
 import { bytesToHex } from '../../libs/typescript/ts-utils/bls';
+import { getGenericLogger } from '../../libs/typescript/ts-utils/logger';
 
+const logger = getGenericLogger();
 const exec = promisify(exec_);
 
 export class CosmosContract implements ISmartContract {
@@ -56,7 +58,7 @@ export class CosmosContract implements ISmartContract {
         last_header_hash: {},
       });
     } else {
-      console.error('Failed to create client');
+      logger.error('Failed to create client');
     }
     return '0x' + bytesToHex(lastHeader);
   }
@@ -91,7 +93,7 @@ export class CosmosContract implements ISmartContract {
     } --attested_header_slot=${update.attestedHeaderSlot.toString()}`;
     const updateDataExec = exec(parseUpdateDataCommand);
     const updateData = (await updateDataExec).stdout.replace(/\s/g, '');
-    console.log(updateData);
+    logger.info(updateData);
 
     var executeFee;
     switch (this.network) {
@@ -120,7 +122,7 @@ export class CosmosContract implements ISmartContract {
         'Updating the Verifier',
       );
     } else {
-      console.error('Failed to create client');
+      logger.error('Failed to create client');
     }
     return result;
   }

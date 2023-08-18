@@ -4,6 +4,9 @@ import {
   PROOF_GENERATOR_QUEUE,
   UPDATE_POLING_QUEUE,
 } from './constants/constants';
+import { getGenericLogger } from '../libs/typescript/ts-utils/logger';
+
+const logger = getGenericLogger();
 
 const config = {
   REDIS_HOST: process.env.REDIS_HOST,
@@ -20,9 +23,9 @@ const proofGeneratorEvents = new QueueEvents(PROOF_GENERATOR_QUEUE, {
 });
 
 proofGeneratorEvents.on('failed', error => {
-  console.error('Proofing generation failed');
+  logger.error('Proofing generation failed');
 
-  console.log(error);
+  logger.error(error);
 });
 
 const getUpdateEvents = new QueueEvents(UPDATE_POLING_QUEUE, {
@@ -33,7 +36,7 @@ const getUpdateEvents = new QueueEvents(UPDATE_POLING_QUEUE, {
 });
 
 getUpdateEvents.on('failed', error => {
-  console.error('Error fetching update');
+  logger.error('Error fetching update');
 
-  console.log(error);
+  logger.error(error);
 });

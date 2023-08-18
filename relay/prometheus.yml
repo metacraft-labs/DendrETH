@@ -1,0 +1,29 @@
+global:
+  scrape_interval: 12s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+  - job_name: listen_metrics
+    static_configs:
+      - targets: [
+      "localhost:2999",
+      "localhost:3000",
+      "localhost:3001",
+      "localhost:3002",
+      "localhost:3003",
+      "localhost:3004",
+      "localhost:3005",
+      "localhost:3006",
+      "localhost:3007",
+      "localhost:3008",
+      "localhost:3009",
+      "localhost:3010",
+      "localhost:3011",
+      "localhost:3012",
+      "localhost:3013",
+      "localhost:3014",
+      "localhost:3015"
+      ]
+      

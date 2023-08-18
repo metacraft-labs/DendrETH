@@ -1,5 +1,9 @@
 import { task } from 'hardhat/config';
+import { getGenericLogger } from '../../../libs/typescript/ts-utils/logger';
+
+const logger = getGenericLogger();
 
 task('accounts', 'Prints the list of accounts', async (_, { ethers }) => {
-  (await ethers.getSigners()).map(a => console.log(a.address));
+  logger.info('Getting Signers..');
+  (await ethers.getSigners()).map(a => logger.info(a.address));
 });

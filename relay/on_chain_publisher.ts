@@ -15,6 +15,9 @@ import { Config, UPDATE_POLING_QUEUE } from './constants/constants';
 import crypto from 'crypto';
 import { getSlotOnChain } from './utils/smart_contract_utils';
 import { addUpdate } from './utils/orchestrator';
+import { getGenericLogger } from '../libs/typescript/ts-utils/logger';
+
+const logger = getGenericLogger();
 
 let isDrainRunning = false;
 
@@ -58,11 +61,11 @@ export async function publishProofs(
           transactionSpeed,
         );
       } catch (e) {
-        console.error('Error while draining updates in Redis', e);
+        logger.error(`Error while draining updates in Redis ${e}`);
       }
     });
   } catch (error) {
-    console.error('Error occurred while publishing proofs: ', error);
+    logger.error(`Error occurred while publishing proofs: ${error}`);
     throw error;
   }
 }
@@ -76,7 +79,7 @@ export async function drainUpdatesInRedis(
   transactionSpeed: TransactionSpeed = 'avg',
 ) {
   if (isDrainRunning) {
-    console.log('Publishing transactions is already running');
+    logger.info('Publishing transactions is already running');
     return;
   }
   isDrainRunning = true;
@@ -88,7 +91,7 @@ export async function drainUpdatesInRedis(
       const proofResult = await redis.getNextProof(lastSlotOnChain);
 
       if (proofResult == null) {
-        console.log('No proof to publish');
+        logger.info('No proof to publish');
         isDrainRunning = false;
         return;
       }
@@ -151,7 +154,7 @@ export async function postUpdateOnChain(
         .padStart(64, '0'),
   };
 
-  console.log(update);
+  logger.info(update);
 
   if (hashiAdapterContract) {
     const finalizedHeaderSlot = await beaconApi.getBlockSlot(
@@ -196,19 +199,19 @@ export async function postUpdateOnChain(
 
   const currentHeadSlot = await beaconApi.getCurrentHeadSlot();
 
-  console.log(`Previous slot on the chain ${lastSlotOnChain}`);
+  logger.info(`Previous slot on the chain ${lastSlotOnChain}`);
 
-  console.log(`Transaction publishing for slot ${transactionSlot}`);
+  logger.info(`Transaction publishing for slot ${transactionSlot}`);
 
-  console.log(`Current slot on the network is ${currentHeadSlot}`);
+  logger.info(`Current slot on the network is ${currentHeadSlot}`);
 
-  console.log(
+  logger.info(
     `Prev slot is ${
       ((currentHeadSlot - lastSlotOnChain) * 12) / 60
     } minutes behind`,
   );
 
-  console.log(
+  logger.info(
     `Transaction is ${
       ((currentHeadSlot - transactionSlot) * 12) / 60
     } minutes behind`,
@@ -233,9 +236,9 @@ async function handleFailure(
 }
 
 function log(error: any, firstMessage: string, secondMessage: string): void {
-  console.log(firstMessage);
-  console.log(error);
-  console.log(secondMessage);
+  logger.info(firstMessage);
+  logger.info(error);
+  logger.info(secondMessage);
 }
 
 async function askForUpdates(
@@ -256,7 +259,10 @@ async function askForUpdates(
     try {
       let before = Date.now();
 
+      logger.info('Getting OnChain Slot..');
       const optimisticSlot = await getSlotOnChain(smartContract, beaconApi);
+
+      logger.info('Getting CurrentHeadSlot');
       const headSlot = await beaconApi.getCurrentHeadSlot();
 
       // Loop through
@@ -264,7 +270,7 @@ async function askForUpdates(
         await addUpdate(
           optimisticSlot,
           slotsJump,
-          headSlot,
+          headSlot - 1, // Signers are from the next block
           updateQueue,
           networkConfig,
           beaconApi,
@@ -274,7 +280,7 @@ async function askForUpdates(
       let after = Date.now();
       await sleep(12000 * slotsJump - (after - before));
     } catch (e) {
-      console.error('Error while fetching update', e);
+      logger.error(`Error while fetching update ${e}`);
     }
   }
 }

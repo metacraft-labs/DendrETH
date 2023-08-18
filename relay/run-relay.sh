@@ -130,6 +130,10 @@ else
   echo "Using remote Redis server at $REDIS_HOST:$REDIS_PORT"
 fi
 
+echo "Starting Prometheus server on 9090"
+supervisorctl start prometheus
+echo "Prometheus server started"
+
 # Run the polling update task
 echo "Starting the polling update task"
 supervisorctl start pollUpdatesWorker
