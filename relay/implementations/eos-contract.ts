@@ -4,6 +4,9 @@ import { exec as exec_ } from 'node:child_process';
 import { compileVerifierParseDataTool } from '../../tests/helpers/helpers';
 import { getDataFromPrintHeaderResult } from '../../libs/typescript/cosmos-utils/cosmos-utils';
 import { formatHex } from '../../libs/typescript/ts-utils/bls';
+import { getGenericLogger } from '../../libs/typescript/ts-utils/logger';
+
+const logger = getGenericLogger();
 
 const exec = promisify(exec_);
 
@@ -28,7 +31,7 @@ export class EOSContract implements ISmartContract {
     const queryRes = JSON.parse((await exec(queryCommand)).stdout);
     const currentIndex = queryRes.rows[0].current_index;
     let lastHeader = queryRes.rows[0].new_optimistic_header_roots[currentIndex];
-    console.log('lastHeader', lastHeader);
+    logger.info(`lastHeader ${lastHeader}`);
 
     return '0x' + lastHeader;
   }
@@ -58,14 +61,14 @@ export class EOSContract implements ISmartContract {
       new_slot: update.attestedHeaderSlot.toString(),
     });
 
-    console.info('updating with data:', updateData);
+    logger.info(`updating with data: ${updateData}`);
     let updateCommand: string;
     if (this.rpcEndpoint == 'local') {
       updateCommand = `cleos push action ${this.contractAddress} update '${updateData}' -p ${this.contractAddress}@active`;
     } else {
       updateCommand = `cleos --url ${this.rpcEndpoint} push action ${this.contractAddress} update '${updateData}' -p ${this.contractAddress}@active`;
     }
-    console.info('updateCommand:', updateCommand);
+    logger.info(`updateCommand: ${updateCommand}`);
     let result = await exec(updateCommand);
 
     return result;

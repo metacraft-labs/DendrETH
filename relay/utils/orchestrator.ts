@@ -7,6 +7,9 @@ import {
 } from '../../libs/typescript/ts-utils/ssz-utils';
 import { IBeaconApi } from '../abstraction/beacon-api-interface';
 import { findClosestValidBlock } from '../workers/poll-updates/get_light_client_input_from_to';
+import { getGenericLogger } from '../../libs/typescript/ts-utils/logger';
+
+const logger = getGenericLogger();
 
 export async function addUpdate(
   optimisticSlot: number,
@@ -37,11 +40,11 @@ export async function addUpdate(
   );
 
   if (optimisticSlot >= nextSlot) {
-    console.log('Not new enough slot');
+    logger.info('No new enough slots');
     return false;
   }
 
-  console.log('New update from to added');
+  logger.info('New update from-to added');
 
   await updateQueue.add(
     'update',

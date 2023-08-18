@@ -1,6 +1,8 @@
 import { IProver } from '../abstraction/prover-interface';
 import { ProofInputType, Proof, WitnessGeneratorInput } from '../types/types';
+import { getGenericLogger } from '../../libs/typescript/ts-utils/logger';
 
+const logger = getGenericLogger();
 export class Prover implements IProver {
   private proverServerURL: string;
 
@@ -9,7 +11,7 @@ export class Prover implements IProver {
   }
 
   async genProof(proofInput: ProofInputType): Promise<Proof> {
-    console.log('Starting to generate proofs');
+    logger.info('Starting to generate proofs');
 
     let st = await this.getStatus();
 
@@ -17,11 +19,11 @@ export class Prover implements IProver {
       throw new Error('Proving server is not ready');
     }
 
-    console.log('Server is ready sending input');
+    logger.info('Server is ready sending input');
 
     await this.callInput(proofInput.proofInput);
 
-    console.log('Input send waiting for proof generation');
+    logger.info('Input send waiting for proof generation');
 
     st = await this.getStatus();
 
@@ -32,7 +34,7 @@ export class Prover implements IProver {
       await new Promise(r => setTimeout(r, 2000));
     }
 
-    console.log('Proof successfully generated');
+    logger.info('Proof successfully generated');
 
     const proof = JSON.parse(st.proof);
 

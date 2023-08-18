@@ -74,12 +74,14 @@
     "ffjavascript": "^0.2.59",
     "hardhat": "^2.10.2",
     "hardhat-gas-reporter": "^1.0.8",
+    "prom-client": "^14.2.0",
     "r1csfile": "^0.0.40",
     "redis": "^4.6.5",
     "redis-commander": "^0.8.0",
     "snarkit2": "^0.2.0",
     "snarkjs": "github:metacraft-labs/snarkjs",
     "uuid": "^9.0.0",
+    "winston": "^3.10.0",
     "yargs": "^17.7.1"
   }
 }

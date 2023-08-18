@@ -3,6 +3,9 @@ import { Queue } from 'bullmq';
 import { GetUpdate } from '../../../relay/types/types';
 import { UPDATE_POLING_QUEUE } from '../../../relay/constants/constants';
 import { task } from 'hardhat/config';
+import { getGenericLogger } from '../../../libs/typescript/ts-utils/logger';
+
+const logger = getGenericLogger();
 
 task('remove-repeat-job', 'Run update recuring task')
   .addParam('jobkey', 'The job key')
@@ -21,7 +24,7 @@ task('remove-repeat-job', 'Run update recuring task')
       },
     });
 
-    console.log(await updateQueue.getRepeatableJobs());
+    logger.info(await updateQueue.getRepeatableJobs());
 
     await updateQueue.removeRepeatableByKey(args.jobkey);
   });

@@ -5,8 +5,9 @@ import { readFileSync, writeFileSync } from 'fs';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as vkey from './converted-vkey.json';
-import { join } from 'path';
+import { getGenericLogger } from '../../../../libs/typescript/ts-utils/logger';
 
+const logger = getGenericLogger();
 const promiseExec = promisify(exec);
 const network = 'mainnet';
 
@@ -30,13 +31,13 @@ let period = 291;
 
 (async () => {
   for (let update of UPDATES.slice(1)) {
-    console.log('Proof convertion...');
+    logger.info('Proof convertion...');
     await promiseExec(
       `python ${path.join(__dirname, 'proof_converter.py')} ${proofsDir}/proof${
         period - 1
       }.json ${proofsDir}/public${period - 1}.json`,
     );
-    console.log('Input generation...');
+    logger.info('Input generation...');
     const proof = JSON.parse(readFileSync(`proof.json`).toString());
 
     writeFileSync(
@@ -55,8 +56,8 @@ let period = 291;
       ),
     );
 
-    console.log('Witness generation...');
-    console.log(
+    logger.info('Witness generation...');
+    logger.info(
       await promiseExec(
         `${path.join(
           __dirname,
@@ -65,8 +66,8 @@ let period = 291;
       ),
     );
 
-    console.log('Proof generation...');
-    console.log(
+    logger.info('Proof generation...');
+    logger.info(
       await promiseExec(
         `${path.join(
           __dirname,

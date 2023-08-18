@@ -1,5 +1,8 @@
 import { groth16 } from 'snarkjs';
 import { readFileSync } from 'fs';
+import { getGenericLogger } from '../../../../libs/typescript/ts-utils/logger';
+
+const logger = getGenericLogger();
 
 (async () => {
   for (let i = 291; i <= 416; i++) {
@@ -22,9 +25,9 @@ import { readFileSync } from 'fs';
     const isValid = await groth16.verify(verificationKey, pub, proof);
 
     if (isValid) {
-      console.log(`Verified recursive proof for period: ${i}`);
+      logger.info(`Verified recursive proof for period: ${i}`);
     } else {
-      console.log(`Invalid proof`, '\x1b[31m');
+      logger.info(`Invalid proof`, '\x1b[31m');
       process.exit(1);
     }
   }

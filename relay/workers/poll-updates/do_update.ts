@@ -3,6 +3,9 @@ import { IBeaconApi } from '../../abstraction/beacon-api-interface';
 import { getInputFromTo } from './get_light_client_input_from_to';
 import { ProofInputType } from '../../types/types';
 import { Config } from '../../constants/constants';
+import { getGenericLogger } from '../../../libs/typescript/ts-utils/logger';
+
+const logger = getGenericLogger();
 
 export default async function doUpdate(
   beaconApi: IBeaconApi,
@@ -11,6 +14,9 @@ export default async function doUpdate(
   to: number,
   networkConfig: Config,
 ) {
+  console.log('');
+  logger.info('Getting Update..');
+
   const result = await getInputFromTo(from, to, beaconApi, networkConfig);
 
   // the task will repeat in case something fails
@@ -22,4 +28,6 @@ export default async function doUpdate(
     },
     priority: from,
   });
+  logger.info('Got Update');
+  console.log('');
 }

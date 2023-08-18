@@ -1,5 +1,8 @@
 import { IBeaconApi } from '../abstraction/beacon-api-interface';
 import { ISmartContract } from '../abstraction/smart-contract-abstraction';
+import { getGenericLogger } from '../../libs/typescript/ts-utils/logger';
+
+const logger = getGenericLogger();
 
 export async function getSlotOnChain(
   smartContract: ISmartContract,
@@ -7,7 +10,7 @@ export async function getSlotOnChain(
 ) {
   const header_root_on_chain = await smartContract.optimisticHeaderRoot();
 
-  console.log('header on chain', header_root_on_chain);
+  logger.info(`header on chain ${header_root_on_chain}`);
 
   const lastSlotOnChain = await beaconApi.getBlockSlot(header_root_on_chain);
   return lastSlotOnChain;
