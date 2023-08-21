@@ -3286,6 +3286,8 @@ __metadata:
     uuid: ^9.0.0
     winston: ^3.10.0
     yargs: ^17.7.1
+  bin:
+    get-balances-input: dist/beacon-light-client/plonky2/get_balances_input/get_balances_input.js
   languageName: unknown
   linkType: soft
 

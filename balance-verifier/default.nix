@@ -67,10 +67,15 @@
         (level: getExe (buildImage level).copyToDockerDaemon)
         allLevels
       );
+
+    get_balances_input = callPackage ../libs/nix/get_balances_input {};
   in {
     legacyPackages = {
       inherit balance-verifier-circuit-per-level balance-verifier-circuit-per-level-docker;
       inherit balance-verifier commitment-mapper balance-verifier-all-images;
+    };
+    packages = {
+      inherit get_balances_input;
     };
   };
 }
