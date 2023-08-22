@@ -75,6 +75,10 @@ in
     nim # Compiling Nim 1.6.8 is currently broken on macOS/M1
     nim-wasm
 
+    # EOS
+    metacraft-labs.leap
+    metacraft-labs.eos-vm
+    metacraft-labs.cdt
     # A basic Cosmos SDK app to host WebAssembly smart contracts
     metacraft-labs.wasmd
     metacraft-labs.rapidsnark-server
