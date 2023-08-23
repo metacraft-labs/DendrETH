@@ -1,0 +1,5 @@
+# Build results
+/node-data-dir
+
+# Files compiled with nim-wasm
+nimbuild
