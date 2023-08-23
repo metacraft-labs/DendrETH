@@ -1,19 +1,18 @@
-use std::{fs, marker::PhantomData, println, time::Instant};
+use std::{marker::PhantomData, println, time::Instant};
 
 use anyhow::Result;
 use circuits::{
     build_validator_balance_circuit::build_validator_balance_circuit,
-    generator_serializer::{self, DendrETHGateSerializer, DendrETHGeneratorSerializer},
+    generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
 };
 use circuits_executables::{
     crud::{fetch_validator_balance_input, write_to_file},
-    provers::{set_boolean_pw_values, set_pw_values, set_validator_pw_values},
+    provers::SetPWValues,
 };
 use futures_lite::future;
 use plonky2::{
-    field::goldilocks_field::GoldilocksField,
     iop::witness::PartialWitness,
-    plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig},
+    plonk::{config::PoseidonGoldilocksConfig},
     util::serialization::Write,
 };
 
@@ -116,27 +115,7 @@ async fn async_main() -> Result<()> {
 
     let start = Instant::now();
 
-    for i in 0..validator_balance_input.balances.len() {
-        set_boolean_pw_values(
-            &mut pw,
-            &validators_balance_verification_targets.balances[i],
-            validator_balance_input.balances[i].clone(),
-        );
-    }
-
-    for i in 0..validator_balance_input.validators.len() {
-        set_validator_pw_values(
-            &mut pw,
-            &validators_balance_verification_targets.validators[i],
-            &validator_balance_input.validators[i],
-        );
-    }
-
-    set_pw_values(
-        &mut pw,
-        &validators_balance_verification_targets.withdrawal_credentials,
-        validator_balance_input.withdrawal_credentials,
-    );
+    validators_balance_verification_targets.set_pw_values(&mut pw, &validator_balance_input);
 
     let proof = data.prove(pw)?;
 

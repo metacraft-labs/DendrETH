@@ -4,10 +4,10 @@ use plonky2::plonk::{
     config::{GenericConfig, PoseidonGoldilocksConfig},
 };
 
-use crate::validator_commitment::{validator_commitment, ValidatorCommitment};
+use crate::validator_commitment::{validator_commitment, ValidatorCommitmentTargets};
 
-pub fn build_first_level_circuit() -> (
-    ValidatorCommitment,
+pub fn build_commitment_mapper_first_level_circuit() -> (
+    ValidatorCommitmentTargets,
     plonky2::plonk::circuit_data::CircuitData<
         plonky2::field::goldilocks_field::GoldilocksField,
         PoseidonGoldilocksConfig,
@@ -41,11 +41,11 @@ mod test {
     use anyhow::Result;
     use plonky2::iop::witness::{PartialWitness, WitnessWrite};
 
-    use crate::{build_first_level_circuit::build_first_level_circuit, utils::ETH_SHA256_BIT_SIZE};
+    use crate::{build_first_level_circuit::build_commitment_mapper_first_level_circuit, utils::ETH_SHA256_BIT_SIZE};
 
     #[test]
     fn test_validator_hash_tree_root() -> Result<()> {
-        let (validator_commitment, data) = build_first_level_circuit();
+        let (validator_commitment, data) = build_commitment_mapper_first_level_circuit();
 
         let mut pw = PartialWitness::new();
 

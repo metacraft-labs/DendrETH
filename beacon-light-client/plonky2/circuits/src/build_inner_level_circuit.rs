@@ -1,5 +1,4 @@
 use plonky2::{
-    field::{goldilocks_field::GoldilocksField, types::Field},
     hash::poseidon::PoseidonHash,
     iop::target::{BoolTarget, Target},
     plonk::{
@@ -8,9 +7,12 @@ use plonky2::{
         config::{GenericConfig, PoseidonGoldilocksConfig},
         proof::ProofWithPublicInputsTarget,
     },
+    util::serialization::{Buffer, IoResult, Read, Write},
 };
 
-use crate::{sha256::make_circuits, utils::ETH_SHA256_BIT_SIZE};
+use crate::{
+    sha256::make_circuits, targets_serialization::{ReadTargets, WriteTargets}, utils::ETH_SHA256_BIT_SIZE,
+};
 
 pub struct InnerCircuitTargets {
     pub proof1: ProofWithPublicInputsTarget<2>,
@@ -19,7 +21,31 @@ pub struct InnerCircuitTargets {
     pub is_zero: BoolTarget,
 }
 
-pub fn build_inner_circuit(
+impl ReadTargets for InnerCircuitTargets {
+    fn read_targets(data: &mut Buffer) -> IoResult<InnerCircuitTargets> {
+        Ok(InnerCircuitTargets {
+            proof1: data.read_target_proof_with_public_inputs()?,
+            proof2: data.read_target_proof_with_public_inputs()?,
+            verifier_circuit_target: data.read_target_verifier_circuit()?,
+            is_zero: data.read_target_bool()?,
+        })
+    }
+}
+
+impl WriteTargets for InnerCircuitTargets {
+    fn write_targets(&self) -> IoResult<Vec<u8>> {
+        let mut data = Vec::<u8>::new();
+
+        data.write_target_proof_with_public_inputs(&self.proof1)?;
+        data.write_target_proof_with_public_inputs(&self.proof2)?;
+        data.write_target_verifier_circuit(&self.verifier_circuit_target)?;
+        data.write_target_bool(self.is_zero)?;
+
+        Ok(data)
+    }
+}
+
+pub fn build_commitment_mapper_inner_circuit(
     inner_circuit_data: &CircuitData<
         plonky2::field::goldilocks_field::GoldilocksField,
         PoseidonGoldilocksConfig,
@@ -57,7 +83,7 @@ pub fn build_inner_circuit(
     builder.verify_proof::<C>(&pt2, &verifier_circuit_target, &inner_circuit_data.common);
 
     let is_zero = builder.add_virtual_bool_target_safe();
-    let one = builder.constant(GoldilocksField::from_canonical_u64(1));
+    let one = builder.one();
 
     let is_one = builder.sub(one, is_zero.target);
 
@@ -85,7 +111,10 @@ pub fn build_inner_circuit(
 
     for i in 0..ETH_SHA256_BIT_SIZE {
         builder.connect(hasher.message[i].target, sha256_hash[i]);
-        builder.connect(hasher.message[i + ETH_SHA256_BIT_SIZE].target, sha256_hash2[i]);
+        builder.connect(
+            hasher.message[i + ETH_SHA256_BIT_SIZE].target,
+            sha256_hash2[i],
+        );
     }
 
     let hash = builder.hash_n_to_hash_no_pad::<PoseidonHash>(

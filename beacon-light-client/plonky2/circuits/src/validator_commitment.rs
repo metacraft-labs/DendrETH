@@ -2,29 +2,52 @@ use plonky2::{
     field::extension::Extendable,
     hash::hash_types::{HashOutTarget, RichField},
     iop::target::BoolTarget,
-    plonk::circuit_builder::CircuitBuilder,
+    plonk::circuit_builder::CircuitBuilder, util::serialization::{Buffer, IoResult, Read, Write},
 };
 
 use crate::{
-    validator_hash_tree_root::{hash_tree_root_validator_sha256, Validator},
-    validator_hash_tree_root_poseidon::{hash_tree_root_validator_poseidon, ValidatorPoseidon},
+    validator_hash_tree_root::{hash_tree_root_validator_sha256, ValidatorShaTargets},
+    validator_hash_tree_root_poseidon::{hash_tree_root_validator_poseidon, ValidatorPoseidonTargets}, targets_serialization::{ReadTargets, WriteTargets},
 };
-pub struct ValidatorCommitment {
-    pub validator: Validator,
+pub struct ValidatorCommitmentTargets {
+    pub validator: ValidatorShaTargets,
     pub sha256_hash_tree_root: [BoolTarget; 256],
     pub poseidon_hash_tree_root: HashOutTarget,
 }
 
+impl ReadTargets for ValidatorCommitmentTargets {
+    fn read_targets(data: &mut Buffer) -> IoResult<Self>
+    where
+        Self: Sized {
+        Ok(ValidatorCommitmentTargets {
+            validator: ValidatorShaTargets::read_targets(data)?,
+            sha256_hash_tree_root: data.read_target_bool_vec()?.try_into().unwrap(),
+            poseidon_hash_tree_root: data.read_target_hash()?,
+        })
+    }
+}
+
+impl WriteTargets for ValidatorCommitmentTargets {
+    fn write_targets(&self) -> IoResult<Vec<u8>> {
+        let mut data = self.validator.write_targets()?;
+
+        data.write_target_bool_vec(&self.sha256_hash_tree_root)?;
+        data.write_target_hash(&self.poseidon_hash_tree_root)?;
+
+        Ok(data)
+    }
+}
+
 pub fn validator_commitment<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-) -> ValidatorCommitment {
+) -> ValidatorCommitmentTargets {
     let hash_tree_root_sha256 = hash_tree_root_validator_sha256(builder);
 
     let validator_poseidon = hash_tree_root_validator_poseidon(builder);
 
     let validator = hash_tree_root_sha256.validator;
 
-    let validator_poseidon_mapped = ValidatorPoseidon {
+    let validator_poseidon_mapped = ValidatorPoseidonTargets {
         pubkey: [
             builder.le_sum(validator.pubkey[0..63].iter()),
             builder.le_sum(validator.pubkey[63..126].iter()),
@@ -110,7 +133,7 @@ pub fn validator_commitment<F: RichField + Extendable<D>, const D: usize>(
         );
     }
 
-    ValidatorCommitment {
+    ValidatorCommitmentTargets {
         validator: validator,
         sha256_hash_tree_root: hash_tree_root_sha256.hash_tree_root,
         poseidon_hash_tree_root: validator_poseidon.hash_tree_root,
@@ -129,7 +152,7 @@ mod test {
         },
     };
 
-    use crate::validator_commitment::validator_commitment;
+    use crate::{utils::ETH_SHA256_BIT_SIZE, validator_commitment::validator_commitment};
 
     #[test]
     fn test_validator_hash_tree_root() -> Result<()> {
@@ -287,7 +310,7 @@ mod test {
             pw.set_bool_target(targets.validator.pubkey[i], validator_pubkey[i] == "1");
         }
 
-        for i in 0..256 {
+        for i in 0..ETH_SHA256_BIT_SIZE {
             pw.set_bool_target(
                 targets.validator.withdrawal_credentials[i],
                 withdraw_credentials[i] == "1",
@@ -318,7 +341,7 @@ mod test {
             );
         }
 
-        for i in 0..256 {
+        for i in 0..ETH_SHA256_BIT_SIZE {
             if validator_hash_tree_root[i] == "1" {
                 builder.assert_one(targets.sha256_hash_tree_root[i].target);
             } else {
@@ -326,9 +349,9 @@ mod test {
             }
         }
 
-        builder.register_public_inputs(&targets.sha256_hash_tree_root.map(|x| x.target));
-
         builder.register_public_inputs(&targets.poseidon_hash_tree_root.elements);
+
+        builder.register_public_inputs(&targets.sha256_hash_tree_root.map(|x| x.target));
 
         let data = builder.build::<C>();
         let proof = data.prove(pw).unwrap();

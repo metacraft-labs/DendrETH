@@ -1,6 +1,7 @@
 use anyhow::Result;
 use circuits::generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer};
 use circuits::is_valid_merkle_branch::is_valid_merkle_branch;
+use circuits::sha256::make_circuits;
 use circuits::utils::ETH_SHA256_BIT_SIZE;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
@@ -25,6 +26,7 @@ struct RawMerkleProof {
     root: Vec<u64>,
     leaf: Vec<u64>,
     branch: Vec<Vec<u64>>,
+    size_bits: Vec<u64>,
     index: u64,
 }
 
@@ -33,6 +35,7 @@ struct MerkleProof {
     root: Vec<bool>,
     leaf: Vec<bool>,
     branch: Vec<Vec<bool>>,
+    size_bits: Vec<bool>,
     index: u64,
 }
 
@@ -51,6 +54,11 @@ fn main() -> Result<()> {
             .into_iter()
             .map(|v| v.into_iter().map(|s| s == 1).collect())
             .collect(),
+        size_bits: raw_merkle_proof
+            .size_bits
+            .into_iter()
+            .map(|s| s == 1)
+            .collect(),
         index: raw_merkle_proof.index,
     };
 
@@ -68,6 +76,14 @@ fn create_proof(merkle_proof: MerkleProof) -> std::result::Result<(), anyhow::Er
     let mut builder = CircuitBuilder::<F, D>::new(config);
 
     let hasher = is_valid_merkle_branch(&mut builder, merkle_proof.branch.len());
+    let hasher_sha = make_circuits(&mut builder, 512);
+
+    for i in 0..256 {
+        builder.connect(hasher.leaf[i].target, hasher_sha.digest[i].target);
+    }
+
+    builder.register_public_inputs(&hasher.root.iter().map(|d| d.target).collect::<Vec<_>>());
+
     println!("Building circuit");
     let start = Instant::now();
     let data = builder.build::<C>();
@@ -82,7 +98,8 @@ fn create_proof(merkle_proof: MerkleProof) -> std::result::Result<(), anyhow::Er
 
     for i in 0..ETH_SHA256_BIT_SIZE {
         pw.set_bool_target(hasher.root[i], merkle_proof.root[i]);
-        pw.set_bool_target(hasher.leaf[i], merkle_proof.leaf[i]);
+        pw.set_bool_target(hasher_sha.message[i], merkle_proof.leaf[i]);
+        pw.set_bool_target(hasher_sha.message[i + 256], merkle_proof.size_bits[i]);
     }
 
     for i in 0..merkle_proof.branch.len() {
@@ -91,51 +108,11 @@ fn create_proof(merkle_proof: MerkleProof) -> std::result::Result<(), anyhow::Er
         }
     }
 
-    let gate_serializer = DendrETHGateSerializer;
-    // let common_data_bytes = data
-    //     .common
-    //     .to_bytes(&gate_serializer)
-    //     .map_err(|_| anyhow::Error::msg("CommonCircuitData serialization failed."))?;
+    let proof = data.prove(pw)?;
 
-    // println!(
-    //     "Common circuit data length: {} bytes",
-    //     common_data_bytes.len()
-    // );
+    println!("public inputs {:?}", proof.public_inputs);
 
-    let generator_serializer = DendrETHGeneratorSerializer {
-        _phantom: PhantomData::<PoseidonGoldilocksConfig>,
-    };
+    data.verify(proof)?;
 
-    let bytes = data.to_bytes(&gate_serializer, &generator_serializer);
-
-    match bytes {
-        Ok(bytes) => {
-            println!("Circuit size: {:?}", bytes.len());
-            let start = Instant::now();
-            let circuit_data_deserialize =
-                CircuitData::<F, C, D>::from_bytes(&bytes, &gate_serializer, &generator_serializer);
-            let elapsed = start.elapsed();
-
-            println!("Deserialize duration {:?}", elapsed);
-        }
-        Err(e) => {
-            println!("Error: {:?}", e.to_string());
-        }
-    }
-
-    let start = Instant::now();
-
-    let proof = data.prove(pw).unwrap();
-
-    let duration = start.elapsed();
-
-    println!("Duration {:?}", duration);
-
-    println!("Proof size: {}", proof.to_bytes().len());
-
-    println!("Verifying proof");
-
-    let res = data.verify(proof);
-
-    res
+    Ok(())
 }

@@ -1,7 +1,7 @@
 use crate::validator::{bool_vec_as_int_vec_nested, bool_vec_as_int_vec};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-fn from_str<'de, D>(deserializer: D) -> Result<Vec<u64>, D::Error>
+pub fn from_str<'de, D>(deserializer: D) -> Result<Vec<u64>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -11,7 +11,7 @@ where
         .collect()
 }
 
-fn to_string<S>(x: &Vec<u64>, s: S) -> Result<S::Ok, S::Error>
+pub fn to_string<S>(x: &Vec<u64>, s: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
@@ -21,7 +21,7 @@ where
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub struct ValidatorPoseidon {
+pub struct ValidatorPoseidonInput {
     #[serde(serialize_with = "to_string", deserialize_with = "from_str")]
     pub pubkey: Vec<u64>,
     #[serde(serialize_with = "to_string", deserialize_with = "from_str")]
@@ -43,7 +43,7 @@ pub struct ValidatorPoseidon {
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidatorBalancesInput {
-    pub validators: Vec<ValidatorPoseidon>,
+    pub validators: Vec<ValidatorPoseidonInput>,
     #[serde(with = "bool_vec_as_int_vec_nested")]
     pub balances: Vec<Vec<bool>>,
     #[serde(serialize_with = "to_string", deserialize_with = "from_str")]
@@ -62,7 +62,7 @@ mod tests {
     #[test]
     fn test_serialize_deserialize() {
         let input = ValidatorBalancesInput {
-            validators: vec![ValidatorPoseidon {
+            validators: vec![ValidatorPoseidonInput {
                 pubkey: vec![1, 2, 3],
                 withdrawal_credentials: vec![4, 5, 6],
                 effective_balance: vec![7, 8, 9],

@@ -14,9 +14,10 @@ use plonky2::{
 use crate::{
     biguint::{BigUintTarget, CircuitBuilderBiguint},
     is_valid_merkle_branch::{is_valid_merkle_branch, IsValidMerkleBranchTargets},
+    sha256::make_circuits,
     utils::{
         biguint_to_bits_target, bits_to_biguint_target, create_bool_target_array,
-        epoch_to_mixed_endian, ETH_SHA256_BIT_SIZE,
+        epoch_to_mixed_endian, to_big_endian, ETH_SHA256_BIT_SIZE,
     },
 };
 
@@ -40,15 +41,20 @@ pub struct FinalCircuitTargets {
     pub balance_branch: [[BoolTarget; ETH_SHA256_BIT_SIZE]; 5],
     pub balance_sum: Target,
     pub withdrawal_credentials: [Target; 5],
+    pub validator_size_bits: [BoolTarget; ETH_SHA256_BIT_SIZE],
 }
 
+const D: usize = 2;
+type C = PoseidonGoldilocksConfig;
+type F = <C as GenericConfig<D>>::F;
+
 pub fn build_final_circuit(
-    balance_final_layer_circuit_data: &CircuitData<
+    balance_data: &CircuitData<
         plonky2::field::goldilocks_field::GoldilocksField,
         PoseidonGoldilocksConfig,
         2,
     >,
-    commitment_mapper_final_layer_circuit_data: &CircuitData<
+    commitment_data: &CircuitData<
         plonky2::field::goldilocks_field::GoldilocksField,
         PoseidonGoldilocksConfig,
         2,
@@ -61,106 +67,157 @@ pub fn build_final_circuit(
         2,
     >,
 ) {
-    const D: usize = 2;
-    type C = PoseidonGoldilocksConfig;
-    type F = <C as GenericConfig<D>>::F;
-
-    let standard_recursion_config = CircuitConfig::standard_recursion_config();
-
-    let final_config = CircuitConfig {
-        num_routed_wires: 37,
-        fri_config: FriConfig {
-            rate_bits: 8,
-            cap_height: 0,
-            proof_of_work_bits: 20,
-            reduction_strategy: FriReductionStrategy::MinSize(None),
-            num_query_rounds: 10,
-        },
-        ..standard_recursion_config
-    };
+    let final_config = CircuitConfig::standard_recursion_config();
 
     let mut builder = CircuitBuilder::<F, D>::new(final_config);
 
-    let balance_verifier_circuit_target = VerifierCircuitTarget {
-        constants_sigmas_cap: builder.add_virtual_cap(
-            balance_final_layer_circuit_data
-                .common
-                .config
-                .fri_config
-                .cap_height,
-        ),
-        circuit_digest: builder.add_virtual_hash(),
-    };
+    let (
+        balance_proof_targets,
+        balance_verifier_circuit_target,
+        balance_root_hash,
+        balance_sum,
+        withdrawal_credentials,
+    ) = setup_balance_targets(&mut builder, balance_data);
 
-    let balance_proof_targets: ProofWithPublicInputsTarget<2> =
-        builder.add_virtual_proof_with_pis(&balance_final_layer_circuit_data.common);
-
-    builder.verify_proof::<C>(
-        &balance_proof_targets,
-        &balance_verifier_circuit_target,
-        &balance_final_layer_circuit_data.common,
-    );
-
-    let balance_validators_poseidon_hash: &[Target] =
-        &balance_proof_targets.public_inputs[262..266];
-
-    let balance_root_hash = &balance_proof_targets.public_inputs[1..257];
-
-    let balance_sum = balance_proof_targets.public_inputs[0];
-
-    let withdrawal_credentials = &balance_proof_targets.public_inputs[257..262];
-
-    builder.register_public_input(balance_sum);
-
-    let commitment_mapper_verifier_circuit_target = VerifierCircuitTarget {
-        constants_sigmas_cap: builder.add_virtual_cap(
-            commitment_mapper_final_layer_circuit_data
-                .common
-                .config
-                .fri_config
-                .cap_height,
-        ),
-        circuit_digest: builder.add_virtual_hash(),
-    };
-
-    let commitment_mapper_proof_targets: ProofWithPublicInputsTarget<2> =
-        builder.add_virtual_proof_with_pis(&commitment_mapper_final_layer_circuit_data.common);
-
-    builder.verify_proof::<C>(
-        &commitment_mapper_proof_targets,
-        &commitment_mapper_verifier_circuit_target,
-        &commitment_mapper_final_layer_circuit_data.common,
-    );
-
-    let commitment_mapper_poseidon_hash = &commitment_mapper_proof_targets.public_inputs[0..4];
+    let (
+        commitment_mapper_proof_targets,
+        commitment_mapper_verifier_circuit_target,
+        commitment_mapper_sha256_root,
+    ) = setup_commitment_mapper_targets(&mut builder, commitment_data);
 
     for i in 0..4 {
         builder.connect(
-            commitment_mapper_poseidon_hash[i],
-            balance_validators_poseidon_hash[i],
+            commitment_mapper_proof_targets.public_inputs[i],
+            balance_proof_targets.public_inputs[262 + i],
         );
     }
 
-    let commitment_mapper_sha256_root = &commitment_mapper_proof_targets.public_inputs[4..260];
-
     let state_root = create_bool_target_array(&mut builder);
 
-    let validators_merkle_branch = create_and_connect_merkle_branch(
-        &mut builder,
-        43,
-        commitment_mapper_sha256_root,
-        &state_root,
-    );
+    builder.register_public_inputs(&state_root.iter().map(|x| x.target).collect::<Vec<Target>>());
+
+    let validator_size_bits = create_bool_target_array(&mut builder);
+
+    let validators_hasher = make_circuits(&mut builder, (2 * ETH_SHA256_BIT_SIZE) as u64);
+
+    for i in 0..ETH_SHA256_BIT_SIZE {
+        builder.connect(
+            validators_hasher.message[i].target,
+            commitment_mapper_sha256_root[i],
+        );
+        builder.connect(
+            validators_hasher.message[i + ETH_SHA256_BIT_SIZE].target,
+            validator_size_bits[i].target,
+        );
+    }
+
+    let validators_merkle_branch =
+        create_and_connect_merkle_branch(&mut builder, 43, &validators_hasher.digest, &state_root);
+
+    let balances_hasher = make_circuits(&mut builder, (2 * ETH_SHA256_BIT_SIZE) as u64);
+
+    for i in 0..ETH_SHA256_BIT_SIZE {
+        builder.connect(balances_hasher.message[i].target, balance_root_hash[i]);
+        builder.connect(
+            balances_hasher.message[i + ETH_SHA256_BIT_SIZE].target,
+            validator_size_bits[i].target,
+        );
+    }
 
     let balance_merkle_branch =
-        create_and_connect_merkle_branch(&mut builder, 44, balance_root_hash, &state_root);
+        create_and_connect_merkle_branch(&mut builder, 44, &balances_hasher.digest, &state_root);
 
-    let balance_circuit_epoch = &balance_proof_targets.public_inputs[266..268];
+    let current_slot = &balance_proof_targets.public_inputs[266..268];
 
-    let balance_circuit_epoch_bits =
-        epoch_to_mixed_endian(&mut builder, balance_circuit_epoch.try_into().unwrap());
+    let slot = verify_slot_is_in_range(&mut builder, current_slot);
 
-    let current_epoch = bits_to_biguint_target(&mut builder, balance_circuit_epoch_bits);
+    let mut slot_bits = biguint_to_bits_target::<_, 2, 2>(&mut builder, &slot);
+
+    slot_bits = to_big_endian(&slot_bits);
+
+    slot_bits.extend((64..ETH_SHA256_BIT_SIZE).map(|_| builder._false()));
+
+    let slot_merkle_branch =
+        create_and_connect_merkle_branch(&mut builder, 34, &slot_bits, &state_root);
+
+    builder.register_public_inputs(&state_root.iter().map(|x| x.target).collect::<Vec<Target>>());
+    builder.register_public_inputs(&withdrawal_credentials);
+    builder.register_public_input(balance_sum);
+
+    let data = builder.build::<C>();
+
+    (
+        FinalCircuitTargets {
+            balance_circuit_targets: BalanceFinalLayerTargets {
+                proof: balance_proof_targets.clone(),
+                verifier_circuit_target: balance_verifier_circuit_target,
+            },
+            commitment_mapper_circuit_targets: CommitmentMapperFinalLayerTargets {
+                proof: commitment_mapper_proof_targets,
+                verifier_circuit_target: commitment_mapper_verifier_circuit_target,
+            },
+            validators_branch: validators_merkle_branch.branch.try_into().unwrap(),
+            state_root,
+            balance_branch: balance_merkle_branch.branch.try_into().unwrap(),
+            balance_sum,
+            slot,
+            slot_branch: slot_merkle_branch.branch.try_into().unwrap(),
+            withdrawal_credentials: withdrawal_credentials.try_into().unwrap(),
+            validator_size_bits,
+        },
+        data,
+    )
+}
+
+fn setup_balance_targets(
+    builder: &mut CircuitBuilder<F, D>,
+    data: &CircuitData<F, C, D>,
+) -> (
+    ProofWithPublicInputsTarget<D>,
+    VerifierCircuitTarget,
+    Vec<Target>,
+    Target,
+    Vec<Target>,
+) {
+    let (proof_targets, verifier_circuit_target) = setup_proof_targets(data, builder);
+
+    let root_hash = proof_targets.public_inputs[1..257].to_vec();
+    let sum = proof_targets.public_inputs[0];
+    let withdrawal_credentials = proof_targets.public_inputs[257..262].to_vec();
+
+    builder.register_public_input(sum);
+    builder.register_public_inputs(&withdrawal_credentials);
+
+    (
+        proof_targets,
+        verifier_circuit_target,
+        root_hash,
+        sum,
+        withdrawal_credentials,
+    )
+}
+
+fn setup_commitment_mapper_targets(
+    builder: &mut CircuitBuilder<F, D>,
+    data: &CircuitData<F, C, D>,
+) -> (
+    ProofWithPublicInputsTarget<D>,
+    VerifierCircuitTarget,
+    Vec<Target>,
+) {
+    let (proof_targets, verifier_circuit_target) = setup_proof_targets(data, builder);
+    let sha256_root = proof_targets.public_inputs[4..260].to_vec();
+
+    (proof_targets, verifier_circuit_target, sha256_root)
+}
+
+fn verify_slot_is_in_range(
+    builder: &mut CircuitBuilder<GoldilocksField, 2>,
+    current_epoch: &[Target],
+) -> BigUintTarget {
+    let current_epoch_bits = epoch_to_mixed_endian(builder, current_epoch.try_into().unwrap());
+
+    let current_epoch = bits_to_biguint_target(builder, current_epoch_bits);
 
     let slots_per_epoch = builder.constant_biguint(&BigUint::from_u32(32).unwrap());
 
@@ -181,44 +238,39 @@ pub fn build_final_circuit(
     let _true = builder._true();
 
     builder.connect(slot_is_in_range.target, _true.target);
+    slot
+}
 
-    let bits = biguint_to_bits_target::<_, 2, 2>(&mut builder, &slot);
+fn setup_proof_targets(
+    circuit_data: &CircuitData<
+        plonky2::field::goldilocks_field::GoldilocksField,
+        PoseidonGoldilocksConfig,
+        2,
+    >,
+    builder: &mut CircuitBuilder<GoldilocksField, 2>,
+) -> (ProofWithPublicInputsTarget<2>, VerifierCircuitTarget) {
+    let verifier_circuit_target = VerifierCircuitTarget {
+        constants_sigmas_cap: builder
+            .add_virtual_cap(circuit_data.common.config.fri_config.cap_height),
+        circuit_digest: builder.add_virtual_hash(),
+    };
 
-    let slot_merkle_branch = create_and_connect_merkle_branch(
-        &mut builder,
-        34,
-        &bits.iter().map(|x| x.target).collect::<Vec<Target>>(),
-        &state_root,
+    let proof_targets: ProofWithPublicInputsTarget<2> =
+        builder.add_virtual_proof_with_pis(&circuit_data.common);
+
+    builder.verify_proof::<PoseidonGoldilocksConfig>(
+        &proof_targets,
+        &verifier_circuit_target,
+        &circuit_data.common,
     );
 
-    let data = builder.build::<C>();
-
-    (
-        FinalCircuitTargets {
-            balance_circuit_targets: BalanceFinalLayerTargets {
-                proof: balance_proof_targets.clone(),
-                verifier_circuit_target: balance_verifier_circuit_target,
-            },
-            commitment_mapper_circuit_targets: CommitmentMapperFinalLayerTargets {
-                proof: commitment_mapper_proof_targets,
-                verifier_circuit_target: commitment_mapper_verifier_circuit_target,
-            },
-            validators_branch: balance_merkle_branch.branch.try_into().unwrap(),
-            state_root,
-            balance_branch: validators_merkle_branch.branch.try_into().unwrap(),
-            balance_sum,
-            slot,
-            slot_branch: slot_merkle_branch.branch.try_into().unwrap(),
-            withdrawal_credentials: withdrawal_credentials.try_into().unwrap(),
-        },
-        data,
-    )
+    (proof_targets, verifier_circuit_target)
 }
 
 fn create_and_connect_merkle_branch(
     builder: &mut CircuitBuilder<GoldilocksField, 2>,
     index: u32,
-    leaf_targets: &[Target],
+    leaf_targets: &[BoolTarget],
     root_targets: &[BoolTarget; ETH_SHA256_BIT_SIZE],
 ) -> IsValidMerkleBranchTargets {
     let merkle_branch = is_valid_merkle_branch(builder, 5);
@@ -227,7 +279,7 @@ fn create_and_connect_merkle_branch(
     builder.connect(merkle_branch.index, index);
 
     for i in 0..ETH_SHA256_BIT_SIZE {
-        builder.connect(merkle_branch.leaf[i].target, leaf_targets[i]);
+        builder.connect(merkle_branch.leaf[i].target, leaf_targets[i].target);
     }
 
     for i in 0..ETH_SHA256_BIT_SIZE {
@@ -235,4 +287,20 @@ fn create_and_connect_merkle_branch(
     }
 
     merkle_branch
+}
+
+fn create_final_config() -> CircuitConfig {
+    let standard_recursion_config = CircuitConfig::standard_recursion_config();
+
+    CircuitConfig {
+        num_routed_wires: 37,
+        fri_config: FriConfig {
+            rate_bits: 8,
+            cap_height: 0,
+            proof_of_work_bits: 20,
+            reduction_strategy: FriReductionStrategy::MinSize(None),
+            num_query_rounds: 10,
+        },
+        ..standard_recursion_config
+    }
 }

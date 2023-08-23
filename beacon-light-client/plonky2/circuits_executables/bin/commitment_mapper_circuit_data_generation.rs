@@ -2,16 +2,18 @@ use std::{fs, marker::PhantomData};
 
 use anyhow::Result;
 use circuits::{
-    build_balance_inner_level_circuit::build_inner_level_circuit,
-    build_validator_balance_circuit::build_validator_balance_circuit,
-    generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer}, targets_serialization::WriteTargets,
+    build_first_level_circuit::build_commitment_mapper_first_level_circuit,
+    build_inner_level_circuit::{build_commitment_mapper_inner_circuit},
+    generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
+    targets_serialization::WriteTargets,
+    validator_commitment::ValidatorCommitmentTargets,
 };
 
 use clap::{App, Arg};
 use futures_lite::future;
 
 use jemallocator::Jemalloc;
-use plonky2::{plonk::config::PoseidonGoldilocksConfig};
+use plonky2::{plonk::config::PoseidonGoldilocksConfig, util::serialization::Write};
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -51,7 +53,7 @@ pub async fn async_main() -> Result<()> {
     };
 
     let (validators_balance_verification_targets, first_level_data) =
-        build_validator_balance_circuit(8);
+        build_commitment_mapper_first_level_circuit();
 
     let gate_serializer = DendrETHGateSerializer;
 
@@ -74,19 +76,39 @@ pub async fn async_main() -> Result<()> {
 
     let mut prev_circuit_data = first_level_data;
 
-    for i in 1..39 {
-        let (targets, data) = build_inner_level_circuit(&prev_circuit_data);
+    for i in 1..42 {
+        let (targets, data) = build_commitment_mapper_inner_circuit(&prev_circuit_data);
 
         if level == Some(i) || level == None {
             let circuit_bytes = data
                 .to_bytes(&gate_serializer, &generator_serializer)
                 .unwrap();
 
-            write_to_file(&format!("{}.plonky2_circuit", i), &circuit_bytes).unwrap();
+            write_to_file(
+                &format!("commitment_mapper_{}.plonky2_circuit", i),
+                &circuit_bytes,
+            )
+            .unwrap();
 
-            let inner_level_targets = targets.write_targets().unwrap();
+            let mut inner_level_targets = Vec::<u8>::new();
 
-            write_to_file(&format!("{}.plonky2_targets", i), &inner_level_targets).unwrap();
+            inner_level_targets
+                .write_target_proof_with_public_inputs(&targets.proof1)
+                .unwrap();
+
+            inner_level_targets
+                .write_target_proof_with_public_inputs(&targets.proof2)
+                .unwrap();
+
+            inner_level_targets
+                .write_target_verifier_circuit(&targets.verifier_circuit_target)
+                .unwrap();
+
+            write_to_file(
+                &format!("commitment_mapper_{}.plonky2_targets", i),
+                &inner_level_targets,
+            )
+            .unwrap();
         }
 
         if level == Some(i) {
@@ -107,19 +129,23 @@ fn write_first_level_circuit(
     >,
     gate_serializer: &DendrETHGateSerializer,
     generator_serializer: &DendrETHGeneratorSerializer<PoseidonGoldilocksConfig, 2>,
-    validators_balance_verification_targets: circuits::validator_balance_circuit::ValidatorBalanceVerificationTargets,
+    validator_commitment_targets: ValidatorCommitmentTargets,
 ) {
     let circuit_bytes = first_level_data
         .to_bytes(gate_serializer, generator_serializer)
         .unwrap();
 
-    write_to_file(&format!("{}.plonky2_circuit", 0), &circuit_bytes).unwrap();
+    write_to_file(
+        &format!("commitment_mapper_{}.plonky2_circuit", 0),
+        &circuit_bytes,
+    )
+    .unwrap();
 
-    let validator_balance_verification_targets_bytes = validators_balance_verification_targets.write_targets().unwrap();
+    let validator_commitment_targets_bytes = validator_commitment_targets.write_targets().unwrap();
 
     write_to_file(
-        &format!("{}.plonky2_targets", 0),
-        &validator_balance_verification_targets_bytes,
+        &format!("commitment_mapper_{}.plonky2_targets", 0),
+        &validator_commitment_targets_bytes,
     )
     .unwrap();
 }

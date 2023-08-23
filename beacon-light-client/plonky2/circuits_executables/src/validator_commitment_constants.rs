@@ -9,6 +9,8 @@ pub struct ValidatorCommitmentConstants {
     pub validator_balance_input_key: String,
     pub balance_verification_queue: String,
     pub balance_verification_proof_key: String,
+    pub final_proof_input_key: String,
+    pub final_layer_proof_key: String,
 }
 
 pub fn get_validator_commitment_constants() -> ValidatorCommitmentConstants {
