@@ -146,6 +146,23 @@ export class Redis implements IRedis {
     await this.redisClient.mSet(result);
   }
 
+  async saveFinalProofInput(input: {
+    stateRoot: number[];
+    slot: string;
+    slotBranch: number[][];
+    withdrawalCredentials: string[];
+    balanceBranch: number[][];
+    validatorsBranch: number[][];
+    validatorsSizeBits: number[]
+  }) {
+    await this.waitForConnection();
+
+    await this.redisClient.set(
+      validator_commitment_constants.finalProofInputKey,
+      JSON.stringify(input),
+    );
+  }
+
   async saveValidatorProof(
     depth: bigint,
     index: bigint,

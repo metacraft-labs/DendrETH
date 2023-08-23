@@ -1,5 +1,4 @@
 use std::{
-    marker::PhantomData,
     println, thread,
     time::{Duration, Instant},
 };
@@ -7,47 +6,37 @@ use std::{
 use anyhow::Result;
 use circuits::{
     build_balance_inner_level_circuit::BalanceInnerCircuitTargets,
-    generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
-    validator_hash_tree_root_poseidon::ValidatorPoseidon,
+    targets_serialization::ReadTargets,
+    validator_balance_circuit::ValidatorBalanceVerificationTargets,
 };
 use circuits_executables::{
     crud::{
-        fetch_proofs, fetch_validator_balance_input, read_from_file, save_balance_proof,
-        BalanceProof,
+        fetch_proofs, fetch_validator_balance_input, load_circuit_data, read_from_file,
+        save_balance_proof, BalanceProof,
     },
-    provers::{
-        handle_balance_inner_level_proof, set_boolean_pw_values, set_pw_values,
-        set_validator_pw_values,
-    },
+    provers::{handle_balance_inner_level_proof, SetPWValues},
     validator_commitment_constants::get_validator_commitment_constants,
 };
 use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
-    iop::{
-        target::{BoolTarget, Target},
-        witness::PartialWitness,
-    },
+    iop::witness::PartialWitness,
     plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig},
-    util::serialization::{Buffer, Read},
+    util::serialization::Buffer,
 };
 
 use clap::{App, Arg};
-use jemallocator::Jemalloc;
+
 use redis::aio::Connection;
 use redis_work_queue::{Item, KeyPrefix, WorkQueue};
+
+use jemallocator::Jemalloc;
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
 enum Targets {
-    FirstLevel(
-        Option<Vec<Vec<BoolTarget>>>,
-        Option<Vec<ValidatorPoseidon>>,
-        Option<Vec<Target>>,
-        Option<Vec<BoolTarget>>,
-        Option<[Target; 2]>,
-    ),
+    FirstLevel(Option<ValidatorBalanceVerificationTargets>),
     InnerLevel(Option<BalanceInnerCircuitTargets>),
 }
 
@@ -94,22 +83,14 @@ async fn async_main() -> Result<()> {
     println!("Redis connection took: {:?}", elapsed);
 
     let start = Instant::now();
-    let gate_serializer = DendrETHGateSerializer;
-    let generator_serializer = DendrETHGeneratorSerializer {
-        _phantom: PhantomData::<PoseidonGoldilocksConfig>,
-    };
 
-    let circuit_data = load_circuit_data(&gate_serializer, &generator_serializer, level)?;
+    let circuit_data = load_circuit_data(&level.to_string())?;
 
     let (inner_circuit_data, targets) = if level == 0 {
         (None, get_first_level_targets()?)
     } else {
         (
-            Some(load_circuit_data(
-                &gate_serializer,
-                &generator_serializer,
-                level - 1,
-            )?),
+            Some(load_circuit_data(&format!("{}", level - 1))?),
             get_inner_level_targets(level)?,
         )
     };
@@ -138,23 +119,6 @@ async fn async_main() -> Result<()> {
         start,
     )
     .await
-}
-
-fn load_circuit_data(
-    gate_serializer: &DendrETHGateSerializer,
-    generator_serializer: &DendrETHGeneratorSerializer<PoseidonGoldilocksConfig, 2>,
-    level: usize,
-) -> Result<CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>> {
-    let circuit_data_bytes = read_from_file(&format!("{}.plonky2_circuit", level))?;
-
-    Ok(
-        CircuitData::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
-            &circuit_data_bytes,
-            gate_serializer,
-            generator_serializer,
-        )
-        .unwrap(),
-    )
 }
 
 async fn process_queue(
@@ -191,23 +155,13 @@ async fn process_queue(
         println!("Processing job data: {:?}", job.data);
 
         match targets {
-            Targets::FirstLevel(
-                balances_targets,
-                validators_targets,
-                withdrawal_credentials_targets,
-                validator_is_zero,
-                current_epoch_target,
-            ) => {
+            Targets::FirstLevel(targets) => {
                 match process_first_level_job(
                     con,
                     queue,
                     job,
                     circuit_data,
-                    &balances_targets,
-                    &validators_targets,
-                    &withdrawal_credentials_targets,
-                    &validator_is_zero,
-                    &current_epoch_target,
+                    targets.as_ref().unwrap(),
                 )
                 .await
                 {
@@ -245,11 +199,7 @@ async fn process_first_level_job(
     queue: &WorkQueue,
     job: Item,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    balances_targets: &Option<Vec<Vec<BoolTarget>>>,
-    validators_targets: &Option<Vec<ValidatorPoseidon>>,
-    withdrawal_credentials_targets: &Option<Vec<Target>>,
-    validator_is_zero: &Option<Vec<BoolTarget>>,
-    current_epoch_target: &Option<[Target; 2]>,
+    targets: &ValidatorBalanceVerificationTargets,
 ) -> Result<()> {
     let balance_input_index = u64::from_be_bytes(job.data[0..8].try_into().unwrap()) as usize;
 
@@ -264,39 +214,7 @@ async fn process_first_level_job(
 
     let mut pw = PartialWitness::new();
 
-    for i in 0..validator_balance_input.balances.len() {
-        set_boolean_pw_values(
-            &mut pw,
-            &balances_targets.as_ref().unwrap()[i],
-            validator_balance_input.balances[i].clone(),
-        );
-    }
-
-    for i in 0..validator_balance_input.validators.len() {
-        set_validator_pw_values(
-            &mut pw,
-            &validators_targets.as_ref().unwrap()[i],
-            &validator_balance_input.validators[i],
-        );
-    }
-
-    set_pw_values(
-        &mut pw,
-        &withdrawal_credentials_targets.as_ref().unwrap(),
-        validator_balance_input.withdrawal_credentials,
-    );
-
-    set_boolean_pw_values(
-        &mut pw,
-        &validator_is_zero.as_ref().unwrap(),
-        validator_balance_input.validator_is_zero,
-    );
-
-    set_pw_values(
-        &mut pw,
-        current_epoch_target.as_ref().unwrap(),
-        validator_balance_input.current_epoch,
-    );
+    targets.set_pw_values(&mut pw, &validator_balance_input);
 
     let proof = circuit_data.prove(pw)?;
 
@@ -373,58 +291,17 @@ async fn process_inner_level_job(
 fn get_first_level_targets() -> Result<Targets, anyhow::Error> {
     let target_bytes = read_from_file(&format!("{}.plonky2_targets", 0))?;
     let mut target_buffer = Buffer::new(&target_bytes);
-    let mut balances_targets = Vec::<Vec<BoolTarget>>::new();
-    let mut validators_targets = Vec::<ValidatorPoseidon>::new();
-    for _ in 0..2 {
-        balances_targets.push(target_buffer.read_target_bool_vec().unwrap());
-    }
-    for _ in 0..8 {
-        validators_targets.push(ValidatorPoseidon {
-            pubkey: target_buffer.read_target_vec().unwrap().try_into().unwrap(),
-            withdrawal_credentials: target_buffer.read_target_vec().unwrap().try_into().unwrap(),
-            effective_balance: target_buffer.read_target_vec().unwrap().try_into().unwrap(),
-            slashed: target_buffer.read_target_vec().unwrap().try_into().unwrap(),
-            activation_eligibility_epoch: target_buffer
-                .read_target_vec()
-                .unwrap()
-                .try_into()
-                .unwrap(),
-            activation_epoch: target_buffer.read_target_vec().unwrap().try_into().unwrap(),
-            exit_epoch: target_buffer.read_target_vec().unwrap().try_into().unwrap(),
-            withdrawable_epoch: target_buffer.read_target_vec().unwrap().try_into().unwrap(),
-        });
-    }
 
-    let withdrawal_credentials = target_buffer.read_target_vec().unwrap();
-
-    let validator_is_zero = target_buffer.read_target_bool_vec().unwrap();
-
-    let current_epoch: [Target; 2] = target_buffer.read_target_vec().unwrap().try_into().unwrap();
-
-    Ok(Targets::FirstLevel(
-        Some(balances_targets),
-        Some(validators_targets),
-        Some(withdrawal_credentials),
-        Some(validator_is_zero),
-        Some(current_epoch),
-    ))
+    Ok(Targets::FirstLevel(Some(
+        ValidatorBalanceVerificationTargets::read_targets(&mut target_buffer).unwrap(),
+    )))
 }
 
 fn get_inner_level_targets(level: usize) -> Result<Targets> {
     let target_bytes = read_from_file(&format!("{}.plonky2_targets", level))?;
     let mut target_buffer = Buffer::new(&target_bytes);
 
-    let proof1 = target_buffer
-        .read_target_proof_with_public_inputs()
-        .unwrap();
-    let proof2 = target_buffer
-        .read_target_proof_with_public_inputs()
-        .unwrap();
-    let verifier_circuit_target = target_buffer.read_target_verifier_circuit().unwrap();
-
-    Ok(Targets::InnerLevel(Some(BalanceInnerCircuitTargets {
-        proof1: proof1,
-        proof2: proof2,
-        verifier_circuit_target: verifier_circuit_target,
-    })))
+    Ok(Targets::InnerLevel(Some(
+        BalanceInnerCircuitTargets::read_targets(&mut target_buffer).unwrap(),
+    )))
 }

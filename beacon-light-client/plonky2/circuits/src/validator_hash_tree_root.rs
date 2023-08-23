@@ -1,24 +1,64 @@
 use plonky2::{
-    field::extension::Extendable, hash::hash_types::RichField, iop::target::BoolTarget,
+    field::extension::Extendable,
+    hash::hash_types::RichField,
+    iop::target::BoolTarget,
     plonk::circuit_builder::CircuitBuilder,
+    util::serialization::{Buffer, IoResult, Read, Write},
 };
 
-use crate::{hash_tree_root::hash_tree_root, utils::create_bool_target_array, sha256::make_circuits};
+use crate::{
+    hash_tree_root::hash_tree_root,
+    sha256::make_circuits,
+    targets_serialization::{ReadTargets, WriteTargets},
+    utils::{create_bool_target_array, ETH_SHA256_BIT_SIZE},
+};
 
-pub struct Validator {
+pub struct ValidatorShaTargets {
     pub pubkey: [BoolTarget; 384],
-    pub withdrawal_credentials: [BoolTarget; 256],
-    pub effective_balance: [BoolTarget; 256],
-    pub slashed: [BoolTarget; 256],
-    pub activation_eligibility_epoch: [BoolTarget; 256],
-    pub activation_epoch: [BoolTarget; 256],
-    pub exit_epoch: [BoolTarget; 256],
-    pub withdrawable_epoch: [BoolTarget; 256],
+    pub withdrawal_credentials: [BoolTarget; ETH_SHA256_BIT_SIZE],
+    pub effective_balance: [BoolTarget; ETH_SHA256_BIT_SIZE],
+    pub slashed: [BoolTarget; ETH_SHA256_BIT_SIZE],
+    pub activation_eligibility_epoch: [BoolTarget; ETH_SHA256_BIT_SIZE],
+    pub activation_epoch: [BoolTarget; ETH_SHA256_BIT_SIZE],
+    pub exit_epoch: [BoolTarget; ETH_SHA256_BIT_SIZE],
+    pub withdrawable_epoch: [BoolTarget; ETH_SHA256_BIT_SIZE],
+}
+
+impl ReadTargets for ValidatorShaTargets {
+    fn read_targets(data: &mut Buffer) -> IoResult<ValidatorShaTargets> {
+        Ok(ValidatorShaTargets {
+            pubkey: data.read_target_bool_vec()?.try_into().unwrap(),
+            withdrawal_credentials: data.read_target_bool_vec()?.try_into().unwrap(),
+            effective_balance: data.read_target_bool_vec()?.try_into().unwrap(),
+            slashed: data.read_target_bool_vec()?.try_into().unwrap(),
+            activation_eligibility_epoch: data.read_target_bool_vec()?.try_into().unwrap(),
+            activation_epoch: data.read_target_bool_vec()?.try_into().unwrap(),
+            exit_epoch: data.read_target_bool_vec()?.try_into().unwrap(),
+            withdrawable_epoch: data.read_target_bool_vec()?.try_into().unwrap(),
+        })
+    }
+}
+
+impl WriteTargets for ValidatorShaTargets {
+    fn write_targets(&self) -> IoResult<Vec<u8>> {
+        let mut bytes = Vec::<u8>::new();
+
+        bytes.write_target_bool_vec(&self.pubkey)?;
+        bytes.write_target_bool_vec(&self.withdrawal_credentials)?;
+        bytes.write_target_bool_vec(&self.effective_balance)?;
+        bytes.write_target_bool_vec(&self.slashed)?;
+        bytes.write_target_bool_vec(&self.activation_eligibility_epoch)?;
+        bytes.write_target_bool_vec(&self.activation_epoch)?;
+        bytes.write_target_bool_vec(&self.exit_epoch)?;
+        bytes.write_target_bool_vec(&self.withdrawable_epoch)?;
+
+        Ok(bytes)
+    }
 }
 
 pub struct ValidatorHashTreeRootTargets {
-    pub validator: Validator,
-    pub hash_tree_root: [BoolTarget; 256],
+    pub validator: ValidatorShaTargets,
+    pub hash_tree_root: [BoolTarget; ETH_SHA256_BIT_SIZE],
 }
 
 pub fn hash_tree_root_validator_sha256<F: RichField + Extendable<D>, const D: usize>(
@@ -51,7 +91,7 @@ pub fn hash_tree_root_validator_sha256<F: RichField + Extendable<D>, const D: us
     let exit_epoch = create_bool_target_array(builder);
     let withdrawable_epoch = create_bool_target_array(builder);
 
-    for i in 0..256 {
+    for i in 0..ETH_SHA256_BIT_SIZE {
         builder.connect(hash_tree_root.leaves[0][i].target, hasher.digest[i].target);
 
         builder.connect(
@@ -85,7 +125,7 @@ pub fn hash_tree_root_validator_sha256<F: RichField + Extendable<D>, const D: us
     }
 
     ValidatorHashTreeRootTargets {
-        validator: Validator {
+        validator: ValidatorShaTargets {
             pubkey,
             withdrawal_credentials,
             effective_balance,
@@ -113,7 +153,9 @@ mod test {
         },
     };
 
-    use crate::validator_hash_tree_root::hash_tree_root_validator_sha256;
+    use crate::{
+        utils::ETH_SHA256_BIT_SIZE, validator_hash_tree_root::hash_tree_root_validator_sha256,
+    };
 
     #[test]
     fn test_validator_hash_tree_root() -> Result<()> {
@@ -271,7 +313,7 @@ mod test {
             pw.set_bool_target(targets.validator.pubkey[i], validator_pubkey[i] == "1");
         }
 
-        for i in 0..256 {
+        for i in 0..ETH_SHA256_BIT_SIZE {
             pw.set_bool_target(
                 targets.validator.withdrawal_credentials[i],
                 withdraw_credentials[i] == "1",
@@ -302,7 +344,7 @@ mod test {
             );
         }
 
-        for i in 0..256 {
+        for i in 0..ETH_SHA256_BIT_SIZE {
             if validator_hash_tree_root[i] == "1" {
                 builder.assert_one(targets.hash_tree_root[i].target);
             } else {

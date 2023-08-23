@@ -2,25 +2,112 @@ import { sha256 } from 'ethers/lib/utils';
 import { bytesToHex, formatHex } from '../../../libs/typescript/ts-utils/bls';
 import { byteArrayToNumber } from '../../../libs/typescript/ts-utils/common-utils';
 import { BeaconApi } from '../../../relay/implementations/beacon-api';
-import { ListCompositeType } from '@chainsafe/ssz';
+import { merkleize } from '@chainsafe/ssz/lib/util/merkleize';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
+import { hexToBits } from '../../../libs/typescript/ts-utils/hex-utils';
 
 (async () => {
   const { ssz } = await import('@lodestar/types');
 
-  const beaconApi = new BeaconApi([
-    'http://unstable.prater.beacon-api.nimbus.team',
-  ]);
-
-  const { beaconState } = await beaconApi.getBeaconState(6104200);
-
-  const hasher = new ListCompositeType(ssz.phase0.Validator, 4);
-
-  const hasherResult = bytesToHex(
-    hasher.hashTreeRoot(beaconState.validators.slice(7172, 7176)),
+  console.log(
+    hexToBits(
+      bytesToHex(ssz.capella.BeaconState.fields.slot.hashTreeRoot(6953401)),
+    ).join(', '),
   );
 
-  console.log(hasherResult);
+  // const beaconApi = new BeaconApi([
+  //   'http://unstable.mainnet.beacon-api.nimbus.team',
+  // ]);
+
+  // const { beaconState } = await beaconApi.getBeaconState(6953401);
+
+  // // const hasherResult = bytesToHex(
+  // //   ssz.phase0.Validators.hashTreeRoot(beaconState.validators.slice(0, 32)),
+  // // );
+
+  // // console.log(hasherResult);
+
+  // const validators = beaconState.validators
+  //   .slice(0, 32)
+  //   .map(validator => ssz.phase0.Validator.hashTreeRoot(validator));
+
+  // const num = bytesToHex(ssz.UintNum64.hashTreeRoot(32));
+
+  // const balancesView = ssz.capella.BeaconState.fields.balances.toViewDU(
+  //   beaconState.balances,
+  // );
+
+  // const balancesTree = new Tree(balancesView.node);
+
+  // const balanceZeroIndex = ssz.capella.BeaconState.fields.balances.getPathInfo([
+  //   0,
+  // ]).gindex;
+
+  // const balances: Uint8Array[] = [];
+
+  // for (let i = 0; i < 8; i++) {
+  //   balances.push(balancesTree.getNode(balanceZeroIndex + BigInt(i)).root);
+  // }
+
+  // ssz.capella.BeaconState;
+  // const result = ssz.capella.BeaconState.fields.balances.hashTreeRoot(
+  //   beaconState.balances.slice(0, 32),
+  // );
+
+  // beaconState.balances = beaconState.balances.slice(0, 32);
+  // beaconState.validators = beaconState.validators.slice(0, 32);
+
+  // console.log(
+  //   hexToBits(
+  //     bytesToHex(ssz.capella.BeaconState.hashTreeRoot(beaconState)),
+  //   ).join(','),
+  // );
+
+  // console.log(
+  //   '----------------------------------------------------------------',
+  // );
+
+  // const beaconStateView = ssz.capella.BeaconState.toViewDU(beaconState);
+  // const beaconStateTree = new Tree(beaconStateView.node);
+
+  // console.log(ssz.capella.BeaconState.getPathInfo(['balances']).gindex);
+
+  // console.log(bytesToHex(beaconStateTree.getNode(44n).root));
+
+  // console.log(
+  //   beaconStateTree
+  //     .getSingleProof(44n)
+  //     .map(x => `[${hexToBits(bytesToHex(x)).toString()}]`)
+  //     .toString(),
+  // );
+
+  // console.log(
+  //   '----------------------------------------------------------------',
+  // );
+
+  // console.log(hexToBits(bytesToHex(result)).join(', '));
+
+  // const resultMerkelize = merkleize(balances, 274877906944);
+
+  // // console.log(bytesToHex(resultMerkelize));
+
+  // console.log(
+  //   sha256(
+  //     '0x' +
+  //       bytesToHex(resultMerkelize) +
+  //       bytesToHex(ssz.UintNum64.hashTreeRoot(32)),
+  //   ),
+  // );
+
+  // console.log(hexToBits(bytesToHex(ssz.UintNum64.hashTreeRoot(32))).join(','));
+
+  // console.log(
+  //   BigInt('0x' + bytesToHex(result))
+  //     .toString(2)
+  //     .padStart(256, '0')
+  //     .split('')
+  //     .join(','),
+  // );
 
   // console.log('------------------------------------------------------');
 

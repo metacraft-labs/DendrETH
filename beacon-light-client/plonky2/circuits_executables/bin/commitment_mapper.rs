@@ -1,23 +1,23 @@
 use anyhow::Result;
 use circuits::{
-    build_first_level_circuit::build_first_level_circuit,
-    build_inner_level_circuit::{build_inner_circuit, InnerCircuitTargets},
+    build_first_level_circuit::build_commitment_mapper_first_level_circuit,
+    build_inner_level_circuit::{build_commitment_mapper_inner_circuit, InnerCircuitTargets},
 };
 use circuits_executables::{
     crud::{fetch_proofs, fetch_validator, save_validator_proof, ValidatorProof},
-    provers::{self, handle_inner_level_proof},
+    provers::{handle_inner_level_proof, SetPWValues},
     validator::VALIDATOR_REGISTRY_LIMIT,
     validator_commitment_constants,
 };
 use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
+    iop::witness::PartialWitness,
     plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig},
 };
 use redis_work_queue::{KeyPrefix, WorkQueue};
 use std::{print, println, thread, time::Duration};
 
-use provers::handle_first_level_proof;
 use validator_commitment_constants::get_validator_commitment_constants;
 
 use jemallocator::Jemalloc;
@@ -37,17 +37,17 @@ async fn async_main() -> Result<()> {
         get_validator_commitment_constants().validator_proofs_queue,
     ));
 
-    let (validator_commitment, first_level_circuit_data) = build_first_level_circuit();
+    let (validator_commitment, first_level_circuit_data) = build_commitment_mapper_first_level_circuit();
 
     let mut inner_circuits: Vec<(
         InnerCircuitTargets,
         CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    )> = Vec::with_capacity(40);
+    )> = Vec::new();
 
-    inner_circuits.push(build_inner_circuit(&first_level_circuit_data));
+    inner_circuits.push(build_commitment_mapper_inner_circuit(&first_level_circuit_data));
 
-    for i in 1..40 {
-        inner_circuits.push(build_inner_circuit(&inner_circuits[i - 1].1));
+    for i in 1..41 {
+        inner_circuits.push(build_commitment_mapper_inner_circuit(&inner_circuits[i - 1].1));
     }
 
     loop {
@@ -73,11 +73,13 @@ async fn async_main() -> Result<()> {
                     continue;
                 }
                 Ok(validator) => {
-                    let proof = handle_first_level_proof(
-                        validator,
-                        &validator_commitment,
-                        &first_level_circuit_data,
-                    )?;
+                    let mut pw = PartialWitness::new();
+
+                    validator_commitment
+                        .validator
+                        .set_pw_values(&mut pw, &validator);
+
+                    let proof = first_level_circuit_data.prove(pw)?;
 
                     match save_validator_proof(&mut con, proof, 0, validator_index).await {
                         Err(err) => {

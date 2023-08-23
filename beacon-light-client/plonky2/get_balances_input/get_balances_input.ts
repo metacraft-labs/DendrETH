@@ -73,15 +73,22 @@ let TAKE;
     );
   }
 
+  queues.push(
+    new WorkQueue(
+      new KeyPrefix(
+        `${validator_commitment_constants.balanceVerificationQueue}:final`,
+      ),
+    ),
+  );
+
   const beaconApi = new BeaconApi([options['beacon-node']]);
 
   const { beaconState } = await beaconApi.getBeaconState(6953401);
 
   const validators = beaconState.validators.slice(0, TAKE);
 
-  for (let i = 0; i < 8; i++) {
-    validators[i].exitEpoch = computeEpochAt(beaconState.slot) + 1;
-  }
+  beaconState.validators = validators;
+  beaconState.balances = beaconState.balances.slice(0, TAKE);
 
   const balancesView = ssz.capella.BeaconState.fields.balances.toViewDU(
     beaconState.balances,
@@ -103,62 +110,72 @@ let TAKE;
     );
   }
 
-  if (await redis.isZeroValidatorEmpty()) {
-    console.log('Adding tasks about zeros');
-    await redis.saveValidatorBalancesInput([
-      {
-        index: Number(validator_commitment_constants.validatorRegistryLimit),
-        input: JSON.stringify({
-          balances: Array(CIRCUIT_SIZE / 4)
-            .fill('')
-            .map(() => ''.padStart(256, '0').split('').map(Number)),
-          validators: Array(CIRCUIT_SIZE).fill(getZeroValidator()),
-          withdrawalCredentials: bigint_to_array(
-            63,
-            5,
-            computeNumberFromLittleEndianBits(
-              hexToBits(
-                '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
+  console.log('Adding tasks about zeros');
+  await redis.saveValidatorBalancesInput([
+    {
+      index: Number(validator_commitment_constants.validatorRegistryLimit),
+      input: JSON.stringify({
+        balances: Array(CIRCUIT_SIZE / 4)
+          .fill('')
+          .map(() => ''.padStart(256, '0').split('').map(Number)),
+        validators: Array(CIRCUIT_SIZE).fill(getZeroValidator()),
+        withdrawalCredentials: bigint_to_array(
+          63,
+          5,
+          computeNumberFromLittleEndianBits(
+            hexToBits(
+              '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
+            ),
+          ),
+        ),
+        currentEpoch: bigint_to_array(
+          63,
+          2,
+          computeNumberFromLittleEndianBits(
+            hexToBits(
+              bytesToHex(
+                ssz.phase0.Validator.fields.activationEpoch.hashTreeRoot(
+                  computeEpochAt(beaconState.slot),
+                ),
               ),
             ),
           ),
-          currentEpoch: bigint_to_array(63, 2, BigInt(0)),
-          validatorIsZero: Array(CIRCUIT_SIZE).fill(0),
-        }),
-      },
-    ]);
+        ),
+        validatorIsZero: Array(CIRCUIT_SIZE).fill(1),
+      }),
+    },
+  ]);
 
-    const buffer = new ArrayBuffer(8);
+  const buffer = new ArrayBuffer(8);
+  const dataView = new DataView(buffer);
+
+  dataView.setBigUint64(
+    0,
+    BigInt(validator_commitment_constants.validatorRegistryLimit),
+    false,
+  );
+
+  await queues[0].addItem(db, new Item(buffer));
+
+  for (let i = 0; i < 38; i++) {
+    const buffer = new ArrayBuffer(24);
     const dataView = new DataView(buffer);
 
+    dataView.setBigUint64(0, BigInt(i), false);
     dataView.setBigUint64(
-      0,
+      8,
+      BigInt(validator_commitment_constants.validatorRegistryLimit),
+      false,
+    );
+    dataView.setBigUint64(
+      16,
       BigInt(validator_commitment_constants.validatorRegistryLimit),
       false,
     );
 
-    await queues[0].addItem(db, new Item(buffer));
+    await queues[i + 1].addItem(db, new Item(buffer));
 
-    for (let i = 0; i < 38; i++) {
-      const buffer = new ArrayBuffer(24);
-      const dataView = new DataView(buffer);
-
-      dataView.setBigUint64(0, BigInt(i), false);
-      dataView.setBigUint64(
-        8,
-        BigInt(validator_commitment_constants.validatorRegistryLimit),
-        false,
-      );
-      dataView.setBigUint64(
-        16,
-        BigInt(validator_commitment_constants.validatorRegistryLimit),
-        false,
-      );
-
-      await queues[i + 1].addItem(db, new Item(buffer));
-
-      console.log('Added zeros tasks');
-    }
+    console.log('Added zeros tasks');
   }
 
   const batchSize = 100;
@@ -174,7 +191,7 @@ let TAKE;
           ? CIRCUIT_SIZE
           : validators.length - j * CIRCUIT_SIZE;
 
-      let array = new Array(size).fill(1);
+      let array = new Array(size).fill(0);
 
       batch.push({
         index: j * CIRCUIT_SIZE,
@@ -214,7 +231,7 @@ let TAKE;
               ),
             ),
           ),
-          validatorIsZero: array.concat(new Array(CIRCUIT_SIZE - size).fill(0)),
+          validatorIsZero: array.concat(new Array(CIRCUIT_SIZE - size).fill(1)),
         }),
       });
     }
@@ -268,6 +285,39 @@ let TAKE;
       prev_index = first;
     }
   }
+
+  const beaconStateView = ssz.capella.BeaconState.toViewDU(beaconState);
+  const beaconStateTree = new Tree(beaconStateView.node);
+
+  await redis.saveFinalProofInput({
+    stateRoot: hexToBits(
+      bytesToHex(ssz.capella.BeaconState.hashTreeRoot(beaconState)),
+    ),
+    slot: beaconState.slot.toString(),
+    slotBranch: beaconStateTree
+      .getSingleProof(34n)
+      .map(x => hexToBits(bytesToHex(x))),
+    withdrawalCredentials: bigint_to_array(
+      63,
+      5,
+      computeNumberFromLittleEndianBits(
+        hexToBits(
+          '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
+        ),
+      ),
+    ),
+    balanceBranch: beaconStateTree
+      .getSingleProof(44n)
+      .map(x => hexToBits(bytesToHex(x))),
+    validatorsBranch: beaconStateTree
+      .getSingleProof(43n)
+      .map(x => hexToBits(bytesToHex(x))),
+    validatorsSizeBits: hexToBits(bytesToHex(ssz.UintNum64.hashTreeRoot(TAKE))),
+  });
+
+  queues[39].addItem(db, new Item(new ArrayBuffer(0)));
+
+  console.log('Added final proof input');
 
   console.log('ready');
 

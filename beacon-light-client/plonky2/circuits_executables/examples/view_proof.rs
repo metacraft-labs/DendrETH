@@ -1,7 +1,7 @@
 use anyhow::Result;
 use circuits::{
-    build_first_level_circuit::build_first_level_circuit,
-    build_inner_level_circuit::{build_inner_circuit, InnerCircuitTargets}, build_balance_inner_level_circuit::{build_balance_inner_circuit, BalanceInnerCircuitTargets}, build_validator_balance_circuit::build_validator_balance_circuit,
+    build_first_level_circuit::build_commitment_mapper_first_level_circuit,
+    build_inner_level_circuit::{build_commitment_mapper_inner_circuit, InnerCircuitTargets}, build_balance_inner_level_circuit::{build_inner_level_circuit, BalanceInnerCircuitTargets}, build_validator_balance_circuit::build_validator_balance_circuit,
 };
 use circuits_executables::crud::{ValidatorProof, fetch_proof, BalanceProof};
 use futures_lite::future;

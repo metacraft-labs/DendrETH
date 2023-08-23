@@ -1,30 +1,78 @@
-
 use plonky2::{
     field::extension::Extendable,
     hash::hash_types::{HashOutTarget, RichField},
     iop::target::{BoolTarget, Target},
     plonk::circuit_builder::CircuitBuilder,
+    util::serialization::{Buffer, IoResult, Read, Write},
 };
 
 use crate::{
-    is_active_validator::is_active_validator,
     hash_tree_root::hash_tree_root,
     hash_tree_root_poseidon::hash_tree_root_poseidon,
-    utils::{create_bool_target_array, to_mixed_endian},
+    is_active_validator::is_active_validator,
+    targets_serialization::{ReadTargets, WriteTargets},
+    utils::{create_bool_target_array, to_mixed_endian, ETH_SHA256_BIT_SIZE},
     validator_hash_tree_root_poseidon::{
-        hash_tree_root_validator_poseidon, ValidatorPoseidon, ValidatorPoseidonHashTreeRootTargets,
+        hash_tree_root_validator_poseidon, ValidatorPoseidonTargets, ValidatorPoseidonHashTreeRootTargets,
     },
 };
 
 pub struct ValidatorBalanceVerificationTargets {
     pub range_total_value: Target,
-    pub range_balances_root: [BoolTarget; 256],
+    pub range_balances_root: [BoolTarget; ETH_SHA256_BIT_SIZE],
     pub range_validator_commitment: HashOutTarget,
-    pub validators: Vec<ValidatorPoseidon>,
+    pub validators: Vec<ValidatorPoseidonTargets>,
     pub validator_is_zero: Vec<BoolTarget>,
-    pub balances: Vec<[BoolTarget; 256]>,
+    pub balances: Vec<[BoolTarget; ETH_SHA256_BIT_SIZE]>,
     pub withdrawal_credentials: [Target; 5],
     pub current_epoch: [Target; 2],
+}
+
+impl ReadTargets for ValidatorBalanceVerificationTargets {
+    fn read_targets(data: &mut Buffer) -> IoResult<ValidatorBalanceVerificationTargets> {
+        let validators_len = data.read_usize()?;
+
+        Ok(ValidatorBalanceVerificationTargets {
+            range_total_value: data.read_target()?,
+            range_balances_root: data.read_target_bool_vec()?.try_into().unwrap(),
+            range_validator_commitment: data.read_target_hash()?,
+            validators: (0..validators_len)
+                .map(|_| ValidatorPoseidonTargets::read_targets(data).unwrap())
+                .collect(),
+            validator_is_zero: data.read_target_bool_vec()?,
+            balances: (0..validators_len / 4)
+                .map(|_| data.read_target_bool_vec().unwrap().try_into().unwrap())
+                .collect(),
+            withdrawal_credentials: data.read_target_vec()?.try_into().unwrap(),
+            current_epoch: data.read_target_vec()?.try_into().unwrap(),
+        })
+    }
+}
+
+impl WriteTargets for ValidatorBalanceVerificationTargets {
+    fn write_targets(&self) -> IoResult<Vec<u8>> {
+        let mut data = Vec::<u8>::new();
+
+        data.write_usize(self.validators.len())?;
+        data.write_target(self.range_total_value)?;
+        data.write_target_bool_vec(&self.range_balances_root)?;
+        data.write_target_hash(&self.range_validator_commitment)?;
+
+        for validator in &self.validators {
+            data.extend(ValidatorPoseidonTargets::write_targets(validator)?);
+        }
+
+        data.write_target_bool_vec(&self.validator_is_zero)?;
+
+        for balance in &self.balances {
+            data.write_target_bool_vec(balance)?;
+        }
+
+        data.write_target_vec(&self.withdrawal_credentials)?;
+        data.write_target_vec(&self.current_epoch)?;
+
+        Ok(data)
+    }
 }
 
 pub fn validator_balance_verification<F: RichField + Extendable<D>, const D: usize>(
@@ -37,14 +85,14 @@ pub fn validator_balance_verification<F: RichField + Extendable<D>, const D: usi
 
     let balances_len = validators_len / 4;
 
-    let balances_leaves: Vec<[BoolTarget; 256]> = (0..balances_len)
+    let balances_leaves: Vec<[BoolTarget; ETH_SHA256_BIT_SIZE]> = (0..balances_len)
         .map(|_| create_bool_target_array(builder))
         .collect();
 
     let balances_hash_tree_root_targets = hash_tree_root(builder, balances_len);
 
     for i in 0..balances_len {
-        for j in 0..256 {
+        for j in 0..ETH_SHA256_BIT_SIZE {
             builder.connect(
                 balances_hash_tree_root_targets.leaves[i][j].target,
                 balances_leaves[i][j].target,

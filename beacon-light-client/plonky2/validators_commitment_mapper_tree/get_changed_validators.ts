@@ -16,7 +16,7 @@ import { BeaconApi } from '../../../relay/implementations/beacon-api';
 
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
 
-const TAKE = 64;
+const TAKE = 32;
 
 (async () => {
   const { ssz } = await import('@lodestar/types');
@@ -63,7 +63,7 @@ const TAKE = 64;
 
     await work_queue.addItem(db, new Item(buffer));
 
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 41; i++) {
       const buffer = new ArrayBuffer(24);
       const dataView = new DataView(buffer);
 
@@ -172,7 +172,7 @@ const TAKE = 64;
   async function addInnerLevelProofs(
     validators: { index: number; validator: Validator }[],
   ) {
-    for (let j = 0n; j < 40n; j++) {
+    for (let j = 0n; j < 41n; j++) {
       console.log('Added inner level of proofs', j);
 
       let prev_index = 2199023255552n;
