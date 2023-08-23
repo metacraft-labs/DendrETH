@@ -1,15 +1,18 @@
 use plonky2::{
     hash::poseidon::PoseidonHash,
-    iop::target::{Target},
+    iop::target::Target,
     plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::{CircuitConfig, CircuitData, VerifierCircuitTarget},
         config::{GenericConfig, PoseidonGoldilocksConfig},
         proof::ProofWithPublicInputsTarget,
     },
+    util::serialization::{Buffer, IoResult, Read, Write},
 };
 
-use crate::{sha256::make_circuits, utils::ETH_SHA256_BIT_SIZE};
+use crate::{
+    sha256::make_circuits, targets_serialization::{ReadTargets, WriteTargets}, utils::ETH_SHA256_BIT_SIZE,
+};
 
 pub struct BalanceInnerCircuitTargets {
     pub proof1: ProofWithPublicInputsTarget<2>,
@@ -17,7 +20,29 @@ pub struct BalanceInnerCircuitTargets {
     pub verifier_circuit_target: VerifierCircuitTarget,
 }
 
-pub fn build_balance_inner_circuit(
+impl ReadTargets for BalanceInnerCircuitTargets {
+    fn read_targets(data: &mut Buffer) -> IoResult<Self> {
+        Ok(BalanceInnerCircuitTargets {
+            proof1: data.read_target_proof_with_public_inputs()?,
+            proof2: data.read_target_proof_with_public_inputs()?,
+            verifier_circuit_target: data.read_target_verifier_circuit()?,
+        })
+    }
+}
+
+impl WriteTargets for BalanceInnerCircuitTargets {
+    fn write_targets(&self) -> IoResult<Vec<u8>> {
+        let mut data = Vec::<u8>::new();
+
+        data.write_target_proof_with_public_inputs(&self.proof1)?;
+        data.write_target_proof_with_public_inputs(&self.proof2)?;
+        data.write_target_verifier_circuit(&self.verifier_circuit_target)?;
+
+        Ok(data)
+    }
+}
+
+pub fn build_inner_level_circuit(
     inner_circuit_data: &CircuitData<
         plonky2::field::goldilocks_field::GoldilocksField,
         PoseidonGoldilocksConfig,
@@ -66,7 +91,10 @@ pub fn build_balance_inner_circuit(
 
     for i in 0..ETH_SHA256_BIT_SIZE {
         builder.connect(hasher.message[i].target, sha256_hash[i]);
-        builder.connect(hasher.message[i + ETH_SHA256_BIT_SIZE].target, sha256_hash2[i]);
+        builder.connect(
+            hasher.message[i + ETH_SHA256_BIT_SIZE].target,
+            sha256_hash2[i],
+        );
     }
 
     let hash = builder.hash_n_to_hash_no_pad::<PoseidonHash>(

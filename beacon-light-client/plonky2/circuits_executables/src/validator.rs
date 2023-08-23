@@ -127,7 +127,7 @@ pub const VALIDATOR_REGISTRY_LIMIT: usize = 1099511627776;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct Validator {
+pub struct ValidatorShaInput {
     #[serde(with = "bool_vec_as_int_vec")]
     pub pubkey: Vec<bool>,
     #[serde(with = "bool_vec_as_int_vec")]
@@ -153,7 +153,7 @@ mod tests {
 
     #[test]
     fn test_serialize() {
-        let validator = Validator {
+        let validator = ValidatorShaInput {
             pubkey: vec![true, false, true],
             withdrawal_credentials: vec![false, false, true],
             effective_balance: vec![true, true, false],
@@ -171,7 +171,7 @@ mod tests {
     #[test]
     fn test_deserialize() {
         let data = "{\"pubkey\":[1,0,1],\"withdrawalCredentials\":[0,0,1],\"effectiveBalance\":[1,1,0],\"slashed\":[0,1,0],\"activationEligibilityEpoch\":[1,0,1],\"activationEpoch\":[1,0,0],\"exitEpoch\":[0,1,1],\"withdrawableEpoch\":[1,1,1]}";
-        let deserialized: Validator = serde_json::from_str(data).unwrap();
+        let deserialized: ValidatorShaInput = serde_json::from_str(data).unwrap();
 
         assert_eq!(deserialized.pubkey, vec![true, false, true]);
         assert_eq!(

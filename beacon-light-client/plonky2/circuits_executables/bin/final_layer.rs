@@ -1,82 +1,125 @@
-use std::fs;
+use std::{println, time::Instant};
 
 use anyhow::Result;
-use plonky2::field::goldilocks_field::GoldilocksField;
-use plonky2::field::types::Field;
-use plonky2::fri::reduction_strategies::FriReductionStrategy;
-use plonky2::fri::FriConfig;
-use plonky2::iop::witness::{PartialWitness, WitnessWrite};
-use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::plonk::circuit_data::CircuitConfig;
-use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+use circuits::build_final_circuit::build_final_circuit;
+use circuits_executables::{
+    crud::{
+        fetch_final_layer_input, fetch_proof, load_circuit_data, save_final_proof, BalanceProof,
+        ValidatorProof,
+    },
+    provers::SetPWValues,
+};
+use clap::{App, Arg};
+use futures_lite::future;
+use plonky2::{
+    field::goldilocks_field::GoldilocksField,
+    iop::witness::{PartialWitness, WitnessWrite},
+    plonk::{config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs},
+};
 
 fn main() -> Result<()> {
-    const D: usize = 2;
-    type C = PoseidonGoldilocksConfig;
-    type F = <C as GenericConfig<D>>::F;
+    future::block_on(async_main())
+}
 
-    let standard_config = CircuitConfig::standard_recursion_config();
+async fn async_main() -> Result<()> {
+    let matches = App::new("")
+        .arg(
+            Arg::with_name("redis_connection")
+                .short('r')
+                .long("redis")
+                .value_name("Redis Connection")
+                .help("Sets a custom Redis connection")
+                .takes_value(true)
+                .default_value("redis://127.0.0.1:6379/"),
+        )
+        .get_matches();
 
-    // A high-rate recursive proof, designed to be verifiable with fewer routed wires.
-    let high_rate_config = CircuitConfig {
-        fri_config: FriConfig {
-            rate_bits: 7,
-            proof_of_work_bits: 16,
-            num_query_rounds: 12,
-            ..standard_config.fri_config.clone()
-        },
-        ..standard_config
-    };
+    let redis_connection = matches.value_of("redis_connection").unwrap();
 
-    // A final proof, optimized for size.
-    let final_config = CircuitConfig {
-        num_routed_wires: 37,
-        fri_config: FriConfig {
-            rate_bits: 8,
-            cap_height: 0,
-            proof_of_work_bits: 20,
-            reduction_strategy: FriReductionStrategy::MinSize(None),
-            num_query_rounds: 10,
-        },
-        ..high_rate_config
-    };
-    let mut builder = CircuitBuilder::<GoldilocksField, D>::new(final_config.clone());
+    let start = Instant::now();
+    let client = redis::Client::open(redis_connection)?;
+    let mut con = client.get_async_connection().await?;
 
-    // The arithmetic circuit.
-    let x = builder.add_virtual_target();
-    let a = builder.mul(x, x);
-    let b = builder.mul_const(F::from_canonical_u32(4), x);
-    let c = builder.mul_const(F::NEG_ONE, b);
-    let d = builder.add(a, c);
-    let e = builder.add_const(d, F::from_canonical_u32(7));
+    let elapsed = start.elapsed();
 
-    // Public inputs are the initial value (provided below) and the result (which is generated).
-    builder.register_public_input(x);
-    builder.register_public_input(e);
-    let mut pw = PartialWitness::new();
-    pw.set_target(x, F::from_canonical_u32(1));
-    let data = builder.build::<C>();
-    let proof = data.prove(pw)?;
+    println!("Redis connection took: {:?}", elapsed);
 
-    println!(
-        "x² - 4 *x + 7 where x = {} is {}",
-        proof.public_inputs[0], proof.public_inputs[1]
+    let balance_data = load_circuit_data("37").unwrap();
+    let commitment_data = load_circuit_data("commitment_mapper_40").unwrap();
+
+    let (circuit_targets, circuit_data) = build_final_circuit(&balance_data, &commitment_data);
+
+    let final_input_data = fetch_final_layer_input(&mut con).await?;
+
+    let mut pw: PartialWitness<GoldilocksField> = PartialWitness::new();
+
+    circuit_targets.set_pw_values(&mut pw, &final_input_data);
+
+    let balance_proof: BalanceProof = fetch_proof(&mut con, 37, 0).await?;
+
+    let balance_final_proof =
+        ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
+            balance_proof.proof,
+            &balance_data.common,
+        )?;
+
+    pw.set_proof_with_pis_target(
+        &circuit_targets.balance_circuit_targets.proof,
+        &balance_final_proof,
     );
 
-    fs::write(
-        "common_circuit_data.json",
-        serde_json::to_string(&data.common)?,
-    )?;
+    pw.set_cap_target(
+        &circuit_targets
+            .balance_circuit_targets
+            .verifier_circuit_target
+            .constants_sigmas_cap,
+        &balance_data.verifier_only.constants_sigmas_cap,
+    );
 
-    fs::write(
-        "verifier_only_circuit_data.json",
-        serde_json::to_string(&data.verifier_only)?,
-    )?;
+    pw.set_hash_target(
+        circuit_targets
+            .balance_circuit_targets
+            .verifier_circuit_target
+            .circuit_digest,
+        balance_data.verifier_only.circuit_digest,
+    );
 
-    fs::write(
-        "proof_with_public_inputs.json",
-        serde_json::to_string(&proof)?,
-    )?;
+    let commitment_proof: ValidatorProof = fetch_proof(&mut con, 40, 0).await?;
 
-    data.verify(proof)
+    let commitment_final_proof = ProofWithPublicInputs::<
+        GoldilocksField,
+        PoseidonGoldilocksConfig,
+        2,
+    >::from_bytes(commitment_proof.proof, &commitment_data.common)?;
+
+    pw.set_proof_with_pis_target(
+        &circuit_targets.commitment_mapper_circuit_targets.proof,
+        &commitment_final_proof,
+    );
+
+    pw.set_cap_target(
+        &circuit_targets
+            .commitment_mapper_circuit_targets
+            .verifier_circuit_target
+            .constants_sigmas_cap,
+        &commitment_data.verifier_only.constants_sigmas_cap,
+    );
+
+    pw.set_hash_target(
+        circuit_targets
+            .commitment_mapper_circuit_targets
+            .verifier_circuit_target
+            .circuit_digest,
+        commitment_data.verifier_only.circuit_digest,
+    );
+
+    let proof = circuit_data.prove(pw)?;
+
+    save_final_proof(&mut con, &proof).await?;
+
+    println!("Proof size: {}", proof.to_bytes().len());
+
+    println!("Final proof saved!");
+
+    Ok(())
 }

@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 circuits = { path = "../circuits" }
+num = { version = "0.4.0", features = ["serde"] }
 plonky2 = { git = "https://github.com/metacraft-labs/plonky2" }
 redis = "0.22"
 serde = "1.0.164"
@@ -32,3 +33,7 @@ path = "bin/balance_verification_circuit_data_generation.rs"
 [[bin]]
 name = "final_layer"
 path = "bin/final_layer.rs"
+
+[[bin]]
+name = "commitment_mapper_circuit_data_generation"
+path = "bin/commitment_mapper_circuit_data_generation.rs"

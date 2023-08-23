@@ -1,24 +1,21 @@
-use std::{fs, marker::PhantomData, println, time::Instant};
+use std::{marker::PhantomData, println, time::Instant};
 
 use anyhow::{Ok, Result};
 use circuits::{
-    build_validator_balance_circuit::build_validator_balance_circuit,
-    generator_serializer::{self, DendrETHGateSerializer, DendrETHGeneratorSerializer},
-    validator_hash_tree_root_poseidon::ValidatorPoseidon,
+    generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
+    targets_serialization::ReadTargets,
+    validator_balance_circuit::ValidatorBalanceVerificationTargets,
 };
 use circuits_executables::{
     crud::{fetch_validator_balance_input, read_from_file},
-    provers::{set_boolean_pw_values, set_pw_values, set_validator_pw_values},
+    provers::SetPWValues,
 };
 use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
-    iop::{
-        target::{BoolTarget, Target},
-        witness::PartialWitness,
-    },
+    iop::{witness::PartialWitness},
     plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig},
-    util::serialization::{Buffer, Read, Write},
+    util::serialization::{Buffer},
 };
 
 use jemallocator::Jemalloc;
@@ -33,34 +30,11 @@ fn main() -> Result<()> {
 async fn async_main() -> Result<()> {
     let start = Instant::now();
 
-    let mut balances = Vec::<Vec<BoolTarget>>::new();
-    let mut validators = Vec::<ValidatorPoseidon>::new();
-
     let target_bytes = read_from_file("targets")?;
     let mut target_buffer = Buffer::new(&target_bytes);
 
-    for _ in 0..2 {
-        balances.push(target_buffer.read_target_bool_vec().unwrap());
-    }
-
-    for _ in 0..8 {
-        validators.push(ValidatorPoseidon {
-            pubkey: target_buffer.read_target_vec().unwrap().try_into().unwrap(),
-            withdrawal_credentials: target_buffer.read_target_vec().unwrap().try_into().unwrap(),
-            effective_balance: target_buffer.read_target_vec().unwrap().try_into().unwrap(),
-            slashed: target_buffer.read_target_vec().unwrap().try_into().unwrap(),
-            activation_eligibility_epoch: target_buffer
-                .read_target_vec()
-                .unwrap()
-                .try_into()
-                .unwrap(),
-            activation_epoch: target_buffer.read_target_vec().unwrap().try_into().unwrap(),
-            exit_epoch: target_buffer.read_target_vec().unwrap().try_into().unwrap(),
-            withdrawable_epoch: target_buffer.read_target_vec().unwrap().try_into().unwrap(),
-        });
-    }
-
-    let withdrawal_credentials = target_buffer.read_target_vec().unwrap();
+    let validator_targets =
+        ValidatorBalanceVerificationTargets::read_targets(&mut target_buffer).unwrap();
 
     let circuit_data_bytes = read_from_file("validator_balance_circuit")?;
 
@@ -74,8 +48,8 @@ async fn async_main() -> Result<()> {
         &circuit_data_bytes,
         &gate_serializer,
         &generator_serializer,
-    ).unwrap();
-
+    )
+    .unwrap();
 
     let elapsed = start.elapsed();
 
@@ -99,30 +73,9 @@ async fn async_main() -> Result<()> {
     let start = Instant::now();
     let mut pw = PartialWitness::new();
 
-    for i in 0..validator_balance_input.balances.len() {
-        set_boolean_pw_values(
-            &mut pw,
-            &balances[i],
-            validator_balance_input.balances[i].clone(),
-        );
-    }
-
-    for i in 0..validator_balance_input.validators.len() {
-        set_validator_pw_values(
-            &mut pw,
-            &validators[i],
-            &validator_balance_input.validators[i],
-        );
-    }
-
-    set_pw_values(
-        &mut pw,
-        &withdrawal_credentials,
-        validator_balance_input.withdrawal_credentials,
-    );
+    validator_targets.set_pw_values(&mut pw, &validator_balance_input);
 
     let proof = data.prove(pw)?;
-
 
     let elapsed = start.elapsed();
 

@@ -1,11 +1,13 @@
 use plonky2::{
-    field::extension::Extendable, hash::hash_types::RichField, iop::target::{BoolTarget, Target},
+    field::extension::Extendable,
+    hash::hash_types::RichField,
+    iop::target::{BoolTarget, Target},
     plonk::circuit_builder::CircuitBuilder,
 };
 use plonky2_u32::gadgets::arithmetic_u32::U32Target;
 use sha2::{Digest, Sha256};
 
-use crate::biguint::{BigUintTarget};
+use crate::biguint::BigUintTarget;
 
 pub const ETH_SHA256_BIT_SIZE: usize = 256;
 
@@ -126,6 +128,10 @@ pub fn uint32_to_bits<F: RichField + Extendable<D>, const D: usize>(
 
 pub fn to_mixed_endian(bits: &[BoolTarget]) -> impl Iterator<Item = &BoolTarget> {
     bits.chunks(8).map(|chunk| chunk.iter().rev()).flatten()
+}
+
+pub fn to_big_endian(bits: &[BoolTarget]) -> Vec<BoolTarget> {
+    bits.chunks(8).rev().flatten().cloned().collect()
 }
 
 pub fn epoch_to_mixed_endian<F: RichField + Extendable<D>, const D: usize>(
