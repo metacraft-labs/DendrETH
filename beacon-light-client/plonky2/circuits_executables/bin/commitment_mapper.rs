@@ -5,7 +5,7 @@ use circuits::{
 };
 use circuits_executables::{
     crud::{fetch_proofs, fetch_validator, save_validator_proof, ValidatorProof},
-    provers::{handle_inner_level_proof, SetPWValues},
+    provers::{handle_commitment_mapper_inner_level_proof, SetPWValues},
     validator::VALIDATOR_REGISTRY_LIMIT,
     validator_commitment_constants,
 };
@@ -114,7 +114,7 @@ async fn async_main() -> Result<()> {
                         &first_level_circuit_data
                     };
 
-                    let proof = handle_inner_level_proof(
+                    let proof = handle_commitment_mapper_inner_level_proof(
                         proofs.0,
                         proofs.1,
                         inner_circuit_data,

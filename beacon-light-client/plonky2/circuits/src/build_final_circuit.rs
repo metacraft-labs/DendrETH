@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use num::{BigUint, FromPrimitive};
 use plonky2::{
     field::{goldilocks_field::GoldilocksField, types::Field},
@@ -94,8 +95,6 @@ pub fn build_final_circuit(
 
     let state_root = create_bool_target_array(&mut builder);
 
-    builder.register_public_inputs(&state_root.iter().map(|x| x.target).collect::<Vec<Target>>());
-
     let validator_size_bits = create_bool_target_array(&mut builder);
 
     let validators_hasher = make_circuits(&mut builder, (2 * ETH_SHA256_BIT_SIZE) as u64);
@@ -127,9 +126,9 @@ pub fn build_final_circuit(
     let balance_merkle_branch =
         create_and_connect_merkle_branch(&mut builder, 44, &balances_hasher.digest, &state_root);
 
-    let current_slot = &balance_proof_targets.public_inputs[266..268];
+    let current_epoch = &balance_proof_targets.public_inputs[266..268];
 
-    let slot = verify_slot_is_in_range(&mut builder, current_slot);
+    let slot = verify_slot_is_in_range(&mut builder, current_epoch);
 
     let mut slot_bits = biguint_to_bits_target::<_, 2, 2>(&mut builder, &slot);
 
@@ -185,9 +184,6 @@ fn setup_balance_targets(
     let sum = proof_targets.public_inputs[0];
     let withdrawal_credentials = proof_targets.public_inputs[257..262].to_vec();
 
-    builder.register_public_input(sum);
-    builder.register_public_inputs(&withdrawal_credentials);
-
     (
         proof_targets,
         verifier_circuit_target,
@@ -217,7 +213,10 @@ fn verify_slot_is_in_range(
 ) -> BigUintTarget {
     let current_epoch_bits = epoch_to_mixed_endian(builder, current_epoch.try_into().unwrap());
 
-    let current_epoch = bits_to_biguint_target(builder, current_epoch_bits);
+    let current_epoch = bits_to_biguint_target(
+        builder,
+        current_epoch_bits.iter().rev().map(|x| *x).collect_vec(),
+    );
 
     let slots_per_epoch = builder.constant_biguint(&BigUint::from_u32(32).unwrap());
 
