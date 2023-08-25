@@ -72,7 +72,7 @@ pub fn handle_generic_inner_level_proof(
     Ok(circuit_data.prove(pw)?)
 }
 
-pub fn handle_inner_level_proof(
+pub fn handle_commitment_mapper_inner_level_proof(
     proof1_bytes: Vec<u8>,
     proof2_bytes: Vec<u8>,
     inner_circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
