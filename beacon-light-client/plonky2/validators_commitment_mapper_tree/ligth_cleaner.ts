@@ -10,7 +10,7 @@ import validator_commitment_constants from '../constants/validator_commitment_co
 (async () => {
   const first_level_proofs = new WorkQueue(
     new KeyPrefix(
-      `${validator_commitment_constants.balanceVerificationQueue}:${1}`,
+      `${validator_commitment_constants.validatorProofsQueue}`,
     ),
   );
   const db = new Redis('redis://127.0.0.1:6379');

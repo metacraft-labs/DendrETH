@@ -11,19 +11,22 @@ use plonky2::{
 };
 
 use crate::{
-    sha256::make_circuits, targets_serialization::{ReadTargets, WriteTargets}, utils::ETH_SHA256_BIT_SIZE,
+    build_commitment_mapper_first_level_circuit::{POSEIDON_HASH_PUB_INDEX, SHA256_HASH_PUB_INDEX},
+    sha256::make_circuits,
+    targets_serialization::{ReadTargets, WriteTargets},
+    utils::{ETH_SHA256_BIT_SIZE, POSEIDON_HASH_SIZE},
 };
 
-pub struct InnerCircuitTargets {
+pub struct CommitmentMapperInnerCircuitTargets {
     pub proof1: ProofWithPublicInputsTarget<2>,
     pub proof2: ProofWithPublicInputsTarget<2>,
     pub verifier_circuit_target: VerifierCircuitTarget,
     pub is_zero: BoolTarget,
 }
 
-impl ReadTargets for InnerCircuitTargets {
-    fn read_targets(data: &mut Buffer) -> IoResult<InnerCircuitTargets> {
-        Ok(InnerCircuitTargets {
+impl ReadTargets for CommitmentMapperInnerCircuitTargets {
+    fn read_targets(data: &mut Buffer) -> IoResult<CommitmentMapperInnerCircuitTargets> {
+        Ok(CommitmentMapperInnerCircuitTargets {
             proof1: data.read_target_proof_with_public_inputs()?,
             proof2: data.read_target_proof_with_public_inputs()?,
             verifier_circuit_target: data.read_target_verifier_circuit()?,
@@ -32,7 +35,7 @@ impl ReadTargets for InnerCircuitTargets {
     }
 }
 
-impl WriteTargets for InnerCircuitTargets {
+impl WriteTargets for CommitmentMapperInnerCircuitTargets {
     fn write_targets(&self) -> IoResult<Vec<u8>> {
         let mut data = Vec::<u8>::new();
 
@@ -52,7 +55,7 @@ pub fn build_commitment_mapper_inner_circuit(
         2,
     >,
 ) -> (
-    InnerCircuitTargets,
+    CommitmentMapperInnerCircuitTargets,
     plonky2::plonk::circuit_data::CircuitData<
         plonky2::field::goldilocks_field::GoldilocksField,
         PoseidonGoldilocksConfig,
@@ -87,27 +90,31 @@ pub fn build_commitment_mapper_inner_circuit(
 
     let is_one = builder.sub(one, is_zero.target);
 
-    let poseidon_hash: &[Target] = &pt1.public_inputs[0..4]
+    let poseidon_hash: &[Target] = &pt1.public_inputs
+        [POSEIDON_HASH_PUB_INDEX..POSEIDON_HASH_PUB_INDEX + POSEIDON_HASH_SIZE]
         .iter()
         .map(|x| builder.mul(*x, is_one))
         .collect::<Vec<Target>>();
 
-    let sha256_hash = &pt1.public_inputs[4..260]
+    let sha256_hash = &pt1.public_inputs
+        [SHA256_HASH_PUB_INDEX..SHA256_HASH_PUB_INDEX + ETH_SHA256_BIT_SIZE]
         .iter()
         .map(|x| builder.mul(*x, is_one))
         .collect::<Vec<Target>>();
 
-    let poseidon_hash2 = &pt2.public_inputs[0..4]
+    let poseidon_hash2 = &pt2.public_inputs
+        [POSEIDON_HASH_PUB_INDEX..POSEIDON_HASH_PUB_INDEX + POSEIDON_HASH_SIZE]
         .iter()
         .map(|x| builder.mul(*x, is_one))
         .collect::<Vec<Target>>();
 
-    let sha256_hash2 = &pt2.public_inputs[4..260]
+    let sha256_hash2 = &pt2.public_inputs
+        [SHA256_HASH_PUB_INDEX..SHA256_HASH_PUB_INDEX + ETH_SHA256_BIT_SIZE]
         .iter()
         .map(|x| builder.mul(*x, is_one))
         .collect::<Vec<Target>>();
 
-    let hasher = make_circuits(&mut builder, 512);
+    let hasher = make_circuits(&mut builder, (2 * ETH_SHA256_BIT_SIZE) as u64);
 
     for i in 0..ETH_SHA256_BIT_SIZE {
         builder.connect(hasher.message[i].target, sha256_hash[i]);
@@ -138,7 +145,7 @@ pub fn build_commitment_mapper_inner_circuit(
     let data = builder.build::<C>();
 
     (
-        InnerCircuitTargets {
+        CommitmentMapperInnerCircuitTargets {
             proof1: pt1,
             proof2: pt2,
             verifier_circuit_target: verifier_circuit_target,

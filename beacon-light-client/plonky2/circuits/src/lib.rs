@@ -1,7 +1,7 @@
 pub mod biguint;
 pub mod bit_operations;
-pub mod build_first_level_circuit;
-pub mod build_inner_level_circuit;
+pub mod build_commitment_mapper_first_level_circuit;
+pub mod build_commitment_mapper_inner_level_circuit;
 pub mod build_validator_balance_circuit;
 pub mod generator_serializer;
 pub mod hash_tree_root;
@@ -10,7 +10,7 @@ pub mod is_valid_merkle_branch;
 pub mod sha256;
 pub mod utils;
 pub mod validator_balance_circuit;
-pub mod validator_commitment;
+pub mod validator_commitment_mapper;
 pub mod validator_hash_tree_root;
 pub mod validator_hash_tree_root_poseidon;
 pub mod build_balance_inner_level_circuit;

@@ -2,18 +2,18 @@ use std::{fs, marker::PhantomData};
 
 use anyhow::Result;
 use circuits::{
-    build_first_level_circuit::build_commitment_mapper_first_level_circuit,
-    build_inner_level_circuit::{build_commitment_mapper_inner_circuit},
+    build_commitment_mapper_first_level_circuit::build_commitment_mapper_first_level_circuit,
+    build_commitment_mapper_inner_level_circuit::build_commitment_mapper_inner_circuit,
     generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
     targets_serialization::WriteTargets,
-    validator_commitment::ValidatorCommitmentTargets,
+    validator_commitment_mapper::ValidatorCommitmentTargets,
 };
 
 use clap::{App, Arg};
 use futures_lite::future;
 
 use jemallocator::Jemalloc;
-use plonky2::{plonk::config::PoseidonGoldilocksConfig, util::serialization::Write};
+use plonky2::{plonk::config::PoseidonGoldilocksConfig};
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -90,19 +90,7 @@ pub async fn async_main() -> Result<()> {
             )
             .unwrap();
 
-            let mut inner_level_targets = Vec::<u8>::new();
-
-            inner_level_targets
-                .write_target_proof_with_public_inputs(&targets.proof1)
-                .unwrap();
-
-            inner_level_targets
-                .write_target_proof_with_public_inputs(&targets.proof2)
-                .unwrap();
-
-            inner_level_targets
-                .write_target_verifier_circuit(&targets.verifier_circuit_target)
-                .unwrap();
+            let inner_level_targets = targets.write_targets().unwrap();
 
             write_to_file(
                 &format!("commitment_mapper_{}.plonky2_targets", i),

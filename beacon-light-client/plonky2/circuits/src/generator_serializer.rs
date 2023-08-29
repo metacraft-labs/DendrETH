@@ -1,4 +1,3 @@
-use std::marker::PhantomData;
 use plonky2::{
     field::extension::Extendable,
     gadgets::{
@@ -41,11 +40,13 @@ use plonky2::{
 };
 use plonky2_u32::gates::{
     add_many_u32::U32AddManyGate,
+    add_many_u32::U32AddManyGenerator,
     arithmetic_u32::{U32ArithmeticGate, U32ArithmeticGenerator},
-    comparison::ComparisonGate,
+    comparison::{ComparisonGate, ComparisonGenerator},
     range_check_u32::U32RangeCheckGate,
     subtraction_u32::U32SubtractionGate,
 };
+use std::marker::PhantomData;
 
 use crate::biguint::BigUintDivRemGenerator;
 
@@ -66,6 +67,7 @@ where
         ArithmeticExtensionGenerator<F, D>,
         BaseSplitGenerator<2>,
         BaseSumGenerator<2>,
+        ComparisonGenerator<F, D>,
         ConstantGenerator<F>,
         CopyGenerator,
         EqualityGenerator,
@@ -86,7 +88,8 @@ where
         SplitGenerator,
         WireSplitGenerator,
         BigUintDivRemGenerator<F, D>,
-        U32ArithmeticGenerator<F, D>
+        U32ArithmeticGenerator<F, D>,
+        U32AddManyGenerator<F, D>
     }
 }
 

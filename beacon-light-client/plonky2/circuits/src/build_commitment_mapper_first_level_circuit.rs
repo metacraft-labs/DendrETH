@@ -4,7 +4,10 @@ use plonky2::plonk::{
     config::{GenericConfig, PoseidonGoldilocksConfig},
 };
 
-use crate::validator_commitment::{validator_commitment, ValidatorCommitmentTargets};
+use crate::validator_commitment_mapper::{validator_commitment_mapper, ValidatorCommitmentTargets};
+
+pub const POSEIDON_HASH_PUB_INDEX: usize = 0;
+pub const SHA256_HASH_PUB_INDEX: usize = 4;
 
 pub fn build_commitment_mapper_first_level_circuit() -> (
     ValidatorCommitmentTargets,
@@ -22,7 +25,7 @@ pub fn build_commitment_mapper_first_level_circuit() -> (
 
     let mut builder = CircuitBuilder::<F, D>::new(standard_recursion_config);
 
-    let validator_commitment_result = validator_commitment(&mut builder);
+    let validator_commitment_result = validator_commitment_mapper(&mut builder);
 
     builder.register_public_inputs(&validator_commitment_result.poseidon_hash_tree_root.elements);
     builder.register_public_inputs(
@@ -41,7 +44,10 @@ mod test {
     use anyhow::Result;
     use plonky2::iop::witness::{PartialWitness, WitnessWrite};
 
-    use crate::{build_first_level_circuit::build_commitment_mapper_first_level_circuit, utils::ETH_SHA256_BIT_SIZE};
+    use crate::{
+        build_commitment_mapper_first_level_circuit::build_commitment_mapper_first_level_circuit,
+        utils::ETH_SHA256_BIT_SIZE,
+    };
 
     #[test]
     fn test_validator_hash_tree_root() -> Result<()> {

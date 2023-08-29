@@ -1,3 +1,5 @@
+use std::println;
+
 use plonky2::{
     field::extension::Extendable,
     hash::hash_types::RichField,
@@ -7,9 +9,10 @@ use plonky2::{
 use plonky2_u32::gadgets::arithmetic_u32::U32Target;
 use sha2::{Digest, Sha256};
 
-use crate::biguint::BigUintTarget;
+use crate::biguint::{BigUintTarget, CircuitBuilderBiguint};
 
 pub const ETH_SHA256_BIT_SIZE: usize = 256;
+pub const POSEIDON_HASH_SIZE: usize = 4;
 
 pub fn hash_bit_array(validator_pubkey: Vec<&str>) -> Vec<String> {
     // Concatenate the array into a single binary string
@@ -44,6 +47,24 @@ pub fn hash_bit_array(validator_pubkey: Vec<&str>) -> Vec<String> {
         .flatten()
         .collect();
     pubkey_binary_result
+}
+
+pub fn biguint_is_equal<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    a: &BigUintTarget,
+    b: &BigUintTarget,
+) -> BoolTarget {
+    assert!(a.limbs.len() == b.limbs.len());
+
+    let mut all_equal = Vec::new();
+    all_equal.push(builder._true());
+
+    for i in 0..a.limbs.len() {
+        let equal = builder.is_equal(a.limbs[i].0, b.limbs[i].0);
+        all_equal.push(builder.and(all_equal[i], equal));
+    }
+
+    all_equal[a.limbs.len()]
 }
 
 pub fn create_bool_target_array<F: RichField + Extendable<D>, const D: usize>(
@@ -130,7 +151,7 @@ pub fn to_mixed_endian(bits: &[BoolTarget]) -> impl Iterator<Item = &BoolTarget>
     bits.chunks(8).map(|chunk| chunk.iter().rev()).flatten()
 }
 
-pub fn to_big_endian(bits: &[BoolTarget]) -> Vec<BoolTarget> {
+pub fn reverse_endianness(bits: &[BoolTarget]) -> Vec<BoolTarget> {
     bits.chunks(8).rev().flatten().cloned().collect()
 }
 
@@ -144,4 +165,24 @@ pub fn epoch_to_mixed_endian<F: RichField + Extendable<D>, const D: usize>(
     let current_epoch_bits_ref = to_mixed_endian(&combined);
 
     current_epoch_bits_ref.cloned().collect()
+}
+
+pub fn if_biguint<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    b: BoolTarget,
+    x: &BigUintTarget,
+    y: &BigUintTarget,
+) -> BigUintTarget {
+    let not_b = builder.not(b);
+
+    let maybe_x = builder.mul_biguint_by_bool(x, b);
+
+    let maybe_y = builder.mul_biguint_by_bool(y, not_b);
+
+    let mut result = builder.add_biguint(&maybe_y, &maybe_x);
+
+    // trim the carry
+    result.limbs.pop();
+
+    result
 }

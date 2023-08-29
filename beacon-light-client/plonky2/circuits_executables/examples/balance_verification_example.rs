@@ -4,6 +4,7 @@ use anyhow::Result;
 use circuits::{
     build_validator_balance_circuit::build_validator_balance_circuit,
     generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
+    targets_serialization::WriteTargets,
 };
 use circuits_executables::{
     crud::{fetch_validator_balance_input, write_to_file},
@@ -11,8 +12,7 @@ use circuits_executables::{
 };
 use futures_lite::future;
 use plonky2::{
-    iop::witness::PartialWitness,
-    plonk::{config::PoseidonGoldilocksConfig},
+    iop::witness::PartialWitness, plonk::config::PoseidonGoldilocksConfig,
     util::serialization::Write,
 };
 
@@ -51,53 +51,8 @@ async fn async_main() -> Result<()> {
 
     write_to_file("validator_balance_circuit", &circuit_bytes).unwrap();
 
-    let mut validator_balance_verification_targets_bytes = Vec::<u8>::new();
-
-    for i in 0..validators_balance_verification_targets.balances.len() {
-        validator_balance_verification_targets_bytes
-            .write_target_bool_vec(&validators_balance_verification_targets.balances[i])
-            .unwrap();
-    }
-
-    for i in 0..validators_balance_verification_targets.validators.len() {
-        validator_balance_verification_targets_bytes
-            .write_target_vec(&validators_balance_verification_targets.validators[i].pubkey)
-            .unwrap();
-        validator_balance_verification_targets_bytes
-            .write_target_vec(
-                &validators_balance_verification_targets.validators[i].withdrawal_credentials,
-            )
-            .unwrap();
-        validator_balance_verification_targets_bytes
-            .write_target_vec(
-                &validators_balance_verification_targets.validators[i].effective_balance,
-            )
-            .unwrap();
-        validator_balance_verification_targets_bytes
-            .write_target_vec(&validators_balance_verification_targets.validators[i].slashed)
-            .unwrap();
-        validator_balance_verification_targets_bytes
-            .write_target_vec(
-                &validators_balance_verification_targets.validators[i].activation_eligibility_epoch,
-            )
-            .unwrap();
-        validator_balance_verification_targets_bytes
-            .write_target_vec(
-                &validators_balance_verification_targets.validators[i].activation_epoch,
-            )
-            .unwrap();
-        validator_balance_verification_targets_bytes
-            .write_target_vec(&validators_balance_verification_targets.validators[i].exit_epoch)
-            .unwrap();
-        validator_balance_verification_targets_bytes
-            .write_target_vec(
-                &validators_balance_verification_targets.validators[i].withdrawable_epoch,
-            )
-            .unwrap();
-    }
-
-    validator_balance_verification_targets_bytes
-        .write_target_vec(&validators_balance_verification_targets.withdrawal_credentials)
+    let validator_balance_verification_targets_bytes = validators_balance_verification_targets
+        .write_targets()
         .unwrap();
 
     write_to_file("targets", &validator_balance_verification_targets_bytes).unwrap();

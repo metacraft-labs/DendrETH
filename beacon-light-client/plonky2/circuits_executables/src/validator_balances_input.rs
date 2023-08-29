@@ -1,4 +1,8 @@
-use crate::validator::{bool_vec_as_int_vec_nested, bool_vec_as_int_vec};
+use crate::{
+    crud::{biguint_to_str, parse_biguint},
+    validator::{bool_vec_as_int_vec, bool_vec_as_int_vec_nested},
+};
+use num::BigUint;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 pub fn from_str<'de, D>(deserializer: D) -> Result<Vec<u64>, D::Error>
@@ -22,22 +26,21 @@ where
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidatorPoseidonInput {
-    #[serde(serialize_with = "to_string", deserialize_with = "from_str")]
-    pub pubkey: Vec<u64>,
-    #[serde(serialize_with = "to_string", deserialize_with = "from_str")]
-    pub withdrawal_credentials: Vec<u64>,
-    #[serde(serialize_with = "to_string", deserialize_with = "from_str")]
-    pub effective_balance: Vec<u64>,
-    #[serde(serialize_with = "to_string", deserialize_with = "from_str")]
-    pub slashed: Vec<u64>,
-    #[serde(serialize_with = "to_string", deserialize_with = "from_str")]
-    pub activation_eligibility_epoch: Vec<u64>,
-    #[serde(serialize_with = "to_string", deserialize_with = "from_str")]
-    pub activation_epoch: Vec<u64>,
-    #[serde(serialize_with = "to_string", deserialize_with = "from_str")]
-    pub exit_epoch: Vec<u64>,
-    #[serde(serialize_with = "to_string", deserialize_with = "from_str")]
-    pub withdrawable_epoch: Vec<u64>,
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
+    pub pubkey: BigUint,
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
+    pub withdrawal_credentials: BigUint,
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
+    pub effective_balance: BigUint,
+    pub slashed: u64,
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
+    pub activation_eligibility_epoch: BigUint,
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
+    pub activation_epoch: BigUint,
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
+    pub exit_epoch: BigUint,
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
+    pub withdrawable_epoch: BigUint,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -46,10 +49,10 @@ pub struct ValidatorBalancesInput {
     pub validators: Vec<ValidatorPoseidonInput>,
     #[serde(with = "bool_vec_as_int_vec_nested")]
     pub balances: Vec<Vec<bool>>,
-    #[serde(serialize_with = "to_string", deserialize_with = "from_str")]
-    pub withdrawal_credentials: Vec<u64>,
-    #[serde(serialize_with = "to_string", deserialize_with = "from_str")]
-    pub current_epoch: Vec<u64>,
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
+    pub withdrawal_credentials: BigUint,
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
+    pub current_epoch: BigUint,
     #[serde(with = "bool_vec_as_int_vec")]
     pub validator_is_zero: Vec<bool>,
 }
@@ -63,18 +66,18 @@ mod tests {
     fn test_serialize_deserialize() {
         let input = ValidatorBalancesInput {
             validators: vec![ValidatorPoseidonInput {
-                pubkey: vec![1, 2, 3],
-                withdrawal_credentials: vec![4, 5, 6],
-                effective_balance: vec![7, 8, 9],
-                slashed: vec![10, 11, 12],
-                activation_eligibility_epoch: vec![13, 14, 15],
-                activation_epoch: vec![16, 17, 18],
-                exit_epoch: vec![19, 20, 21],
-                withdrawable_epoch: vec![22, 23, 24],
+                pubkey: BigUint::from(1u64),
+                withdrawal_credentials: BigUint::from(2u64),
+                effective_balance: BigUint::from(3u64),
+                slashed: 0,
+                activation_eligibility_epoch: BigUint::from(4u64),
+                activation_epoch: BigUint::from(5u64),
+                exit_epoch: BigUint::from(6u64),
+                withdrawable_epoch: BigUint::from(7u64),
             }],
             balances: vec![vec![true, false, true], vec![false, true, false]],
-            withdrawal_credentials: vec![28, 29, 30],
-            current_epoch: vec![31, 32],
+            withdrawal_credentials: BigUint::from(30u64),
+            current_epoch: BigUint::from(40u64),
             validator_is_zero: vec![false, false, false],
         };
 
