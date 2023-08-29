@@ -172,9 +172,9 @@ export interface ValidatorProof {
 
 export interface BalanceProof {
   needsChange: boolean;
-  rangeTotalValue: number;
+  rangeTotalValue: string;
   validatorsCommitment: number[];
   proof: number[];
   balancesHash: number[];
-  withdrawalCredentials: number[];
+  withdrawalCredentials: string;
 }

@@ -119,28 +119,12 @@ let TAKE;
           .fill('')
           .map(() => ''.padStart(256, '0').split('').map(Number)),
         validators: Array(CIRCUIT_SIZE).fill(getZeroValidator()),
-        withdrawalCredentials: bigint_to_array(
-          63,
-          5,
-          computeNumberFromLittleEndianBits(
-            hexToBits(
-              '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
-            ),
+        withdrawalCredentials: computeNumberFromLittleEndianBits(
+          hexToBits(
+            '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
           ),
-        ),
-        currentEpoch: bigint_to_array(
-          63,
-          2,
-          computeNumberFromLittleEndianBits(
-            hexToBits(
-              bytesToHex(
-                ssz.phase0.Validator.fields.activationEpoch.hashTreeRoot(
-                  computeEpochAt(beaconState.slot),
-                ),
-              ),
-            ),
-          ),
-        ),
+        ).toString(),
+        currentEpoch: computeEpochAt(beaconState.slot).toString(),
         validatorIsZero: Array(CIRCUIT_SIZE).fill(1),
       }),
     },
@@ -203,34 +187,18 @@ let TAKE;
           validators: [
             ...validators
               .slice(j * CIRCUIT_SIZE, (j + 1) * CIRCUIT_SIZE)
-              .map(v => convertValidator(v, ssz)),
+              .map(v => convertValidator(v)),
             ...Array(
               (j + 1) * CIRCUIT_SIZE -
                 Math.min((j + 1) * CIRCUIT_SIZE, validators.length),
             ).fill(getZeroValidator()),
           ],
-          withdrawalCredentials: bigint_to_array(
-            63,
-            5,
-            computeNumberFromLittleEndianBits(
-              hexToBits(
-                '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
-              ),
+          withdrawalCredentials: computeNumberFromLittleEndianBits(
+            hexToBits(
+              '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
             ),
-          ),
-          currentEpoch: bigint_to_array(
-            63,
-            2,
-            computeNumberFromLittleEndianBits(
-              hexToBits(
-                bytesToHex(
-                  ssz.phase0.Validator.fields.activationEpoch.hashTreeRoot(
-                    computeEpochAt(beaconState.slot),
-                  ),
-                ),
-              ),
-            ),
-          ),
+          ).toString(),
+          currentEpoch: computeEpochAt(beaconState.slot).toString(),
           validatorIsZero: array.concat(new Array(CIRCUIT_SIZE - size).fill(1)),
         }),
       });
@@ -297,15 +265,11 @@ let TAKE;
     slotBranch: beaconStateTree
       .getSingleProof(34n)
       .map(x => hexToBits(bytesToHex(x))),
-    withdrawalCredentials: bigint_to_array(
-      63,
-      5,
-      computeNumberFromLittleEndianBits(
-        hexToBits(
-          '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
-        ),
+    withdrawalCredentials: computeNumberFromLittleEndianBits(
+      hexToBits(
+        '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
       ),
-    ),
+    ).toString(),
     balanceBranch: beaconStateTree
       .getSingleProof(44n)
       .map(x => hexToBits(bytesToHex(x))),
@@ -326,119 +290,42 @@ let TAKE;
 
 function getZeroValidator() {
   return {
-    pubkey: ''.padStart(7, '0').split(''),
-    withdrawalCredentials: ''.padStart(5, '0').split(''),
-    effectiveBalance: ''.padStart(2, '0').split(''),
-    slashed: ['0'],
-    activationEligibilityEpoch: ''.padStart(2, '0').split(''),
-    activationEpoch: ''.padStart(2, '0').split(''),
-    exitEpoch: ''.padStart(2, '0').split(''),
-    withdrawableEpoch: ''.padStart(2, '0').split(''),
+    pubkey: '0',
+    withdrawalCredentials: '0',
+    effectiveBalance: '0',
+    slashed: 0,
+    activationEligibilityEpoch: '0',
+    activationEpoch: '0',
+    exitEpoch: '0',
+    withdrawableEpoch: '0',
   };
 }
 
-function convertValidator(validator, ssz): any {
+function convertValidator(validator): any {
   return {
-    pubkey: bigint_to_array(
-      63,
-      7,
-      computeNumberFromLittleEndianBits(
-        hexToBits(bytesToHex(validator.pubkey), 384),
-      ),
-    ),
-    withdrawalCredentials: bigint_to_array(
-      63,
-      5,
-      computeNumberFromLittleEndianBits(
-        hexToBits(bytesToHex(validator.withdrawalCredentials)),
-      ),
-    ),
-    effectiveBalance: bigint_to_array(
-      63,
-      2,
-      computeNumberFromLittleEndianBits(
-        hexToBits(
-          bytesToHex(
-            ssz.phase0.Validator.fields.effectiveBalance.hashTreeRoot(
-              validator.effectiveBalance,
-            ),
-          ),
-        ),
-      ),
-    ),
-    slashed: bigint_to_array(
-      63,
-      1,
-      computeNumberFromLittleEndianBits(
-        hexToBits(
-          bytesToHex(
-            ssz.phase0.Validator.fields.slashed.hashTreeRoot(validator.slashed),
-          ),
-        ),
-      ),
-    ),
-    activationEligibilityEpoch: bigint_to_array(
-      63,
-      2,
-      computeNumberFromLittleEndianBits(
-        hexToBits(
-          bytesToHex(
-            ssz.phase0.Validator.fields.activationEligibilityEpoch.hashTreeRoot(
-              validator.activationEligibilityEpoch,
-            ),
-          ),
-        ),
-      ),
-    ),
-    activationEpoch: bigint_to_array(
-      63,
-      2,
-      computeNumberFromLittleEndianBits(
-        hexToBits(
-          bytesToHex(
-            ssz.phase0.Validator.fields.activationEpoch.hashTreeRoot(
-              validator.activationEpoch,
-            ),
-          ),
-        ),
-      ),
-    ),
-    exitEpoch: bigint_to_array(
-      63,
-      2,
-      computeNumberFromLittleEndianBits(
-        hexToBits(
-          bytesToHex(
-            ssz.phase0.Validator.fields.exitEpoch.hashTreeRoot(
-              validator.exitEpoch,
-            ),
-          ),
-        ),
-      ),
-    ),
-    withdrawableEpoch: bigint_to_array(
-      63,
-      2,
-      computeNumberFromLittleEndianBits(
-        hexToBits(
-          bytesToHex(
-            ssz.phase0.Validator.fields.withdrawableEpoch.hashTreeRoot(
-              validator.withdrawableEpoch,
-            ),
-          ),
-        ),
-      ),
-    ),
+    pubkey: computeNumberFromLittleEndianBits(
+      hexToBits(bytesToHex(validator.pubkey), 384),
+    ).toString(),
+    withdrawalCredentials: computeNumberFromLittleEndianBits(
+      hexToBits(bytesToHex(validator.withdrawalCredentials)),
+    ).toString(),
+    effectiveBalance: validator.effectiveBalance.toString(),
+    slashed: Number(validator.slashed),
+    activationEligibilityEpoch: validator.activationEligibilityEpoch.toString(),
+    activationEpoch: validator.activationEpoch.toString(),
+    exitEpoch:
+      validator.exitEpoch === Infinity
+        ? (2n ** 64n - 1n).toString()
+        : validator.exitEpoch.toString(),
+    withdrawableEpoch:
+      validator.withdrawableEpoch === Infinity
+        ? (2n ** 64n - 1n).toString()
+        : validator.withdrawableEpoch.toString(),
   };
 }
 
-function computeNumberFromLittleEndianBits(bits) {
-  let sum = 0n;
-  for (let i = 0; i < bits.length; i++) {
-    sum += BigInt(bits[i]) * 2n ** BigInt(i);
-  }
-
-  return sum;
+function computeNumberFromLittleEndianBits(bits: number[]) {
+  return BigInt('0b' + bits.join(''));
 }
 
 function calculateIndexes(index: bigint, depth: bigint) {

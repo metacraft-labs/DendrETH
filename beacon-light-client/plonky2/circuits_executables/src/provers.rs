@@ -1,15 +1,16 @@
 use circuits::{
     biguint::WitnessBigUint, build_balance_inner_level_circuit::BalanceInnerCircuitTargets,
-    build_final_circuit::FinalCircuitTargets, build_inner_level_circuit::InnerCircuitTargets,
+    build_commitment_mapper_inner_level_circuit::CommitmentMapperInnerCircuitTargets,
+    build_final_circuit::FinalCircuitTargets,
     validator_balance_circuit::ValidatorBalanceVerificationTargets,
     validator_hash_tree_root::ValidatorShaTargets,
     validator_hash_tree_root_poseidon::ValidatorPoseidonTargets,
 };
 
 use plonky2::{
-    field::{goldilocks_field::GoldilocksField, types::Field},
+    field::goldilocks_field::GoldilocksField,
     iop::{
-        target::{BoolTarget, Target},
+        target::BoolTarget,
         witness::{PartialWitness, WitnessWrite},
     },
     plonk::{
@@ -76,7 +77,7 @@ pub fn handle_commitment_mapper_inner_level_proof(
     proof1_bytes: Vec<u8>,
     proof2_bytes: Vec<u8>,
     inner_circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    inner_circuit_targets: &InnerCircuitTargets,
+    inner_circuit_targets: &CommitmentMapperInnerCircuitTargets,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     is_zero: bool,
 ) -> Result<ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>> {
@@ -123,12 +124,6 @@ fn set_boolean_pw_values(
     }
 }
 
-fn set_pw_values(pw: &mut PartialWitness<GoldilocksField>, target: &[Target], source: &[u64]) {
-    for i in 0..target.len() {
-        pw.set_target(target[i], GoldilocksField::from_canonical_u64(source[i]));
-    }
-}
-
 pub trait SetPWValues<T> {
     fn set_pw_values(&self, pw: &mut PartialWitness<GoldilocksField>, source: &T);
 }
@@ -139,29 +134,24 @@ impl SetPWValues<ValidatorPoseidonInput> for ValidatorPoseidonTargets {
         pw: &mut PartialWitness<GoldilocksField>,
         source: &ValidatorPoseidonInput,
     ) {
-        set_pw_values(pw, &self.pubkey, &source.pubkey);
+        pw.set_biguint_target(&self.pubkey, &source.pubkey);
 
-        set_pw_values(
-            pw,
-            &self.withdrawal_credentials,
-            &source.withdrawal_credentials,
-        );
+        pw.set_biguint_target(&self.withdrawal_credentials, &source.withdrawal_credentials);
 
-        set_pw_values(pw, &self.effective_balance, &source.effective_balance);
+        pw.set_biguint_target(&self.effective_balance, &source.effective_balance);
 
-        set_pw_values(pw, &self.slashed, &source.slashed);
+        pw.set_bool_target(self.slashed, source.slashed == 1);
 
-        set_pw_values(
-            pw,
+        pw.set_biguint_target(
             &self.activation_eligibility_epoch,
             &source.activation_eligibility_epoch,
         );
 
-        set_pw_values(pw, &self.activation_epoch, &source.activation_epoch);
+        pw.set_biguint_target(&self.activation_epoch, &source.activation_epoch);
 
-        set_pw_values(pw, &self.exit_epoch, &source.exit_epoch);
+        pw.set_biguint_target(&self.exit_epoch, &source.exit_epoch);
 
-        set_pw_values(pw, &self.withdrawable_epoch, &source.withdrawable_epoch);
+        pw.set_biguint_target(&self.withdrawable_epoch, &source.withdrawable_epoch);
     }
 }
 
@@ -179,15 +169,11 @@ impl SetPWValues<ValidatorBalancesInput> for ValidatorBalanceVerificationTargets
             self.validators[i].set_pw_values(pw, &source.validators[i]);
         }
 
-        set_pw_values(
-            pw,
-            &self.withdrawal_credentials,
-            &source.withdrawal_credentials,
-        );
+        pw.set_biguint_target(&self.withdrawal_credentials, &source.withdrawal_credentials);
 
         set_boolean_pw_values(pw, &self.validator_is_zero, &source.validator_is_zero);
 
-        set_pw_values(pw, &self.current_epoch, &source.current_epoch);
+        pw.set_biguint_target(&self.current_epoch, &source.current_epoch);
     }
 }
 
@@ -229,11 +215,7 @@ impl SetPWValues<FinalCircuitInput> for FinalCircuitTargets {
             set_boolean_pw_values(pw, &self.slot_branch[i], &source.slot_branch[i]);
         }
 
-        set_pw_values(
-            pw,
-            &self.withdrawal_credentials,
-            &source.withdrawal_credentials,
-        );
+        pw.set_biguint_target(&self.withdrawal_credentials, &source.withdrawal_credentials);
 
         for i in 0..source.balance_branch.len() {
             set_boolean_pw_values(pw, &self.balance_branch[i], &source.balance_branch[i]);

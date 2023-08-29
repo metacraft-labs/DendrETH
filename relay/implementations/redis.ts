@@ -150,7 +150,7 @@ export class Redis implements IRedis {
     stateRoot: number[];
     slot: string;
     slotBranch: number[][];
-    withdrawalCredentials: string[];
+    withdrawalCredentials: string;
     balanceBranch: number[][];
     validatorsBranch: number[][];
     validatorsSizeBits: number[]
@@ -188,11 +188,11 @@ export class Redis implements IRedis {
     index: bigint,
     proof: BalanceProof = {
       needsChange: true,
-      rangeTotalValue: 0,
+      rangeTotalValue: "0",
       validatorsCommitment: [],
       proof: [],
       balancesHash: [],
-      withdrawalCredentials: [],
+      withdrawalCredentials: "0",
     },
   ): Promise<void> {
     await this.waitForConnection();

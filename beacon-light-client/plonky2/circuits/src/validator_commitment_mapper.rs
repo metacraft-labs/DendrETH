@@ -2,12 +2,18 @@ use plonky2::{
     field::extension::Extendable,
     hash::hash_types::{HashOutTarget, RichField},
     iop::target::BoolTarget,
-    plonk::circuit_builder::CircuitBuilder, util::serialization::{Buffer, IoResult, Read, Write},
+    plonk::circuit_builder::CircuitBuilder,
+    util::serialization::{Buffer, IoResult, Read, Write},
 };
 
 use crate::{
+    biguint::CircuitBuilderBiguint,
+    targets_serialization::{ReadTargets, WriteTargets},
+    utils::{bits_to_biguint_target, reverse_endianness},
     validator_hash_tree_root::{hash_tree_root_validator_sha256, ValidatorShaTargets},
-    validator_hash_tree_root_poseidon::{hash_tree_root_validator_poseidon, ValidatorPoseidonTargets}, targets_serialization::{ReadTargets, WriteTargets},
+    validator_hash_tree_root_poseidon::{
+        hash_tree_root_validator_poseidon, ValidatorPoseidonTargets,
+    },
 };
 pub struct ValidatorCommitmentTargets {
     pub validator: ValidatorShaTargets,
@@ -18,7 +24,8 @@ pub struct ValidatorCommitmentTargets {
 impl ReadTargets for ValidatorCommitmentTargets {
     fn read_targets(data: &mut Buffer) -> IoResult<Self>
     where
-        Self: Sized {
+        Self: Sized,
+    {
         Ok(ValidatorCommitmentTargets {
             validator: ValidatorShaTargets::read_targets(data)?,
             sha256_hash_tree_root: data.read_target_bool_vec()?.try_into().unwrap(),
@@ -38,7 +45,7 @@ impl WriteTargets for ValidatorCommitmentTargets {
     }
 }
 
-pub fn validator_commitment<F: RichField + Extendable<D>, const D: usize>(
+pub fn validator_commitment_mapper<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
 ) -> ValidatorCommitmentTargets {
     let hash_tree_root_sha256 = hash_tree_root_validator_sha256(builder);
@@ -48,90 +55,73 @@ pub fn validator_commitment<F: RichField + Extendable<D>, const D: usize>(
     let validator = hash_tree_root_sha256.validator;
 
     let validator_poseidon_mapped = ValidatorPoseidonTargets {
-        pubkey: [
-            builder.le_sum(validator.pubkey[0..63].iter()),
-            builder.le_sum(validator.pubkey[63..126].iter()),
-            builder.le_sum(validator.pubkey[126..189].iter()),
-            builder.le_sum(validator.pubkey[189..252].iter()),
-            builder.le_sum(validator.pubkey[252..315].iter()),
-            builder.le_sum(validator.pubkey[315..378].iter()),
-            builder.le_sum(validator.pubkey[378..384].iter()),
-        ],
-        withdrawal_credentials: [
-            builder.le_sum(validator.withdrawal_credentials[0..63].iter()),
-            builder.le_sum(validator.withdrawal_credentials[63..126].iter()),
-            builder.le_sum(validator.withdrawal_credentials[126..189].iter()),
-            builder.le_sum(validator.withdrawal_credentials[189..252].iter()),
-            builder.le_sum(validator.withdrawal_credentials[252..256].iter()),
-        ],
-        activation_eligibility_epoch: [
-            builder.le_sum(validator.activation_eligibility_epoch[0..63].iter()),
-            builder.le_sum(validator.activation_eligibility_epoch[63..64].iter()),
-        ],
-        slashed: [builder.le_sum(validator.slashed[0..1].iter())],
-        effective_balance: [
-            builder.le_sum(validator.effective_balance[0..63].iter()),
-            builder.le_sum(validator.effective_balance[63..64].iter()),
-        ],
-        activation_epoch: [
-            builder.le_sum(validator.activation_epoch[0..63].iter()),
-            builder.le_sum(validator.activation_epoch[63..64].iter()),
-        ],
-        exit_epoch: [
-            builder.le_sum(validator.exit_epoch[0..63].iter()),
-            builder.le_sum(validator.exit_epoch[63..64].iter()),
-        ],
-        withdrawable_epoch: [
-            builder.le_sum(validator.withdrawable_epoch[0..63].iter()),
-            builder.le_sum(validator.withdrawable_epoch[63..64].iter()),
-        ],
+        pubkey: bits_to_biguint_target(builder, validator.pubkey.to_vec()),
+        withdrawal_credentials: bits_to_biguint_target(
+            builder,
+            validator.withdrawal_credentials.to_vec(),
+        ),
+        activation_eligibility_epoch: bits_to_biguint_target(
+            builder,
+            reverse_endianness(&validator.activation_eligibility_epoch[0..64]),
+        ),
+        slashed: validator.slashed[0],
+        effective_balance: bits_to_biguint_target(
+            builder,
+            reverse_endianness(&validator.effective_balance[0..64]),
+        ),
+        activation_epoch: bits_to_biguint_target(
+            builder,
+            reverse_endianness(&validator.activation_epoch[0..64]),
+        ),
+        exit_epoch: bits_to_biguint_target(
+            builder,
+            reverse_endianness(&validator.exit_epoch[0..64]),
+        ),
+        withdrawable_epoch: bits_to_biguint_target(
+            builder,
+            reverse_endianness(&validator.withdrawable_epoch[0..64]),
+        ),
     };
 
-    for i in 0..7 {
-        builder.connect(
-            validator_poseidon.validator.pubkey[i],
-            validator_poseidon_mapped.pubkey[i],
-        );
-    }
-
-    for i in 0..5 {
-        builder.connect(
-            validator_poseidon.validator.withdrawal_credentials[i],
-            validator_poseidon_mapped.withdrawal_credentials[i],
-        )
-    }
-
-    builder.connect(
-        validator_poseidon.validator.slashed[0],
-        validator_poseidon_mapped.slashed[0],
+    builder.connect_biguint(
+        &validator_poseidon.validator.pubkey,
+        &validator_poseidon_mapped.pubkey,
     );
 
-    for i in 0..2 {
-        builder.connect(
-            validator_poseidon.validator.activation_eligibility_epoch[i],
-            validator_poseidon_mapped.activation_eligibility_epoch[i],
-        );
+    builder.connect_biguint(
+        &validator_poseidon.validator.withdrawal_credentials,
+        &validator_poseidon_mapped.withdrawal_credentials,
+    );
 
-        builder.connect(
-            validator_poseidon.validator.effective_balance[i],
-            validator_poseidon_mapped.effective_balance[i],
-        );
+    builder.connect(
+        validator_poseidon.validator.slashed.target,
+        validator_poseidon_mapped.slashed.target,
+    );
 
-        builder.connect(
-            validator_poseidon.validator.activation_epoch[i],
-            validator_poseidon_mapped.activation_epoch[i],
-        );
+    builder.connect_biguint(
+        &validator_poseidon.validator.activation_eligibility_epoch,
+        &validator_poseidon_mapped.activation_eligibility_epoch,
+    );
 
-        builder.connect(
-            validator_poseidon.validator.exit_epoch[i],
-            validator_poseidon_mapped.exit_epoch[i],
-        );
+    builder.connect_biguint(
+        &validator_poseidon.validator.effective_balance,
+        &validator_poseidon_mapped.effective_balance,
+    );
 
-        builder.connect(
-            validator_poseidon.validator.withdrawable_epoch[i],
-            validator_poseidon_mapped.withdrawable_epoch[i],
-        );
-    }
+    builder.connect_biguint(
+        &validator_poseidon.validator.activation_epoch,
+        &validator_poseidon_mapped.activation_epoch,
+    );
+
+    builder.connect_biguint(
+        &validator_poseidon.validator.exit_epoch,
+        &validator_poseidon_mapped.exit_epoch,
+    );
+
+    builder.connect_biguint(
+        &validator_poseidon.validator.withdrawable_epoch,
+        &validator_poseidon_mapped.withdrawable_epoch,
+    );
 
     ValidatorCommitmentTargets {
         validator: validator,
@@ -152,7 +142,9 @@ mod test {
         },
     };
 
-    use crate::{utils::ETH_SHA256_BIT_SIZE, validator_commitment::validator_commitment};
+    use crate::{
+        utils::ETH_SHA256_BIT_SIZE, validator_commitment_mapper::validator_commitment_mapper,
+    };
 
     #[test]
     fn test_validator_hash_tree_root() -> Result<()> {
@@ -162,7 +154,7 @@ mod test {
 
         let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
 
-        let targets = validator_commitment(&mut builder);
+        let targets = validator_commitment_mapper(&mut builder);
 
         let mut pw = PartialWitness::new();
 

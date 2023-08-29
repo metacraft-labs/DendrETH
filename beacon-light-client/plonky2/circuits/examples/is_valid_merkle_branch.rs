@@ -1,5 +1,4 @@
 use anyhow::Result;
-use circuits::generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer};
 use circuits::is_valid_merkle_branch::is_valid_merkle_branch;
 use circuits::sha256::make_circuits;
 use circuits::utils::ETH_SHA256_BIT_SIZE;
@@ -7,12 +6,11 @@ use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use plonky2::iop::witness::{PartialWitness, WitnessWrite};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::plonk::circuit_data::{CircuitConfig, CircuitData};
+use plonky2::plonk::circuit_data::{CircuitConfig};
 use plonky2::plonk::config::PoseidonGoldilocksConfig;
 use serde::Deserialize;
 use std::fs::File;
 use std::io::BufReader;
-use std::marker::PhantomData;
 use std::println;
 use std::time::Instant;
 

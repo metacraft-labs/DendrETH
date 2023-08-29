@@ -5,11 +5,19 @@ use crate::{
         bool_vec_as_int_vec, bool_vec_as_int_vec_nested, ValidatorShaInput,
         VALIDATOR_REGISTRY_LIMIT,
     },
-    validator_balances_input::{from_str, to_string, ValidatorBalancesInput},
+    validator_balances_input::ValidatorBalancesInput,
     validator_commitment_constants::get_validator_commitment_constants,
 };
 use anyhow::Result;
-use circuits::generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer};
+use circuits::{
+    build_validator_balance_circuit::{
+        CURRENT_EPOCH_PUB_INDEX, RANGE_BALANCES_ROOT_PUB_INDEX, RANGE_TOTAL_VALUE_PUB_INDEX,
+        RANGE_VALIDATOR_COMMITMENT_PUB_INDEX, WITHDRAWAL_CREDENTIALS_PUB_INDEX,
+        WITHDRAWAL_CREDENTIALS_SIZE,
+    },
+    generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
+    utils::{ETH_SHA256_BIT_SIZE, POSEIDON_HASH_SIZE},
+};
 use num::BigUint;
 use plonky2::{
     field::{goldilocks_field::GoldilocksField, types::Field64},
@@ -33,15 +41,18 @@ pub struct ValidatorProof {
 #[serde(rename_all = "camelCase")]
 pub struct BalanceProof {
     pub needs_change: bool,
-    pub range_total_value: u64,
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
+    pub range_total_value: BigUint,
     pub validators_commitment: Vec<u64>,
     pub balances_hash: Vec<u64>,
-    pub withdrawal_credentials: Vec<u64>,
-    pub current_epoch: Vec<u64>,
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
+    pub withdrawal_credentials: BigUint,
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
+    pub current_epoch: BigUint,
     pub proof: Vec<u8>,
 }
 
-fn biguint_to_str<S>(value: &BigUint, serializer: S) -> Result<S::Ok, S::Error>
+pub fn biguint_to_str<S>(value: &BigUint, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
@@ -49,7 +60,7 @@ where
     serializer.serialize_str(&str_value)
 }
 
-fn parse_biguint<'de, D>(deserializer: D) -> Result<BigUint, D::Error>
+pub fn parse_biguint<'de, D>(deserializer: D) -> Result<BigUint, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -69,8 +80,8 @@ pub struct FinalCircuitInput {
     pub slot: BigUint,
     #[serde(with = "bool_vec_as_int_vec_nested")]
     pub slot_branch: Vec<Vec<bool>>,
-    #[serde(serialize_with = "to_string", deserialize_with = "from_str")]
-    pub withdrawal_credentials: Vec<u64>,
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
+    pub withdrawal_credentials: BigUint,
     #[serde(with = "bool_vec_as_int_vec_nested")]
     pub balance_branch: Vec<Vec<bool>>,
     #[serde(with = "bool_vec_as_int_vec_nested")]
@@ -172,23 +183,35 @@ pub async fn save_balance_proof(
 ) -> Result<()> {
     let balance_proof = serde_json::to_string(&BalanceProof {
         needs_change: false,
-        range_total_value: proof.public_inputs[0].0 % GoldilocksField::ORDER,
-        balances_hash: proof.public_inputs[1..257]
+        range_total_value: BigUint::new(
+            proof.public_inputs[RANGE_TOTAL_VALUE_PUB_INDEX..2]
+                .iter()
+                .map(|x| (x.0 % GoldilocksField::ORDER) as u32)
+                .collect(),
+        ),
+        balances_hash: proof.public_inputs
+            [RANGE_BALANCES_ROOT_PUB_INDEX..RANGE_BALANCES_ROOT_PUB_INDEX + ETH_SHA256_BIT_SIZE]
             .iter()
             .map(|x| x.0 % GoldilocksField::ORDER)
             .collect(),
-        withdrawal_credentials: proof.public_inputs[257..262]
+        withdrawal_credentials: BigUint::new(
+            proof.public_inputs[WITHDRAWAL_CREDENTIALS_PUB_INDEX
+                ..WITHDRAWAL_CREDENTIALS_PUB_INDEX + WITHDRAWAL_CREDENTIALS_SIZE]
+                .iter()
+                .map(|x| (x.0 % GoldilocksField::ORDER) as u32)
+                .collect(),
+        ),
+        validators_commitment: proof.public_inputs[RANGE_VALIDATOR_COMMITMENT_PUB_INDEX
+            ..RANGE_VALIDATOR_COMMITMENT_PUB_INDEX + POSEIDON_HASH_SIZE]
             .iter()
             .map(|x| x.0 % GoldilocksField::ORDER)
             .collect(),
-        validators_commitment: proof.public_inputs[262..266]
-            .iter()
-            .map(|x| x.0 % GoldilocksField::ORDER)
-            .collect(),
-        current_epoch: proof.public_inputs[266..268]
-            .iter()
-            .map(|x| x.0 % GoldilocksField::ORDER)
-            .collect(),
+        current_epoch: BigUint::new(
+            proof.public_inputs[CURRENT_EPOCH_PUB_INDEX..CURRENT_EPOCH_PUB_INDEX + 2]
+                .iter()
+                .map(|x| (x.0 % GoldilocksField::ORDER) as u32)
+                .collect(),
+        ),
         proof: proof.to_bytes(),
     })?;
 

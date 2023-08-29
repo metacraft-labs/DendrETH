@@ -1,22 +1,27 @@
 use anyhow::Result;
 use circuits::{
-    build_first_level_circuit::build_commitment_mapper_first_level_circuit,
-    build_inner_level_circuit::{build_commitment_mapper_inner_circuit, InnerCircuitTargets},
+    build_commitment_mapper_inner_level_circuit::CommitmentMapperInnerCircuitTargets,
+    targets_serialization::ReadTargets, validator_commitment_mapper::ValidatorCommitmentTargets,
 };
 use circuits_executables::{
-    crud::{fetch_proofs, fetch_validator, save_validator_proof, ValidatorProof},
+    crud::{
+        fetch_proofs, fetch_validator, load_circuit_data, read_from_file, save_validator_proof,
+        ValidatorProof,
+    },
     provers::{handle_commitment_mapper_inner_level_proof, SetPWValues},
     validator::VALIDATOR_REGISTRY_LIMIT,
     validator_commitment_constants,
 };
 use futures_lite::future;
+use num::BigUint;
 use plonky2::{
-    field::goldilocks_field::GoldilocksField,
+    field::{goldilocks_field::GoldilocksField, types::Field64},
     iop::witness::PartialWitness,
     plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig},
+    util::serialization::Buffer,
 };
 use redis_work_queue::{KeyPrefix, WorkQueue};
-use std::{print, println, thread, time::Duration};
+use std::{format, print, println, thread, time::Duration};
 
 use validator_commitment_constants::get_validator_commitment_constants;
 
@@ -37,24 +42,26 @@ async fn async_main() -> Result<()> {
         get_validator_commitment_constants().validator_proofs_queue,
     ));
 
-    let (validator_commitment, first_level_circuit_data) = build_commitment_mapper_first_level_circuit();
+    let first_level_circuit_data = load_circuit_data("commitment_mapper_0")?;
+    let validator_commitment = get_first_level_targets()?;
 
     let mut inner_circuits: Vec<(
-        InnerCircuitTargets,
+        CommitmentMapperInnerCircuitTargets,
         CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     )> = Vec::new();
 
-    inner_circuits.push(build_commitment_mapper_inner_circuit(&first_level_circuit_data));
-
-    for i in 1..41 {
-        inner_circuits.push(build_commitment_mapper_inner_circuit(&inner_circuits[i - 1].1));
+    for i in 1..42 {
+        inner_circuits.push((
+            get_inner_targets(i)?,
+            load_circuit_data(&format!("commitment_mapper_{}", i))?,
+        ));
     }
 
     loop {
         println!("Waiting for job...");
 
         let job = match queue
-            .lease(&mut con, Option::None, Duration::from_secs(600))
+            .lease(&mut con, Option::None, Duration::from_secs(20))
             .await?
         {
             Some(job) => job,
@@ -149,4 +156,18 @@ async fn async_main() -> Result<()> {
             queue.complete(&mut con, &job).await?;
         }
     }
+}
+
+fn get_inner_targets(i: usize) -> Result<CommitmentMapperInnerCircuitTargets> {
+    let target_bytes = read_from_file(&format!("commitment_mapper_{}.plonky2_targets", i))?;
+    let mut target_buffer = Buffer::new(&target_bytes);
+
+    Ok(CommitmentMapperInnerCircuitTargets::read_targets(&mut target_buffer).unwrap())
+}
+
+fn get_first_level_targets() -> Result<ValidatorCommitmentTargets> {
+    let target_bytes = read_from_file(&format!("commitment_mapper_{}.plonky2_targets", 0))?;
+    let mut target_buffer = Buffer::new(&target_bytes);
+
+    Ok(ValidatorCommitmentTargets::read_targets(&mut target_buffer).unwrap())
 }

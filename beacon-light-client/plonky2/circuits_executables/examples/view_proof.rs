@@ -1,9 +1,13 @@
 use anyhow::Result;
 use circuits::{
-    build_first_level_circuit::build_commitment_mapper_first_level_circuit,
-    build_inner_level_circuit::{build_commitment_mapper_inner_circuit, InnerCircuitTargets}, build_balance_inner_level_circuit::{build_inner_level_circuit, BalanceInnerCircuitTargets}, build_validator_balance_circuit::build_validator_balance_circuit,
+    build_balance_inner_level_circuit::{build_inner_level_circuit, BalanceInnerCircuitTargets},
+    build_commitment_mapper_first_level_circuit::build_commitment_mapper_first_level_circuit,
+    build_commitment_mapper_inner_level_circuit::{
+        build_commitment_mapper_inner_circuit, CommitmentMapperInnerCircuitTargets,
+    },
+    build_validator_balance_circuit::build_validator_balance_circuit,
 };
-use circuits_executables::crud::{ValidatorProof, fetch_proof, BalanceProof};
+use circuits_executables::crud::{fetch_proof, BalanceProof, ValidatorProof};
 use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
