@@ -1,13 +1,79 @@
-use plonky2::plonk::{
-    circuit_builder::CircuitBuilder,
-    circuit_data::CircuitConfig,
-    config::{GenericConfig, PoseidonGoldilocksConfig},
+use itertools::Itertools;
+use plonky2::{
+    field::{goldilocks_field::GoldilocksField, types::Field64},
+    hash::hash_types::HashOutTarget,
+    iop::target::BoolTarget,
+    plonk::{
+        circuit_builder::CircuitBuilder,
+        circuit_data::CircuitConfig,
+        config::{GenericConfig, PoseidonGoldilocksConfig},
+        proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
+    },
 };
 
-use crate::validator_commitment_mapper::{validator_commitment_mapper, ValidatorCommitmentTargets};
+use crate::{
+    utils::{ETH_SHA256_BIT_SIZE, POSEIDON_HASH_SIZE},
+    validator_commitment_mapper::{validator_commitment_mapper, ValidatorCommitmentTargets},
+};
 
 pub const POSEIDON_HASH_PUB_INDEX: usize = 0;
 pub const SHA256_HASH_PUB_INDEX: usize = 4;
+
+pub type CommitmentMapperProof =
+    ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>;
+
+pub trait CommitmentMapperProofExt {
+    fn get_poseidon_hash_tree_root(&self) -> Vec<u64>;
+
+    fn get_sha256_hash_tree_root(&self) -> Vec<u64>;
+}
+
+impl CommitmentMapperProofExt for CommitmentMapperProof {
+    fn get_poseidon_hash_tree_root(&self) -> Vec<u64> {
+        return self.public_inputs
+            [POSEIDON_HASH_PUB_INDEX..POSEIDON_HASH_PUB_INDEX + POSEIDON_HASH_SIZE]
+            .iter()
+            .map(|x| x.0 % GoldilocksField::ORDER)
+            .collect_vec();
+    }
+
+    fn get_sha256_hash_tree_root(&self) -> Vec<u64> {
+        return self.public_inputs
+            [SHA256_HASH_PUB_INDEX..SHA256_HASH_PUB_INDEX + ETH_SHA256_BIT_SIZE]
+            .iter()
+            .map(|x| x.0 % GoldilocksField::ORDER)
+            .collect_vec();
+    }
+}
+
+pub type CommitmentMapperProofTarget = ProofWithPublicInputsTarget<2>;
+
+pub trait CommitmentMapperProofTargetExt {
+    fn get_commitment_mapper_poseidon_hash_tree_root(&self) -> HashOutTarget;
+
+    fn get_commitment_mapper_sha256_hash_tree_root(&self) -> [BoolTarget; ETH_SHA256_BIT_SIZE];
+}
+
+impl CommitmentMapperProofTargetExt for CommitmentMapperProofTarget {
+    fn get_commitment_mapper_poseidon_hash_tree_root(&self) -> HashOutTarget {
+        HashOutTarget {
+            elements: self.public_inputs
+                [POSEIDON_HASH_PUB_INDEX..POSEIDON_HASH_PUB_INDEX + POSEIDON_HASH_SIZE]
+                .try_into()
+                .unwrap(),
+        }
+    }
+
+    fn get_commitment_mapper_sha256_hash_tree_root(&self) -> [BoolTarget; ETH_SHA256_BIT_SIZE] {
+        self.public_inputs[SHA256_HASH_PUB_INDEX..SHA256_HASH_PUB_INDEX + ETH_SHA256_BIT_SIZE]
+            .iter()
+            .cloned()
+            .map(|x| BoolTarget::new_unsafe(x))
+            .collect_vec()
+            .try_into()
+            .unwrap()
+    }
+}
 
 pub fn build_commitment_mapper_first_level_circuit() -> (
     ValidatorCommitmentTargets,

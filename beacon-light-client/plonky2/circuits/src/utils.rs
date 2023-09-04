@@ -1,5 +1,3 @@
-use std::println;
-
 use plonky2::{
     field::extension::Extendable,
     hash::hash_types::RichField,

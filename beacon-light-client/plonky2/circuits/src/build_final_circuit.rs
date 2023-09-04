@@ -1,26 +1,25 @@
 use itertools::Itertools;
 use num::{BigUint, FromPrimitive};
 use plonky2::{
-    field::{goldilocks_field::GoldilocksField, types::Field},
+    field::{
+        goldilocks_field::GoldilocksField,
+        types::{Field, Field64},
+    },
     fri::{reduction_strategies::FriReductionStrategy, FriConfig},
+    hash::hash_types::HashOutTarget,
     iop::target::{BoolTarget, Target},
     plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::{CircuitConfig, CircuitData, VerifierCircuitTarget},
         config::{GenericConfig, PoseidonGoldilocksConfig},
-        proof::ProofWithPublicInputsTarget,
+        proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
     },
 };
-use plonky2_u32::gadgets::arithmetic_u32::U32Target;
 
 use crate::{
     biguint::{BigUintTarget, CircuitBuilderBiguint},
-    build_commitment_mapper_first_level_circuit::{POSEIDON_HASH_PUB_INDEX, SHA256_HASH_PUB_INDEX},
-    build_validator_balance_circuit::{
-        CURRENT_EPOCH_PUB_INDEX, RANGE_BALANCES_ROOT_PUB_INDEX, RANGE_TOTAL_VALUE_PUB_INDEX,
-        RANGE_VALIDATOR_COMMITMENT_PUB_INDEX, WITHDRAWAL_CREDENTIALS_PUB_INDEX,
-        WITHDRAWAL_CREDENTIALS_SIZE,
-    },
+    build_commitment_mapper_first_level_circuit::CommitmentMapperProofTargetExt,
+    build_validator_balance_circuit::ValidatorBalanceProofTargetsExt,
     is_valid_merkle_branch::{is_valid_merkle_branch, IsValidMerkleBranchTargets},
     sha256::make_circuits,
     utils::{
@@ -49,6 +48,45 @@ pub struct FinalCircuitTargets {
     pub balance_sum: BigUintTarget,
     pub withdrawal_credentials: BigUintTarget,
     pub validator_size_bits: [BoolTarget; ETH_SHA256_BIT_SIZE],
+}
+
+pub type FinalCircuitProof = ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>;
+
+pub trait FinalCircuitProofExt {
+    fn get_final_circuit_state_root(&self) -> [u64; ETH_SHA256_BIT_SIZE];
+
+    fn get_final_circuit_withdrawal_credentials(&self) -> BigUint;
+
+    fn get_final_circuit_balance_sum(&self) -> BigUint;
+}
+
+impl FinalCircuitProofExt for FinalCircuitProof {
+    fn get_final_circuit_state_root(&self) -> [u64; ETH_SHA256_BIT_SIZE] {
+        self.public_inputs[0..256]
+            .iter()
+            .map(|x| x.0 % GoldilocksField::ORDER)
+            .collect_vec()
+            .try_into()
+            .unwrap()
+    }
+
+    fn get_final_circuit_withdrawal_credentials(&self) -> BigUint {
+        BigUint::new(
+            self.public_inputs[256..264]
+                .iter()
+                .map(|x| (x.0 % GoldilocksField::ORDER) as u32)
+                .collect_vec(),
+        )
+    }
+
+    fn get_final_circuit_balance_sum(&self) -> BigUint {
+        BigUint::new(
+            self.public_inputs[264..266]
+                .iter()
+                .map(|x| (x.0 % GoldilocksField::ORDER) as u32)
+                .collect_vec(),
+        )
+    }
 }
 
 const D: usize = 2;
@@ -84,21 +122,21 @@ pub fn build_final_circuit(
         balance_root_hash,
         balance_sum,
         withdrawal_credentials,
+        current_epoch,
+        balances_validator_poseidon_root,
     ) = setup_balance_targets(&mut builder, balance_data);
 
     let (
         commitment_mapper_proof_targets,
         commitment_mapper_verifier_circuit_target,
+        commitment_mapper_poseidon_root,
         commitment_mapper_sha256_root,
     ) = setup_commitment_mapper_targets(&mut builder, commitment_data);
 
-    // TODO: maybe return just the poseidon hash instead of the whole proof
-    for i in 0..4 {
-        builder.connect(
-            commitment_mapper_proof_targets.public_inputs[POSEIDON_HASH_PUB_INDEX + i],
-            balance_proof_targets.public_inputs[RANGE_VALIDATOR_COMMITMENT_PUB_INDEX + i],
-        );
-    }
+    builder.connect_hashes(
+        commitment_mapper_poseidon_root,
+        balances_validator_poseidon_root,
+    );
 
     let state_root = create_bool_target_array(&mut builder);
 
@@ -109,7 +147,7 @@ pub fn build_final_circuit(
     for i in 0..ETH_SHA256_BIT_SIZE {
         builder.connect(
             validators_hasher.message[i].target,
-            commitment_mapper_sha256_root[i],
+            commitment_mapper_sha256_root[i].target,
         );
         builder.connect(
             validators_hasher.message[i + ETH_SHA256_BIT_SIZE].target,
@@ -123,7 +161,10 @@ pub fn build_final_circuit(
     let balances_hasher = make_circuits(&mut builder, (2 * ETH_SHA256_BIT_SIZE) as u64);
 
     for i in 0..ETH_SHA256_BIT_SIZE {
-        builder.connect(balances_hasher.message[i].target, balance_root_hash[i]);
+        builder.connect(
+            balances_hasher.message[i].target,
+            balance_root_hash[i].target,
+        );
         builder.connect(
             balances_hasher.message[i + ETH_SHA256_BIT_SIZE].target,
             validator_size_bits[i].target,
@@ -132,16 +173,6 @@ pub fn build_final_circuit(
 
     let balance_merkle_branch =
         create_and_connect_merkle_branch(&mut builder, 44, &balances_hasher.digest, &state_root);
-
-    // TODO: instead of getting it from the proof just return the current_epoch
-    let current_epoch = BigUintTarget {
-        limbs: balance_proof_targets.public_inputs
-            [CURRENT_EPOCH_PUB_INDEX..CURRENT_EPOCH_PUB_INDEX + 2]
-            .iter()
-            .cloned()
-            .map(|x| U32Target(x))
-            .collect_vec(),
-    };
 
     let slot = builder.add_virtual_biguint_target(2);
 
@@ -197,34 +228,19 @@ fn setup_balance_targets(
 ) -> (
     ProofWithPublicInputsTarget<D>,
     VerifierCircuitTarget,
-    Vec<Target>,
+    [BoolTarget; ETH_SHA256_BIT_SIZE],
     BigUintTarget,
     BigUintTarget,
+    BigUintTarget,
+    HashOutTarget,
 ) {
     let (proof_targets, verifier_circuit_target) = setup_proof_targets(data, builder);
 
-    let root_hash = proof_targets.public_inputs
-        [RANGE_BALANCES_ROOT_PUB_INDEX..RANGE_BALANCES_ROOT_PUB_INDEX + ETH_SHA256_BIT_SIZE]
-        .to_vec();
-
-    let sum = BigUintTarget {
-        limbs: proof_targets.public_inputs
-            [RANGE_TOTAL_VALUE_PUB_INDEX..RANGE_TOTAL_VALUE_PUB_INDEX + 2]
-            .iter()
-            .cloned()
-            .map(|x| U32Target(x))
-            .collect_vec(),
-    };
-
-    let withdrawal_credentials = BigUintTarget {
-        limbs: proof_targets.public_inputs[WITHDRAWAL_CREDENTIALS_PUB_INDEX
-            ..WITHDRAWAL_CREDENTIALS_PUB_INDEX + WITHDRAWAL_CREDENTIALS_SIZE]
-            .iter()
-            .cloned()
-            .map(|x| U32Target(x))
-            .collect_vec(),
-    };
-    // WHY we don't get the current epoch from the proof?
+    let root_hash = proof_targets.get_range_balances_root();
+    let sum = proof_targets.get_range_total_value();
+    let withdrawal_credentials = proof_targets.get_withdrawal_credentials();
+    let current_epoch = proof_targets.get_current_epoch();
+    let poseidon_hash = proof_targets.get_range_validator_commitment();
 
     (
         proof_targets,
@@ -232,6 +248,8 @@ fn setup_balance_targets(
         root_hash,
         sum,
         withdrawal_credentials,
+        current_epoch,
+        poseidon_hash,
     )
 }
 
@@ -241,14 +259,20 @@ fn setup_commitment_mapper_targets(
 ) -> (
     ProofWithPublicInputsTarget<D>,
     VerifierCircuitTarget,
-    Vec<Target>,
+    HashOutTarget,
+    [BoolTarget; ETH_SHA256_BIT_SIZE],
 ) {
     let (proof_targets, verifier_circuit_target) = setup_proof_targets(data, builder);
-    let sha256_root = proof_targets.public_inputs
-        [SHA256_HASH_PUB_INDEX..SHA256_HASH_PUB_INDEX + ETH_SHA256_BIT_SIZE]
-        .to_vec();
+    let sha256_root = proof_targets.get_commitment_mapper_sha256_hash_tree_root();
 
-    (proof_targets, verifier_circuit_target, sha256_root)
+    let poseidon_root = proof_targets.get_commitment_mapper_poseidon_hash_tree_root();
+
+    (
+        proof_targets,
+        verifier_circuit_target,
+        poseidon_root,
+        sha256_root,
+    )
 }
 
 fn verify_slot_is_in_range(

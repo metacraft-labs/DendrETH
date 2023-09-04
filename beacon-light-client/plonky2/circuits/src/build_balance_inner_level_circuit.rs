@@ -1,7 +1,5 @@
-use itertools::Itertools;
 use plonky2::{
     hash::poseidon::PoseidonHash,
-    iop::target::Target,
     plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::{CircuitConfig, CircuitData, VerifierCircuitTarget},
@@ -10,18 +8,15 @@ use plonky2::{
     },
     util::serialization::{Buffer, IoResult, Read, Write},
 };
-use plonky2_u32::gadgets::arithmetic_u32::U32Target;
 
 use crate::{
-    biguint::{BigUintTarget, CircuitBuilderBiguint},
+    biguint::{CircuitBuilderBiguint},
     build_validator_balance_circuit::{
-        set_public_variables, CURRENT_EPOCH_PUB_INDEX, RANGE_BALANCES_ROOT_PUB_INDEX,
-        RANGE_TOTAL_VALUE_PUB_INDEX, RANGE_VALIDATOR_COMMITMENT_PUB_INDEX,
-        WITHDRAWAL_CREDENTIALS_PUB_INDEX, WITHDRAWAL_CREDENTIALS_SIZE,
+        set_public_variables, ValidatorBalanceProofTargetsExt,
     },
     sha256::make_circuits,
     targets_serialization::{ReadTargets, WriteTargets},
-    utils::{ETH_SHA256_BIT_SIZE, POSEIDON_HASH_SIZE},
+    utils::{ETH_SHA256_BIT_SIZE},
 };
 
 pub struct BalanceInnerCircuitTargets {
@@ -89,94 +84,59 @@ pub fn build_inner_level_circuit(
 
     builder.verify_proof::<C>(&pt2, &verifier_circuit_target, &inner_circuit_data.common);
 
-    let poseidon_hash: &[Target] = &pt1.public_inputs[RANGE_VALIDATOR_COMMITMENT_PUB_INDEX
-        ..RANGE_VALIDATOR_COMMITMENT_PUB_INDEX + POSEIDON_HASH_SIZE];
+    let poseidon_hash = pt1.get_range_validator_commitment();
 
-    let sha256_hash = &pt1.public_inputs
-        [RANGE_BALANCES_ROOT_PUB_INDEX..RANGE_BALANCES_ROOT_PUB_INDEX + ETH_SHA256_BIT_SIZE];
+    let sha256_hash = pt1.get_range_balances_root();
 
-    let poseidon_hash2 = &pt2.public_inputs[RANGE_VALIDATOR_COMMITMENT_PUB_INDEX
-        ..RANGE_VALIDATOR_COMMITMENT_PUB_INDEX + POSEIDON_HASH_SIZE];
+    let poseidon_hash2 = pt2.get_range_validator_commitment();
 
-    let sha256_hash2 = &pt2.public_inputs
-        [RANGE_BALANCES_ROOT_PUB_INDEX..RANGE_BALANCES_ROOT_PUB_INDEX + ETH_SHA256_BIT_SIZE];
+    let sha256_hash2 = pt2.get_range_balances_root();
 
     let hasher = make_circuits(&mut builder, (2 * ETH_SHA256_BIT_SIZE) as u64);
 
     for i in 0..ETH_SHA256_BIT_SIZE {
-        builder.connect(hasher.message[i].target, sha256_hash[i]);
+        builder.connect(hasher.message[i].target, sha256_hash[i].target);
         builder.connect(
             hasher.message[i + ETH_SHA256_BIT_SIZE].target,
-            sha256_hash2[i],
+            sha256_hash2[i].target,
         );
     }
 
     let hash = builder.hash_n_to_hash_no_pad::<PoseidonHash>(
         poseidon_hash
+            .elements
             .iter()
-            .chain(poseidon_hash2.iter())
+            .chain(poseidon_hash2.elements.iter())
             .cloned()
             .collect(),
     );
 
-    let sum1 = BigUintTarget {
-        limbs: pt1.public_inputs[RANGE_TOTAL_VALUE_PUB_INDEX..RANGE_TOTAL_VALUE_PUB_INDEX + 2]
-            .iter()
-            .map(|x| U32Target(*x))
-            .collect_vec(),
-    };
+    let sum1 = pt1.get_range_total_value();
 
-    let sum2 = BigUintTarget {
-        limbs: pt2.public_inputs[RANGE_TOTAL_VALUE_PUB_INDEX..RANGE_TOTAL_VALUE_PUB_INDEX + 2]
-            .iter()
-            .map(|x| U32Target(*x))
-            .collect_vec(),
-    };
+    let sum2 = pt2.get_range_total_value();
 
     let mut sum = builder.add_biguint(&sum1, &sum2);
 
     // pop carry
     sum.limbs.pop();
 
-    let withdrawal_credentials1 = &pt1.public_inputs
-        [WITHDRAWAL_CREDENTIALS_PUB_INDEX..WITHDRAWAL_CREDENTIALS_PUB_INDEX + WITHDRAWAL_CREDENTIALS_SIZE];
-    let withdrawal_credentials2 = &pt2.public_inputs
-        [WITHDRAWAL_CREDENTIALS_PUB_INDEX..WITHDRAWAL_CREDENTIALS_PUB_INDEX + WITHDRAWAL_CREDENTIALS_SIZE];
+    let withdrawal_credentials1 = pt1.get_withdrawal_credentials();
+    let withdrawal_credentials2 = pt2.get_withdrawal_credentials();
 
-    for i in 0..5 {
-        builder.connect(withdrawal_credentials1[i], withdrawal_credentials2[i]);
-    }
+    builder.connect_biguint(&withdrawal_credentials1, &withdrawal_credentials2);
 
-    let withdrawal_credentials = BigUintTarget {
-        limbs: withdrawal_credentials1
-            .iter()
-            .cloned()
-            .map(|x| U32Target(x))
-            .collect_vec(),
-    };
+    let current_epoch1 = pt1.get_current_epoch();
+    let current_epoch2 = pt2.get_current_epoch();
 
-    let current_epoch1 = &pt1.public_inputs[CURRENT_EPOCH_PUB_INDEX..CURRENT_EPOCH_PUB_INDEX + 2];
-    let current_epoch2 = &pt2.public_inputs[CURRENT_EPOCH_PUB_INDEX..CURRENT_EPOCH_PUB_INDEX + 2];
-
-    for i in 0..2 {
-        builder.connect(current_epoch1[i], current_epoch2[i]);
-    }
-
-    let current_epoch = BigUintTarget {
-        limbs: current_epoch1
-            .iter()
-            .cloned()
-            .map(|x| U32Target(x))
-            .collect_vec(),
-    };
+    builder.connect_biguint(&current_epoch1, &current_epoch2);
 
     set_public_variables(
         &mut builder,
         &sum,
         hasher.digest.try_into().unwrap(),
-        &withdrawal_credentials,
+        &withdrawal_credentials1,
         hash,
-        &current_epoch,
+        &current_epoch1,
     );
 
     let data = builder.build::<C>();

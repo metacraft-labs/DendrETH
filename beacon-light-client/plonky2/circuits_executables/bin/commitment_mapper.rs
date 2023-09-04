@@ -13,9 +13,8 @@ use circuits_executables::{
     validator_commitment_constants,
 };
 use futures_lite::future;
-use num::BigUint;
 use plonky2::{
-    field::{goldilocks_field::GoldilocksField, types::Field64},
+    field::{goldilocks_field::GoldilocksField},
     iop::witness::PartialWitness,
     plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig},
     util::serialization::Buffer,
