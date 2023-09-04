@@ -10,17 +10,16 @@ use crate::{
 };
 use anyhow::Result;
 use circuits::{
+    build_commitment_mapper_first_level_circuit::CommitmentMapperProofExt,
+    build_final_circuit::FinalCircuitProofExt,
     build_validator_balance_circuit::{
-        CURRENT_EPOCH_PUB_INDEX, RANGE_BALANCES_ROOT_PUB_INDEX, RANGE_TOTAL_VALUE_PUB_INDEX,
-        RANGE_VALIDATOR_COMMITMENT_PUB_INDEX, WITHDRAWAL_CREDENTIALS_PUB_INDEX,
-        WITHDRAWAL_CREDENTIALS_SIZE,
+        ValidatorBalanceProofExt,
     },
     generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
-    utils::{ETH_SHA256_BIT_SIZE, POSEIDON_HASH_SIZE},
 };
 use num::BigUint;
 use plonky2::{
-    field::{goldilocks_field::GoldilocksField, types::Field64},
+    field::{goldilocks_field::GoldilocksField},
     plonk::{
         circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs,
     },
@@ -95,8 +94,8 @@ pub struct FinalCircuitInput {
 pub struct FinalProof {
     pub needs_change: bool,
     pub state_root: Vec<u64>,
-    pub withdrawal_credentials: Vec<u64>,
-    pub balance_sum: u64,
+    pub withdrawal_credentials: BigUint,
+    pub balance_sum: BigUint,
     pub proof: Vec<u8>,
 }
 
@@ -183,35 +182,11 @@ pub async fn save_balance_proof(
 ) -> Result<()> {
     let balance_proof = serde_json::to_string(&BalanceProof {
         needs_change: false,
-        range_total_value: BigUint::new(
-            proof.public_inputs[RANGE_TOTAL_VALUE_PUB_INDEX..2]
-                .iter()
-                .map(|x| (x.0 % GoldilocksField::ORDER) as u32)
-                .collect(),
-        ),
-        balances_hash: proof.public_inputs
-            [RANGE_BALANCES_ROOT_PUB_INDEX..RANGE_BALANCES_ROOT_PUB_INDEX + ETH_SHA256_BIT_SIZE]
-            .iter()
-            .map(|x| x.0 % GoldilocksField::ORDER)
-            .collect(),
-        withdrawal_credentials: BigUint::new(
-            proof.public_inputs[WITHDRAWAL_CREDENTIALS_PUB_INDEX
-                ..WITHDRAWAL_CREDENTIALS_PUB_INDEX + WITHDRAWAL_CREDENTIALS_SIZE]
-                .iter()
-                .map(|x| (x.0 % GoldilocksField::ORDER) as u32)
-                .collect(),
-        ),
-        validators_commitment: proof.public_inputs[RANGE_VALIDATOR_COMMITMENT_PUB_INDEX
-            ..RANGE_VALIDATOR_COMMITMENT_PUB_INDEX + POSEIDON_HASH_SIZE]
-            .iter()
-            .map(|x| x.0 % GoldilocksField::ORDER)
-            .collect(),
-        current_epoch: BigUint::new(
-            proof.public_inputs[CURRENT_EPOCH_PUB_INDEX..CURRENT_EPOCH_PUB_INDEX + 2]
-                .iter()
-                .map(|x| (x.0 % GoldilocksField::ORDER) as u32)
-                .collect(),
-        ),
+        range_total_value: proof.get_range_total_value(),
+        balances_hash: proof.get_range_balances_root().to_vec(),
+        withdrawal_credentials: proof.get_withdrawal_credentials(),
+        validators_commitment: proof.get_range_validator_commitment().to_vec(),
+        current_epoch: proof.get_current_epoch(),
         proof: proof.to_bytes(),
     })?;
 
@@ -236,15 +211,9 @@ pub async fn save_final_proof(
 ) -> Result<()> {
     let final_proof = serde_json::to_string(&FinalProof {
         needs_change: false,
-        state_root: proof.public_inputs[0..256]
-            .iter()
-            .map(|x| x.0 % GoldilocksField::ORDER)
-            .collect(),
-        withdrawal_credentials: proof.public_inputs[256..261]
-            .iter()
-            .map(|x| x.0 % GoldilocksField::ORDER)
-            .collect(),
-        balance_sum: proof.public_inputs[261].0 % GoldilocksField::ORDER,
+        state_root: proof.get_final_circuit_state_root().to_vec(),
+        withdrawal_credentials: proof.get_final_circuit_withdrawal_credentials(),
+        balance_sum: proof.get_final_circuit_balance_sum(),
         proof: proof.to_bytes(),
     })?;
 
@@ -281,14 +250,8 @@ pub async fn save_validator_proof(
     index: usize,
 ) -> Result<()> {
     let validator_proof = serde_json::to_string(&ValidatorProof {
-        poseidon_hash: proof.public_inputs[0..4]
-            .iter()
-            .map(|x| x.0 % GoldilocksField::ORDER)
-            .collect(),
-        sha256_hash: proof.public_inputs[4..260]
-            .iter()
-            .map(|x| x.0 % GoldilocksField::ORDER)
-            .collect(),
+        poseidon_hash: proof.get_poseidon_hash_tree_root().to_vec(),
+        sha256_hash: proof.get_sha256_hash_tree_root().to_vec(),
         proof: proof.to_bytes(),
         needs_change: false,
     })?;
