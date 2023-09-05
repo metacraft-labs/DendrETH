@@ -279,18 +279,26 @@ already very large. To perform our compilations, we had to purchase a server
 with 384GB of RAM where the fully integrated build takes the following amount
 of time:
 
-|                                      |          |
-| ------------------------------------ | -------- |
-| Circuit compilation                  | 6h       |
-| Circuit Constraints                  | 88945803 |
-| Witness generation C++ compilation   | 1h       |
-| Witness generation                   | 3m       |
-| Trusted setup phase 2 key generation | 26h      |
-| Trusted setup phase 2 contribution   | N/a      |
-| Proving key size                     | 49G      |
-| Proving key verification             | N/a      |
-| Proving time (rapidsnark)            | 4m       |
-| Proof verification time              | 1s       |
+|                                      |              |
+| ------------------------------------ | ------------ |
+| Circuit compilation                  | 6h, 27m, 47s |
+| Circuit template instances           | 410          |
+| Circuit non linear Constraints       | 89648756     |
+| Circuit linear Constraints           | 0            |
+| Circuit public inputs                | 0            |
+| Circuit public outputs               | 2            |
+| Circuit private inputs               | 20961        |
+| Circuit private outputs              | 0            |
+| Circuit wires                        | 88833842     |
+| Circuit labels                       | 472858554    |
+| Witness generation C++ compilation   | 1h           |
+| Witness generation                   | 3m           |
+| Trusted setup phase 2 key generation | 26h          |
+| Trusted setup phase 2 contribution   | N/a          |
+| Proving key size                     | 49G          |
+| Proving key verification             | N/a          |
+| Proving time (rapidsnark)            | 4m           |
+| Proof verification time              | 1s           |
 
 You can examine the required commands for building the final circuit here:
 
