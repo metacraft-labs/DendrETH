@@ -12,9 +12,10 @@ use circuits_executables::{
     validator::VALIDATOR_REGISTRY_LIMIT,
     validator_commitment_constants,
 };
+use clap::{App, Arg};
 use futures_lite::future;
 use plonky2::{
-    field::{goldilocks_field::GoldilocksField},
+    field::goldilocks_field::GoldilocksField,
     iop::witness::PartialWitness,
     plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig},
     util::serialization::Buffer,
@@ -34,7 +35,35 @@ fn main() -> Result<()> {
 }
 
 async fn async_main() -> Result<()> {
-    let client = redis::Client::open("redis://127.0.0.1:6379/")?;
+    let matches = App::new("")
+    .arg(
+        Arg::with_name("redis_connection")
+            .short('r')
+            .long("redis")
+            .value_name("Redis Connection")
+            .help("Sets a custom Redis connection")
+            .takes_value(true)
+            .default_value("redis://127.0.0.1:6379/"),
+    )
+    .arg(
+        Arg::with_name("stop_after")
+        .long("stop-after")
+        .value_name("Stop after")
+        .help("Sets how much seconds to wait until the program stops if no new tasks are found in the queue")
+        .takes_value(true)
+        .default_value("20")
+    )
+    .arg(
+        Arg::with_name("lease_for")
+        .value_name("lease-for")
+        .help("Sets for how long the task will be leased and then possibly requeued if not finished")
+        .takes_value(true)
+        .default_value("30"))
+    .get_matches();
+
+    let redis_connection = matches.value_of("redis_connection").unwrap();
+
+    let client = redis::Client::open(redis_connection)?;
     let mut con = client.get_async_connection().await?;
 
     let queue = WorkQueue::new(KeyPrefix::new(
@@ -56,11 +85,27 @@ async fn async_main() -> Result<()> {
         ));
     }
 
+    let stop_after = matches
+        .value_of("stop_after")
+        .unwrap()
+        .parse::<u64>()
+        .unwrap();
+
+    let lease_for = matches
+        .value_of("lease_for")
+        .unwrap()
+        .parse::<u64>()
+        .unwrap();
+
     loop {
         println!("Waiting for job...");
 
         let job = match queue
-            .lease(&mut con, Option::None, Duration::from_secs(20))
+            .lease(
+                &mut con,
+                Some(Duration::from_secs(stop_after)),
+                Duration::from_secs(lease_for),
+            )
             .await?
         {
             Some(job) => job,

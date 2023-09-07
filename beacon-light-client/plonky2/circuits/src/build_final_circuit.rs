@@ -275,6 +275,7 @@ fn setup_commitment_mapper_targets(
     )
 }
 
+// TODO: test
 fn verify_slot_is_in_range(
     builder: &mut CircuitBuilder<GoldilocksField, 2>,
     slot: &BigUintTarget,
