@@ -15,23 +15,59 @@ const {
 import { BeaconApi } from '../../../relay/implementations/beacon-api';
 
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
+import yargs from 'yargs';
 
-const TAKE = 32;
+let TAKE: number | undefined;
 
 (async () => {
   const { ssz } = await import('@lodestar/types');
 
-  const redis = new RedisLocal('127.0.0.1', 6379);
+  const options = yargs
+    .usage(
+      'Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>',
+    )
+    .option('redis-host ', {
+      alias: 'redis-host',
+      describe: 'The Redis host',
+      type: 'string',
+      default: '127.0.0.1',
+      description: 'Sets a custom redis connection',
+    })
+    .option('redis-port', {
+      alias: 'redis-port',
+      describe: 'The Redis port',
+      type: 'number',
+      default: 6379,
+      description: 'Sets a custom redis connection',
+    })
+    .option('beacon-node', {
+      alias: 'beacon-node',
+      describe: 'The beacon node url',
+      type: 'string',
+      default: 'http://unstable.mainnet.beacon-api.nimbus.team',
+      description: 'Sets a custom beacon node url',
+    })
+    .option('take', {
+      alias: 'take',
+      describe: 'The number of validators to take',
+      type: 'number',
+      default: undefined,
+      description: 'Sets the number of validators to take',
+    }).argv;
 
-  const db = new Redis('redis://127.0.0.1:6379');
+  const redis = new RedisLocal(options['redis-host'], options['redis-port']);
+
+  const db = new Redis(
+    `redis://${options['redis-host']}:${options['redis-port']}`,
+  );
+
+  TAKE = options['take'];
 
   const work_queue = new WorkQueue(
     new KeyPrefix(`${validator_commitment_constants.validatorProofsQueue}`),
   );
 
-  const beaconApi = new BeaconApi([
-    'http://unstable.mainnet.beacon-api.nimbus.team',
-  ]);
+  const beaconApi = new BeaconApi([options['beacon-node']]);
 
   // handle zeros validators
   if (await redis.isZeroValidatorEmpty()) {

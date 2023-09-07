@@ -64,12 +64,55 @@ async fn async_main() -> Result<()> {
                 .takes_value(true)
                 .required(true),
         )
+        .arg(
+            Arg::with_name("stop_after")
+            .long("stop-after")
+            .value_name("Stop after")
+            .help("Sets how much seconds to wait until the program stops if no new tasks are found in the queue")
+            .takes_value(true)
+            .default_value("20")
+        )
+        .arg(
+            Arg::with_name("lease_for")
+            .value_name("lease-for")
+            .help("Sets for how long the task will be leased and then possibly requeued if not finished")
+            .takes_value(true)
+            .default_value("30"))
+        .arg(
+            Arg::with_name("run_for_minutes")
+                .long("run-for")
+                .value_name("Run for X minutes")
+                .takes_value(true)
+                .default_value("infinity"),
+        )
         .get_matches();
 
     let level = matches
         .value_of("circuit_level")
         .unwrap()
         .parse::<usize>()
+        .unwrap();
+
+    let run_for_input = matches.value_of("run_for_minutes").unwrap();
+
+    let time_to_run: Option<Duration> = match run_for_input {
+        "infinity" => None,
+        minutes => {
+            let mins = minutes.parse::<u64>().expect("Failed to parse minutes");
+            Some(Duration::from_secs(mins * 60))
+        }
+    };
+
+    let stop_after = matches
+        .value_of("stop_after")
+        .unwrap()
+        .parse::<u64>()
+        .unwrap();
+
+    let lease_for = matches
+        .value_of("lease_for")
+        .unwrap()
+        .parse::<u64>()
         .unwrap();
 
     let redis_connection = matches.value_of("redis_connection").unwrap();
@@ -117,6 +160,9 @@ async fn async_main() -> Result<()> {
         &targets,
         level,
         start,
+        time_to_run,
+        stop_after,
+        lease_for,
     )
     .await
 }
@@ -129,12 +175,17 @@ async fn process_queue(
     targets: &Targets,
     level: usize,
     start: Instant,
+    time_to_run: Option<Duration>,
+    stop_after: u64,
+    lease_for: u64,
 ) -> Result<()> {
-    let ten_minutes = Duration::from_secs(10 * 60);
-
-    while start.elapsed() < ten_minutes {
+    while time_to_run.is_none() || start.elapsed() < time_to_run.unwrap() {
         let job = match queue
-            .lease(con, Some(Duration::from_secs(20)), Duration::from_secs(30))
+            .lease(
+                con,
+                Some(Duration::from_secs(stop_after)),
+                Duration::from_secs(lease_for),
+            )
             .await?
         {
             Some(job) => job,
