@@ -218,7 +218,7 @@ let TAKE;
     console.log(`added ${i * CIRCUIT_SIZE}`);
   }
 
-  for (let j = 1; j < 39; j++) {
+  for (let j = 1; j < 38; j++) {
     console.log('Added inner level of proofs', j);
 
     let prev_index = 2199023255552n;

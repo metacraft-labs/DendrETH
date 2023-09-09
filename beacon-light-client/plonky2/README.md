@@ -1,8 +1,8 @@
-### Beacon Light Client Task Execution and Data Flow
+# Beacon Light Client Task Execution and Data Flow
 
 The Beacon Light Client relies heavily on a Redis instance to handle task management. This document provides an overview of the technical structure of the system, including how tasks are produced, consumed, and executed.
 
-#### Commitment Mapper
+## Commitment Mapper
 
 1. **Task Creation**
 
@@ -64,7 +64,7 @@ Flags:
 
 - `--level [value]`: Optional. Sets the circuit level. Defaults to: `all`
 
-#### Balance Verification
+## Balance Verification
 
 1. **Circuits Serialization**
    ```

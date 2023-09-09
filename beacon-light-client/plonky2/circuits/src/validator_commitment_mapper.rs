@@ -9,7 +9,7 @@ use plonky2::{
 use crate::{
     biguint::CircuitBuilderBiguint,
     targets_serialization::{ReadTargets, WriteTargets},
-    utils::{bits_to_biguint_target, reverse_endianness},
+    utils::{bits_to_biguint_target, ssz_num_from_bits},
     validator_hash_tree_root::{hash_tree_root_validator_sha256, ValidatorShaTargets},
     validator_hash_tree_root_poseidon::{
         hash_tree_root_validator_poseidon, ValidatorPoseidonTargets,
@@ -60,27 +60,15 @@ pub fn validator_commitment_mapper<F: RichField + Extendable<D>, const D: usize>
             builder,
             validator.withdrawal_credentials.to_vec(),
         ),
-        activation_eligibility_epoch: bits_to_biguint_target(
+        activation_eligibility_epoch: ssz_num_from_bits(
             builder,
-            reverse_endianness(&validator.activation_eligibility_epoch[0..64]),
+            &validator.activation_eligibility_epoch[0..64],
         ),
         slashed: validator.slashed[0],
-        effective_balance: bits_to_biguint_target(
-            builder,
-            reverse_endianness(&validator.effective_balance[0..64]),
-        ),
-        activation_epoch: bits_to_biguint_target(
-            builder,
-            reverse_endianness(&validator.activation_epoch[0..64]),
-        ),
-        exit_epoch: bits_to_biguint_target(
-            builder,
-            reverse_endianness(&validator.exit_epoch[0..64]),
-        ),
-        withdrawable_epoch: bits_to_biguint_target(
-            builder,
-            reverse_endianness(&validator.withdrawable_epoch[0..64]),
-        ),
+        effective_balance: ssz_num_from_bits(builder, &validator.effective_balance[0..64]),
+        activation_epoch: ssz_num_from_bits(builder, &validator.activation_epoch[0..64]),
+        exit_epoch: ssz_num_from_bits(builder, &validator.exit_epoch[0..64]),
+        withdrawable_epoch: ssz_num_from_bits(builder, &validator.withdrawable_epoch[0..64]),
     };
 
     builder.connect_biguint(

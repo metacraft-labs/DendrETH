@@ -250,8 +250,8 @@ pub async fn save_validator_proof(
     index: usize,
 ) -> Result<()> {
     let validator_proof = serde_json::to_string(&ValidatorProof {
-        poseidon_hash: proof.get_poseidon_hash_tree_root().to_vec(),
-        sha256_hash: proof.get_sha256_hash_tree_root().to_vec(),
+        poseidon_hash: proof.get_commitment_mapper_poseidon_hash_tree_root().to_vec(),
+        sha256_hash: proof.get_commitment_mapper_sha256_hash_tree_root().to_vec(),
         proof: proof.to_bytes(),
         needs_change: false,
     })?;

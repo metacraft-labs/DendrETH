@@ -74,7 +74,7 @@ pub async fn async_main() -> Result<()> {
 
     let mut prev_circuit_data = first_level_data;
 
-    for i in 1..39 {
+    for i in 1..38 {
         let (targets, data) = build_inner_level_circuit(&prev_circuit_data);
 
         if level == Some(i) || level == None {
