@@ -22,9 +22,7 @@ use crate::{
     build_validator_balance_circuit::ValidatorBalanceProofTargetsExt,
     is_valid_merkle_branch::{is_valid_merkle_branch, IsValidMerkleBranchTargets},
     sha256::make_circuits,
-    utils::{
-        biguint_to_bits_target, create_bool_target_array, reverse_endianness, ETH_SHA256_BIT_SIZE,
-    },
+    utils::{create_bool_target_array, ssz_num_to_bits, ETH_SHA256_BIT_SIZE},
 };
 
 pub struct BalanceFinalLayerTargets {
@@ -178,9 +176,7 @@ pub fn build_final_circuit(
 
     verify_slot_is_in_range(&mut builder, &slot, &current_epoch);
 
-    let mut slot_bits = reverse_endianness(&biguint_to_bits_target::<_, 2, 2>(&mut builder, &slot));
-
-    slot_bits.extend((64..ETH_SHA256_BIT_SIZE).map(|_| builder._false()));
+    let slot_bits = ssz_num_to_bits(&mut builder, &slot, 64);
 
     let slot_merkle_branch =
         create_and_connect_merkle_branch(&mut builder, 34, &slot_bits, &state_root);

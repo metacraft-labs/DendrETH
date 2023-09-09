@@ -2873,6 +2873,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/js-yaml@npm:^4.0.5":
+  version: 4.0.5
+  resolution: "@types/js-yaml@npm:4.0.5"
+  checksum: 7dcac8c50fec31643cc9d6444b5503239a861414cdfaa7ae9a38bc22597c4d850c4b8cec3d82d73b3fbca408348ce223b0408d598b32e094470dfffc6d486b4d
+  languageName: node
+  linkType: hard
+
 "@types/keyv@npm:^3.1.4":
   version: 3.1.4
   resolution: "@types/keyv@npm:3.1.4"
@@ -4539,6 +4546,7 @@ __metadata:
     "@lodestar/types": ^1.4.1
     "@nomiclabs/hardhat-ethers": ^2.0.5
     "@nomiclabs/hardhat-waffle": ^2.0.3
+    "@types/js-yaml": ^4.0.5
     bullmq: ^3.7.1
     chai: ^4.3.6
     circom_tester: ^0.0.14
@@ -4546,6 +4554,7 @@ __metadata:
     ethereum-waffle: ^4.0.7
     ethers: ^5.6.4
     hardhat: ^2.9.3
+    js-yaml: ^4.1.0
     redis: ^4.6.5
     snarkit2: "https://github.com/fluidex/snarkit2#70142d8bbc5ec79cfa6869205263ff77e8423975"
     snarkjs: "github:metacraft-labs/snarkjs"
@@ -8396,7 +8405,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"js-yaml@npm:4.1.0":
+"js-yaml@npm:4.1.0, js-yaml@npm:^4.1.0":
   version: 4.1.0
   resolution: "js-yaml@npm:4.1.0"
   dependencies:

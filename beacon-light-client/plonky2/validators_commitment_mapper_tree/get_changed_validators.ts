@@ -99,7 +99,7 @@ let TAKE: number | undefined;
 
     await work_queue.addItem(db, new Item(buffer));
 
-    for (let i = 0; i < 41; i++) {
+    for (let i = 0; i < 40; i++) {
       const buffer = new ArrayBuffer(24);
       const dataView = new DataView(buffer);
 
@@ -208,7 +208,7 @@ let TAKE: number | undefined;
   async function addInnerLevelProofs(
     validators: { index: number; validator: Validator }[],
   ) {
-    for (let j = 0n; j < 41n; j++) {
+    for (let j = 0n; j < 40n; j++) {
       console.log('Added inner level of proofs', j);
 
       let prev_index = 2199023255552n;

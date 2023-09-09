@@ -1,7 +1,5 @@
 use plonky2::{
-    field::extension::Extendable,
-    hash::hash_types::RichField,
-    iop::target::{BoolTarget, Target},
+    field::extension::Extendable, hash::hash_types::RichField, iop::target::BoolTarget,
     plonk::circuit_builder::CircuitBuilder,
 };
 use plonky2_u32::gadgets::arithmetic_u32::U32Target;
@@ -103,6 +101,7 @@ pub fn biguint_to_bits_target<F: RichField + Extendable<D>, const D: usize, cons
             res.push(BoolTarget::new_unsafe(bit_targets[j]));
         }
     }
+
     res
 }
 
@@ -145,24 +144,28 @@ pub fn uint32_to_bits<F: RichField + Extendable<D>, const D: usize>(
     bits.map(|x| x.unwrap())
 }
 
-pub fn to_mixed_endian(bits: &[BoolTarget]) -> impl Iterator<Item = &BoolTarget> {
-    bits.chunks(8).map(|chunk| chunk.iter().rev()).flatten()
-}
-
-pub fn reverse_endianness(bits: &[BoolTarget]) -> Vec<BoolTarget> {
+fn reverse_endianness(bits: &[BoolTarget]) -> Vec<BoolTarget> {
     bits.chunks(8).rev().flatten().cloned().collect()
 }
 
-pub fn epoch_to_mixed_endian<F: RichField + Extendable<D>, const D: usize>(
+pub fn ssz_num_to_bits<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    current_epoch: [Target; 2],
+    num: &BigUintTarget,
+    bit_len: usize,
 ) -> Vec<BoolTarget> {
-    let mut combined = builder.split_le(current_epoch[0], 63);
-    combined.extend(builder.split_le(current_epoch[1], 1));
+    assert!(bit_len <= ETH_SHA256_BIT_SIZE);
 
-    let current_epoch_bits_ref = to_mixed_endian(&combined);
+    let mut bits = reverse_endianness(&biguint_to_bits_target::<F, D, 2>(builder, num));
+    bits.extend((bit_len..ETH_SHA256_BIT_SIZE).map(|_| builder._false()));
 
-    current_epoch_bits_ref.cloned().collect()
+    bits
+}
+
+pub fn ssz_num_from_bits<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    bits: &[BoolTarget],
+) -> BigUintTarget {
+    bits_to_biguint_target(builder, reverse_endianness(bits))
 }
 
 pub fn if_biguint<F: RichField + Extendable<D>, const D: usize>(
@@ -183,4 +186,160 @@ pub fn if_biguint<F: RichField + Extendable<D>, const D: usize>(
     result.limbs.pop();
 
     result
+}
+
+#[cfg(test)]
+mod test_ssz_num_from_bits {
+    use anyhow::Result;
+    use itertools::Itertools;
+    use num::{BigUint, Num};
+    use plonky2::{
+        field::goldilocks_field::GoldilocksField,
+        iop::witness::{PartialWitness, WitnessWrite},
+        plonk::{
+            circuit_builder::CircuitBuilder, circuit_data::CircuitConfig,
+            config::PoseidonGoldilocksConfig,
+        },
+    };
+    use serde::Deserialize;
+    use std::{fs, iter::repeat, println};
+
+    use crate::{biguint::CircuitBuilderBiguint, utils::ssz_num_from_bits};
+
+    #[derive(Debug, Default, Deserialize)]
+    #[serde(default)]
+    struct Config {
+        test_cases: Vec<TestCase>,
+    }
+
+    #[derive(Debug, Deserialize, Clone)]
+    struct TestCase {
+        r#type: String,
+        valid: bool,
+        value: String,
+        ssz: Option<String>,
+        tags: Vec<String>,
+    }
+
+    fn get_test_cases(path: &str) -> Result<Vec<TestCase>> {
+        let yaml_str = fs::read_to_string(path).expect("Unable to read config file");
+        let config: Config = serde_yaml::from_str(&yaml_str)?;
+
+        Ok(config.test_cases)
+    }
+
+    #[test]
+    fn test_ssz_num_from_bits() -> Result<()> {
+        let bound_test_cases = get_test_cases("../../../vendor/eth2.0-tests/ssz/uint_bounds.yaml")?
+            .iter()
+            .cloned()
+            .filter(|x| x.valid)
+            .collect_vec();
+
+        let random_test_cases =
+            get_test_cases("../../../vendor/eth2.0-tests/ssz/uint_random.yaml")?
+                .iter()
+                .cloned()
+                .filter(|x| x.valid)
+                .collect_vec();
+
+        let test_cases = bound_test_cases
+            .iter()
+            .chain(random_test_cases.iter())
+            .cloned()
+            .collect_vec();
+
+        const D: usize = 2;
+        type C = PoseidonGoldilocksConfig;
+        type F = GoldilocksField;
+
+        let grouped_test_cases = test_cases
+            .iter()
+            .group_by(|x| x.r#type.clone())
+            .into_iter()
+            .map(|(k, v)| (k, v.cloned().collect_vec()))
+            .collect_vec();
+
+        for (type_, test_cases) in grouped_test_cases {
+            let num_bits = type_
+                .split("uint")
+                .last()
+                .unwrap()
+                .parse::<usize>()
+                .unwrap();
+
+            if num_bits % 32 != 0 {
+                // For  now lets test only multiples of 32
+                continue;
+            }
+
+            for test_case in test_cases {
+                println!(
+                    "Running test case: {}_{}",
+                    test_case.r#type, test_case.tags[2]
+                );
+
+                let mut pw = PartialWitness::new();
+
+                let mut builder =
+                    CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
+
+                let bits = (0..num_bits)
+                    .map(|_| builder.add_virtual_bool_target_safe())
+                    .collect::<Vec<_>>();
+
+                let target = ssz_num_from_bits(&mut builder, &bits);
+
+                let value = test_case.value.parse::<BigUint>().expect(
+                    format!(
+                        "Unable to parse value: {}_{}",
+                        test_case.r#type, test_case.tags[2]
+                    )
+                    .as_str(),
+                );
+
+                let expected_target = builder.constant_biguint(&value);
+
+                builder.connect_biguint(&target, &expected_target);
+
+                let data = builder.build::<C>();
+
+                let bits_value = BigUint::from_str_radix(&test_case.ssz.unwrap()[2..], 16)
+                    .unwrap()
+                    .to_str_radix(2)
+                    .chars()
+                    .map(|x| x == '1')
+                    .collect_vec();
+
+                let padding_length = num_bits - bits_value.len();
+
+                let expected_bits = repeat(false)
+                    .take(padding_length)
+                    .chain(bits_value.iter().cloned())
+                    .collect_vec();
+
+                for i in 0..num_bits {
+                    pw.set_bool_target(bits[i], expected_bits[i]);
+                }
+
+                let proof = data.prove(pw).expect(
+                    format!(
+                        "Prove failed for {}_{}",
+                        test_case.r#type, test_case.tags[2]
+                    )
+                    .as_str(),
+                );
+
+                data.verify(proof).expect(
+                    format!(
+                        "Prove failed for {}_{}",
+                        test_case.r#type, test_case.tags[2]
+                    )
+                    .as_str(),
+                );
+            }
+        }
+
+        Ok(())
+    }
 }

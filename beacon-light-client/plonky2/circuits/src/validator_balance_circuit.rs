@@ -13,8 +13,8 @@ use crate::{
     is_active_validator::is_active_validator,
     targets_serialization::{ReadTargets, WriteTargets},
     utils::{
-        biguint_is_equal, bits_to_biguint_target, create_bool_target_array, if_biguint,
-        reverse_endianness, ETH_SHA256_BIT_SIZE,
+        biguint_is_equal, create_bool_target_array, if_biguint,
+        ssz_num_from_bits, ETH_SHA256_BIT_SIZE,
     },
     validator_hash_tree_root_poseidon::{
         hash_tree_root_validator_poseidon, ValidatorPoseidonHashTreeRootTargets,
@@ -154,9 +154,9 @@ pub fn validator_balance_verification<F: RichField + Extendable<D>, const D: usi
             &withdrawal_credentials,
         );
 
-        let balance = bits_to_biguint_target(
+        let balance = ssz_num_from_bits(
             builder,
-            reverse_endianness(&balances_leaves[i / 4][((i % 4) * 64)..(((i % 4) * 64) + 64)]),
+            &balances_leaves[i / 4][((i % 4) * 64)..(((i % 4) * 64) + 64)],
         );
 
         let zero = builder.zero_biguint();

@@ -78,7 +78,7 @@ async fn async_main() -> Result<()> {
         CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     )> = Vec::new();
 
-    for i in 1..42 {
+    for i in 1..41 {
         inner_circuits.push((
             get_inner_targets(i)?,
             load_circuit_data(&format!("commitment_mapper_{}", i))?,

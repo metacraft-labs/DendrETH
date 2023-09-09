@@ -46,3 +46,6 @@
 [submodule "vendor/constantine"]
 	path = vendor/constantine
 	url = git@github.com:metacraft-labs/constantine.git
+[submodule "vendor/eth2.0-tests"]
+	path = vendor/eth2.0-tests
+	url = git@github.com:ethereum/eth2.0-tests.git
