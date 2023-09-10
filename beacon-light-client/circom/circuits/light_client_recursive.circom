@@ -26,6 +26,8 @@ template LightClientRecursive(N, K) {
 
   // private inputs
   signal input prevHeaderHashNum[2];
+  signal input syncCommitteeHistoricParticipation[1024];
+  signal input prevVerifierCommitment;
 
   // verification key
   signal input negalfa1xbeta2[6][2][k]; // e(-alfa1, beta2)
@@ -261,6 +263,9 @@ template LightClientRecursive(N, K) {
 
   firstORcorrect.out === 1;
 
+  component historicSyncCommiteeHashTreeRoot = HashTreeRootPoseidon(1024);
+  historicSyncCommiteeHashTreeRoot.leaves <== syncCommitteeHistoricParticipation; 
+
   component verifierPoseidon = VerifierPoseidon(pubInpCount, k);
   verifierPoseidon.originator <== originator;
   verifierPoseidon.nextHeaderHashNum <== nextHeaderHashNum;
@@ -268,6 +273,8 @@ template LightClientRecursive(N, K) {
   verifierPoseidon.gamma2 <== gamma2;
   verifierPoseidon.delta2 <== delta2;
   verifierPoseidon.IC <== IC;
-
+  verifierPoseidon.historicSyncCommiteeHashTreeRoot <== historicSyncCommiteeHashTreeRoot.out;
+ 
+  prevVerifierCommitment === verifierPoseidon.out;
   out <== verifierPoseidon.out;
 }
