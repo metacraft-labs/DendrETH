@@ -12,7 +12,7 @@ include "hash_to_field.circom";
 include "is_first.circom";
 include "../../../vendor/circom-pairing/circuits/bls_signature.circom";
 include "../../../vendor/circom-pairing/circuits/bn254/groth16.circom";
-include "hash_verifier_pedersen.circom";
+include "hash_verifier_poseidon.circom";
 
 template LightClientRecursive(N, K) {
   var pubInpCount = 4;
@@ -56,7 +56,7 @@ template LightClientRecursive(N, K) {
   signal input bitmask[N];
   signal input signature[2][2][K];
 
-  signal output out[2]; // Pedersen Hash of public inputs & verification key
+  signal output out; // Poseidon Hash of public inputs & verification key
 
   var prevHeaderHash[256];
   var nextHeaderHash[256];
@@ -261,13 +261,13 @@ template LightClientRecursive(N, K) {
 
   firstORcorrect.out === 1;
 
-  component verifierPedersen = VerifierPedersen(pubInpCount, k);
-  verifierPedersen.originator <== originator;
-  verifierPedersen.nextHeaderHashNum <== nextHeaderHashNum;
-  verifierPedersen.negalfa1xbeta2 <== negalfa1xbeta2;
-  verifierPedersen.gamma2 <== gamma2;
-  verifierPedersen.delta2 <== delta2;
-  verifierPedersen.IC <== IC;
+  component verifierPoseidon = VerifierPoseidon(pubInpCount, k);
+  verifierPoseidon.originator <== originator;
+  verifierPoseidon.nextHeaderHashNum <== nextHeaderHashNum;
+  verifierPoseidon.negalfa1xbeta2 <== negalfa1xbeta2;
+  verifierPoseidon.gamma2 <== gamma2;
+  verifierPoseidon.delta2 <== delta2;
+  verifierPoseidon.IC <== IC;
 
-  out <== verifierPedersen.out;
+  out <== verifierPoseidon.out;
 }
