@@ -52,7 +52,7 @@ describe('Light Client Verifier In Cosmos', () => {
     await compileContractMain(null, 'verifier-constantine');
     cosmos = await setUpCosmosTestnet(mnemonic, 'verifier-constantine');
     client = cosmos.client;
-  }, 360000 /* timeout in milliseconds */);
+  }, 720000 /* timeout in milliseconds */);
 
   test('Check "Verifier" after initialization', async () => {
     console.info("Running 'Check Verifier after initialization' test");

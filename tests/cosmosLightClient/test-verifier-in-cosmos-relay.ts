@@ -50,7 +50,7 @@ describe('Light Client Verifier In Cosmos', () => {
 
     cosmos = await setUpCosmosTestnet(mnemonic, 'verifier-bncurve');
     DendrETHWalletInfo = cosmos.walletInfo;
-  }, 360000 /* timeout in milliseconds */);
+  }, 720000 /* timeout in milliseconds */);
 
   test('Check "Verifier" after initialization', async () => {
     console.info("Running 'Check Verifier after initialization' test");
