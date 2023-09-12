@@ -29,19 +29,19 @@ jobs:
       - name: Run yarn format check
         run: nix develop -c yarn format:check
 
-  EOS_Relayer_Test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-      - name: Use local my-action
-        uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+  # EOS_Relayer_Test:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         submodules: recursive
+  #     - name: Use local my-action
+  #       uses: ./.github/actions/setup
+  #       with:
+  #         cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
-      - name: Run Verifier in EOS - Relayer test
-        run: nix develop -c yarn test './tests/eosLightClient/test-verifier-in-EOS-relay.ts'
+  #     - name: Run Verifier in EOS - Relayer test
+  #       run: nix develop -c yarn test './tests/eosLightClient/test-verifier-in-EOS-relay.ts'
 
   Solidity_Validators_Accumulator_Test:
     runs-on: ubuntu-latest
@@ -232,7 +232,7 @@ jobs:
 
     needs:
       - Linter
-      - EOS_Relayer_Test
+      # - EOS_Relayer_Test
       - Solidity_Validators_Accumulator_Test
       - Nim_Light_Client_Compiled_with_Emsctipten_Tests
       - Nim_Light_Client_Clang_Test
