@@ -56,7 +56,7 @@ describe('Light Client Verifier In Cosmos', () => {
 
     cosmos = await setUpCosmosTestnet(mnemonic, 'verifier-bncurve');
     client = cosmos.client;
-  }, 360000 /* timeout in milliseconds */);
+  }, 720000 /* timeout in milliseconds */);
 
   test('Check "Verifier" after initialization', async () => {
     console.info("Running 'Check Verifier after initialization' test");
@@ -116,7 +116,7 @@ describe('Light Client Verifier In Cosmos', () => {
     });
     const domainStripped = domain.toString().replace(/\s/g, '');
     expect(domainStripped).toEqual(expectedDomain);
-  }, 300000);
+  }, 720000);
 
   test('Check "Verifier" after one update', async () => {
     console.info("Running 'Check Verifier after one update' test");
@@ -167,7 +167,7 @@ describe('Light Client Verifier In Cosmos', () => {
 
     const header = headerAfterOneUpdate.toString().replace(/\s/g, '');
     expect(header).toEqual(expectedHeader);
-  }, 300000);
+  }, 720000);
 
   test('Check "Verifier" after 33 updates', async () => {
     console.info("Running 'Check Verifier after 33 updates' test");
@@ -373,5 +373,5 @@ describe('Light Client Verifier In Cosmos', () => {
     appendJsonFile(gasUsageFile, gasArrayVerifier);
 
     await stopCosmosNode('verifier-bncurve');
-  }, 2000000);
+  }, 720000);
 });
