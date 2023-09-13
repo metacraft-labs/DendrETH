@@ -13,7 +13,7 @@ import { getFilesInDir } from '../../../../libs/typescript/ts-utils/data';
 import * as constants from '../../../../relay/constants/network_config.json';
 
 export async function getProof(vkey, proof, originator, prevUpdate, update) {
-  const { ssz } = await import("@lodestar/types");
+  const { ssz } = await import('@lodestar/types');
 
   let points: PointG1[] = prevUpdate.next_sync_committee.pubkeys.map(x =>
     PointG1.fromHex(x.slice(2)),
@@ -156,8 +156,6 @@ export async function getProof(vkey, proof, originator, prevUpdate, update) {
   };
   return input;
 }
-
-
 
 (async () => {
   const UPDATES = getFilesInDir(
