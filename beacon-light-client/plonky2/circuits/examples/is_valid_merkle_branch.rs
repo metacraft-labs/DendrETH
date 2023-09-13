@@ -76,7 +76,7 @@ fn create_proof(merkle_proof: MerkleProof) -> std::result::Result<(), anyhow::Er
     let hasher = is_valid_merkle_branch(&mut builder, merkle_proof.branch.len());
     let hasher_sha = make_circuits(&mut builder, 512);
 
-    for i in 0..256 {
+    for i in 0..ETH_SHA256_BIT_SIZE {
         builder.connect(hasher.leaf[i].target, hasher_sha.digest[i].target);
     }
 
