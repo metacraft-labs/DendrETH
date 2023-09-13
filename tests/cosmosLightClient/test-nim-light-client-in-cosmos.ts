@@ -61,7 +61,7 @@ describe('Light Client In Cosmos', () => {
     let cosmos = await setUpCosmosTestnet(mnemonic, 'light-client');
     client = cosmos.client;
     DendrETHWalletInfo = cosmos.walletInfo;
-  }, 360000 /* timeout in milliseconds */);
+  }, 720000 /* timeout in milliseconds */);
 
   test('Check "LightClientStore" after initialization', async () => {
     const expectedHeaderSlot = 2375680;
@@ -126,7 +126,7 @@ describe('Light Client In Cosmos', () => {
     );
 
     expect(headerSlotAfterInitialization).toEqual(expectedHeaderSlot);
-  }, 300000);
+  }, 720000);
 
   test('Check "LightClientStore" after one update', async () => {
     const expectedHeaderSlot = 2381376;
@@ -172,7 +172,7 @@ describe('Light Client In Cosmos', () => {
       queryResultAfterOneUpdate.slice(0, 8),
     );
     expect(headerSlotAfterOneUpdate).toEqual(expectedHeaderSlot);
-  }, 300000);
+  }, 720000);
 
   test('Check "LightClientStore" after first 20 updates', async () => {
     const expectedHeaderSlot = 2531776;
@@ -231,5 +231,5 @@ describe('Light Client In Cosmos', () => {
     expect(headerSlotAfterAllUpdates).toEqual(expectedHeaderSlot);
 
     await stopCosmosNode('light-client');
-  }, 1500000);
+  }, 720000);
 });
