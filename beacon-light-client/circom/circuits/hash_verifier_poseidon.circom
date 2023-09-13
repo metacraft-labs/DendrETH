@@ -30,6 +30,7 @@ template VerifierPoseidon(pubInpCount, k) {
             }
         }
     }
+
     cummulative_index += 6 * 2 * k;
 
     for (var i = 0; i < 2; i++) { 
@@ -39,6 +40,7 @@ template VerifierPoseidon(pubInpCount, k) {
             }
         }
     }
+
     cummulative_index += 2 * 2 * k;
 
     for (var i = 0; i < 2; i++) { 
@@ -48,6 +50,7 @@ template VerifierPoseidon(pubInpCount, k) {
             }
         }
     }
+
     cummulative_index += 2 * 2 * k;
 
     for (var i = 0; i < pubInpCount + 1; i++) { 
@@ -57,16 +60,19 @@ template VerifierPoseidon(pubInpCount, k) {
             }
         }
     }
+
     cummulative_index += (pubInpCount + 1)*2*k;
 
     for (var i = 0; i < 2; i++) {
         commitment.in[cummulative_index + i] <== originator[i];
     }
+    
     cummulative_index += 2;
 
     for (var i = 0; i < 2; i++) {
         commitment.in[cummulative_index + i] <== nextHeaderHashNum[i];
     }
+
     cummulative_index += 2;
 
     commitment.in[cummulative_index] <== historicSyncCommiteeHashTreeRoot;
