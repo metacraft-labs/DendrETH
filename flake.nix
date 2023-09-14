@@ -36,6 +36,7 @@
     ...
   }:
     flake-parts.lib.mkFlake {inherit inputs;} {
+      imports = [./balance-verifier];
       systems = [
         "x86_64-linux"
         "aarch64-linux"
@@ -44,25 +45,13 @@
       ];
       perSystem = {
         config,
+        lib,
         system,
         pkgs,
         inputs',
         ...
       }: let
-        inherit (inputs'.mcl-blockchain.legacyPackages) nix2container rust-stable pkgs-with-rust-overlay;
-
-        crane = mcl-blockchain.inputs.crane;
-
-        rust-nightly = pkgs-with-rust-overlay.rust-bin.nightly."2023-06-12".default.override {
-          extensions = ["rust-src"];
-          targets = ["wasm32-wasi" "wasm32-unknown-unknown"];
-        };
-
-        craneLib-nightly = (crane.mkLib pkgs).overrideToolchain rust-nightly;
-
-        circuits_executables = pkgs.callPackage ./libs/nix/circuits_executables {
-          craneLib = craneLib-nightly;
-        };
+        inherit (inputs'.mcl-blockchain.legacyPackages) nix2container rust-stable rust-nightly;
 
         docker-images = import ./libs/nix/docker-images.nix {inherit pkgs nix2container;};
       in {
@@ -79,6 +68,7 @@
             "wasm3-0.5.0"
           ];
         };
+
         packages =
           {
             inherit (docker-images) docker-image-yarn;
