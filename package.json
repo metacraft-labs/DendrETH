@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "license": "CC0-1.0",
   "description": "A smart contract implementation of the Ethereum light client sync protocol",
-  "packageManager": "yarn@3.2.1",
+  "packageManager": "yarn@4.1.0",
   "workspaces": [
     "beacon-light-client/circom",
     "beacon-light-client/solidity",
