@@ -15,7 +15,7 @@ include "../../../vendor/circom-pairing/circuits/bn254/groth16.circom";
 include "hash_verifier_poseidon.circom";
 
 template LightClientRecursive(N, K) {
-  var pubInpCount = 4;
+  var pubInpCount = 1;
 
   // BN254 facts
   var k = 6;
@@ -27,6 +27,7 @@ template LightClientRecursive(N, K) {
   // private inputs
   signal input prevHeaderHashNum[2];
   signal input syncCommitteeHistoricParticipation[1024];
+  signal input syncCommitteeHistoricParticipationIndex;
   signal input prevVerifierCommitment;
 
   // verification key
@@ -214,7 +215,7 @@ template LightClientRecursive(N, K) {
   }
 
   // check recursive snark
-  component groth16Verifier = verifyProof(pubInpCount);
+  component groth16Verifier = verifyProof(1);
   for (var i = 0;i < 6;i++) {
       for (var j = 0;j < 2;j++) {
           for (var idx = 0;idx < k;idx++) {
@@ -245,11 +246,12 @@ template LightClientRecursive(N, K) {
       }
   }
 
-  groth16Verifier.pubInput[0] <== originator[0];
-  groth16Verifier.pubInput[1] <== originator[1];
-  groth16Verifier.pubInput[2] <== prevHeaderHashNum[0];
-  groth16Verifier.pubInput[3] <== prevHeaderHashNum[1];
+  signal prevVerifierCommitment <== VerifierPoseidon(pubInpCount, k)(
+    originator, prevHeaderHashNum, negalfa1xbeta2, gamma2, delta2, IC, historicParticipationRateHashTreeRoot
+  );
 
+  groth16Verifier.pubInput[0] <== prevVerifierCommitment;
+ 
   component isFirst = IsFirst();
 
   isFirst.firstHash[0] <== originator[0];
@@ -274,7 +276,9 @@ template LightClientRecursive(N, K) {
   verifierPoseidon.delta2 <== delta2;
   verifierPoseidon.IC <== IC;
   verifierPoseidon.historicParticipationRateHashTreeRoot <== historicParticipationRateHashTreeRoot.out;
- 
+  verifierPoseidon.syncCommitteeHistoricParticipationIndex <== syncCommitteeHistoricParticipationIndex;
+  verifierPoseidon.domain <== computeDomain.domain;
+
   prevVerifierCommitment === verifierPoseidon.out;
   out <== verifierPoseidon.out;
 }
