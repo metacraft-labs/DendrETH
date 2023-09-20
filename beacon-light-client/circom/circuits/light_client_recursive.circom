@@ -1,5 +1,7 @@
 pragma circom 2.1.5;
 
+include "hash_verifier_poseidon.circom";
+include "sync_committee_historic_participation.circom"
 include "sync_commitee_hash_tree_root.circom";
 include "compress.circom";
 include "aggregate_bitmask.circom";
@@ -12,10 +14,10 @@ include "hash_to_field.circom";
 include "is_first.circom";
 include "../../../vendor/circom-pairing/circuits/bls_signature.circom";
 include "../../../vendor/circom-pairing/circuits/bn254/groth16.circom";
-include "hash_verifier_poseidon.circom";
 
 template LightClientRecursive(N, K) {
   var pubInpCount = 1;
+  var PERIODS = 1024;
 
   // BN254 facts
   var k = 6;
@@ -23,12 +25,11 @@ template LightClientRecursive(N, K) {
   // public inputs
   signal input originator[2];
   signal input nextHeaderHashNum[2];
+  signal input syncCommitteeHistoricParticipation[PERIODS];
 
   // private inputs
   signal input prevHeaderHashNum[2];
-  signal input syncCommitteeHistoricParticipation[1024];
   signal input syncCommitteeHistoricParticipationIndex;
-  signal input prevVerifierCommitment;
 
   // verification key
   signal input negalfa1xbeta2[6][2][k]; // e(-alfa1, beta2)
@@ -59,7 +60,7 @@ template LightClientRecursive(N, K) {
   signal input bitmask[N];
   signal input signature[2][2][K];
 
-  signal output out; // Poseidon Hash of public inputs & verification key
+  signal output out; // Poseidon Hash of inputs & verification key
 
   var prevHeaderHash[256];
   var nextHeaderHash[256];
@@ -246,8 +247,26 @@ template LightClientRecursive(N, K) {
       }
   }
 
+  component prevHistoricParticipationRateHashTreeRoot = HashTreeRootPoseidon(PERIODS) (
+    syncCommitteeHistoricParticipation
+  );
+
+  signal prevSyncCommitteeHistoricParticipationIndex <== syncCommitteeHistoricParticipationIndex - 1;
+
   signal prevVerifierCommitment <== VerifierPoseidon(pubInpCount, k)(
-    originator, prevHeaderHashNum, negalfa1xbeta2, gamma2, delta2, IC, historicParticipationRateHashTreeRoot
+    originator, prevHeaderHashNum, negalfa1xbeta2,
+    gamma2, delta2, IC,
+    historicParticipationRateHashTreeRoot, prevSyncCommitteeHistoricParticipationIndex, computeDomain.domain
+  );
+
+  component updateSyncCommitteeHistoricParticipation = UpdateSyncCommitteeHistoricParticipation(512,PERIODS) (
+    syncCommitteeHistoricParticipation, syncCommitteeHistoricParticipationIndex, bitmask
+  );
+
+  signal curSyncCommitteeHistoricParticipation <== updateSyncCommitteeHistoricParticipation.out;
+
+  component curHistoricParticipationRateHashTreeRoot = HashTreeRootPoseidon(PERIODS) (
+    curSyncCommitteeHistoricParticipation
   );
 
   groth16Verifier.pubInput[0] <== prevVerifierCommitment;
@@ -265,19 +284,11 @@ template LightClientRecursive(N, K) {
 
   firstORcorrect.out === 1;
 
-  component historicParticipationRateHashTreeRoot = HashTreeRootPoseidon(1024);
-  historicParticipationRateHashTreeRoot.leaves <== syncCommitteeHistoricParticipation; 
-
-  component verifierPoseidon = VerifierPoseidon(pubInpCount, k);
-  verifierPoseidon.originator <== originator;
-  verifierPoseidon.nextHeaderHashNum <== nextHeaderHashNum;
-  verifierPoseidon.negalfa1xbeta2 <== negalfa1xbeta2;
-  verifierPoseidon.gamma2 <== gamma2;
-  verifierPoseidon.delta2 <== delta2;
-  verifierPoseidon.IC <== IC;
-  verifierPoseidon.historicParticipationRateHashTreeRoot <== historicParticipationRateHashTreeRoot.out;
-  verifierPoseidon.syncCommitteeHistoricParticipationIndex <== syncCommitteeHistoricParticipationIndex;
-  verifierPoseidon.domain <== computeDomain.domain;
+  component verifierPoseidon = VerifierPoseidon(pubInpCount, k) (
+    originator, nextHeaderHashNum, negalfa1xbeta2,
+    gamma2, delta2, IC,
+    curHistoricParticipationRateHashTreeRoot, syncCommitteeHistoricParticipationIndex, compute_domain.domain
+  );
 
   prevVerifierCommitment === verifierPoseidon.out;
   out <== verifierPoseidon.out;

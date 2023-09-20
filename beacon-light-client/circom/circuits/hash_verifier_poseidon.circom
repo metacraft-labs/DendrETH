@@ -6,6 +6,7 @@ template VerifierPoseidon(pubInpCount, k) {
     signal input originator[2];
     signal input nextHeaderHashNum[2];
     signal input historicSyncCommitteeHashTreeRoot;
+    signal input syncCommitteeHistoricParticipationIndex;
 
     // Verification Key
     signal input negalfa1xbeta2[6][2][k]; // e(-alfa1, beta2)
