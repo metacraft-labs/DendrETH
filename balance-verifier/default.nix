@@ -29,6 +29,7 @@
     balance-verifier-circuit-builder = circuits-executable "balance_verification_circuit_data_generation";
     balance-verifier = circuits-executable "balance_verification";
     commitment-mapper = circuits-executable "commitment_mapper";
+    final-layer = circuits-executable "final_layer";
 
     balance-verification-circuit = level:
       runCommandLocal "balance-verification-circuit-per-level-${level}" {} ''
@@ -57,6 +58,20 @@
         };
       };
 
+    final-layer-image = nix2container.buildImage {
+      name = "final-layer";
+      tag = "latest";
+      copyToRoot = pkgs.buildEnv {
+        name = "root";
+        paths = [final-layer];
+        pathsToLink = ["/bin"];
+      };
+      config = {
+        entrypoint = ["/bin/${final-layer.meta.programName}"];
+        workingdir = "/bin";
+      };
+    };
+
     balance-verifier-circuit-per-level-docker = lib.genAttrs allLevels buildImage;
 
     balance-verifier-all-images =
@@ -72,7 +87,7 @@
   in {
     legacyPackages = {
       inherit balance-verifier-circuit-per-level balance-verifier-circuit-per-level-docker;
-      inherit balance-verifier commitment-mapper balance-verifier-all-images;
+      inherit balance-verifier commitment-mapper balance-verifier-all-images final-layer final-layer-image;
     };
     packages = {
       inherit get_balances_input;
