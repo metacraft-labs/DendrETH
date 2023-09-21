@@ -276,8 +276,8 @@ The circuits employed by this project are some of the largest ever developed.
 We are building upon the BLS primitives implemented by the [circom-pairing][1]
 project and the SHA256 implementation from [circomlib][15], both of which are
 already very large. To perform our compilations, we had to purchase a server
-with 384GB of RAM where the fully integrated build takes the following amount
-of time:
+with two Intel(R) Xeon(R) E5-2650 CPUs and 384GB of RAM where the fully
+integrated build takes the following amount of time:
 
 |                                      |              |
 | ------------------------------------ | ------------ |
@@ -291,14 +291,16 @@ of time:
 | Circuit private outputs              | 0            |
 | Circuit wires                        | 88833842     |
 | Circuit labels                       | 472858554    |
-| Witness generation C++ compilation   | 1h           |
-| Witness generation                   | 3m           |
+| Witness generator C++ compilation    | 1h           |
 | Trusted setup phase 2 key generation | 26h          |
 | Trusted setup phase 2 contribution   | N/a          |
 | Proving key size                     | 49G          |
 | Proving key verification             | N/a          |
-| Proving time (rapidsnark)            | 4m           |
+| Proof generation (rapidsnark)        | 4m, 25s      |
 | Proof verification time              | 1s           |
+
+The cited proof generation time was obtained from a configuration with a single
+Intel(R) i9-12000K CPU with 128GB of RAM.
 
 You can examine the required commands for building the final circuit here:
 
