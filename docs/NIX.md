@@ -46,7 +46,7 @@ sh <(curl -L https://nixos.org/nix/install) --daemon
 
 DendrETH is taking advantage of some experimental Nix features such as the
 `nix` command the so called `flakes` which provide more control when pinning
-all dependencies of the project to precise versions. These feature must be
+all dependencies of the project to precise versions. These features must be
 [enabled manually][2] after the installation. To learn more about the Nix
 flakes, please see the following tutorial:
 
