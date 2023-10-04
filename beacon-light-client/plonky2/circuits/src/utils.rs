@@ -52,15 +52,14 @@ pub fn biguint_is_equal<F: RichField + Extendable<D>, const D: usize>(
 ) -> BoolTarget {
     assert!(a.limbs.len() == b.limbs.len());
 
-    let mut all_equal = Vec::new();
-    all_equal.push(builder._true());
+    let mut all_equal = builder._true();
 
     for i in 0..a.limbs.len() {
         let equal = builder.is_equal(a.limbs[i].0, b.limbs[i].0);
-        all_equal.push(builder.and(all_equal[i], equal));
+        all_equal = builder.and(all_equal, equal);
     }
 
-    all_equal[a.limbs.len()]
+    all_equal
 }
 
 pub fn create_bool_target_array<F: RichField + Extendable<D>, const D: usize>(
