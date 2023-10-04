@@ -13,8 +13,8 @@ use crate::{
     is_active_validator::is_active_validator,
     targets_serialization::{ReadTargets, WriteTargets},
     utils::{
-        biguint_is_equal, create_bool_target_array, if_biguint,
-        ssz_num_from_bits, ETH_SHA256_BIT_SIZE,
+        biguint_is_equal, create_bool_target_array, if_biguint, ssz_num_from_bits,
+        ETH_SHA256_BIT_SIZE,
     },
     validator_hash_tree_root_poseidon::{
         hash_tree_root_validator_poseidon, ValidatorPoseidonHashTreeRootTargets,
@@ -143,9 +143,7 @@ pub fn validator_balance_verification<F: RichField + Extendable<D>, const D: usi
 
     let current_epoch = builder.add_virtual_biguint_target(2);
 
-    let mut sums: Vec<BigUintTarget> = Vec::new();
-
-    sums.push(builder.zero_biguint());
+    let mut sum = builder.zero_biguint();
 
     for i in 0..validators_len {
         let is_equal = biguint_is_equal(
@@ -172,16 +170,14 @@ pub fn validator_balance_verification<F: RichField + Extendable<D>, const D: usi
 
         let current = if_biguint(builder, will_be_counted, &balance, &zero);
 
-        let mut tmp_sum = builder.add_biguint(&sums[i], &current);
+        sum = builder.add_biguint(&sum, &current);
 
-        tmp_sum.limbs.pop();
-
-        sums.push(tmp_sum);
+        sum.limbs.pop();
     }
 
     ValidatorBalanceVerificationTargets {
         validator_is_zero: validator_is_zero,
-        range_total_value: sums[validators_len].clone(),
+        range_total_value: sum,
         range_balances_root: balances_hash_tree_root_targets.hash_tree_root,
         range_validator_commitment: hash_tree_root_poseidon_targets.hash_tree_root,
         validators: validators_leaves
