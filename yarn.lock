@@ -1871,7 +1871,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@lodestar/params@npm:^1.4.1, @lodestar/params@npm:^1.4.3":
+"@lodestar/params@npm:^1.4.1":
+  version: 1.11.3
+  resolution: "@lodestar/params@npm:1.11.3"
+  checksum: 40cda13be2d90db6fde1313c858abca7f898f600dc75f1cda9b26dddb581e029283e4b10f3c76176baac7742adf26ff3fb664ffc0f1e5fa49735895178636f2d
+  languageName: node
+  linkType: hard
+
+"@lodestar/params@npm:^1.4.3":
   version: 1.4.3
   resolution: "@lodestar/params@npm:1.4.3"
   checksum: c6285dc00dd402e376739198b014c87207b5ce72cea40386ec351d048606dbbed642b1df8557e958ad98e8de1acea80ad206524b4f3e0e4a84b1a7725d248b13
