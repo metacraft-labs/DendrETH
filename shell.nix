@@ -8,6 +8,8 @@ in
   mkShell {
     packages = shell-pkgs;
 
+    nativeBuildInputs = [pkg-config openssl];
+
     shellHook = ''
       set -e
 
