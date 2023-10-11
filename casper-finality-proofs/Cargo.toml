@@ -12,7 +12,9 @@ path = "bin/weigh_justification_and_finalization.rs"
 [dependencies]
 plonky2 = { git = "https://github.com/mir-protocol/plonky2.git", default-features = false}
 plonky2x = { git = "https://github.com/succinctlabs/succinctx.git", branch = "main" }
+curta = { git = "https://github.com/succinctlabs/curta", branch = "main" }
 serde = { version = "1.0.187", features = ["derive"] }
 serde_json = "1.0.103"
+serde_derive = "1.0.188"
 ethers = { version = "2.0" }
 itertools = { version = "0.10.0", default-features = false }
