@@ -405,11 +405,13 @@ dependencies = [
 name = "casper-finality-proofs"
 version = "0.1.0"
 dependencies = [
+ "curta 0.1.0 (git+https://github.com/succinctlabs/curta?branch=main)",
  "ethers",
  "itertools 0.10.5",
  "plonky2",
  "plonky2x",
  "serde",
+ "serde_derive",
  "serde_json",
 ]
 
@@ -698,6 +700,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0369ee1ad671834580515889b80f2ea915f23b8be8d0daa4bbaf2ac5c7590835"
 dependencies = [
  "cipher",
+]
+
+[[package]]
+name = "curta"
+version = "0.1.0"
+source = "git+https://github.com/succinctlabs/curta?branch=main#b397226c359a372726316e99397db68272f20b04"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "hex",
+ "itertools 0.10.5",
+ "log",
+ "num",
+ "plonky2",
+ "plonky2_maybe_rayon 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand",
+ "serde",
+ "subtle-encoding",
 ]
 
 [[package]]
@@ -2729,7 +2749,7 @@ dependencies = [
  "base64 0.13.1",
  "bincode",
  "clap",
- "curta",
+ "curta 0.1.0 (git+https://github.com/succinctlabs/curta.git)",
  "curve25519-dalek",
  "digest 0.10.7",
  "dotenv",
