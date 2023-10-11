@@ -13,7 +13,7 @@ runs:
       uses: DeterminateSystems/magic-nix-cache-action@v1
     - uses: cachix/cachix-action@v12
       with:
-        name: nix-blockchain-development
+        name: mcl-blockchain-packages
         authToken: '${{ inputs.cachix_auth_token }}'
     - name: Build Nix dev shell
       shell: bash
