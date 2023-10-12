@@ -1,8 +1,7 @@
 use plonky2::field::types::Field;
-use plonky2::iop::target::BoolTarget;
 use plonky2x::prelude::{BoolVariable, Bytes32Variable, CircuitBuilder, PlonkParameters, BytesVariable, Variable};
 use crate::utils::variable::{to_bits, to_byte_variable};
-use crate::utils::universal::{assert_is_true,le_sum,div_rem};
+use crate::utils::universal::{assert_is_true, le_sum, div_rem, exp_from_bits};
 
 fn compute_shuffled_index<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
@@ -66,14 +65,10 @@ fn compute_shuffled_index<L: PlonkParameters<D>, const D: usize>(
 
         let position_mod_8 = div_rem(builder, position, const_8);
         let position_mod_8_to_bits: [BoolVariable; 8] = to_bits(position_mod_8, builder);
-        let position_mod_8_to_iter = position_mod_8_to_bits
-            .into_iter()
-            .map(|x| BoolTarget::new_unsafe(x.0 .0));
-        let const_2_pow_position_mod_8 =
-            builder.api.exp_from_bits(const_2.0, position_mod_8_to_iter);
+        let const_2_pow_position_mod_8 = exp_from_bits(builder, const_2, &position_mod_8_to_bits);
 
         let byte_shl_position_mod_8 =
-            builder.div(byte_to_variable, Variable(const_2_pow_position_mod_8));
+            builder.div(byte_to_variable, const_2_pow_position_mod_8);
         let bit = div_rem(builder, byte_shl_position_mod_8, const_2);
         let bit_eq_1 = builder.is_equal(bit, const_1);
         index = builder.select(bit_eq_1, flip, index);
