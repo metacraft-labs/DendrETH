@@ -2,18 +2,7 @@ use plonky2::field::types::Field;
 use plonky2::iop::target::BoolTarget;
 use plonky2x::prelude::{BoolVariable, Bytes32Variable, CircuitBuilder, PlonkParameters, BytesVariable, Variable};
 use crate::utils::variable::{to_bits, to_byte_variable};
-use crate::utils::universal::{assert_is_true,le_sum};
-
-pub fn div_rem<L: PlonkParameters<D>, const D: usize>(
-    builder: &mut CircuitBuilder<L, D>,
-    lhs: Variable,
-    rhs: Variable,
-) -> Variable {
-    let quotient = builder.div(lhs, rhs);
-    let quotient_times_rhs = builder.mul(quotient, rhs);
-
-    builder.sub(rhs, quotient_times_rhs)
-}
+use crate::utils::universal::{assert_is_true,le_sum,div_rem};
 
 fn compute_shuffled_index<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,

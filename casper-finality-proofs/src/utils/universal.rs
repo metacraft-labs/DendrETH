@@ -18,3 +18,14 @@ pub fn le_sum<L: PlonkParameters<D>, const D: usize>(builder: &mut CircuitBuilde
         .collect_vec();
     Variable(builder.api.le_sum(bits.into_iter()))
 }
+
+pub fn div_rem<L: PlonkParameters<D>, const D: usize>(
+    builder: &mut CircuitBuilder<L, D>,
+    lhs: Variable,
+    rhs: Variable,
+) -> Variable {
+    let quotient = builder.div(lhs, rhs);
+    let quotient_times_rhs = builder.mul(quotient, rhs);
+
+    builder.sub(rhs, quotient_times_rhs)
+}
