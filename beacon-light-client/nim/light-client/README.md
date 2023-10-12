@@ -5,5 +5,5 @@ This folder contains a minimal Nim implementation of the light client syncing al
 To run all tests, execute the following command:
 
 ```bash
-yarn test-emcc
+yarn test
 ```
