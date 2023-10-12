@@ -1,5 +1,4 @@
 use plonky2x::prelude::{BoolVariable, CircuitBuilder, PlonkParameters};
-use std::cmp::min;
 
 pub fn shift_right<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
@@ -11,7 +10,7 @@ pub fn shift_right<L: PlonkParameters<D>, const D: usize>(
         new_bits[i] = bits[i - shift_count];
     }
 
-    for i in 0..min(shift_count, bits.len()) {
+    for i in 0..shift_count {
         new_bits[i] = builder._false();
     }
 

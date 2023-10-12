@@ -1,4 +1,5 @@
+pub mod extract_merkle_info;
 pub mod macros;
-pub mod parse_file;
+pub mod parsers;
 pub mod setup;
 pub mod test_engine;

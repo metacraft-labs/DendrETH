@@ -887,7 +887,7 @@ dependencies = [
  "clap 4.4.7",
  "colored",
  "crossbeam",
- "curta 0.1.0 (git+https://github.com/succinctlabs/curta.git?branch=main)",
+ "curta 0.1.0 (git+https://github.com/succinctlabs/curta.git?rev=8f6026a115eeec5e148ccdf2e2b2c724c41629fd)",
  "ef_tests",
  "ethers",
  "hex",
@@ -1400,10 +1400,12 @@ dependencies = [
 [[package]]
 name = "curta"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/curta.git?branch=main#b397226c359a372726316e99397db68272f20b04"
+source = "git+https://github.com/succinctlabs/curta.git?rev=8f6026a115eeec5e148ccdf2e2b2c724c41629fd#8f6026a115eeec5e148ccdf2e2b2c724c41629fd"
 dependencies = [
  "anyhow",
  "bincode",
+ "curve25519-dalek 4.1.1",
+ "env_logger 0.9.3",
  "hex",
  "itertools 0.10.5",
  "log",
@@ -2106,6 +2108,19 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.38",
+]
+
+[[package]]
+name = "env_logger"
+version = "0.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a12e6657c4c97ebab115a42dcee77225f7f482cdd841cf7088c657a42e9e00e7"
+dependencies = [
+ "atty",
+ "humantime",
+ "log",
+ "regex",
+ "termcolor",
 ]
 
 [[package]]
@@ -5922,7 +5937,7 @@ source = "git+https://github.com/mir-protocol/plonky2.git#0258ad4a3dfeeb92bc59e0
 [[package]]
 name = "plonky2x"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/succinctx.git?branch=main#fa77412f0716468b30050b8b12835b15305b0007"
+source = "git+https://github.com/succinctlabs/succinctx.git?rev=fa77412f0716468b30050b8b12835b15305b0007#fa77412f0716468b30050b8b12835b15305b0007"
 dependencies = [
  "anyhow",
  "array-macro",
@@ -5936,7 +5951,7 @@ dependencies = [
  "digest 0.10.7",
  "dotenv",
  "ed25519-consensus",
- "env_logger",
+ "env_logger 0.10.0",
  "ethers",
  "ff 0.13.0",
  "futures",
@@ -5964,7 +5979,7 @@ dependencies = [
 [[package]]
 name = "plonky2x-derive"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/succinctx.git?branch=main#fa77412f0716468b30050b8b12835b15305b0007"
+source = "git+https://github.com/succinctlabs/succinctx.git?rev=fa77412f0716468b30050b8b12835b15305b0007#fa77412f0716468b30050b8b12835b15305b0007"
 dependencies = [
  "proc-macro2",
  "quote",
