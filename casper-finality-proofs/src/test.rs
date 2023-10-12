@@ -1,8 +1,6 @@
 use plonky2x::{
     backend::circuit::Circuit,
-    prelude::{
-        CircuitBuilder, PlonkParameters, Variable
-    },
+    prelude::{CircuitBuilder, PlonkParameters, Variable},
 };
 
 #[derive(Debug, Clone)]
@@ -18,4 +16,3 @@ impl Circuit for TestCircuit {
         builder.write::<Variable>(c);
     }
 }
-
