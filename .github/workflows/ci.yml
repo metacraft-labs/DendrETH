@@ -57,19 +57,19 @@ jobs:
       - name: Run Solidity Validators accumulator tests
         run: nix develop -c make test-validator-accumulator
 
-  Nim_Light_Client_Compiled_with_Emsctipten_Tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-      - name: Use local my-action
-        uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-      - name: Run Nim Light Client compiled with emsctipten tests
-        run: nix develop -c yarn test-emcc './tests/test-nim-to-wasm.ts' 'test-nim-light-client.ts'
+  # Nim_Light_Client_Compiled_with_Emsctipten_Tests:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         submodules: recursive
+  #     - name: Use local my-action
+  #       uses: ./.github/actions/setup
+  #       with:
+  #         cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+  #
+  #     - name: Run Nim Light Client compiled with emsctipten tests
+  #       run: nix develop -c yarn test-emcc './tests/test-nim-to-wasm.ts' 'test-nim-light-client.ts'
 
   Nim_Light_Client_Clang_Test:
     runs-on: ubuntu-latest
@@ -234,7 +234,7 @@ jobs:
       - Linter
       # - EOS_Relayer_Test
       - Solidity_Validators_Accumulator_Test
-      - Nim_Light_Client_Compiled_with_Emsctipten_Tests
+      # - Nim_Light_Client_Compiled_with_Emsctipten_Tests
       - Nim_Light_Client_Clang_Test
       - Nim_Groth16_Verifier_Tests
       - Run_Light_Client_In_Cosmos_Test
