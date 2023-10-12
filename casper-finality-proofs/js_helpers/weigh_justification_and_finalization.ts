@@ -9,13 +9,15 @@ import { hexToBits } from '../../libs/typescript/ts-utils/hex-utils';
   ]);
   const { beaconState } = await beaconApi.getBeaconState(6953401);
 
-  console.log(beaconState.justificationBits.get(0));
-  console.log(beaconState.justificationBits.get(1));
-  console.log(beaconState.justificationBits.get(2));
-  console.log(beaconState.justificationBits.get(3));
+  // console.log(beaconState.justificationBits.get(0));
+  // console.log(beaconState.justificationBits.get(1));
+  // console.log(beaconState.justificationBits.get(2));
+  // console.log(beaconState.justificationBits.get(3));
 
   const { ssz } = await import('@lodestar/types');
-
+  const beaconStateHash = bytesToHex(ssz.capella.BeaconState.hashTreeRoot(beaconState));
+  console.log('beacon state hash', beaconStateHash);
+  /*
   console.log(
     'justification bits index',
     ssz.capella.BeaconState.getPathInfo(['justification_bits']).gindex,
@@ -76,24 +78,34 @@ import { hexToBits } from '../../libs/typescript/ts-utils/hex-utils';
       ...blocksRootTree.getSingleProof(epoch_index),
     ].map(bytesToHex),
   );
+  */
 
   // beaconState.slot = 12;
   // beaconState.balances = [1234];
 
   // const { ssz } = await import('@lodestar/types');
   // const pathInfo = ssz.capella.BeaconState.getPathInfo(['historical_summaries']);
+  const slotPathInfo = ssz.capella.BeaconState.getPathInfo(['slot']);
+  console.log(slotPathInfo);
+  console.log(slotPathInfo.gindex);
+  console.log(beaconState.slot);
 
-  // console.log(pathInfo.gindex);
+  console.log(bytesToHex(ssz.capella.BeaconState.fields.slot.hashTreeRoot(beaconState.slot)));
+  // console.log(ssz.capella.BeaconState.hashTreeRoot(beaconState))
 
-  // console.log(beaconState.slot);
+  const beaconStateViewDU = ssz.capella.BeaconState.toViewDU(beaconState);
+  const tree = new Tree(beaconStateViewDU.node);
 
-  // console.log(bytesToHex(ssz.capella.BeaconState.fields.slot.hashTreeRoot(beaconState.slot)));
+  const slot_proof = tree.getSingleProof(slotPathInfo.gindex);
+  console.log(slot_proof.map(bytesToHex));
 
-  // const beaconStateViewDU = ssz.capella.BeaconState.toViewDU(beaconState);
-
-  // const tree = new Tree(beaconStateViewDU.node);
-
-  // const proof = tree.getSingleProof(pathInfo.gindex);
-
-  // console.log(proof.map(bytesToHex));
+  console.log('previous_justified_checkpoint');
+  const previousJustifiedCheckpointPathInfo = ssz.capella.BeaconState.getPathInfo(['previous_justified_checkpoint']);
+  const previousJustifiedCheckpointProof = tree.getSingleProof(previousJustifiedCheckpointPathInfo.gindex);
+  const previousJustifiedCheckpointLeaf = ssz.capella.BeaconState.fields.previousJustifiedCheckpoint.hashTreeRoot(beaconState.previousJustifiedCheckpoint);
+  console.log('previous_justified_checkpoint_leaf', bytesToHex(previousJustifiedCheckpointLeaf));
+  console.log('epoch', beaconState.previousJustifiedCheckpoint.epoch);
+  console.log('root', bytesToHex(beaconState.previousJustifiedCheckpoint.root));
+  console.log('gindex', previousJustifiedCheckpointPathInfo.gindex);
+  console.log(previousJustifiedCheckpointProof.map(bytesToHex));
 })();

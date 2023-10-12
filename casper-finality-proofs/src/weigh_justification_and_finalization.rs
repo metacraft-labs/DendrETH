@@ -1,36 +1,126 @@
-use std::io::Bytes;
-
+use plonky2::hash::hash_types::RichField;
 use plonky2x::{
     backend::circuit::Circuit,
     frontend::vars::SSZVariable,
     prelude::{
-        ArrayVariable, BoolVariable, ByteVariable, Bytes32Variable, CircuitBuilder,
-        CircuitVariable, Div, PlonkParameters, Sub, U64Variable, Rem,
+        ArrayVariable, Bytes32Variable, CircuitBuilder, CircuitVariable, PlonkParameters,
+        U64Variable, Variable,
     },
-    utils::bytes32,
 };
 
-use crate::checkpoint::CheckpointVariable;
-
 #[derive(Debug, Clone)]
-struct WeighJustificationAndFinalization;
+pub struct WeighJustificationAndFinalization;
+
+fn verify_slot<L: PlonkParameters<D>, const D: usize>(
+    builder: &mut CircuitBuilder<L, D>,
+    beacon_state_root: Bytes32Variable,
+    slot: U64Variable,
+    slot_proof: ArrayVariable<Bytes32Variable, 5>,
+) {
+    let slot_leaf = slot.hash_tree_root(builder);
+    let slot_index = U64Variable::constant(builder, 34);
+    builder.ssz_verify_proof(
+        beacon_state_root,
+        slot_leaf,
+        slot_proof.as_slice(),
+        slot_index,
+    );
+}
+
+#[allow(unused)]
+fn compute_epoch_at_slot<L: PlonkParameters<D>, const D: usize>(
+    builder: &mut CircuitBuilder<L, D>,
+    slot: U64Variable,
+) -> U64Variable {
+    let slots_per_epoch = builder.constant::<U64Variable>(32);
+    builder.div(slot, slots_per_epoch)
+}
+
+#[allow(unused)]
+fn get_current_epoch<L: PlonkParameters<D>, const D: usize>(
+    builder: &mut CircuitBuilder<L, D>,
+    slot: U64Variable,
+) -> U64Variable {
+    compute_epoch_at_slot(builder, slot)
+}
+
+#[allow(unused)]
+fn get_previous_epoch<L: PlonkParameters<D>, const D: usize>(
+    builder: &mut CircuitBuilder<L, D>,
+    slot: U64Variable,
+) -> U64Variable {
+    let zero = builder.zero::<U64Variable>();
+    let one = builder.one::<U64Variable>();
+
+    let block_is_not_genesis = builder.gte(slot, one);
+    let previous_slot = builder.sub(slot, one);
+    let previous_slot = builder.select(block_is_not_genesis, previous_slot, zero);
+    compute_epoch_at_slot(builder, previous_slot)
+}
+
+type Epoch = U64Variable;
+type Root = Bytes32Variable;
+
+#[derive(Debug, Clone, CircuitVariable)]
+#[value_name(CheckpointValue)]
+pub struct CheckpointVariable {
+    pub epoch: Epoch,
+    pub root: Root,
+}
+
+impl SSZVariable for CheckpointVariable {
+    fn hash_tree_root<L: PlonkParameters<D>, const D: usize>(
+        &self,
+        builder: &mut CircuitBuilder<L, D>,
+    ) -> Bytes32Variable {
+        let epoch_leaf = builder.ssz_hash_tree_root(self.epoch);
+        let root_leaf = builder.ssz_hash_tree_root(self.root);
+        builder.sha256_pair(epoch_leaf, root_leaf)
+    }
+}
+
+fn verify_previous_justified_checkpoint<L: PlonkParameters<D>, const D: usize>(
+    builder: &mut CircuitBuilder<L, D>,
+    beacon_state_root: Root,
+    checkpoint: CheckpointVariable,
+    proof: ArrayVariable<Bytes32Variable, 5>,
+) {
+    let checkpoint_leaf = builder.ssz_hash_tree_root(checkpoint);
+    let checkpoint_index = builder.constant::<U64Variable>(50);
+
+    builder.ssz_verify_proof(
+        beacon_state_root,
+        checkpoint_leaf,
+        proof.as_slice(),
+        checkpoint_index,
+    );
+}
 
 impl Circuit for WeighJustificationAndFinalization {
     fn define<L: PlonkParameters<D>, const D: usize>(builder: &mut CircuitBuilder<L, D>) {
-        let beacon_state = builder.read::<Bytes32Variable>();
-        let total_active_balance = builder.read::<U64Variable>();
-        let previous_epoch_target_balance = builder.read::<U64Variable>();
-        let current_epoch_target_balance = builder.read::<U64Variable>();
+        let beacon_state_root = builder.read::<Bytes32Variable>();
 
+        // verify slot
         let slot = builder.read::<U64Variable>();
         let slot_proof = builder.read::<ArrayVariable<Bytes32Variable, 5>>();
+        verify_slot(builder, beacon_state_root, slot, slot_proof);
 
-        let slot_leaf = slot.hash_tree_root(builder);
+        // verify previous_justified_checkpoint
+        let previous_justified_checkpoint = builder.read::<CheckpointVariable>();
+        let previous_justified_checkpoint_proof =
+            builder.read::<ArrayVariable<Bytes32Variable, 5>>();
+        verify_previous_justified_checkpoint(
+            builder,
+            beacon_state_root,
+            previous_justified_checkpoint,
+            previous_justified_checkpoint_proof,
+        );
 
-        let slot_index = U64Variable::constant(builder, 34);
+        // let total_active_balance = builder.read::<U64Variable>();
+        // let previous_epoch_target_balance = builder.read::<U64Variable>();
+        // let current_epoch_target_balance = builder.read::<U64Variable>();
 
-        builder.ssz_verify_proof(beacon_state, slot_leaf, slot_proof.as_slice(), slot_index);
-
+        /*
         // Assert we are not in the genesis epoch
         // Maybe extract to another function get_current_epoch
         let current_epoch = slot.div(U64Variable::constant(builder, 32), builder);
@@ -141,10 +231,6 @@ impl Circuit for WeighJustificationAndFinalization {
         //     state.finalized_checkpoint = old_current_justified_checkpoint
 
         builder.write::<Bytes32Variable>(current_epoch_justified_checkpoint.root);
+        */
     }
-}
-
-fn verify_justified_checkpoint<L: PlonkParameters<D>, const D: usize>(
-    builder: &mut CircuitBuilder<L, D>,
-) {
 }
