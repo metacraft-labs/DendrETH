@@ -313,7 +313,7 @@ At the moment, there are multiple test suites of interest:
 - The WebAssembly tests of the Nim light client:
 
   ```
-  yarn test-emcc
+  yarn test
   ```
 
 - The Circom components test suite:
