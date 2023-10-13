@@ -5,3 +5,7 @@ pub mod test_engine;
 pub mod test_lte;
 pub mod weigh_justification_and_finalization;
 pub mod commitment_mapper_variable;
+pub mod commitment_mapper_first_level;
+pub mod commitment_mapper_inner_level;
+pub mod get_total_active_balance_first_level;
+pub mod proof_utils;
