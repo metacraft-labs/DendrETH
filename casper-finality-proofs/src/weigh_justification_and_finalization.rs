@@ -53,9 +53,11 @@ fn get_previous_epoch<L: PlonkParameters<D>, const D: usize>(
     let one = builder.one::<U64Variable>();
 
     let block_is_not_genesis = builder.gte(slot, one);
-    let previous_slot = builder.sub(slot, one);
-    let previous_slot = builder.select(block_is_not_genesis, previous_slot, zero);
-    compute_epoch_at_slot(builder, previous_slot)
+    let current_epoch = get_current_epoch(builder, slot);
+    let previous_epoch = builder.sub(current_epoch, one);
+    let previous_epoch = builder.select(block_is_not_genesis, previous_epoch, zero);
+    compute_epoch_at_slot(builder, previous_epoch)
+}
 }
 
 #[derive(Debug, Clone, CircuitVariable)]
