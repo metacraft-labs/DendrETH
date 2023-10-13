@@ -4,3 +4,4 @@ pub mod test;
 pub mod test_engine;
 pub mod test_lte;
 pub mod weigh_justification_and_finalization;
+pub mod commitment_mapper_variable;
