@@ -10,7 +10,7 @@ name = "test_engine"
 path = "bin/test_engine.rs"
 
 [dependencies]
-plonky2 = { git = "https://github.com/mir-protocol/plonky2.git", default-features = false}
+plonky2 = { git = "https://github.com/mir-protocol/plonky2.git", default-features = false }
 plonky2x = { git = "https://github.com/succinctlabs/succinctx.git", branch = "main" }
 curta = { git = "https://github.com/succinctlabs/curta", branch = "main" }
 serde = { version = "1.0.187", features = ["derive"] }

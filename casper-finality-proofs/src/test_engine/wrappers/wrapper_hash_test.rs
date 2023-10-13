@@ -1,7 +1,7 @@
-use crate::assert_equal;
 use crate::hash_test::HashTestCircuit;
 use crate::test_engine::types::test_hash_data::TestInput;
 use crate::test_engine::utils::parse_file::read_fixture;
+use crate::{assert_equal, to_string};
 use plonky2x::frontend::eth::beacon::vars::BeaconValidatorVariable;
 use plonky2x::prelude::{Bytes32Variable, U64Variable};
 use plonky2x::utils::eth::beacon::BeaconValidator;
@@ -25,25 +25,9 @@ pub fn wrapper(path: &str) -> Result<(), anyhow::Error> {
     let slot = json_data.inputs.slot.as_u64();
     input.write::<U64Variable>(slot);
 
-    let a_str = json_data
-        .inputs
-        .a
-        .as_bytes()
-        .iter()
-        .map(|x| format!("{:02x}", x))
-        .collect::<String>();
-
-    let pubkey_str = json_data
-        .inputs
-        .pubkey
-        .as_bytes()
-        .iter()
-        .map(|x| format!("{:02x}", x))
-        .collect::<String>();
-
     let value = BeaconValidator {
-        pubkey: pubkey_str.to_string(),
-        withdrawal_credentials: a_str,
+        pubkey: to_string!(json_data.inputs.pubkey),
+        withdrawal_credentials: to_string!(json_data.inputs.a),
         activation_epoch: slot,
         activation_eligibility_epoch: slot,
         exit_epoch: slot.to_string(),
