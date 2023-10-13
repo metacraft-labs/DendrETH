@@ -9,20 +9,10 @@ import { hexToBits } from '../../libs/typescript/ts-utils/hex-utils';
   ]);
   const { beaconState } = await beaconApi.getBeaconState(6953401);
 
-  // console.log(beaconState.justificationBits.get(0));
-  // console.log(beaconState.justificationBits.get(1));
-  // console.log(beaconState.justificationBits.get(2));
-  // console.log(beaconState.justificationBits.get(3));
-
   const { ssz } = await import('@lodestar/types');
   const beaconStateHash = bytesToHex(ssz.capella.BeaconState.hashTreeRoot(beaconState));
   console.log('beacon state hash', beaconStateHash);
   /*
-  console.log(
-    'justification bits index',
-    ssz.capella.BeaconState.getPathInfo(['justification_bits']).gindex,
-  );
-
   console.log(
     'previous justified checkpoint index',
     ssz.capella.BeaconState.getPathInfo(['previous_justified_checkpoint'])
@@ -119,4 +109,20 @@ import { hexToBits } from '../../libs/typescript/ts-utils/hex-utils';
   console.log('root', bytesToHex(beaconState.currentJustifiedCheckpoint.root));
   console.log('gindex', currentJustifiedCheckpointPathInfo.gindex);
   console.log(currentJustifiedCheckpointProof.map(bytesToHex));
+
+  console.log('justification_bits')
+  console.log(beaconState.justificationBits.get(0));
+  console.log(beaconState.justificationBits.get(1));
+  console.log(beaconState.justificationBits.get(2));
+  console.log(beaconState.justificationBits.get(3));
+
+  const justificationBitsPathInfo = ssz.capella.BeaconState.getPathInfo(['justification_bits']);
+  console.log(
+    'justification bits index',
+    justificationBitsPathInfo.gindex
+  );
+
+  console.log('justification_bits_leaf', bytesToHex(ssz.capella.BeaconState.fields.justificationBits.hashTreeRoot(beaconState.justificationBits)));
+
+  console.log('justification_bits proof', tree.getSingleProof(justificationBitsPathInfo.gindex).map(bytesToHex));
 })();

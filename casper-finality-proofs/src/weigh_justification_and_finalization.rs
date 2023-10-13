@@ -3,8 +3,8 @@ use plonky2x::{
     backend::circuit::Circuit,
     frontend::vars::SSZVariable,
     prelude::{
-        ArrayVariable, Bytes32Variable, CircuitBuilder, CircuitVariable, PlonkParameters,
-        U64Variable, Variable,
+        ArrayVariable, BoolVariable, ByteVariable, Bytes32Variable, CircuitBuilder,
+        CircuitVariable, PlonkParameters, U64Variable, Variable,
     },
 };
 
@@ -76,6 +76,41 @@ impl SSZVariable for CheckpointVariable {
     }
 }
 
+#[derive(Debug, Clone, CircuitVariable)]
+#[value_name(JustificationBitsValue)]
+pub struct JustificationBitsVariable {
+    pub bits: ArrayVariable<BoolVariable, 4>,
+}
+
+impl SSZVariable for JustificationBitsVariable {
+    fn hash_tree_root<L: PlonkParameters<D>, const D: usize>(
+        &self,
+        builder: &mut CircuitBuilder<L, D>,
+    ) -> Bytes32Variable {
+        let zero_byte = builder.constant::<ByteVariable>(0);
+        let zero_bit = builder.constant::<BoolVariable>(false);
+
+        let first_byte = ByteVariable([
+            zero_bit,
+            zero_bit,
+            zero_bit,
+            zero_bit,
+            self.bits[3],
+            self.bits[2],
+            self.bits[1],
+            self.bits[0],
+        ]);
+
+        let mut justification_bits_vec = vec![first_byte];
+        justification_bits_vec.extend(vec![zero_byte; 31]);
+        let justification_bits_fixed_size: [ByteVariable; 32] =
+            justification_bits_vec.try_into().unwrap();
+
+        let justification_bits_leaf = Bytes32Variable::from(justification_bits_fixed_size);
+        justification_bits_leaf
+    }
+}
+
 fn verify_previous_justified_checkpoint<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
     beacon_state_root: Root,
@@ -96,6 +131,22 @@ fn verify_current_justified_checkpoint<L: PlonkParameters<D>, const D: usize>(
     let checkpoint_leaf = builder.ssz_hash_tree_root(checkpoint);
     let gindex = builder.constant::<U64Variable>(51);
     builder.ssz_verify_proof(beacon_state_root, checkpoint_leaf, proof.as_slice(), gindex);
+}
+
+fn verify_justification_bits<L: PlonkParameters<D>, const D: usize>(
+    builder: &mut CircuitBuilder<L, D>,
+    beacon_state_root: Root,
+    justification_bits: JustificationBitsVariable,
+    proof: BeaconStateLeafProof,
+) {
+    let justification_bits_leaf = justification_bits.hash_tree_root(builder);
+    let gindex = builder.constant::<U64Variable>(49);
+    builder.ssz_verify_proof(
+        beacon_state_root,
+        justification_bits_leaf,
+        proof.as_slice(),
+        gindex,
+    );
 }
 
 impl Circuit for WeighJustificationAndFinalization {
@@ -122,6 +173,15 @@ impl Circuit for WeighJustificationAndFinalization {
             beacon_state_root,
             current_justified_checkpoint,
             current_justified_checkpoint_proof,
+        );
+
+        let justification_bits = builder.read::<JustificationBitsVariable>();
+        let justification_bits_proof = builder.read::<BeaconStateLeafProof>();
+        verify_justification_bits(
+            builder,
+            beacon_state_root,
+            justification_bits,
+            justification_bits_proof,
         );
 
         // let total_active_balance = builder.read::<U64Variable>();
