@@ -6,8 +6,14 @@
   # custom binary cache must manually include its `nixConfig` settings for
   # substituters and trusted public keys:
   nixConfig = {
-    extra-substituters = "https://nix-blockchain-development.cachix.org";
-    extra-trusted-public-keys = "nix-blockchain-development.cachix.org-1:Ekei3RuW3Se+P/UIo6Q/oAgor/fVhFuuuX5jR8K/cdg=";
+    extra-substituters = [
+      "https://mcl-blockchain-packages.cachix.org"
+      "https://cache.iog.io"
+    ];
+    extra-trusted-public-keys = [
+      "mcl-blockchain-packages.cachix.org-1:qoEiUyBgNXmgJTThjbjO//XA9/6tCmx/OohHHt9hWVY="
+      "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="
+    ];
   };
 
   inputs = {
