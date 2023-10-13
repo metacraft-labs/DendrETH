@@ -108,4 +108,15 @@ import { hexToBits } from '../../libs/typescript/ts-utils/hex-utils';
   console.log('root', bytesToHex(beaconState.previousJustifiedCheckpoint.root));
   console.log('gindex', previousJustifiedCheckpointPathInfo.gindex);
   console.log(previousJustifiedCheckpointProof.map(bytesToHex));
+
+
+  console.log('current_justified_checkpoint');
+  const currentJustifiedCheckpointPathInfo = ssz.capella.BeaconState.getPathInfo(['current_justified_checkpoint']);
+  const currentJustifiedCheckpointProof = tree.getSingleProof(currentJustifiedCheckpointPathInfo.gindex);
+  const currentJustifiedCheckpointLeaf = ssz.capella.BeaconState.fields.currentJustifiedCheckpoint.hashTreeRoot(beaconState.currentJustifiedCheckpoint);
+  console.log('current_justified_checkpoint_leaf', bytesToHex(currentJustifiedCheckpointLeaf));
+  console.log('epoch', beaconState.currentJustifiedCheckpoint.epoch);
+  console.log('root', bytesToHex(beaconState.currentJustifiedCheckpoint.root));
+  console.log('gindex', currentJustifiedCheckpointPathInfo.gindex);
+  console.log(currentJustifiedCheckpointProof.map(bytesToHex));
 })();

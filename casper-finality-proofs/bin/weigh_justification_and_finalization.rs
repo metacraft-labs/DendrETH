@@ -43,11 +43,26 @@ fn main() {
         bytes32!("0x938c96912b5c4683b27fa6edc5d8b76ceb31d3c4ffce919382f59ba3ed3a079f"),
     ];
 
+    let current_justified_checkpoint = CheckpointValue::<<L as PlonkParameters<D>>::Field> {
+        epoch: 217292,
+        root: bytes32!("0xc014dab4e45229aa677898bac663fe791c2d4ec62af0e328f02c5a0ba3f1eeb1"),
+    };
+
+    let current_justified_checkpoint_proof: [H256; 5] = [
+        bytes32!("0x2b913be7c761bbb483a1321ff90ad13669cbc422c8e23eccf9eb0137c8c3cf48"),
+        bytes32!("0xedaaa63d1f9e2e4564ce78f62dc7130511d2edf70d76c3106be94da93fb8594a"),
+        bytes32!("0xcaac4c42893341c15c557df194682f42b6037a99fcec7d581d7624f470f05c06"),
+        bytes32!("0x18d01635cb93bbf01263b79b3de8302211264ab2f3a3e0833f77e508a1abaaa1"),
+        bytes32!("0x938c96912b5c4683b27fa6edc5d8b76ceb31d3c4ffce919382f59ba3ed3a079f"),
+    ];
+
     input.write::<Bytes32Variable>(H256(beacon_state_root));
     input.write::<U64Variable>(6953401);
     input.write::<ArrayVariable<Bytes32Variable, 5>>(slot_proof.to_vec());
     input.write::<CheckpointVariable>(previous_justified_checkpoint);
     input.write::<ArrayVariable<Bytes32Variable, 5>>(previous_justified_checkpoint_proof.to_vec());
+    input.write::<CheckpointVariable>(current_justified_checkpoint);
+    input.write::<ArrayVariable<Bytes32Variable, 5>>(current_justified_checkpoint_proof.to_vec());
 
     let (proof, output) = circuit.prove(&input);
     circuit.verify(&proof, &input, &output);
