@@ -1,3 +1,4 @@
+use crate::assert_equal;
 use crate::test::TestCircuit;
 use crate::test_engine::types::test_data::TestInput;
 use crate::test_engine::utils::parse_file::read_fixture;
@@ -7,7 +8,7 @@ use plonky2x::{
     prelude::{CircuitBuilder, DefaultParameters, PlonkParameters, Variable},
 };
 
-pub fn wrapper(path: &str) {
+pub fn wrapper(path: &str) -> Result<(), anyhow::Error> {
     type L = DefaultParameters;
     const D: usize = 2;
     let json_data: TestInput = read_fixture::<TestInput>(path);
@@ -26,8 +27,10 @@ pub fn wrapper(path: &str) {
     let (proof, mut output) = circuit.prove(&input);
     circuit.verify(&proof, &input, &output);
     let sum = output.read::<Variable>();
-    assert_eq!(
+
+    assert_equal!(
         sum,
         <L as PlonkParameters<D>>::Field::from_canonical_u64(json_data.outputs.c.as_u64())
     );
+    Ok(())
 }

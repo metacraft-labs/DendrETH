@@ -1,3 +1,4 @@
+use crate::assert_equal;
 use crate::hash_test::HashTestCircuit;
 use crate::test_engine::types::test_hash_data::TestInput;
 use crate::test_engine::utils::parse_file::read_fixture;
@@ -9,7 +10,7 @@ use plonky2x::{
     prelude::{CircuitBuilder, DefaultParameters},
 };
 
-pub fn wrapper(path: &str) {
+pub fn wrapper(path: &str) -> Result<(), anyhow::Error> {
     let json_data: TestInput = read_fixture::<TestInput>(path);
 
     let mut builder = CircuitBuilder::<DefaultParameters, 2>::new();
@@ -32,8 +33,16 @@ pub fn wrapper(path: &str) {
         .map(|x| format!("{:02x}", x))
         .collect::<String>();
 
+    let pubkey_str = json_data
+        .inputs
+        .pubkey
+        .as_bytes()
+        .iter()
+        .map(|x| format!("{:02x}", x))
+        .collect::<String>();
+
     let value = BeaconValidator {
-        pubkey: "0x123000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000".to_string(),
+        pubkey: pubkey_str.to_string(),
         withdrawal_credentials: a_str,
         activation_epoch: slot,
         activation_eligibility_epoch: slot,
@@ -53,6 +62,7 @@ pub fn wrapper(path: &str) {
 
     let epoch = output.read::<U64Variable>();
 
-    assert_eq!(hash, json_data.outputs.hash);
-    assert_eq!(epoch, json_data.outputs.epoch.as_u64());
+    assert_equal!(hash, json_data.outputs.hash);
+    assert_equal!(epoch, json_data.outputs.epoch.as_u64());
+    Ok(())
 }
