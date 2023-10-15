@@ -34,6 +34,7 @@ fn main() {
                 let res = join_handle.join();
                 return res;
             });
+            println!("file_name: {}", file_name);
 
             match r.unwrap() {
                 // Thread finished without panic.
@@ -47,17 +48,27 @@ fn main() {
                             &circuit_name,
                             &mut failed_tests,
                         );
+                    } else if file_name.contains("fail") {
+                        handle_error(
+                            Box::new("Test is supposed to fail but it passed."),
+                            &mut colored_file_name,
+                            &file_name,
+                            &circuit_name,
+                            &mut failed_tests,
+                        );
                     }
                 }
                 // Thread panicked due to circuit failure when called inside wrapper.
                 Err(e) => {
-                    handle_error(
-                        e,
-                        &mut colored_file_name,
-                        &file_name,
-                        &circuit_name,
-                        &mut failed_tests,
-                    );
+                    if !file_name.contains("fail") {
+                        handle_error(
+                            e,
+                            &mut colored_file_name,
+                            &file_name,
+                            &circuit_name,
+                            &mut failed_tests,
+                        );
+                    }
                 }
             }
 
