@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::test_engine::wrappers::{
     wrapper_hash_test::wrapper as wrapper_hash_test, wrapper_test::wrapper as wrapper_test,
+    wrapper_test_lte::wrapper as wrapper_test_lte,
 };
 
 pub struct TestCase {
@@ -17,13 +18,13 @@ impl TestCase {
 
 pub struct Mapper {
     pub folder_path: String,
-    pub wrapper: Box<dyn Fn(String) -> Result<(), anyhow::Error>>,
+    pub wrapper: Box<dyn Fn(String) -> Result<(), anyhow::Error> + Send + Sync>,
 }
 
 impl Mapper {
     fn new(
         folder_path: String,
-        wrapper: Box<dyn Fn(String) -> Result<(), anyhow::Error>>,
+        wrapper: Box<dyn Fn(String) -> Result<(), anyhow::Error> + Send + Sync>,
     ) -> Mapper {
         Mapper {
             folder_path,
@@ -49,12 +50,16 @@ pub fn build_function_map(tests: Vec<TestCase>) -> HashMap<TestWrappers, Box<Map
 pub enum TestWrappers {
     WrapperTest,
     WrapperHashTest,
+    WrapperTestLte,
 }
 
-pub fn map_test_to_wrapper(test: TestWrappers) -> Box<dyn Fn(String) -> Result<(), anyhow::Error>> {
+pub fn map_test_to_wrapper(
+    test: TestWrappers,
+) -> Box<dyn Fn(String) -> Result<(), anyhow::Error> + Send + Sync> {
     match test {
         TestWrappers::WrapperTest => Box::new(|path| wrapper_test(path.as_str())),
         TestWrappers::WrapperHashTest => Box::new(|path| wrapper_hash_test(path.as_str())),
+        TestWrappers::WrapperTestLte => Box::new(|path| wrapper_test_lte(path.as_str())),
     }
 }
 
@@ -67,6 +72,10 @@ pub fn init_tests() -> Vec<TestCase> {
     tests.push(TestCase::new(
         TestWrappers::WrapperHashTest,
         "./src/test_engine/tests/hash_test/".to_string(),
+    ));
+    tests.push(TestCase::new(
+        TestWrappers::WrapperTestLte,
+        "./src/test_engine/tests/test_lte/".to_string(),
     ));
 
     tests

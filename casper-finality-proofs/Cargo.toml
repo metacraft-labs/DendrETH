@@ -20,4 +20,5 @@ ethers = { version = "2.0" }
 primitive-types = "0.12.2"
 colored = "2.0.4"
 anyhow = "1.0.75"
+crossbeam = "0.8.2"
 itertools = { version = "0.10.0", default-features = false }
