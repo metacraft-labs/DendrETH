@@ -1,16 +1,13 @@
-use casper_finality_proofs::test_engine::utils::test_engine::{build_function_map, init_tests};
+use casper_finality_proofs::test_engine::utils::test_engine::{
+    build_function_map, handle_error, init_tests,
+};
 use colored::Colorize;
 use crossbeam::thread;
 use std::panic;
 
 fn main() {
-    // Set a custom panic hook
-    panic::set_hook(Box::new(|info| {
-        println!(
-            "Error: {}",
-            info.payload().downcast_ref::<String>().unwrap()
-        );
-    }));
+    // Prevent the program from stopping its execution on panic.
+    panic::set_hook(Box::new(|_| {}));
 
     let tests = init_tests();
 
@@ -18,7 +15,8 @@ fn main() {
     let mut failed_tests: Vec<String> = Vec::new();
 
     for (name, _) in function_map.iter() {
-        println!("\nRunning circuit: {}", format!("{:?}", name).blue().bold());
+        let circuit_name = format!("{:?}", name).blue().bold();
+        println!("\nRunning circuit: {}", circuit_name);
         let folder_path = &function_map.get(&name).unwrap().folder_path;
         let files = std::fs::read_dir(folder_path).unwrap();
 
@@ -29,28 +27,40 @@ fn main() {
             let mut colored_file_name = String::from(file_name.clone()).green();
 
             let r = thread::scope(|s| {
-                s.spawn(|_| {
+                let join_handle = s.spawn(|_| {
                     return (function_map.get(name).unwrap().wrapper)(path);
                 });
+
+                let res = join_handle.join();
+                return res;
             });
 
-            match r {
-                Ok(_) => {}
-                Err(e) => {
-                    let mut error_str = String::from("Circuit failure");
-                    if let Some(e) = e.downcast_ref::<&'static str>() {
-                        error_str = format!("Error: {}", e);
-                    } else if let Some(e) = e.downcast_ref::<String>() {
-                        error_str = format!("Error: {}", e);
+            match r.unwrap() {
+                // Thread finished without panic.
+                Ok(r) => {
+                    // Assertion failed inside wrapper.
+                    if let Err(e) = r {
+                        handle_error(
+                            Box::new(e),
+                            &mut colored_file_name,
+                            &file_name,
+                            &circuit_name,
+                            &mut failed_tests,
+                        );
                     }
-                    colored_file_name = String::from(file_name.clone()).on_red();
-                    failed_tests.push(format!(
-                        "{}: {}",
-                        String::from(file_name).yellow(),
-                        error_str
-                    ));
+                }
+                // Thread panicked due to circuit failure when called inside wrapper.
+                Err(e) => {
+                    handle_error(
+                        e,
+                        &mut colored_file_name,
+                        &file_name,
+                        &circuit_name,
+                        &mut failed_tests,
+                    );
                 }
             }
+
             println!("-> {}", colored_file_name);
         }
     }
