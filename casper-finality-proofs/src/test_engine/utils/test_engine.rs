@@ -1,9 +1,9 @@
-use std::collections::HashMap;
-
 use crate::test_engine::wrappers::{
     wrapper_hash_test::wrapper as wrapper_hash_test, wrapper_test::wrapper as wrapper_test,
     wrapper_test_lte::wrapper as wrapper_test_lte,
 };
+use colored::{ColoredString, Colorize};
+use std::collections::HashMap;
 
 pub struct TestCase {
     name: TestWrappers,
@@ -31,6 +31,30 @@ impl Mapper {
             wrapper,
         }
     }
+}
+
+pub fn handle_error(
+    e: Box<dyn std::any::Any + Send>,
+    colored_file_name: &mut ColoredString,
+    file_name: &str,
+    circuit_name: &ColoredString,
+    failed_tests: &mut Vec<String>,
+) {
+    let mut error_str = String::from("Circuit failure");
+    if let Some(e) = e.downcast_ref::<&'static str>() {
+        error_str = format!("Error: {}", e);
+    } else if let Some(e) = e.downcast_ref::<String>() {
+        error_str = format!("Error: {}", e);
+    } else if let Some(e) = e.downcast_ref::<anyhow::Error>() {
+        error_str = format!("Error: {}", e);
+    }
+    *colored_file_name = String::from(file_name).on_red();
+    failed_tests.push(format!(
+        "[{}] {}: {}",
+        circuit_name,
+        String::from(file_name).yellow(),
+        error_str
+    ));
 }
 
 pub fn build_function_map(tests: Vec<TestCase>) -> HashMap<TestWrappers, Box<Mapper>> {
