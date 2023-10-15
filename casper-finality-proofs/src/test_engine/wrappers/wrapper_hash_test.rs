@@ -13,6 +13,9 @@ use plonky2x::{
 pub fn wrapper(path: &str) -> Result<(), anyhow::Error> {
     let json_data: TestInput = read_fixture::<TestInput>(path);
 
+    // a way to convert hex string to U256
+    // let u256_from_str = U256::from_str_radix(json_data.inputs.str.as_str(), 16).unwrap();
+
     let mut builder = CircuitBuilder::<DefaultParameters, 2>::new();
     HashTestCircuit::define(&mut builder);
 
@@ -31,7 +34,7 @@ pub fn wrapper(path: &str) -> Result<(), anyhow::Error> {
         activation_epoch: slot,
         activation_eligibility_epoch: slot,
         exit_epoch: slot.to_string(),
-        slashed: false,
+        slashed: json_data.inputs.slashed,
         effective_balance: 32,
         withdrawable_epoch: slot.to_string(),
     };
