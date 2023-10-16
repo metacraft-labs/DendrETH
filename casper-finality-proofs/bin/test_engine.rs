@@ -1,9 +1,12 @@
-use casper_finality_proofs::test_engine::utils::test_engine::{
-    build_function_map, handle_error, init_tests,
+use casper_finality_proofs::test_engine::utils::{
+    setup::init_tests,
+    test_engine::{build_function_map, handle_error},
 };
 use colored::Colorize;
 use crossbeam::thread;
 use std::panic;
+
+static FAIL_EXT: &str = "_fail.json";
 
 fn main() {
     // Prevent the program from stopping its execution on panic.
@@ -34,7 +37,6 @@ fn main() {
                 let res = join_handle.join();
                 return res;
             });
-            println!("file_name: {}", file_name);
 
             match r.unwrap() {
                 // Thread finished without panic.
@@ -48,7 +50,7 @@ fn main() {
                             &circuit_name,
                             &mut failed_tests,
                         );
-                    } else if file_name.contains("fail") {
+                    } else if file_name.contains(FAIL_EXT) {
                         handle_error(
                             Box::new("Test is supposed to fail but it passed."),
                             &mut colored_file_name,
@@ -60,7 +62,7 @@ fn main() {
                 }
                 // Thread panicked due to circuit failure when called inside wrapper.
                 Err(e) => {
-                    if !file_name.contains("fail") {
+                    if !file_name.contains(FAIL_EXT) {
                         handle_error(
                             e,
                             &mut colored_file_name,
