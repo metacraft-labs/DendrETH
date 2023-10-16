@@ -7,7 +7,11 @@ edition = "2021"
 
 [[bin]]
 name = "test_engine"
-path = "bin/test_engine.rs"
+path = "src/test_engine/bin/main.rs"
+
+[[bin]]
+name = "differential_tester"
+path = "src/test_engine/differential_tester/bin/main.rs"
 
 [dependencies]
 plonky2 = { git = "https://github.com/mir-protocol/plonky2.git", default-features = false }
@@ -21,4 +25,5 @@ primitive-types = "0.12.2"
 colored = "2.0.4"
 anyhow = "1.0.75"
 crossbeam = "0.8.2"
+strum = { version = "0.25", features = ["derive"] }
 itertools = { version = "0.10.0", default-features = false }
