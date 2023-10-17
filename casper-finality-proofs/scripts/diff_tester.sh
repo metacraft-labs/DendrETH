@@ -14,24 +14,16 @@ NC='\033[0m' # No Color
 declare -a failed_tests
 declare -a failed_tests_details
 
-# Circuits: wrapper_name - path_to_tests_folder
-testCircuit='{ "circuit": "WrapperTest", "path": "./src/test_engine/tests/test", "ref": "./scripts/ref.py" }'
-hashCircuit='{ "circuit": "WrapperHashTest", "path": "./src/test_engine/tests/hash_test" }'
-testLteCircuit='{ "circuit": "WrapperTestLte", "path": "./src/test_engine/tests/test_lte" }'
+process_json() {
+    local json_file="$1"
 
-# Array of circuits
-circuits=("$testCircuit")
-
-for data in "${circuits[@]}"
-do
-    circuit=$(echo "$data" | sed -n 's/.*"circuit": "\([^"]*\)".*/\1/p')
-    path=$(echo "$data" | sed -n 's#.*"path": "\([^"]*\)".*#\1#p')
-    ref=$(echo "$data" | sed -n 's#.*"ref": "\([^"]*\)".*#\1#p')
+    circuit=$(sed -n 's/.*"circuit": "\([^"]*\)".*/\1/p' "$json_file")
+    path=$(sed -n 's#.*"path": "\([^"]*\)".*#\1#p' "$json_file")
+    ref=$(sed -n 's#.*"ref": "\([^"]*\)".*#\1#p' "$json_file")
 
     echo "\nRunning circuit: ${BOLD_BLUE}$circuit${NC}"
 
-    for file in "$path"/*.json
-    do
+    for file in "$path"/*.json; do
         file_name=$(basename "$file")
         cargo_output=$(cargo run --release --bin differential_tester -- "$circuit" "$file" 2>&1 | awk '/thread .*main.* panicked/,/note:/ {if (!/note:/) print}' | tail -n +2)
         python_output=$(python3 "$ref" "$file" 2>&1)
@@ -56,15 +48,30 @@ do
             echo "-> ${GREEN}$file_name${NC}"
         fi
     done
-done
+}
+
+if [ $# -eq 1 ]; then
+    filepath="./scripts/differential_setup/$1.json"
+    if [ -f "$filepath" ]; then
+        process_json "$filepath"
+    else
+        echo "Error: File not found! $filepath"
+        exit 1
+    fi
+else
+    for filepath in ./scripts/differential_setup/*.json; do
+        if [ -f "$filepath" ]; then
+            process_json "$filepath"
+        fi
+    done
+fi
 
 if [ ${#failed_tests[@]} -eq 0 ]; then
-    echo "\n${BOLD}${GREEN}All tests passed!${NC}"
+    echo "\n${BOLD_GREEN}All tests passed!${NC}"
 else
     # Print failed tests and their errors
     echo "\n${BOLD_RED}Failed tests:${NC}"
-    for ((i = 0; i < ${#failed_tests[@]}; i++))
-    do
+    for ((i = 0; i < ${#failed_tests[@]}; i++)); do
         echo "${failed_tests[$i]}"
         cat "${failed_tests_details[$i]}"
     done
