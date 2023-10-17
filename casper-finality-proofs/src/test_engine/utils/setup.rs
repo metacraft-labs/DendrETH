@@ -3,9 +3,9 @@ use crate::test_engine::wrappers::{
     wrapper_hash_test::wrapper as wrapper_hash_test, wrapper_test::wrapper as wrapper_test,
     wrapper_test_lte::wrapper as wrapper_test_lte,
 };
-use strum::EnumString;
+use strum::{Display, EnumString};
 
-#[derive(Debug, Eq, Hash, PartialEq, Copy, Clone, EnumString)]
+#[derive(Debug, Eq, Hash, PartialEq, Copy, Clone, EnumString, Display)]
 pub enum TestWrappers {
     WrapperTest,
     WrapperHashTest,

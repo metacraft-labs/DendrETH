@@ -4,7 +4,7 @@ use casper_finality_proofs::test_engine::utils::{
 };
 use colored::Colorize;
 use crossbeam::thread;
-use std::panic;
+use std::{env, panic};
 
 static FAIL_EXT: &str = "_fail.json";
 
@@ -12,7 +12,26 @@ fn main() {
     // Prevent the program from stopping its execution on panic.
     panic::set_hook(Box::new(|_| {}));
 
-    let tests = init_tests();
+    let args: Vec<String> = env::args().skip(1).collect();
+    let mut tests = init_tests();
+
+    if args.len() > 0 {
+        let test = tests.iter().find(|test| test.name.to_string() == args[0]);
+        match test {
+            Some(t) => {
+                tests = vec![t.clone()];
+            }
+            None => {
+                println!(
+                    "{}",
+                    format!("Test {} not found.", args[0].to_string().blue())
+                        .bold()
+                        .red()
+                );
+                return;
+            }
+        }
+    }
 
     let function_map = build_function_map(tests);
     let mut failed_tests: Vec<String> = Vec::new();
