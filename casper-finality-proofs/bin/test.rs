@@ -2,9 +2,9 @@ use std::print;
 
 use casper_finality_proofs::test::TestCircuit;
 use plonky2x::{
-    backend::{circuit::Circuit, function::VerifiableFunction},
+    backend::circuit::Circuit,
     frontend::eth::beacon::vars::BeaconValidatorVariable,
-    prelude::{Bytes32Variable, CircuitBuilder, DefaultParameters, PlonkParameters, U64Variable},
+    prelude::{Bytes32Variable, CircuitBuilder, DefaultParameters, U64Variable},
     utils::{bytes32, eth::beacon::BeaconValidator},
 };
 
@@ -27,8 +27,8 @@ fn main() {
     let value = BeaconValidator {
         pubkey: "0x123000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000".to_string(),
         withdrawal_credentials: "0x1230000000000000000000000000000000000000000000000000000000000000".to_string(),
-        activation_epoch: 6152,
-        activation_eligibility_epoch: 6152,
+        activation_epoch: "6152".to_string(),
+        activation_eligibility_epoch: "6152".to_string(),
         exit_epoch: "6152".to_string(),
         slashed: false,
         effective_balance: 32,

@@ -2066,26 +2066,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "af150ab688ff2122fcef229be89cb50dd66af9e01a4ff320cc137eecc9bacc38"
 
 [[package]]
-name = "jemalloc-sys"
-version = "0.5.4+5.3.0-patched"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac6c1946e1cea1788cbfde01c993b52a10e2da07f4bac608228d1bed20bfebf2"
-dependencies = [
- "cc",
- "libc",
-]
-
-[[package]]
-name = "jemallocator"
-version = "0.5.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0de374a9f8e63150e6f5e8a60cc14c668226d7a347d8aee1a45766e3c4dd3bc"
-dependencies = [
- "jemalloc-sys",
- "libc",
-]
-
-[[package]]
 name = "jobserver"
 version = "0.1.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2794,7 +2774,6 @@ source = "git+https://github.com/mir-protocol/plonky2.git#b4203c3d47c9164cecb589
 [[package]]
 name = "plonky2x"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/succinctx.git?branch=main#15e9bff0f9d543cb0db899d047438b545421c144"
 dependencies = [
  "anyhow",
  "array-macro",
@@ -2814,7 +2793,6 @@ dependencies = [
  "futures",
  "hex",
  "itertools 0.10.5",
- "jemallocator",
  "lazy_static",
  "log",
  "num",
@@ -2837,7 +2815,6 @@ dependencies = [
 [[package]]
 name = "plonky2x-derive"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/succinctx.git?branch=main#15e9bff0f9d543cb0db899d047438b545421c144"
 dependencies = [
  "proc-macro2",
  "quote",

@@ -55,7 +55,7 @@ impl Circuit for CommitmentMapperFirstLevel {
 
         builder.write(sum);
         builder.write(validators_hash_tree_root);
-        builder.write(balances_leaves);
+        builder.write(balances_root);
         builder.write(current_epoch);
     }
 }
