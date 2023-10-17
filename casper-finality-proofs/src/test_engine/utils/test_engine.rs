@@ -2,9 +2,10 @@ use super::setup::{map_test_to_wrapper, TestWrappers};
 use colored::{ColoredString, Colorize};
 use std::collections::HashMap;
 
+#[derive(Clone)]
 pub struct TestCase {
-    name: TestWrappers,
-    path: String,
+    pub name: TestWrappers,
+    pub path: String,
 }
 
 impl TestCase {
