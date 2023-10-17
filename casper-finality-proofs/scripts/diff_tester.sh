@@ -1,28 +1,71 @@
 #!/bin/bash
 
-# Circuits
-testCircuit='{ "circuit": "WrapperTest", "path": "./src/test_engine/tests/test" }'
+# Color for printing
+BOLD_BLUE='\033[1;34m'
+BOLD_RED='\033[1;31m'
+BOLD_GREEN='\033[1;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+RED_BG='\033[41m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+# Array to store failed tests and their files
+declare -a failed_tests
+declare -a failed_tests_details
+
+# Circuits: wrapper_name - path_to_tests_folder
+testCircuit='{ "circuit": "WrapperTest", "path": "./src/test_engine/tests/test", "ref": "./scripts/ref.py" }'
 hashCircuit='{ "circuit": "WrapperHashTest", "path": "./src/test_engine/tests/hash_test" }'
 testLteCircuit='{ "circuit": "WrapperTestLte", "path": "./src/test_engine/tests/test_lte" }'
 
-# Create an array of circuits
-circuits=("$testCircuit" "$hashCircuit" "$testLteCircuit")
+# Array of circuits
+circuits=("$testCircuit")
 
-# Loop over the array of circuits
 for data in "${circuits[@]}"
 do
-    # Extract values from the JSON strings using sed
     circuit=$(echo "$data" | sed -n 's/.*"circuit": "\([^"]*\)".*/\1/p')
     path=$(echo "$data" | sed -n 's#.*"path": "\([^"]*\)".*#\1#p')
+    ref=$(echo "$data" | sed -n 's#.*"ref": "\([^"]*\)".*#\1#p')
+
+    echo "\nRunning circuit: ${BOLD_BLUE}$circuit${NC}"
 
     for file in "$path"/*.json
     do
         file_name=$(basename "$file")
-        output=$(cargo run  --release --bin differential_tester -- "$circuit" "$file" 2>&1)
-        if [[ $output == *"thread 'main' panicked"* ]]; then
-            echo "[$circuit] Fail: $file_name"
+        cargo_output=$(cargo run --release --bin differential_tester -- "$circuit" "$file" 2>&1 | awk '/thread .*main.* panicked/,/note:/ {if (!/note:/) print}' | tail -n +2)
+        python_output=$(python3 "$ref" "$file" 2>&1)
+        python_exit_code=$?
+
+        # Either cargo_output or python_exit_code is not 0 -> test failed
+        if [[ -n "$cargo_output" || $python_exit_code -ne 0 ]]; then
+            # If test is not supposed to fail but one of the scripts fails -> test failed
+            if [[ "$file_name" != *_fail.json && ((-n "$cargo_output" && $python_exit_code -eq 0) || (-z "$cargo_output" && $python_exit_code -ne 0)) ]]; then
+
+                echo "-> ${RED_BG}$file_name${NC}"
+                failed_tests+=("-> ${BOLD_BLUE}[$circuit]${NC} ${YELLOW}$file_name${NC}: $cargo_output$python_output")
+                failed_tests_details+=("$file")
+            else
+                echo "-> ${GREEN}$file_name${NC}"
+            fi
+        elif [[ "$file_name" == *_fail.json ]]; then
+            echo "-> ${RED_BG}$file_name${NC}"
+            failed_tests+=("-> ${BOLD_BLUE}[$circuit]${NC} ${YELLOW}$file_name${NC}: Error: Test is supposed to fail but it passed.")
+            failed_tests_details+=("$file")
         else
-            echo "[$circuit] Success: $file_name"
+            echo "-> ${GREEN}$file_name${NC}"
         fi
     done
 done
+
+if [ ${#failed_tests[@]} -eq 0 ]; then
+    echo "\n${BOLD}${GREEN}All tests passed!${NC}"
+else
+    # Print failed tests and their errors
+    echo "\n${BOLD_RED}Failed tests:${NC}"
+    for ((i = 0; i < ${#failed_tests[@]}; i++))
+    do
+        echo "${failed_tests[$i]}"
+        cat "${failed_tests_details[$i]}"
+    done
+fi
