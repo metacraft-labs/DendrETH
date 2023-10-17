@@ -49,3 +49,6 @@
 [submodule "vendor/eth2.0-tests"]
 	path = vendor/eth2.0-tests
 	url = git@github.com:ethereum/eth2.0-tests.git
+[submodule "vendor/zkllvm-metacraft-circuits/zkllvm-template"]
+	path = vendor/zkllvm-metacraft-circuits/zkllvm-template
+	url = https://github.com/NilFoundation/zkllvm-template.git
