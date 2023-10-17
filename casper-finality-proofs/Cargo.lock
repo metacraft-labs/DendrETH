@@ -406,6 +406,7 @@ name = "casper-finality-proofs"
 version = "0.1.0"
 dependencies = [
  "ethers",
+ "hex",
  "itertools 0.10.5",
  "plonky2",
  "plonky2x",
