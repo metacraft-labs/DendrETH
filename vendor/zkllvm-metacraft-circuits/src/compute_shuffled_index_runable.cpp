@@ -6,9 +6,21 @@
 
 #include "byte_utils.h"
 
+#include "boost/filesystem.hpp"   // includes all needed Boost.Filesystem declarations
+#include <iostream>               // for std::cout
+using namespace boost::filesystem;// for ease of tutorial presentation;
+                                  //  a namespace alias is preferred practice in real code
+
 using namespace byte_utils;
 
-constexpr unsigned char SHUFFLE_ROUND_COUNT = 90;
+#include <llvm/ObjectYAML/YAML.h>
+
+using std::cout;
+
+using llvm::yaml::MappingTraits;
+using llvm::yaml::IO;
+
+constexpr unsigned char SHUFFLE_ROUND_COUNT = 10;
 
 uint64_t compute_shuffled_index(
         uint64_t index,
@@ -55,66 +67,112 @@ uint64_t compute_shuffled_index(
 
 }
 
+struct TestInput {
+    std::string seed;
+    int count;
+    std::vector<int> mapping;
+};
+
+namespace llvm {
+    namespace yaml {
+        template <>
+        struct MappingTraits<TestInput> {
+          static void mapping(IO &io, TestInput &info) {
+            io.mapRequired("seed",         info.seed);
+            io.mapOptional("count",        info.count);
+            io.mapOptional("mapping",      info.mapping);
+          }
+        };
+    }
+}
+
+void find_matching_files( const path & dir_path,           // in this directory,
+                const std::vector<std::string> & patterns, // search for this name,
+                std::vector<path> & path_found )           // placing path here if found
+{
+    auto check_matching = [](const std::string& file_path,
+                             const std::vector<std::string> & patterns) {
+        for(const auto& v : patterns) {
+            if(file_path.find(v) == std::string::npos) {
+                return false;
+            }
+        }
+        return true;
+    };
+    if ( !exists( dir_path ) ) return;
+    directory_iterator end_itr; // default construction yields past-the-end
+    for ( directory_iterator itr( dir_path );
+            itr != end_itr;
+            ++itr )
+    {
+        if (is_directory(itr->status()))
+        {
+            find_matching_files(itr->path(), patterns, path_found);
+        }
+        else if (check_matching(itr->path().string(), patterns))
+        {
+            path_found.push_back(itr->path());
+        }
+    }
+}
+
 int main(int argc, char* argv[]) {
 
-    for(int i = 0; i < 10000; i++) {
-        int val = rand();
-        printf("starting val = %d\n", val);
-        int saved = val;
-        auto myArr = int_to_bytes(val);
-        val = bytes_to_int<int>(myArr);
-        printf("after the convertions val = %d\n\n", val);    
+    typename hashes::sha2<256>::block_type sha;
 
-        assert_true(val == saved);
+    std::array<unsigned char, 32> source_buffer;
+
+    //sha = hash<hashes::sha2<256>>(source_buffer.begin(), source_buffer.end());
+
+    using llvm::yaml::Output;
+/*
+seed: '0x2c7c329908222b0e98b0dc09c8e92c6f28b2abb4c6b5300f4244e6b740311f88'
+count: 5
+mapping: [4, 1, 0, 3, 2]
+*/
+    TestInput tom;
+    tom.seed = "0x2c7c329908222b0e98b0dc09c8e92c6f28b2abb4c6b5300f4244e6b740311f88";
+    tom.count = 5;
+    tom.mapping = {4, 1, 0, 3, 2};
+
+    Output yout(llvm::outs());
+    yout << tom;
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+    using llvm::yaml::Input;
+
+    TestInput doc;
+
+    auto my_yaml = std::string(
+R"(seed: '0x2c7c329908222b0e98b0dc09c8e92c6f28b2abb4c6b5300f4244e6b740311f88'
+count: 10
+mapping: [9, 5, 3, 8, 4, 6, 2, 0, 7, 1])");
+
+    Input yin(my_yaml);
+    yin >> doc;
+
+    cout << "\nmy_yaml = " << my_yaml << "\n";
+
+    if ( yin.error() )
+      return 1;
+
+    // Process read document
+    cout << "doc.seed = " << doc.seed << "\n";
+    cout << "doc.count = " << doc.count << "\n";
+    cout << "doc.mapping = [";
+    for(auto it = doc.mapping.begin(); it != doc.mapping.end(); it++) {
+        cout << *it << ", ";
     }
+    cout << "]\n";
 
-    for(int i = 0; i < 10000; i++) {
-        uint64_t val = rand();
-        printf("starting val64 = %ld\n", val);
-        int saved = val;
-        auto myArr = int_to_bytes(val);
-        val = bytes_to_int<uint64_t>(myArr);
-        printf("after the convertions val64 = %ld\n\n", val);
-
-        assert_true(val == saved);
+    std::vector<path> result;
+    path my_path("/tmp");
+    find_matching_files(my_path, std::vector<std::string>{"2", "mapping.yaml"}, result);
+    for(const auto& v : result) {
+        std::string s = v.string();
+        std::cout << s << "\n\n";
     }
-
-    for(int i = 0; i < 10000; i++) {
-        unsigned char val = rand();
-        printf("starting unsigned char = %d\n", val);
-        int saved = val;
-        auto myArr = int_to_bytes(val);
-        val = bytes_to_int<unsigned char>(myArr);
-        printf("after the convertions unsigned char = %d\n\n", val);    
-
-        assert_true(val == saved);
-    }
-
-
-// ##################################################################################################################
-    sha256_t seed = {1, 2, 3, 4, 5, 6, 7, 8, 255, 256, 11, 65536, 16777215, 16777216, 167772160, 1677721600};
-    std::array<unsigned char, 16*4> source_buffer;
-
-    sha256_to_bytes_array(seed, source_buffer);
-
-    printf("\nDEBUG source_buffer:");
-    for(int i = 0; i < 16*4; i++) {
-        printf("%d ", (int)source_buffer[i]);
-    }
-    printf("\n");
-// ##################################################################################################################
-
-    std::array<bool, 5> a = {0, 1, 1, 0, 1};
-    auto b = take_n_elements<bool, a.size(), 4>(a);
-    hashes::sha2<256>::digest_type d = hash<hashes::sha2<256>>(b.begin(), b.end());
-
-    for(auto it = b.begin(); it != b.end(); it++) {
-        printf("DEBUG B: %d\n", (int)*it);
-    }
-
-// ##################################################################################################################
-
-    // compute_shuffled_index(3, 5, b1);
 
     return 0;
 }

@@ -1,3 +1,8 @@
+set(CMAKE_BUILD_TYPE "Debug")
+
+add_compile_options(-fsanitize=address)
+add_link_options(-fsanitize=address)
+
 function(add_example example_target)
     set(prefix ARG)
     set(noValues "")
@@ -39,16 +44,20 @@ function(add_example example_target)
                 ${Boost_LIBRARIES})
 endfunction()
 
+cm_find_package(Boost COMPONENTS REQUIRED filesystem)
+
 add_custom_target(template)
 
 add_example(compute_shuffled_index SOURCES compute_shuffled_index.cpp INPUT main.inp)
 
+find_package(LLVM REQUIRED CONFIG)
+
+message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
+message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+
 add_executable(compute_shuffled_index_runable compute_shuffled_index_runable.cpp)
 
 add_dependencies(template compute_shuffled_index_runable)
-
-set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
-set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 
 add_compile_options(-fsanitize=address)
 add_link_options(-fsanitize=address)
@@ -77,5 +86,6 @@ crypto3::random
 crypto3::stream
 crypto3::vdf
 crypto3::zk
+LLVMSupport
 
 ${Boost_LIBRARIES})
