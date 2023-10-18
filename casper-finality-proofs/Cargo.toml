@@ -6,6 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bin]]
+name = "weigh_justification_and_finalization"
+path = "bin/weigh_justification_and_finalization.rs"
+
+[[bin]]
 name = "test_engine"
 path = "src/test_engine/bin/main.rs"
 
