@@ -33,7 +33,7 @@ pub fn div_rem<L: PlonkParameters<D>, const D: usize>(
     let quotient = builder.div(lhs, rhs);
     let quotient_times_rhs = builder.mul(quotient, rhs);
 
-    builder.sub(rhs, quotient_times_rhs)
+    builder.sub(lhs, quotient_times_rhs)
 }
 
 pub fn exp_from_bits<L: PlonkParameters<D>, const D: usize>(

@@ -405,6 +405,7 @@ dependencies = [
 name = "casper-finality-proofs"
 version = "0.1.0"
 dependencies = [
+ "array-macro",
  "ethers",
  "hex",
  "itertools 0.10.5",
