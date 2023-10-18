@@ -1,9 +1,8 @@
 use itertools::Itertools;
 use plonky2::field::types::Field;
 use plonky2::iop::target::BoolTarget;
-use plonky2x::prelude::{BoolVariable, Bytes32Variable, CircuitBuilder, PlonkParameters, BytesVariable, Variable, ByteVariable};
+use plonky2x::prelude::{BoolVariable, Bytes32Variable, CircuitBuilder, PlonkParameters, BytesVariable, Variable, ByteVariable, CircuitVariable};
 use crate::utils::variable::{to_bits, to_byte_variable};
-use crate::utils::byte_variable::constant;
 use crate::utils::universal::{assert_is_true, div_rem};
 
 fn compute_shuffled_index<L: PlonkParameters<D>, const D: usize>(
@@ -19,11 +18,11 @@ fn compute_shuffled_index<L: PlonkParameters<D>, const D: usize>(
     let const_2: Variable = builder.constant(L::Field::from_canonical_u8(2));
     let const_8: Variable = builder.constant(L::Field::from_canonical_u8(8));
     let const_256: Variable = builder.constant(L::Field::from_canonical_usize(256));
-    let const_0_byte: ByteVariable = constant(builder, 0);
+    let const_0_byte: ByteVariable = ByteVariable::constant(builder, 0);
     const SHUFFLE_ROUND_COUNT: usize = 90;
     const TEST: usize = 3;
     for current_round in 0..TEST {
-        let current_round_bytes: ByteVariable = constant(builder, current_round as u8);
+        let current_round_bytes: ByteVariable = ByteVariable::constant(builder, current_round as u8);
 
         let mut seed_round_to_be_hashed: BytesVariable<33> = BytesVariable([const_0_byte; 33]);
         for i in 0..32 {
