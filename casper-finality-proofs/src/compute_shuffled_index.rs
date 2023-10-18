@@ -1,10 +1,16 @@
-use itertools::Itertools;
-use plonky2::field::types::Field;
-use plonky2::iop::target::BoolTarget;
-use plonky2x::prelude::{BoolVariable, Bytes32Variable, CircuitBuilder, PlonkParameters, BytesVariable, Variable, ByteVariable, CircuitVariable};
-use crate::utils::variable::{to_bits, to_byte_variable};
 use crate::utils::universal::{assert_is_true, div_rem};
+use crate::utils::variable::{to_bits, to_byte_variable};
+use ethers::abi::Bytes;
+use itertools::Itertools;
+use plonky2::field::types::{Field, PrimeField64};
+use plonky2::iop::target::BoolTarget;
+use plonky2x::frontend::vars::EvmVariable;
+use plonky2x::prelude::{
+    BoolVariable, ByteVariable, Bytes32Variable, BytesVariable, CircuitBuilder, CircuitVariable,
+    PlonkParameters, U64Variable, Variable,
+};
 
+// TODO: use U64Variable instead of Variable
 fn compute_shuffled_index<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
     mut index: Variable,
@@ -22,7 +28,8 @@ fn compute_shuffled_index<L: PlonkParameters<D>, const D: usize>(
     const SHUFFLE_ROUND_COUNT: usize = 90;
     const TEST: usize = 3;
     for current_round in 0..TEST {
-        let current_round_bytes: ByteVariable = ByteVariable::constant(builder, current_round as u8);
+        let current_round_bytes: ByteVariable =
+            ByteVariable::constant(builder, current_round as u8);
 
         let mut seed_round_to_be_hashed: BytesVariable<33> = BytesVariable([const_0_byte; 33]);
         for i in 0..32 {
@@ -61,26 +68,47 @@ fn compute_shuffled_index<L: PlonkParameters<D>, const D: usize>(
         let position_div_256 = builder.div(position, const_256);
 
         let mut position_div_256_temp = position_div_256;
-        let mut result_vec = Vec::new();
-        for _ in 0..4 {
-            let low_bits = builder.api.low_bits(position_div_256.0, 8, 8);
-            let bits: [BoolVariable; 8] = low_bits
-                .iter()
-                .map(|x| BoolVariable::from(Variable(x.target)))
-                .collect_vec()
-                .try_into()
-                .unwrap();
-            let byte_var = ByteVariable(bits);
-            result_vec.push(byte_var);
 
-            position_div_256_temp = builder.div(position_div_256_temp, const_256);
-        }
+        let mut position_div_256_temp_bits =
+            builder.to_le_bits(position_div_256_temp);
+
+        let mut position_div_256_temp_bytes = Vec::new();
 
         for i in 0..4 {
-            for j in 0..8 {
-                builder.watch(&result_vec[i].0[j].0, "result_vec");
-            }
+            position_div_256_temp_bytes.push(ByteVariable(
+                position_div_256_temp_bits[i * 8..(i + 1) * 8]
+                    .try_into()
+                    .unwrap(),
+            ));
         }
+
+        let position_div_256_bytes =
+            BytesVariable::<4>(position_div_256_temp_bytes.try_into().unwrap());
+
+        builder.watch(&position_div_256_temp_bits, "bits");
+
+        builder.watch(&position_div_256_bytes, "bytes");
+
+        // let mut result_vec = Vec::new();
+        // for _ in 0..4 {
+        //     let low_bits = builder.api.low_bits(position_div_256.0, 8, 8);
+        //     let bits: [BoolVariable; 8] = low_bits
+        //         .iter()
+        //         .map(|x| BoolVariable::from(Variable(x.target)))
+        //         .collect_vec()
+        //         .try_into()
+        //         .unwrap();
+        //     let byte_var = ByteVariable(bits);
+        //     result_vec.push(byte_var);
+
+        //     position_div_256_temp = builder.div(position_div_256_temp, const_256);
+        // }
+
+        // for i in 0..4 {
+        //     for j in 0..8 {
+        //         builder.watch(&result_vec[i].0[j].0, "result_vec");
+        //     }
+        // }
 
         // let position_div_256_bytes = ByteVariable::from_target(builder, position_div_256.0);
         // debug::debug(
@@ -107,34 +135,34 @@ fn compute_shuffled_index<L: PlonkParameters<D>, const D: usize>(
         //     );
         // }
 
-        let position_div_256_bytes = to_byte_variable(position_div_256, builder);
-        let mut source_to_be_hashed: BytesVariable<34> = BytesVariable([const_0_byte; 34]);
-        for i in 0..32 {
-            source_to_be_hashed.0[i] = seed.0 .0[i];
-        }
-        source_to_be_hashed.0[32] = current_round_bytes;
-        source_to_be_hashed.0[33] = position_div_256_bytes;
+        // let position_div_256_bytes = to_byte_variable(position_div_256, builder);
+        // let mut source_to_be_hashed: BytesVariable<34> = BytesVariable([const_0_byte; 34]);
+        // for i in 0..32 {
+        //     source_to_be_hashed.0[i] = seed.0 .0[i];
+        // }
+        // source_to_be_hashed.0[32] = current_round_bytes;
+        // source_to_be_hashed.0[33] = position_div_256_bytes;
 
-        let source = builder.sha256(&source_to_be_hashed.0);
+        // let source = builder.sha256(&source_to_be_hashed.0);
 
-        let position_mod_256 = div_rem(builder, position, const_8);
-        let position_mod_256_div_8 = builder.div(position_mod_256, const_8);
+        // let position_mod_256 = div_rem(builder, position, const_8);
+        // let position_mod_256_div_8 = builder.div(position_mod_256, const_8);
 
-        let byte = builder.select_array(&source.0 .0, position_mod_256_div_8);
-        let byte_to_variable = byte.to_variable(builder);
-        let position_mod_8 = div_rem(builder, position, const_8);
-        let position_mod_8_to_bits: [BoolVariable; 8] = to_bits(position_mod_8, builder);
-        let position_mod_8_to_iter = position_mod_8_to_bits
-            .into_iter()
-            .map(|x| BoolTarget::new_unsafe(x.0 .0));
-        let const_2_pow_position_mod_8 =
-            builder.api.exp_from_bits(const_2.0, position_mod_8_to_iter);
+        // let byte = builder.select_array(&source.0 .0, position_mod_256_div_8);
+        // let byte_to_variable = byte.to_variable(builder);
+        // let position_mod_8 = div_rem(builder, position, const_8);
+        // let position_mod_8_to_bits: [BoolVariable; 8] = to_bits(position_mod_8, builder);
+        // let position_mod_8_to_iter = position_mod_8_to_bits
+        //     .into_iter()
+        //     .map(|x| BoolTarget::new_unsafe(x.0 .0));
+        // let const_2_pow_position_mod_8 =
+        //     builder.api.exp_from_bits(const_2.0, position_mod_8_to_iter);
 
-        let byte_shl_position_mod_8 =
-            builder.div(byte_to_variable, Variable(const_2_pow_position_mod_8));
-        let bit = div_rem(builder, byte_shl_position_mod_8, const_2);
-        let bit_eq_1 = builder.is_equal(bit, const_1);
-        index = builder.select(bit_eq_1, flip, index);
+        // let byte_shl_position_mod_8 =
+        //     builder.div(byte_to_variable, Variable(const_2_pow_position_mod_8));
+        // let bit = div_rem(builder, byte_shl_position_mod_8, const_2);
+        // let bit_eq_1 = builder.is_equal(bit, const_1);
+        // index = builder.select(bit_eq_1, flip, index);
     }
 
     index
@@ -143,6 +171,7 @@ fn compute_shuffled_index<L: PlonkParameters<D>, const D: usize>(
 #[cfg(test)]
 mod tests {
     use plonky2::field::goldilocks_field::GoldilocksField;
+    use plonky2x::utils;
 
     use super::*;
     use plonky2x::backend::circuit::DefaultParameters;
@@ -151,6 +180,7 @@ mod tests {
 
     #[test]
     fn test_compute_shuffled_index() {
+        utils::setup_logger();
         let mut builder: CircuitBuilder<DefaultParameters, 2> = DefaultBuilder::new();
         type F = GoldilocksField;
 
