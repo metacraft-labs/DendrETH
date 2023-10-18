@@ -27,7 +27,7 @@ fn compute_shuffled_index<L: PlonkParameters<D>, const D: usize>(
     let const_0_byte: ByteVariable = ByteVariable::constant(builder, 0);
     const SHUFFLE_ROUND_COUNT: usize = 90;
     const TEST: usize = 3;
-    for current_round in 0..TEST {
+    for current_round in 0..SHUFFLE_ROUND_COUNT {
         let current_round_bytes: ByteVariable =
             ByteVariable::constant(builder, current_round as u8);
 
@@ -67,10 +67,9 @@ fn compute_shuffled_index<L: PlonkParameters<D>, const D: usize>(
 
         let position_div_256 = builder.div(position, const_256);
 
-        let mut position_div_256_temp = position_div_256;
+        let position_div_256_temp = position_div_256;
 
-        let mut position_div_256_temp_bits =
-            builder.to_le_bits(position_div_256_temp);
+        let position_div_256_temp_bits: [BoolVariable; 64] = to_bits(position_div_256_temp, builder);
 
         let mut position_div_256_temp_bytes = Vec::new();
 
@@ -83,7 +82,7 @@ fn compute_shuffled_index<L: PlonkParameters<D>, const D: usize>(
         }
 
         let position_div_256_bytes =
-            BytesVariable::<4>(position_div_256_temp_bytes.try_into().unwrap());
+            BytesVariable::<4>(position_div_256_temp_bytes.clone().try_into().unwrap());
 
         builder.watch(&position_div_256_temp_bits, "bits");
 
@@ -117,52 +116,35 @@ fn compute_shuffled_index<L: PlonkParameters<D>, const D: usize>(
         //     position_div_256_bytes.0[0].0,
         // );
 
-        // let position_div_256_bytes = position_div_256_bytes.to_variable(builder);
+        let mut source_to_be_hashed: BytesVariable<37> = BytesVariable([const_0_byte; 37]);
+        for i in 0..32 {
+            source_to_be_hashed.0[i] = seed.0 .0[i];
+        }
+        source_to_be_hashed.0[32] = current_round_bytes;
+        for i in 0..4 {
+            source_to_be_hashed.0[33 + i] = position_div_256_temp_bytes[i];
+        }
 
-        // debug::debug(
-        //     builder,
-        //     "position_div_256_bytes - in variable second".to_string(),
-        //     position_div_256_bytes,
-        // );
+        let source = builder.sha256(&source_to_be_hashed.0);
 
-        // let position_div_256_bits: [BoolVariable; 64] = position_div_256.to_bits(builder);
+        let position_mod_256 = div_rem(builder, position, const_8);
+        let position_mod_256_div_8 = builder.div(position_mod_256, const_8);
 
-        // for i in 0..64 {
-        //     debug::debug(
-        //         builder,
-        //         "position_div_256_bits".to_string(),
-        //         position_div_256_bits[i].0,
-        //     );
-        // }
+        let byte = builder.select_array(&source.0 .0, position_mod_256_div_8);
+        let byte_to_variable = byte.to_variable(builder);
+        let position_mod_8 = div_rem(builder, position, const_8);
+        let position_mod_8_to_bits: [BoolVariable; 8] = to_bits(position_mod_8, builder);
+        let position_mod_8_to_iter = position_mod_8_to_bits
+            .into_iter()
+            .map(|x| BoolTarget::new_unsafe(x.0 .0));
+        let const_2_pow_position_mod_8 =
+            builder.api.exp_from_bits(const_2.0, position_mod_8_to_iter);
 
-        // let position_div_256_bytes = to_byte_variable(position_div_256, builder);
-        // let mut source_to_be_hashed: BytesVariable<34> = BytesVariable([const_0_byte; 34]);
-        // for i in 0..32 {
-        //     source_to_be_hashed.0[i] = seed.0 .0[i];
-        // }
-        // source_to_be_hashed.0[32] = current_round_bytes;
-        // source_to_be_hashed.0[33] = position_div_256_bytes;
-
-        // let source = builder.sha256(&source_to_be_hashed.0);
-
-        // let position_mod_256 = div_rem(builder, position, const_8);
-        // let position_mod_256_div_8 = builder.div(position_mod_256, const_8);
-
-        // let byte = builder.select_array(&source.0 .0, position_mod_256_div_8);
-        // let byte_to_variable = byte.to_variable(builder);
-        // let position_mod_8 = div_rem(builder, position, const_8);
-        // let position_mod_8_to_bits: [BoolVariable; 8] = to_bits(position_mod_8, builder);
-        // let position_mod_8_to_iter = position_mod_8_to_bits
-        //     .into_iter()
-        //     .map(|x| BoolTarget::new_unsafe(x.0 .0));
-        // let const_2_pow_position_mod_8 =
-        //     builder.api.exp_from_bits(const_2.0, position_mod_8_to_iter);
-
-        // let byte_shl_position_mod_8 =
-        //     builder.div(byte_to_variable, Variable(const_2_pow_position_mod_8));
-        // let bit = div_rem(builder, byte_shl_position_mod_8, const_2);
-        // let bit_eq_1 = builder.is_equal(bit, const_1);
-        // index = builder.select(bit_eq_1, flip, index);
+        let byte_shl_position_mod_8 =
+            builder.div(byte_to_variable, Variable(const_2_pow_position_mod_8));
+        let bit = div_rem(builder, byte_shl_position_mod_8, const_2);
+        let bit_eq_1 = builder.is_equal(bit, const_1);
+        index = builder.select(bit_eq_1, flip, index);
     }
 
     index
