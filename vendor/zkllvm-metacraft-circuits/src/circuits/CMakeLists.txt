@@ -1,0 +1,3 @@
+add_example(compute_shuffled_index SOURCES compute_shuffled_index.cpp INPUT main.inp)
+
+# add_dependencies(template compute_shuffled_index)

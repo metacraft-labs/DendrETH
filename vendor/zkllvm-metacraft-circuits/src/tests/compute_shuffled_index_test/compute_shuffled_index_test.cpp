@@ -1,10 +1,9 @@
 #include <nil/crypto3/hash/algorithm/hash.hpp>
 #include <nil/crypto3/hash/sha2.hpp>
+#include "byte_utils.h"
 
 #include <algorithm>
 #include <array>
-
-#include "byte_utils.h"
 
 #include "boost/filesystem.hpp"   // includes all needed Boost.Filesystem declarations
 #include <iostream>               // for std::cout
