@@ -1,6 +1,6 @@
 #include <nil/crypto3/hash/algorithm/hash.hpp>
 #include <nil/crypto3/hash/sha2.hpp>
-#include "utils/byte_utils.h"
+#include "../utils/byte_utils.h"
 
 #include <algorithm>
 #include <array>
