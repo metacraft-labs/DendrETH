@@ -9,23 +9,27 @@ use plonky2x::{
 
 use crate::commitment_mapper_variable::{poseidon_hash_tree_root_leafs, CommitmentMapperVariable};
 
-#[derive(Debug, Clone)]
-pub struct CommitmentMapperFirstLevel;
+pub const VALIDATORS_PER_CHUNK: usize = 8;
+pub const BALANCES_PER_CHUNK: usize = 2;
 
-impl Circuit for CommitmentMapperFirstLevel {
+#[derive(Debug, Clone)]
+pub struct TotalActiveBalanceFirstLevel;
+
+impl Circuit for TotalActiveBalanceFirstLevel {
     fn define<L: PlonkParameters<D>, const D: usize>(builder: &mut CircuitBuilder<L, D>)
     where
         <<L as PlonkParameters<D>>::Config as plonky2::plonk::config::GenericConfig<D>>::Hasher:
             plonky2::plonk::config::AlgebraicHasher<<L as PlonkParameters<D>>::Field>,
     {
-        let validators = builder.read::<ArrayVariable<BeaconValidatorVariable, 8>>();
-        let balances_leaves = builder.read::<ArrayVariable<Bytes32Variable, 2>>();
+        let validators =
+            builder.read::<ArrayVariable<BeaconValidatorVariable, VALIDATORS_PER_CHUNK>>();
+        let balances_leaves = builder.read::<ArrayVariable<Bytes32Variable, BALANCES_PER_CHUNK>>();
 
         let balances_root = builder.ssz_hash_leafs(balances_leaves.as_slice());
 
         let mut validators_leaves = Vec::new();
 
-        for i in 0..8 {
+        for i in 0..VALIDATORS_PER_CHUNK {
             validators_leaves.push(CommitmentMapperVariable::hash_tree_root(
                 &validators.data[i],
                 builder,
@@ -38,25 +42,27 @@ impl Circuit for CommitmentMapperFirstLevel {
 
         let mut sum = builder.zero::<U64Variable>();
 
-        for i in 0..8 {
+        for i in 0..VALIDATORS_PER_CHUNK {
             let balance = U64Variable::decode(
                 builder,
                 &balances_leaves.data[i / 4].0 .0[i % 4 * 8..i % 4 * 8 + 8],
             );
 
+            builder.watch(&balance, "log_balance");
+
             let is_active = is_active_validator(builder, validators.data[i], current_epoch);
 
             let zero = builder.zero::<U64Variable>();
 
-            let current = builder.select(is_active, zero, balance);
+            let current = builder.select(is_active, balance, zero);
 
             sum = builder.add(sum, current);
         }
 
         builder.write(sum);
+        builder.write(current_epoch);
         builder.write(validators_hash_tree_root);
         builder.write(balances_root);
-        builder.write(current_epoch);
     }
 }
 

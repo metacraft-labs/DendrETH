@@ -1,12 +1,7 @@
-use std::println;
-
 use plonky2x::{
     backend::circuit::Circuit,
-    frontend::{
-        eth::beacon::vars::BeaconValidatorVariable,
-        hash::poseidon::poseidon256::PoseidonHashOutVariable, vars::SSZVariable,
-    },
-    prelude::{ArrayVariable, CircuitBuilder, PlonkParameters, Variable},
+    frontend::{eth::beacon::vars::BeaconValidatorVariable, vars::SSZVariable},
+    prelude::{CircuitBuilder, PlonkParameters},
 };
 
 use crate::commitment_mapper_variable::CommitmentMapperVariable;

@@ -25,6 +25,15 @@ path = "bin/commitment_mapper_inner_level.rs"
 name = "commitment_mapper_first_level"
 path = "bin/commitment_mapper_first_level.rs"
 
+[[bin]]
+name = "get_total_active_balance_first_level"
+path = "bin/get_total_active_balance_first_level.rs"
+
+[[bin]]
+name = "get_total_active_balance_inner_level"
+path = "bin/get_total_active_balance_inner_level.rs"
+
+
 [dependencies]
 plonky2 = { git = "https://github.com/mir-protocol/plonky2.git", default-features = false }
 plonky2x = { git = "https://github.com/succinctlabs/succinctx.git", branch = "main" }

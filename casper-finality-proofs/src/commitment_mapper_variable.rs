@@ -4,9 +4,7 @@ use plonky2x::{
         eth::{beacon::vars::BeaconValidatorVariable, vars::BLSPubkeyVariable},
         hash::poseidon::poseidon256::PoseidonHashOutVariable,
     },
-    prelude::{
-        ArrayVariable, Bytes32Variable, CircuitBuilder, CircuitVariable, PlonkParameters, Variable,
-    },
+    prelude::{ArrayVariable, CircuitBuilder, CircuitVariable, PlonkParameters, Variable},
 };
 
 pub trait CommitmentMapperVariable: CircuitVariable {
