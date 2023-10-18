@@ -5,7 +5,6 @@ BOLD_BLUE='\033[1;34m'
 BOLD_RED='\033[1;31m'
 BOLD_GREEN='\033[1;32m'
 YELLOW='\033[1;33m'
-RED='\033[0;31m'
 RED_BG='\033[41m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
@@ -21,7 +20,7 @@ process_json() {
     path=$(sed -n 's#.*"path": "\([^"]*\)".*#\1#p' "$json_file")
     ref=$(sed -n 's#.*"ref": "\([^"]*\)".*#\1#p' "$json_file")
 
-    echo "\nRunning circuit: ${BOLD_BLUE}$circuit${NC}"
+    printf "\n%s %b\n" "Running circuit:" "${BOLD_BLUE}$circuit${NC}"
 
     for file in "$path"/*.json; do
         file_name=$(basename "$file")
@@ -55,7 +54,7 @@ if [ $# -eq 1 ]; then
     if [ -f "$filepath" ]; then
         process_json "$filepath"
     else
-        echo "Error: File not found! $filepath"
+        echo "${BOLD_RED}Error: File not found! $filepath${NC}"
         exit 1
     fi
 else
@@ -67,12 +66,12 @@ else
 fi
 
 if [ ${#failed_tests[@]} -eq 0 ]; then
-    echo "\n${BOLD_GREEN}All tests passed!${NC}"
+    printf "\n%b" "${BOLD_GREEN}All tests passed!${NC}"
 else
     # Print failed tests and their errors
-    echo "\n${BOLD_RED}Failed tests:${NC}"
+    printf "\n%b" "${BOLD_RED}Failed tests:${NC}"
     for ((i = 0; i < ${#failed_tests[@]}; i++)); do
-        echo "${failed_tests[$i]}"
+        printf "\n%b\n" "${failed_tests[$i]}"
         cat "${failed_tests_details[$i]}"
     done
 fi
