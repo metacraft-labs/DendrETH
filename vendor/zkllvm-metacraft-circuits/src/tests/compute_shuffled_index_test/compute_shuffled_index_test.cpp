@@ -5,26 +5,28 @@
 #include <algorithm>
 #include <array>
 
-#include "boost/filesystem.hpp"   // includes all needed Boost.Filesystem declarations
-#include <iostream>               // for std::cout
-using namespace boost::filesystem;// for ease of tutorial presentation;
-                                  //  a namespace alias is preferred practice in real code
-
-using namespace byte_utils;
-
+#include "boost/filesystem.hpp"
 #include <llvm/ObjectYAML/YAML.h>
+#include <iostream> 
+#include <fstream>
+#include <streambuf>
 
-using std::cout;
+using namespace boost::filesystem;
 
+using llvm::yaml::Output;
+using llvm::yaml::Input;
 using llvm::yaml::MappingTraits;
 using llvm::yaml::IO;
 
-constexpr unsigned char SHUFFLE_ROUND_COUNT = 10;
+using namespace byte_utils;
+
+using std::cout;
 
 uint64_t compute_shuffled_index(
         uint64_t index,
         uint64_t index_count,
-        sha256_t seed) {
+        sha256_t seed,
+        int SHUFFLE_ROUND_COUNT = 90) {
     assert_true(index < index_count);
 
     std::array<unsigned char, 32+1+4> source_buffer;
@@ -123,54 +125,41 @@ int main(int argc, char* argv[]) {
 
     //sha = hash<hashes::sha2<256>>(source_buffer.begin(), source_buffer.end());
 
-    using llvm::yaml::Output;
-/*
-seed: '0x2c7c329908222b0e98b0dc09c8e92c6f28b2abb4c6b5300f4244e6b740311f88'
-count: 5
-mapping: [4, 1, 0, 3, 2]
-*/
-    TestInput tom;
-    tom.seed = "0x2c7c329908222b0e98b0dc09c8e92c6f28b2abb4c6b5300f4244e6b740311f88";
-    tom.count = 5;
-    tom.mapping = {4, 1, 0, 3, 2};
+    auto process_test_input = [] (const std::vector<path>& cases) {
+        for(const auto& v : cases) {
+            std::cout << v.string() << ":\n";
 
-    Output yout(llvm::outs());
-    yout << tom;
+            std::ifstream t(v.string());
+            std::string yaml_content((std::istreambuf_iterator<char>(t)),
+                                      std::istreambuf_iterator<char>());
 
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
+            TestInput doc;
 
-    using llvm::yaml::Input;
+            Input yin(yaml_content);
+            yin >> doc;
 
-    TestInput doc;
+            if ( yin.error() ) {
+                std::cerr << "Failes to process " << v.string() << "\n";
+                return false;
+            }
 
-    auto my_yaml = std::string(
-R"(seed: '0x2c7c329908222b0e98b0dc09c8e92c6f28b2abb4c6b5300f4244e6b740311f88'
-count: 10
-mapping: [9, 5, 3, 8, 4, 6, 2, 0, 7, 1])");
-
-    Input yin(my_yaml);
-    yin >> doc;
-
-    cout << "\nmy_yaml = " << my_yaml << "\n";
-
-    if ( yin.error() )
-      return 1;
-
-    // Process read document
-    cout << "doc.seed = " << doc.seed << "\n";
-    cout << "doc.count = " << doc.count << "\n";
-    cout << "doc.mapping = [";
-    for(auto it = doc.mapping.begin(); it != doc.mapping.end(); it++) {
-        cout << *it << ", ";
-    }
-    cout << "]\n";
+            std::cout << "seed=" << doc.seed << "\n";
+            std::cout << "count=" << doc.count << "\n";
+            for(const auto& v : doc.mapping) {
+                std::cout << v << " ";
+            }
+            std::cout << "\n\n";
+        }
+        return true;
+    };
 
     std::vector<path> result;
-    path my_path("/tmp");
-    find_matching_files(my_path, std::vector<std::string>{"2", "mapping.yaml"}, result);
-    for(const auto& v : result) {
-        std::string s = v.string();
-        std::cout << s << "\n\n";
+    path my_path("./consensus-spec-tests");
+    find_matching_files(my_path, std::vector<std::string>{"minimal", "mapping.yaml"}, result);
+    find_matching_files(my_path, std::vector<std::string>{"mainnet", "mapping.yaml"}, result);
+
+    if(!process_test_input(result)) {
+        return 1;
     }
 
     return 0;
