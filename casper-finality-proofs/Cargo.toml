@@ -13,10 +13,6 @@ path = "bin/weigh_justification_and_finalization.rs"
 name = "test_engine"
 path = "src/test_engine/bin/main.rs"
 
-[[bin]]
-name = "differential_tester"
-path = "src/test_engine/differential_tester/bin/main.rs"
-
 [dependencies]
 plonky2 = { git = "https://github.com/mir-protocol/plonky2.git", default-features = false }
 plonky2x = { git = "https://github.com/succinctlabs/succinctx.git", branch = "main" }
