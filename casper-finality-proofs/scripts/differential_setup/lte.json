@@ -1,5 +1,0 @@
-{
-    "circuit": "WrapperTestLte",
-    "path": "./src/test_engine/tests/test_lte",
-    "ref": "./scripts/reference/ref_lte.py"
-}

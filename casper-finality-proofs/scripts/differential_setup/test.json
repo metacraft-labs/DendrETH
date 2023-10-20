@@ -1,5 +1,0 @@
-{
-    "circuit": "WrapperTest",
-    "path": "./src/test_engine/tests/test",
-    "ref": "./scripts/reference/ref_test.py"
-}
