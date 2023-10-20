@@ -44,7 +44,7 @@ The test engine is a tool for running unit tests for plonky2 circuits.
   }
   ```
 
-  To add a test which is expected to fail on a circuit level, name the JSON file with a trailing `_fail.json`. The test engine will expect the circuit to fail and will mark the test as successful if it does.
+  To add a test which is expected to fail on a circuit level, name the JSON file with a trailing `_fail.`. The test engine will expect the circuit to fail and will mark the test as successful if it does.
 
 - ### Wrappers
 
