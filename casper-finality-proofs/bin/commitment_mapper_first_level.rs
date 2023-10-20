@@ -2,15 +2,15 @@ pub mod get_total_active_balance_first_level;
 
 use std::println;
 
-use casper_finality_proofs::commitment_mapper_first_level::CommitmentMapperFirstLevel;
+use casper_finality_proofs::{
+    commitment_mapper_first_level::CommitmentMapperFirstLevel,
+    validator::{ValidatorValue, ValidatorVariable},
+};
 use plonky2x::{
     backend::circuit::Circuit,
-    frontend::{
-        eth::beacon::vars::BeaconValidatorVariable,
-        hash::poseidon::poseidon256::PoseidonHashOutVariable,
-    },
+    frontend::hash::poseidon::poseidon256::PoseidonHashOutVariable,
     prelude::{Bytes32Variable, CircuitBuilder, DefaultParameters, GateRegistry, HintRegistry},
-    utils::eth::beacon::BeaconValidator,
+    utils::{bytes, bytes32, self},
 };
 
 fn main() {
@@ -28,16 +28,18 @@ fn main() {
     );
 
     let mut input = circuit.input();
-    input.write::<BeaconValidatorVariable>( BeaconValidator {
-        pubkey: "0x123000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000".to_string(),
-        withdrawal_credentials: "0x1230000000000000000000000000000000000000000000000000000000000000".to_string(),
-        activation_epoch: "6152".to_string(),
-        activation_eligibility_epoch: "6152".to_string(),
-        exit_epoch: "6152".to_string(),
+    input.write::<ValidatorVariable>( ValidatorValue{
+        pubkey: bytes!("0x933ad9491b62059dd065b560d256d8957a8c402cc6e8d8ee7290ae11e8f7329267a8811c397529dac52ae1342ba58c95"),
+        withdrawal_credentials: bytes32!("0x0100000000000000000000000d369bb49efa5100fd3b86a9f828c55da04d2d50"),
+        activation_epoch: 0,
+        activation_eligibility_epoch: 0,
+        exit_epoch: 18446744073709551615,
         slashed: false,
-        effective_balance: 32,
-        withdrawable_epoch: "6152".to_string(),
+        effective_balance: 32000000000,
+        withdrawable_epoch: 18446744073709551615,
     });
+
+    utils::setup_logger();
 
     let (proof, mut output) = circuit.prove(&input);
 

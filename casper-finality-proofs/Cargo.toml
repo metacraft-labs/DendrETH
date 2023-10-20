@@ -25,13 +25,13 @@ path = "bin/commitment_mapper_inner_level.rs"
 name = "commitment_mapper_first_level"
 path = "bin/commitment_mapper_first_level.rs"
 
-[[bin]]
-name = "get_total_active_balance_first_level"
-path = "bin/get_total_active_balance_first_level.rs"
+# [[bin]]
+# name = "get_total_active_balance_first_level"
+# path = "bin/get_total_active_balance_first_level.rs"
 
-[[bin]]
-name = "get_total_active_balance_inner_level"
-path = "bin/get_total_active_balance_inner_level.rs"
+# [[bin]]
+# name = "get_total_active_balance_inner_level"
+# path = "bin/get_total_active_balance_inner_level.rs"
 
 
 [dependencies]
@@ -52,3 +52,4 @@ once_cell = "1.18.0"
 walkdir = "2.4.0"
 itertools = { version = "0.10.0", default-features = false }
 clap = { version = "4.4.6", features = ["derive"] }
+hex = "0.4.3"

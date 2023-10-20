@@ -4,7 +4,7 @@ use plonky2x::{
     prelude::{CircuitBuilder, PlonkParameters},
 };
 
-use crate::commitment_mapper_variable::CommitmentMapperVariable;
+use crate::{commitment_mapper_variable::CommitmentMapperVariable, validator::ValidatorVariable};
 
 #[derive(Debug, Clone)]
 pub struct CommitmentMapperFirstLevel;
@@ -15,7 +15,7 @@ impl Circuit for CommitmentMapperFirstLevel {
         <<L as PlonkParameters<D>>::Config as plonky2::plonk::config::GenericConfig<D>>::Hasher:
             plonky2::plonk::config::AlgebraicHasher<<L as PlonkParameters<D>>::Field>,
     {
-        let validator = builder.read::<BeaconValidatorVariable>();
+        let validator = builder.read::<ValidatorVariable>();
 
         let sha256_hash_tree_root = SSZVariable::hash_tree_root(&validator, builder);
         let poseidon_hash_tree_root = CommitmentMapperVariable::hash_tree_root(&validator, builder);

@@ -1,11 +1,13 @@
 use plonky2::plonk::config::{AlgebraicHasher, GenericConfig};
 use plonky2x::{
     frontend::{
-        eth::{beacon::vars::BeaconValidatorVariable, vars::BLSPubkeyVariable},
+        eth::{vars::BLSPubkeyVariable},
         hash::poseidon::poseidon256::PoseidonHashOutVariable,
     },
     prelude::{ArrayVariable, CircuitBuilder, CircuitVariable, PlonkParameters, Variable},
 };
+
+use crate::validator::ValidatorVariable;
 
 pub trait CommitmentMapperVariable: CircuitVariable {
     fn hash_tree_root<L: PlonkParameters<D>, const D: usize>(
@@ -17,7 +19,7 @@ pub trait CommitmentMapperVariable: CircuitVariable {
             AlgebraicHasher<<L as PlonkParameters<D>>::Field>;
 }
 
-impl CommitmentMapperVariable for BeaconValidatorVariable {
+impl CommitmentMapperVariable for ValidatorVariable {
     fn hash_tree_root<L: PlonkParameters<D>, const D: usize>(
         &self,
         builder: &mut CircuitBuilder<L, D>,
@@ -27,6 +29,7 @@ impl CommitmentMapperVariable for BeaconValidatorVariable {
             plonky2::plonk::config::AlgebraicHasher<<L as PlonkParameters<D>>::Field>,
     {
         let pubkey_hash = builder.poseidon_hash(&self.pubkey.variables());
+        builder.watch(&pubkey_hash, 'pubkey_hash')
         let withdrawal_credentials_hash =
             builder.poseidon_hash(&self.withdrawal_credentials.variables());
 
