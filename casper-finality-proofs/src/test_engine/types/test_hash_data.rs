@@ -4,7 +4,6 @@ use primitive_types::H384;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct Inputs {
     pub pubkey: H384,
     pub slashed: bool,

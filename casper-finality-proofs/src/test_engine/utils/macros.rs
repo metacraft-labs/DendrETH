@@ -25,10 +25,6 @@ macro_rules! assert_equal {
 #[macro_export]
 macro_rules! to_string {
     ($value:expr) => {
-        $value
-            .as_bytes()
-            .iter()
-            .map(|x| format!("{:02x}", x))
-            .collect::<String>()
+        format!("{:?}", $value)
     };
 }

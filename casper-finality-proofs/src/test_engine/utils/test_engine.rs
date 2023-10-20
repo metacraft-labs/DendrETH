@@ -16,13 +16,13 @@ impl TestCase {
 
 pub struct Mapper {
     pub folder_path: String,
-    pub wrapper: Box<dyn Fn(String) -> Result<(), anyhow::Error> + Send + Sync>,
+    pub wrapper: Box<dyn Fn(String, bool) -> Result<String, anyhow::Error> + Send + Sync>,
 }
 
 impl Mapper {
     fn new(
         folder_path: String,
-        wrapper: Box<dyn Fn(String) -> Result<(), anyhow::Error> + Send + Sync>,
+        wrapper: Box<dyn Fn(String, bool) -> Result<String, anyhow::Error> + Send + Sync>,
     ) -> Mapper {
         Mapper {
             folder_path,
@@ -33,7 +33,7 @@ impl Mapper {
 
 pub fn handle_error(
     e: Box<dyn std::any::Any + Send>,
-    colored_file_name: &mut ColoredString,
+    verbose: bool,
     file_name: &str,
     circuit_name: &ColoredString,
     failed_tests: &mut Vec<String>,
@@ -46,13 +46,21 @@ pub fn handle_error(
     } else if let Some(e) = e.downcast_ref::<anyhow::Error>() {
         error_str = format!("Error: {}", e);
     }
-    *colored_file_name = String::from(file_name).on_red();
+    if verbose {
+        return println!(
+            "{} {} {}",
+            "[FAIL]".red().bold(),
+            file_name.to_string().yellow(),
+            error_str
+        );
+    }
     failed_tests.push(format!(
         "[{}] {}: {}",
         circuit_name,
         String::from(file_name).yellow(),
         error_str
     ));
+    println!("-> {}", String::from(file_name).on_red());
 }
 
 pub fn build_function_map(tests: Vec<TestCase>) -> HashMap<TestWrappers, Box<Mapper>> {

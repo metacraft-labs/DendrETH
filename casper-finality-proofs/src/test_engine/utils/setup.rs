@@ -14,11 +14,17 @@ pub enum TestWrappers {
 
 pub fn map_test_to_wrapper(
     test: TestWrappers,
-) -> Box<dyn Fn(String) -> Result<(), anyhow::Error> + Send + Sync> {
+) -> Box<dyn Fn(String, bool) -> Result<String, anyhow::Error> + Send + Sync> {
     match test {
-        TestWrappers::WrapperTest => Box::new(|path| wrapper_test(path.as_str())),
-        TestWrappers::WrapperHashTest => Box::new(|path| wrapper_hash_test(path.as_str())),
-        TestWrappers::WrapperTestLte => Box::new(|path| wrapper_test_lte(path.as_str())),
+        TestWrappers::WrapperTest => {
+            Box::new(|data, should_assert| wrapper_test(data.as_str(), should_assert))
+        }
+        TestWrappers::WrapperHashTest => {
+            Box::new(|path, should_assert| wrapper_hash_test(path.as_str(), should_assert))
+        }
+        TestWrappers::WrapperTestLte => {
+            Box::new(|path, should_assert| wrapper_test_lte(path.as_str(), should_assert))
+        }
     }
 }
 

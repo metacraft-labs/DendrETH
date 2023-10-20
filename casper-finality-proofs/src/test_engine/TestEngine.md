@@ -12,12 +12,12 @@ The test engine is a tool for running unit tests for plonky2 circuits.
 
   ```rust
   pub struct Inputs {
-      pub a: U256,
-      pub b: U256,
+      pub a: u64,
+      pub b: u64,
   }
 
   pub struct Outputs {
-      pub c: U256,
+      pub c: u64,
   }
 
   pub struct TestData {
@@ -35,11 +35,11 @@ The test engine is a tool for running unit tests for plonky2 circuits.
   ```json
   {
     "inputs": {
-      "a": "0xa",
-      "b": "0x14"
+      "a": 1,
+      "b": 2
     },
     "outputs": {
-      "c": "0x1e"
+      "c": 3
     }
   }
   ```
@@ -58,11 +58,11 @@ The test engine is a tool for running unit tests for plonky2 circuits.
   let json_data: TestData = read_fixture::<TestData>(path);
 
   input.write::<Variable>(<L as PlonkParameters<D>>::Field::from_canonical_u64(
-      json_data.inputs.a.as_u64(),
+      json_data.inputs.a,
   ));
 
   input.write::<Variable>(<L as PlonkParameters<D>>::Field::from_canonical_u64(
-      json_data.inputs.b.as_u64(),
+      json_data.inputs.b,
   ));
   ```
 
@@ -72,9 +72,11 @@ The test engine is a tool for running unit tests for plonky2 circuits.
   let sum = output.read::<Variable>();
   assert_equal!(
       sum,
-      <L as PlonkParameters<D>>::Field::from_canonical_u64(json_data.outputs.c.as_u64())
+      <L as PlonkParameters<D>>::Field::from_canonical_u64(json_data.outputs.c)
   );
   ```
+
+  Each wrapper should return a formatted string containing the outputs of the circuit. This is used to print the outputs in the console for differential testing assertions.
 
 - ### Setup
 
@@ -91,7 +93,7 @@ The test engine is a tool for running unit tests for plonky2 circuits.
      ```rust
      pub fn map_test_to_wrapper(test: TestWrappers) -> ... {
          match test {
-             TestWrappers::NewTestCircuit => Box::new(|path| wrapper_new_test(path.as_str())),
+             TestWrappers::NewTestCircuit => Box::new(|path, should_assert| wrapper_new_test(path.as_str(), should_assert)),
              ...
          }
      }
@@ -116,11 +118,17 @@ The test engine is a tool for running unit tests for plonky2 circuits.
   cargo run --bin test_engine --release
   ```
 
-  To run a specific test, use:
+  To run the tests with specific flags, use the following format:
 
   ```sh
-  cargo run --bin test_engine --release -- NewTestCircuit
+  cargo run --bin test_engine --release -- -c=NewTestCircuit
   ```
+
+  Flags:
+
+  - `-c`, `--circuit` - run a specific circuit
+  - `-p`, `--path` - run a specific test folder (should be used along with `-c` flag)
+  - `-r`, `--ref` - run the test engine in a format that is compatible with the differential testing tool
 
   where `NewTestCircuit` is the name of the registered circuit in `TestWrappers` enum in `src/test_engine/utils/setup.rs`.
 

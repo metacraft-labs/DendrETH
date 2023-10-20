@@ -2,6 +2,8 @@ use crate::hash_test::HashTestCircuit;
 use crate::test_engine::types::test_hash_data::TestInput;
 use crate::test_engine::utils::parse_file::read_fixture;
 use crate::{assert_equal, to_string};
+use once_cell::sync::Lazy;
+use plonky2x::backend::circuit::CircuitBuild;
 use plonky2x::frontend::eth::beacon::vars::BeaconValidatorVariable;
 use plonky2x::prelude::{Bytes32Variable, U64Variable};
 use plonky2x::utils::eth::beacon::BeaconValidator;
@@ -10,17 +12,20 @@ use plonky2x::{
     prelude::{CircuitBuilder, DefaultParameters},
 };
 
-pub fn wrapper(path: &str) -> Result<(), anyhow::Error> {
+// Singleton-like pattern
+static CIRCUIT: Lazy<CircuitBuild<DefaultParameters, 2>> = Lazy::new(|| {
+    let mut builder = CircuitBuilder::<DefaultParameters, 2>::new();
+    HashTestCircuit::define(&mut builder);
+    builder.build()
+});
+
+pub fn wrapper(path: &str, should_assert: bool) -> Result<String, anyhow::Error> {
     let json_data: TestInput = read_fixture::<TestInput>(path);
 
     // a way to convert hex string to U256
     // let u256_from_str = U256::from_str_radix(json_data.inputs.str.as_str(), 16).unwrap();
 
-    let mut builder = CircuitBuilder::<DefaultParameters, 2>::new();
-    HashTestCircuit::define(&mut builder);
-
-    let circuit = builder.build();
-    let mut input = circuit.input();
+    let mut input = CIRCUIT.input();
 
     input.write::<Bytes32Variable>(json_data.inputs.a);
     input.write::<Bytes32Variable>(json_data.inputs.b);
@@ -41,15 +46,17 @@ pub fn wrapper(path: &str) -> Result<(), anyhow::Error> {
 
     input.write::<BeaconValidatorVariable>(value);
 
-    let (proof, mut output) = circuit.prove(&input);
+    let (proof, mut output) = CIRCUIT.prove(&input);
 
-    circuit.verify(&proof, &input, &output);
+    CIRCUIT.verify(&proof, &input, &output);
 
     let hash = output.read::<Bytes32Variable>();
 
     let epoch = output.read::<U64Variable>();
 
-    assert_equal!(hash, json_data.outputs.hash);
-    assert_equal!(epoch, json_data.outputs.epoch.as_u64());
-    Ok(())
+    if should_assert {
+        assert_equal!(hash, json_data.outputs.hash);
+        assert_equal!(epoch, json_data.outputs.epoch.as_u64());
+    }
+    Ok(format!("{} {}", to_string!(hash), epoch))
 }
