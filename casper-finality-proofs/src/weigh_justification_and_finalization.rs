@@ -12,7 +12,7 @@ type Epoch = U64Variable;
 type Slot = U64Variable;
 type Root = Bytes32Variable;
 type Gwei = U64Variable;
-type MerkleProof<const N: usize> = ArrayVariable<Bytes32Variable, N>;
+type MerkleProof<const DEPTH: usize> = ArrayVariable<Bytes32Variable, DEPTH>;
 type BeaconStateLeafProof = MerkleProof<5>;
 
 const SLOTS_PER_EPOCH: u64 = 32;
@@ -28,8 +28,8 @@ fn verify_slot<L: PlonkParameters<D>, const D: usize>(
     proof: BeaconStateLeafProof,
 ) {
     let slot_leaf = slot.hash_tree_root(builder);
-    let slot_index = U64Variable::constant(builder, 34);
-    builder.ssz_verify_proof(beacon_state_root, slot_leaf, proof.as_slice(), slot_index);
+    let gindex = U64Variable::constant(builder, 34);
+    builder.ssz_verify_proof(beacon_state_root, slot_leaf, proof.as_slice(), gindex);
 }
 
 fn compute_start_slot_at_epoch_in_block_roots<L: PlonkParameters<D>, const D: usize>(
@@ -131,32 +131,6 @@ fn verify_justification_bits<L: PlonkParameters<D>, const D: usize>(
         proof.as_slice(),
         gindex,
     );
-}
-
-fn verify_slot_is_in_epoch<L: PlonkParameters<D>, const D: usize>(
-    builder: &mut CircuitBuilder<L, D>,
-    slot: Slot,
-    epoch: Epoch,
-) {
-    let one = builder.one();
-
-    let slots_per_epoch = builder.constant::<U64Variable>(SLOTS_PER_EPOCH);
-    let slots_per_epoch_minus_one = builder.sub(slots_per_epoch, one);
-
-    let slot_lower_bound = builder.mul(epoch, slots_per_epoch);
-    let slot_upper_bound = builder.add(slot_lower_bound, slots_per_epoch_minus_one);
-
-    // currently broken because plonky2x doesn't implement gte and gt properly
-    let slot_is_above_lower_bound_pred = builder.gte(slot, slot_lower_bound);
-    let slot_is_below_upper_bound_pred = builder.lte(slot, slot_upper_bound);
-
-    let slot_is_in_epoch_pred = builder.and(
-        slot_is_above_lower_bound_pred,
-        slot_is_below_upper_bound_pred,
-    );
-
-    let one = builder.one::<Variable>();
-    builder.assert_is_equal(slot_is_in_epoch_pred.0, one);
 }
 
 fn shift_justification_bits<L: PlonkParameters<D>, const D: usize>(
@@ -371,20 +345,28 @@ fn verify_finalized_checkpoint<L: PlonkParameters<D>, const D: usize>(
     );
 }
 
-fn assert_current_slot_is_not_genesis<L: PlonkParameters<D>, const D: usize>(
+fn assert_epoch_is_not_genesis_epoch<L: PlonkParameters<D>, const D: usize>(
+    builder: &mut CircuitBuilder<L, D>,
+    epoch: Epoch,
+) {
+    let one = builder.one();
+    let condition = builder.gte(epoch, one);
+    let one = builder.one();
+    builder.assert_is_equal(condition.0, one);
+}
+
+fn calculate_current_epoch<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
     slot: Slot,
-) {
-    let zero = builder.zero();
-    let one = builder.one();
-    let condition = builder.gt(slot, zero);
-    builder.assert_is_equal(condition.0, one);
+) -> Epoch {
+    let slots_per_epoch = builder.constant::<U64Variable>(SLOTS_PER_EPOCH);
+    builder.div(slot, slots_per_epoch)
 }
 
 impl Circuit for WeighJustificationAndFinalization {
     fn define<L: PlonkParameters<D>, const D: usize>(builder: &mut CircuitBuilder<L, D>) {
         let beacon_state_root = builder.read::<Root>();
-        let slot = builder.read::<U64Variable>();
+        let slot = builder.read::<Slot>();
         let slot_proof = builder.read::<BeaconStateLeafProof>();
         let previous_justified_checkpoint = builder.read::<CheckpointVariable>();
         let previous_justified_checkpoint_proof = builder.read::<BeaconStateLeafProof>();
@@ -392,7 +374,6 @@ impl Circuit for WeighJustificationAndFinalization {
         let current_justified_checkpoint_proof = builder.read::<BeaconStateLeafProof>();
         let justification_bits = builder.read::<JustificationBitsVariable>();
         let justification_bits_proof = builder.read::<BeaconStateLeafProof>();
-        let current_epoch = builder.read::<Epoch>();
         let total_active_balance = builder.read::<Gwei>();
         let previous_epoch_target_balance = builder.read::<Gwei>();
         let current_epoch_target_balance = builder.read::<Gwei>();
@@ -402,8 +383,6 @@ impl Circuit for WeighJustificationAndFinalization {
         let current_epoch_start_slot_root_in_block_roots_proof = builder.read::<MerkleProof<18>>();
         let finalized_checkpoint = builder.read::<CheckpointVariable>();
         let finalized_checkpoint_proof = builder.read::<BeaconStateLeafProof>();
-
-        assert_current_slot_is_not_genesis(builder, slot);
 
         verify_slot(builder, beacon_state_root, slot, slot_proof);
 
@@ -428,7 +407,8 @@ impl Circuit for WeighJustificationAndFinalization {
             justification_bits_proof,
         );
 
-        verify_slot_is_in_epoch(builder, slot, current_epoch);
+        let current_epoch = calculate_current_epoch(builder, slot);
+        assert_epoch_is_not_genesis_epoch(builder, current_epoch);
 
         let one = builder.one();
         let previous_epoch = builder.sub(current_epoch, one);
@@ -485,136 +465,5 @@ impl Circuit for WeighJustificationAndFinalization {
         builder.write::<CheckpointVariable>(new_current_justified_checkpoint);
         builder.write::<CheckpointVariable>(new_finalized_checkpoint);
         builder.write::<JustificationBitsVariable>(new_justification_bits);
-
-        /*
-        let new_current_justified_checkpoint_ssz =
-            builder.ssz_hash_tree_root(new_current_justified_checkpoint);
-        builder.write(new_current_justified_checkpoint_ssz);
-
-        let new_justification_bits_ssz = builder.ssz_hash_tree_root(new_justification_bits);
-        builder.write(new_justification_bits_ssz);
-
-        let new_finalized_checkpoint_ssz = builder.ssz_hash_tree_root(new_finalized_checkpoint);
-        builder.write(new_finalized_checkpoint_ssz);
-        */
-
-        // REST IS NOT MINE
-
-        // let total_active_balance = builder.read::<U64Variable>();
-        // let previous_epoch_target_balance = builder.read::<U64Variable>();
-        // let current_epoch_target_balance = builder.read::<U64Variable>();
-
-        /*
-        // Assert we are not in the genesis epoch
-        // Maybe extract to another function get_current_epoch
-        let current_epoch = slot.div(U64Variable::constant(builder, 32), builder);
-
-        let prev_epoch = current_epoch.sub(U64Variable::constant(builder, 1), builder);
-
-        // TODO: move to separate function
-        let old_previous_justified_checkpoint = builder.read::<CheckpointVariable>();
-        let old_previous_justified_checkpoint_proof =
-            builder.read::<ArrayVariable<Bytes32Variable, 5>>();
-
-        let old_previous_leaf = old_previous_justified_checkpoint.hash_tree_root(builder);
-        let old_previous_justified_checkpoint_index = U64Variable::constant(builder, 50);
-
-        builder.ssz_verify_proof(
-            beacon_state,
-            old_previous_leaf,
-            old_previous_justified_checkpoint_proof.as_slice(),
-            old_previous_justified_checkpoint_index,
-        );
-
-        let old_current_justified_checkpoint = builder.read::<U64Variable>();
-        let old_current_justified_checkpoint_proof =
-            builder.read::<ArrayVariable<Bytes32Variable, 5>>();
-
-        let old_current_leaf = old_current_justified_checkpoint.hash_tree_root(builder);
-        let old_current_justified_checkpoint_index = U64Variable::constant(builder, 51);
-
-        builder.ssz_verify_proof(
-            beacon_state,
-            old_current_leaf,
-            old_current_justified_checkpoint_proof.as_slice(),
-            old_current_justified_checkpoint_index,
-        );
-
-        // TODO: implement
-        //
-        //   if previous_epoch_target_balance * 3 >= total_active_balance * 2:
-        //        state.current_justified_checkpoint = Checkpoint(epoch=previous_epoch,
-        //                                                        root=get_block_root(state, previous_epoch))
-        //        state.justification_bits[1] = 0b1
-        //   if current_epoch_target_balance * 3 >= total_active_balance * 2:
-        //          state.current_justified_checkpoint = Checkpoint(epoch=current_epoch,
-        //                                                          root=get_block_root(state, current_epoch))
-        //          state.justification_bits[0] = 0b1
-
-        let previous_epoch_justified_root = builder.read::<Bytes32Variable>();
-        let previous_epoch_justified_root_proof =
-            builder.read::<ArrayVariable<Bytes32Variable, 6>>();
-
-        let previous_epoch_justified_checkpoint = CheckpointVariable {
-            epoch: prev_epoch,
-            root: previous_epoch_justified_root,
-        };
-
-        // let index = prev_epoch.rem(rhs, builder);
-
-        // builder.ssz_verify_proof(root, leaf, branch, gindex)
-
-        let current_epoch_justified_root = builder.read::<Bytes32Variable>();
-        let current_epoch_justified_root_proof =
-            builder.read::<ArrayVariable<Bytes32Variable, 6>>();
-
-        let current_epoch_justified_checkpoint = CheckpointVariable {
-            epoch: current_epoch,
-            root: current_epoch_justified_root,
-        };
-
-        // Only if the above logic is true
-        builder.write::<Bytes32Variable>(previous_epoch_justified_checkpoint.root);
-
-        let justification_bits = builder.read::<ArrayVariable<BoolVariable, 4>>();
-        let justification_bits_proof = builder.read::<ArrayVariable<Bytes32Variable, 5>>();
-
-        let mut justification_bits_leaf = Bytes32Variable::constant(builder, bytes32!("0x0"));
-        justification_bits_leaf.0.0[0] = ByteVariable([
-            justification_bits[0],
-            justification_bits[1],
-            justification_bits[2],
-            justification_bits[3],
-            BoolVariable::constant(builder, false),
-            BoolVariable::constant(builder, false),
-            BoolVariable::constant(builder, false),
-            BoolVariable::constant(builder, false),
-        ]);
-
-        let justification_bits_index = U64Variable::constant(builder, 49);
-
-        builder.ssz_verify_proof(
-            beacon_state,
-            justification_bits_leaf,
-            justification_bits_proof.as_slice(),
-            justification_bits_index,
-        );
-
-        // TODO: implement
-        // # The 2nd/3rd/4th most recent epochs are justified, the 2nd using the 4th as source
-        // if all(bits[1:4]) and old_previous_justified_checkpoint.epoch + 3 == current_epoch:
-        //     state.finalized_checkpoint = old_previous_justified_checkpoint
-        // # The 2nd/3rd most recent epochs are justified, the 2nd using the 3rd as source
-        // if all(bits[1:3]) and old_previous_justified_checkpoint.epoch + 2 == current_epoch:
-        //     state.finalized_checkpoint = old_previous_justified_checkpoint
-        // # The 1st/2nd/3rd most recent epochs are justified, the 1st using the 3rd as source
-        // if all(bits[0:3]) and old_current_justified_checkpoint.epoch + 2 == current_epoch:
-        //     state.finalized_checkpoint = old_current_justified_checkpoint
-        // # The 1st/2nd most recent epochs are justified, the 1st using the 2nd as source
-        // if all(bits[0:2]) and old_current_justified_checkpoint.epoch + 1 == current_epoch:
-        //     state.finalized_checkpoint = old_current_justified_checkpoint
-
-        builder.write::<Bytes32Variable>(current_epoch_justified_checkpoint.root);
-        */
     }
 }

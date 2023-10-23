@@ -71,38 +71,6 @@ fn main() {
         bytes32!("0x938c96912b5c4683b27fa6edc5d8b76ceb31d3c4ffce919382f59ba3ed3a079f"),
     ];
 
-    let block_roots =
-        bytes32!("0xfee940bee27428bc2cd1fca0469418136f52171ec0ca8c4a026fed32a39e6b13");
-
-    let block_roots_proof = [
-        bytes32!("0xc524bb3c09211599514c4146b1f109551ccce70826f359f87ce780c177160a1a"),
-        bytes32!("0xe3b723a252e9ca9f904a74143a31b8d0115df6db02f74f0fc992926c80edd641"),
-        bytes32!("0x844ee47d27dcc46ccbcdda65c8ab3dcdae34a7eff6ce4ab77cb8c78c36e72819"),
-        bytes32!("0x2dd00c742aa4b987fe238286414c22b8d85b5caa469f3c35431693cbe46631d7"),
-        bytes32!("0x71f820aab5b9e7848c94dad326e5badf4b3ccd7865a752c8e90bc68d8c5a05bf"),
-    ];
-
-    let block_roots_leaf_index = 123;
-
-    let block_roots_leaf =
-        bytes32!("0x9b2b61743b18714d1fdd6dea16f12a21ce8e171d4597f80e9dbf7d5e3114b64d");
-
-    let block_roots_leaf_proof = [
-        bytes32!("0x81093187991c12d12a309c972de565a0aeedf9b2e7c949a7bbd5a5b777b06b63"),
-        bytes32!("0x1ef6d5621d5eaf7b62b771796d017b156d61cffe680fe5f09e57d55f552ee5f9"),
-        bytes32!("0xbe26ba9222841329b5aad7ce16e6398a5d31e65326b03bd6bd9155c9f3a4ccfe"),
-        bytes32!("0x7dc3e35298630c3ebc7d7e3f81527353bc10847a0ffd6c5e5dae1bfb58642350"),
-        bytes32!("0x94744689693f67809cd1c3f494acf3b31c630d1f60fe1ef4ad8172075cd3c515"),
-        bytes32!("0x67c4cf93d74e77ddafba5656c75da5dd00bdb4d0368a9e6f3ae2784933d35d94"),
-        bytes32!("0xe1e381d5fdb581d9f0f0c4bcff69d696156a41e1d40124a65a10b56cceeacdcf"),
-        bytes32!("0xa0a2585bfbd1049111b4cedb90e3f7751c318dcfc7c4b04964ce5dd9fbf914ab"),
-        bytes32!("0xe03e9daaed7de70f628ff46048231551f069a2bb82ae2ce6e4d8c0708504a6ab"),
-        bytes32!("0x031454659eff3bd0b263fa7322eeb5931d1bca5f2350de3db48f22c718b04314"),
-        bytes32!("0x9e285dbb099b9a5475508056f1de4dde24a4ecb9602a790cb903692197742099"),
-        bytes32!("0xbff27c9a4fb350d233f49cbc7b85e96fcc9f6cf0970589cd4da72becb5f4fd07"),
-        bytes32!("0xce476f9ea8d7a8d8daed58ee6bfa10f9915b33e4505fc71e1a222769ce939356"),
-    ];
-
     let previous_epoch_start_slot_root_in_block_roots_proof = [
         bytes32!("0x73dea1035b1bd431ccd1eaa893ad5f4b8488e68d2ca90615e5be0d8f7ba5a650"),
         bytes32!("0x0f7c6aa59235e573a4cdfb9411d5e4eb6255571814906c5928c016626aa2ff0a"),
@@ -150,17 +118,6 @@ fn main() {
     let current_epoch_start_slot_root_in_block_roots =
         bytes32!("0x386f84f9d82ec2e8ae6ff584ef7f62f07da47f0163a3b9ce6f263107ac6e1c9c");
 
-    let current_epoch = 217293;
-
-    let previous_epoch_first_slot_root_in_block_index = 6528;
-    let current_epoch_first_slot_root_in_block_index = 6560;
-
-    let previous_epoch_justified_checkpoint_root =
-        bytes32!("0xce476f9ea8d7a8d8daed58ee6bfa10f9915b33e4505fc71e1a222769ce939356");
-
-    let current_epoch_justified_checkpoint_root =
-        bytes32!("0xce476f9ea8d7a8d8daed58ee6bfa10f9915b33e4505fc71e1a222769ce939356");
-
     let total_active_balance = 10;
     let previous_epoch_target_balance = 10;
     let current_epoch_target_balance = 20;
@@ -187,7 +144,6 @@ fn main() {
     input.write::<ArrayVariable<Bytes32Variable, 5>>(current_justified_checkpoint_proof.to_vec());
     input.write::<JustificationBitsVariable>(justification_bits);
     input.write::<ArrayVariable<Bytes32Variable, 5>>(justification_bits_proof.to_vec());
-    input.write::<U64Variable>(current_epoch);
     input.write::<U64Variable>(total_active_balance);
     input.write::<U64Variable>(previous_epoch_target_balance);
     input.write::<U64Variable>(current_epoch_target_balance);
@@ -201,17 +157,6 @@ fn main() {
     );
     input.write::<CheckpointVariable>(finalized_checkpoint);
     input.write::<ArrayVariable<Bytes32Variable, 5>>(finalized_checkpoint_proof.to_vec());
-
-    // input.write::<Bytes32Variable>(previous_epoch_justified_checkpoint_root);
-    // input.write::<Bytes32Variable>(current_epoch_justified_checkpoint_root);
-
-    /*
-    input.write::<Bytes32Variable>(block_roots);
-    input.write::<ArrayVariable<Bytes32Variable, 5>>(block_roots_proof.to_vec());
-    input.write::<U64Variable>(block_roots_leaf_index);
-    input.write::<Bytes32Variable>(block_roots_leaf);
-    input.write::<ArrayVariable<Bytes32Variable, 13>>(block_roots_leaf_proof.to_vec());
-    */
 
     let (proof, mut output) = circuit.prove(&input);
     circuit.verify(&proof, &input, &output);
