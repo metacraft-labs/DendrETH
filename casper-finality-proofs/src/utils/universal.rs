@@ -1,5 +1,5 @@
 use plonky2::iop::target::BoolTarget;
-use plonky2x::prelude::{BoolVariable, CircuitBuilder, PlonkParameters, Variable, CircuitVariable};
+use plonky2x::prelude::{BoolVariable, CircuitBuilder, PlonkParameters, Variable, CircuitVariable, U64Variable};
 use itertools::Itertools;
 
 /// Fails if i1 != true.
@@ -25,11 +25,11 @@ pub fn le_sum<L: PlonkParameters<D>, const D: usize>(
     Variable(builder.api.le_sum(bits.into_iter()))
 }
 
-pub fn div_rem<L: PlonkParameters<D>, const D: usize>(
+pub fn div_rem_u64<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
-    lhs: Variable,
-    rhs: Variable,
-) -> Variable {
+    lhs: U64Variable,
+    rhs: U64Variable,
+) -> U64Variable {
     let quotient = builder.div(lhs, rhs);
     let quotient_times_rhs = builder.mul(quotient, rhs);
 
