@@ -1,8 +1,16 @@
+use std::{collections::HashSet, error::Error, fs, path::Path};
+
 use casper_finality_proofs::weigh_justification_and_finalization::{
     CheckpointValue, CheckpointVariable, JustificationBitsValue, JustificationBitsVariable,
     WeighJustificationAndFinalization,
 };
 use ethers::types::H256;
+use lighthouse_state_merkle_proof::MerkleTree;
+use lighthouse_types::{
+    consts::altair::TIMELY_TARGET_FLAG_INDEX, historical_summary::HistoricalSummaryCache,
+    BeaconState, ChainSpec, Epoch, EthSpec, ForkName, Hash256, MainnetEthSpec, PendingAttestation,
+    RelativeEpoch, VariableList,
+};
 use plonky2x::{
     backend::circuit::Circuit,
     prelude::{
@@ -12,7 +20,405 @@ use plonky2x::{
     utils::bytes32,
 };
 
-fn main() {
+use lighthouse_cached_tree_hash::{CacheArena, CachedTreeHash};
+use lighthouse_ef_tests::{self, testing_spec};
+use lighthouse_state_processing::{
+    common::update_progressive_balances_cache::initialize_progressive_balances_cache,
+    per_epoch_processing::{
+        altair::ParticipationCache,
+        base::{process_justification_and_finalization, ValidatorStatuses},
+        capella::process_epoch,
+        JustificationAndFinalizationState,
+    },
+    per_slot_processing,
+};
+use snap::raw::Decoder;
+
+use lighthouse_types::beacon_state;
+
+pub fn ssz_decode_state<E: EthSpec>(path: &Path, spec: &ChainSpec) -> BeaconState<E> {
+    let compressed_bytes = fs::read(path).unwrap();
+    let mut decoder = Decoder::new();
+    let ssz_bytes = decoder.decompress_vec(&compressed_bytes).unwrap();
+    BeaconState::from_ssz_bytes(ssz_bytes.as_slice(), &spec).unwrap()
+    // println!("{:?}", bytes);
+}
+
+fn get_matching_source_attestations<E: EthSpec>(
+    state: &BeaconState<E>,
+    epoch: u64,
+) -> VariableList<PendingAttestation<E>, E::MaxPendingAttestations> {
+    if epoch == state.current_epoch().as_u64() {
+        state.current_epoch_attestations().unwrap().clone()
+    } else {
+        state.previous_epoch_attestations().unwrap().clone()
+    }
+}
+
+fn get_block_root_at_slot<E: EthSpec>(state: &BeaconState<E>, slot: u64) -> Hash256 {
+    state.block_roots()[slot as usize % 8192]
+}
+
+fn compute_start_slot_at_epoch(epoch: u64) -> u64 {
+    epoch * 32
+}
+
+fn get_block_root<E: EthSpec>(state: &BeaconState<E>, epoch: u64) -> Hash256 {
+    get_block_root_at_slot(state, compute_start_slot_at_epoch(epoch))
+}
+
+fn get_matching_target_attestations<E: EthSpec>(
+    state: &BeaconState<E>,
+    epoch: u64,
+) -> VariableList<PendingAttestation<E>, E::MaxPendingAttestations> {
+    let mut result: VariableList<PendingAttestation<E>, E::MaxPendingAttestations> =
+        Default::default();
+
+    // let mut result: Vec<PendingAttestation<E>>;
+    let matching_source_attestations = get_matching_source_attestations(state, epoch);
+    for attestation in matching_source_attestations {
+        if attestation.data.target.root == get_block_root(state, epoch) {
+            let _ = result.push(attestation);
+        }
+    }
+    result
+}
+
+/*
+fn get_unslashed_attesting_indices<E: EthSpec>(
+    state: &BeaconState<E>,
+    attestations: VariableList<PendingAttestation<E>, E::MaxPendingAttestations>,
+) -> HashSet<usize> {
+    let mut output: HashSet<usize>;
+    for attestation in attestations {
+        output.extend(get_attesting_indices(
+            state,
+            attestation.data,
+            attestation.aggregation_bits,
+        ));
+    }
+
+    let thing = state.validators()[0].slashed;
+
+    output = output
+        .into_iter()
+        .filter(|index| !state.validators()[*index].slashed)
+        .collect();
+
+    output
+}
+*/
+
+/*
+fn get_attesting_balance<E: EthSpec>(
+    state: &BeaconState<E>,
+    attestations: VariableList<PendingAttestation<E>, E::MaxPendingAttestations>,
+) -> u64 {
+    get_total_balance(state, get_unslashed_attesting_indices(state, attestations))
+}
+*/
+
+struct Balances {
+    pub total_active_balance: u64,
+    pub previous_target_balance: u64,
+    pub current_target_balance: u64,
+}
+
+fn extract_balances<E: EthSpec>(state: &mut BeaconState<E>, spec: &ChainSpec) -> Balances {
+    // Ensure the committee caches are built.
+    state
+        .build_committee_cache(RelativeEpoch::Previous, spec)
+        .unwrap();
+    state
+        .build_committee_cache(RelativeEpoch::Current, spec)
+        .unwrap();
+    state
+        .build_committee_cache(RelativeEpoch::Next, spec)
+        .unwrap();
+
+    // Pre-compute participating indices and total balances.
+    let participation_cache = ParticipationCache::new(state, spec).unwrap();
+    let sync_committee = state.current_sync_committee().unwrap().clone();
+    initialize_progressive_balances_cache(state, Some(&participation_cache), spec).unwrap();
+
+    // Justification and finalization.
+    let previous_epoch = state.previous_epoch();
+    let current_epoch = state.current_epoch();
+    let previous_indices = participation_cache
+        .get_unslashed_participating_indices(TIMELY_TARGET_FLAG_INDEX, previous_epoch)
+        .unwrap();
+    let current_indices = participation_cache
+        .get_unslashed_participating_indices(TIMELY_TARGET_FLAG_INDEX, current_epoch)
+        .unwrap();
+
+    Balances {
+        total_active_balance: participation_cache.current_epoch_total_active_balance(),
+        previous_target_balance: previous_indices.total_balance().unwrap(),
+        current_target_balance: current_indices.total_balance().unwrap(),
+    }
+}
+
+fn compute_merkle_proof<E: EthSpec>(
+    state: &mut BeaconState<E>,
+    generalized_index: usize,
+) -> Vec<Hash256> {
+    // 2. Get all `BeaconState` leaves.
+    let mut cache = state.tree_hash_cache_mut().take().unwrap();
+
+    let leaves = cache.recalculate_tree_hash_leaves(state).unwrap();
+    state.tree_hash_cache_mut().restore(cache);
+
+    // 3. Make deposit tree.
+    // Use the depth of the `BeaconState` fields (i.e. `log2(32) = 5`).
+    let depth = 5;
+    let tree = MerkleTree::create(&leaves, depth);
+    let (_, proof) = tree.generate_proof(generalized_index, depth).unwrap();
+
+    proof
+}
+
+fn compute_block_roots_merkle_proof<E: EthSpec>(
+    state: &mut BeaconState<E>,
+    index: usize,
+) -> Vec<Hash256> {
+    // let mut historical_summaries = state.historical_summaries_mut().unwrap();
+    // historical_summaries.new_tree_hash_cache();
+    // let historical_summary_cache = HistoricalSummaryCache::new(historical_summaries);
+    let arena = &mut CacheArena::default();
+    let mut cache = state.block_roots().new_tree_hash_cache(arena);
+    let _ = state
+        .block_roots()
+        .recalculate_tree_hash_root(arena, &mut cache);
+
+    let mut leaves = Vec::new();
+    cache
+        .leaves()
+        .iter(arena)
+        .unwrap()
+        .for_each(|leaf| leaves.push(*leaf));
+
+    let depth = 13;
+    let tree = MerkleTree::create(leaves.as_slice(), depth);
+    let (_, proof) = tree.generate_proof(2usize.pow(13) + index, depth).unwrap();
+    proof
+
+    // cache.recalculate_tree_hash_root()
+    // cache.update_leaves(arena, u64_iter(state.block_roots()));
+
+    // let mut leaves_alloc: Vec<H256> = historical_summary_cache.new_tree_hash_cache(arena).leaves();
+
+    // cache.new_tree_hash_cache()
+}
+
+fn compute_block_roots_start_epoch_slot_to_beacon_state_proof<E: EthSpec>(
+    state: &mut BeaconState<E>,
+    epoch: Epoch,
+) -> Vec<Hash256> {
+    let block_roots_proof = compute_merkle_proof(state, 37);
+    let index = (epoch.as_usize() * 32) % 8192;
+    let block_roots_slot_proof = compute_block_roots_merkle_proof(state, index);
+
+    [
+        block_roots_slot_proof.as_slice(),
+        block_roots_proof.as_slice(),
+    ]
+    .concat()
+    .to_vec()
+}
+
+pub fn compute_beacon_state_tree_hash_root<E: EthSpec>(state: &mut BeaconState<E>) -> Hash256 {
+    let mut cache = state.tree_hash_cache_mut().take().unwrap();
+    let root_hash = cache.recalculate_tree_hash_root(state).unwrap();
+    state.tree_hash_cache_mut().restore(cache);
+    root_hash
+}
+
+pub fn get_block_root_epoch_start_slot_root<E: EthSpec>(
+    state: &BeaconState<E>,
+    epoch: Epoch,
+) -> Hash256 {
+    state.block_roots()[(epoch.as_usize() * 32) % 8192]
+}
+
+fn test_circuit_ssz_snappy() {
+    type L = DefaultParameters;
+    const D: usize = 2;
+    let mut builder = CircuitBuilder::<L, D>::new();
+    WeighJustificationAndFinalization::define(&mut builder);
+    let circuit = builder.build();
+    let mut input = circuit.input();
+    let spec = &testing_spec::<MainnetEthSpec>(ForkName::Capella);
+    let mut state = ssz_decode_state::<MainnetEthSpec>(Path::new("./bin/pre.ssz_snappy"), spec);
+    state.initialize_tree_hash_cache();
+    let balances = extract_balances(&mut state, spec);
+
+    /*
+    println!(
+        "beacon state tree root: {}",
+        compute_beacon_state_tree_hash_root(&mut state)
+    );
+    println!("slot: {}", state.slot());
+    println!(
+        "previous_justified_checkpoint: {:?}",
+        state.previous_justified_checkpoint()
+    );
+    println!(
+        "current_justified_checkpoint: {:?}",
+        state.current_justified_checkpoint()
+    );
+    println!("justification_bits: {:?}", state.justification_bits());
+    println!("total_active_balance: {:?}", state.total_active_balance());
+    println!("finalized_checkpoint: {:?}", state.finalized_checkpoint());
+    println!("previous_epoch_target_balance: {}", "TODO");
+    println!("current_epoch_target_balance: {}", "TODO");
+    println!(
+        "current_epoch_start_slot_in_block_roots: {:?}",
+        state.block_roots()[state.current_epoch().as_usize() * 32 % 8192]
+    );
+    println!(
+        "previous_epoch_start_slot_in_block_roots: {:?}",
+        state.block_roots()[state.previous_epoch().as_usize() * 32 % 8192]
+    );
+    println!("finalized_checkpoint: {:?}", state.finalized_checkpoint());
+    */
+
+    /*
+    println!("total_active_balance: {}", balances.total_active_balance);
+    println!(
+        "previous_epoch_target_attesters: {}",
+        balances.previous_target_balance
+    );
+    println!(
+        "current_epoch_target_attesters: {}",
+        balances.current_target_balance
+    );
+    */
+
+    let slot = state.slot().as_u64();
+    let slot_proof = compute_merkle_proof(&mut state, 34);
+
+    let beacon_state_root = compute_beacon_state_tree_hash_root(&mut state);
+
+    let previous_justified_checkpoint = CheckpointValue::<<L as PlonkParameters<D>>::Field> {
+        epoch: state.previous_justified_checkpoint().epoch.as_u64(),
+        root: state.previous_justified_checkpoint().root,
+    };
+
+    let previous_justified_checkpoint_proof = compute_merkle_proof(&mut state, 50);
+
+    let current_justified_checkpoint = CheckpointValue::<<L as PlonkParameters<D>>::Field> {
+        epoch: state.current_justified_checkpoint().epoch.as_u64(),
+        root: state.current_justified_checkpoint().root,
+    };
+
+    let current_justified_checkpoint_proof = compute_merkle_proof(&mut state, 51);
+
+    let justification_bits = JustificationBitsValue::<<L as PlonkParameters<D>>::Field> {
+        bits: state
+            .justification_bits()
+            .iter()
+            .map(|byte| byte as bool)
+            .collect(),
+    };
+
+    let justification_bits_proof = compute_merkle_proof(&mut state, 49);
+
+    let previous_epoch = state.previous_epoch();
+    let previous_epoch_start_slot_root_in_block_roots_proof =
+        compute_block_roots_start_epoch_slot_to_beacon_state_proof(&mut state, previous_epoch);
+
+    let current_epoch = state.current_epoch();
+    let current_epoch_start_slot_root_in_block_roots_proof =
+        compute_block_roots_start_epoch_slot_to_beacon_state_proof(&mut state, current_epoch);
+
+    let previous_epoch_start_slot_root_in_block_roots =
+        get_block_root_epoch_start_slot_root(&state, state.previous_epoch());
+    let current_epoch_start_slot_root_in_block_roots =
+        get_block_root_epoch_start_slot_root(&state, state.current_epoch());
+
+    let finalized_checkpoint = CheckpointValue::<<L as PlonkParameters<D>>::Field> {
+        epoch: state.finalized_checkpoint().epoch.as_u64(),
+        root: state.finalized_checkpoint().root,
+    };
+
+    let finalized_checkpoint_proof = compute_merkle_proof(&mut state, 52);
+
+    input.write::<Bytes32Variable>(beacon_state_root);
+    input.write::<U64Variable>(slot);
+    input.write::<ArrayVariable<Bytes32Variable, 5>>(slot_proof.to_vec());
+    input.write::<CheckpointVariable>(previous_justified_checkpoint);
+    input.write::<ArrayVariable<Bytes32Variable, 5>>(previous_justified_checkpoint_proof.to_vec());
+    input.write::<CheckpointVariable>(current_justified_checkpoint);
+    input.write::<ArrayVariable<Bytes32Variable, 5>>(current_justified_checkpoint_proof.to_vec());
+    input.write::<JustificationBitsVariable>(justification_bits);
+    input.write::<ArrayVariable<Bytes32Variable, 5>>(justification_bits_proof.to_vec());
+    input.write::<U64Variable>(balances.total_active_balance);
+    input.write::<U64Variable>(balances.previous_target_balance);
+    input.write::<U64Variable>(balances.current_target_balance);
+    input.write::<Bytes32Variable>(previous_epoch_start_slot_root_in_block_roots);
+    input.write::<ArrayVariable<Bytes32Variable, 18>>(
+        previous_epoch_start_slot_root_in_block_roots_proof.to_vec(),
+    );
+    input.write::<Bytes32Variable>(current_epoch_start_slot_root_in_block_roots);
+    input.write::<ArrayVariable<Bytes32Variable, 18>>(
+        current_epoch_start_slot_root_in_block_roots_proof.to_vec(),
+    );
+    input.write::<CheckpointVariable>(finalized_checkpoint);
+    input.write::<ArrayVariable<Bytes32Variable, 5>>(finalized_checkpoint_proof.to_vec());
+
+    let (proof, mut output) = circuit.prove(&input);
+    circuit.verify(&proof, &input, &output);
+
+    let new_previous_justified_checkpoint = output.read::<CheckpointVariable>();
+    let new_current_justified_checkpoint = output.read::<CheckpointVariable>();
+    let new_finalized_checkpoint = output.read::<CheckpointVariable>();
+    let new_justification_bits = output.read::<JustificationBitsVariable>();
+
+    println!("outputs:");
+    println!(
+        "new_previous_justified_checkpoint: {:?}",
+        new_previous_justified_checkpoint
+    );
+    println!(
+        "new_current_justified_checkpoint: {:?}",
+        new_current_justified_checkpoint
+    );
+    println!("new_finalized_checkpoint: {:?}", new_finalized_checkpoint);
+    println!("new_justification_bits: {:?}", new_justification_bits);
+
+    let post_state = ssz_decode_state::<MainnetEthSpec>(Path::new("./bin/post.ssz_snappy"), spec);
+
+    println!("expected outputs:");
+    println!(
+        "new_previous_justified_checkpoint: {:?}",
+        post_state.previous_justified_checkpoint()
+    );
+    println!(
+        "new_current_justified_checkpoint: {:?}",
+        post_state.current_justified_checkpoint()
+    );
+    println!(
+        "new_finalized_checkpoint: {:?}",
+        post_state.finalized_checkpoint()
+    );
+    println!(
+        "new_justification_bits: [{}, {}, {}, {}]",
+        post_state.justification_bits().get(0).unwrap(),
+        post_state.justification_bits().get(1).unwrap(),
+        post_state.justification_bits().get(2).unwrap(),
+        post_state.justification_bits().get(3).unwrap(),
+    );
+
+    println!(
+        "previous_justification_bits: [{}, {}, {}, {}]",
+        state.justification_bits().get(0).unwrap(),
+        state.justification_bits().get(1).unwrap(),
+        state.justification_bits().get(2).unwrap(),
+        state.justification_bits().get(3).unwrap(),
+    );
+}
+
+fn test_circuit_sample_data() {
     type L = DefaultParameters;
     const D: usize = 2;
     let mut builder = CircuitBuilder::<L, D>::new();
@@ -177,4 +583,9 @@ fn main() {
     );
     println!("new_finalized_checkpoint: {:?}", new_finalized_checkpoint);
     println!("new_justification_bits: {:?}", new_justification_bits);
+}
+
+fn main() {
+    test_circuit_ssz_snappy();
+    // test_circuit_sample_data();
 }

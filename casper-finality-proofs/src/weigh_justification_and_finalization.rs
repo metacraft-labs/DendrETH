@@ -352,7 +352,7 @@ fn assert_epoch_is_not_genesis_epoch<L: PlonkParameters<D>, const D: usize>(
     let one = builder.one();
     let condition = builder.gte(epoch, one);
     let one = builder.one();
-    builder.assert_is_equal(condition.0, one);
+    builder.assert_is_equal(condition.variable, one);
 }
 
 fn calculate_current_epoch<L: PlonkParameters<D>, const D: usize>(
