@@ -36,6 +36,17 @@ pub fn div_rem_u64<L: PlonkParameters<D>, const D: usize>(
     builder.sub(lhs, quotient_times_rhs)
 }
 
+pub fn div_rem<L: PlonkParameters<D>, const D: usize>(
+    builder: &mut CircuitBuilder<L, D>,
+    lhs: Variable,
+    rhs: Variable,
+) -> Variable {
+    let quotient = builder.div(lhs, rhs);
+    let quotient_times_rhs = builder.mul(quotient, rhs);
+
+    builder.sub(lhs, quotient_times_rhs)
+}
+
 pub fn exp_from_bits<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
     base: Variable,
