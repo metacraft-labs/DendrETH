@@ -241,16 +241,19 @@ pub fn get_block_root_epoch_start_slot_root<E: EthSpec>(
 }
 
 fn test_circuit_ssz_snappy() {
+    plonky2x::utils::setup_logger();
     type L = DefaultParameters;
     const D: usize = 2;
-    let mut builder = CircuitBuilder::<L, D>::new();
-    WeighJustificationAndFinalization::define(&mut builder);
-    let circuit = builder.build();
-    let mut input = circuit.input();
+
     let spec = &testing_spec::<MainnetEthSpec>(ForkName::Capella);
     let mut state = ssz_decode_state::<MainnetEthSpec>(Path::new("./bin/pre.ssz_snappy"), spec);
     state.initialize_tree_hash_cache();
     let balances = extract_balances(&mut state, spec);
+
+    let mut builder = CircuitBuilder::<L, D>::new();
+    WeighJustificationAndFinalization::define(&mut builder);
+    let circuit = builder.build();
+    let mut input = circuit.input();
 
     /*
     println!(

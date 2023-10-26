@@ -138,8 +138,8 @@ fn shift_justification_bits<L: PlonkParameters<D>, const D: usize>(
     justification_bits: JustificationBitsVariable,
 ) -> JustificationBitsVariable {
     let mut new_bits = justification_bits.bits.as_vec();
-    for i in 1..4 {
-        new_bits[i] = new_bits[i - 1];
+    for i in (0..3).rev() {
+        new_bits[i + 1] = new_bits[i];
     }
     new_bits[0] = builder._false();
 
@@ -161,15 +161,24 @@ fn is_supermajority_link<L: PlonkParameters<D>, const D: usize>(
     builder.gte(target_balance_three_times, total_active_balance_two_times)
 }
 
-fn set_first_justification_bit(
+fn set_nth_justification_bit(
     justification_bits: JustificationBitsVariable,
+    index: usize,
     value: BoolVariable,
 ) -> JustificationBitsVariable {
     let mut new_bits = justification_bits.bits.as_vec();
-    new_bits[0] = value;
+    new_bits[index] = value;
     JustificationBitsVariable {
         bits: ArrayVariable::new(new_bits),
     }
+}
+
+fn get_previous_epoch<L: PlonkParameters<D>, const D: usize>(
+    builder: &mut CircuitBuilder<L, D>,
+    current_epoch: Epoch,
+) -> Epoch {
+    let one = builder.one();
+    builder.sub(current_epoch, one)
 }
 
 fn determine_new_current_justified_checkpoint<L: PlonkParameters<D>, const D: usize>(
@@ -180,7 +189,6 @@ fn determine_new_current_justified_checkpoint<L: PlonkParameters<D>, const D: us
     justification_bits: JustificationBitsVariable,
     current_justified_checkpoint: &CheckpointVariable,
     current_epoch: Epoch,
-    previous_epoch: Epoch, // probably don't need this
     previous_epoch_justified_checkpoint_root: Root,
     current_epoch_justified_checkpoint_root: Root,
 ) -> (CheckpointVariable, JustificationBitsVariable) {
@@ -189,6 +197,16 @@ fn determine_new_current_justified_checkpoint<L: PlonkParameters<D>, const D: us
     let current_epoch_supermajority_link_pred =
         is_supermajority_link(builder, current_epoch_target_balance, total_active_balance);
 
+    builder.watch(
+        &previous_epoch_supermajority_link_pred,
+        "previous_epoch_supermajority_link_pred",
+    );
+    builder.watch(
+        &current_epoch_supermajority_link_pred,
+        "current_epoch_supermajority_link_pred",
+    );
+
+    let previous_epoch = get_previous_epoch(builder, current_epoch);
     let previous_epoch_justified_checkpoint = CheckpointVariable {
         epoch: previous_epoch,
         root: previous_epoch_justified_checkpoint_root,
@@ -211,15 +229,21 @@ fn determine_new_current_justified_checkpoint<L: PlonkParameters<D>, const D: us
         new_current_justified_checkpoint,
     );
 
-    let current_justified_checkpoint_modified_pred = builder.and(
+    let _true = builder._true();
+    let new_second_justification_bit = builder.select(
         previous_epoch_supermajority_link_pred,
-        current_epoch_supermajority_link_pred,
+        _true,
+        justification_bits.bits[0],
     );
 
-    let new_justification_bits = shift_justification_bits(builder, justification_bits);
-    let new_justification_bits = set_first_justification_bit(
+    let mut new_justification_bits = shift_justification_bits(builder, justification_bits);
+    new_justification_bits =
+        set_nth_justification_bit(new_justification_bits, 1, new_second_justification_bit);
+
+    new_justification_bits = set_nth_justification_bit(
         new_justification_bits,
-        current_justified_checkpoint_modified_pred,
+        0,
+        current_epoch_supermajority_link_pred,
     );
 
     (new_current_justified_checkpoint, new_justification_bits)
@@ -246,6 +270,15 @@ fn process_finalizations<L: PlonkParameters<D>, const D: usize>(
     current_epoch: Epoch,
     finalized_checkpoint: CheckpointVariable,
 ) -> CheckpointVariable {
+    builder.watch(
+        &previous_justified_checkpoint,
+        "previous_justified_checkpoint",
+    );
+    builder.watch(
+        &current_justified_checkpoint,
+        "current_justified_checkpoint",
+    );
+
     let one = builder.constant::<U64Variable>(1);
     let two = builder.constant::<U64Variable>(2);
     let three = builder.constant::<U64Variable>(3);
@@ -410,9 +443,7 @@ impl Circuit for WeighJustificationAndFinalization {
         let current_epoch = calculate_current_epoch(builder, slot);
         assert_epoch_is_not_genesis_epoch(builder, current_epoch);
 
-        let one = builder.one();
-        let previous_epoch = builder.sub(current_epoch, one);
-
+        let previous_epoch = get_previous_epoch(builder, current_epoch);
         let new_previous_justified_checkpoint = current_justified_checkpoint.clone();
 
         verify_epoch_start_slot_root_in_block_roots(
@@ -447,14 +478,13 @@ impl Circuit for WeighJustificationAndFinalization {
                 justification_bits.clone(),
                 &current_justified_checkpoint,
                 current_epoch,
-                previous_epoch,
                 previous_epoch_start_slot_root_in_block_roots,
                 current_epoch_start_slot_root_in_block_roots,
             );
 
         let new_finalized_checkpoint = process_finalizations(
             builder,
-            justification_bits.clone(),
+            new_justification_bits.clone(),
             previous_justified_checkpoint,
             current_justified_checkpoint,
             current_epoch,
