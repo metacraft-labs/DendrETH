@@ -272,15 +272,6 @@ fn test_circuit_ssz_snappy() {
         post_state.justification_bits().get(2).unwrap(),
         post_state.justification_bits().get(3).unwrap(),
     );
-
-    println!("Debug info:");
-    println!(
-        "previous_justification_bits: [{}, {}, {}, {}]",
-        state.justification_bits().get(0).unwrap(),
-        state.justification_bits().get(1).unwrap(),
-        state.justification_bits().get(2).unwrap(),
-        state.justification_bits().get(3).unwrap(),
-    );
 }
 
 #[allow(unused)]
