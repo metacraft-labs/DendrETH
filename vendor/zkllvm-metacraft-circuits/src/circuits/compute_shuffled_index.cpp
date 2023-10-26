@@ -4,9 +4,9 @@
 #include <algorithm>
 #include <array>
 
-#include "../utils/byte_utils.h"
+#include "../circuit_utils/circuit_byte_utils.h"
 
-using namespace byte_utils;
+using namespace circuit_byte_utils;
 
 constexpr unsigned char SHUFFLE_ROUND_COUNT = 90;
 
