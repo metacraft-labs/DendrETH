@@ -1,8 +1,9 @@
 use std::{fs, path::Path};
 
-use casper_finality_proofs::weigh_justification_and_finalization::{
-    CheckpointValue, CheckpointVariable, JustificationBitsValue, JustificationBitsVariable,
-    WeighJustificationAndFinalization,
+use casper_finality_proofs::{
+    checkpoint::{CheckpointValue, CheckpointVariable},
+    justification_bits::{JustificationBitsValue, JustificationBitsVariable},
+    weigh_justification_and_finalization::WeighJustificationAndFinalization,
 };
 use ethers::types::H256;
 use lighthouse_state_merkle_proof::MerkleTree;

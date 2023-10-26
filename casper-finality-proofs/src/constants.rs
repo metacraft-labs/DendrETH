@@ -1,0 +1,2 @@
+pub const SLOTS_PER_EPOCH: u64 = 32;
+pub const SLOTS_PER_HISTORICAL_ROOT: u64 = 8192;
