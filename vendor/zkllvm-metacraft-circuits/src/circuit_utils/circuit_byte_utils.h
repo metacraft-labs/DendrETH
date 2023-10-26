@@ -1,6 +1,6 @@
 using namespace nil::crypto3;
 
-namespace byte_utils {
+namespace circuit_byte_utils {
 
     using sha256_t = typename hashes::sha2<256>::block_type;
 

@@ -1,6 +1,6 @@
 #include <nil/crypto3/hash/algorithm/hash.hpp>
 #include <nil/crypto3/hash/sha2.hpp>
-#include "byte_utils.h"
+#include "circuit_utils/circuit_byte_utils.h"
 
 #include <algorithm>
 #include <array>
@@ -18,7 +18,7 @@ using llvm::yaml::Input;
 using llvm::yaml::MappingTraits;
 using llvm::yaml::IO;
 
-using namespace byte_utils;
+using namespace circuit_byte_utils;
 
 using std::cout;
 
