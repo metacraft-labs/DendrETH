@@ -5,7 +5,12 @@ use plonky2x::{
 
 use crate::{
     checkpoint::CheckpointVariable,
-    constants::{SLOTS_PER_EPOCH, SLOTS_PER_HISTORICAL_ROOT},
+    constants::{
+        BEACON_STATE_CURRENT_JUSTIFIED_CHECKPOINT_GINDEX, BEACON_STATE_FINALIZED_CHECKPOINT_GINDEX,
+        BEACON_STATE_JUSTIFICATION_BITS_GINDEX, BEACON_STATE_PREVIOUS_JUSTIFIED_CHECKPOINT_GINDEX,
+        BEACON_STATE_SLOT_GINDEX, DEPTH18_START_BLOCK_ROOTS_GINDEX, SLOTS_PER_EPOCH,
+        SLOTS_PER_HISTORICAL_ROOT,
+    },
     justification_bits::JustificationBitsVariable,
     types::{BeaconStateLeafProof, Epoch, MerkleProof, Root, Slot},
 };
@@ -27,7 +32,7 @@ pub fn verify_slot<L: PlonkParameters<D>, const D: usize>(
     proof: BeaconStateLeafProof,
 ) {
     let slot_leaf = slot.hash_tree_root(builder);
-    let gindex = U64Variable::constant(builder, 34);
+    let gindex = U64Variable::constant(builder, BEACON_STATE_SLOT_GINDEX);
     builder.ssz_verify_proof(beacon_state_root, slot_leaf, proof.as_slice(), gindex);
 }
 
@@ -38,7 +43,7 @@ pub fn verify_previous_justified_checkpoint<L: PlonkParameters<D>, const D: usiz
     proof: BeaconStateLeafProof,
 ) {
     let checkpoint_leaf = builder.ssz_hash_tree_root(checkpoint);
-    let gindex = builder.constant::<U64Variable>(50);
+    let gindex = builder.constant::<U64Variable>(BEACON_STATE_PREVIOUS_JUSTIFIED_CHECKPOINT_GINDEX);
     builder.ssz_verify_proof(beacon_state_root, checkpoint_leaf, proof.as_slice(), gindex);
 }
 
@@ -49,7 +54,7 @@ pub fn verify_current_justified_checkpoint<L: PlonkParameters<D>, const D: usize
     proof: BeaconStateLeafProof,
 ) {
     let checkpoint_leaf = builder.ssz_hash_tree_root(checkpoint);
-    let gindex = builder.constant::<U64Variable>(51);
+    let gindex = builder.constant::<U64Variable>(BEACON_STATE_CURRENT_JUSTIFIED_CHECKPOINT_GINDEX);
     builder.ssz_verify_proof(beacon_state_root, checkpoint_leaf, proof.as_slice(), gindex);
 }
 
@@ -60,7 +65,7 @@ pub fn verify_justification_bits<L: PlonkParameters<D>, const D: usize>(
     proof: BeaconStateLeafProof,
 ) {
     let justification_bits_leaf = justification_bits.hash_tree_root(builder);
-    let gindex = builder.constant::<U64Variable>(49);
+    let gindex = builder.constant::<U64Variable>(BEACON_STATE_JUSTIFICATION_BITS_GINDEX);
     builder.ssz_verify_proof(
         beacon_state_root,
         justification_bits_leaf,
@@ -76,9 +81,10 @@ pub fn verify_epoch_start_slot_root_in_block_roots<L: PlonkParameters<D>, const 
     block_root: Root,
     proof: MerkleProof<18>,
 ) {
-    let first_block_roots_gindex = builder.constant::<U64Variable>(303104);
+    let start_block_roots_gindex =
+        builder.constant::<U64Variable>(DEPTH18_START_BLOCK_ROOTS_GINDEX);
     let index_in_block_roots = compute_start_slot_at_epoch_in_block_roots(builder, epoch);
-    let gindex = builder.add(first_block_roots_gindex, index_in_block_roots);
+    let gindex = builder.add(start_block_roots_gindex, index_in_block_roots);
     builder.ssz_verify_proof(beacon_state_root, block_root, proof.as_slice(), gindex);
 }
 
@@ -89,7 +95,7 @@ pub fn verify_finalized_checkpoint<L: PlonkParameters<D>, const D: usize>(
     proof: BeaconStateLeafProof,
 ) {
     let finalized_checkpoint_leaf = finalized_checkpoint.hash_tree_root(builder);
-    let gindex = builder.constant::<U64Variable>(52);
+    let gindex = builder.constant::<U64Variable>(BEACON_STATE_FINALIZED_CHECKPOINT_GINDEX);
     builder.ssz_verify_proof(
         beacon_state_root,
         finalized_checkpoint_leaf,
