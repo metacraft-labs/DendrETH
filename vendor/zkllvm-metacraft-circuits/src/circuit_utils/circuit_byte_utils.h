@@ -1,3 +1,5 @@
+#include "base_types.h"
+
 using namespace nil::crypto3;
 
 namespace circuit_byte_utils {
@@ -19,7 +21,7 @@ namespace circuit_byte_utils {
 
         bool result = true;
         for(auto i = 0; i < sizeof(block0)/sizeof(block0[0]) && result; i++) {
-            printf("Element fount %d\n", i);
+            printf("Element found %d\n", i);
             result = result && (block0[0] == block1[0]);
         }
 
@@ -40,7 +42,7 @@ namespace circuit_byte_utils {
         for(int int_count = 0; int_count < sizeof(sha)/sizeof(sha[0]); int_count++) {
 
             for(int byte_count = 0; byte_count < sizeof(sha[0]); byte_count++) {
-                out[int_count * sizeof(sha[0]) + byte_count] = get_nth_byte<decltype(sha[int_count])>(sha[int_count], byte_count);
+                out[int_count * sizeof(sha[0]) + byte_count] = get_nth_byte(sha[int_count], byte_count);
             }
 
         }
@@ -57,26 +59,37 @@ namespace circuit_byte_utils {
     }
 
     template <typename T>
-    std::array<unsigned char, sizeof(T)> int_to_bytes(const T& paramInt)
+    std::array<Byte, sizeof(T)> int_to_bytes(const T& paramInt, bool little_endian = true)
     {
         static_assert(std::is_integral<typename std::remove_reference<T>::type>::value, "T must be integral");
-        std::array<unsigned char, sizeof(T)> arrayOfByte{};
-        for (int i = 0; i < sizeof(T); i++) {
-            arrayOfByte[sizeof(T) - 1 - i] = get_nth_byte(paramInt, i);
+        std::array<Byte, sizeof(T)> arrayOfByte{};
+        if (little_endian) {
+            for (int i = 0; i < sizeof(T); i++) {
+                arrayOfByte[i] = (paramInt >> (i * 8));
+            }
+        } else {
+            for (int i = sizeof(T) - 1; i >= 0; i--) {
+                arrayOfByte[i] = (paramInt >> (i * 8));
+            }
         }
         return arrayOfByte;
     }
 
     template <typename T>
-    T bytes_to_int(const std::array<unsigned char, sizeof(T)>& paramVec)
+    T bytes_to_int(const std::array<Byte, sizeof(T)>& paramVec, bool little_endian = true)
     {
         static_assert(std::is_integral<typename std::remove_reference<T>::type>::value, "T must be integral");
-        T val = 0;
-        for (int i = sizeof(T) - 1; i >= 0; i--) {
-            int temp = paramVec[i];
-            val |= (temp << ((sizeof(T) - 1 - i) * 8));
+        T result = 0;
+        if (little_endian) {
+            for (int i = sizeof(T) - 1; i >= 0; i--) {
+                result = (result << 8) + paramVec[i];
+            }
+        } else {
+            for (unsigned i = 0; i < sizeof(T); i++) {
+                result = (result << 8) + paramVec[i];
+            }
         }
-        return val;
+        return result;
     }
 
 }
