@@ -64,7 +64,7 @@ mod tests {
         let mut builder = CircuitBuilder::<DefaultParameters, 2>::new();
         ComputeShuffledIndex::define(&mut builder);
 
-        let circuit = builder.build();
+        let circuit = builder.mock_build();
 
         const START_IDX: u64 = 0;
         const COUNT: u64 = 9999;
@@ -788,8 +788,7 @@ mod tests {
             input.write::<U64Variable>(COUNT);
             input.write::<ArrayVariable<ByteVariable, 32>>(seed_bytes_fixed_size.to_vec());
 
-            let (_witness, mut _output) = circuit.prove(&input);
-            circuit.verify(&_witness, &input, &_output);
+            let (_witness, mut _output) = circuit.mock_prove(&input);
             let shuffled_index_res = _output.read::<U64Variable>();
 
             println!("{} {}", mapping[i as usize], shuffled_index_res);

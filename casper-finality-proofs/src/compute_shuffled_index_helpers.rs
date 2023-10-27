@@ -111,7 +111,7 @@ pub fn compute_bit<L: PlonkParameters<D>, const D: usize>(
         exp_from_bits(builder, const_2, &position_mod_8_to_bits);
     let const_2_pow_position_mod_8_u64 =
         U64Variable::from_variables(builder, &[const_2_pow_position_mod_8, const_0]);
-    let byte_shl_position_mod_8 = builder.div(byte_u64, const_2_pow_position_mod_8_u64);
+    let byte_shr_position_mod_8 = builder.div(byte_u64, const_2_pow_position_mod_8_u64);
 
-    builder.rem(byte_shl_position_mod_8, const_2_u64)
+    builder.rem(byte_shr_position_mod_8, const_2_u64)
 }
