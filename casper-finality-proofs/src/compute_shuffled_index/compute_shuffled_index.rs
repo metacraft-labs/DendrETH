@@ -1,4 +1,4 @@
-use crate::{utils::universal::assert_is_true, compute_shuffled_index_helpers::{compute_pivot, compute_source, compute_byte, compute_bit, compute_hash}};
+use crate::{utils::utils::assert_is_true, compute_shuffled_index_helpers::{compute_pivot, compute_source, compute_byte, compute_bit, compute_hash}};
 use plonky2x::{
     backend::circuit::Circuit,
     prelude::{
