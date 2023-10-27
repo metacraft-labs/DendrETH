@@ -46,7 +46,7 @@ pub fn calculate_current_epoch<L: PlonkParameters<D>, const D: usize>(
     builder.div(slot, slots_per_epoch)
 }
 
-pub fn determine_new_current_justified_checkpoint<L: PlonkParameters<D>, const D: usize>(
+pub fn process_justifications<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
     total_active_balance: Gwei,
     previous_epoch_target_balance: Gwei,

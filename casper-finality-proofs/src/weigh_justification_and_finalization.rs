@@ -87,19 +87,18 @@ impl Circuit for WeighJustificationAndFinalization {
             finalized_checkpoint_proof,
         );
 
-        let (new_current_justified_checkpoint, new_justification_bits) =
-            determine_new_current_justified_checkpoint(
-                builder,
-                total_active_balance,
-                previous_epoch_target_balance,
-                current_epoch_target_balance,
-                justification_bits.clone(),
-                &current_justified_checkpoint,
-                current_epoch,
-                previous_epoch,
-                previous_epoch_start_slot_root_in_block_roots,
-                current_epoch_start_slot_root_in_block_roots,
-            );
+        let (new_current_justified_checkpoint, new_justification_bits) = process_justifications(
+            builder,
+            total_active_balance,
+            previous_epoch_target_balance,
+            current_epoch_target_balance,
+            justification_bits.clone(),
+            &current_justified_checkpoint,
+            current_epoch,
+            previous_epoch,
+            previous_epoch_start_slot_root_in_block_roots,
+            current_epoch_start_slot_root_in_block_roots,
+        );
 
         let new_finalized_checkpoint = process_finalizations(
             builder,
