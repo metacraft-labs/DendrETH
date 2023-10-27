@@ -18,7 +18,7 @@ pub struct DebugGenerator<L: PlonkParameters<D>, const D: usize> {
 }
 
 impl<L: PlonkParameters<D>, const D: usize> DebugGenerator<L, D> {
-    pub fn new(builder: &mut CircuitBuilder<L, D>, format: String, variable: Variable) -> Self {
+    pub fn new(_builder: &mut CircuitBuilder<L, D>, format: String, variable: Variable) -> Self {
         Self {
             format,
             variable,
