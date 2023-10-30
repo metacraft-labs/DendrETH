@@ -1,0 +1,9 @@
+{
+    "inputs": {
+        "seed": "0x4ac96f664a6cafd300b161720809b9e17905d4d8fed7a97ff89cf0080a953fe7",
+        "count": 10
+    },
+    "outputs": {
+        "mapping": [0, 6, 8, 2, 7, 9, 3, 4, 5, 1]
+    }
+}

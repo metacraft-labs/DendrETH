@@ -9,7 +9,7 @@ use plonky2x::{
 use super::compute_shuffled_index_helpers::{compute_pivot, compute_source, compute_byte, compute_bit, compute_hash};
 
 #[derive(Debug, Clone)]
-struct ComputeShuffledIndex;
+pub struct ComputeShuffledIndex;
 
 impl Circuit for ComputeShuffledIndex {
     fn define<L: PlonkParameters<D>, const D: usize>(
