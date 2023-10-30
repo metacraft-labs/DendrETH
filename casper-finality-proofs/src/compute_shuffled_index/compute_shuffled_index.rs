@@ -1,9 +1,6 @@
 use crate::utils::utils::assert_is_true;
-use plonky2x::{
-    backend::circuit::Circuit,
-    prelude::{
-        BoolVariable, Bytes32Variable, CircuitBuilder, PlonkParameters, U64Variable, CircuitVariable
-    },
+use plonky2x::prelude::{
+    BoolVariable, Bytes32Variable, CircuitBuilder, PlonkParameters, U64Variable, CircuitVariable
 };
 
 use super::compute_shuffled_index_helpers::{compute_pivot, compute_source, compute_byte, compute_bit, compute_hash};
@@ -11,9 +8,10 @@ use super::compute_shuffled_index_helpers::{compute_pivot, compute_source, compu
 #[derive(Debug, Clone)]
 pub struct ComputeShuffledIndex;
 
-impl Circuit for ComputeShuffledIndex {
-    fn define<L: PlonkParameters<D>, const D: usize>(
-        builder: &mut CircuitBuilder<L, D>
+impl ComputeShuffledIndex {
+    pub fn define_circuit<L: PlonkParameters<D>, const D: usize>(
+        builder: &mut CircuitBuilder<L, D>,
+        shuffle_round_count: usize
     ) {
         let mut index = builder.read::<U64Variable>();
         let index_count = builder.read::<U64Variable>();
@@ -22,9 +20,7 @@ impl Circuit for ComputeShuffledIndex {
         let index_lte_index_count = builder.lte(index, index_count);
         assert_is_true(builder, index_lte_index_count);
 
-        const SHUFFLE_ROUND_COUNT: usize = 90;
-
-        for current_round in 0..SHUFFLE_ROUND_COUNT {
+        for current_round in 0..shuffle_round_count {
             let hash = compute_hash(builder, seed, current_round);
             let pivot = compute_pivot(builder, hash, index_count);
 
