@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import Redis from 'ioredis';
 import chalk from 'chalk';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
@@ -9,9 +10,13 @@ import { KeyPrefix, WorkQueue, Item } from '@mevitae/redis-work-queue';
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
 import { computeEpochAt } from '@dendreth/utils/ts-utils/ssz-utils';
 import { panic } from '@dendreth/utils/ts-utils/common-utils';
-import config from '../common_config.json';
 import { Validator } from '@dendreth/relay/types/types';
 import { CommandLineOptionsBuilder } from '../cmdline';
+import config from '../common_config.json';
+import {
+  convertValidatorToValidatorPoseidonInput,
+  getZeroValidatorPoseidonInput,
+} from './utils';
 
 const CIRCUIT_SIZE = 8;
 let TAKE: number;
@@ -67,7 +72,7 @@ let TAKE: number;
 
   const queues: any[] = [];
 
-  for (let i = 0; i < 39; i++) {
+  for (let i = 0; i < 38; i++) {
     queues.push(
       new WorkQueue(
         new KeyPrefix(
@@ -87,21 +92,13 @@ let TAKE: number;
 
   const beaconApi = await getBeaconApi([options['beacon-node']]);
 
-  const beaconState_bin = fs.existsSync('../mock_data/beaconState.bin')
-    ? '../mock_data/beaconState.bin'
-    : 'mock_data/beaconState.bin';
-
-  const { beaconState } = MOCK
-    ? {
-        beaconState: ssz.capella.BeaconState.deserialize(
-          fs.readFileSync(beaconState_bin),
-        ),
-      }
-    : (await beaconApi.getBeaconState(
-        options['slot'] !== undefined
-          ? BigInt(options['slot'])
-          : await beaconApi.getHeadSlot(),
-      )) || panic('Could not fetch beacon state');
+  const slot =
+    options['slot'] !== undefined
+      ? BigInt(options['slot'])
+      : await beaconApi.getHeadSlot();
+  const { beaconState } =
+    (await beaconApi.getBeaconState(slot)) ||
+    panic('Could not fetch beacon state');
 
   const offset = Number(options['offset']) || 0;
   const take = TAKE !== Infinity ? TAKE + offset : Infinity;
@@ -113,6 +110,10 @@ let TAKE: number;
 
   const balancesView = ssz.capella.BeaconState.fields.balances.toViewDU(
     beaconState.balances,
+  );
+
+  const db = new Redis(
+    `redis://${options['redis-host']}:${options['redis-port']}`,
   );
 
   const balancesTree = new Tree(balancesView.node);
@@ -142,12 +143,12 @@ let TAKE: number;
         balances: Array(CIRCUIT_SIZE / 4)
           .fill('')
           .map(() => ''.padStart(256, '0').split('').map(Number)),
-        validators: Array(CIRCUIT_SIZE).fill(getZeroValidator()),
-        withdrawalCredentials: computeNumberFromLittleEndianBits(
+        validators: Array(CIRCUIT_SIZE).fill(getZeroValidatorPoseidonInput()),
+        withdrawalCredentials: [
           hexToBits(
             '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
           ),
-        ).toString(),
+        ],
         currentEpoch: computeEpochAt(beaconState.slot).toString(),
         validatorIsZero: Array(CIRCUIT_SIZE).fill(1),
       },
@@ -167,8 +168,8 @@ let TAKE: number;
 
   await queues[0].addItem(redis.client, new Item(Buffer.from(buffer)));
 
-  for (let i = 0; i < 38; i++) {
-    const buffer = new ArrayBuffer(8);
+  for (let i = 0; i < 37; i++) {
+    const buffer = new ArrayBuffer(24);
     const dataView = new DataView(buffer);
 
     dataView.setBigUint64(
@@ -206,17 +207,17 @@ let TAKE: number;
           validators: [
             ...validators
               .slice(j * CIRCUIT_SIZE, (j + 1) * CIRCUIT_SIZE)
-              .map((v: Validator) => convertValidator(v)),
+              .map(v => convertValidatorToValidatorPoseidonInput(v)),
             ...Array(
               (j + 1) * CIRCUIT_SIZE -
                 Math.min((j + 1) * CIRCUIT_SIZE, validators.length),
-            ).fill(getZeroValidator()),
+            ).fill(getZeroValidatorPoseidonInput()),
           ],
-          withdrawalCredentials: computeNumberFromLittleEndianBits(
+          withdrawalCredentials: [
             hexToBits(
               '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
             ),
-          ).toString(),
+          ],
           currentEpoch: computeEpochAt(beaconState.slot).toString(),
           validatorIsZero: array.concat(new Array(CIRCUIT_SIZE - size).fill(1)),
         },
@@ -274,11 +275,11 @@ let TAKE: number;
     slotBranch: beaconStateTree
       .getSingleProof(34n)
       .map(x => hexToBits(bytesToHex(x))),
-    withdrawalCredentials: computeNumberFromLittleEndianBits(
+    withdrawalCredentials: [
       hexToBits(
         '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
       ),
-    ).toString(),
+    ],
     balanceBranch: beaconStateTree
       .getSingleProof(44n)
       .map(x => hexToBits(bytesToHex(x))),
@@ -294,43 +295,3 @@ let TAKE: number;
 
   await redis.quit();
 })();
-
-function getZeroValidator() {
-  return {
-    pubkey: '0',
-    withdrawalCredentials: '0',
-    effectiveBalance: '0',
-    slashed: 0,
-    activationEligibilityEpoch: '0',
-    activationEpoch: '0',
-    exitEpoch: '0',
-    withdrawableEpoch: '0',
-  };
-}
-
-function convertValidator(validator: Validator): any {
-  return {
-    pubkey: computeNumberFromLittleEndianBits(
-      hexToBits(bytesToHex(validator.pubkey), 384),
-    ).toString(),
-    withdrawalCredentials: computeNumberFromLittleEndianBits(
-      hexToBits(bytesToHex(validator.withdrawalCredentials)),
-    ).toString(),
-    effectiveBalance: validator.effectiveBalance.toString(),
-    slashed: Number(validator.slashed),
-    activationEligibilityEpoch: validator.activationEligibilityEpoch.toString(),
-    activationEpoch: validator.activationEpoch.toString(),
-    exitEpoch:
-      validator.exitEpoch === Infinity
-        ? (2n ** 64n - 1n).toString()
-        : validator.exitEpoch.toString(),
-    withdrawableEpoch:
-      validator.withdrawableEpoch === Infinity
-        ? (2n ** 64n - 1n).toString()
-        : validator.withdrawableEpoch.toString(),
-  };
-}
-
-function computeNumberFromLittleEndianBits(bits: number[]) {
-  return BigInt('0b' + bits.join(''));
-}

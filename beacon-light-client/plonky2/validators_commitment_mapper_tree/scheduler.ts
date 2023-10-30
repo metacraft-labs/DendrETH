@@ -1,4 +1,3 @@
-import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import { splitIntoBatches } from '@dendreth/utils/ts-utils/common-utils';
 import {
   BeaconApi,
@@ -7,9 +6,14 @@ import {
 import { Redis } from '@dendreth/relay/implementations/redis';
 import { Validator, IndexedValidator } from '@dendreth/relay/types/types';
 import chalk from 'chalk';
-import fs from 'fs';
 import { KeyPrefix, WorkQueue, Item } from '@mevitae/redis-work-queue';
 import CONSTANTS from '../constants/validator_commitment_constants.json';
+import {
+  convertValidatorToProof,
+  getZeroValidatorInput,
+  gindexFromIndex,
+  makeBranchIterator,
+} from './utils';
 
 enum TaskTag {
   UPDATE_PROOF_NODE = 0,
@@ -22,6 +26,7 @@ export class CommitmentMapperScheduler {
   private api: BeaconApi;
   private queue: any;
   private currentEpoch: bigint;
+  private lastFinalizedEpoch: bigint;
   private headEpoch: bigint;
   private take: number | undefined = undefined;
   private offset: number | undefined = undefined;
@@ -36,14 +41,16 @@ export class CommitmentMapperScheduler {
     this.queue = new WorkQueue(
       new KeyPrefix(`${CONSTANTS.validatorProofsQueue}`),
     );
-    this.api = await getBeaconApi([options['beacon-node']]);
+    this.api = await getBeaconApi(options['beacon-node']);
     this.headEpoch = BigInt(await this.api.getHeadSlot()) / 32n;
+    this.lastFinalizedEpoch = this.headEpoch - 3n;
     this.currentEpoch =
       options['sync-epoch'] !== undefined
         ? BigInt(options['sync-epoch'])
         : this.headEpoch;
-    this.mock = options['MOCK'];
-    this.ssz = (await import('@lodestar/types')).ssz;
+
+    const mod = await import('@lodestar/types');
+    this.ssz = mod.ssz;
   }
 
   async dispose() {
@@ -52,33 +59,10 @@ export class CommitmentMapperScheduler {
 
   async start(runOnce: boolean = false) {
     console.log(chalk.bold.blue('Fetching validators from database...'));
-    if (!this.mock) {
-      this.validators = await this.redis.getValidatorsBatched(
-        this.ssz,
-        this.currentEpoch,
-      );
-    } else {
-      const beaconStateBin = fs.existsSync('../mock_data/beaconState.bin')
-        ? '../mock_data/beaconState.bin'
-        : 'mock_data/beaconState.bin';
-
-      const serializedState = fs.readFileSync(beaconStateBin);
-
-      if (serializedState.byteLength < 1000) {
-        console.error(
-          chalk.red(
-            'Error: Unexpectedly small beacon state file.\n' +
-              'Please ensure Git LFS is enabled and run the following:\n' +
-              chalk.bold('git lfs fetch; git lfs checkout'),
-          ),
-        );
-        return;
-      }
-
-      this.validators =
-        this.ssz.capella.BeaconState.deserialize(serializedState).validators;
-    }
-
+    this.validators = await this.redis.getValidatorsBatched(
+      this.ssz,
+      this.currentEpoch,
+    );
     console.log(
       `Loaded ${chalk.bold.yellow(
         this.validators.length,
@@ -101,15 +85,19 @@ export class CommitmentMapperScheduler {
       return;
     }
 
-    if (!this.mock) {
-      await this.syncEpoch();
+    await this.syncEpoch(true);
 
-      const es = this.api.subscribeForEvents(['head']);
-      es.addEventListener('head', async event => {
-        this.headEpoch = BigInt(JSON.parse(event.data).slot) / 32n;
-        await this.syncEpoch();
-      });
-    }
+    const eventSource = await this.api.subscribeForEvents([
+      'head',
+      'finalized_checkpoint',
+    ]);
+    eventSource.addEventListener('head', async (event: any) => {
+      this.headEpoch = BigInt(JSON.parse(event.data).slot) / 32n;
+      await this.syncEpoch(false);
+    });
+    eventSource.addEventListener('finalized_checkpoint', (event: any) => {
+      this.lastFinalizedEpoch = BigInt(JSON.parse(event.data).epoch);
+    });
   }
 
   async scheduleZeroTasks() {
@@ -117,22 +105,16 @@ export class CommitmentMapperScheduler {
       [
         {
           index: Number(CONSTANTS.validatorRegistryLimit),
-          data: {
-            pubkey: ''.padEnd(96, '0'),
-            withdrawalCredentials: ''.padEnd(64, '0'),
-            effectiveBalance: ''.padEnd(64, '0'),
-            slashed: ''.padEnd(64, '0'),
-            activationEligibilityEpoch: ''.padEnd(64, '0'),
-            activationEpoch: ''.padEnd(64, '0'),
-            exitEpoch: ''.padEnd(64, '0'),
-            withdrawableEpoch: ''.padEnd(64, '0'),
-          },
+          data: getZeroValidatorInput(),
         },
       ],
       this.currentEpoch,
     );
 
-    await this.scheduleValidatorProof(BigInt(CONSTANTS.validatorRegistryLimit));
+    await this.scheduleValidatorProof(
+      BigInt(CONSTANTS.validatorRegistryLimit),
+      this.currentEpoch,
+    );
     await this.redis.saveZeroValidatorProof(40n);
 
     for (let depth = 39n; depth >= 0n; depth--) {
@@ -141,9 +123,13 @@ export class CommitmentMapperScheduler {
     }
   }
 
-  async syncEpoch() {
-    while (this.currentEpoch < this.headEpoch) {
+  async syncEpoch(shouldUpdateFinalizedEpoch: boolean) {
+    const update = async (alabala: boolean) => {
       this.currentEpoch++;
+      if (alabala) {
+        this.redis.updateLastFinalizedEpoch(this.currentEpoch);
+      }
+
       console.log(
         chalk.bold.blue(
           `Syncing ${
@@ -156,7 +142,17 @@ export class CommitmentMapperScheduler {
         ),
       );
       await this.updateValidators();
-    }
+    };
+
+    console.log('update 1');
+    while (this.currentEpoch < this.lastFinalizedEpoch)
+      await update(shouldUpdateFinalizedEpoch);
+    console.log('update 2');
+    while (this.currentEpoch < this.headEpoch) await update(false);
+  }
+
+  async setValidatorsLength(epoch: bigint, length: number) {
+    await this.redis.setValidatorsLength(epoch, length);
   }
 
   async updateValidators() {
@@ -169,6 +165,10 @@ export class CommitmentMapperScheduler {
       .map((validator, index) => ({ validator, index }))
       .filter(hasValidatorChanged(this.validators));
 
+    await this.redis.setValidatorsLength(
+      this.currentEpoch,
+      newValidators.length,
+    );
     await this.saveValidatorsInBatches(changedValidators);
 
     console.log(
@@ -179,29 +179,30 @@ export class CommitmentMapperScheduler {
     this.validators = newValidators;
   }
 
-  async saveValidatorsInBatches(
+  public async saveValidatorsInBatches(
     validators: IndexedValidator[],
+    epoch = this.currentEpoch,
     batchSize = 200,
   ) {
     for (const batch of splitIntoBatches(validators, batchSize)) {
       await this.redis.saveValidators(
         batch.map((validator: IndexedValidator) => ({
           index: validator.index,
-          data: this.convertValidatorToProof(validator.validator),
+          data: convertValidatorToProof(validator.validator, this.ssz),
         })),
-        this.currentEpoch,
+        epoch,
       );
       await Promise.all(
         batch.map(validator =>
-          this.scheduleValidatorProof(BigInt(validator.index)),
+          this.scheduleValidatorProof(BigInt(validator.index), epoch),
         ),
       );
     }
 
-    await this.updateBranches(validators);
+    await this.updateBranches(validators, epoch);
   }
 
-  async scheduleValidatorProof(validatorIndex: bigint) {
+  async scheduleValidatorProof(validatorIndex: bigint, epoch: bigint) {
     const buffer = new ArrayBuffer(17);
     const dataView = new DataView(buffer);
     dataView.setUint8(0, TaskTag.UPDATE_VALIDATOR_PROOF);
@@ -212,53 +213,50 @@ export class CommitmentMapperScheduler {
     // Don't create an epoch lookup for the zero validator proof
     if (validatorIndex !== BigInt(CONSTANTS.validatorRegistryLimit)) {
       await this.redis.addToEpochLookup(
-        `${CONSTANTS.validatorProofKey}:${gindexFromValidatorIndex(
+        `${CONSTANTS.validatorProofKey}:${gindexFromIndex(
           validatorIndex,
+          40n,
         )}`,
-        this.currentEpoch,
+        epoch,
       );
     }
   }
 
-  async scheduleUpdateProofNodeTask(gindex: bigint) {
+  async scheduleUpdateProofNodeTask(gindex: bigint, epoch: bigint) {
     const buffer = new ArrayBuffer(17);
     const dataView = new DataView(buffer);
 
     await this.redis.addToEpochLookup(
       `${CONSTANTS.validatorProofKey}:${gindex}`,
-      this.currentEpoch,
+      epoch,
     );
 
     dataView.setUint8(0, TaskTag.UPDATE_PROOF_NODE);
     dataView.setBigUint64(1, gindex, false);
-    dataView.setBigUint64(9, this.currentEpoch, false);
+    dataView.setBigUint64(9, epoch, false);
     this.queue.addItem(this.redis.client, new Item(Buffer.from(buffer)));
   }
 
-  async updateBranches(validators: IndexedValidator[]) {
-    const changedValidatorGindices = validators.map(validator =>
-      gindexFromValidatorIndex(BigInt(validator.index)),
+  async updateBranches(validators: IndexedValidator[], epoch: bigint) {
+    let levelIterator = makeBranchIterator(
+      validators.map(validator => BigInt(validator.index)),
+      40n,
     );
+
+    let leafs = levelIterator.next().value!;
+
     await Promise.all(
-      changedValidatorGindices.map(async gindex =>
-        this.redis.saveValidatorProof(gindex, this.currentEpoch),
-      ),
+      leafs.map(gindex => this.redis.saveValidatorProof(gindex, epoch)),
     );
 
-    let nodesNeedingUpdate = new Set(changedValidatorGindices.map(getParent));
-    while (nodesNeedingUpdate.size !== 0) {
-      const newNodesNeedingUpdate = new Set<bigint>();
+    for (const gindices of levelIterator) {
+      await Promise.all(
+        gindices.map(gindex => this.redis.saveValidatorProof(gindex, epoch)),
+      );
 
-      for (const gindex of nodesNeedingUpdate) {
-        if (gindex !== 0n) {
-          newNodesNeedingUpdate.add(getParent(gindex));
-        }
-
-        await this.redis.saveValidatorProof(gindex, this.currentEpoch);
-        await this.scheduleUpdateProofNodeTask(gindex);
-      }
-
-      nodesNeedingUpdate = newNodesNeedingUpdate;
+      await Promise.all(
+        gindices.map(gindex => this.scheduleUpdateProofNodeTask(gindex, epoch)),
+      );
     }
   }
 
@@ -271,51 +269,6 @@ export class CommitmentMapperScheduler {
 
     this.queue.addItem(this.redis.client, new Item(Buffer.from(buffer)));
   }
-
-  convertValidatorToProof(validator: Validator) {
-    return {
-      pubkey: bytesToHex(validator.pubkey),
-      withdrawalCredentials: bytesToHex(validator.withdrawalCredentials),
-      effectiveBalance: bytesToHex(
-        this.ssz.phase0.Validator.fields.effectiveBalance.hashTreeRoot(
-          validator.effectiveBalance,
-        ),
-      ),
-      slashed: bytesToHex(
-        this.ssz.phase0.Validator.fields.slashed.hashTreeRoot(
-          validator.slashed,
-        ),
-      ),
-      activationEligibilityEpoch: bytesToHex(
-        this.ssz.phase0.Validator.fields.activationEligibilityEpoch.hashTreeRoot(
-          validator.activationEligibilityEpoch,
-        ),
-      ),
-      activationEpoch: bytesToHex(
-        this.ssz.phase0.Validator.fields.activationEpoch.hashTreeRoot(
-          validator.activationEpoch,
-        ),
-      ),
-      exitEpoch: bytesToHex(
-        this.ssz.phase0.Validator.fields.exitEpoch.hashTreeRoot(
-          validator.exitEpoch,
-        ),
-      ),
-      withdrawableEpoch: bytesToHex(
-        this.ssz.phase0.Validator.fields.withdrawableEpoch.hashTreeRoot(
-          validator.withdrawableEpoch,
-        ),
-      ),
-    };
-  }
-}
-
-function gindexFromValidatorIndex(index: bigint) {
-  return 2n ** 40n - 1n + index;
-}
-
-function getParent(gindex: bigint) {
-  return (gindex - 1n) / 2n;
 }
 
 // Returns a function that checks whether a validator at validator index has
@@ -331,4 +284,27 @@ function hasValidatorChanged(prevValidators: Validator[]) {
     validator.activationEpoch !== prevValidators[index].activationEpoch ||
     validator.exitEpoch !== prevValidators[index].exitEpoch ||
     validator.withdrawableEpoch !== prevValidators[index].withdrawableEpoch;
+}
+
+async function getFirstNonMissingSlotInEpoch(
+  api: BeaconApi,
+  epoch: number,
+): Promise<number> {
+  for (let relativeSlot = 0; relativeSlot < 31; ++relativeSlot) {
+    const slot = epoch * 32 + relativeSlot;
+    try {
+      const status = await api.pingEndpoint(
+        `/eth/v1/beacon/states/${slot}/root`,
+      );
+      if (status === 200) {
+        return slot;
+      }
+
+      // const validators = await api.getBlockRootBySlot(epoch * 32 + slot);
+      // return epoch * 32 + slot;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  throw new Error('Did not find non-empty slot in epoch');
 }

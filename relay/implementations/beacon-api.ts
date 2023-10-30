@@ -19,6 +19,8 @@ import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 import { prometheusTiming } from '@dendreth/utils/ts-utils/prometheus-utils';
 import { panic } from '@dendreth/utils/ts-utils/common-utils';
 import EventSource from 'eventsource';
+// @ts-ignore
+import { StateId } from '@lodestar/api/beacon/routes/beacon';
 
 const logger = getGenericLogger();
 
@@ -444,8 +446,13 @@ export class BeaconApi implements IBeaconApi {
       }
       url = url + `?id=${range.join(',')}`;
 
-      const validators = await (await this.fetchWithFallback(url)).json();
-      validators.data.sort((v1: any, v2: any) => +v1.index - +v2.index);
+      const response = await this.fetchWithFallback(url);
+      if (response.status === 404) {
+        throw new Error('status 404 not found');
+      }
+
+      const validators = await response.json();
+      validators.data.sort((v1, v2) => +v1.index - +v2.index);
       return ssz.phase0.Validators.fromJson(
         validators.data.map((x: any) => x.validator),
       );
@@ -458,7 +465,27 @@ export class BeaconApi implements IBeaconApi {
     }
   }
 
-  async getBeaconState(slot: bigint) {
+  async getBlockRootBySlot(stateId: StateId) {
+    let url = `/eth/v1/beacon/blocks/${stateId}/root`;
+    const json = await (await this.fetchWithFallback(url)).json();
+    return json.data.root;
+  }
+
+  async getBeaconStateSSZBytes(stateId: StateId) {
+    const beaconStateSZZ = await this.fetchWithFallback(
+      `/eth/v2/debug/beacon/states/${stateId}`,
+      {
+        headers: {
+          Accept: 'application/octet-stream',
+        },
+      },
+    )
+      .then(response => response.arrayBuffer())
+      .then(buffer => new Uint8Array(buffer));
+    return beaconStateSZZ;
+  }
+
+  async getBeaconState(slot: StateId) {
     logger.info('Getting Beacon State..');
 
     const beaconStateSZZ = await this.fetchWithFallback(
@@ -500,14 +527,24 @@ export class BeaconApi implements IBeaconApi {
     return this.beaconRestApis[this.currentApiIndex];
   }
 
+  private async fetchWithFallbackNoRetry(
+    subUrl: string,
+    init?: RequestInit,
+  ): Promise<Response> {
+    return fetch(this.concatUrl(subUrl), init);
+  }
+
   private async fetchWithFallback(
     subUrl: string,
     init?: RequestInit,
   ): Promise<Response> {
     let retries = 0;
+    const maxApiRetries = 5;
+
     while (true) {
+      console.log(this.getCurrentApi());
       try {
-        const result = await fetch(this.concatUrl(subUrl), init);
+        const result = await this.fetchWithFallbackNoRetry(subUrl, init);
         if (result.status === 429) {
           logger.warn('Rate limit exceeded');
 
@@ -519,7 +556,7 @@ export class BeaconApi implements IBeaconApi {
         return result;
       } catch (error) {
         retries++;
-        if (retries >= this.beaconRestApis.length) {
+        if (retries >= this.beaconRestApis.length * maxApiRetries) {
           logger.error('All beacon rest apis failed');
           throw error;
         }
@@ -533,7 +570,18 @@ export class BeaconApi implements IBeaconApi {
     }
   }
 
+  async pingEndpoint(endpoint: string, init?: RequestInit): Promise<number> {
+    const response = await this.fetchWithFallbackNoRetry(endpoint, init);
+    return response.status;
+  }
+
   private concatUrl(urlPath: string): string {
-    return this.getCurrentApi() + urlPath;
+    const baseUrl = this.getCurrentApi();
+    const finalUrl = `${
+      baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl
+    }/${urlPath.startsWith('/') ? urlPath.slice(1) : urlPath}`;
+
+    console.log('url href', finalUrl);
+    return finalUrl;
   }
 }

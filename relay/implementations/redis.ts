@@ -1,10 +1,11 @@
 import { hexToBytes } from '@dendreth/utils/ts-utils/bls';
-import { bitsToBytes } from '@dendreth/utils/ts-utils/hex-utils';
 import { IRedis } from '../abstraction/redis-interface';
 import {
   BalanceProof,
+  BalancesAccumulatorInput,
   ProofResultType,
   Validator,
+  ValidatorShaInput,
   ValidatorProof,
 } from '../types/types';
 import { RedisClientType, createClient } from 'redis';
@@ -94,6 +95,12 @@ export class Redis implements IRedis {
     return 0;
   }
 
+  async updateLastFinalizedEpoch(epoch: bigint) {
+    await this.waitForConnection();
+
+    this.client.set(CONSTANTS.lastFinalizedEpochLookupKey, epoch.toString());
+  }
+
   async getAllKeys(pattern: string): Promise<string[]> {
     await this.waitForConnection();
     return this.client.keys(pattern);
@@ -129,10 +136,14 @@ export class Redis implements IRedis {
 
     const key = `${CONSTANTS.validatorProofKey}:${gindex}:${latestEpoch}`;
     const result = await this.client.get(key);
-    if (result === null) {
+    if (result == null) {
       return null;
     }
     return JSON.parse(result)[hashKey];
+  }
+
+  async getValidatorsRoot(epoch: bigint): Promise<String | null> {
+    return this.client.get(`${CONSTANTS.validatorsRootKey}:${epoch}`);
   }
 
   async notifyAboutNewProof(): Promise<void> {
@@ -235,11 +246,71 @@ export class Redis implements IRedis {
     return allValidators;
   }
 
+  // async getValidatorsAccumulatorBatched(
+  //   protocol: string,
+  //   batchSize = 1000,
+  // ): Promise<ValidatorPubkeyDeposit[]> {
+  //   await this.waitForConnection();
+  //
+  //   let keys = (
+  //     await this.client.keys(
+  //       `${CONSTANTS.validatorAccumulatorKey}:${protocol}:*`,
+  //     )
+  //   ).filter(key => !key.includes(CONSTANTS.validatorRegistryLimit.toString()));
+  //
+  //   let allValidators: ValidatorPubkeyDeposit[] = new Array(keys.length);
+  //
+  //   for (const [keyBatchIndex, batchKeys] of splitIntoBatches(
+  //     keys,
+  //     batchSize,
+  //   ).entries()) {
+  //     const res = await this.client.json_mget(batchKeys, '$');
+  //     if (res === null) {
+  //       continue;
+  //     }
+  //     const batchValidators = (res as any[]).filter(v => v !== null).flat();
+  //
+  //     for (const [index, redisValidator] of batchValidators.entries()) {
+  //       try {
+  //         const validator: ValidatorPubkeyDeposit = {
+  //           validator_pubkey: redisValidator.validator_pubkey,
+  //           validator_eth1_deposit_index: Number(
+  //             redisValidator.validator_eth1_deposit_index,
+  //           ),
+  //         };
+  //
+  //         const validatorIndex = Number(batchKeys[index].split(':')[2]);
+  //         allValidators[validatorIndex] = validator;
+  //       } catch (e) {
+  //         console.error(e);
+  //         continue;
+  //       }
+  //     }
+  //     console.log(
+  //       `Loaded batch ${chalk.bold.yellowBright(
+  //         keyBatchIndex + 1,
+  //       )}/${chalk.bold.yellow(Math.ceil(keys.length / batchSize))}`,
+  //     );
+  //   }
+  //
+  //   return allValidators;
+  // }
+
   async isZeroValidatorEmpty() {
     await this.waitForConnection();
 
     const result = await this.client.keys(
       `${CONSTANTS.validatorKey}:${CONSTANTS.validatorRegistryLimit}:*`,
+    );
+
+    return result.length === 0;
+  }
+
+  async isZeroValidatorAccumulatorEmpty() {
+    await this.waitForConnection();
+
+    const result = await this.client.keys(
+      `${CONSTANTS.validatorAccumulatorKey}:${CONSTANTS.validatorRegistryLimit}:*`,
     );
 
     return result.length === 0;
@@ -251,11 +322,29 @@ export class Redis implements IRedis {
     const result = await this.client.get(
       `${CONSTANTS.validatorBalanceInputKey}:${CONSTANTS.validatorRegistryLimit}`,
     );
+
     return result == null;
   }
 
+  // async saveAccumulatorValidators(
+  //   validatorAccumulatorWithIndices: IndexedValidatorPubkeyDeposit[],
+  //   protocol: string,
+  // ) {
+  //   await this.waitForConnection();
+  //
+  //   const args = validatorAccumulatorWithIndices.map(validator => {
+  //     return [
+  //       `${CONSTANTS.validatorAccumulatorKey}:${protocol}:${validator.index}`,
+  //       '$',
+  //       JSON.stringify(validator.validator),
+  //     ];
+  //   });
+  //
+  //   await this.client.sendCommand(new RedisReJSON.Command('JSON.MSET', args));
+  // }
+
   async saveValidators(
-    validatorsWithIndices: { index: number; data: any }[],
+    validatorsWithIndices: { index: number; data: ValidatorShaInput }[],
     epoch: bigint,
   ) {
     await this.waitForConnection();
@@ -275,7 +364,25 @@ export class Redis implements IRedis {
       )
     ).flat();
 
-    await this.client.mset(args);
+    await this.client.mset(...args);
+  }
+
+  async saveBalancesAccumulatorInput(
+    balancesInputs: BalancesAccumulatorInput[],
+    protocol: string,
+  ) {
+    await this.waitForConnection();
+
+    const args = balancesInputs
+      .map((input, index) => {
+        return [
+          `${CONSTANTS.balanceVerificationAccumulatorKey}:${protocol}:${index}`,
+          JSON.stringify(input),
+        ];
+      })
+      .flat();
+
+    await this.client.mset(...args);
   }
 
   async saveValidatorBalancesInput(
@@ -292,14 +399,14 @@ export class Redis implements IRedis {
       })
       .flat();
 
-    await this.client.mset(args);
+    await this.client.mset(...args);
   }
 
   async saveFinalProofInput(input: {
     stateRoot: number[];
     slot: string;
     slotBranch: number[][];
-    withdrawalCredentials: string;
+    withdrawalCredentials: [number[]];
     balanceBranch: number[][];
     validatorsBranch: number[][];
     validatorsSizeBits: number[];
@@ -308,6 +415,24 @@ export class Redis implements IRedis {
 
     await this.client.set(CONSTANTS.finalProofInputKey, JSON.stringify(input));
   }
+
+  // async saveValidatorAccumulatorProof(
+  //   gindex: bigint,
+  //   protocol: string,
+  //   proof: ValidatorProof = {
+  //     needsChange: true,
+  //     proof: [],
+  //     poseidonHash: [],
+  //     sha256Hash: [],
+  //   },
+  // ): Promise<void> {
+  //   await this.waitForConnection();
+  //   await this.client.json_set(
+  //     `${CONSTANTS.validatorAccumulatorProofKey}:${protocol}:${gindex}`,
+  //     '$',
+  //     proof as any,
+  //   );
+  // }
 
   async saveValidatorProof(
     gindex: bigint,
@@ -325,6 +450,23 @@ export class Redis implements IRedis {
       JSON.stringify(proof),
     );
   }
+
+  // async saveZeroValidatorAccumulatorProof(
+  //   depth: bigint,
+  //   proof: ValidatorProof = {
+  //     needsChange: true,
+  //     proof: [],
+  //     poseidonHash: [],
+  //     sha256Hash: [],
+  //   },
+  // ): Promise<void> {
+  //   await this.waitForConnection();
+  //   await this.client.json_set(
+  //     `${CONSTANTS.validatorAccumulatorProofKey}:zeroes:${depth}`,
+  //     '$',
+  //     proof as any,
+  //   );
+  // }
 
   async saveZeroValidatorProof(
     depth: bigint,
@@ -388,6 +530,29 @@ export class Redis implements IRedis {
     }
 
     return JSON.parse(proof);
+  }
+
+  /*
+  async getValidatorCommitmentRoot(epoch: number): Promise<string[]> {
+    await this.waitForConnection();
+
+    const latestEpoch = await this.getLatestEpoch(
+      `${CONSTANTS.validatorProofKey}:65535`,
+      BigInt(epoch),
+    );
+    return (await this.client.json_get(
+      `${CONSTANTS.validatorProofKey}:65535:${latestEpoch}`,
+      'poseidonHash',
+    )) as string[];
+  }
+  */
+
+  public async setValidatorsLength(epoch: bigint, length: number) {
+    await this.waitForConnection();
+    await this.client.set(
+      `${CONSTANTS.validatorsLengthKey}:${epoch}`,
+      length.toString(),
+    );
   }
 
   async get(key: string): Promise<string | null> {

@@ -13,7 +13,13 @@ import { getOptions, lightClean } from '../light_cleaner_common';
   const prefix = new KeyPrefix(
     `${validator_commitment_constants.validatorProofsQueue}`,
   );
-  const first_level_proofs = new WorkQueue(prefix);
+  const validatorAccumulatorPrefix = new KeyPrefix(
+    `${validator_commitment_constants.validatorAccumulatorProofQueue}`,
+  );
+  const validatorProofs = new WorkQueue(prefix);
+  const validator_accumulator_proofs = new WorkQueue(
+    validatorAccumulatorPrefix,
+  );
 
   const redis = new Redis(
     `redis://${options['redis-host']}:${options['redis-port']}`,
@@ -21,7 +27,12 @@ import { getOptions, lightClean } from '../light_cleaner_common';
 
   while (true) {
     console.log('Performing light clean');
-    await lightClean.call(first_level_proofs, redis, prefix);
+    await lightClean.call(validatorProofs, redis, prefix);
+    await lightClean.call(
+      validator_accumulator_proofs,
+      redis,
+      validatorAccumulatorPrefix,
+    );
     console.log(`Waiting ${options['clean-duration'] / 1000} seconds`);
     await sleep(options['clean-duration']);
   }

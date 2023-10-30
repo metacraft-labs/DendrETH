@@ -1,15 +1,25 @@
 {
   "validatorKey": "validator",
+  "validatorAccumulatorKey": "validator_accumulator",
   "validatorProofKey": "validator_proof",
+  "validatorAccumulatorProofKey": "validator_accumulator_proof",
   "validatorProofsQueue": "validator_proof_queue",
+  "validatorAccumulatorProofQueue": "validator_accumulator_proof_queue",
   "validatorRegistryLimit": 1099511627776,
   "validatorBalanceInputKey": "validator_balance_input",
   "balanceVerificationQueue": "balance_verification_queue",
   "balanceVerificationProofKey": "balance_verification_proof",
+  "balanceVerificationAccumulatorKey": "balance_verification_accumulator",
+  "balanceVerificationAccumulatorProofKey": "balance_verification_accumulator_proof",
+  "balanceVerificationAccumulatorProofQueue": "balance_verification_accumulator_proof_queue",
   "finalProofInputKey": "final_proof_input",
   "finalLayerProofKey": "final_layer_proof",
   "zeroHashesForLevelKey": "zero_hashes_for_level",
   "epochLookupKey": "epoch_lookup",
   "validatorProofStorage": "validator_proof_storage",
-  "balanceVerificationProofStorage": "balance_verification_proof_storage"
+  "balanceVerificationProofStorage": "balance_verification_proof_storage",
+  "validatorsLengthKey": "validators_length",
+  "validatorsRootKey": "validators_root",
+  "lastFinalizedEpochLookupKey": "last_finalized_epoch"
+
 }

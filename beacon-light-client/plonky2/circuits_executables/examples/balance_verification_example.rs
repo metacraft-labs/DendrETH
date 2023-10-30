@@ -31,7 +31,7 @@ async fn async_main() -> Result<()> {
     println!("Redis connection took: {:?}", elapsed);
 
     let start = Instant::now();
-    let (validators_balance_verification_targets, data) = build_validator_balance_circuit(8);
+    let (validators_balance_verification_targets, data) = build_validator_balance_circuit::<1>(8);
     let elapsed = start.elapsed();
 
     println!("Circuit generation took: {:?}", elapsed);
@@ -59,7 +59,7 @@ async fn async_main() -> Result<()> {
     let mut pw = PartialWitness::new();
 
     let start = Instant::now();
-    let validator_balance_input = fetch_validator_balance_input(&mut con, 0).await?;
+    let validator_balance_input = fetch_validator_balance_input::<1>(&mut con, 0).await?;
 
     let elapsed = start.elapsed();
 

@@ -34,7 +34,7 @@ async fn async_main() -> Result<()> {
     let mut target_buffer = Buffer::new(&target_bytes);
 
     let validator_targets =
-        ValidatorBalanceVerificationTargets::read_targets(&mut target_buffer).unwrap();
+        ValidatorBalanceVerificationTargets::<1>::read_targets(&mut target_buffer).unwrap();
 
     let circuit_data_bytes = read_from_file("0.plonky2_circuit")?;
 
@@ -64,7 +64,7 @@ async fn async_main() -> Result<()> {
     println!("Redis connection took: {:?}", elapsed);
 
     let start = Instant::now();
-    let validator_balance_input = fetch_validator_balance_input(&mut con, 0).await?;
+    let validator_balance_input = fetch_validator_balance_input::<1>(&mut con, 0).await?;
 
     let elapsed = start.elapsed();
 

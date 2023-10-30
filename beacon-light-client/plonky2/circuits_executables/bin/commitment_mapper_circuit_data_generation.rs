@@ -23,6 +23,8 @@ fn write_to_file(file_path: &str, data: &[u8]) -> Result<()> {
     Ok(())
 }
 
+const CIRCUIT_NAME: &str = "commitment_mapper";
+
 fn main() -> Result<()> {
     future::block_on(async_main())
 }
@@ -85,7 +87,7 @@ pub async fn async_main() -> Result<()> {
                 .unwrap();
 
             write_to_file(
-                &format!("commitment_mapper_{}.plonky2_circuit", i),
+                &format!("{}_{}.plonky2_circuit", CIRCUIT_NAME, i),
                 &circuit_bytes,
             )
             .unwrap();
@@ -93,7 +95,7 @@ pub async fn async_main() -> Result<()> {
             let inner_level_targets = targets.write_targets().unwrap();
 
             write_to_file(
-                &format!("commitment_mapper_{}.plonky2_targets", i),
+                &format!("{}_{}.plonky2_targets", CIRCUIT_NAME, i),
                 &inner_level_targets,
             )
             .unwrap();
@@ -124,7 +126,7 @@ fn write_first_level_circuit(
         .unwrap();
 
     write_to_file(
-        &format!("commitment_mapper_{}.plonky2_circuit", 0),
+        &format!("{}_{}.plonky2_circuit", CIRCUIT_NAME, 0),
         &circuit_bytes,
     )
     .unwrap();
@@ -132,7 +134,7 @@ fn write_first_level_circuit(
     let validator_commitment_targets_bytes = validator_commitment_targets.write_targets().unwrap();
 
     write_to_file(
-        &format!("commitment_mapper_{}.plonky2_targets", 0),
+        &format!("{}_{}.plonky2_targets", CIRCUIT_NAME, 0),
         &validator_commitment_targets_bytes,
     )
     .unwrap();

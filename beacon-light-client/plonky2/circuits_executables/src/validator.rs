@@ -138,6 +138,12 @@ pub struct ValidatorShaInput {
     pub withdrawable_epoch: String,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ValidatorAccumulatorInput {
+    pub validator_pubkey: String,
+    pub validator_eth1_deposit_index: u64,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

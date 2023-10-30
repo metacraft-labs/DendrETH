@@ -1,7 +1,7 @@
 import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
 import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
 
-import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
+import { getCommitmentMapperProof, gindexFromIndex } from './utils';
 import { CommandLineOptionsBuilder } from '../cmdline';
 
 type HashAlgorithm = 'sha256' | 'poseidon';
@@ -60,29 +60,10 @@ function bitArrayToByteArray(hash: number[]): Uint8Array {
   const epoch = options['epoch']
     ? BigInt(options['epoch'])
     : (await beaconApi.getHeadSlot()) / 32n;
-  let gindex = 2n ** 40n - 1n + BigInt(options['validator-index']);
+  let gindex = gindexFromIndex(BigInt(options['validator-index']), 40n);
 
   const hashAlg: HashAlgorithm = options['hash-algorithm'];
-  let path: (number[] | string)[] = [];
-
-  while (gindex !== 0n) {
-    const siblingGindex = gindex % 2n === 0n ? gindex - 1n : gindex + 1n;
-
-    const hash = await redis.extractHashFromCommitmentMapperProof(
-      siblingGindex,
-      epoch,
-      hashAlg,
-    );
-    if (hash !== null) {
-      path.push(hash);
-    }
-
-    gindex = (gindex - 1n) / 2n;
-  }
-
-  if (hashAlg == 'sha256') {
-    path = (path as number[][]).map(bitArrayToByteArray).map(bytesToHex);
-  }
+  let path = await getCommitmentMapperProof(epoch, gindex, hashAlg, redis);
 
   console.log(path);
 

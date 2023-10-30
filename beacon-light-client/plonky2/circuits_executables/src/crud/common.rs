@@ -2,10 +2,10 @@ use std::{fs, marker::PhantomData, thread, time::Duration};
 
 use crate::{
     validator::{
-        bool_vec_as_int_vec, bool_vec_as_int_vec_nested, ValidatorShaInput,
-        VALIDATOR_REGISTRY_LIMIT,
+        bool_vec_as_int_vec, bool_vec_as_int_vec_nested, ValidatorAccumulatorInput,
+        ValidatorShaInput, VALIDATOR_REGISTRY_LIMIT,
     },
-    validator_balances_input::ValidatorBalancesInput,
+    validator_balances_input::{ValidatorBalanceAccumulatorInput, ValidatorBalancesInput},
     validator_commitment_constants::VALIDATOR_COMMITMENT_CONSTANTS,
 };
 use anyhow::{ensure, Result};
@@ -13,9 +13,9 @@ use async_trait::async_trait;
 
 use circuits::{
     build_commitment_mapper_first_level_circuit::CommitmentMapperProofExt,
-    build_final_circuit::FinalCircuitProofExt,
     build_validator_balance_circuit::ValidatorBalanceProofExt,
     generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
+    utils::hash_bytes,
 };
 use num::BigUint;
 use plonky2::{
@@ -24,7 +24,7 @@ use plonky2::{
         circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs,
     },
 };
-use redis::{aio::Connection, AsyncCommands};
+use redis::{aio::Connection, AsyncCommands, RedisError};
 use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize, Serializer};
 
 use super::proof_storage::proof_storage::ProofStorage;
@@ -33,7 +33,7 @@ use super::proof_storage::proof_storage::ProofStorage;
 #[serde(rename_all = "camelCase")]
 pub struct ValidatorProof {
     pub needs_change: bool,
-    pub poseidon_hash: Vec<u64>,
+    pub poseidon_hash: Vec<String>,
     pub sha256_hash: Vec<u64>,
     pub proof_index: String,
 }
@@ -44,13 +44,22 @@ pub struct BalanceProof {
     pub needs_change: bool,
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub range_total_value: BigUint,
-    pub validators_commitment: Vec<u64>,
+    pub validators_commitment: Vec<String>,
     pub balances_hash: Vec<u64>,
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub withdrawal_credentials: BigUint,
+    pub withdrawal_credentials: Vec<Vec<u64>>,
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub current_epoch: BigUint,
+    pub number_of_non_activated_validators: u64,
+    pub number_of_active_validators: u64,
+    pub number_of_exited_validators: u64,
     pub proof_index: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BalanceAccumulatorProof {
+    pub needs_change: bool,
+    pub proof: Vec<u8>,
 }
 
 pub fn biguint_to_str<S>(value: &BigUint, serializer: S) -> Result<S::Ok, S::Error>
@@ -81,8 +90,8 @@ pub struct FinalCircuitInput {
     pub slot: BigUint,
     #[serde(with = "bool_vec_as_int_vec_nested")]
     pub slot_branch: Vec<Vec<bool>>,
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub withdrawal_credentials: BigUint,
+    #[serde(with = "bool_vec_as_int_vec_nested")]
+    pub withdrawal_credentials: Vec<Vec<bool>>,
     #[serde(with = "bool_vec_as_int_vec_nested")]
     pub balance_branch: Vec<Vec<bool>>,
     #[serde(with = "bool_vec_as_int_vec_nested")]
@@ -96,8 +105,11 @@ pub struct FinalCircuitInput {
 pub struct FinalProof {
     pub needs_change: bool,
     pub state_root: Vec<u64>,
-    pub withdrawal_credentials: BigUint,
+    pub withdrawal_credentials: Vec<Vec<u64>>,
     pub balance_sum: BigUint,
+    pub number_of_non_activated_validators: u64,
+    pub number_of_active_validators: u64,
+    pub number_of_exited_validators: u64,
     pub proof: Vec<u8>,
 }
 
@@ -162,7 +174,7 @@ impl ProofProvider for BalanceProof {
     }
 }
 
-pub async fn fetch_validator_balance_input(
+pub async fn fetch_validator_balance_input<const N: usize>(
     con: &mut Connection,
     index: u64,
 ) -> Result<ValidatorBalancesInput> {
@@ -179,6 +191,25 @@ pub async fn fetch_validator_balance_input(
     .await?)
 }
 
+pub async fn fetch_validator_balance_accumulator_input(
+    con: &mut Connection,
+    protocol: String,
+    index: u64,
+) -> Result<ValidatorBalanceAccumulatorInput> {
+    Ok(fetch_redis_json_object::<ValidatorBalanceAccumulatorInput>(
+        con,
+        format!(
+            "{}:{}:{}",
+            VALIDATOR_COMMITMENT_CONSTANTS
+                .balance_verification_accumulator_key
+                .to_owned(),
+            protocol,
+            index
+        ),
+    )
+    .await?)
+}
+
 pub async fn fetch_final_layer_input(con: &mut Connection) -> Result<FinalCircuitInput> {
     let json: String = con
         .get(VALIDATOR_COMMITMENT_CONSTANTS.final_proof_input_key)
@@ -187,7 +218,7 @@ pub async fn fetch_final_layer_input(con: &mut Connection) -> Result<FinalCircui
     Ok(result)
 }
 
-pub async fn save_balance_proof(
+pub async fn save_balance_proof<const N: usize>(
     con: &mut Connection,
     proof_storage: &mut dyn ProofStorage,
     proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
@@ -201,11 +232,17 @@ pub async fn save_balance_proof(
 
     let balance_proof = BalanceProof {
         needs_change: false,
-        range_total_value: proof.get_range_total_value(),
-        balances_hash: proof.get_range_balances_root().to_vec(),
-        withdrawal_credentials: proof.get_withdrawal_credentials(),
-        validators_commitment: proof.get_range_validator_commitment().to_vec(),
-        current_epoch: proof.get_current_epoch(),
+        range_total_value: <ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> as ValidatorBalanceProofExt<N>>::get_range_total_value(&proof),
+        balances_hash: <ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> as ValidatorBalanceProofExt<N>>::get_range_balances_root(&proof).to_vec(),
+        withdrawal_credentials: <ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> as ValidatorBalanceProofExt<N>>::
+            get_withdrawal_credentials(&proof)
+            .map(|x| x.to_vec())
+            .to_vec(),
+        validators_commitment: <ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> as ValidatorBalanceProofExt<N>>::get_range_validator_commitment(&proof).to_vec(),
+        current_epoch: <ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> as ValidatorBalanceProofExt<N>>::get_current_epoch(&proof),
+        number_of_non_activated_validators: <ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> as ValidatorBalanceProofExt<N>>::get_number_of_non_activated_validators(&proof),
+        number_of_active_validators: <ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> as ValidatorBalanceProofExt<N>>::get_number_of_active_validators(&proof),
+        number_of_exited_validators: <ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> as ValidatorBalanceProofExt<N>>::get_number_of_exited_validators(&proof),
         proof_index: proof_index.clone(),
     };
 
@@ -230,15 +267,52 @@ pub async fn save_balance_proof(
     Ok(())
 }
 
+pub async fn save_balance_accumulator_proof(
+    con: &mut Connection,
+    proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    level: u64,
+    index: u64,
+) -> Result<()> {
+    let balance_proof = BalanceAccumulatorProof {
+        needs_change: false,
+        proof: proof.to_bytes(),
+    };
+
+    save_json_object(
+        con,
+        &format!(
+            "{}:{}:{}",
+            VALIDATOR_COMMITMENT_CONSTANTS
+                .balance_verification_accumulator_proof_key
+                .to_owned(),
+            level,
+            index
+        ),
+        &balance_proof,
+    )
+    .await?;
+
+    Ok(())
+}
+
 pub async fn save_final_proof(
     con: &mut Connection,
     proof: &ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    state_root: Vec<u64>,
+    withdrawal_credentials: Vec<Vec<u64>>,
+    balance_sum: BigUint,
+    number_of_non_activated_validators: u64,
+    number_of_active_validators: u64,
+    number_of_exited_validators: u64,
 ) -> Result<()> {
     let final_proof = FinalProof {
         needs_change: false,
-        state_root: proof.get_final_circuit_state_root().to_vec(),
-        withdrawal_credentials: proof.get_final_circuit_withdrawal_credentials(),
-        balance_sum: proof.get_final_circuit_balance_sum(),
+        state_root: state_root,
+        withdrawal_credentials: withdrawal_credentials,
+        balance_sum: balance_sum,
+        number_of_non_activated_validators: number_of_non_activated_validators,
+        number_of_active_validators: number_of_active_validators,
+        number_of_exited_validators: number_of_exited_validators,
         proof: proof.to_bytes(),
     };
 
@@ -325,6 +399,23 @@ pub async fn get_latest_epoch(con: &mut Connection, key: &String, epoch: u64) ->
     Ok(result[0].clone())
 }
 
+pub async fn fetch_validator_accumulator(
+    con: &mut Connection,
+    validator_accumulator_index: u64,
+    protocol: String,
+) -> Result<ValidatorAccumulatorInput> {
+    let key = format!(
+        "{}:{}:{}",
+        VALIDATOR_COMMITMENT_CONSTANTS
+            .validator_accumulator_key
+            .to_owned(),
+        protocol,
+        validator_accumulator_index
+    );
+
+    Ok(fetch_redis_json_object::<ValidatorAccumulatorInput>(con, key).await?)
+}
+
 pub async fn fetch_validator(
     con: &mut Connection,
     validator_index: u64,
@@ -333,7 +424,7 @@ pub async fn fetch_validator(
     let key = format!(
         "{}:{}",
         VALIDATOR_COMMITMENT_CONSTANTS.validator_key.to_owned(),
-        validator_index
+        validator_index,
     );
 
     let latest_epoch = get_latest_epoch(con, &key, epoch).await?;
@@ -383,6 +474,29 @@ pub async fn save_zero_validator_proof(
     Ok(())
 }
 
+pub async fn save_json_object<T: Serialize>(
+    con: &mut Connection,
+    key: &str,
+    object: &T,
+) -> Result<()> {
+    let json = serde_json::to_string(object)?;
+    con.set(key, json).await?;
+    Ok(())
+}
+
+pub fn u64_to_ssz_leaf(value: u64) -> [u8; 32] {
+    let mut ret = vec![0u8; 32];
+    ret[0..8].copy_from_slice(value.to_le_bytes().as_slice());
+    println!("ssz leaf: {:?}", hex::encode(&ret));
+    ret.try_into().unwrap()
+}
+
+fn bits_to_bytes(bits: &[u64]) -> Vec<u8> {
+    bits.chunks(8)
+        .map(|bits| (0..8usize).fold(0u8, |byte, pos| byte | ((bits[pos]) << (7 - pos)) as u8))
+        .collect::<Vec<_>>()
+}
+
 pub async fn save_validator_proof(
     con: &mut Connection,
     proof_storage: &mut dyn ProofStorage,
@@ -407,6 +521,49 @@ pub async fn save_validator_proof(
         .set_proof(proof_index, &proof.to_bytes())
         .await?;
 
+    // fetch validators len
+    if gindex == 0 {
+        let length_result: Result<u64, _> = con
+            // NOTE: Vsushtnost mai ne iskame da triem, zashtoto ni trqbva kato
+            // input na casper finality circuit-a
+            .get_del(format!(
+                "{}:{}",
+                VALIDATOR_COMMITMENT_CONSTANTS.validators_length_key, epoch
+            ))
+            .await;
+
+        match length_result {
+            Ok(length) => {
+                let validators_root_bytes: Vec<u8> = [
+                    &bits_to_bytes(&validator_proof.sha256_hash)[..],
+                    &u64_to_ssz_leaf(length)[..],
+                ]
+                .concat()
+                .try_into()
+                .unwrap();
+
+                let validators_root = hex::encode(hash_bytes(validators_root_bytes.as_slice()));
+                println!(
+                    "redis root: {}",
+                    hex::encode(bits_to_bytes(&validator_proof.sha256_hash))
+                );
+                println!("validators hash tree root: {}", validators_root);
+
+                con.set(
+                    format!(
+                        "{}:{}",
+                        VALIDATOR_COMMITMENT_CONSTANTS.validators_root_key, epoch
+                    ),
+                    validators_root,
+                )
+                .await?;
+            }
+            // The validators root has already been saved and the length is deleted
+            Err(_) => {}
+        }
+        // delete the length
+    }
+
     save_json_object(
         con,
         &format!(
@@ -420,6 +577,62 @@ pub async fn save_validator_proof(
         &validator_proof,
     )
     .await?;
+
+    Ok(())
+}
+
+pub async fn save_zero_validator_accumulator_proof(
+    con: &mut Connection,
+    proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    depth: u64,
+) -> Result<()> {
+    let proof_index = format!(
+        "{}:zeroes:{}",
+        VALIDATOR_COMMITMENT_CONSTANTS
+            .validator_accumulator_proof_key
+            .to_owned(),
+        depth,
+    );
+
+    let validator_proof = ValidatorProof {
+        poseidon_hash: proof
+            .get_commitment_mapper_poseidon_hash_tree_root()
+            .to_vec(),
+        sha256_hash: proof.get_commitment_mapper_sha256_hash_tree_root().to_vec(),
+        needs_change: false,
+        proof_index: proof_index.clone(),
+    };
+
+    save_json_object(con, &proof_index, &validator_proof).await?;
+
+    Ok(())
+}
+
+pub async fn save_validator_accumulator_proof(
+    con: &mut Connection,
+    proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    protocol: String,
+    gindex: u64,
+) -> Result<()> {
+    let proof_index = format!(
+        "{}:{}:{}",
+        VALIDATOR_COMMITMENT_CONSTANTS
+            .validator_accumulator_proof_key
+            .to_owned(),
+        protocol,
+        gindex
+    );
+
+    let validator_proof = ValidatorProof {
+        poseidon_hash: proof
+            .get_commitment_mapper_poseidon_hash_tree_root()
+            .to_vec(),
+        sha256_hash: proof.get_commitment_mapper_sha256_hash_tree_root().to_vec(),
+        needs_change: false,
+        proof_index: proof_index.clone(),
+    };
+
+    save_json_object(con, &proof_index, &validator_proof).await?;
 
     Ok(())
 }
@@ -447,6 +660,20 @@ pub async fn fetch_zero_proof<T: NeedsChange + KeyProvider + DeserializeOwned + 
     }
 }
 
+pub async fn fetch_zero_accumulator_proof(
+    con: &mut Connection,
+    depth: u64,
+) -> Result<ValidatorProof> {
+    Ok(fetch_redis_json_object::<ValidatorProof>(
+        con,
+        format!(
+            "{}:zeroes:{}",
+            VALIDATOR_COMMITMENT_CONSTANTS.validator_accumulator_proof_key, depth
+        ),
+    )
+    .await?)
+}
+
 pub async fn fetch_redis_json_object<T: DeserializeOwned + Clone>(
     con: &mut Connection,
     key: String,
@@ -454,16 +681,6 @@ pub async fn fetch_redis_json_object<T: DeserializeOwned + Clone>(
     let json: String = con.get(key).await?;
     let result = serde_json::from_str::<T>(&json)?;
     Ok(result)
-}
-
-pub async fn save_json_object<T: Serialize>(
-    con: &mut Connection,
-    key: &str,
-    object: &T,
-) -> Result<()> {
-    let json = serde_json::to_string(object)?;
-    con.set(key, json).await?;
-    Ok(())
 }
 
 pub async fn fetch_proof<T: NeedsChange + KeyProvider + DeserializeOwned + Clone>(
@@ -529,6 +746,67 @@ pub async fn fetch_proofs<
     ))
 }
 
+pub async fn fetch_accumulator_proofs(
+    con: &mut Connection,
+    proof_storage: &mut dyn ProofStorage,
+    protocol: String,
+    gindex: u64,
+) -> Result<(Vec<u8>, Vec<u8>)> {
+    let left_child_gindex = gindex * 2 + 1;
+    let right_child_gindex = gindex * 2 + 2;
+
+    let proof1 = fetch_proof_accumulator(con, protocol.clone(), left_child_gindex).await?;
+    let proof2 = fetch_proof_accumulator(con, protocol.clone(), right_child_gindex).await?;
+
+    Ok((
+        proof1.get_proof(proof_storage).await,
+        proof2.get_proof(proof_storage).await,
+    ))
+}
+
+pub async fn fetch_proof_accumulator(
+    con: &mut Connection,
+    protocol: String,
+    gindex: u64,
+) -> Result<ValidatorProof> {
+    let mut retries = 0;
+    let key = format!(
+        "{}:{}:{}",
+        VALIDATOR_COMMITMENT_CONSTANTS.validator_accumulator_proof_key, protocol, gindex
+    );
+
+    loop {
+        if retries > 5 {
+            return Err(anyhow::anyhow!("Not able to complete, try again"));
+        }
+
+        let mut proof_result = fetch_redis_json_object::<ValidatorProof>(con, key.clone()).await;
+
+        if proof_result.is_err() {
+            // get the zeroth proof
+            let key = format!(
+                "{}:{}:{}",
+                VALIDATOR_COMMITMENT_CONSTANTS.validator_accumulator_proof_key,
+                "zeroes",
+                get_depth_for_gindex(gindex)
+            );
+            proof_result = fetch_redis_json_object::<ValidatorProof>(con, key.clone()).await;
+        }
+
+        let proof = proof_result?;
+
+        if proof.needs_change() {
+            // Wait a bit and try again
+            thread::sleep(Duration::from_secs(10));
+            retries += 1;
+
+            continue;
+        }
+
+        return Ok(proof);
+    }
+}
+
 // @TODO: Rename this later
 pub async fn fetch_proof_balances<T: NeedsChange + KeyProvider + DeserializeOwned + Clone>(
     con: &mut Connection,
@@ -556,6 +834,48 @@ pub async fn fetch_proof_balances<T: NeedsChange + KeyProvider + DeserializeOwne
         }
 
         let proof = proof_result?;
+
+        if proof.needs_change() {
+            // Wait a bit and try again
+            thread::sleep(Duration::from_secs(10));
+            retries += 1;
+
+            continue;
+        }
+
+        return Ok(proof);
+    }
+}
+
+pub async fn fetch_proof_balance<T: NeedsChange + KeyProvider + DeserializeOwned>(
+    con: &mut Connection,
+    depth: usize,
+    index: usize,
+) -> Result<T> {
+    let mut retries = 0;
+
+    loop {
+        if retries > 5 {
+            return Err(anyhow::anyhow!("Not able to complete, try again"));
+        }
+
+        let mut proof_result: Result<String, RedisError> = con
+            .get(format!("{}:{}:{}", T::get_key(), depth, index))
+            .await;
+
+        if proof_result.is_err() {
+            // get the zeroth proof
+            proof_result = con
+                .get(format!(
+                    "{}:{}:{}",
+                    T::get_key(),
+                    depth,
+                    VALIDATOR_REGISTRY_LIMIT
+                ))
+                .await;
+        }
+
+        let proof = serde_json::from_str::<T>(&proof_result?)?;
 
         if proof.needs_change() {
             // Wait a bit and try again
