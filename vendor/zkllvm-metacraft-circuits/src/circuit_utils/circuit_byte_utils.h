@@ -6,14 +6,6 @@ namespace circuit_byte_utils {
 
     using sha256_t = typename hashes::sha2<256>::block_type;
 
-#ifdef __ZKLLVM__
-#define assert_true(c) \
-    { __builtin_assigner_exit_check(c); }
-#else
-#define assert_true(c) \
-    { assert(c); }
-#endif
-
     bool is_same(sha256_t block0, sha256_t block1) {
 
         bool result = true;
