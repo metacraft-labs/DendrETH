@@ -10,6 +10,10 @@ name = "weigh_justification_and_finalization"
 path = "bin/weigh_justification_and_finalization.rs"
 
 [[bin]]
+name = "compute_shuffled_index"
+path = "src/test_engine/bin/compute_shuffled_index.rs"
+
+[[bin]]
 name = "test_engine"
 path = "src/test_engine/bin/main.rs"
 
