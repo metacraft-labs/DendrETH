@@ -1,6 +1,5 @@
 use plonky2::iop::target::BoolTarget;
-use plonky2::field::types::Field;
-use plonky2x::prelude::{BoolVariable, CircuitBuilder, PlonkParameters, Variable, CircuitVariable, Bytes32Variable};
+use plonky2x::prelude::{BoolVariable, CircuitBuilder, PlonkParameters, Variable, CircuitVariable};
 use itertools::Itertools;
 
 /// Fails if i1 != true.

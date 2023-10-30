@@ -1,18 +1,13 @@
-use plonky2x::prelude::{U64Variable, Bytes32Variable, PlonkParameters, CircuitBuilder, ByteVariable, BytesVariable, CircuitVariable, Variable};
+use plonky2x::prelude::{U64Variable, Bytes32Variable, PlonkParameters, CircuitBuilder, ByteVariable, BytesVariable, CircuitVariable, Variable, BoolVariable};
 use plonky2::field::types::Field;
 use itertools::Itertools;
-use crate::utils::{utils::{exp_from_bits, assert_is_true}, variable::bits_to_variable};
+use crate::utils::{utils::exp_from_bits, variable::bits_to_variable};
 
 pub fn compute_hash<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
     seed: Bytes32Variable,
     current_round: usize
 ) -> Bytes32Variable {
-    let seed_current_round_hashed_1: Vec<[BoolVariable; 8]> = seed_current_round_hashed
-    .as_bytes()
-    .iter()
-    .map(|x| x.as_be_bits())
-    .collect();
     let const_0_byte: ByteVariable = ByteVariable::constant(builder, 0);
     let current_round_bytes: ByteVariable = ByteVariable::constant(builder, current_round as u8);
 
@@ -127,8 +122,7 @@ pub fn bytes_slice_to_variable<L: PlonkParameters<D>, const D: usize>(
     start_idx: usize,
     end_idx: usize,
 ) -> Variable {
-    let start_idx_lte_end_idx = builder.lte(start_idx, end_idx);
-    assert_is_true(builder, start_idx_lte_end_idx);
+    assert!(start_idx < end_idx);
     let const_2: Variable = builder.constant(L::Field::from_canonical_usize(2));
     let mut power_of_2 = builder.constant(L::Field::from_canonical_usize(1));
     let mut result = builder.constant(L::Field::from_canonical_usize(0));
@@ -136,7 +130,7 @@ pub fn bytes_slice_to_variable<L: PlonkParameters<D>, const D: usize>(
 
     for i in start_idx..end_idx {
         for j in 0..8 {
-            bits.push(bytes.0 .0[end_idx - i].0[j]);
+            bits.push(bytes.0 .0[7 - i].0[j]);
         }
     }
 

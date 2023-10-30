@@ -7,8 +7,8 @@ use plonky2::iop::witness::PartitionWitness;
 use plonky2::plonk::circuit_data::CommonCircuitData;
 use plonky2::util::serialization::{Buffer, IoResult};
 
-use crate::frontend::vars::{CircuitVariable, Variable};
-use crate::prelude::{CircuitBuilder, PlonkParameters};
+use plonky2x::frontend::vars::{CircuitVariable, Variable};
+use plonky2x::prelude::{CircuitBuilder, PlonkParameters};
 
 #[derive(Debug, Clone)]
 pub struct DebugGenerator<L: PlonkParameters<D>, const D: usize> {
