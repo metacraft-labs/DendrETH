@@ -130,11 +130,9 @@ let TAKE;
           .fill('')
           .map(() => ''.padStart(256, '0').split('').map(Number)),
         validators: Array(CIRCUIT_SIZE).fill(getZeroValidator()),
-        withdrawalCredentials: computeNumberFromLittleEndianBits(
-          hexToBits(
-            '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
-          ),
-        ).toString(),
+        withdrawalCredentials: hexToBits(
+          '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
+        ),
         currentEpoch: computeEpochAt(beaconState.slot).toString(),
         validatorIsZero: Array(CIRCUIT_SIZE).fill(1),
       }),
@@ -205,11 +203,9 @@ let TAKE;
                 Math.min((j + 1) * CIRCUIT_SIZE, validators.length),
             ).fill(getZeroValidator()),
           ],
-          withdrawalCredentials: computeNumberFromLittleEndianBits(
-            hexToBits(
-              '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
-            ),
-          ).toString(),
+          withdrawalCredentials: hexToBits(
+            '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
+          ),
           currentEpoch: computeEpochAt(beaconState.slot).toString(),
           validatorIsZero: array.concat(new Array(CIRCUIT_SIZE - size).fill(1)),
         }),
@@ -279,11 +275,9 @@ let TAKE;
     slotBranch: beaconStateTree
       .getSingleProof(34n)
       .map(x => hexToBits(bytesToHex(x))),
-    withdrawalCredentials: computeNumberFromLittleEndianBits(
-      hexToBits(
-        '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
-      ),
-    ).toString(),
+    withdrawalCredentials: hexToBits(
+      '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
+    ),
     balanceBranch: beaconStateTree
       .getSingleProof(44n)
       .map(x => hexToBits(bytesToHex(x))),
@@ -304,8 +298,8 @@ let TAKE;
 
 function getZeroValidator() {
   return {
-    pubkey: '0',
-    withdrawalCredentials: '0',
+    pubkey: Array(384).fill(0),
+    withdrawalCredentials: Array(256).fill(0),
     effectiveBalance: '0',
     slashed: 0,
     activationEligibilityEpoch: '0',
@@ -317,12 +311,10 @@ function getZeroValidator() {
 
 function convertValidator(validator): any {
   return {
-    pubkey: computeNumberFromLittleEndianBits(
-      hexToBits(bytesToHex(validator.pubkey), 384),
-    ).toString(),
-    withdrawalCredentials: computeNumberFromLittleEndianBits(
-      hexToBits(bytesToHex(validator.withdrawalCredentials)),
-    ).toString(),
+    pubkey: hexToBits(bytesToHex(validator.pubkey), 384),
+    withdrawalCredentials: hexToBits(
+      bytesToHex(validator.withdrawalCredentials),
+    ),
     effectiveBalance: validator.effectiveBalance.toString(),
     slashed: Number(validator.slashed),
     activationEligibilityEpoch: validator.activationEligibilityEpoch.toString(),

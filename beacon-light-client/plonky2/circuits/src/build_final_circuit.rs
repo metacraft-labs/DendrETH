@@ -44,7 +44,7 @@ pub struct FinalCircuitTargets {
     pub validators_branch: [[BoolTarget; ETH_SHA256_BIT_SIZE]; 5],
     pub balance_branch: [[BoolTarget; ETH_SHA256_BIT_SIZE]; 5],
     pub balance_sum: BigUintTarget,
-    pub withdrawal_credentials: BigUintTarget,
+    pub withdrawal_credentials: [BoolTarget; ETH_SHA256_BIT_SIZE],
     pub validator_size_bits: [BoolTarget; ETH_SHA256_BIT_SIZE],
 }
 
@@ -53,9 +53,15 @@ pub type FinalCircuitProof = ProofWithPublicInputs<GoldilocksField, PoseidonGold
 pub trait FinalCircuitProofExt {
     fn get_final_circuit_state_root(&self) -> [u64; ETH_SHA256_BIT_SIZE];
 
-    fn get_final_circuit_withdrawal_credentials(&self) -> BigUint;
+    fn get_final_circuit_withdrawal_credentials(&self) -> [u64; ETH_SHA256_BIT_SIZE];
 
     fn get_final_circuit_balance_sum(&self) -> BigUint;
+
+    fn get_final_number_of_non_activated_validators(&self) -> u64;
+
+    fn get_final_number_of_active_validators(&self) -> u64;
+
+    fn get_final_number_of_exited_validators(&self) -> u64;
 }
 
 impl FinalCircuitProofExt for FinalCircuitProof {
@@ -68,22 +74,34 @@ impl FinalCircuitProofExt for FinalCircuitProof {
             .unwrap()
     }
 
-    fn get_final_circuit_withdrawal_credentials(&self) -> BigUint {
+    fn get_final_circuit_withdrawal_credentials(&self) -> [u64; ETH_SHA256_BIT_SIZE] {
+        self.public_inputs[256..512]
+            .iter()
+            .map(|x| x.0 % GoldilocksField::ORDER)
+            .collect_vec()
+            .try_into()
+            .unwrap()
+    }
+
+    fn get_final_circuit_balance_sum(&self) -> BigUint {
         BigUint::new(
-            self.public_inputs[256..264]
+            self.public_inputs[512..514]
                 .iter()
                 .map(|x| (x.0 % GoldilocksField::ORDER) as u32)
                 .collect_vec(),
         )
     }
 
-    fn get_final_circuit_balance_sum(&self) -> BigUint {
-        BigUint::new(
-            self.public_inputs[264..266]
-                .iter()
-                .map(|x| (x.0 % GoldilocksField::ORDER) as u32)
-                .collect_vec(),
-        )
+    fn get_final_number_of_non_activated_validators(&self) -> u64 {
+        self.public_inputs[514].0 % GoldilocksField::ORDER
+    }
+
+    fn get_final_number_of_active_validators(&self) -> u64 {
+        self.public_inputs[515].0 % GoldilocksField::ORDER
+    }
+
+    fn get_final_number_of_exited_validators(&self) -> u64 {
+        self.public_inputs[516].0 % GoldilocksField::ORDER
     }
 }
 
@@ -122,6 +140,9 @@ pub fn build_final_circuit(
         withdrawal_credentials,
         current_epoch,
         balances_validator_poseidon_root,
+        number_of_non_activated_validators,
+        number_of_active_validators,
+        number_of_exited_validators,
     ) = setup_balance_targets(&mut builder, balance_data);
 
     let (
@@ -185,13 +206,18 @@ pub fn build_final_circuit(
 
     builder.register_public_inputs(
         &withdrawal_credentials
-            .limbs
             .iter()
-            .map(|x| x.0)
+            .map(|x| x.target)
             .collect_vec(),
     );
 
     builder.register_public_inputs(&balance_sum.limbs.iter().map(|x| x.0).collect_vec());
+
+    builder.register_public_input(number_of_non_activated_validators);
+
+    builder.register_public_input(number_of_active_validators);
+
+    builder.register_public_input(number_of_exited_validators);
 
     let data = builder.build::<C>();
 
@@ -226,9 +252,12 @@ fn setup_balance_targets(
     VerifierCircuitTarget,
     [BoolTarget; ETH_SHA256_BIT_SIZE],
     BigUintTarget,
-    BigUintTarget,
+    [BoolTarget; ETH_SHA256_BIT_SIZE],
     BigUintTarget,
     HashOutTarget,
+    Target,
+    Target,
+    Target,
 ) {
     let (proof_targets, verifier_circuit_target) = setup_proof_targets(data, builder);
 
@@ -237,6 +266,9 @@ fn setup_balance_targets(
     let withdrawal_credentials = proof_targets.get_withdrawal_credentials();
     let current_epoch = proof_targets.get_current_epoch();
     let poseidon_hash = proof_targets.get_range_validator_commitment();
+    let number_of_non_activated_validators = proof_targets.get_number_of_non_activated_validators();
+    let number_of_active_validators = proof_targets.get_number_of_active_validators();
+    let number_of_exited_validators = proof_targets.get_number_of_exited_validators();
 
     (
         proof_targets,
@@ -246,6 +278,9 @@ fn setup_balance_targets(
         withdrawal_credentials,
         current_epoch,
         poseidon_hash,
+        number_of_non_activated_validators,
+        number_of_active_validators,
+        number_of_exited_validators,
     )
 }
 

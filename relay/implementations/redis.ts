@@ -145,7 +145,7 @@ export class Redis implements IRedis {
     stateRoot: number[];
     slot: string;
     slotBranch: number[][];
-    withdrawalCredentials: string;
+    withdrawalCredentials: number[];
     balanceBranch: number[][];
     validatorsBranch: number[][];
     validatorsSizeBits: number[];
