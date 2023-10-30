@@ -1,6 +1,5 @@
 use core::fmt::Debug;
-use ethers::types::{H256, U256};
-use primitive_types::H384;
+use ethers::types::H256;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize, Serialize)]
