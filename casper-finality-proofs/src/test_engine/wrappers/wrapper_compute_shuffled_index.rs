@@ -22,18 +22,17 @@ pub fn wrapper(path: &str, should_assert: bool) -> Result<String, anyhow::Error>
 
     let mut result_indices: Vec<u64> = Vec::new();
 
-    for i in 0..json_data.inputs.count {
+    for i in 0..json_data.count {
         let mut input = CIRCUIT.input();
 
         input.write::<U64Variable>(i);
-        input.write::<U64Variable>(json_data.inputs.count);
-        input.write::<Bytes32Variable>(json_data.inputs.seed);
+        input.write::<U64Variable>(json_data.count);
+        input.write::<Bytes32Variable>(json_data.seed);
 
         let (_witness, mut _output) = CIRCUIT.mock_prove(&input);
         let shuffled_index_res = _output.read::<U64Variable>();
-        println!("shuffled_index_res: {:?}", shuffled_index_res);
         if should_assert {
-            assert_equal!(json_data.outputs.mapping[i as usize], shuffled_index_res);
+            assert_equal!(json_data.mapping[i as usize], shuffled_index_res);
         }
 
         result_indices.push(shuffled_index_res);
