@@ -11907,8 +11907,8 @@ __metadata:
   linkType: hard
 
 "snarkjs@github:metacraft-labs/snarkjs":
-  version: 0.6.3
-  resolution: "snarkjs@https://github.com/metacraft-labs/snarkjs.git#commit=44d4cc150c30a388d9bd8fb4ba9deb39dfb9c57e"
+  version: 0.6.10
+  resolution: "snarkjs@https://github.com/metacraft-labs/snarkjs.git#commit=091ee9c3744c660b0ecd961f9197a8249a8f7d3b"
   dependencies:
     "@iden3/binfileutils": 0.0.11
     bfj: ^7.0.2
@@ -11922,7 +11922,7 @@ __metadata:
     r1csfile: 0.0.45
   bin:
     snarkjs: build/cli.cjs
-  checksum: 59ca5a35ec20038589fab2e22f56c61d5cd42706e7a0ce1393fb66580a7ac982c16e8ed0e377c93bf0b5aa6eb105aa9da3bf94eb6e0f0733451d2793cc7d312e
+  checksum: 91946fe67a5d9c002fce1a297200ee46e9505520716255afe5358b847f4715c5da46a83b047419b426bdaa836fdb5ed04ca86c57460a4636564b0fd06ba393d1
   languageName: node
   linkType: hard
 

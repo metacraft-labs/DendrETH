@@ -173,3 +173,5 @@ redis-server/
 
 *.plonky2_targets
 *.plonky2_circuit
+
+.DS_Store
