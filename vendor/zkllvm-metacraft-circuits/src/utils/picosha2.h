@@ -32,7 +32,10 @@ THE SOFTWARE.
 #include <algorithm>
 #include <cassert>
 #include <iterator>
-#include <vector>
+#include <array>
+
+#include "../circuit_utils/base_types.h"
+
 namespace picosha2 {
     typedef unsigned long word_t;
     typedef unsigned char byte_t;
@@ -154,7 +157,7 @@ namespace picosha2 {
         }
 
         void init() {
-            buffer_.clear();
+            buffer_size_ = 0;
             std::fill(data_length_digits_, data_length_digits_ + 4, word_t(0));
             std::copy(detail::initial_message_digest, detail::initial_message_digest + 8, h_);
         }
@@ -162,19 +165,24 @@ namespace picosha2 {
         template<typename RaIter>
         void process(RaIter first, RaIter last) {
             add_to_data_length(static_cast<word_t>(std::distance(first, last)));
-            std::copy(first, last, std::back_inserter(buffer_));
+            assert_true(buffer_size_ + (last - first) < PICOSHA2_BUFFER_SIZE_FOR_INPUT_ITERATOR);
+            std::copy(first, last, buffer_.begin() + buffer_size_);
+            buffer_size_ += last - first;
             std::size_t i = 0;
-            for (; i + 64 <= buffer_.size(); i += 64) {
+            for (; i + 64 <= buffer_size_; i += 64) {
                 detail::hash256_block(h_, buffer_.begin() + i, buffer_.begin() + i + 64);
             }
-            buffer_.erase(buffer_.begin(), buffer_.begin() + i);
+            buffer_size_ -= i;
+            for (int j = 0; j < buffer_size_; j++) {
+                buffer_[j] = buffer_[i + j];
+            }
         }
 
         void finish() {
             byte_t temp[64];
             std::fill(temp, temp + 64, byte_t(0));
-            std::size_t remains = buffer_.size();
-            std::copy(buffer_.begin(), buffer_.end(), temp);
+            std::size_t remains = buffer_size_;
+            std::copy(buffer_.begin(), buffer_.begin() + buffer_size_, temp);
             temp[remains] = 0x80;
 
             if (remains > 55) {
@@ -232,7 +240,8 @@ namespace picosha2 {
                 (*begin++) = static_cast<byte_t>(data_bit_length_digits[i]);
             }
         }
-        std::vector<byte_t> buffer_;
+        std::array<byte_t, PICOSHA2_BUFFER_SIZE_FOR_INPUT_ITERATOR> buffer_;
+        size_t buffer_size_ = 0;
         word_t data_length_digits_[4];    // as 64bit integer (16bit x 4 integer)
         word_t h_[8];
     };
@@ -251,7 +260,7 @@ namespace picosha2 {
         template<typename InputIter, typename OutIter>
         void hash256_impl(InputIter first, InputIter last, OutIter first2, OutIter last2, int buffer_size,
                           std::input_iterator_tag) {
-            std::vector<byte_t> buffer(buffer_size);
+            std::array<byte_t, PICOSHA2_BUFFER_SIZE_FOR_INPUT_ITERATOR> buffer {};
             hash256_one_by_one hasher;
             // hasher.init();
             while (first != last) {

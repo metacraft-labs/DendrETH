@@ -5,11 +5,12 @@
 #include <array>
 
 #include "../circuit_utils/circuit_byte_utils.h"
+#include "../utils/picosha2.h"
 
 using namespace circuit_byte_utils;
 
-[[circuit]] uint64_t
-    compute_shuffled_index(uint64_t index, uint64_t index_count, sha256_t seed, int SHUFFLE_ROUND_COUNT = 90) {
+[[circuit]] uint64_t compute_shuffled_index(uint64_t index, uint64_t index_count, std::array<Byte, 32> seed,
+                                            int SHUFFLE_ROUND_COUNT = 90) {
     assert_true(index < index_count);
 
     std::array<Byte, 32 + 1 + 4> source_buffer {};
