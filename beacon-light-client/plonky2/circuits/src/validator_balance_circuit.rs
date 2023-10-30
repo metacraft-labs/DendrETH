@@ -1,7 +1,8 @@
+use itertools::Itertools;
 use plonky2::{
     field::extension::Extendable,
     hash::hash_types::{HashOutTarget, RichField},
-    iop::target::BoolTarget,
+    iop::target::{BoolTarget, Target},
     plonk::circuit_builder::CircuitBuilder,
     util::serialization::{Buffer, IoResult, Read, Write},
 };
@@ -10,10 +11,10 @@ use crate::{
     biguint::{BigUintTarget, CircuitBuilderBiguint},
     hash_tree_root::hash_tree_root,
     hash_tree_root_poseidon::hash_tree_root_poseidon,
-    is_active_validator::is_active_validator,
+    is_active_validator::get_validator_status,
     targets_serialization::{ReadTargets, WriteTargets},
     utils::{
-        biguint_is_equal, create_bool_target_array, if_biguint, ssz_num_from_bits,
+        bool_target_equal, create_bool_target_array, if_biguint, ssz_num_from_bits,
         ETH_SHA256_BIT_SIZE,
     },
     validator_hash_tree_root_poseidon::{
@@ -22,19 +23,22 @@ use crate::{
     },
 };
 
-pub struct ValidatorBalanceVerificationTargets {
+pub struct ValidatorBalanceVerificationTargets<const N: usize> {
     pub range_total_value: BigUintTarget,
     pub range_balances_root: [BoolTarget; ETH_SHA256_BIT_SIZE],
     pub range_validator_commitment: HashOutTarget,
     pub validators: Vec<ValidatorPoseidonTargets>,
     pub validator_is_zero: Vec<BoolTarget>,
     pub balances: Vec<[BoolTarget; ETH_SHA256_BIT_SIZE]>,
-    pub withdrawal_credentials: BigUintTarget,
+    pub withdrawal_credentials: [[BoolTarget; ETH_SHA256_BIT_SIZE]; N],
     pub current_epoch: BigUintTarget,
+    pub number_of_non_activated_validators: Target,
+    pub number_of_active_validators: Target,
+    pub number_of_exited_validators: Target,
 }
 
-impl ReadTargets for ValidatorBalanceVerificationTargets {
-    fn read_targets(data: &mut Buffer) -> IoResult<ValidatorBalanceVerificationTargets> {
+impl<const N: usize> ReadTargets for ValidatorBalanceVerificationTargets<N> {
+    fn read_targets(data: &mut Buffer) -> IoResult<ValidatorBalanceVerificationTargets<N>> {
         let validators_len = data.read_usize()?;
 
         Ok(ValidatorBalanceVerificationTargets {
@@ -48,13 +52,20 @@ impl ReadTargets for ValidatorBalanceVerificationTargets {
             balances: (0..validators_len / 4)
                 .map(|_| data.read_target_bool_vec().unwrap().try_into().unwrap())
                 .collect(),
-            withdrawal_credentials: BigUintTarget::read_targets(data)?,
+            withdrawal_credentials: (0..N)
+                .map(|_| data.read_target_bool_vec().unwrap().try_into().unwrap())
+                .collect_vec()
+                .try_into()
+                .unwrap(),
             current_epoch: BigUintTarget::read_targets(data)?,
+            number_of_non_activated_validators: data.read_target()?,
+            number_of_active_validators: data.read_target()?,
+            number_of_exited_validators: data.read_target()?,
         })
     }
 }
 
-impl WriteTargets for ValidatorBalanceVerificationTargets {
+impl<const N: usize> WriteTargets for ValidatorBalanceVerificationTargets<N> {
     fn write_targets(&self) -> IoResult<Vec<u8>> {
         let mut data = Vec::<u8>::new();
 
@@ -73,17 +84,28 @@ impl WriteTargets for ValidatorBalanceVerificationTargets {
             data.write_target_bool_vec(balance)?;
         }
 
-        data.extend(BigUintTarget::write_targets(&self.withdrawal_credentials)?);
+        for i in 0..N {
+            data.write_target_bool_vec(&self.withdrawal_credentials[i])?;
+        }
+
         data.extend(BigUintTarget::write_targets(&self.current_epoch)?);
+
+        data.write_target(self.number_of_non_activated_validators)?;
+        data.write_target(self.number_of_active_validators)?;
+        data.write_target(self.number_of_exited_validators)?;
 
         Ok(data)
     }
 }
 
-pub fn validator_balance_verification<F: RichField + Extendable<D>, const D: usize>(
+pub fn validator_balance_verification<
+    F: RichField + Extendable<D>,
+    const D: usize,
+    const N: usize,
+>(
     builder: &mut CircuitBuilder<F, D>,
     validators_len: usize,
-) -> ValidatorBalanceVerificationTargets {
+) -> ValidatorBalanceVerificationTargets<N> {
     if !validators_len.is_power_of_two() {
         panic!("validators_len must be a power of two");
     }
@@ -138,19 +160,34 @@ pub fn validator_balance_verification<F: RichField + Extendable<D>, const D: usi
             HashOutTarget { elements },
         );
     }
+    let mut withdrawal_credentials = [[BoolTarget::default(); ETH_SHA256_BIT_SIZE]; N];
 
-    let withdrawal_credentials = builder.add_virtual_biguint_target(8);
+    for i in 0..N {
+        withdrawal_credentials[i] = create_bool_target_array(builder);
+    }
 
     let current_epoch = builder.add_virtual_biguint_target(2);
 
     let mut sum = builder.zero_biguint();
 
+    let mut number_of_non_activated_validators = builder.zero();
+
+    let mut number_of_active_validators = builder.zero();
+
+    let mut number_of_exited_validators = builder.zero();
+
     for i in 0..validators_len {
-        let is_equal = biguint_is_equal(
-            builder,
-            &validators_leaves[i].validator.withdrawal_credentials,
-            &withdrawal_credentials,
-        );
+        let mut is_equal = builder._false();
+
+        for j in 0..N {
+            let is_equal_inner = bool_target_equal(
+                builder,
+                &validators_leaves[i].validator.withdrawal_credentials,
+                &withdrawal_credentials[j],
+            );
+
+            is_equal = builder.or(is_equal_inner, is_equal);
+        }
 
         let balance = ssz_num_from_bits(
             builder,
@@ -159,18 +196,32 @@ pub fn validator_balance_verification<F: RichField + Extendable<D>, const D: usi
 
         let zero = builder.zero_biguint();
 
-        let is_valid_validator = is_active_validator(
-            builder,
-            &validators_leaves[i].validator.activation_epoch,
-            &current_epoch,
-            &validators_leaves[i].validator.exit_epoch,
-        );
+        let (is_non_activated_validator, is_valid_validator, is_exited_validator) =
+            get_validator_status(
+                builder,
+                &validators_leaves[i].validator.activation_epoch,
+                &current_epoch,
+                &validators_leaves[i].validator.exit_epoch,
+            );
 
         let will_be_counted = builder.and(is_equal, is_valid_validator);
 
         let current = if_biguint(builder, will_be_counted, &balance, &zero);
 
         sum = builder.add_biguint(&sum, &current);
+
+        number_of_active_validators =
+            builder.add(number_of_active_validators, will_be_counted.target);
+
+        let will_be_counted = builder.and(is_equal, is_non_activated_validator);
+
+        number_of_non_activated_validators =
+            builder.add(number_of_non_activated_validators, will_be_counted.target);
+
+        let will_be_counted = builder.and(is_equal, is_exited_validator);
+
+        number_of_exited_validators =
+            builder.add(number_of_exited_validators, will_be_counted.target);
 
         sum.limbs.pop();
     }
@@ -187,5 +238,8 @@ pub fn validator_balance_verification<F: RichField + Extendable<D>, const D: usi
         balances: balances_leaves,
         withdrawal_credentials: withdrawal_credentials,
         current_epoch,
+        number_of_non_activated_validators,
+        number_of_active_validators,
+        number_of_exited_validators,
     }
 }

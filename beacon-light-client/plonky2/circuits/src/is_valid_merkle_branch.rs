@@ -15,10 +15,18 @@ pub struct IsValidMerkleBranchTargets {
     pub root: [BoolTarget; ETH_SHA256_BIT_SIZE],
 }
 
-pub fn is_valid_merkle_branch<F: RichField + Extendable<D>, const D: usize>(
+pub struct IsValidMerkleBranchTargetsResult {
+    pub leaf: [BoolTarget; ETH_SHA256_BIT_SIZE],
+    pub branch: Vec<[BoolTarget; ETH_SHA256_BIT_SIZE]>,
+    pub index: Target,
+    pub root: [BoolTarget; ETH_SHA256_BIT_SIZE],
+    pub is_valid: BoolTarget,
+}
+
+pub fn is_valid_merkle_branch_sha256_result<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     depth: usize,
-) -> IsValidMerkleBranchTargets {
+) -> IsValidMerkleBranchTargetsResult {
     let index = builder.add_virtual_target();
 
     let leaf: [BoolTarget; ETH_SHA256_BIT_SIZE] = create_bool_target_array(builder);
@@ -50,14 +58,36 @@ pub fn is_valid_merkle_branch<F: RichField + Extendable<D>, const D: usize>(
         }
     }
 
+    let mut is_valid = builder._true();
+
     for i in 0..ETH_SHA256_BIT_SIZE {
-        builder.connect(hashers[depth - 1].digest[i].target, root[i].target)
+        let is_equal = builder.is_equal(hashers[depth - 1].digest[i].target, root[i].target);
+        is_valid = builder.and(is_valid, is_equal);
     }
 
-    IsValidMerkleBranchTargets {
+    IsValidMerkleBranchTargetsResult {
         leaf: leaf,
         branch: branch,
         index: index,
         root: root,
+        is_valid,
+    }
+}
+
+pub fn is_valid_merkle_branch_sha256<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    depth: usize,
+) -> IsValidMerkleBranchTargets {
+    let is_valid_merkle_branch_result_targets = is_valid_merkle_branch_sha256_result(builder, depth);
+
+    let _true = builder._true();
+
+    builder.connect(is_valid_merkle_branch_result_targets.is_valid.target, _true.target);
+
+    IsValidMerkleBranchTargets {
+        leaf: is_valid_merkle_branch_result_targets.leaf,
+        branch: is_valid_merkle_branch_result_targets.branch,
+        index: is_valid_merkle_branch_result_targets.index,
+        root: is_valid_merkle_branch_result_targets.root,
     }
 }

@@ -26,10 +26,8 @@ where
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidatorPoseidonInput {
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub pubkey: BigUint,
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub withdrawal_credentials: BigUint,
+    pub pubkey: String,
+    pub withdrawal_credentials: String,
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub effective_balance: BigUint,
     pub slashed: u64,
@@ -49,12 +47,29 @@ pub struct ValidatorBalancesInput {
     pub validators: Vec<ValidatorPoseidonInput>,
     #[serde(with = "bool_vec_as_int_vec_nested")]
     pub balances: Vec<Vec<bool>>,
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub withdrawal_credentials: BigUint,
+    #[serde(with = "bool_vec_as_int_vec_nested")]
+    pub withdrawal_credentials: Vec<Vec<bool>>,
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub current_epoch: BigUint,
     #[serde(with = "bool_vec_as_int_vec")]
     pub validator_is_zero: Vec<bool>,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ValidatorBalanceAccumulatorInput {
+    pub balances_root: String,
+    pub balances: Vec<String>,
+    pub balances_proofs: Vec<Vec<String>>,
+    pub validator_deposit_indexes: Vec<u64>,
+    pub validator_indexes: Vec<u64>,
+    pub validator_commitment_proofs: Vec<Vec<Vec<String>>>,
+    pub validators: Vec<ValidatorPoseidonInput>,
+    #[serde(with = "bool_vec_as_int_vec")]
+    pub validator_is_not_zero: Vec<bool>,
+    pub validator_commitment_root: Vec<String>,
+    pub current_epoch: u64,
+    pub current_eth1_deposit_index: u64,
 }
 
 #[cfg(test)]
@@ -66,8 +81,8 @@ mod tests {
     fn test_serialize_deserialize() {
         let input = ValidatorBalancesInput {
             validators: vec![ValidatorPoseidonInput {
-                pubkey: BigUint::from(1u64),
-                withdrawal_credentials: BigUint::from(2u64),
+                pubkey: [false; 384].to_vec(),
+                withdrawal_credentials: [false; 256].to_vec(),
                 effective_balance: BigUint::from(3u64),
                 slashed: 0,
                 activation_eligibility_epoch: BigUint::from(4u64),
@@ -76,7 +91,7 @@ mod tests {
                 withdrawable_epoch: BigUint::from(7u64),
             }],
             balances: vec![vec![true, false, true], vec![false, true, false]],
-            withdrawal_credentials: BigUint::from(30u64),
+            withdrawal_credentials: vec![[false; 256].to_vec()],
             current_epoch: BigUint::from(40u64),
             validator_is_zero: vec![false, false, false],
         };

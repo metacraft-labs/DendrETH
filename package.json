@@ -88,6 +88,8 @@
     "hardhat": "^2.22.0",
     "hardhat-gas-reporter": "^1.0.8",
     "ioredis": "^5.3.2",
+    "ioredis-rejson": "^1.0.10",
+    "node-html-parser": "^6.1.12",
     "prom-client": "^14.2.0",
     "r1csfile": "^0.0.40",
     "redis": "^4.6.10",

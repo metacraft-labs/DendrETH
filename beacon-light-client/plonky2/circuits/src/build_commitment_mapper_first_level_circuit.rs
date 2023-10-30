@@ -6,13 +6,16 @@ use plonky2::{
     plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::CircuitConfig,
-        config::{GenericConfig, PoseidonGoldilocksConfig},
+        config::PoseidonGoldilocksConfig,
         proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
     },
 };
 
 use crate::{
     utils::{ETH_SHA256_BIT_SIZE, POSEIDON_HASH_SIZE},
+    validator_accumulator_commitment_mapper::{
+        validator_accumulator_commitment_mapper, ValidatorAccumulatorCommitmentTargets,
+    },
     validator_commitment_mapper::{validator_commitment_mapper, ValidatorCommitmentTargets},
 };
 
@@ -23,17 +26,17 @@ pub type CommitmentMapperProof =
     ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>;
 
 pub trait CommitmentMapperProofExt {
-    fn get_commitment_mapper_poseidon_hash_tree_root(&self) -> Vec<u64>;
+    fn get_commitment_mapper_poseidon_hash_tree_root(&self) -> Vec<String>;
 
     fn get_commitment_mapper_sha256_hash_tree_root(&self) -> Vec<u64>;
 }
 
 impl CommitmentMapperProofExt for CommitmentMapperProof {
-    fn get_commitment_mapper_poseidon_hash_tree_root(&self) -> Vec<u64> {
+    fn get_commitment_mapper_poseidon_hash_tree_root(&self) -> Vec<String> {
         return self.public_inputs
             [POSEIDON_HASH_PUB_INDEX..POSEIDON_HASH_PUB_INDEX + POSEIDON_HASH_SIZE]
             .iter()
-            .map(|x| x.0 % GoldilocksField::ORDER)
+            .map(|x| (x.0 % GoldilocksField::ORDER).to_string())
             .collect_vec();
     }
 
@@ -75,6 +78,79 @@ impl CommitmentMapperProofTargetExt for CommitmentMapperProofTarget {
     }
 }
 
+pub trait CommitmentMapperTargets {
+    fn get_commitment_mapper_poseidon_hash_tree_root(&self) -> HashOutTarget;
+
+    fn get_commitment_mapper_sha256_hash_tree_root(&self) -> [BoolTarget; ETH_SHA256_BIT_SIZE];
+}
+
+impl CommitmentMapperTargets for ValidatorCommitmentTargets {
+    fn get_commitment_mapper_poseidon_hash_tree_root(&self) -> HashOutTarget {
+        self.poseidon_hash_tree_root
+    }
+
+    fn get_commitment_mapper_sha256_hash_tree_root(&self) -> [BoolTarget; ETH_SHA256_BIT_SIZE] {
+        self.sha256_hash_tree_root
+    }
+}
+
+impl CommitmentMapperTargets for ValidatorAccumulatorCommitmentTargets {
+    fn get_commitment_mapper_poseidon_hash_tree_root(&self) -> HashOutTarget {
+        self.poseidon_hash_tree_root
+    }
+
+    fn get_commitment_mapper_sha256_hash_tree_root(&self) -> [BoolTarget; ETH_SHA256_BIT_SIZE] {
+        self.sha256_hash_tree_root
+    }
+}
+
+fn build_commitment_mapper_first_level_circuit_generic<F, T>(
+    mapper_function: F,
+) -> (
+    T,
+    plonky2::plonk::circuit_data::CircuitData<
+        plonky2::field::goldilocks_field::GoldilocksField,
+        PoseidonGoldilocksConfig,
+        2,
+    >,
+)
+where
+    F: FnOnce(&mut CircuitBuilder<GoldilocksField, 2>) -> T,
+    T: CommitmentMapperTargets,
+{
+    let standard_recursion_config = CircuitConfig::standard_recursion_config();
+    let mut builder = CircuitBuilder::<GoldilocksField, 2>::new(standard_recursion_config);
+
+    let validator_commitment_result = mapper_function(&mut builder);
+
+    // Register public inputs using the trait methods
+    builder.register_public_inputs(
+        &validator_commitment_result
+            .get_commitment_mapper_poseidon_hash_tree_root()
+            .elements,
+    );
+    builder.register_public_inputs(
+        &validator_commitment_result
+            .get_commitment_mapper_sha256_hash_tree_root()
+            .map(|x| x.target),
+    );
+
+    let data = builder.build::<PoseidonGoldilocksConfig>();
+
+    (validator_commitment_result, data)
+}
+
+pub fn build_accumulator_commitment_mapper_first_level_circuit() -> (
+    ValidatorAccumulatorCommitmentTargets,
+    plonky2::plonk::circuit_data::CircuitData<
+        plonky2::field::goldilocks_field::GoldilocksField,
+        PoseidonGoldilocksConfig,
+        2,
+    >,
+) {
+    build_commitment_mapper_first_level_circuit_generic(validator_accumulator_commitment_mapper)
+}
+
 pub fn build_commitment_mapper_first_level_circuit() -> (
     ValidatorCommitmentTargets,
     plonky2::plonk::circuit_data::CircuitData<
@@ -83,26 +159,7 @@ pub fn build_commitment_mapper_first_level_circuit() -> (
         2,
     >,
 ) {
-    const D: usize = 2;
-    type C = PoseidonGoldilocksConfig;
-    type F = <C as GenericConfig<D>>::F;
-
-    let standard_recursion_config = CircuitConfig::standard_recursion_config();
-
-    let mut builder = CircuitBuilder::<F, D>::new(standard_recursion_config);
-
-    let validator_commitment_result = validator_commitment_mapper(&mut builder);
-
-    builder.register_public_inputs(&validator_commitment_result.poseidon_hash_tree_root.elements);
-    builder.register_public_inputs(
-        &validator_commitment_result
-            .sha256_hash_tree_root
-            .map(|x| x.target),
-    );
-
-    let data = builder.build::<C>();
-
-    (validator_commitment_result, data)
+    build_commitment_mapper_first_level_circuit_generic(validator_commitment_mapper)
 }
 
 #[cfg(test)]

@@ -4,7 +4,7 @@ use circuits::{
     targets_serialization::ReadTargets, validator_commitment_mapper::ValidatorCommitmentTargets,
 };
 use circuits_executables::{
-    commitment_mapper_task::{deserialize_task, CommitmentMapperTask},
+    commitment_mapper_task::CommitmentMapperTask,
     crud::{
         common::{
             fetch_proofs, fetch_validator, fetch_zero_proof, get_depth_for_gindex,
@@ -14,18 +14,17 @@ use circuits_executables::{
         proof_storage::proof_storage::create_proof_storage,
     },
     provers::{handle_commitment_mapper_inner_level_proof, SetPWValues},
-    utils::{gindex_from_validator_index, parse_config_file},
+    utils::{gindex_from_validator_index, parse_config_file, CommandLineOptionsBuilder},
     validator::VALIDATOR_REGISTRY_LIMIT,
     validator_commitment_constants::VALIDATOR_COMMITMENT_CONSTANTS,
 };
-use clap::{App, Arg};
+
 use colored::Colorize;
+use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     iop::witness::{PartialWitness, WitnessWrite},
-    plonk::{
-        circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs,
-    },
+    plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig},
     util::serialization::Buffer,
 };
 
@@ -34,97 +33,23 @@ use std::{format, println, thread, time::Duration};
 
 use jemallocator::Jemalloc;
 
-use serde_binary::binary_stream;
-
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
-#[tokio::main]
-async fn main() -> Result<()> {
+const CIRCUIT_NAME: &str = "commitment_mapper";
+
+fn main() -> Result<()> {
+    future::block_on(async_main())
+}
+
+async fn async_main() -> Result<()> {
     let config = parse_config_file("../common_config.json".to_owned())?;
-    let matches = App::new("")
-    .arg(
-        Arg::with_name("redis_connection")
-            .short('r')
-            .long("redis")
-            .value_name("Redis Connection")
-            .help("Sets a custom Redis connection")
-            .takes_value(true)
-            .default_value(&format!("redis://{}:{}/", config["redis-host"], config["redis-port"])),
-    )
-    .arg(
-        Arg::with_name("stop_after")
-        .long("stop-after")
-        .value_name("Stop after")
-        .help("Sets how much seconds to wait until the program stops if no new tasks are found in the queue")
-        .takes_value(true)
-        .default_value("20")
-    )
-    .arg(
-        Arg::with_name("lease_for")
-        .value_name("lease-for")
-        .help("Sets for how long the task will be leased and then possibly requeued if not finished")
-        .takes_value(true)
-        .default_value("30"))
-    .arg(
-        Arg::with_name("mock")
-        .long("mock")
-        .help("Sets mock mode")
-        .takes_value(false)
-        .default_value("false")
-    )
-    .arg(
-        Arg::with_name("proof_storage_type")
-            .long("proof-storage-type")
-            .value_name("proof_storage_type")
-            .help("Sets the type of proof storage")
-            .takes_value(true)
-            .required(true)
-            .possible_values(&["redis", "file", "azure", "aws"])
-    )
-    .arg(
-        Arg::with_name("folder_name")
-            .long("folder-name")
-            .value_name("folder_name")
-            .help("Sets the name of the folder proofs will be stored in")
-            .takes_value(true)
-    )
-    .arg(
-        Arg::with_name("azure_account")
-            .long("azure-account-name")
-            .value_name("azure_account")
-            .help("Sets the name of the azure account")
-            .takes_value(true)
-    )
-    .arg(
-        Arg::with_name("azure_container")
-            .long("azure-container-name")
-            .value_name("azure_container")
-            .help("Sets the name of the azure container")
-            .takes_value(true)
-    )
-    .arg(
-        Arg::with_name("aws_endpoint_url")
-            .long("aws-endpoint-url")
-            .value_name("aws_endpoint_url")
-            .help("Sets the aws endpoint url")
-            .takes_value(true)
-    )
-    .arg(
-        Arg::with_name("aws_region")
-            .long("aws-region")
-            .value_name("aws_region")
-            .help("Sets the aws region")
-            .takes_value(true)
-    )
-    .arg(
-        Arg::with_name("aws_bucket_name")
-            .long("aws-bucket-name")
-            .value_name("aws_bucket_name")
-            .help("Sets the aws bucket name")
-            .takes_value(true)
-    )
-    .get_matches();
+
+    let matches = CommandLineOptionsBuilder::new("commitment_mapper")
+        .with_redis_options(&config)
+        .with_work_queue_options()
+        .with_proof_storage_options()
+        .get_matches();
 
     let redis_connection = matches.value_of("redis_connection").unwrap();
 
@@ -141,7 +66,7 @@ async fn main() -> Result<()> {
             .to_owned(),
     ));
 
-    let first_level_circuit_data = load_circuit_data("commitment_mapper_0")?;
+    let first_level_circuit_data = load_circuit_data(&format!("{}_{}", CIRCUIT_NAME, 0))?;
     let validator_commitment = get_first_level_targets()?;
 
     let mut inner_circuits: Vec<(
@@ -152,7 +77,7 @@ async fn main() -> Result<()> {
     for i in 1..41 {
         inner_circuits.push((
             get_inner_targets(i)?,
-            load_circuit_data(&format!("commitment_mapper_{}", i))?,
+            load_circuit_data(&format!("{}_{}", CIRCUIT_NAME, i))?,
         ));
     }
 
@@ -168,15 +93,8 @@ async fn main() -> Result<()> {
         .parse::<u64>()
         .unwrap();
 
-    let mock = matches.value_of("mock").unwrap().parse::<bool>().unwrap();
-
-    let inner_proof_mock_binary = include_bytes!("../mock_data/inner_proof_mapper.mock");
-    let proof_mock_binary = include_bytes!("../mock_data/proof_mapper.mock");
-
     loop {
-        if !mock {
-            println!("{}", "Waiting for task...".yellow());
-        }
+        println!("{}", "Waiting for task...".yellow());
 
         let Some(queue_item) = queue
             .lease(
@@ -189,7 +107,7 @@ async fn main() -> Result<()> {
             continue;
         };
 
-        let Some(task) = deserialize_task(&queue_item.data) else {
+        let Some(task) = CommitmentMapperTask::deserialize(&queue_item.data) else {
             println!("{}", "Invalid task data".red().bold());
             println!("{}", format!("Got bytes: {:?}", queue_item.data).red());
             queue.complete(&mut con, &queue_item).await?;
@@ -213,19 +131,14 @@ async fn main() -> Result<()> {
                             validator_index == VALIDATOR_REGISTRY_LIMIT as u64,
                         );
 
-                        let proof = if mock {
-                            serde_binary::from_slice(proof_mock_binary, binary_stream::Endian::Big)
-                                .unwrap()
-                        } else {
-                            first_level_circuit_data.prove(pw)?
-                        };
+                        let proof = first_level_circuit_data.prove(pw)?;
 
                         if validator_index as usize != VALIDATOR_REGISTRY_LIMIT {
                             match save_validator_proof(
                                 &mut con,
                                 proof_storage.as_mut(),
                                 proof,
-                                gindex_from_validator_index(validator_index),
+                                gindex_from_validator_index(validator_index, 40),
                                 epoch,
                             )
                             .await
@@ -299,26 +212,13 @@ async fn main() -> Result<()> {
                             &first_level_circuit_data
                         };
 
-                        let proof = if mock {
-                            let inner_proof_mock: ProofWithPublicInputs<
-                                GoldilocksField,
-                                PoseidonGoldilocksConfig,
-                                2,
-                            > = serde_binary::from_slice(
-                                inner_proof_mock_binary,
-                                binary_stream::Endian::Big,
-                            )
-                            .unwrap();
-                            inner_proof_mock
-                        } else {
-                            handle_commitment_mapper_inner_level_proof(
-                                proofs.0,
-                                proofs.1,
-                                inner_circuit_data,
-                                &inner_circuits[level].0,
-                                &inner_circuits[level].1,
-                            )?
-                        };
+                        let proof = handle_commitment_mapper_inner_level_proof(
+                            proofs.0,
+                            proofs.1,
+                            inner_circuit_data,
+                            &inner_circuits[level].0,
+                            &inner_circuits[level].1,
+                        )?;
 
                         if let Err(err) = save_validator_proof(
                             &mut con,
@@ -358,16 +258,18 @@ async fn main() -> Result<()> {
                 let level = 39 - depth as usize;
 
                 match fetch_zero_proof::<ValidatorProof>(&mut con, depth + 1).await {
-                    Ok(proof) => {
+                    Ok(lower_proof) => {
                         let inner_circuit_data = if level > 0 {
                             &inner_circuits[level - 1].1
                         } else {
                             &first_level_circuit_data
                         };
 
+                        let lower_proof_bytes = lower_proof.get_proof(proof_storage.as_mut()).await;
+
                         let proof = handle_commitment_mapper_inner_level_proof(
-                            proof.get_proof(proof_storage.as_mut()).await,
-                            proof.get_proof(proof_storage.as_mut()).await,
+                            lower_proof_bytes.clone(),
+                            lower_proof_bytes.clone(),
                             inner_circuit_data,
                             &inner_circuits[level].0,
                             &inner_circuits[level].1,
@@ -411,14 +313,14 @@ async fn main() -> Result<()> {
 }
 
 fn get_inner_targets(i: usize) -> Result<CommitmentMapperInnerCircuitTargets> {
-    let target_bytes = read_from_file(&format!("commitment_mapper_{}.plonky2_targets", i))?;
+    let target_bytes = read_from_file(&format!("{}_{}.plonky2_targets", CIRCUIT_NAME, i))?;
     let mut target_buffer = Buffer::new(&target_bytes);
 
     Ok(CommitmentMapperInnerCircuitTargets::read_targets(&mut target_buffer).unwrap())
 }
 
 fn get_first_level_targets() -> Result<ValidatorCommitmentTargets> {
-    let target_bytes = read_from_file(&format!("commitment_mapper_{}.plonky2_targets", 0))?;
+    let target_bytes = read_from_file(&format!("{}_{}.plonky2_targets", CIRCUIT_NAME, 0))?;
     let mut target_buffer = Buffer::new(&target_bytes);
 
     Ok(ValidatorCommitmentTargets::read_targets(&mut target_buffer).unwrap())

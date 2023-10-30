@@ -1,5 +1,4 @@
 use colored::Colorize;
-use std::fmt::Display;
 
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
@@ -67,42 +66,93 @@ impl CommitmentMapperTask {
     }
 }
 
-impl Display for CommitmentMapperTask {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> ::std::result::Result<(), ::std::fmt::Error> {
-        match *self {
-            CommitmentMapperTask::UpdateProofNode(gindex, epoch) => f.write_str(&format!(
-                "UpdateProofNode(gindex = {}, epoch = {})",
-                gindex, epoch
-            )),
-            CommitmentMapperTask::ProveZeroForDepth(_) => f.write_str(&format!("{:?}", *self)),
-            CommitmentMapperTask::UpdateValidatorProof(validator_index, epoch) => {
-                f.write_str(&format!(
-                    "UpdateValidatorProof(validator_index = {}, epoch = {})",
-                    validator_index, epoch
+impl CommitmentMapperTask {
+    pub fn deserialize(bytes: &[u8]) -> Option<CommitmentMapperTask> {
+        match FromPrimitive::from_u8(u8::from_be_bytes(bytes[0..1].try_into().unwrap()))? {
+            CommitmentMapperTaskType::UpdateProofNode => {
+                let gindex = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
+                let epoch = u64::from_be_bytes(bytes[9..17].try_into().unwrap());
+                Some(CommitmentMapperTask::UpdateProofNode(gindex, epoch))
+            }
+            CommitmentMapperTaskType::ProveZeroForDepth => {
+                let depth = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
+                Some(CommitmentMapperTask::ProveZeroForDepth(depth))
+            }
+            CommitmentMapperTaskType::UpdateValidatorProof => {
+                let validator_index = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
+                let epoch = u64::from_be_bytes(bytes[9..17].try_into().unwrap());
+                Some(CommitmentMapperTask::UpdateValidatorProof(
+                    validator_index,
+                    epoch,
                 ))
             }
         }
     }
 }
 
-pub fn deserialize_task(bytes: &[u8]) -> Option<CommitmentMapperTask> {
-    match FromPrimitive::from_u8(u8::from_be_bytes(bytes[0..1].try_into().unwrap()))? {
-        CommitmentMapperTaskType::UpdateProofNode => {
-            let gindex = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
-            let epoch = u64::from_be_bytes(bytes[9..17].try_into().unwrap());
-            Some(CommitmentMapperTask::UpdateProofNode(gindex, epoch))
-        }
-        CommitmentMapperTaskType::ProveZeroForDepth => {
-            let depth = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
-            Some(CommitmentMapperTask::ProveZeroForDepth(depth))
-        }
-        CommitmentMapperTaskType::UpdateValidatorProof => {
-            let validator_index = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
-            let epoch = u64::from_be_bytes(bytes[9..17].try_into().unwrap());
-            Some(CommitmentMapperTask::UpdateValidatorProof(
-                validator_index,
-                epoch,
-            ))
+#[derive(FromPrimitive)]
+#[repr(u8)]
+enum CommitmentMapperAccumulatorTaskType {
+    AppendValidatorAccumulatorProof,
+    UpdateProofNode,
+    ProveZeroForDepth,
+}
+
+#[derive(Debug)]
+pub enum CommitmentMapperAccumulatorTask {
+    AppendValidatorAccumulatorProof(Gindex),
+    UpdateProofNode(Gindex),
+    ProveZeroForDepth(Depth),
+}
+
+impl CommitmentMapperAccumulatorTask {
+    pub fn log(&self) {
+        match *self {
+            CommitmentMapperAccumulatorTask::AppendValidatorAccumulatorProof(gindex) => println!(
+                "{}",
+                format!(
+                    "Appending validator accumulator proof at index {}...",
+                    gindex.to_string().magenta()
+                )
+                .blue()
+                .bold()
+            ),
+            CommitmentMapperAccumulatorTask::UpdateProofNode(gindex) => println!(
+                "{}",
+                format!(
+                    "Updating proof node at gindex {}...",
+                    gindex.to_string().magenta()
+                )
+                .blue()
+                .bold()
+            ),
+            CommitmentMapperAccumulatorTask::ProveZeroForDepth(depth) => {
+                println!(
+                    "{}",
+                    format!("Proving zero for depth {}...", depth.to_string().magenta())
+                        .blue()
+                        .bold(),
+                )
+            }
+        };
+    }
+}
+
+impl CommitmentMapperAccumulatorTask {
+    pub fn deserialize(bytes: &[u8]) -> Option<CommitmentMapperAccumulatorTask> {
+        match FromPrimitive::from_u8(u8::from_be_bytes(bytes[0..1].try_into().unwrap()))? {
+            CommitmentMapperAccumulatorTaskType::AppendValidatorAccumulatorProof => {
+                let gindex = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
+                Some(CommitmentMapperAccumulatorTask::AppendValidatorAccumulatorProof(gindex))
+            }
+            CommitmentMapperAccumulatorTaskType::UpdateProofNode => {
+                let gindex = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
+                Some(CommitmentMapperAccumulatorTask::UpdateProofNode(gindex))
+            }
+            CommitmentMapperAccumulatorTaskType::ProveZeroForDepth => {
+                let depth = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
+                Some(CommitmentMapperAccumulatorTask::ProveZeroForDepth(depth))
+            }
         }
     }
 }

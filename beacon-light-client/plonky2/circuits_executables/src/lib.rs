@@ -1,3 +1,5 @@
+#![feature(async_closure)]
+#[warn(unused_variables)]
 pub mod commitment_mapper_task;
 pub mod crud;
 pub mod provers;

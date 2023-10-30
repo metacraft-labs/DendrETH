@@ -85,6 +85,7 @@ contract ValidatorsAccumulator {
   }
 
   // Function to handle deposits from validators
+  // TODO: Maybe we can construct the accumulator using posiedon hash directly
   function deposit(
     bytes calldata pubkey,
     bytes calldata withdrawal_credentials,

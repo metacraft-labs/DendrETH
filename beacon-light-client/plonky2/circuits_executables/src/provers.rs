@@ -3,12 +3,15 @@ use circuits::{
     build_commitment_mapper_inner_level_circuit::CommitmentMapperInnerCircuitTargets,
     build_final_circuit::FinalCircuitTargets, utils::SetBytesArray,
     validator_balance_circuit::ValidatorBalanceVerificationTargets,
+    validator_balance_circuit_accumulator::ValidatorBalanceVerificationTargetsAccumulator,
     validator_hash_tree_root::ValidatorShaTargets,
     validator_hash_tree_root_poseidon::ValidatorPoseidonTargets,
 };
 
+use num::BigUint;
 use plonky2::{
-    field::goldilocks_field::GoldilocksField,
+    field::{goldilocks_field::GoldilocksField, types::Field},
+    hash::hash_types::HashOut,
     iop::{
         target::BoolTarget,
         witness::{PartialWitness, WitnessWrite},
@@ -23,7 +26,9 @@ use plonky2::{
 use crate::{
     crud::common::FinalCircuitInput,
     validator::ValidatorShaInput,
-    validator_balances_input::{ValidatorBalancesInput, ValidatorPoseidonInput},
+    validator_balances_input::{
+        ValidatorBalanceAccumulatorInput, ValidatorBalancesInput, ValidatorPoseidonInput,
+    },
 };
 
 use anyhow::Result;
@@ -123,9 +128,12 @@ impl SetPWValues<ValidatorPoseidonInput> for ValidatorPoseidonTargets {
         pw: &mut PartialWitness<GoldilocksField>,
         source: &ValidatorPoseidonInput,
     ) {
-        pw.set_biguint_target(&self.pubkey, &source.pubkey);
+        pw.set_bytes_array(&self.pubkey, &hex::decode(&source.pubkey).unwrap());
 
-        pw.set_biguint_target(&self.withdrawal_credentials, &source.withdrawal_credentials);
+        pw.set_bytes_array(
+            &self.withdrawal_credentials,
+            &hex::decode(&source.withdrawal_credentials).unwrap(),
+        );
 
         pw.set_biguint_target(&self.effective_balance, &source.effective_balance);
 
@@ -144,7 +152,9 @@ impl SetPWValues<ValidatorPoseidonInput> for ValidatorPoseidonTargets {
     }
 }
 
-impl SetPWValues<ValidatorBalancesInput> for ValidatorBalanceVerificationTargets {
+impl<const N: usize> SetPWValues<ValidatorBalancesInput>
+    for ValidatorBalanceVerificationTargets<N>
+{
     fn set_pw_values(
         &self,
         pw: &mut PartialWitness<GoldilocksField>,
@@ -158,11 +168,93 @@ impl SetPWValues<ValidatorBalancesInput> for ValidatorBalanceVerificationTargets
             self.validators[i].set_pw_values(pw, &source.validators[i]);
         }
 
-        pw.set_biguint_target(&self.withdrawal_credentials, &source.withdrawal_credentials);
+        for i in 0..N {
+            set_boolean_pw_values(
+                pw,
+                &self.withdrawal_credentials[i],
+                &source.withdrawal_credentials[i],
+            );
+        }
 
         set_boolean_pw_values(pw, &self.validator_is_zero, &source.validator_is_zero);
 
         pw.set_biguint_target(&self.current_epoch, &source.current_epoch);
+    }
+}
+
+impl SetPWValues<ValidatorBalanceAccumulatorInput>
+    for ValidatorBalanceVerificationTargetsAccumulator
+{
+    fn set_pw_values(
+        &self,
+        pw: &mut PartialWitness<GoldilocksField>,
+        source: &ValidatorBalanceAccumulatorInput,
+    ) {
+        pw.set_bytes_array(
+            &self.balances_root,
+            &hex::decode(&source.balances_root).unwrap(),
+        );
+
+        for i in 0..source.balances.len() {
+            pw.set_bytes_array(
+                &self.balances[i],
+                &hex::decode(&source.balances[i]).unwrap(),
+            );
+        }
+
+        for i in 0..source.balances_proofs.len() {
+            for j in 0..source.balances_proofs[i].len() {
+                pw.set_bytes_array(
+                    &self.balances_proofs[i][j],
+                    &hex::decode(&source.balances_proofs[i][j]).unwrap(),
+                );
+            }
+        }
+
+        for i in 0..source.validator_deposit_indexes.len() {
+            pw.set_biguint_target(
+                &self.validator_deposit_indexes[i],
+                &BigUint::from(source.validator_deposit_indexes[i]),
+            );
+        }
+
+        for i in 0..source.validator_indexes.len() {
+            pw.set_target(
+                self.validator_indexes[i],
+                GoldilocksField::from_canonical_u64(source.validator_indexes[i]),
+            );
+        }
+
+        for i in 0..source.validators.len() {
+            self.validators[i].set_pw_values(pw, &source.validators[i]);
+        }
+
+        pw.set_hash_target(
+            self.validator_commitment_root,
+            string_vec_to_hash_out(&source.validator_commitment_root),
+        );
+
+        for i in 0..source.validator_commitment_proofs.len() {
+            for j in 0..source.validator_commitment_proofs[i].len() {
+                pw.set_hash_target(
+                    self.validator_commitment_proofs[i][j],
+                    string_vec_to_hash_out(&source.validator_commitment_proofs[i][j]),
+                );
+            }
+        }
+
+        for i in 0..source.validator_is_not_zero.len() {
+            pw.set_bool_target(
+                self.validator_is_not_zero[i],
+                source.validator_is_not_zero[i],
+            );
+        }
+
+        pw.set_biguint_target(&self.current_epoch, &BigUint::from(source.current_epoch));
+        pw.set_biguint_target(
+            &self.current_eth1_deposit_index,
+            &BigUint::from(source.current_eth1_deposit_index),
+        );
     }
 }
 
@@ -201,7 +293,7 @@ impl SetPWValues<ValidatorShaInput> for ValidatorShaTargets {
     }
 }
 
-impl SetPWValues<FinalCircuitInput> for FinalCircuitTargets {
+impl<const N: usize> SetPWValues<FinalCircuitInput> for FinalCircuitTargets<N> {
     fn set_pw_values(&self, pw: &mut PartialWitness<GoldilocksField>, source: &FinalCircuitInput) {
         set_boolean_pw_values(pw, &self.state_root, &source.state_root);
 
@@ -211,7 +303,13 @@ impl SetPWValues<FinalCircuitInput> for FinalCircuitTargets {
             set_boolean_pw_values(pw, &self.slot_branch[i], &source.slot_branch[i]);
         }
 
-        pw.set_biguint_target(&self.withdrawal_credentials, &source.withdrawal_credentials);
+        for i in 0..N {
+            set_boolean_pw_values(
+                pw,
+                &self.withdrawal_credentials[i],
+                &source.withdrawal_credentials[i],
+            );
+        }
 
         for i in 0..source.balance_branch.len() {
             set_boolean_pw_values(pw, &self.balance_branch[i], &source.balance_branch[i]);
@@ -222,5 +320,16 @@ impl SetPWValues<FinalCircuitInput> for FinalCircuitTargets {
         }
 
         set_boolean_pw_values(pw, &self.validator_size_bits, &source.validators_size_bits);
+    }
+}
+
+fn string_vec_to_hash_out(source: &Vec<String>) -> HashOut<GoldilocksField> {
+    HashOut::<GoldilocksField> {
+        elements: source
+            .iter()
+            .map(|e| GoldilocksField::from_canonical_u64(e.parse::<u64>().unwrap()))
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap(),
     }
 }

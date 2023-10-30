@@ -163,6 +163,52 @@ export interface Validator {
   withdrawableEpoch: number;
 }
 
+export interface ValidatorPubkeyDeposit {
+  validator_pubkey: string;
+  validator_eth1_deposit_index: number;
+}
+
+export interface IndexedValidatorPubkeyDeposit {
+  index: number;
+  validator: ValidatorPubkeyDeposit;
+}
+
+export interface ValidatorShaInput {
+  pubkey: string;
+  withdrawalCredentials: string;
+  effectiveBalance: string;
+  slashed: string;
+  activationEligibilityEpoch: string;
+  activationEpoch: string;
+  exitEpoch: string;
+  withdrawableEpoch: string;
+}
+
+export interface ValidatorPoseidonInput {
+  pubkey: string;
+  withdrawalCredentials: string;
+  effectiveBalance: string;
+  slashed: number;
+  activationEligibilityEpoch: string;
+  activationEpoch: string;
+  exitEpoch: string;
+  withdrawableEpoch: string;
+}
+
+export interface BalancesAccumulatorInput {
+  balancesRoot: string;
+  balances: string[];
+  balancesProofs: string[][];
+  validatorDepositIndexes: number[];
+  validatorIndexes: number[];
+  validators: ValidatorPoseidonInput[];
+  validatorCommitmentProofs: string[][][];
+  validatorIsNotZero: number[];
+  validatorCommitmentRoot: string[];
+  currentEpoch: number;
+  currentEth1DepositIndex: number;
+}
+
 export interface ValidatorProof {
   needsChange: boolean;
   proofIndex: string;
