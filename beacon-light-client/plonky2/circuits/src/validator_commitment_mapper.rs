@@ -9,7 +9,7 @@ use plonky2::{
 use crate::{
     biguint::CircuitBuilderBiguint,
     targets_serialization::{ReadTargets, WriteTargets},
-    utils::{bits_to_biguint_target, ssz_num_from_bits},
+    utils::{bits_to_biguint_target, ssz_num_from_bits, ETH_SHA256_BIT_SIZE},
     validator_hash_tree_root::{hash_tree_root_validator_sha256, ValidatorShaTargets},
     validator_hash_tree_root_poseidon::{
         hash_tree_root_validator_poseidon, ValidatorPoseidonTargets,
@@ -55,11 +55,8 @@ pub fn validator_commitment_mapper<F: RichField + Extendable<D>, const D: usize>
     let validator = hash_tree_root_sha256.validator;
 
     let validator_poseidon_mapped = ValidatorPoseidonTargets {
-        pubkey: bits_to_biguint_target(builder, validator.pubkey.to_vec()),
-        withdrawal_credentials: bits_to_biguint_target(
-            builder,
-            validator.withdrawal_credentials.to_vec(),
-        ),
+        pubkey: validator.pubkey,
+        withdrawal_credentials: validator.withdrawal_credentials,
         activation_eligibility_epoch: ssz_num_from_bits(
             builder,
             &validator.activation_eligibility_epoch[0..64],
@@ -71,15 +68,19 @@ pub fn validator_commitment_mapper<F: RichField + Extendable<D>, const D: usize>
         withdrawable_epoch: ssz_num_from_bits(builder, &validator.withdrawable_epoch[0..64]),
     };
 
-    builder.connect_biguint(
-        &validator_poseidon.validator.pubkey,
-        &validator_poseidon_mapped.pubkey,
-    );
+    for i in 0..384 {
+        builder.connect(
+            validator_poseidon.validator.pubkey[i].target,
+            validator_poseidon_mapped.pubkey[i].target,
+        );
+    }
 
-    builder.connect_biguint(
-        &validator_poseidon.validator.withdrawal_credentials,
-        &validator_poseidon_mapped.withdrawal_credentials,
-    );
+    for i in 0..ETH_SHA256_BIT_SIZE {
+        builder.connect(
+            validator_poseidon.validator.withdrawal_credentials[i].target,
+            validator_poseidon_mapped.withdrawal_credentials[i].target,
+        );
+    }
 
     builder.connect(
         validator_poseidon.validator.slashed.target,

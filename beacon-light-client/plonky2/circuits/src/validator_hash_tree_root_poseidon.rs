@@ -4,7 +4,7 @@ use plonky2::{
         hash_types::{HashOutTarget, RichField},
         poseidon::PoseidonHash,
     },
-    iop::target::{BoolTarget},
+    iop::target::BoolTarget,
     plonk::circuit_builder::CircuitBuilder,
     util::serialization::{Buffer, IoResult, Read, Write},
 };
@@ -13,12 +13,13 @@ use crate::{
     biguint::{BigUintTarget, CircuitBuilderBiguint},
     hash_tree_root_poseidon::hash_tree_root_poseidon,
     targets_serialization::{ReadTargets, WriteTargets},
+    utils::{create_bool_target_array, ETH_SHA256_BIT_SIZE},
 };
 
 #[derive(Clone, Debug)]
 pub struct ValidatorPoseidonTargets {
-    pub pubkey: BigUintTarget,
-    pub withdrawal_credentials: BigUintTarget,
+    pub pubkey: [BoolTarget; 384],
+    pub withdrawal_credentials: [BoolTarget; ETH_SHA256_BIT_SIZE],
     pub effective_balance: BigUintTarget,
     pub slashed: BoolTarget,
     pub activation_eligibility_epoch: BigUintTarget,
@@ -30,8 +31,8 @@ pub struct ValidatorPoseidonTargets {
 impl ReadTargets for ValidatorPoseidonTargets {
     fn read_targets(data: &mut Buffer) -> IoResult<ValidatorPoseidonTargets> {
         Ok(ValidatorPoseidonTargets {
-            pubkey: BigUintTarget::read_targets(data)?,
-            withdrawal_credentials: BigUintTarget::read_targets(data)?,
+            pubkey: data.read_target_bool_vec()?.try_into().unwrap(),
+            withdrawal_credentials: data.read_target_bool_vec()?.try_into().unwrap(),
             effective_balance: BigUintTarget::read_targets(data)?,
             slashed: data.read_target_bool()?,
             activation_eligibility_epoch: BigUintTarget::read_targets(data)?,
@@ -46,8 +47,8 @@ impl WriteTargets for ValidatorPoseidonTargets {
     fn write_targets(&self) -> IoResult<Vec<u8>> {
         let mut data = Vec::<u8>::new();
 
-        data.extend(BigUintTarget::write_targets(&self.pubkey)?);
-        data.extend(BigUintTarget::write_targets(&self.withdrawal_credentials)?);
+        data.write_target_bool_vec(&self.pubkey);
+        data.write_target_bool_vec(&self.withdrawal_credentials);
         data.extend(BigUintTarget::write_targets(&self.effective_balance)?);
         data.write_target_bool(self.slashed)?;
         data.extend(BigUintTarget::write_targets(
@@ -65,9 +66,15 @@ impl ValidatorPoseidonTargets {
     pub fn new<F: RichField + Extendable<D>, const D: usize>(
         builder: &mut CircuitBuilder<F, D>,
     ) -> ValidatorPoseidonTargets {
+        let pubkey: [BoolTarget; 384] = (0..384)
+            .map(|_| builder.add_virtual_bool_target_safe())
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+
         ValidatorPoseidonTargets {
-            pubkey: builder.add_virtual_biguint_target(12),
-            withdrawal_credentials: builder.add_virtual_biguint_target(8),
+            pubkey: pubkey,
+            withdrawal_credentials: create_bool_target_array(builder),
             effective_balance: builder.add_virtual_biguint_target(2),
             slashed: builder.add_virtual_bool_target_safe(),
             activation_eligibility_epoch: builder.add_virtual_biguint_target(2),
@@ -90,14 +97,13 @@ pub fn hash_tree_root_validator_poseidon<F: RichField + Extendable<D>, const D: 
 
     let leaves = vec![
         builder.hash_n_to_hash_no_pad::<PoseidonHash>(
-            validator.pubkey.limbs.iter().map(|x| x.0).collect(),
+            validator.pubkey.iter().map(|x| x.target).collect(),
         ),
         builder.hash_n_to_hash_no_pad::<PoseidonHash>(
             validator
                 .withdrawal_credentials
-                .limbs
                 .iter()
-                .map(|x| x.0)
+                .map(|x| x.target)
                 .collect(),
         ),
         builder.hash_n_to_hash_no_pad::<PoseidonHash>(

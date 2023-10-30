@@ -10,13 +10,11 @@ use plonky2::{
 };
 
 use crate::{
-    biguint::{CircuitBuilderBiguint},
-    build_validator_balance_circuit::{
-        set_public_variables, ValidatorBalanceProofTargetsExt,
-    },
+    biguint::CircuitBuilderBiguint,
+    build_validator_balance_circuit::{set_public_variables, ValidatorBalanceProofTargetsExt},
     sha256::make_circuits,
     targets_serialization::{ReadTargets, WriteTargets},
-    utils::{ETH_SHA256_BIT_SIZE},
+    utils::ETH_SHA256_BIT_SIZE,
 };
 
 pub struct BalanceInnerCircuitTargets {
@@ -71,8 +69,8 @@ pub fn build_inner_level_circuit(
 
     let verifier_circuit_target = VerifierCircuitTarget {
         constants_sigmas_cap: builder
-            .add_virtual_cap(inner_circuit_data.common.config.fri_config.cap_height),
-        circuit_digest: builder.add_virtual_hash(),
+            .constant_merkle_cap(&inner_circuit_data.verifier_only.constants_sigmas_cap),
+        circuit_digest: builder.constant_hash(inner_circuit_data.verifier_only.circuit_digest),
     };
 
     let pt1: ProofWithPublicInputsTarget<2> =

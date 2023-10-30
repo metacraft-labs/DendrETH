@@ -10,6 +10,4 @@ pub mod commitment_mapper_inner_level;
 // pub mod get_total_active_balance_first_level;
 // pub mod get_total_active_balance_inner_level;
 pub mod proof_utils;
-pub mod test;
-pub mod weigh_justification_and_finalization;
 pub mod validator;

@@ -146,11 +146,14 @@ pub fn validator_balance_verification<F: RichField + Extendable<D>, const D: usi
     let mut sum = builder.zero_biguint();
 
     for i in 0..validators_len {
-        let is_equal = biguint_is_equal(
-            builder,
-            &validators_leaves[i].validator.withdrawal_credentials,
-            &withdrawal_credentials,
-        );
+        // TODO: is withdrawal_credentials equal
+        // let is_equal = biguint_is_equal(
+        //     builder,
+        //     &validators_leaves[i].validator.withdrawal_credentials,
+        //     &withdrawal_credentials,
+        // );
+
+        let is_equal = builder._true();
 
         let balance = ssz_num_from_bits(
             builder,

@@ -1,8 +1,17 @@
-use plonky2::plonk::config::{AlgebraicHasher, GenericConfig};
+use ethers::prelude::k256::elliptic_curve::generic_array::functional::FunctionalSequence;
+use itertools::Itertools;
+use plonky2::{
+    field::types::PrimeField,
+    iop::target::BoolTarget,
+    plonk::config::{AlgebraicHasher, GenericConfig},
+};
 use plonky2x::{
     frontend::{
-        eth::{vars::BLSPubkeyVariable},
-        hash::poseidon::poseidon256::PoseidonHashOutVariable,
+        eth::vars::BLSPubkeyVariable,
+        hash::{
+            bit_operations::util::bits_to_biguint_target,
+            poseidon::poseidon256::PoseidonHashOutVariable,
+        },
     },
     prelude::{ArrayVariable, CircuitBuilder, CircuitVariable, PlonkParameters, Variable},
 };
@@ -28,10 +37,50 @@ impl CommitmentMapperVariable for ValidatorVariable {
         <<L as PlonkParameters<D>>::Config as plonky2::plonk::config::GenericConfig<D>>::Hasher:
             plonky2::plonk::config::AlgebraicHasher<<L as PlonkParameters<D>>::Field>,
     {
-        let pubkey_hash = builder.poseidon_hash(&self.pubkey.variables());
-        builder.watch(&pubkey_hash, 'pubkey_hash')
-        let withdrawal_credentials_hash =
-            builder.poseidon_hash(&self.withdrawal_credentials.variables());
+        let pubkey_biguint = bits_to_biguint_target(
+            &mut builder.api,
+            self.pubkey
+                .0
+                 .0
+                .map(|x| x.0)
+                .iter()
+                .flatten()
+                .map(|x| BoolTarget::new_unsafe(x.targets()[0]))
+                .collect_vec(),
+        );
+
+        let pubkey_hash = builder.poseidon_hash(
+            &pubkey_biguint
+                .limbs
+                .iter()
+                .map(|x| Variable::from(x.0))
+                .collect_vec(),
+        );
+
+        // let pubkey_hash = builder.poseidon_hash(&self.pubkey.variables());
+
+        let withdrawal_credentials_biguint = bits_to_biguint_target(
+            &mut builder.api,
+            self.withdrawal_credentials
+                .0
+                 .0
+                .map(|x| x.0)
+                .iter()
+                .flatten()
+                .map(|x| BoolTarget::new_unsafe(x.targets()[0]))
+                .collect_vec(),
+        );
+
+        let withdrawal_credentials_hash = builder.poseidon_hash(
+            &withdrawal_credentials_biguint
+                .limbs
+                .iter()
+                .map(|x| Variable::from(x.0))
+                .collect_vec(),
+        );
+
+        // let withdrawal_credentials_hash =
+        //     builder.poseidon_hash(&self.withdrawal_credentials.variables());
 
         let effective_balance_hash = builder.poseidon_hash(&self.effective_balance.variables());
         let slashed_hash = builder.poseidon_hash(&self.slashed.variables());
