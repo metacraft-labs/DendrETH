@@ -1,3 +1,4 @@
+use num::BigUint;
 use serde::{Deserialize, Serialize};
 
 pub mod bool_vec_as_int_vec {
@@ -136,6 +137,12 @@ pub struct ValidatorShaInput {
     pub activation_epoch: String,
     pub exit_epoch: String,
     pub withdrawable_epoch: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ValidatorAccumulatorInput {
+    pub validator_pubkey: String,
+    pub validator_eth1_deposit_index: BigUint,
 }
 
 #[cfg(test)]

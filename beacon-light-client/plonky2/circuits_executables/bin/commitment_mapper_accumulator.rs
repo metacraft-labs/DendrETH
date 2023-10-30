@@ -1,48 +1,92 @@
 use anyhow::Result;
 use circuits::{
+    biguint::WitnessBigUint,
     build_commitment_mapper_inner_level_circuit::CommitmentMapperInnerCircuitTargets,
-    targets_serialization::ReadTargets, validator_commitment_mapper::ValidatorCommitmentTargets,
+    targets_serialization::ReadTargets, utils::SetBytesArray,
+    validator_accumulator_commitment_mapper::ValidatorAccumulatorCommitmentTargets,
 };
 use circuits_executables::{
-    commitment_mapper_task::{deserialize_task, CommitmentMapperTask},
     crud::{
-        fetch_proofs, fetch_validator, fetch_zero_proof, get_depth_for_gindex, load_circuit_data,
-        read_from_file, save_validator_proof, save_zero_validator_proof, ProofProvider,
-        ValidatorProof,
+        fetch_accumulator_proofs, fetch_validator_accumulator, fetch_zero_accumulator_proof,
+        get_depth_for_gindex, load_circuit_data, read_from_file, save_validator_accumulator_proof,
+        save_zero_validator_accumulator_proof, ProofProvider, ValidatorProof,
     },
-    provers::{handle_commitment_mapper_inner_level_proof, SetPWValues},
-    utils::{gindex_from_validator_index, parse_config_file},
-    validator::VALIDATOR_REGISTRY_LIMIT,
-    validator_commitment_constants,
+    provers::handle_commitment_mapper_inner_level_proof,
+    validator::VALIDATOR_REGISTRY_LIMIT, validator_commitment_constants::VALIDATOR_COMMITMENT_CONSTANTS,
 };
 use clap::{App, Arg};
-use colored::Colorize;
 use futures_lite::future;
+use num::FromPrimitive;
+use num_derive::FromPrimitive;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
-    iop::witness::{PartialWitness, WitnessWrite},
+    iop::witness::PartialWitness,
     plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig},
     util::serialization::Buffer,
 };
 use redis_work_queue::{KeyPrefix, WorkQueue};
 use std::{format, println, thread, time::Duration};
 
-use validator_commitment_constants::VALIDATOR_COMMITMENT_CONSTANTS;
-
 use jemallocator::Jemalloc;
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
-const CIRCUIT_NAME: &str = "commitment_mapper";
+const CIRCUIT_NAME: &str = "commitment_mapper_accumulator";
+
+#[derive(FromPrimitive)]
+#[repr(u8)]
+enum CommitmentMapperAccumulatorTaskType {
+    UpdateProofNode,
+    ProveZeroForLevel,
+    UpdateValidatorProof,
+    None,
+}
+
+#[derive(Debug)]
+enum CommitmentMapperAccumulatorTask {
+    UpdateProofNode(u64),      // gindex
+    ProveZeroForLevel(u64),    // level
+    UpdateValidatorProof(u64), // validator index
+    None,
+}
+
+fn deserialize_task(bytes: &[u8]) -> CommitmentMapperAccumulatorTask {
+    let task_type: Option<CommitmentMapperAccumulatorTaskType> =
+        FromPrimitive::from_u8(u8::from_be_bytes(bytes[0..1].try_into().unwrap()));
+
+    if task_type.is_none() {
+        return CommitmentMapperAccumulatorTask::None;
+    }
+
+    let task_type = task_type.unwrap();
+
+    match task_type {
+        CommitmentMapperAccumulatorTaskType::UpdateProofNode => {
+            let gindex = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
+            CommitmentMapperAccumulatorTask::UpdateProofNode(gindex)
+        }
+        CommitmentMapperAccumulatorTaskType::ProveZeroForLevel => {
+            let level = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
+            CommitmentMapperAccumulatorTask::ProveZeroForLevel(level)
+        }
+        CommitmentMapperAccumulatorTaskType::UpdateValidatorProof => {
+            let validator_index = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
+            CommitmentMapperAccumulatorTask::UpdateValidatorProof(validator_index)
+        }
+        CommitmentMapperAccumulatorTaskType::None => unreachable!(),
+    }
+}
+
+fn gindex_from_validator_index(index: u64) -> u64 {
+    return 2u64.pow(40) - 1 + index;
+}
 
 fn main() -> Result<()> {
     future::block_on(async_main())
 }
 
 async fn async_main() -> Result<()> {
-    let config = parse_config_file("../common_config.json".to_owned())?;
-
     let matches = App::new("")
     .arg(
         Arg::with_name("redis_connection")
@@ -51,7 +95,7 @@ async fn async_main() -> Result<()> {
             .value_name("Redis Connection")
             .help("Sets a custom Redis connection")
             .takes_value(true)
-            .default_value(&format!("redis://{}:{}/", config["redis-host"], config["redis-port"])),
+            .default_value("redis://127.0.0.1:6379/"),
     )
     .arg(
         Arg::with_name("stop_after")
@@ -76,7 +120,7 @@ async fn async_main() -> Result<()> {
 
     let queue = WorkQueue::new(KeyPrefix::new(
         VALIDATOR_COMMITMENT_CONSTANTS
-            .validator_proofs_queue
+            .validator_accumulator_proof_queue
             .to_owned(),
     ));
 
@@ -108,80 +152,65 @@ async fn async_main() -> Result<()> {
         .unwrap();
 
     loop {
-        println!("{}", "Waiting for task...".yellow());
+        println!("Waiting for job...");
 
-        let Some(queue_item) = queue
+        let job = match queue
             .lease(
                 &mut con,
                 Some(Duration::from_secs(stop_after)),
                 Duration::from_secs(lease_for),
             )
             .await?
-        else {
-            continue;
+        {
+            Some(job) => job,
+            None => continue,
         };
 
-        let Some(task) = deserialize_task(&queue_item.data) else {
-            println!("{}", "Invalid task data".red().bold());
-            println!("{}", format!("Got bytes: {:?}", queue_item.data).red());
-            queue.complete(&mut con, &queue_item).await?;
-            continue;
-        };
+        println!("Got job: {:?}", job.data);
 
-        task.log();
+        let task = deserialize_task(&job.data);
 
         match task {
-            CommitmentMapperTask::UpdateValidatorProof(validator_index, epoch) => {
-                match fetch_validator(&mut con, validator_index, epoch).await {
+            CommitmentMapperAccumulatorTask::UpdateValidatorProof(validator_index) => {
+                match fetch_validator_accumulator(&mut con, validator_index).await {
                     Ok(validator) => {
                         let mut pw = PartialWitness::new();
 
-                        validator_commitment
-                            .validator
-                            .set_pw_values(&mut pw, &validator);
-
-                        pw.set_bool_target(
-                            validator_commitment.validator_is_zero,
-                            validator_index == VALIDATOR_REGISTRY_LIMIT as u64,
+                        pw.set_bytes_array(
+                            &validator_commitment.validator_pubkey,
+                            &hex::decode(validator.validator_pubkey).unwrap(),
+                        );
+                        pw.set_biguint_target(
+                            &validator_commitment.validator_eth1_deposit_index,
+                            &validator.validator_eth1_deposit_index,
                         );
 
                         let proof = first_level_circuit_data.prove(pw)?;
 
                         if validator_index as usize != VALIDATOR_REGISTRY_LIMIT {
-                            match save_validator_proof(
+                            match save_validator_accumulator_proof(
                                 &mut con,
                                 proof,
                                 gindex_from_validator_index(validator_index),
-                                epoch,
                             )
                             .await
                             {
                                 Ok(_) => {
-                                    queue.complete(&mut con, &queue_item).await?;
+                                    queue.complete(&mut con, &job).await?;
                                 }
                                 Err(err) => {
-                                    println!(
-                                        "{}",
-                                        format!("Error while proving zero validator: {}", err)
-                                            .red()
-                                            .bold()
-                                    );
+                                    println!("Error: {}", err);
                                     thread::sleep(Duration::from_secs(10));
                                     continue;
                                 }
                             }
                         } else {
-                            match save_zero_validator_proof(&mut con, proof, 40).await {
+                            match save_zero_validator_accumulator_proof(&mut con, proof, 40).await {
                                 Ok(_) => {
-                                    queue.complete(&mut con, &queue_item).await?;
+                                    queue.complete(&mut con, &job).await?;
                                 }
                                 Err(err) => {
-                                    println!(
-                                        "{}",
-                                        format!("Error while proving validator: {}", err)
-                                            .red()
-                                            .bold()
-                                    );
+                                    println!("Error: {}", err);
                                     thread::sleep(Duration::from_secs(10));
                                     continue;
                                 }
@@ -189,21 +218,16 @@ async fn async_main() -> Result<()> {
                         }
                     }
                     Err(err) => {
-                        println!(
-                            "{}",
-                            format!("Error while fetching validator: {}", err)
-                                .red()
-                                .bold()
-                        );
+                        println!("Error: {}", err);
                         thread::sleep(Duration::from_secs(10));
                         continue;
                     }
                 };
             }
-            CommitmentMapperTask::UpdateProofNode(gindex, epoch) => {
+            CommitmentMapperAccumulatorTask::UpdateProofNode(gindex) => {
                 let level = 39 - get_depth_for_gindex(gindex) as usize;
 
-                match fetch_proofs::<ValidatorProof>(&mut con, gindex, epoch).await {
+                match fetch_accumulator_proofs(&mut con, gindex).await {
                     Ok(proofs) => {
                         let inner_circuit_data = if level > 0 {
                             &inner_circuits[level - 1].1
@@ -219,37 +243,28 @@ async fn async_main() -> Result<()> {
                             &inner_circuits[level].1,
                         )?;
 
-                        match save_validator_proof(&mut con, proof, gindex, epoch).await {
-                            Ok(_) => queue.complete(&mut con, &queue_item).await?,
+                        match save_validator_accumulator_proof(&mut con, proof, gindex).await {
+                            Ok(_) => queue.complete(&mut con, &job).await?,
                             Err(err) => {
-                                println!(
-                                    "{}",
-                                    format!("Error while saving validator proof: {}", err)
-                                        .red()
-                                        .bold()
-                                );
+                                println!("Error: {}", err);
                                 thread::sleep(Duration::from_secs(1));
                                 continue;
                             }
                         }
                     }
                     Err(err) => {
-                        println!(
-                            "{}",
-                            format!("Error while fetching validator proof: {}", err)
-                                .red()
-                                .bold()
-                        );
+                        println!("Error: {}", err);
                         thread::sleep(Duration::from_secs(1));
                         continue;
                     }
                 };
             }
-            CommitmentMapperTask::ProveZeroForDepth(depth) => {
+            CommitmentMapperAccumulatorTask::ProveZeroForLevel(depth) => {
+                println!("Got prove zero level task");
                 // the level in the inner proofs tree
                 let level = 39 - depth as usize;
 
-                match fetch_zero_proof::<ValidatorProof>(&mut con, depth + 1).await {
+                match fetch_zero_accumulator_proof::<ValidatorProof>(&mut con, depth + 1).await {
                     Ok(proof) => {
                         let inner_circuit_data = if level > 0 {
                             &inner_circuits[level - 1].1
@@ -265,31 +280,27 @@ async fn async_main() -> Result<()> {
                             &inner_circuits[level].1,
                         )?;
 
-                        match save_zero_validator_proof(&mut con, proof, depth).await {
-                            Ok(_) => queue.complete(&mut con, &queue_item).await?,
+                        match save_zero_validator_accumulator_proof(&mut con, proof, depth).await {
+                            Ok(_) => queue.complete(&mut con, &job).await?,
                             Err(err) => {
-                                println!(
-                                    "{}",
-                                    format!("Error while saving zero validator proof: {}", err)
-                                        .red()
-                                        .bold()
-                                );
+                                println!("Error: {}", err);
                                 thread::sleep(Duration::from_secs(1));
                                 continue;
                             }
                         }
                     }
                     Err(err) => {
-                        println!(
-                            "{}",
-                            format!("Error while proving zero for depth {}: {}", depth, err)
-                                .red()
-                                .bold()
-                        );
+                        println!("Error: {}", err);
                         thread::sleep(Duration::from_secs(1));
                         continue;
                     }
                 };
+            }
+            _ => {
+                println!("Invalid job data");
+                println!("This is bug from somewhere");
+
+                queue.complete(&mut con, &job).await?;
             }
         };
     }
@@ -302,9 +313,9 @@ fn get_inner_targets(i: usize) -> Result<CommitmentMapperInnerCircuitTargets> {
     Ok(CommitmentMapperInnerCircuitTargets::read_targets(&mut target_buffer).unwrap())
 }
 
-fn get_first_level_targets() -> Result<ValidatorCommitmentTargets> {
+fn get_first_level_targets() -> Result<ValidatorAccumulatorCommitmentTargets> {
     let target_bytes = read_from_file(&format!("{}_{}.plonky2_targets", CIRCUIT_NAME, 0))?;
     let mut target_buffer = Buffer::new(&target_bytes);
 
-    Ok(ValidatorCommitmentTargets::read_targets(&mut target_buffer).unwrap())
+    Ok(ValidatorAccumulatorCommitmentTargets::read_targets(&mut target_buffer).unwrap())
 }

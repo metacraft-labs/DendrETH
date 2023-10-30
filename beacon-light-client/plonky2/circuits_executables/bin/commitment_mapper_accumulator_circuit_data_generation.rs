@@ -2,10 +2,11 @@ use std::{fs, marker::PhantomData};
 
 use anyhow::Result;
 use circuits::{
-    build_balance_inner_level_circuit::build_inner_level_circuit,
-    build_validator_balance_circuit::build_validator_balance_circuit,
+    build_commitment_mapper_first_level_circuit::build_accumulator_commitment_mapper_first_level_circuit,
+    build_commitment_mapper_inner_level_circuit::build_commitment_mapper_inner_circuit,
     generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
     targets_serialization::WriteTargets,
+    validator_accumulator_commitment_mapper::ValidatorAccumulatorCommitmentTargets,
 };
 
 use clap::{App, Arg};
@@ -21,6 +22,8 @@ fn write_to_file(file_path: &str, data: &[u8]) -> Result<()> {
     fs::write(file_path, data)?;
     Ok(())
 }
+
+const CIRCUIT_NAME: &str = "commitment_mapper_accumulator";
 
 fn main() -> Result<()> {
     future::block_on(async_main())
@@ -52,7 +55,7 @@ pub async fn async_main() -> Result<()> {
     };
 
     let (validators_balance_verification_targets, first_level_data) =
-        build_validator_balance_circuit::<1>(8);
+        build_accumulator_commitment_mapper_first_level_circuit();
 
     let gate_serializer = DendrETHGateSerializer;
 
@@ -75,19 +78,27 @@ pub async fn async_main() -> Result<()> {
 
     let mut prev_circuit_data = first_level_data;
 
-    for i in 1..38 {
-        let (targets, data) = build_inner_level_circuit::<1>(&prev_circuit_data);
+    for i in 1..41 {
+        let (targets, data) = build_commitment_mapper_inner_circuit(&prev_circuit_data);
 
         if level == Some(i) || level == None {
             let circuit_bytes = data
                 .to_bytes(&gate_serializer, &generator_serializer)
                 .unwrap();
 
-            write_to_file(&format!("{}.plonky2_circuit", i), &circuit_bytes).unwrap();
+            write_to_file(
+                &format!("{}_{}.plonky2_circuit", CIRCUIT_NAME, i),
+                &circuit_bytes,
+            )
+            .unwrap();
 
             let inner_level_targets = targets.write_targets().unwrap();
 
-            write_to_file(&format!("{}.plonky2_targets", i), &inner_level_targets).unwrap();
+            write_to_file(
+                &format!("{}_{}.plonky2_targets", CIRCUIT_NAME, i),
+                &inner_level_targets,
+            )
+            .unwrap();
         }
 
         if level == Some(i) {
@@ -100,7 +111,7 @@ pub async fn async_main() -> Result<()> {
     Ok(())
 }
 
-fn write_first_level_circuit<const N: usize>(
+fn write_first_level_circuit(
     first_level_data: &plonky2::plonk::circuit_data::CircuitData<
         plonky2::field::goldilocks_field::GoldilocksField,
         PoseidonGoldilocksConfig,
@@ -108,21 +119,23 @@ fn write_first_level_circuit<const N: usize>(
     >,
     gate_serializer: &DendrETHGateSerializer,
     generator_serializer: &DendrETHGeneratorSerializer<PoseidonGoldilocksConfig, 2>,
-    validators_balance_verification_targets: circuits::validator_balance_circuit::ValidatorBalanceVerificationTargets<N>,
+    validator_commitment_targets: ValidatorAccumulatorCommitmentTargets,
 ) {
     let circuit_bytes = first_level_data
         .to_bytes(gate_serializer, generator_serializer)
         .unwrap();
 
-    write_to_file(&format!("{}.plonky2_circuit", 0), &circuit_bytes).unwrap();
+    write_to_file(
+        &format!("{}_{}.plonky2_circuit", CIRCUIT_NAME, 0),
+        &circuit_bytes,
+    )
+    .unwrap();
 
-    let validator_balance_verification_targets_bytes = validators_balance_verification_targets
-        .write_targets()
-        .unwrap();
+    let validator_commitment_targets_bytes = validator_commitment_targets.write_targets().unwrap();
 
     write_to_file(
-        &format!("{}.plonky2_targets", 0),
-        &validator_balance_verification_targets_bytes,
+        &format!("{}_{}.plonky2_targets", CIRCUIT_NAME, 0),
+        &validator_commitment_targets_bytes,
     )
     .unwrap();
 }

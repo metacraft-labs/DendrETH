@@ -1,5 +1,6 @@
 use plonky2::{
-    hash::poseidon::PoseidonHash,
+    hash::{poseidon::PoseidonHash},
+    iop::target::BoolTarget,
     plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::{CircuitConfig, CircuitData, VerifierCircuitTarget},
@@ -10,13 +11,13 @@ use plonky2::{
 };
 
 use crate::{
-    biguint::{CircuitBuilderBiguint},
+    biguint::CircuitBuilderBiguint,
     build_validator_balance_circuit::{
         set_public_variables, ValidatorBalanceProofTargetsExt,
     },
     sha256::make_circuits,
     targets_serialization::{ReadTargets, WriteTargets},
-    utils::{ETH_SHA256_BIT_SIZE},
+    utils::ETH_SHA256_BIT_SIZE,
 };
 
 pub struct BalanceInnerCircuitTargets {
@@ -47,7 +48,7 @@ impl WriteTargets for BalanceInnerCircuitTargets {
     }
 }
 
-pub fn build_inner_level_circuit(
+pub fn build_inner_level_circuit<const N: usize>(
     inner_circuit_data: &CircuitData<
         plonky2::field::goldilocks_field::GoldilocksField,
         PoseidonGoldilocksConfig,
@@ -71,26 +72,24 @@ pub fn build_inner_level_circuit(
 
     let verifier_circuit_target = VerifierCircuitTarget {
         constants_sigmas_cap: builder
-            .add_virtual_cap(inner_circuit_data.common.config.fri_config.cap_height),
-        circuit_digest: builder.add_virtual_hash(),
+            .constant_merkle_cap(&inner_circuit_data.verifier_only.constants_sigmas_cap),
+        circuit_digest: builder.constant_hash(inner_circuit_data.verifier_only.circuit_digest),
     };
 
-    let pt1: ProofWithPublicInputsTarget<2> =
-        builder.add_virtual_proof_with_pis(&inner_circuit_data.common);
-    let pt2: ProofWithPublicInputsTarget<2> =
-        builder.add_virtual_proof_with_pis(&inner_circuit_data.common);
+    let pt1 = builder.add_virtual_proof_with_pis(&inner_circuit_data.common);
+    let pt2 = builder.add_virtual_proof_with_pis(&inner_circuit_data.common);
 
     builder.verify_proof::<C>(&pt1, &verifier_circuit_target, &inner_circuit_data.common);
 
     builder.verify_proof::<C>(&pt2, &verifier_circuit_target, &inner_circuit_data.common);
 
-    let poseidon_hash = pt1.get_range_validator_commitment();
+    let poseidon_hash = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_range_validator_commitment(&pt1);
 
-    let sha256_hash = pt1.get_range_balances_root();
+    let sha256_hash = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_range_balances_root(&pt1);
 
-    let poseidon_hash2 = pt2.get_range_validator_commitment();
+    let poseidon_hash2 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_range_validator_commitment(&pt2);
 
-    let sha256_hash2 = pt2.get_range_balances_root();
+    let sha256_hash2 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_range_balances_root(&pt2);
 
     let hasher = make_circuits(&mut builder, (2 * ETH_SHA256_BIT_SIZE) as u64);
 
@@ -111,22 +110,49 @@ pub fn build_inner_level_circuit(
             .collect(),
     );
 
-    let sum1 = pt1.get_range_total_value();
+    let number_of_non_activated_validators1 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_number_of_non_activated_validators(&pt1);
+    let number_of_non_activated_validators2 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_number_of_non_activated_validators(&pt2);
 
-    let sum2 = pt2.get_range_total_value();
+    let number_of_non_activated_validators = builder.add(
+        number_of_non_activated_validators1,
+        number_of_non_activated_validators2,
+    );
+
+    let number_of_active_validators1 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_number_of_active_validators(&pt1);
+    let number_of_active_validators2 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_number_of_active_validators(&pt2);
+
+    let number_of_active_validators =
+        builder.add(number_of_active_validators1, number_of_active_validators2);
+
+    let number_of_exited_validators1 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_number_of_exited_validators(&pt1);
+    let number_of_exited_validators2 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_number_of_exited_validators(&pt2);
+
+    let number_of_exited_validators =
+        builder.add(number_of_exited_validators1, number_of_exited_validators2);
+
+    let sum1 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_range_total_value(&pt1);
+
+    let sum2 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_range_total_value(&pt2);
 
     let mut sum = builder.add_biguint(&sum1, &sum2);
 
     // pop carry
     sum.limbs.pop();
 
-    let withdrawal_credentials1 = pt1.get_withdrawal_credentials();
-    let withdrawal_credentials2 = pt2.get_withdrawal_credentials();
+    let withdrawal_credentials1: [[BoolTarget; 256]; N] = pt1.get_withdrawal_credentials();
+    let withdrawal_credentials2: [[BoolTarget; 256]; N] = pt2.get_withdrawal_credentials();
 
-    builder.connect_biguint(&withdrawal_credentials1, &withdrawal_credentials2);
+    for i in 0..N {
+        for j in 0..ETH_SHA256_BIT_SIZE {
+            builder.connect(
+                withdrawal_credentials1[i][j].target,
+                withdrawal_credentials2[i][j].target,
+            );
+        }
+    }
 
-    let current_epoch1 = pt1.get_current_epoch();
-    let current_epoch2 = pt2.get_current_epoch();
+    let current_epoch1 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_current_epoch(&pt1);
+    let current_epoch2 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_current_epoch(&pt2);
 
     builder.connect_biguint(&current_epoch1, &current_epoch2);
 
@@ -137,6 +163,9 @@ pub fn build_inner_level_circuit(
         &withdrawal_credentials1,
         hash,
         &current_epoch1,
+        number_of_non_activated_validators,
+        number_of_active_validators,
+        number_of_exited_validators,
     );
 
     let data = builder.build::<C>();

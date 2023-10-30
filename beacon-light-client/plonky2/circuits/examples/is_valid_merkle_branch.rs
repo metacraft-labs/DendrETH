@@ -1,5 +1,5 @@
 use anyhow::Result;
-use circuits::is_valid_merkle_branch::is_valid_merkle_branch;
+use circuits::is_valid_merkle_branch::is_valid_merkle_branch_sha256_result;
 use circuits::sha256::make_circuits;
 use circuits::utils::ETH_SHA256_BIT_SIZE;
 use plonky2::field::goldilocks_field::GoldilocksField;
@@ -73,7 +73,7 @@ fn create_proof(merkle_proof: MerkleProof) -> std::result::Result<(), anyhow::Er
     let config = CircuitConfig::standard_recursion_config();
     let mut builder = CircuitBuilder::<F, D>::new(config);
 
-    let hasher = is_valid_merkle_branch(&mut builder, merkle_proof.branch.len());
+    let hasher = is_valid_merkle_branch_sha256_result(&mut builder, merkle_proof.branch.len());
     let hasher_sha = make_circuits(&mut builder, 512);
 
     for i in 0..ETH_SHA256_BIT_SIZE {

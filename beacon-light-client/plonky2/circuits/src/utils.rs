@@ -38,6 +38,21 @@ pub fn biguint_is_equal<F: RichField + Extendable<D>, const D: usize>(
     all_equal
 }
 
+pub fn bool_target_equal<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    a: &[BoolTarget; ETH_SHA256_BIT_SIZE],
+    b: &[BoolTarget; ETH_SHA256_BIT_SIZE],
+) -> BoolTarget {
+    let mut all_equal = builder._true();
+
+    for i in 0..ETH_SHA256_BIT_SIZE {
+        let equal = builder.is_equal(a[i].target, b[i].target);
+        all_equal = builder.and(all_equal, equal);
+    }
+
+    all_equal
+}
+
 pub fn create_bool_target_array<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
 ) -> [BoolTarget; ETH_SHA256_BIT_SIZE] {

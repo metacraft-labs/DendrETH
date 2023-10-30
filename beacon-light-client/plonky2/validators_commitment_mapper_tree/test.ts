@@ -5,16 +5,33 @@ import { BeaconApi } from '../../../relay/implementations/beacon-api';
 import { merkleize } from '@chainsafe/ssz/lib/util/merkleize';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { hexToBits } from '../../../libs/typescript/ts-utils/hex-utils';
+import { hashTreeRoot } from '../../../libs/typescript/ts-utils/ssz-utils';
 
 (async () => {
   const { ssz } = await import('@lodestar/types');
 
-  console.log(
-    hexToBits(
-      bytesToHex(ssz.capella.BeaconState.fields.slot.hashTreeRoot(6953401)),
-    ).join(', '),
-  );
+  function calculateValidatorsAccumulator(
+    validatorsPubkeys: string,
+    eth1DepositIndex: number,
+  ): string {
+    const validatorPubkey = validatorsPubkeys.padStart(96, '0');
+    let bytes = ssz.capella.BeaconState.fields.eth1DepositIndex.hashTreeRoot(eth1DepositIndex);
 
+    console.log(formatHex(bytesToHex(bytes)).padStart(16, '0'));
+
+    return sha256(
+      '0x' +
+        formatHex(validatorPubkey) +
+        formatHex(bytesToHex(bytes)).padStart(16, '0'),
+    );
+  }
+
+  console.log(
+    calculateValidatorsAccumulator(
+      '89bcf22c91a560d95d09c1192664eea1baab0780b6d4441ca39d1cb5094b177b17f47a67b16fb972bfd3b78b602ffeee',
+      1076099,
+    ),
+  );
   // const beaconApi = new BeaconApi([
   //   'http://unstable.mainnet.beacon-api.nimbus.team',
   // ]);

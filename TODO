@@ -1,0 +1,17 @@
+ - Commitment mapper
+  - Test performance with Validator where bytes are just array of bits or when they are more dense
+  - Write down how exactly it works
+ - Start VerifyAttestationData
+   - The attestations satisfy all validation criteria from process_attestation
+   - each validator is part of the active validator set through a merkle proof against the current BeaconState hash_tree_root and
+   - that it belongs to the correct sub-committee.
+
+
+
+https://github.com/gnosis/hashi/pull/23#pullrequestreview-1687722522
+
+
+
+промените които трябва да направя за liquidStaking са
+- да може withdrawalCredentials да е array
+- да може да си сетваш дали да се смята цялото дърво от валидатори или да се валидират само отделни с merkle proof

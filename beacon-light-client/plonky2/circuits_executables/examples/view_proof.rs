@@ -1,18 +1,13 @@
 use anyhow::Result;
 use circuits::{
-    build_balance_inner_level_circuit::{build_inner_level_circuit, BalanceInnerCircuitTargets},
-    build_commitment_mapper_first_level_circuit::build_commitment_mapper_first_level_circuit,
-    build_commitment_mapper_inner_level_circuit::{
-        build_commitment_mapper_inner_circuit, CommitmentMapperInnerCircuitTargets,
-    },
     build_validator_balance_circuit::build_validator_balance_circuit,
 };
-use circuits_executables::crud::{fetch_proof, BalanceProof, ValidatorProof};
+use circuits_executables::crud::{fetch_proof, BalanceProof};
 use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     plonk::{
-        circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs,
+        config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs,
     },
 };
 use std::{print, println};
@@ -26,7 +21,7 @@ async fn async_main() -> Result<()> {
         .get_async_connection()
         .await?;
 
-    let (_, first_level_circuit_data) = build_validator_balance_circuit(8);
+    let (_, first_level_circuit_data) = build_validator_balance_circuit::<1>(8);
 
     // let mut inner_circuits: Vec<(
     //     BalanceInnerCircuitTargets,

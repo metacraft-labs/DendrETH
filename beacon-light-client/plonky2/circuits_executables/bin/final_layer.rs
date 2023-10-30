@@ -54,7 +54,7 @@ async fn async_main() -> Result<()> {
     let balance_data = load_circuit_data("37").unwrap();
     let commitment_data = load_circuit_data("commitment_mapper_40").unwrap();
 
-    let (circuit_targets, circuit_data) = build_final_circuit(&balance_data, &commitment_data);
+    let (circuit_targets, circuit_data) = build_final_circuit::<1>(&balance_data, &commitment_data);
 
     let final_input_data = fetch_final_layer_input(&mut con).await?;
 
@@ -123,7 +123,21 @@ async fn async_main() -> Result<()> {
 
     let proof = circuit_data.prove(pw)?;
 
-    save_final_proof(&mut con, &proof).await?;
+    save_final_proof(
+        &mut con,
+        &proof,
+        final_input_data
+            .state_root
+            .iter()
+            .map(|x| *x as u64)
+            .collect::<Vec<u64>>(),
+        balance_proof.withdrawal_credentials,
+        balance_proof.range_total_value,
+        balance_proof.number_of_non_activated_validators,
+        balance_proof.number_of_active_validators,
+        balance_proof.number_of_non_activated_validators,
+    )
+    .await?;
 
     println!(
         "{}",

@@ -1,7 +1,10 @@
 {
   "validatorKey": "validator",
+  "validatorAccumulatorKey": "validator_accumulator",
   "validatorProofKey": "validator_proof",
+  "validatorAccumulatorProofKey": "validator_accumulator_proof",
   "validatorProofsQueue": "validator_proof_queue",
+  "validatorAccumulatorProofQueue": "validator_accumulator_proof_queue",
   "validatorRegistryLimit": 1099511627776,
   "validatorBalanceInputKey": "validator_balance_input",
   "balanceVerificationQueue": "balance_verification_queue",

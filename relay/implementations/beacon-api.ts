@@ -16,6 +16,7 @@ import { prometheusTiming } from '../../libs/typescript/ts-utils/prometheus-util
 import EventSource from 'eventsource';
 // @ts-ignore
 import { StateId } from '@lodestar/api/beacon/routes/beacon';
+import path from 'path';
 
 const logger = getGenericLogger();
 export class BeaconApi implements IBeaconApi {
@@ -228,7 +229,8 @@ export class BeaconApi implements IBeaconApi {
 
     const prevFinalizedHeaderResult = await (
       await this.fetchWithFallback(
-        `/eth/v1/beacon/headers/${'0x' + bytesToHex(prevBeaconSate.finalizedCheckpoint.root)
+        `/eth/v1/beacon/headers/${
+          '0x' + bytesToHex(prevBeaconSate.finalizedCheckpoint.root)
         }`,
       )
     ).json();
@@ -277,7 +279,7 @@ export class BeaconApi implements IBeaconApi {
         bytesToHex(
           prevFinalizedBeaconState[
             prevUpdateFinalizedSyncCommmitteePeriod ===
-              currentSyncCommitteePeriod
+            currentSyncCommitteePeriod
               ? 'currentSyncCommittee'
               : 'nextSyncCommittee'
           ].aggregatePubkey,
@@ -311,7 +313,8 @@ export class BeaconApi implements IBeaconApi {
 
     const finalizedHeaderResult = await (
       await this.fetchWithFallback(
-        `/eth/v1/beacon/headers/${'0x' + bytesToHex(beaconState.finalizedCheckpoint.root)
+        `/eth/v1/beacon/headers/${
+          '0x' + bytesToHex(beaconState.finalizedCheckpoint.root)
         }`,
       )
     ).json();
@@ -402,7 +405,9 @@ export class BeaconApi implements IBeaconApi {
   }
 
   async getHeadSlot(): Promise<bigint> {
-    const res = await (await this.fetchWithFallback('/eth/v1/beacon/headers/head')).json();
+    const res = await (
+      await this.fetchWithFallback('/eth/v1/beacon/headers/head')
+    ).json();
     return BigInt(res.data.header.message.slot);
   }
 
@@ -450,7 +455,12 @@ export class BeaconApi implements IBeaconApi {
       .then(response => response.arrayBuffer())
       .then(buffer => new Uint8Array(buffer));
 
+    console.log('here');
+
     const beaconState = ssz.capella.BeaconState.deserialize(beaconStateSZZ);
+
+    console.log('here1');
+
     const beaconStateView = ssz.capella.BeaconState.toViewDU(beaconState);
     const stateTree = new Tree(beaconStateView.node);
 
@@ -501,6 +511,10 @@ export class BeaconApi implements IBeaconApi {
   }
 
   private concatUrl(urlPath: string): string {
-    return this.getCurrentApi() + urlPath;
+    const url = new URL(this.getCurrentApi());
+    url.pathname = path.join(url.pathname, urlPath);
+
+    console.log('url href', url.href);
+    return url.href;
   }
 }

@@ -123,9 +123,13 @@ impl SetPWValues<ValidatorPoseidonInput> for ValidatorPoseidonTargets {
         pw: &mut PartialWitness<GoldilocksField>,
         source: &ValidatorPoseidonInput,
     ) {
-        pw.set_biguint_target(&self.pubkey, &source.pubkey);
+        set_boolean_pw_values(pw, &self.pubkey, &source.pubkey);
 
-        pw.set_biguint_target(&self.withdrawal_credentials, &source.withdrawal_credentials);
+        set_boolean_pw_values(
+            pw,
+            &self.withdrawal_credentials,
+            &source.withdrawal_credentials,
+        );
 
         pw.set_biguint_target(&self.effective_balance, &source.effective_balance);
 
@@ -144,7 +148,9 @@ impl SetPWValues<ValidatorPoseidonInput> for ValidatorPoseidonTargets {
     }
 }
 
-impl SetPWValues<ValidatorBalancesInput> for ValidatorBalanceVerificationTargets {
+impl<const N: usize> SetPWValues<ValidatorBalancesInput>
+    for ValidatorBalanceVerificationTargets<N>
+{
     fn set_pw_values(
         &self,
         pw: &mut PartialWitness<GoldilocksField>,
@@ -158,7 +164,13 @@ impl SetPWValues<ValidatorBalancesInput> for ValidatorBalanceVerificationTargets
             self.validators[i].set_pw_values(pw, &source.validators[i]);
         }
 
-        pw.set_biguint_target(&self.withdrawal_credentials, &source.withdrawal_credentials);
+        for i in 0..N {
+            set_boolean_pw_values(
+                pw,
+                &self.withdrawal_credentials[i],
+                &source.withdrawal_credentials[i],
+            );
+        }
 
         set_boolean_pw_values(pw, &self.validator_is_zero, &source.validator_is_zero);
 
@@ -201,7 +213,7 @@ impl SetPWValues<ValidatorShaInput> for ValidatorShaTargets {
     }
 }
 
-impl SetPWValues<FinalCircuitInput> for FinalCircuitTargets {
+impl<const N: usize> SetPWValues<FinalCircuitInput> for FinalCircuitTargets<N> {
     fn set_pw_values(&self, pw: &mut PartialWitness<GoldilocksField>, source: &FinalCircuitInput) {
         set_boolean_pw_values(pw, &self.state_root, &source.state_root);
 
@@ -211,7 +223,13 @@ impl SetPWValues<FinalCircuitInput> for FinalCircuitTargets {
             set_boolean_pw_values(pw, &self.slot_branch[i], &source.slot_branch[i]);
         }
 
-        pw.set_biguint_target(&self.withdrawal_credentials, &source.withdrawal_credentials);
+        for i in 0..N {
+            set_boolean_pw_values(
+                pw,
+                &self.withdrawal_credentials[i],
+                &source.withdrawal_credentials[i],
+            );
+        }
 
         for i in 0..source.balance_branch.len() {
             set_boolean_pw_values(pw, &self.balance_branch[i], &source.balance_branch[i]);

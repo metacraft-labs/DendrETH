@@ -1,6 +1,4 @@
-import {
-  splitIntoBatches,
-} from '../../libs/typescript/ts-utils/common-utils';
+import { splitIntoBatches } from '../../libs/typescript/ts-utils/common-utils';
 import { hexToBytes } from '../../libs/typescript/ts-utils/bls';
 import { IRedis } from '../abstraction/redis-interface';
 import {
@@ -70,7 +68,11 @@ export class Redis implements IRedis {
     return this.client.keys(pattern);
   }
 
-  async extractHashFromCommitmentMapperProof(gindex: bigint, epoch: bigint, hashAlgorithm: 'sha256' | 'poseidon'): Promise<number[] | null> {
+  async extractHashFromCommitmentMapperProof(
+    gindex: bigint,
+    epoch: bigint,
+    hashAlgorithm: 'sha256' | 'poseidon',
+  ): Promise<number[] | null> {
     const hashAlgorithmOptionMap = {
       sha256: 'sha256Hash',
       poseidon: 'poseidonHash',
@@ -171,7 +173,6 @@ export class Redis implements IRedis {
           console.error(e);
           continue;
         }
-
       }
       console.log(`Loaded batch ${chalk.bold.yellowBright(keyBatchIndex + 1)}/${chalk.bold.yellow(Math.ceil(keys.length / batchSize))}`);
     }
@@ -199,7 +200,9 @@ export class Redis implements IRedis {
     return result == null;
   }
 
-  async saveValidators(validatorsWithIndices: { index: number; data: any }[], epoch: bigint) {
+  async saveAccumulatorValidators(
+    validatorAccumulatorWithIndices: { index: number; data: any }[],
+  ) {
     await this.waitForConnection();
 
     const args = await Promise.all(validatorsWithIndices.map(async (validator) => {
@@ -212,6 +215,29 @@ export class Redis implements IRedis {
     }));
 
     await this.client.sendCommand(new RedisReJSON.Command('JSON.MSET', args));
+  }
+
+  async saveValidators(
+    validatorsWithIndices: { index: number; data: any }[],
+    epoch: bigint,
+  ) {
+    await this.waitForConnection();
+
+    const args = await Promise.all(
+      validatorsWithIndices.map(async validator => {
+        await this.addToEpochLookup(
+          `${validator_commitment_constants.validatorKey}:${validator.index}`,
+          epoch,
+        );
+        return {
+          key: `${validator_commitment_constants.validatorKey}:${validator.index}:${epoch}`,
+          path: '$',
+          value: validator.data,
+        };
+      }),
+    );
+
+    await this.redisClient.json.mSet(args);
   }
 
   async saveValidatorBalancesInput(
@@ -234,7 +260,7 @@ export class Redis implements IRedis {
     stateRoot: number[];
     slot: string;
     slotBranch: number[][];
-    withdrawalCredentials: string;
+    withdrawalCredentials: [number[]];
     balanceBranch: number[][];
     validatorsBranch: number[][];
     validatorsSizeBits: number[];
@@ -245,6 +271,23 @@ export class Redis implements IRedis {
       CONSTANTS.finalProofInputKey,
       "$",
       input as any
+    );
+  }
+
+  async saveValidatorAccumulatorProof(
+    gindex: bigint,
+    proof: ValidatorProof = {
+      needsChange: true,
+      proof: [],
+      poseidonHash: [],
+      sha256Hash: [],
+    },
+  ): Promise<void> {
+    await this.waitForConnection();
+    await this.redisClient.json.set(
+      `${validator_commitment_constants.validatorAccumulatorProofKey}:${gindex}`,
+      '$',
+      proof as any,
     );
   }
 

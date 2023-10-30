@@ -74,7 +74,7 @@ let TAKE: number | undefined;
 
   const queues: any[] = [];
 
-  for (let i = 0; i < 39; i++) {
+  for (let i = 0; i < 38; i++) {
     queues.push(
       new WorkQueue(
         new KeyPrefix(
@@ -137,11 +137,11 @@ let TAKE: number | undefined;
           .fill('')
           .map(() => ''.padStart(256, '0').split('').map(Number)),
         validators: Array(CIRCUIT_SIZE).fill(getZeroValidator()),
-        withdrawalCredentials: computeNumberFromLittleEndianBits(
+        withdrawalCredentials: [
           hexToBits(
             '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
           ),
-        ).toString(),
+        ],
         currentEpoch: computeEpochAt(beaconState.slot).toString(),
         validatorIsZero: Array(CIRCUIT_SIZE).fill(1),
       },
@@ -161,8 +161,8 @@ let TAKE: number | undefined;
 
   await queues[0].addItem(redis.client, new Item(buffer));
 
-  for (let i = 0; i < 38; i++) {
-    const buffer = new ArrayBuffer(8);
+  for (let i = 0; i < 37; i++) {
+    const buffer = new ArrayBuffer(24);
     const dataView = new DataView(buffer);
 
     dataView.setBigUint64(
@@ -207,11 +207,11 @@ let TAKE: number | undefined;
               Math.min((j + 1) * CIRCUIT_SIZE, validators.length),
             ).fill(getZeroValidator()),
           ],
-          withdrawalCredentials: computeNumberFromLittleEndianBits(
+          withdrawalCredentials: [
             hexToBits(
               '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
             ),
-          ).toString(),
+          ],
           currentEpoch: computeEpochAt(beaconState.slot).toString(),
           validatorIsZero: array.concat(new Array(CIRCUIT_SIZE - size).fill(1)),
         },
@@ -262,11 +262,11 @@ let TAKE: number | undefined;
     slotBranch: beaconStateTree
       .getSingleProof(34n)
       .map(x => hexToBits(bytesToHex(x))),
-    withdrawalCredentials: computeNumberFromLittleEndianBits(
+    withdrawalCredentials: [
       hexToBits(
         '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
       ),
-    ).toString(),
+    ],
     balanceBranch: beaconStateTree
       .getSingleProof(44n)
       .map(x => hexToBits(bytesToHex(x))),
@@ -276,7 +276,7 @@ let TAKE: number | undefined;
     validatorsSizeBits: hexToBits(bytesToHex(ssz.UintNum64.hashTreeRoot(TAKE))),
   });
 
-  queues[39].addItem(redis.client, new Item(new ArrayBuffer(0)));
+  queues[38].addItem(db, new Item(new ArrayBuffer(0)));
 
   console.log(chalk.bold.greenBright('Done'));
 
@@ -285,8 +285,8 @@ let TAKE: number | undefined;
 
 function getZeroValidator() {
   return {
-    pubkey: '0',
-    withdrawalCredentials: '0',
+    pubkey: Array(384).fill(0),
+    withdrawalCredentials: Array(256).fill(0),
     effectiveBalance: '0',
     slashed: 0,
     activationEligibilityEpoch: '0',
@@ -298,12 +298,10 @@ function getZeroValidator() {
 
 function convertValidator(validator): any {
   return {
-    pubkey: computeNumberFromLittleEndianBits(
-      hexToBits(bytesToHex(validator.pubkey), 384),
-    ).toString(),
-    withdrawalCredentials: computeNumberFromLittleEndianBits(
-      hexToBits(bytesToHex(validator.withdrawalCredentials)),
-    ).toString(),
+    pubkey: hexToBits(bytesToHex(validator.pubkey), 384),
+    withdrawalCredentials: hexToBits(
+      bytesToHex(validator.withdrawalCredentials),
+    ),
     effectiveBalance: validator.effectiveBalance.toString(),
     slashed: Number(validator.slashed),
     activationEligibilityEpoch: validator.activationEligibilityEpoch.toString(),

@@ -39,8 +39,8 @@ use jemallocator::Jemalloc;
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
-enum Targets {
-    FirstLevel(Option<ValidatorBalanceVerificationTargets>),
+enum Targets<const N: usize> {
+    FirstLevel(Option<ValidatorBalanceVerificationTargets<N>>),
     InnerLevel(Option<BalanceInnerCircuitTargets>),
 }
 
@@ -137,11 +137,11 @@ async fn async_main() -> Result<()> {
     let circuit_data = load_circuit_data(&level.to_string())?;
 
     let (inner_circuit_data, targets) = if level == 0 {
-        (None, get_first_level_targets()?)
+        (None, get_first_level_targets::<1>()?)
     } else {
         (
             Some(load_circuit_data(&format!("{}", level - 1))?),
-            get_inner_level_targets(level)?,
+            get_inner_level_targets::<1>(level)?,
         )
     };
 
@@ -171,12 +171,12 @@ async fn async_main() -> Result<()> {
     .await
 }
 
-async fn process_queue(
+async fn process_queue<const N: usize>(
     con: &mut redis::aio::Connection,
     queue: &WorkQueue,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     inner_circuit_data: Option<&CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>>,
-    targets: &Targets,
+    targets: &Targets<N>,
     level: u64,
     start: Instant,
     time_to_run: Option<Duration>,
@@ -232,7 +232,7 @@ async fn process_queue(
                 };
             }
             Targets::InnerLevel(inner_circuit_targets) => {
-                match process_inner_level_task(
+                match process_inner_level_job::<N>(
                     con,
                     queue,
                     queue_item,
@@ -254,12 +254,12 @@ async fn process_queue(
     Ok(())
 }
 
-async fn process_first_level_task(
+async fn process_first_level_task<const N: usize>(
     con: &mut Connection,
     queue: &WorkQueue,
     queue_item: Item,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    targets: &ValidatorBalanceVerificationTargets,
+    targets: &ValidatorBalanceVerificationTargets<N>,
 ) -> Result<()> {
     let balance_input_index = u64::from_be_bytes(queue_item.data[0..8].try_into().unwrap());
 
@@ -277,14 +277,21 @@ async fn process_first_level_task(
         println!("{}", "Processing task for zero proof...".blue().bold());
     }
 
-    let validator_balance_input = fetch_validator_balance_input(con, balance_input_index).await?;
+    let start = Instant::now();
+    let validator_balance_input =
+        fetch_validator_balance_input::<N>(con, balance_input_index).await?;
+
+    let elapsed = start.elapsed();
+
+    println!("Fetching validator balance input took: {:?}", elapsed);
+
     let mut pw = PartialWitness::new();
 
     targets.set_pw_values(&mut pw, &validator_balance_input);
 
     let proof = circuit_data.prove(pw)?;
 
-    match save_balance_proof(con, proof, 0, balance_input_index).await {
+    match save_balance_proof::<N>(con, proof, 0, balance_input_index).await {
         Err(err) => {
             println!(
                 "{}",
@@ -303,7 +310,7 @@ async fn process_first_level_task(
     Ok(())
 }
 
-async fn process_inner_level_task(
+async fn process_inner_level_job<const N: usize>(
     con: &mut Connection,
     queue: &WorkQueue,
     queue_item: Item,
@@ -348,7 +355,7 @@ async fn process_inner_level_task(
                 &circuit_data,
             )?;
 
-            match save_balance_proof(con, proof, level, index).await {
+            match save_balance_proof::<N>(con, proof, level, index).await {
                 Err(err) => {
                     println!(
                         "{}",
@@ -372,7 +379,7 @@ async fn process_inner_level_task(
     }
 }
 
-fn get_first_level_targets() -> Result<Targets, anyhow::Error> {
+fn get_first_level_targets<const N: usize>() -> Result<Targets<N>, anyhow::Error> {
     let target_bytes = read_from_file(&format!("{}.plonky2_targets", 0))?;
     let mut target_buffer = Buffer::new(&target_bytes);
 
@@ -381,11 +388,11 @@ fn get_first_level_targets() -> Result<Targets, anyhow::Error> {
     )))
 }
 
-fn get_inner_level_targets(level: u64) -> Result<Targets> {
+fn get_inner_level_targets<const N: usize>(level: u64) -> Result<Targets<N>> {
     let target_bytes = read_from_file(&format!("{}.plonky2_targets", level))?;
     let mut target_buffer = Buffer::new(&target_bytes);
 
-    Ok(Targets::InnerLevel(Some(
+    Ok(Targets::<N>::InnerLevel(Some(
         BalanceInnerCircuitTargets::read_targets(&mut target_buffer).unwrap(),
     )))
 }

@@ -175,3 +175,11 @@ redis-server/
 *.plonky2_circuit
 
 .DS_Store
+
+# tmp
+beacon-light-client/plonky2/circuits_executables/verifier/circuit/verifier_only_circuit_data.json
+beacon-light-client/plonky2/circuits_executables/verifier/circuit/srs_setup
+beacon-light-client/plonky2/circuits_executables/verifier/circuit/solidity_bytes.bin
+beacon-light-client/plonky2/circuits_executables/verifier/circuit/proof_with_public_inputs.json
+beacon-light-client/plonky2/circuits_executables/verifier/circuit/common_circuit_data.json
+beacon-light-client/plonky2/circuits_executables/verifier/DendrETH
