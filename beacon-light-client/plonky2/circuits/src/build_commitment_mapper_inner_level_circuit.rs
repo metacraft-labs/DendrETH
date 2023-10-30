@@ -1,5 +1,5 @@
 use plonky2::{
-    hash::{poseidon::PoseidonHash},
+    hash::poseidon::PoseidonHash,
     iop::target::{BoolTarget, Target},
     plonk::{
         circuit_builder::CircuitBuilder,
@@ -11,12 +11,10 @@ use plonky2::{
 };
 
 use crate::{
-    build_commitment_mapper_first_level_circuit::{
-        CommitmentMapperProofTargetExt,
-    },
+    build_commitment_mapper_first_level_circuit::CommitmentMapperProofTargetExt,
     sha256::make_circuits,
     targets_serialization::{ReadTargets, WriteTargets},
-    utils::{ETH_SHA256_BIT_SIZE},
+    utils::ETH_SHA256_BIT_SIZE,
 };
 
 pub struct CommitmentMapperInnerCircuitTargets {
@@ -73,9 +71,8 @@ pub fn build_commitment_mapper_inner_circuit(
     let mut builder = CircuitBuilder::<F, D>::new(standard_recursion_config);
 
     let verifier_circuit_target = VerifierCircuitTarget {
-        constants_sigmas_cap: builder
-            .add_virtual_cap(inner_circuit_data.common.config.fri_config.cap_height),
-        circuit_digest: builder.add_virtual_hash(),
+        constants_sigmas_cap: builder.constant_merkle_cap(&inner_circuit_data.verifier_only.constants_sigmas_cap),
+        circuit_digest: builder.constant_hash(inner_circuit_data.verifier_only.circuit_digest),
     };
 
     let pt1 = builder.add_virtual_proof_with_pis(&inner_circuit_data.common);

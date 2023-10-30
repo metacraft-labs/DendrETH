@@ -41,11 +41,13 @@ pub struct BalanceProof {
     pub range_total_value: BigUint,
     pub validators_commitment: Vec<u64>,
     pub balances_hash: Vec<u64>,
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub withdrawal_credentials: BigUint,
+    pub withdrawal_credentials: Vec<u64>,
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub current_epoch: BigUint,
-    pub proof: Vec<u8>,
+    pub proof_index: String,
+    pub number_of_non_activated_validators: u64,
+    pub number_of_active_validators: u64,
+    pub number_of_exited_validators: u64,
 }
 
 pub fn biguint_to_str<S>(value: &BigUint, serializer: S) -> Result<S::Ok, S::Error>
@@ -76,8 +78,8 @@ pub struct FinalCircuitInput {
     pub slot: BigUint,
     #[serde(with = "bool_vec_as_int_vec_nested")]
     pub slot_branch: Vec<Vec<bool>>,
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub withdrawal_credentials: BigUint,
+    #[serde(with = "bool_vec_as_int_vec")]
+    pub withdrawal_credentials: Vec<bool>,
     #[serde(with = "bool_vec_as_int_vec_nested")]
     pub balance_branch: Vec<Vec<bool>>,
     #[serde(with = "bool_vec_as_int_vec_nested")]
@@ -91,10 +93,11 @@ pub struct FinalCircuitInput {
 pub struct FinalProof {
     pub needs_change: bool,
     pub state_root: Vec<u64>,
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub withdrawal_credentials: BigUint,
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
+    pub withdrawal_credentials: Vec<u64>,
     pub balance_sum: BigUint,
+    pub number_of_non_activated_validators: u64,
+    pub number_of_active_validators: u64,
+    pub number_of_exited_validators: u64,
     pub proof: Vec<u8>,
 }
 
@@ -183,10 +186,13 @@ pub async fn save_balance_proof(
         needs_change: false,
         range_total_value: proof.get_range_total_value(),
         balances_hash: proof.get_range_balances_root().to_vec(),
-        withdrawal_credentials: proof.get_withdrawal_credentials(),
+        withdrawal_credentials: proof.get_withdrawal_credentials().to_vec(),
         validators_commitment: proof.get_range_validator_commitment().to_vec(),
         current_epoch: proof.get_current_epoch(),
-        proof: proof.to_bytes(),
+        proof_index: proof_index.clone(),
+        number_of_non_activated_validators: proof.get_number_of_non_activated_validators(),
+        number_of_active_validators: proof.get_number_of_active_validators(),
+        number_of_exited_validators: proof.get_number_of_exited_validators(),
     })?;
 
     let _: () = con
@@ -213,9 +219,12 @@ pub async fn save_final_proof(
 ) -> Result<()> {
     let final_proof = serde_json::to_string(&FinalProof {
         needs_change: false,
-        state_root: state_root,
-        withdrawal_credentials: withdrawal_credentials,
-        balance_sum: balance_sum,
+        state_root: proof.get_final_circuit_state_root().to_vec(),
+        withdrawal_credentials: proof.get_final_circuit_withdrawal_credentials().to_vec(),
+        balance_sum: proof.get_final_circuit_balance_sum(),
+        number_of_non_activated_validators: proof.get_final_number_of_non_activated_validators(),
+        number_of_active_validators: proof.get_final_number_of_active_validators(),
+        number_of_exited_validators: proof.get_final_number_of_exited_validators(),
         proof: proof.to_bytes(),
     })?;
 

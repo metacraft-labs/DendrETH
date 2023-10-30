@@ -134,9 +134,13 @@ impl SetPWValues<ValidatorPoseidonInput> for ValidatorPoseidonTargets {
         pw: &mut PartialWitness<GoldilocksField>,
         source: &ValidatorPoseidonInput,
     ) {
-        pw.set_biguint_target(&self.pubkey, &source.pubkey);
+        set_boolean_pw_values(pw, &self.pubkey, &source.pubkey);
 
-        pw.set_biguint_target(&self.withdrawal_credentials, &source.withdrawal_credentials);
+        set_boolean_pw_values(
+            pw,
+            &self.withdrawal_credentials,
+            &source.withdrawal_credentials,
+        );
 
         pw.set_biguint_target(&self.effective_balance, &source.effective_balance);
 
@@ -169,7 +173,11 @@ impl SetPWValues<ValidatorBalancesInput> for ValidatorBalanceVerificationTargets
             self.validators[i].set_pw_values(pw, &source.validators[i]);
         }
 
-        pw.set_biguint_target(&self.withdrawal_credentials, &source.withdrawal_credentials);
+        set_boolean_pw_values(
+            pw,
+            &self.withdrawal_credentials,
+            &source.withdrawal_credentials,
+        );
 
         set_boolean_pw_values(pw, &self.validator_is_zero, &source.validator_is_zero);
 
@@ -222,7 +230,11 @@ impl SetPWValues<FinalCircuitInput> for FinalCircuitTargets {
             set_boolean_pw_values(pw, &self.slot_branch[i], &source.slot_branch[i]);
         }
 
-        pw.set_biguint_target(&self.withdrawal_credentials, &source.withdrawal_credentials);
+        set_boolean_pw_values(
+            pw,
+            &self.withdrawal_credentials,
+            &source.withdrawal_credentials,
+        );
 
         for i in 0..source.balance_branch.len() {
             set_boolean_pw_values(pw, &self.balance_branch[i], &source.balance_branch[i]);

@@ -10,13 +10,11 @@ use plonky2::{
 };
 
 use crate::{
-    biguint::{CircuitBuilderBiguint},
-    build_validator_balance_circuit::{
-        set_public_variables, ValidatorBalanceProofTargetsExt,
-    },
+    biguint::CircuitBuilderBiguint,
+    build_validator_balance_circuit::{set_public_variables, ValidatorBalanceProofTargetsExt},
     sha256::make_circuits,
     targets_serialization::{ReadTargets, WriteTargets},
-    utils::{ETH_SHA256_BIT_SIZE},
+    utils::ETH_SHA256_BIT_SIZE,
 };
 
 pub struct BalanceInnerCircuitTargets {
@@ -71,8 +69,8 @@ pub fn build_inner_level_circuit(
 
     let verifier_circuit_target = VerifierCircuitTarget {
         constants_sigmas_cap: builder
-            .add_virtual_cap(inner_circuit_data.common.config.fri_config.cap_height),
-        circuit_digest: builder.add_virtual_hash(),
+            .constant_merkle_cap(&inner_circuit_data.verifier_only.constants_sigmas_cap),
+        circuit_digest: builder.constant_hash(inner_circuit_data.verifier_only.circuit_digest),
     };
 
     let pt1: ProofWithPublicInputsTarget<2> =
@@ -111,6 +109,26 @@ pub fn build_inner_level_circuit(
             .collect(),
     );
 
+    let number_of_non_activated_validators1 = pt1.get_number_of_non_activated_validators();
+    let number_of_non_activated_validators2 = pt2.get_number_of_non_activated_validators();
+
+    let number_of_non_activated_validators = builder.add(
+        number_of_non_activated_validators1,
+        number_of_non_activated_validators2,
+    );
+
+    let number_of_active_validators1 = pt1.get_number_of_active_validators();
+    let number_of_active_validators2 = pt2.get_number_of_active_validators();
+
+    let number_of_active_validators =
+        builder.add(number_of_active_validators1, number_of_active_validators2);
+
+    let number_of_exited_validators1 = pt1.get_number_of_exited_validators();
+    let number_of_exited_validators2 = pt2.get_number_of_exited_validators();
+
+    let number_of_exited_validators =
+        builder.add(number_of_exited_validators1, number_of_exited_validators2);
+
     let sum1 = pt1.get_range_total_value();
 
     let sum2 = pt2.get_range_total_value();
@@ -123,7 +141,12 @@ pub fn build_inner_level_circuit(
     let withdrawal_credentials1 = pt1.get_withdrawal_credentials();
     let withdrawal_credentials2 = pt2.get_withdrawal_credentials();
 
-    builder.connect_biguint(&withdrawal_credentials1, &withdrawal_credentials2);
+    for i in 0..ETH_SHA256_BIT_SIZE {
+        builder.connect(
+            withdrawal_credentials1[i].target,
+            withdrawal_credentials2[i].target,
+        );
+    }
 
     let current_epoch1 = pt1.get_current_epoch();
     let current_epoch2 = pt2.get_current_epoch();
@@ -137,6 +160,9 @@ pub fn build_inner_level_circuit(
         &withdrawal_credentials1,
         hash,
         &current_epoch1,
+        number_of_non_activated_validators,
+        number_of_active_validators,
+        number_of_exited_validators
     );
 
     let data = builder.build::<C>();

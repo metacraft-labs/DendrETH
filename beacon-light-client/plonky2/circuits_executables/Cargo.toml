@@ -38,9 +38,5 @@ name = "final_layer"
 path = "bin/final_layer.rs"
 
 [[bin]]
-name = "wrapper"
-path = "bin/wrapper.rs"
-
-[[bin]]
 name = "commitment_mapper_circuit_data_generation"
 path = "bin/commitment_mapper_circuit_data_generation.rs"

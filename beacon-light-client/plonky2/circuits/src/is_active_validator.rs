@@ -16,12 +16,12 @@ pub struct IsActiveValidatorTargets {
     pub exit_epoch: [Target; 2],
 }
 
-pub fn is_active_validator<F: RichField + Extendable<D>, const D: usize>(
+pub fn get_validator_status<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     activation_epoch: &BigUintTarget,
     current_epoch: &BigUintTarget,
     exit_epoch: &BigUintTarget,
-) -> BoolTarget {
+) -> (BoolTarget, BoolTarget, BoolTarget) {
     let activation_epoch_le_current_epoch = builder.cmp_biguint(&activation_epoch, &current_epoch);
 
     let current_epoch_le_exit_epoch = builder.cmp_biguint(&current_epoch, &exit_epoch);
@@ -31,10 +31,16 @@ pub fn is_active_validator<F: RichField + Extendable<D>, const D: usize>(
 
     let current_epoch_lt_exit_epoch = builder.and(current_epoch_le_exit_epoch, not_equal);
 
-    builder.and(
+    let is_not_activated = builder.not(activation_epoch_le_current_epoch);
+
+    let is_valid_validator = builder.and(
         activation_epoch_le_current_epoch,
         current_epoch_lt_exit_epoch,
-    )
+    );
+
+    let is_validator_exited = builder.not(current_epoch_lt_exit_epoch);
+
+    (is_not_activated, is_valid_validator, is_validator_exited)
 }
 
 #[cfg(test)]
@@ -52,14 +58,14 @@ mod test {
 
     use crate::{
         biguint::{CircuitBuilderBiguint, WitnessBigUint},
-        is_active_validator::is_active_validator,
+        is_active_validator::get_validator_status,
     };
 
     fn test_helper(
         activation_epoch_value: u64,
         current_epoch_value: u64,
         exit_epoch_value: u64,
-        is_positive: bool,
+        assert_result: (bool, bool, bool),
     ) -> std::result::Result<(), anyhow::Error> {
         const D: usize = 2;
         type C = PoseidonGoldilocksConfig;
@@ -73,8 +79,8 @@ mod test {
         let current_epoch = builder.add_virtual_biguint_target(2);
         let exit_epoch = builder.add_virtual_biguint_target(2);
 
-        let result =
-            is_active_validator(&mut builder, &activation_epoch, &current_epoch, &exit_epoch);
+        let (is_non_activated_validator, is_valid_validator, is_exited_validator) =
+            get_validator_status(&mut builder, &activation_epoch, &current_epoch, &exit_epoch);
 
         pw.set_biguint_target(
             &activation_epoch,
@@ -88,10 +94,22 @@ mod test {
 
         pw.set_biguint_target(&exit_epoch, &BigUint::from_u64(exit_epoch_value).unwrap());
 
-        if is_positive {
-            builder.assert_one(result.target);
+        if assert_result.0 {
+            builder.assert_one(is_non_activated_validator.target);
         } else {
-            builder.assert_zero(result.target);
+            builder.assert_zero(is_non_activated_validator.target);
+        }
+
+        if assert_result.1 {
+            builder.assert_one(is_valid_validator.target);
+        } else {
+            builder.assert_zero(is_valid_validator.target);
+        }
+
+        if assert_result.2 {
+            builder.assert_one(is_exited_validator.target);
+        } else {
+            builder.assert_zero(is_exited_validator.target);
         }
 
         let data = builder.build::<C>();
@@ -102,21 +120,21 @@ mod test {
 
     #[test]
     fn test_is_active_validator_valid() -> Result<()> {
-        test_helper(6953401, 6953401, 6953402, true)
+        test_helper(6953401, 6953401, 6953402, (false, true, false))
     }
 
     #[test]
     fn test_is_active_validator_exit_epoch_is_less_than_current_epoch() -> Result<()> {
-        test_helper(6953401, 6953401, 6953400, false)
+        test_helper(6953401, 6953401, 6953400, (false, false, true))
     }
 
     #[test]
     fn test_is_active_validator_exit_epoch_is_equal_to_current_epoch() -> Result<()> {
-        test_helper(6953400, 6953401, 6953401, false)
+        test_helper(6953400, 6953401, 6953401, (false, false, true))
     }
 
     #[test]
     fn test_is_active_validator_activation_epoch_is_bigger_than_current_epoch() -> Result<()> {
-        test_helper(6953402, 6953401, 6953403, false)
+        test_helper(6953402, 6953401, 6953403, (true, false, false))
     }
 }
