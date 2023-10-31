@@ -1,15 +1,13 @@
 use plonky2::iop::target::BoolTarget;
-use plonky2x::prelude::{BoolVariable, CircuitBuilder, PlonkParameters, Variable, CircuitVariable};
+use plonky2x::prelude::{BoolVariable, CircuitBuilder, PlonkParameters, Variable};
 
 /// Fails if i1 != true.
-pub fn assert_is_true<V: CircuitVariable, L: PlonkParameters<D>, const D: usize>(
+pub fn assert_is_true<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
-    i1: V
+    condition: BoolVariable,
 ) {
-    let one = builder.api.one();
-    for t1 in i1.targets().iter() {
-        builder.api.connect(*t1, one);
-    }
+    let _true = builder._true();
+    builder.assert_is_equal(condition, _true);
 }
 
 /// Exponentiate `base` to the power of `exponent`, given by its little-endian bits.

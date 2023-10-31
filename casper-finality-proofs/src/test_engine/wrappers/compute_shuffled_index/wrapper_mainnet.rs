@@ -1,5 +1,5 @@
 use crate::assert_equal;
-use crate::compute_shuffled_index::compute_shuffled_index::ComputeShuffledIndex;
+use crate::compute_shuffled_index::compute_shuffled_index::define;
 use crate::test_engine::types::compute_shuffled_index_data::TestData;
 use crate::test_engine::utils::parse_file::read_fixture;
 use once_cell::sync::Lazy;
@@ -11,7 +11,7 @@ use plonky2x::prelude::{CircuitBuilder, DefaultParameters};
 static MAINNET_CIRCUIT: Lazy<MockCircuitBuild<DefaultParameters, 2>> = Lazy::new(|| {
     const SHUFFLE_ROUND_COUNT: usize = 90;
     let mut builder = CircuitBuilder::<DefaultParameters, 2>::new();
-    ComputeShuffledIndex::define(&mut builder, SHUFFLE_ROUND_COUNT);
+    define(&mut builder, SHUFFLE_ROUND_COUNT);
     builder.mock_build()
 });
 

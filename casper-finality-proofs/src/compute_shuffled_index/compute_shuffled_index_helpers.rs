@@ -1,14 +1,14 @@
-use plonky2x::prelude::{U64Variable, Bytes32Variable, PlonkParameters, CircuitBuilder, ByteVariable, BytesVariable, CircuitVariable, Variable, BoolVariable};
+use plonky2x::{prelude::{U64Variable, Bytes32Variable, PlonkParameters, CircuitBuilder, ByteVariable, BytesVariable, CircuitVariable, Variable, BoolVariable}, frontend::vars::EvmVariable};
 use plonky2::field::types::Field;
 use itertools::Itertools;
 use crate::utils::{utils::exp_from_bits, variable::bits_to_variable};
 
-/// Returns the bytes concatenation of seed and current_round
+/// Returns the first 8 bytes of the bytes concatenation of seed and current_round as U64Variable
 pub fn compute_hash<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
     seed: Bytes32Variable,
     current_round: usize
-) -> Bytes32Variable {
+) -> U64Variable {
     let const_0_byte: ByteVariable = ByteVariable::constant(builder, 0);
     let current_round_bytes: ByteVariable = ByteVariable::constant(builder, current_round as u8);
 
@@ -18,30 +18,9 @@ pub fn compute_hash<L: PlonkParameters<D>, const D: usize>(
     }
     hash.0[32] = current_round_bytes;
 
-    builder.sha256(&hash.0)
-}
+    let hash = builder.curta_sha256(&hash.0);
 
-/// Returns the remainder of the hash's first 8 bytes as U64Variable and index count
-pub fn compute_pivot<L: PlonkParameters<D>, const D: usize>(
-    builder: &mut CircuitBuilder<L, D>,
-    hash: Bytes32Variable,
-    index_count: U64Variable
-) -> U64Variable {
-    let first_half_hash_bits = bytes_slice_to_variable(builder, hash, 0, 4);
-    let second_half_hash_bits = bytes_slice_to_variable(builder, hash, 4, 8);
-
-    let first_8_bytes_hash = U64Variable::from_variables(
-        builder,
-        &[
-            second_half_hash_bits,
-            first_half_hash_bits,
-        ],
-    );
-
-    builder.rem(
-        first_8_bytes_hash,
-        index_count,
-    )
+    U64Variable::decode(builder, &hash.0.0[0..8].iter().rev().cloned().collect_vec())
 }
 
 /// Converts position to variable and returns the bytes concatenation of seed, current_round and position divided by 256
@@ -76,7 +55,7 @@ pub fn compute_source<L: PlonkParameters<D>, const D: usize>(
         source.0[33 + i] = position_div_256_bytes[i];
     }
 
-    builder.sha256(&source.0)
+    builder.curta_sha256(&source.0)
 }
 
 /// Returns the byte in source at index (position % 256) / 8
@@ -118,32 +97,4 @@ pub fn compute_bit<L: PlonkParameters<D>, const D: usize>(
     let bit = builder.rem(byte_shr_position_mod_8, const_2_u64);
 
     BoolVariable::from_variables(builder, &[bit.variables()[0]])
-}
-
-/// Converts first 8 bytes of Bytes32Variable's bits to little-endian bit representation and returns the accumulation of each bit by power of 2.
-pub fn bytes_slice_to_variable<L: PlonkParameters<D>, const D: usize>(
-    builder: &mut CircuitBuilder<L, D>,
-    bytes: Bytes32Variable,
-    start_idx: usize,
-    end_idx: usize,
-) -> Variable {
-    assert!(start_idx < end_idx);
-    let const_2: Variable = builder.constant(L::Field::from_canonical_usize(2));
-    let mut power_of_2 = builder.constant(L::Field::from_canonical_usize(1));
-    let mut result = builder.constant(L::Field::from_canonical_usize(0));
-    let mut bits: Vec<BoolVariable> = Vec::new();
-
-    for i in start_idx..end_idx {
-        for j in 0..8 {
-            bits.push(bytes.0 .0[7 - i].0[j]);
-        }
-    }
-
-    for i in 0..32 {
-        let addend = builder.mul(bits[31 - i].variable, power_of_2);
-        result = builder.add(addend, result);
-        power_of_2 = builder.mul(const_2, power_of_2);
-    }
-
-    result
 }

@@ -1,4 +1,4 @@
-use casper_finality_proofs::compute_shuffled_index::compute_shuffled_index::ComputeShuffledIndex;
+use casper_finality_proofs::compute_shuffled_index::compute_shuffled_index::define;
 use plonky2x::utils;
 use plonky2x::prelude::{
     ArrayVariable, ByteVariable, CircuitBuilder, DefaultParameters, U64Variable, bytes
@@ -15,7 +15,7 @@ fn test_compute_shuffled_index_100() {
 
     const SHUFFLE_ROUND_COUNT: usize = 90;
     let mut builder = CircuitBuilder::<DefaultParameters, 2>::new();
-    ComputeShuffledIndex::define(&mut builder, SHUFFLE_ROUND_COUNT);
+    define(&mut builder, SHUFFLE_ROUND_COUNT);
 
     let circuit = builder.mock_build();
 
