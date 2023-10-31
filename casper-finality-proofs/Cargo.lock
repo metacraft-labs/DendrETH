@@ -406,7 +406,6 @@ name = "casper-finality-proofs"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "array-macro",
  "clap",
  "colored",
  "crossbeam",

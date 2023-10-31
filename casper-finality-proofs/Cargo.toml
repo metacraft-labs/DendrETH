@@ -35,5 +35,4 @@ once_cell = "1.18.0"
 walkdir = "2.4.0"
 itertools = { version = "0.10.0", default-features = false }
 hex = "0.4.3"
-array-macro = "2.1.5"
 clap = { version = "4.4.6", features = ["derive"] }

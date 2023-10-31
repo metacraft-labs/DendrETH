@@ -18,7 +18,7 @@ pub struct DebugGenerator<L: PlonkParameters<D>, const D: usize> {
 }
 
 impl<L: PlonkParameters<D>, const D: usize> DebugGenerator<L, D> {
-    pub fn new(
+    pub fn _new(
         _builder: &mut CircuitBuilder<L, D>,
         string: Vec<String>,
         value: Vec<Variable>,
@@ -78,11 +78,11 @@ impl<L: PlonkParameters<D>, const D: usize> SimpleGenerator<L::Field, D> for Deb
     }
 }
 
-pub fn debug<L: PlonkParameters<D>, const D: usize>(
+pub fn _debug<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
     format: Vec<String>,
     variable: Vec<Variable>,
 ) {
-    let generator: DebugGenerator<L, D> = DebugGenerator::new(builder, format, variable);
+    let generator: DebugGenerator<L, D> = DebugGenerator::_new(builder, format, variable);
     builder.add_simple_generator(generator.clone());
 }

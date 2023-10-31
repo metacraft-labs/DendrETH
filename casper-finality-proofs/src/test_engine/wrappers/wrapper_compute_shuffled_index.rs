@@ -11,7 +11,7 @@ use plonky2x::prelude::{CircuitBuilder, DefaultParameters};
 static CIRCUIT: Lazy<MockCircuitBuild<DefaultParameters, 2>> = Lazy::new(|| {
     const SHUFFLE_ROUND_COUNT: usize = 90;
     let mut builder = CircuitBuilder::<DefaultParameters, 2>::new();
-    ComputeShuffledIndex::define_circuit(&mut builder, SHUFFLE_ROUND_COUNT);
+    ComputeShuffledIndex::define(&mut builder, SHUFFLE_ROUND_COUNT);
     builder.mock_build()
 });
 

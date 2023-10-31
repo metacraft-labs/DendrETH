@@ -48,7 +48,7 @@ pub fn init_tests() -> Vec<TestCase> {
     ));
     tests.push(TestCase::new(
         TestWrappers::WrapperComputeShuffledIndex,
-        "./src/test_engine/tests/compute_shuffled_index_test/".to_string(),
+        "./src/test_engine/tests/compute_shuffled_index/".to_string(),
     ));
 
     tests

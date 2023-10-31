@@ -3,6 +3,7 @@ use plonky2::field::types::Field;
 use itertools::Itertools;
 use crate::utils::{utils::exp_from_bits, variable::bits_to_variable};
 
+/// Returns the bytes concatenation of seed and current_round
 pub fn compute_hash<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
     seed: Bytes32Variable,
@@ -20,6 +21,7 @@ pub fn compute_hash<L: PlonkParameters<D>, const D: usize>(
     builder.sha256(&hash.0)
 }
 
+/// Returns the remainder of the hash's first 8 bytes as U64Variable and index count
 pub fn compute_pivot<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
     hash: Bytes32Variable,
@@ -42,6 +44,7 @@ pub fn compute_pivot<L: PlonkParameters<D>, const D: usize>(
     )
 }
 
+/// Converts position to variable and returns the bytes concatenation of seed, current_round and position divided by 256
 pub fn compute_source<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
     position: U64Variable,
@@ -76,6 +79,7 @@ pub fn compute_source<L: PlonkParameters<D>, const D: usize>(
     builder.sha256(&source.0)
 }
 
+/// Returns the byte in source at index (position % 256) / 8
 pub fn compute_byte<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
     source_array: Bytes32Variable,
@@ -91,6 +95,7 @@ pub fn compute_byte<L: PlonkParameters<D>, const D: usize>(
     builder.select_array(&source_array.0 .0, position_mod_256_div_8_variable)
 }
 
+/// Returns the remainder of byte / 2^(position % 8) and 2
 pub fn compute_bit<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
     byte: ByteVariable,
