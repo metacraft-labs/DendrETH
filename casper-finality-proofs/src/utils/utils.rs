@@ -19,6 +19,6 @@ pub fn exp_from_bits<L: PlonkParameters<D>, const D: usize>(
     exponent_bits: &[BoolVariable],
 ) -> Variable {
     Variable(builder.api.exp_from_bits(base.0, exponent_bits.into_iter()
-    .map(|x| BoolTarget::new_unsafe(x.0 .0))))
+    .map(|x| BoolTarget::new_unsafe(x.variable.0))))
 }
 

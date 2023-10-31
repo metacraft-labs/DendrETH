@@ -36,8 +36,8 @@ pub fn wrapper(path: &str, should_assert: bool) -> Result<String, anyhow::Error>
     let value = BeaconValidator {
         pubkey: to_string!(json_data.inputs.pubkey),
         withdrawal_credentials: to_string!(json_data.inputs.a),
-        activation_epoch: slot,
-        activation_eligibility_epoch: slot,
+        activation_epoch: slot.to_string(),
+        activation_eligibility_epoch: slot.to_string(),
         exit_epoch: slot.to_string(),
         slashed: json_data.inputs.slashed,
         effective_balance: 32,

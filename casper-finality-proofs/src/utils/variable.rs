@@ -10,7 +10,7 @@ pub fn bits_to_variable<L: PlonkParameters<D>, const D: usize>(
     let mut power_of_2 = builder.constant(L::Field::from_canonical_usize(1));
     let mut result = builder.constant(L::Field::from_canonical_usize(0));
     for i in 0..bits_len {
-        let addend = builder.mul(bits[i].0, power_of_2);
+        let addend = builder.mul(bits[i].variable, power_of_2);
         result = builder.add(addend, result);
         power_of_2 = builder.mul(const_2, power_of_2);
     }

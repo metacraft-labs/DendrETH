@@ -62,7 +62,7 @@ pub fn compute_source<L: PlonkParameters<D>, const D: usize>(
         let bits = position_div_256_bits[(i * 8)..((i + 1) * 8)]
             .iter()
             .rev()
-            .map(|x| x.0)
+            .map(|x| x.variable)
             .collect_vec();
         position_div_256_bytes.push(ByteVariable::from_variables(builder, bits.as_slice()));
     }
@@ -95,12 +95,12 @@ pub fn compute_byte<L: PlonkParameters<D>, const D: usize>(
     builder.select_array(&source_array.0 .0, position_mod_256_div_8_variable)
 }
 
-/// Returns the remainder of byte / 2^(position % 8) and 2
+/// Returns the remainder of byte / 2^(position % 8) and 2 as BoolVariable
 pub fn compute_bit<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
     byte: ByteVariable,
     position: U64Variable
-) -> U64Variable {
+) -> BoolVariable {
     let const_0: Variable = builder.constant(L::Field::from_canonical_usize(0));
     let const_2: Variable = builder.constant(L::Field::from_canonical_usize(2));
     let const_2_u64 = builder.constant::<U64Variable>(2);
@@ -115,9 +115,9 @@ pub fn compute_bit<L: PlonkParameters<D>, const D: usize>(
     let const_2_pow_position_mod_8_u64 =
         U64Variable::from_variables(builder, &[const_2_pow_position_mod_8, const_0]);
     let byte_shr_position_mod_8 = builder.div(byte_u64, const_2_pow_position_mod_8_u64);
+    let bit = builder.rem(byte_shr_position_mod_8, const_2_u64);
 
-
-    builder.rem(byte_shr_position_mod_8, const_2_u64)
+    BoolVariable::from_variables(builder, &[bit.variables()[0]])
 }
 
 /// Converts first 8 bytes of Bytes32Variable's bits to little-endian bit representation and returns the accumulation of each bit by power of 2.
@@ -140,7 +140,7 @@ pub fn bytes_slice_to_variable<L: PlonkParameters<D>, const D: usize>(
     }
 
     for i in 0..32 {
-        let addend = builder.mul(bits[31 - i].0, power_of_2);
+        let addend = builder.mul(bits[31 - i].variable, power_of_2);
         result = builder.add(addend, result);
         power_of_2 = builder.mul(const_2, power_of_2);
     }

@@ -1,7 +1,8 @@
 use super::test_engine::TestCase;
 use crate::test_engine::wrappers::{
     wrapper_hash_test::wrapper as wrapper_hash_test, wrapper_test::wrapper as wrapper_test,
-    wrapper_test_lte::wrapper as wrapper_test_lte, wrapper_compute_shuffled_index::wrapper as wrapper_compute_shuffled_index ,
+    wrapper_test_lte::wrapper as wrapper_test_lte, compute_shuffled_index::wrapper_mainnet::wrapper as wrapper_mainnet ,
+    compute_shuffled_index::wrapper_minimal::wrapper as wrapper_minimal
 };
 use strum::{Display, EnumString};
 
@@ -10,7 +11,8 @@ pub enum TestWrappers {
     WrapperTest,
     WrapperHashTest,
     WrapperTestLte,
-    WrapperComputeShuffledIndex
+    WrapperMainnet,
+    WrapperMinimal
 }
 
 pub fn map_test_to_wrapper(
@@ -26,8 +28,11 @@ pub fn map_test_to_wrapper(
         TestWrappers::WrapperTestLte => {
             Box::new(|path, should_assert| wrapper_test_lte(path.as_str(), should_assert))
         }
-        TestWrappers::WrapperComputeShuffledIndex => {
-            Box::new(|path, should_assert| wrapper_compute_shuffled_index(path.as_str(), should_assert))
+        TestWrappers::WrapperMainnet => {
+            Box::new(|path, should_assert| wrapper_mainnet(path.as_str(), should_assert))
+        }
+        TestWrappers::WrapperMinimal => {
+            Box::new(|path, should_assert| wrapper_minimal(path.as_str(), should_assert))
         }
     }
 }
@@ -47,7 +52,11 @@ pub fn init_tests() -> Vec<TestCase> {
         "./src/test_engine/tests/test_lte/".to_string(),
     ));
     tests.push(TestCase::new(
-        TestWrappers::WrapperComputeShuffledIndex,
+        TestWrappers::WrapperMainnet,
+        "./src/test_engine/tests/compute_shuffled_index/".to_string(),
+    ));
+    tests.push(TestCase::new(
+        TestWrappers::WrapperMinimal,
         "./src/test_engine/tests/compute_shuffled_index/".to_string(),
     ));
 

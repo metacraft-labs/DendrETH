@@ -35,7 +35,7 @@ impl ComputeShuffledIndex {
             let byte = compute_byte(builder, source, position);
             let bit = compute_bit(builder, byte, position);
 
-            index = builder.select(BoolVariable(bit.variables()[0]), flip, index);
+            index = builder.select(bit, flip, index);
         }
 
         builder.write::<U64Variable>(index);
