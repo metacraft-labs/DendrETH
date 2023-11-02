@@ -41,10 +41,6 @@ namespace byte_utils {
         return (first_nibble << 4) + second_nibble;
     }
 
-    unsigned char get_nth_bit(uint64_t gindex, short i) {
-        return 1 & (gindex >> i);
-    }
-
 #define PrintContainer(val)               \
     {                                     \
         std::cout << #val << ": ";        \
