@@ -1,3 +1,5 @@
+#pragma once
+
 #include "base_types.h"
 
 using namespace nil::crypto3;
@@ -23,6 +25,15 @@ namespace circuit_byte_utils {
         assert_true(n < sizeof(T));
 
         return val >> (n * 8);
+    }
+
+    unsigned char get_nth_bit(uint64_t gindex, short i) {
+        return 1 & (gindex >> i);
+    }
+
+    void set_nth_bit(Byte& gindex, short i) {
+        assert_true(i < 8);
+        gindex = gindex | (Byte(1) << i);
     }
 
     template<typename T>
