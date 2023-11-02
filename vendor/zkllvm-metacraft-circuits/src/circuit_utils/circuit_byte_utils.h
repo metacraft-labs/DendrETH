@@ -25,6 +25,10 @@ namespace circuit_byte_utils {
         return val >> (n * 8);
     }
 
+    unsigned char get_nth_bit(uint64_t gindex, short i) {
+        return 1 & (gindex >> i);
+    }
+
     template<typename T>
     void sha256_to_bytes_array(sha256_t sha, T& out) {
         assert_true(out.size() >= sizeof(sha));
