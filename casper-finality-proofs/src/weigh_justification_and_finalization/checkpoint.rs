@@ -19,6 +19,6 @@ impl SSZVariable for CheckpointVariable {
     ) -> Bytes32Variable {
         let epoch_leaf = builder.ssz_hash_tree_root(self.epoch);
         let root_leaf = builder.ssz_hash_tree_root(self.root);
-        builder.sha256_pair(epoch_leaf, root_leaf)
+        builder.curta_sha256_pair(epoch_leaf, root_leaf)
     }
 }
