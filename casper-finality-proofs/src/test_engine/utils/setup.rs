@@ -1,8 +1,9 @@
 use super::test_engine::TestCase;
 use crate::test_engine::wrappers::{
+    compute_shuffled_index::wrapper_mainnet::wrapper as wrapper_mainnet,
+    compute_shuffled_index::wrapper_minimal::wrapper as wrapper_minimal,
     wrapper_hash_test::wrapper as wrapper_hash_test, wrapper_test::wrapper as wrapper_test,
-    wrapper_test_lte::wrapper as wrapper_test_lte, compute_shuffled_index::wrapper_mainnet::wrapper as wrapper_mainnet ,
-    compute_shuffled_index::wrapper_minimal::wrapper as wrapper_minimal
+    wrapper_test_lte::wrapper as wrapper_test_lte,
 };
 use strum::{Display, EnumString};
 
@@ -12,7 +13,7 @@ pub enum TestWrappers {
     WrapperHashTest,
     WrapperTestLte,
     WrapperMainnet,
-    WrapperMinimal
+    WrapperMinimal,
 }
 
 pub fn map_test_to_wrapper(

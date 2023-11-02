@@ -1,8 +1,8 @@
 use casper_finality_proofs::compute_shuffled_index::compute_shuffled_index::define;
-use plonky2x::utils;
 use plonky2x::prelude::{
-    ArrayVariable, ByteVariable, CircuitBuilder, DefaultParameters, U64Variable, bytes
+    bytes, ArrayVariable, ByteVariable, CircuitBuilder, DefaultParameters, U64Variable,
 };
+use plonky2x::utils;
 
 fn test_compute_shuffled_index_100() {
     utils::setup_logger();
@@ -13,7 +13,7 @@ fn test_compute_shuffled_index_100() {
     let mut seed_bytes_fixed_size = [0u8; 32];
     seed_bytes_fixed_size[..32].copy_from_slice(&seed_bytes);
 
-    const SHUFFLE_ROUND_COUNT: usize = 90;
+    const SHUFFLE_ROUND_COUNT: u8 = 90;
     let mut builder = CircuitBuilder::<DefaultParameters, 2>::new();
     define(&mut builder, SHUFFLE_ROUND_COUNT);
 
@@ -21,11 +21,13 @@ fn test_compute_shuffled_index_100() {
 
     const START_IDX: u64 = 0;
     const COUNT: u64 = 100;
-    let mapping = [53, 21, 19, 29, 76, 32, 67, 63, 3, 38, 89, 37, 30, 78, 0, 40, 96, 44, 22,
-    42, 23, 62, 92, 87, 11, 43, 54, 75, 71, 82, 68, 36, 59, 90, 66, 45, 58, 70, 4, 72,
-    33, 24, 6, 39, 52, 51, 99, 8, 27, 88, 20, 31, 86, 77, 94, 95, 85, 41, 93, 15, 13,
-    5, 74, 81, 18, 17, 47, 2, 16, 7, 84, 9, 79, 65, 61, 49, 60, 50, 64, 34, 55, 56,
-    91, 98, 28, 46, 14, 73, 12, 25, 26, 57, 83, 80, 35, 97, 69, 10, 1, 48];
+    let mapping = [
+        53, 21, 19, 29, 76, 32, 67, 63, 3, 38, 89, 37, 30, 78, 0, 40, 96, 44, 22, 42, 23, 62, 92,
+        87, 11, 43, 54, 75, 71, 82, 68, 36, 59, 90, 66, 45, 58, 70, 4, 72, 33, 24, 6, 39, 52, 51,
+        99, 8, 27, 88, 20, 31, 86, 77, 94, 95, 85, 41, 93, 15, 13, 5, 74, 81, 18, 17, 47, 2, 16, 7,
+        84, 9, 79, 65, 61, 49, 60, 50, 64, 34, 55, 56, 91, 98, 28, 46, 14, 73, 12, 25, 26, 57, 83,
+        80, 35, 97, 69, 10, 1, 48,
+    ];
     for i in START_IDX..COUNT {
         let mut input = circuit.input();
 

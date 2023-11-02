@@ -1,13 +1,13 @@
-use crate::utils::utils::assert_is_true;
-use plonky2x::prelude::{
-    Bytes32Variable, CircuitBuilder, PlonkParameters, U64Variable
-};
+use crate::utils::utils::{assert_is_true, max};
+use plonky2x::prelude::{Bytes32Variable, CircuitBuilder, PlonkParameters, U64Variable};
 
-use super::compute_shuffled_index_helpers::{compute_source, compute_byte, compute_bit, compute_hash};
+use super::compute_shuffled_index_helpers::{
+    compute_bit, compute_byte, compute_flip, compute_pivot, compute_source,
+};
 
 pub fn define<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
-    shuffle_round_count: usize
+    shuffle_round_count: u8,
 ) {
     let mut index = builder.read::<U64Variable>();
     let index_count = builder.read::<U64Variable>();
@@ -17,15 +17,10 @@ pub fn define<L: PlonkParameters<D>, const D: usize>(
     assert_is_true(builder, index_lt_index_count);
 
     for current_round in 0..shuffle_round_count {
-        let hash = compute_hash(builder, seed, current_round);
-        let pivot = builder.rem(hash, index_count);
+        let pivot = compute_pivot(builder, seed, index_count, current_round);
+        let flip = compute_flip(builder, pivot, index_count, index);
 
-        let sum_pivot_index_count = builder.add(pivot, index_count);
-        let sum_pivot_index_count_sub_index = builder.sub(sum_pivot_index_count, index);
-        let flip = builder.rem(sum_pivot_index_count_sub_index, index_count);
-
-        let index_lte_flip = builder.lte(index, flip);
-        let position = builder.select(index_lte_flip, flip, index);
+        let position = max(builder, index, flip);
         let source = compute_source(builder, position, seed, current_round);
 
         let byte = compute_byte(builder, source, position);

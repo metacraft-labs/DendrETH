@@ -9,7 +9,7 @@ use plonky2x::prelude::{CircuitBuilder, DefaultParameters};
 
 // Singleton-like pattern
 static MAINNET_CIRCUIT: Lazy<MockCircuitBuild<DefaultParameters, 2>> = Lazy::new(|| {
-    const SHUFFLE_ROUND_COUNT: usize = 90;
+    const SHUFFLE_ROUND_COUNT: u8 = 90;
     let mut builder = CircuitBuilder::<DefaultParameters, 2>::new();
     define(&mut builder, SHUFFLE_ROUND_COUNT);
     builder.mock_build()

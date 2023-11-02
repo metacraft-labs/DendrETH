@@ -7,5 +7,3 @@ pub mod test_lte;
 mod types;
 mod utils;
 pub mod weigh_justification_and_finalization;
-
-mod utils;
