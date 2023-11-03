@@ -1,6 +1,6 @@
 pub mod get_total_active_balance_first_level;
 
-use std::println;
+use std::{fs, println};
 
 use casper_finality_proofs::{
     commitment_mapper_first_level::CommitmentMapperFirstLevel,
@@ -18,14 +18,14 @@ fn main() {
     CommitmentMapperFirstLevel::define(&mut builder);
     let circuit = builder.build();
 
-    // let hint_serializer = HintRegistry::<DefaultParameters, 2>::new();
-    // let gate_serializer = GateRegistry::<DefaultParameters, 2>::new();
+    let hint_serializer = HintRegistry::<DefaultParameters, 2>::new();
+    let gate_serializer = GateRegistry::<DefaultParameters, 2>::new();
 
-    // circuit.save(
-    //     &"build/first_level.circuit".to_string(),
-    //     &gate_serializer,
-    //     &hint_serializer,
-    // );
+    circuit.save(
+        &"build/first_level.circuit".to_string(),
+        &gate_serializer,
+        &hint_serializer,
+    );
 
     let mut input = circuit.input();
     input.write::<ValidatorVariable>( ValidatorValue{
@@ -80,7 +80,10 @@ fn main() {
     let poseidon_result = output.read::<PoseidonHashOutVariable>();
 
     // println!("sha256_result {:?}", sha256_result);
+
     println!("poseidon_result {:?}", poseidon_result);
 
     println!("proof public inputs {:?}", proof.public_inputs);
+
+    fs::write("build/proof1", proof.to_bytes()).unwrap();
 }
