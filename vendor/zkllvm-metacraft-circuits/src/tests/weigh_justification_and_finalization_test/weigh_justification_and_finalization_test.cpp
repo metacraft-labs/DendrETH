@@ -168,6 +168,65 @@ void verify_justification_bits(
     );
 }
 
+Epoch get_current_epoch(
+    Slot slot 
+)
+{
+    auto slots_per_epoch = SLOTS_PER_EPOCH;
+    return slot / slots_per_epoch;
+}
+
+void assert_epoch_is_not_genesis_epoch(
+    Epoch epoch
+)
+{
+    assert_true(epoch >= 1);
+}
+
+Epoch get_previous_epoch(
+    Epoch current_epoch
+) 
+{
+    return current_epoch - 1;
+}
+
+Slot compute_start_slot_at_epoch_in_block_roots(
+    Epoch epoch
+)
+{
+    auto slots_per_epoch = SLOTS_PER_EPOCH;
+    auto slots_per_historical_root = SLOTS_PER_HISTORICAL_ROOT;
+    auto start_slot_at_epoch = epoch * slots_per_epoch;
+    return start_slot_at_epoch % slots_per_historical_root;
+}
+
+void verify_epoch_start_slot_root_in_block_roots(
+    Root beacon_state_root,
+    Epoch epoch,
+    Root block_root,
+    MerkleProof<18> proof
+) {
+    auto start_block_roots_gindex = DEPTH18_START_BLOCK_ROOTS_GINDEX;
+    auto index_in_block_roots = compute_start_slot_at_epoch_in_block_roots(epoch);
+    auto gindex = start_block_roots_gindex + index_in_block_roots;
+    ssz_verify_proof<array_size<decltype(proof)>::size>(beacon_state_root, block_root, proof, gindex);
+}
+
+void verify_finalized_checkpoint(
+    Root beacon_state_root,
+    CheckpointVariable finalized_checkpoint,
+    BeaconStateLeafProof proof
+) {
+    auto finalized_checkpoint_leaf = hash_tree_root(finalized_checkpoint);
+    auto gindex = BEACON_STATE_FINALIZED_CHECKPOINT_GINDEX;
+    ssz_verify_proof<array_size<BeaconStateLeafProof>::size>(
+        beacon_state_root,
+        finalized_checkpoint_leaf,
+        proof,
+        gindex
+    );
+}
+
 //#################################################################################################
 
 int main(int argc, char* argv[]) {
