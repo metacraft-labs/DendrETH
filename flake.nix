@@ -36,7 +36,7 @@
     ...
   }:
     flake-parts.lib.mkFlake {inherit inputs;} {
-      imports = [./balance-verifier];
+      imports = [./balance-verifier ./shell.nix];
       systems = [
         "x86_64-linux"
         "aarch64-linux"
@@ -76,7 +76,6 @@
           // pkgs.lib.optionalAttrs (pkgs.hostPlatform.isLinux && pkgs.hostPlatform.isx86_64) {
             inherit (docker-images) docker-image-all;
           };
-        devShells.default = import ./shell.nix {inherit pkgs rust-stable rust-nightly;};
         devShells.light-client = import ./libs/nix/shell-with-light-client.nix {inherit pkgs rust-stable;};
       };
     };
