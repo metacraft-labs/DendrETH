@@ -8,7 +8,7 @@
     inherit (inputs.mcl-blockchain.inputs) crane;
     inherit (inputs'.mcl-blockchain.legacyPackages) nix2container pkgs-with-rust-overlay;
     pkgs = pkgs-with-rust-overlay;
-    inherit (pkgs) callPackage rust-bin runCommandLocal writeScript;
+    inherit (pkgs) callPackage rust-bin runCommandLocal writeScriptBin;
     inherit (lib) getExe;
 
     rust-nightly = rust-bin.nightly."2023-06-12".default;
@@ -38,7 +38,7 @@
         mv *.plonky2_targets *.plonky2_circuit $out/bin
       '';
 
-    allLevels = builtins.map builtins.toString (lib.lists.range 0 38);
+    allLevels = builtins.map builtins.toString (lib.lists.range 0 37);
     balance-verifier-circuit-per-level = lib.genAttrs (allLevels ++ ["all"]) balance-verification-circuit;
 
     buildImage = level: let
@@ -75,7 +75,7 @@
     balance-verifier-circuit-per-level-docker = lib.genAttrs allLevels buildImage;
 
     balance-verifier-all-images =
-      writeScript "balance-verifier-all-images"
+      writeScriptBin "balance-verifier-all-images"
       (
         lib.concatMapStringsSep
         "\n"
@@ -90,7 +90,7 @@
       inherit balance-verifier commitment-mapper balance-verifier-all-images final-layer final-layer-image;
     };
     packages = {
-      inherit get_balances_input;
+      inherit get_balances_input balance-verifier-circuit-builder;
     };
   };
 }
