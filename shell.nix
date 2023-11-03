@@ -1,33 +1,43 @@
-{
-  pkgs,
-  rust-stable,
-  rust-nightly,
-}:
-with pkgs; let
-  shell-pkgs = import ./libs/nix/common-shell-pkgs.nix {inherit pkgs rust-stable;};
-in
-  mkShell {
-    packages = [rust-nightly] ++ shell-pkgs;
+{inputs, ...}: {
+  perSystem = {
+    lib,
+    inputs',
+    pkgs,
+    system,
+    ...
+  }: let
+    inherit (inputs'.mcl-blockchain.legacyPackages) pkgs-with-rust-overlay rust-stable;
+    inherit (pkgs-with-rust-overlay) rust-bin;
 
-    nativeBuildInputs = [pkg-config openssl];
+    rust-nightly = rust-bin.nightly."2023-06-12".default;
+  in {
+    devShells.default = with pkgs; let
+      shell-pkgs = import ./libs/nix/common-shell-pkgs.nix {inherit pkgs rust-stable;};
+    in
+      mkShell {
+        packages = [rust-nightly] ++ shell-pkgs;
 
-    shellHook = ''
-      set -e
+        nativeBuildInputs = [pkg-config openssl];
 
-      export NODE_OPTIONS="--experimental-vm-modules"
-      export PATH="$PATH:$PWD/node_modules/.bin";
-      export CC=clang
-      export LOCAL_NIM_LIB="$PWD/vendor/nim/lib"
-      export LOCAL_HARDHAT_PRIVATE_KEY="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+        shellHook = ''
+          set -e
 
-      if [ -f .env ]; then
-        set -a
-        source .env
-        set +a
-      fi
+          export NODE_OPTIONS="--experimental-vm-modules"
+          export PATH="$PATH:$PWD/node_modules/.bin";
+          export CC=clang
+          export LOCAL_NIM_LIB="$PWD/vendor/nim/lib"
+          export LOCAL_HARDHAT_PRIVATE_KEY="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 
-      # scripts/check-user-env-file-contents.sh
+          if [ -f .env ]; then
+            set -a
+            source .env
+            set +a
+          fi
 
-      figlet "DendrETH"
-    '';
-  }
+          # scripts/check-user-env-file-contents.sh
+
+          figlet "DendrETH"
+        '';
+      };
+  };
+}
