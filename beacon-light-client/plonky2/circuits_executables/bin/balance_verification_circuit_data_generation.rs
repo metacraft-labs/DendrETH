@@ -1,5 +1,5 @@
-use std::{fs, marker::PhantomData, ops::RangeInclusive, path::Path, process};
-use num::clamp;
+use std::{fs, marker::PhantomData};
+
 use anyhow::Result;
 use circuits::{
     build_balance_inner_level_circuit::build_inner_level_circuit,
@@ -44,7 +44,7 @@ pub async fn async_main() -> Result<()> {
                 }),
         )
         .get_matches();
-    let level_str = matches.value_of("circuit_level").unwrap();
+
     let level = match matches.value_of("circuit_level").unwrap() {
         "all" => None,
         x => Some(x.parse::<usize>().unwrap()),
@@ -58,11 +58,6 @@ pub async fn async_main() -> Result<()> {
     let generator_serializer = DendrETHGeneratorSerializer {
         _phantom: PhantomData::<PoseidonGoldilocksConfig>,
     };
-
-    if level != None && level.unwrap() > 37 {
-        eprintln!("\x1b[31mError: Supplied level {} is larger than the maximum allowed level 38\x1b[0m", level.unwrap());
-        process::exit(1);
-    }
 
     if level == None || level == Some(0) {
         write_first_level_circuit(
@@ -78,10 +73,10 @@ pub async fn async_main() -> Result<()> {
     }
 
     let mut prev_circuit_data = first_level_data;
-    let level_range = if level == None { 1..=37 } else { RangeInclusive::new(1,clamp(level.unwrap(),1,37)) };
-    for i in level_range {
+
+    for i in 1..38 {
         let (targets, data) = build_inner_level_circuit(&prev_circuit_data);
-        println!("{}", i);
+
         if level == Some(i) || level == None {
             let circuit_bytes = data
                 .to_bytes(&gate_serializer, &generator_serializer)
@@ -99,17 +94,6 @@ pub async fn async_main() -> Result<()> {
         }
 
         prev_circuit_data = data;
-    }
-
-    let mut exists = false;
-    for i in 1..=37 {
-        if Path::new(&format!("{}.plonky2_circuit",i)).exists() || Path::new(&format!("{}.plonky2_targets",i)).exists() {
-            exists = true;
-        }
-    }
-    if !exists {
-        eprintln!("\x1b[31mError: No plonky2 output created. Level used was: {}\x1b[0m", level_str);
-        process::exit(1);
     }
 
     Ok(())
