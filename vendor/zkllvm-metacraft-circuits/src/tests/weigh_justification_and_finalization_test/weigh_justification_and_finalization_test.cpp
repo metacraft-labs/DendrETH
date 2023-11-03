@@ -1,6 +1,7 @@
 #include <nil/crypto3/hash/algorithm/hash.hpp>
 #include <nil/crypto3/hash/sha2.hpp>
 #include "circuit_utils/circuit_byte_utils.h"
+#include "circuit_utils/constants.h"
 
 #include <algorithm>
 #include <array>
@@ -25,16 +26,32 @@ using namespace file_utils;
 using std::cout;
 
 //#################################################################################################
+
+Bytes32 sha256_pair(
+    const Bytes32& left,
+    const Bytes32& right
+)
+{
+    Bytes32 ret_val{};
+    Bytes64 combined{};
+    std::copy(left.begin(), left.end(), combined.begin());
+    std::copy(right.begin(), right.end(), combined.begin() + 32);
+
+    picosha2::hash256(combined.begin(), combined.end(), ret_val.begin(), ret_val.end());
+
+    return ret_val;
+}
+
+template <uint32_t MERKLE_DEPTH>
 Bytes32 ssz_restore_merkle_root(
     const Bytes32& leaf,
-    const std::array<Bytes32, MAX_MERKLE_DEPTH> branch,
-    const unsigned int branch_depth,
+    const std::array<Bytes32, MERKLE_DEPTH>& branch,
     uint64_t gindex
 )
 {
     auto hash = leaf;
 
-    for(size_t i = 0; i < branch_depth; i++) {
+    for(size_t i = 0; i < MERKLE_DEPTH; i++) {
         Bytes32 left;
         Bytes32 right;
 
@@ -61,32 +78,78 @@ Bytes32 ssz_restore_merkle_root(
     return hash;
 }
 
+template <uint32_t MERKLE_DEPTH>
 void ssz_verify_proof(
-    const Bytes32 root,
-    const Bytes32 leaf,
-    const std::array<Bytes32, MAX_MERKLE_DEPTH> branch,
-    const unsigned int branch_depth,
+    const Bytes32& root,
+    const Bytes32& leaf,
+    const std::array<Bytes32, MERKLE_DEPTH>& branch,
     const uint64_t gindex
-) {
-    auto expected_root = ssz_restore_merkle_root(leaf, branch, branch_depth, gindex);
+)
+{
+    auto expected_root = ssz_restore_merkle_root<MERKLE_DEPTH>(leaf, branch, gindex);
     assert_true(root == expected_root);
 }
 
+Bytes32 hash_tree_root(uint64_t val)
+{
+    auto bytes = int_to_bytes(val);
+    Bytes32 return_val{};
+    std::copy(bytes.begin(), bytes.end(), return_val.begin());
+    return return_val;
+}
+
+Bytes32 hash_tree_root(const CheckpointVariable& checkpoint)
+{
+    auto epoch_leaf = hash_tree_root(checkpoint.epoch);
+    return sha256_pair(epoch_leaf, checkpoint.root);
+}
+
 void verify_slot(
+    const Root& beacon_state_root,
+    const Slot& slot,
+    const BeaconStateLeafProof& proof
+)
+{
+    auto slot_leaf = hash_tree_root(slot);
+    auto gindex = BEACON_STATE_SLOT_GINDEX;
+    ssz_verify_proof<array_size<BeaconStateLeafProof>::size>(beacon_state_root, slot_leaf, proof, gindex);
+}
+
+void verify_previous_justified_checkpoint(
+    const Root& beacon_state_root,
+    const CheckpointVariable& checkpoint,
+    const BeaconStateLeafProof& proof
+)
+{
+    const auto checkpoint_leaf = hash_tree_root(checkpoint);
+    const auto gindex = BEACON_STATE_PREVIOUS_JUSTIFIED_CHECKPOINT_GINDEX;
+    ssz_verify_proof<array_size<BeaconStateLeafProof>::size>(beacon_state_root, checkpoint_leaf, proof, gindex);
+}
+
+void verify_current_justified_checkpoint(
     Root beacon_state_root,
-    Slot slot,
+    CheckpointVariable checkpoint,
     BeaconStateLeafProof proof
-) {
-    // auto slot_leaf = slot.hash_tree_root(builder);
-    // auto gindex = U64Variable::constant(builder, BEACON_STATE_SLOT_GINDEX);
-    // ssz_verify_proof(beacon_state_root, slot_leaf, proof.as_slice(), gindex);
+)
+{
+    auto checkpoint_leaf = hash_tree_root(checkpoint);
+    auto gindex = BEACON_STATE_CURRENT_JUSTIFIED_CHECKPOINT_GINDEX;
+    ssz_verify_proof<array_size<BeaconStateLeafProof>::size>(beacon_state_root, checkpoint_leaf, proof, gindex);
 }
 
 //#################################################################################################
 
 int main(int argc, char* argv[]) {
 
+    uint64_t val = 191;
+    auto val_bytes = hash_tree_root(val);
+    std::cout << "bytesToHex(val_bytes) = " << byte_utils::bytesToHex(val_bytes) << "\n";
 
+    Bytes32 left{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32};
+    Bytes32 right{33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64};
+    sha256_pair(left, right);
+
+    std::cout << "array_size<BeaconStateLeafProof>::size = " << array_size<BeaconStateLeafProof>::size << "\n";
 
     return 0;
 }

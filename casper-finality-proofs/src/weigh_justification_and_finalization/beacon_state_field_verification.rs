@@ -43,6 +43,10 @@ pub fn verify_slot<L: PlonkParameters<D>, const D: usize>(
     proof: BeaconStateLeafProof,
 ) {
     let slot_leaf = slot.hash_tree_root(builder);
+    // println!("DEBUG: slot={:?}", slot);
+    // println!("slot_leaf={:?}", slot_leaf);
+    builder.watch(&slot, "slot");
+    builder.watch(&slot_leaf, "slot_leaf");
     let gindex = U64Variable::constant(builder, BEACON_STATE_SLOT_GINDEX);
     builder.ssz_verify_proof(beacon_state_root, slot_leaf, proof.as_slice(), gindex);
 }

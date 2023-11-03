@@ -1,3 +1,5 @@
+#pragma once
+
 #include "base_types.h"
 
 using namespace nil::crypto3;
