@@ -31,6 +31,11 @@ namespace circuit_byte_utils {
         return 1 & (gindex >> i);
     }
 
+    void set_nth_bit(Byte& gindex, short i) {
+        assert_true(i < 8);
+        gindex = gindex | (Byte(1) << i);
+    }
+
     template<typename T>
     void sha256_to_bytes_array(sha256_t sha, T& out) {
         assert_true(out.size() >= sizeof(sha));

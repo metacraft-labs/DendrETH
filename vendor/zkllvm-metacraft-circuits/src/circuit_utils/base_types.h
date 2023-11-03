@@ -26,6 +26,10 @@ struct CheckpointVariable {
     Root root;
 };
 
+struct JustificationBitsVariable {
+    std::array<bool, 4> bits;
+};
+
 constexpr unsigned int MAX_MERKLE_DEPTH = 512;
 
 //!!!TODO: Use assertion in circuits when introduced in tooling

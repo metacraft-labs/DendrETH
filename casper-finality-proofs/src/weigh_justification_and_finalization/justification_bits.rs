@@ -66,12 +66,19 @@ impl SSZVariable for JustificationBitsVariable {
             self.bits[0],
         ]);
 
+        builder.watch(&self.bits[0], "self.bits[0]");
+        builder.watch(&self.bits[1], "self.bits[1]");
+        builder.watch(&self.bits[2], "self.bits[2]");
+        builder.watch(&self.bits[3], "self.bits[4]");
+
+        builder.watch(&first_byte, "first_byte");
         let mut justification_bits_vec = vec![first_byte];
         justification_bits_vec.extend(vec![zero_byte; 31]);
         let justification_bits_fixed_size: [ByteVariable; 32] =
             justification_bits_vec.try_into().unwrap();
 
         let justification_bits_leaf = Bytes32Variable::from(justification_bits_fixed_size);
+        builder.watch(&justification_bits_leaf, "justification_bits_leaf");
         justification_bits_leaf
     }
 }

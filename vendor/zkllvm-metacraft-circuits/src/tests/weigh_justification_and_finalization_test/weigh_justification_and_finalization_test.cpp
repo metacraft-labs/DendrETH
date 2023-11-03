@@ -1,5 +1,6 @@
 #include <nil/crypto3/hash/algorithm/hash.hpp>
 #include <nil/crypto3/hash/sha2.hpp>
+#include "circuit_utils/base_types.h"
 #include "circuit_utils/circuit_byte_utils.h"
 #include "circuit_utils/constants.h"
 
@@ -104,6 +105,18 @@ Bytes32 hash_tree_root(const CheckpointVariable& checkpoint)
     return sha256_pair(epoch_leaf, checkpoint.root);
 }
 
+Bytes32 hash_tree_root(const JustificationBitsVariable& checkpoint)
+{
+    Bytes32 ret_val{};
+    for(auto i = 0; i < 4; i++) {
+        if(checkpoint.bits[i]) {
+            set_nth_bit(ret_val[0], i);
+        }
+    }
+
+    return ret_val;
+}
+
 void verify_slot(
     const Root& beacon_state_root,
     const Slot& slot,
@@ -123,7 +136,8 @@ void verify_previous_justified_checkpoint(
 {
     const auto checkpoint_leaf = hash_tree_root(checkpoint);
     const auto gindex = BEACON_STATE_PREVIOUS_JUSTIFIED_CHECKPOINT_GINDEX;
-    ssz_verify_proof<array_size<BeaconStateLeafProof>::size>(beacon_state_root, checkpoint_leaf, proof, gindex);
+    ssz_verify_proof<array_size<BeaconStateLeafProof>::size>(
+        beacon_state_root, checkpoint_leaf, proof, gindex);
 }
 
 void verify_current_justified_checkpoint(
@@ -134,7 +148,24 @@ void verify_current_justified_checkpoint(
 {
     auto checkpoint_leaf = hash_tree_root(checkpoint);
     auto gindex = BEACON_STATE_CURRENT_JUSTIFIED_CHECKPOINT_GINDEX;
-    ssz_verify_proof<array_size<BeaconStateLeafProof>::size>(beacon_state_root, checkpoint_leaf, proof, gindex);
+    ssz_verify_proof<array_size<BeaconStateLeafProof>::size>(
+        beacon_state_root, checkpoint_leaf, proof, gindex);
+}
+
+void verify_justification_bits(
+    Root beacon_state_root,
+    JustificationBitsVariable justification_bits,
+    BeaconStateLeafProof proof
+)
+{
+    auto justification_bits_leaf = hash_tree_root(justification_bits);
+    auto gindex = BEACON_STATE_JUSTIFICATION_BITS_GINDEX;
+    ssz_verify_proof<array_size<BeaconStateLeafProof>::size>(
+        beacon_state_root,
+        justification_bits_leaf,
+        proof,
+        gindex
+    );
 }
 
 //#################################################################################################
@@ -150,6 +181,18 @@ int main(int argc, char* argv[]) {
     sha256_pair(left, right);
 
     std::cout << "array_size<BeaconStateLeafProof>::size = " << array_size<BeaconStateLeafProof>::size << "\n";
+
+    JustificationBitsVariable jbv{};
+    jbv.bits[1] = true;
+
+    for(auto i = 0; i < jbv.bits.size(); i++) {
+        std::cout << "jbv.bits[" << i << "] = " << jbv.bits[i] << "\n";
+    }
+
+    auto jbv_res = hash_tree_root(jbv);
+
+    std::cout << "bytesToHex(jbv_res) = " << byte_utils::bytesToHex(jbv_res) << "\n";
+
 
     return 0;
 }
