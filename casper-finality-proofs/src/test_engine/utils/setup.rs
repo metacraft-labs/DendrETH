@@ -3,11 +3,21 @@ use crate::test_engine::wrappers::wrapper_weigh_justification_and_finalization::
     wrapper as wrapper_weigh_justification_and_finalization,
     CIRCUIT as circuit_weigh_justification_and_finalization,
 };
+use crate::test_engine::wrappers::compute_shuffled_index::wrapper_mainnet::{
+    wrapper as wrapper_mainnet,
+    MAINNET_CIRCUIT as circuit_mainnet,
+};
+use crate::test_engine::wrappers::compute_shuffled_index::wrapper_minimal::{
+    wrapper as wrapper_minimal,
+    MINIMAL_CIRCUIT as circuit_minimal,
+};
 use once_cell::sync::Lazy;
 use strum::{Display, EnumString};
 
 #[derive(Debug, Eq, Hash, PartialEq, Copy, Clone, EnumString, Display)]
 pub enum TestWrappers {
+    WrapperMainnet,
+    WrapperMinimal,
     WrapperWeighJustificationAndFinalizationConsensusMainnet,
 }
 
@@ -26,6 +36,22 @@ pub fn map_test_to_wrapper(
                 wrapper_weigh_justification_and_finalization(path, should_assert)
             }),
         ),
+        TestWrappers::WrapperMainnet => (
+            Box::new(|| {
+                Lazy::force(&circuit_mainnet);
+            }),
+            Box::new(|path, should_assert| {
+                wrapper_mainnet(&path, should_assert)
+            }),
+        ),
+        TestWrappers::WrapperMinimal => (
+            Box::new(|| {
+                Lazy::force(&circuit_minimal);
+            }),
+            Box::new(|path, should_assert| {
+                wrapper_minimal(&path, should_assert)
+            }),
+        ),
     }
 }
 
@@ -36,6 +62,14 @@ pub fn init_tests() -> Vec<TestCase> {
         "../vendor/consensus-spec-tests/tests/mainnet/capella/epoch_processing/justification_and_finalization/pyspec_tests/".to_string(),
         true,
     ));
+    tests.push(TestCase::new(
+        TestWrappers::WrapperMainnet,
+        "./src/test_engine/tests/compute_shuffled_index/".to_string(),
+        true));
+    tests.push(TestCase::new(
+        TestWrappers::WrapperMinimal,
+        "./src/test_engine/tests/compute_shuffled_index/".to_string(),
+        true));
 
     tests
 }

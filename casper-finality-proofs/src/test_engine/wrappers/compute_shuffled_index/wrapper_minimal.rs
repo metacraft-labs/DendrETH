@@ -1,14 +1,14 @@
 use crate::assert_equal;
 use crate::compute_shuffled_index::compute_shuffled_index::define;
 use crate::test_engine::types::compute_shuffled_index_data::TestData;
-use crate::test_engine::utils::parse_file::read_fixture;
+use crate::test_engine::utils::parsers::parse_file::read_fixture;
 use once_cell::sync::Lazy;
 use plonky2x::backend::circuit::MockCircuitBuild;
 use plonky2x::prelude::{Bytes32Variable, U64Variable};
 use plonky2x::prelude::{CircuitBuilder, DefaultParameters};
 
 // Singleton-like pattern
-static MINIMAL_CIRCUIT: Lazy<MockCircuitBuild<DefaultParameters, 2>> = Lazy::new(|| {
+pub static MINIMAL_CIRCUIT: Lazy<MockCircuitBuild<DefaultParameters, 2>> = Lazy::new(|| {
     const SHUFFLE_ROUND_COUNT: u8 = 10;
     let mut builder = CircuitBuilder::<DefaultParameters, 2>::new();
     define(&mut builder, SHUFFLE_ROUND_COUNT);
