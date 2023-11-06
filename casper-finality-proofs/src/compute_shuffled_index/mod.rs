@@ -1,3 +1,3 @@
-pub mod compute_shuffled_index;
+pub mod circuit;
 
-mod compute_shuffled_index_helpers;
+mod helpers;

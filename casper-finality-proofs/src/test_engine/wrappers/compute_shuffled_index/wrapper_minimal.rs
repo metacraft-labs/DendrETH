@@ -1,5 +1,5 @@
 use crate::assert_equal;
-use crate::compute_shuffled_index::compute_shuffled_index::define;
+use crate::compute_shuffled_index::circuit::define;
 use crate::test_engine::types::compute_shuffled_index_data::TestData;
 use crate::test_engine::utils::parsers::parse_file::read_fixture;
 use once_cell::sync::Lazy;

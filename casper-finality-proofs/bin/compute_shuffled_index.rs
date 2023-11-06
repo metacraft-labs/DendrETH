@@ -1,4 +1,4 @@
-use casper_finality_proofs::compute_shuffled_index::compute_shuffled_index::define;
+use casper_finality_proofs::compute_shuffled_index::circuit::define;
 use plonky2x::prelude::{
     bytes, ArrayVariable, ByteVariable, CircuitBuilder, DefaultParameters, U64Variable,
 };
@@ -10,8 +10,7 @@ fn main() {
     let seed_bytes: Vec<u8> =
         bytes!("0x4ac96f664a6cafd300b161720809b9e17905d4d8fed7a97ff89cf0080a953fe7");
 
-    let mut seed_bytes_fixed_size = [0u8; 32];
-    seed_bytes_fixed_size[..32].copy_from_slice(&seed_bytes);
+    let seed_bytes_fixed_size: [u8; 32] = seed_bytes.try_into().unwrap();
 
     const SHUFFLE_ROUND_COUNT: u8 = 90;
     let mut builder = CircuitBuilder::<DefaultParameters, 2>::new();

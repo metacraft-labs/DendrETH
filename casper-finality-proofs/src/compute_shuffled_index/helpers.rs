@@ -1,4 +1,3 @@
-use crate::utils::{utils::exp_from_bits, variable::bits_to_variable};
 use itertools::Itertools;
 use plonky2::field::types::Field;
 use plonky2x::{
@@ -8,6 +7,8 @@ use plonky2x::{
         PlonkParameters, U64Variable, Variable,
     },
 };
+
+use crate::utils::plonky2x_extensions::{bits_to_variable, exp_from_bits};
 
 /// Returns the first 8 bytes of the hashed concatenation of seed with current_round
 pub fn compute_pivot<L: PlonkParameters<D>, const D: usize>(
@@ -86,7 +87,7 @@ pub fn compute_byte<L: PlonkParameters<D>, const D: usize>(
     let position_mod_256 = builder.rem(position, const_256);
     let position_mod_256_div_8 = builder.div(position_mod_256, const_8);
     let position_mod_256_div_8_bits = builder.to_le_bits(position_mod_256_div_8);
-    let position_mod_256_div_8_variable = bits_to_variable(builder, &position_mod_256_div_8_bits, 8);
+    let position_mod_256_div_8_variable = bits_to_variable(builder, &position_mod_256_div_8_bits);
 
     builder.select_array(&source_array.0 .0, position_mod_256_div_8_variable)
 }
