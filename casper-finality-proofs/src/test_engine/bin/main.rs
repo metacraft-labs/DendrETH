@@ -1,11 +1,11 @@
 use casper_finality_proofs::test_engine::utils::{
     setup::init_tests,
-    test_engine::{build_function_map, handle_error},
+    test_engine::{build_function_map, handle_error, handle_path},
 };
 use clap::Parser;
 use colored::Colorize;
 use crossbeam::thread;
-use std::panic;
+use std::{panic, process::exit, time::Instant};
 use walkdir::WalkDir;
 
 static FAIL_EXT: &str = "_fail.";
@@ -53,39 +53,56 @@ fn main() {
     let function_map = build_function_map(tests);
     let mut failed_tests: Vec<String> = Vec::new();
 
-    for (name, _) in function_map.iter() {
+    for (name, mapper) in function_map.iter() {
         let circuit_name = format!("{:?}", name).blue().bold();
-        println!("\nRunning circuit: {}", circuit_name);
         let folder_path = if args.path.is_empty() {
             &function_map.get(&name).unwrap().folder_path
         } else {
             &args.path
         };
 
-        for e in WalkDir::new(folder_path).into_iter().filter_map(|e| e.ok()) {
-            if e.metadata().unwrap().is_file() {
-                let path = e.path().display().to_string();
-                let file_name = if args.r#ref {
-                    path.clone()
-                } else {
-                    e.file_name().to_str().unwrap().to_owned()
-                };
+        println!("\n{}", format!("Building {}", circuit_name).bold().yellow());
+        let now = Instant::now();
+        (mapper.init)();
+        println!(
+            "{}",
+            format!("Build took {:.3}s!", now.elapsed().as_secs_f32()).yellow()
+        );
 
+        let mut entries = WalkDir::new(folder_path).into_iter();
+        loop {
+            let entry = match entries.next() {
+                None => break,
+                Some(Ok(it)) => it,
+                Some(Err(e)) => {
+                    println!("{}", format!("Error: {}", e).bold().red());
+                    exit(1)
+                }
+            };
+
+            if let Some((path, file_name)) = handle_path(entry, mapper.is_folder_test, args.r#ref) {
+                if mapper.is_folder_test {
+                    // The test is a folder and all its files are part of a single test.
+                    entries.skip_current_dir();
+                }
+
+                let now = Instant::now();
                 let r = thread::scope(|s| {
                     let join_handle = s.spawn(|_| {
-                        return (function_map.get(name).unwrap().wrapper)(path, !args.r#ref);
+                        return (mapper.wrapper)(path, !args.r#ref);
                     });
 
                     let res = join_handle.join();
                     return res;
                 });
+                let elapsed = now.elapsed().as_secs_f32();
 
                 let handle_success = |res: String| {
                     let colored_file_name = String::from(file_name.clone()).green();
                     if args.r#ref {
                         println!("{} {} {}", "[OK]".green().bold(), colored_file_name, res);
                     } else {
-                        println!("-> {}", colored_file_name);
+                        println!("-> {} - {:.3}s", colored_file_name, elapsed);
                     }
                 };
 

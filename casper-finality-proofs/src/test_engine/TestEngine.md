@@ -50,7 +50,7 @@ The test engine is a tool for running unit tests for plonky2 circuits.
 
   To test a circuit, create a wrapper in `src/test_engine/wrappers/`. It represents a function that writes input data to the circuit and asserts its outputs. It uses `TestData` data to assert that the circuit is working correctly.
 
-  `path` is an argument to the `wrapper()` method, received from the test engine. It is the path to the JSON file containing the input and output data for the test.
+  `path` is an argument to the `wrapper()` method, received from the test engine. It is the path to the JSON/YAML file or directory containing the input and output data for the test.
 
   To use the serialized data:
 
@@ -65,6 +65,8 @@ The test engine is a tool for running unit tests for plonky2 circuits.
       json_data.inputs.b,
   ));
   ```
+
+  \*For ssz files, use `read_ssz_fixture()` instead of `read_fixture()`.
 
   Then use `assert_equal!` to validate that the output of the circuit corresponds to the expected output:
 
@@ -93,8 +95,13 @@ The test engine is a tool for running unit tests for plonky2 circuits.
      ```rust
      pub fn map_test_to_wrapper(test: TestWrappers) -> ... {
          match test {
-             TestWrappers::NewTestCircuit => Box::new(|path, should_assert| wrapper_new_test(path.as_str(), should_assert)),
-             ...
+              TestWrappers::NewTestCircuit => (
+                Box::new(|| {
+                  Lazy::force(&circuit_new_test);
+                }),
+                Box::new(|path, should_assert| wrapper_new_test(path.as_str(), should_assert)),
+              ),
+              ...
          }
      }
      ```
@@ -105,10 +112,12 @@ The test engine is a tool for running unit tests for plonky2 circuits.
          tests.push(TestCase::new(
              TestWrappers::NewTestCircuit,
              "./src/test_engine/tests/new_test/".to_string(),
+             false
          ));
          ...
      }
      ```
+     The last parameter indicates whether the test is a folder containing multiple files which represent the data for a single test (`true`) or a single file (`json` or `yaml`) containing data for a single test (`false`).
 
 - ### Running tests
 
@@ -140,12 +149,14 @@ The test engine is a tool for running unit tests for plonky2 circuits.
         b { color: lightblue; font-weight: bold }
         g { color: lightgreen }
         y { color: yellow }
+        yb { color: yellow; font-weight: bold }
     </style>
 
   > Example:
   >
-  > Running circuit: <b>WrapperTest</b>\
-  > -> <g>sum_100.json</g>\
+  > <yb>Building</yb> <b>WrapperTest</b>\
+  > <y>Build took 8.241s!</y>\
+  > -> <g>sum_100.json</g> - 0.012s\
   > -> <rb>sum_30.json</rb>
   >
   > <r>Failed tests:</r>\
