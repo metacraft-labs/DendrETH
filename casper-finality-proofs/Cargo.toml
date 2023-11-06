@@ -36,9 +36,9 @@ walkdir = "2.4.0"
 hex = "0.4.3"
 itertools = { version = "0.10.0", default-features = false }
 clap = { version = "4.4.6", features = ["derive"] }
-lighthouse_types = { git = "https://github.com/sigp/lighthouse", tag = "v4.5.0", package = "types"}
-lighthouse_ef_tests = { git = "https://github.com/sigp/lighthouse", tag = "v4.5.0", package = "ef_tests"}
-lighthouse_state_processing = { git = "https://github.com/sigp/lighthouse", tag = "v4.5.0", package = "state_processing"}
-lighthouse_state_merkle_proof = { git = "https://github.com/sigp/lighthouse", tag = "v4.5.0", package = "merkle_proof"}
-lighthouse_cached_tree_hash = { git = "https://github.com/sigp/lighthouse", tag = "v4.5.0", package = "cached_tree_hash"}
+lighthouse_types = { git = "https://github.com/sigp/lighthouse", tag = "v4.5.0", package = "types" }
+lighthouse_ef_tests = { git = "https://github.com/sigp/lighthouse", tag = "v4.5.0", package = "ef_tests" }
+lighthouse_state_processing = { git = "https://github.com/sigp/lighthouse", tag = "v4.5.0", package = "state_processing" }
+lighthouse_state_merkle_proof = { git = "https://github.com/sigp/lighthouse", tag = "v4.5.0", package = "merkle_proof" }
+lighthouse_cached_tree_hash = { git = "https://github.com/sigp/lighthouse", tag = "v4.5.0", package = "cached_tree_hash" }
 snap = "1.1.0"

@@ -52,3 +52,6 @@
 [submodule "vendor/zkllvm-metacraft-circuits/zkllvm-template"]
 	path = vendor/zkllvm-metacraft-circuits/zkllvm-template
 	url = https://github.com/NilFoundation/zkllvm-template.git
+[submodule "vendor/consensus-spec-tests"]
+	path = vendor/consensus-spec-tests
+	url = https://github.com/ethereum/consensus-spec-tests.git
