@@ -21,11 +21,11 @@ fn write_to_file(file_path: &str, data: &[u8]) -> Result<()> {
     Ok(())
 }
 
-fn main() -> Result<()> {
+fn main() -> Result<(),String> {
     future::block_on(async_main())
 }
 
-pub async fn async_main() -> Result<()> {
+pub async fn async_main() -> Result<(),String> {
     let matches = App::new("")
         .arg(
             Arg::with_name("circuit_level")
@@ -45,7 +45,7 @@ pub async fn async_main() -> Result<()> {
         )
         .get_matches();
     let level_str = matches.value_of("circuit_level").unwrap();
-    let level = match matches.value_of("circuit_level").unwrap() {
+    let level = match level_str {
         "all" => None,
         x => Some(x.parse::<usize>().unwrap()),
     };
@@ -60,8 +60,7 @@ pub async fn async_main() -> Result<()> {
     };
 
     if level != None && level.unwrap() > 37 {
-        eprintln!("\x1b[31mError: Supplied level {} is larger than the maximum allowed level 38\x1b[0m", level.unwrap());
-        process::exit(1);
+        return Err(String::from(format!("Supplied level {} is larger than the maximum allowed level 37",level.unwrap())));
     }
 
     if level == None || level == Some(0) {
@@ -78,10 +77,9 @@ pub async fn async_main() -> Result<()> {
     }
 
     let mut prev_circuit_data = first_level_data;
-    let level_range = if level == None { 1..=37 } else { RangeInclusive::new(1,clamp(level.unwrap(),1,37)) };
-    for i in level_range {
+    let max_level = if level == None {37} else {clamp(level.unwrap(),1,37)};
+    for i in 1..=max_level {
         let (targets, data) = build_inner_level_circuit(&prev_circuit_data);
-        println!("{}", i);
         if level == Some(i) || level == None {
             let circuit_bytes = data
                 .to_bytes(&gate_serializer, &generator_serializer)
@@ -102,14 +100,14 @@ pub async fn async_main() -> Result<()> {
     }
 
     let mut exists = false;
-    for i in 1..=37 {
+    for i in 1..=max_level {
         if Path::new(&format!("{}.plonky2_circuit",i)).exists() || Path::new(&format!("{}.plonky2_targets",i)).exists() {
             exists = true;
+            break;
         }
     }
     if !exists {
-        eprintln!("\x1b[31mError: No plonky2 output created. Level used was: {}\x1b[0m", level_str);
-        process::exit(1);
+        return Err(String::from(format!("No plonky2 output created. Level used was: {}", level_str)));
     }
 
     Ok(())
