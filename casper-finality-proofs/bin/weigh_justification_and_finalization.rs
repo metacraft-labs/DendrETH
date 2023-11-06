@@ -13,8 +13,7 @@ use plonky2x::{
     utils::bytes32,
 };
 
-#[allow(unused)]
-fn test_circuit_sample_data() {
+fn main() {
     type L = DefaultParameters;
     const D: usize = 2;
     let mut builder = CircuitBuilder::<L, D>::new();
@@ -179,8 +178,4 @@ fn test_circuit_sample_data() {
     );
     println!("new_finalized_checkpoint: {:?}", new_finalized_checkpoint);
     println!("new_justification_bits: {:?}", new_justification_bits);
-}
-
-fn main() {
-    test_circuit_sample_data();
 }

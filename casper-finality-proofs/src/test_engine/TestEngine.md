@@ -50,7 +50,7 @@ The test engine is a tool for running unit tests for plonky2 circuits.
 
   To test a circuit, create a wrapper in `src/test_engine/wrappers/`. It represents a function that writes input data to the circuit and asserts its outputs. It uses `TestData` data to assert that the circuit is working correctly.
 
-  `path` is an argument to the `wrapper()` method, received from the test engine. It is the path to the JSON or YAML file containing the input and output data for the test.
+  `path` is an argument to the `wrapper()` method, received from the test engine. It is the path to the JSON/YAML file or directory containing the input and output data for the test.
 
   To use the serialized data:
 

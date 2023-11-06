@@ -6,7 +6,7 @@ use crate::{
         BEACON_STATE_SLOT_GINDEX,
     },
     test_engine::utils::{
-        extract_merkle_info::{
+        data_generation::{
             compute_beacon_state_tree_hash_root,
             compute_block_roots_start_epoch_slot_to_beacon_state_proof, compute_merkle_proof,
             extract_balances, get_block_root_epoch_start_slot_root,
