@@ -4,7 +4,7 @@ use plonky2x::prelude::{BoolVariable, CircuitBuilder, PlonkParameters, Variable}
 /// Returns the accumulation of each bit by the power of 2
 pub fn bits_to_variable<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
-    bits: Vec<BoolVariable>,
+    bits: &[BoolVariable],
     num_bits: usize,
 ) -> Variable {
     let const_2: Variable = builder.constant(L::Field::from_canonical_usize(2));

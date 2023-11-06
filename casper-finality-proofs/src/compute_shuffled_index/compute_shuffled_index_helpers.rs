@@ -35,7 +35,7 @@ pub fn compute_pivot<L: PlonkParameters<D>, const D: usize>(
     builder.rem(hash, index_count)
 }
 
-/// TODO:
+/// Returns the computation of (pivot + index_count - index) % index_count
 pub fn compute_flip<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
     pivot: U64Variable,
@@ -86,7 +86,7 @@ pub fn compute_byte<L: PlonkParameters<D>, const D: usize>(
     let position_mod_256 = builder.rem(position, const_256);
     let position_mod_256_div_8 = builder.div(position_mod_256, const_8);
     let position_mod_256_div_8_bits = builder.to_le_bits(position_mod_256_div_8);
-    let position_mod_256_div_8_variable = bits_to_variable(builder, position_mod_256_div_8_bits, 8);
+    let position_mod_256_div_8_variable = bits_to_variable(builder, &position_mod_256_div_8_bits, 8);
 
     builder.select_array(&source_array.0 .0, position_mod_256_div_8_variable)
 }
