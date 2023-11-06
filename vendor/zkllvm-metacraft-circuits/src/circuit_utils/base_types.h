@@ -18,7 +18,7 @@ using Bytes64 = std::array<Byte, 64>;
 template<typename>
 struct array_size;
 template<typename T, size_t N>
-struct array_size<std::array<T,N> > {
+struct array_size<std::array<T, N>> {
     static size_t const size = N;
 };
 
@@ -26,16 +26,15 @@ using Epoch = uint64_t;
 using Slot = uint64_t;
 using Root = Bytes32;
 using Gwei = uint64_t;
-template <size_t DEPTH>
+template<size_t DEPTH>
 using MerkleProof = std::array<Bytes32, DEPTH>;
 using BeaconStateLeafProof = MerkleProof<5>;
 
 struct CheckpointVariable {
     Epoch epoch;
     Root root;
-    bool operator == (const CheckpointVariable &c) const
-    {
-       return (epoch == c.epoch && root == c.root);
+    bool operator==(const CheckpointVariable &c) const {
+        return (epoch == c.epoch && root == c.root);
     }
 };
 
@@ -44,29 +43,27 @@ struct JustificationBitsVariable {
     void shift_left(size_t n) {
         assert_true(n > 0);
         assert_true(n <= bits.size());
-        memmove(&bits[0], &bits[n], sizeof(bool)*(bits.size() - n));
+        memmove(&bits[0], &bits[n], sizeof(bool) * (bits.size() - n));
         memset(&bits[bits.size() - n], 0, sizeof(bool) * n);
     }
     void shift_right(size_t n) {
         assert_true(n > 0);
         assert_true(n <= bits.size());
-        memmove(&bits[n], &bits[0], sizeof(bool)*(bits.size() - n));
+        memmove(&bits[n], &bits[0], sizeof(bool) * (bits.size() - n));
         memset(&bits[0], 0, sizeof(bool) * n);
     }
-    bool test_range(const size_t lower_bound,
-                    const size_t upper_bound_non_inclusive) const {
+    bool test_range(const size_t lower_bound, const size_t upper_bound_non_inclusive) const {
         assert_true(lower_bound < upper_bound_non_inclusive);
         assert_true(lower_bound >= 0);
         assert_true(upper_bound_non_inclusive <= bits.size());
         bool result = true;
-        for(size_t i = lower_bound; i < upper_bound_non_inclusive; i++) {
+        for (size_t i = lower_bound; i < upper_bound_non_inclusive; i++) {
             result = result && bits[i];
         }
         return result;
     }
-    bool operator == (const JustificationBitsVariable &j) const
-    {
-       return (bits == j.bits);
+    bool operator==(const JustificationBitsVariable &j) const {
+        return (bits == j.bits);
     }
 };
 
