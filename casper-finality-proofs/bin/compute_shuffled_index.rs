@@ -4,7 +4,7 @@ use plonky2x::prelude::{
 };
 use plonky2x::utils;
 
-fn test_compute_shuffled_index_100() {
+fn main() {
     utils::setup_logger();
 
     let seed_bytes: Vec<u8> =
@@ -41,8 +41,4 @@ fn test_compute_shuffled_index_100() {
         println!("{} {}", mapping[i as usize], shuffled_index_res);
         assert!(mapping[i as usize] == shuffled_index_res);
     }
-}
-
-fn main() {
-    test_compute_shuffled_index_100();
 }
