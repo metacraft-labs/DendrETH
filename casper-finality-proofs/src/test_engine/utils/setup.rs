@@ -14,8 +14,8 @@ use strum::{Display, EnumString};
 
 #[derive(Debug, Eq, Hash, PartialEq, Copy, Clone, EnumString, Display)]
 pub enum TestWrappers {
-    WrapperComputeShuffledIndexMainnet,
-    WrapperComputeShuffledIndexMinimal,
+    WrapperComputeShuffledIndexConsensusMainnet,
+    WrapperComputeShuffledIndexConsensusMinimal,
     WrapperWeighJustificationAndFinalizationConsensusMainnet,
 }
 
@@ -34,13 +34,13 @@ pub fn map_test_to_wrapper(
                 wrapper_weigh_justification_and_finalization(path, should_assert)
             }),
         ),
-        TestWrappers::WrapperComputeShuffledIndexMainnet => (
+        TestWrappers::WrapperComputeShuffledIndexConsensusMainnet => (
             Box::new(|| {
                 Lazy::force(&circuit_mainnet);
             }),
             Box::new(|path, should_assert| wrapper_mainnet(&path, should_assert)),
         ),
-        TestWrappers::WrapperComputeShuffledIndexMinimal => (
+        TestWrappers::WrapperComputeShuffledIndexConsensusMinimal => (
             Box::new(|| {
                 Lazy::force(&circuit_minimal);
             }),
@@ -57,12 +57,12 @@ pub fn init_tests() -> Vec<TestCase> {
         true,
     ));
     tests.push(TestCase::new(
-        TestWrappers::WrapperComputeShuffledIndexMainnet,
+        TestWrappers::WrapperComputeShuffledIndexConsensusMainnet,
         "../vendor/consensus-spec-tests/tests/mainnet/phase0/shuffling/core/shuffle".to_string(),
         true,
     ));
     tests.push(TestCase::new(
-        TestWrappers::WrapperComputeShuffledIndexMinimal,
+        TestWrappers::WrapperComputeShuffledIndexConsensusMinimal,
         "../vendor/consensus-spec-tests/tests/minimal/phase0/shuffling/core/shuffle".to_string(),
         true,
     ));
