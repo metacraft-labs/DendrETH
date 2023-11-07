@@ -17,6 +17,10 @@ path = "bin/compute_shuffled_index.rs"
 name = "test_engine"
 path = "src/test_engine/bin/main.rs"
 
+[[bin]]
+name = "combine_finality_votes"
+path = "bin/combine_finality_votes.rs"
+
 [dependencies]
 plonky2 = { git = "https://github.com/mir-protocol/plonky2.git", default-features = false }
 plonky2x = { git = "https://github.com/succinctlabs/succinctx.git", branch = "main" }
@@ -42,3 +46,4 @@ lighthouse_state_processing = { git = "https://github.com/sigp/lighthouse", tag 
 lighthouse_state_merkle_proof = { git = "https://github.com/sigp/lighthouse", tag = "v4.5.0", package = "merkle_proof" }
 lighthouse_cached_tree_hash = { git = "https://github.com/sigp/lighthouse", tag = "v4.5.0", package = "cached_tree_hash" }
 snap = "1.1.0"
+rand = "0.8.5"

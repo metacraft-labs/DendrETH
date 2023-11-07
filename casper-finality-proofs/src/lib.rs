@@ -1,3 +1,4 @@
+pub mod combine_finality_votes;
 pub mod compute_shuffled_index;
 pub mod constants;
 pub mod test_engine;
