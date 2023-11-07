@@ -59,12 +59,12 @@ pub fn init_tests() -> Vec<TestCase> {
     tests.push(TestCase::new(
         TestWrappers::WrapperComputeShuffledIndexConsensusMainnet,
         "../vendor/consensus-spec-tests/tests/mainnet/phase0/shuffling/core/shuffle".to_string(),
-        true,
+        false,
     ));
     tests.push(TestCase::new(
         TestWrappers::WrapperComputeShuffledIndexConsensusMinimal,
         "../vendor/consensus-spec-tests/tests/minimal/phase0/shuffling/core/shuffle".to_string(),
-        true,
+        false,
     ));
 
     tests
