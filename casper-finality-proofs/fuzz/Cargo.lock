@@ -909,6 +909,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "casper-finality-proofs-fuzz"
+version = "0.0.0"
+dependencies = [
+ "bincode",
+ "casper-finality-proofs",
+ "ethers",
+ "libfuzzer-sys",
+ "primitive-types 0.12.2",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "cc"
 version = "1.0.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4138,6 +4151,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "libfuzzer-sys"
+version = "0.4.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a96cfd5557eb82f2b83fed4955246c988d331975a002961b07c81584d107e7f7"
+dependencies = [
+ "arbitrary",
+ "cc",
+ "once_cell",
+]
+
+[[package]]
 name = "libm"
 version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5890,7 +5914,7 @@ checksum = "14e6ab3f592e6fb464fc9712d8d6e6912de6473954635fd76a589d832cffcbb0"
 [[package]]
 name = "plonky2"
 version = "0.1.4"
-source = "git+https://github.com/mir-protocol/plonky2.git#fa93454c5ca88a8b5075b4026f6042cd5b766eb4"
+source = "git+https://github.com/mir-protocol/plonky2.git#19178072b4b6115daeadc8106361960fc2d4600a"
 dependencies = [
  "ahash 0.8.6",
  "anyhow",
@@ -5913,7 +5937,7 @@ dependencies = [
 [[package]]
 name = "plonky2_field"
 version = "0.1.1"
-source = "git+https://github.com/mir-protocol/plonky2.git#fa93454c5ca88a8b5075b4026f6042cd5b766eb4"
+source = "git+https://github.com/mir-protocol/plonky2.git#19178072b4b6115daeadc8106361960fc2d4600a"
 dependencies = [
  "anyhow",
  "itertools 0.11.0",
@@ -5937,7 +5961,7 @@ dependencies = [
 [[package]]
 name = "plonky2_maybe_rayon"
 version = "0.1.1"
-source = "git+https://github.com/mir-protocol/plonky2.git#fa93454c5ca88a8b5075b4026f6042cd5b766eb4"
+source = "git+https://github.com/mir-protocol/plonky2.git#19178072b4b6115daeadc8106361960fc2d4600a"
 dependencies = [
  "rayon",
 ]
@@ -5945,7 +5969,7 @@ dependencies = [
 [[package]]
 name = "plonky2_util"
 version = "0.1.1"
-source = "git+https://github.com/mir-protocol/plonky2.git#fa93454c5ca88a8b5075b4026f6042cd5b766eb4"
+source = "git+https://github.com/mir-protocol/plonky2.git#19178072b4b6115daeadc8106361960fc2d4600a"
 
 [[package]]
 name = "plonky2x"

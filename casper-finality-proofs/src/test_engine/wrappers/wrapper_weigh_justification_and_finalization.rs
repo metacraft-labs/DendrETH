@@ -49,8 +49,6 @@ pub fn wrapper(path: String, should_assert: bool) -> Result<String, anyhow::Erro
     state.initialize_tree_hash_cache();
     let balances = extract_balances(&mut state, spec);
 
-    let mut builder = CircuitBuilder::<L, D>::new();
-    WeighJustificationAndFinalization::define(&mut builder);
     let mut input = CIRCUIT.input();
 
     let slot = state.slot().as_u64();

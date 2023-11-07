@@ -1,0 +1,49 @@
+[package]
+name = "casper-finality-proofs-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+# alabala = { package = "arbitrary", optional = true, version = "1.3.2", features = [
+#     "derive",
+# ] }
+libfuzzer-sys = { version = "0.4.7" }
+casper-finality-proofs = { path = ".." }
+ethers = "2.0"
+primitive-types = "0.12.2"
+serde_json = "1.0.103"
+serde = { version = "1.0.187", features = ["derive"] }
+bincode = "1.3.3"
+
+# [features]
+# arbitrary = ["./arbitrary"]
+# default = ["arbitrary"]
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "fuzz_target_1"
+path = "fuzz_targets/fuzz_target_1.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "test"
+path = "fuzz_targets/test.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "test2"
+path = "fuzz_targets/test2.rs"
+test = false
+doc = false
