@@ -6,7 +6,7 @@ use crate::{
 };
 use plonky2x::prelude::{BoolVariable, CircuitBuilder, PlonkParameters, U64Variable};
 
-fn is_supermajority_link<L: PlonkParameters<D>, const D: usize>(
+pub fn is_supermajority_link<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
     target_balance: Gwei,
     total_active_balance: Gwei,
