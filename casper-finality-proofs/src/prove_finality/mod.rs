@@ -1,1 +1,1 @@
-pub mod prove_finality;
+pub mod circuit;
