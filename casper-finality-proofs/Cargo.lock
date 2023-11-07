@@ -897,6 +897,7 @@ dependencies = [
  "plonky2",
  "plonky2x",
  "primitive-types 0.12.2",
+ "rand",
  "serde",
  "serde_derive",
  "serde_json",
