@@ -1,1 +1,2 @@
 pub mod wrapper_weigh_justification_and_finalization;
+pub mod compute_shuffled_index;

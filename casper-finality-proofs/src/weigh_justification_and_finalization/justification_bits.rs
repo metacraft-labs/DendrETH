@@ -7,7 +7,7 @@ use plonky2x::{
     },
 };
 
-use crate::utils::bits::shift_right;
+use crate::utils::plonky2x_extensions::shift_right;
 
 #[derive(Debug, Clone, CircuitVariable)]
 #[value_name(JustificationBitsValue)]
