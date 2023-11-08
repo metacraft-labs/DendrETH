@@ -34,7 +34,7 @@ fn main() {
     let mut rng = rand::thread_rng();
 
     let mut proofs = vec![];
-    for _ in 0..2usize.pow(3) {
+    for _ in 0..2usize.pow(1) {
         let random_set_bit: usize = rng.gen::<usize>() % BITMASK_SIZE;
         let mut input = verify_subcommittee_vote.input();
         input.write::<Variable>(<L as PlonkParameters<D>>::Field::from_canonical_usize(
