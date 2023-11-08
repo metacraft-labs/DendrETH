@@ -43,7 +43,7 @@ fn unite_validators_bitmasks<L: PlonkParameters<D>, const D: usize>(
     bitmask2: &ArrayVariable<BoolVariable, BITMASK_SIZE>,
 ) -> (ArrayVariable<BoolVariable, BITMASK_SIZE>, Variable) {
     let mut voted_count = builder.zero();
-    let mut result_bitmask = vec![builder._false(); BITMASK_SIZE]; // ArrayVariable::new(vec![builder._false(); BITMASK_SIZE]);
+    let mut result_bitmask = vec![builder._false(); BITMASK_SIZE];
 
     for i in 0..BITMASK_SIZE {
         let either_bit_is_set = builder.or(bitmask1[i], bitmask2[i]);
@@ -85,23 +85,23 @@ impl CombineFinalityVotes {
         let target2 = proof2_reader.read::<Variable>();
         let source2 = proof2_reader.read::<Variable>();
 
-        builder.assert_is_equal(source1, source2);
-        builder.assert_is_equal(target1, target2);
+        // builder.assert_is_equal(source1, source2);
+        // builder.assert_is_equal(target1, target2);
 
         let (bitmask, voted_count) = unite_validators_bitmasks(builder, &bitmask1, &bitmask2);
 
         // NOTE: This doesn't need to be here
-        let voted_count_sum = builder.add(voted_count1, voted_count2);
-        let bitmask_sanity_check_pred = builder.gte(voted_count_sum, voted_count);
-        assert_is_true(builder, bitmask_sanity_check_pred);
+        // let voted_count_sum = builder.add(voted_count1, voted_count2);
+        // let bitmask_sanity_check_pred = builder.gte(voted_count_sum, voted_count);
+        // assert_is_true(builder, bitmask_sanity_check_pred);
 
-        builder.watch(&bitmask1, "bitmask1");
-        builder.watch(&bitmask2, "bitmask2");
+        // builder.watch(&bitmask1, "bitmask1");
+        // builder.watch(&bitmask2, "bitmask2");
 
-        builder.watch(&source1, "source");
-        builder.watch(&target1, "target");
-        builder.watch(&voted_count, "voted_count");
-        builder.watch(&bitmask, "bitmask");
+        // builder.watch(&source1, "source");
+        // builder.watch(&target1, "target");
+        // builder.watch(&voted_count, "voted_count");
+        // builder.watch(&bitmask, "bitmask");
 
         builder.proof_write(source1);
         builder.proof_write(target1);

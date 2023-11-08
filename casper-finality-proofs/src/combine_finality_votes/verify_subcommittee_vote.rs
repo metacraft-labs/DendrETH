@@ -4,7 +4,7 @@ use plonky2x::{
     prelude::{ArrayVariable, BoolVariable, CircuitBuilder, PlonkParameters, Variable},
 };
 
-pub const BITMASK_SIZE: usize = 10;
+pub const BITMASK_SIZE: usize = 2_000_000;
 
 #[derive(Debug, Clone)]
 pub struct VerifySubcommitteeVote;
