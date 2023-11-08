@@ -897,7 +897,6 @@ dependencies = [
  "plonky2",
  "plonky2x",
  "primitive-types 0.12.2",
- "rand",
  "serde",
  "serde_derive",
  "serde_json",
@@ -1401,7 +1400,7 @@ dependencies = [
 [[package]]
 name = "curta"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/curta.git?branch=main#86723feac21731c3f7acd8827abafe16609d47c4"
+source = "git+https://github.com/succinctlabs/curta.git?branch=main#7b10c6d041bb33ec1a3f7a85fc6f74e27cf655d4"
 dependencies = [
  "anyhow",
  "bincode",
@@ -1421,7 +1420,7 @@ dependencies = [
 [[package]]
 name = "curta"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/curta.git#86723feac21731c3f7acd8827abafe16609d47c4"
+source = "git+https://github.com/succinctlabs/curta.git#7b10c6d041bb33ec1a3f7a85fc6f74e27cf655d4"
 dependencies = [
  "anyhow",
  "bincode",
