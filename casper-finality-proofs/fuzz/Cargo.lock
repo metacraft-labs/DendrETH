@@ -897,6 +897,7 @@ dependencies = [
  "plonky2",
  "plonky2x",
  "primitive-types 0.12.2",
+ "quinn-proto",
  "serde",
  "serde_derive",
  "serde_json",
@@ -912,10 +913,12 @@ dependencies = [
 name = "casper-finality-proofs-fuzz"
 version = "0.0.0"
 dependencies = [
+ "arbitrary",
  "bincode",
  "casper-finality-proofs",
  "ethers",
  "libfuzzer-sys",
+ "once_cell",
  "primitive-types 0.12.2",
  "serde",
  "serde_json",
@@ -1413,11 +1416,11 @@ dependencies = [
 [[package]]
 name = "curta"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/curta.git?branch=main#7b10c6d041bb33ec1a3f7a85fc6f74e27cf655d4"
+source = "git+https://github.com/succinctlabs/curta.git?branch=main#86723feac21731c3f7acd8827abafe16609d47c4"
 dependencies = [
  "anyhow",
  "bincode",
- "curve25519-dalek 4.1.1",
+ "curve25519-dalek",
  "env_logger 0.9.3",
  "hex",
  "itertools 0.10.5",
@@ -1433,11 +1436,11 @@ dependencies = [
 [[package]]
 name = "curta"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/curta.git#7b10c6d041bb33ec1a3f7a85fc6f74e27cf655d4"
+source = "git+https://github.com/succinctlabs/curta.git#86723feac21731c3f7acd8827abafe16609d47c4"
 dependencies = [
  "anyhow",
  "bincode",
- "curve25519-dalek 4.1.1",
+ "curve25519-dalek",
  "env_logger 0.9.3",
  "hex",
  "itertools 0.10.5",
@@ -1452,44 +1455,19 @@ dependencies = [
 
 [[package]]
 name = "curve25519-dalek"
-version = "4.0.0"
-source = "git+https://github.com/succinctlabs/curve25519-dalek.git?branch=feature/edwards-point-getters#e2d1bd10d6d772af07cac5c8161cd7655016af6d"
-dependencies = [
- "cfg-if",
- "cpufeatures",
- "curve25519-dalek-derive 0.1.0",
- "fiat-crypto 0.1.20",
- "platforms 3.2.0",
- "rustc_version",
- "subtle",
- "zeroize",
-]
-
-[[package]]
-name = "curve25519-dalek"
 version = "4.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e89b8c6a2e4b1f45971ad09761aafb85514a84744b67a95e32c3cc1352d1f65c"
 dependencies = [
  "cfg-if",
  "cpufeatures",
- "curve25519-dalek-derive 0.1.1",
+ "curve25519-dalek-derive",
  "digest 0.10.7",
- "fiat-crypto 0.2.2",
+ "fiat-crypto",
  "platforms 3.2.0",
  "rustc_version",
  "subtle",
  "zeroize",
-]
-
-[[package]]
-name = "curve25519-dalek-derive"
-version = "0.1.0"
-source = "git+https://github.com/succinctlabs/curve25519-dalek.git?branch=feature/edwards-point-getters#e2d1bd10d6d772af07cac5c8161cd7655016af6d"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.39",
 ]
 
 [[package]]
@@ -1501,19 +1479,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.39",
-]
-
-[[package]]
-name = "curve25519-dalek-ng"
-version = "4.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c359b7249347e46fb28804470d071c921156ad62b3eef5d34e2ba867533dec8"
-dependencies = [
- "byteorder",
- "digest 0.9.0",
- "rand_core",
- "subtle-ng",
- "zeroize",
 ]
 
 [[package]]
@@ -1939,27 +1904,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "ed25519-consensus"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c8465edc8ee7436ffea81d21a019b16676ee3db267aa8d5a8d729581ecf998b"
-dependencies = [
- "curve25519-dalek-ng",
- "hex",
- "rand_core",
- "serde",
- "sha2 0.9.9",
- "thiserror",
- "zeroize",
-]
-
-[[package]]
 name = "ed25519-dalek"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7277392b266383ef8396db7fdeb1e77b6c52fed775f5df15bb24f35b72156980"
 dependencies = [
- "curve25519-dalek 4.1.1",
+ "curve25519-dalek",
  "ed25519",
  "rand_core",
  "serde",
@@ -2182,9 +2132,9 @@ checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
 
 [[package]]
 name = "errno"
-version = "0.3.5"
+version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac3e13f66a2f95e32a39eaa81f6b95d42878ca0e1db0c7543723dfe12557e860"
+checksum = "7c18ee0ed65a5f1f81cac6b1d213b69c35fa47d4252ad41f1486dbd8226fe36e"
 dependencies = [
  "libc",
  "windows-sys 0.48.0",
@@ -2964,12 +2914,6 @@ checksum = "ec54ac60a7f2ee9a97cad9946f9bf629a3bc6a7ae59e68983dc9318f5a54b81a"
 
 [[package]]
 name = "fiat-crypto"
-version = "0.1.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e825f6987101665dea6ec934c09ec6d721de7bc1bf92248e1d5810c8cd636b77"
-
-[[package]]
-name = "fiat-crypto"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a481586acf778f1b1455424c343f71124b048ffa5f4fc3f8f6ae9dc432dcb3c7"
@@ -3298,9 +3242,9 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
-version = "0.2.10"
+version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be4136b2a15dd319360be1c07d9933517ccf0be8f16bf62a3bee4f0d618df427"
+checksum = "fe9006bed769170c11f845cf00c7c1e9092aeb3f268e007c3e760ac68008070f"
 dependencies = [
  "cfg-if",
  "js-sys",
@@ -4410,7 +4354,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2eeec39ad3ad0677551907dd304b2f13f17208ccebe333bef194076cd2e8921"
 dependencies = [
  "bytes",
- "curve25519-dalek 4.1.1",
+ "curve25519-dalek",
  "futures",
  "libp2p-core",
  "libp2p-identity",
@@ -4737,9 +4681,9 @@ checksum = "ef53942eb7bf7ff43a617b3e2c1c4a5ecf5944a7c1bc12d7ee39bbb15e5c1519"
 
 [[package]]
 name = "linux-raw-sys"
-version = "0.4.10"
+version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da2479e8c062e40bf0066ffa0bc823de0a9368974af99c9f6df941d2c231e03f"
+checksum = "969488b55f8ac402214f3f5fd243ebb7206cf82de60d3172994707a4bcc2b829"
 
 [[package]]
 name = "lmdb-rkv"
@@ -5914,7 +5858,7 @@ checksum = "14e6ab3f592e6fb464fc9712d8d6e6912de6473954635fd76a589d832cffcbb0"
 [[package]]
 name = "plonky2"
 version = "0.1.4"
-source = "git+https://github.com/mir-protocol/plonky2.git#19178072b4b6115daeadc8106361960fc2d4600a"
+source = "git+https://github.com/mir-protocol/plonky2.git#605932d149eeba4558b404b52180e9ac20daca87"
 dependencies = [
  "ahash 0.8.6",
  "anyhow",
@@ -5937,7 +5881,7 @@ dependencies = [
 [[package]]
 name = "plonky2_field"
 version = "0.1.1"
-source = "git+https://github.com/mir-protocol/plonky2.git#19178072b4b6115daeadc8106361960fc2d4600a"
+source = "git+https://github.com/mir-protocol/plonky2.git#605932d149eeba4558b404b52180e9ac20daca87"
 dependencies = [
  "anyhow",
  "itertools 0.11.0",
@@ -5961,7 +5905,7 @@ dependencies = [
 [[package]]
 name = "plonky2_maybe_rayon"
 version = "0.1.1"
-source = "git+https://github.com/mir-protocol/plonky2.git#19178072b4b6115daeadc8106361960fc2d4600a"
+source = "git+https://github.com/mir-protocol/plonky2.git#605932d149eeba4558b404b52180e9ac20daca87"
 dependencies = [
  "rayon",
 ]
@@ -5969,12 +5913,12 @@ dependencies = [
 [[package]]
 name = "plonky2_util"
 version = "0.1.1"
-source = "git+https://github.com/mir-protocol/plonky2.git#19178072b4b6115daeadc8106361960fc2d4600a"
+source = "git+https://github.com/mir-protocol/plonky2.git#605932d149eeba4558b404b52180e9ac20daca87"
 
 [[package]]
 name = "plonky2x"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/succinctx.git?branch=main#598e609dcfc7985afcb706c8775346ec9de081cb"
+source = "git+https://github.com/succinctlabs/succinctx.git?branch=main#fcf983d5ab78128636718d0827cc4a218017e5d0"
 dependencies = [
  "anyhow",
  "array-macro",
@@ -5984,10 +5928,10 @@ dependencies = [
  "bincode",
  "clap 4.4.7",
  "curta 0.1.0 (git+https://github.com/succinctlabs/curta.git)",
- "curve25519-dalek 4.0.0",
+ "curve25519-dalek",
  "digest 0.10.7",
  "dotenv",
- "ed25519-consensus",
+ "ed25519-dalek",
  "env_logger 0.10.0",
  "ethers",
  "ff 0.13.0",
@@ -6016,7 +5960,7 @@ dependencies = [
 [[package]]
 name = "plonky2x-derive"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/succinctx.git?branch=main#598e609dcfc7985afcb706c8775346ec9de081cb"
+source = "git+https://github.com/succinctlabs/succinctx.git?branch=main#fcf983d5ab78128636718d0827cc4a218017e5d0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -6365,6 +6309,7 @@ version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "141bf7dfde2fbc246bfd3fe12f2455aa24b0fbd9af535d8c86c7bd1381ff2b1a"
 dependencies = [
+ "arbitrary",
  "bytes",
  "rand",
  "ring 0.16.20",
@@ -6835,7 +6780,7 @@ dependencies = [
  "bitflags 2.4.1",
  "errno",
  "libc",
- "linux-raw-sys 0.4.10",
+ "linux-raw-sys 0.4.11",
  "windows-sys 0.48.0",
 ]
 
@@ -7565,7 +7510,7 @@ dependencies = [
  "aes-gcm",
  "blake2",
  "chacha20poly1305",
- "curve25519-dalek 4.1.1",
+ "curve25519-dalek",
  "rand_core",
  "ring 0.16.20",
  "rustc_version",
@@ -7820,12 +7765,6 @@ checksum = "7dcb1ed7b8330c5eed5441052651dd7a12c75e2ed88f2ec024ae1fa3a5e59945"
 dependencies = [
  "zeroize",
 ]
-
-[[package]]
-name = "subtle-ng"
-version = "2.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "734676eb262c623cec13c3155096e08d1f8f29adce39ba17948b18dad1e54142"
 
 [[package]]
 name = "superstruct"
@@ -9248,7 +9187,7 @@ version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fb66477291e7e8d2b0ff1bcb900bf29489a9692816d79874bea351e7a8b6de96"
 dependencies = [
- "curve25519-dalek 4.1.1",
+ "curve25519-dalek",
  "rand_core",
  "serde",
  "zeroize",

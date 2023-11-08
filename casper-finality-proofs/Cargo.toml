@@ -42,7 +42,5 @@ lighthouse_state_processing = { git = "https://github.com/sigp/lighthouse", tag 
 lighthouse_state_merkle_proof = { git = "https://github.com/sigp/lighthouse", tag = "v4.5.0", package = "merkle_proof" }
 lighthouse_cached_tree_hash = { git = "https://github.com/sigp/lighthouse", tag = "v4.5.0", package = "cached_tree_hash" }
 snap = "1.1.0"
-# arbitrary = { version = "1.3.2", features = ["derive"], optional = true }
-
-# [features]
-# arbitrary = ["lighthouse_ef_tests/arbitrary", "dep:arbitrary"]
+# Crate is specified due to release issues with the crate
+quinn-proto = { version = "0.10.6", features = ["arbitrary"] }
