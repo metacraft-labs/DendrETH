@@ -2,6 +2,7 @@
 #include <nil/crypto3/hash/sha2.hpp>
 
 #include <llvm/ObjectYAML/YAML.h>
+#include "json/json.hpp"
 #include <iostream>
 #include <fstream>
 #include <streambuf>
@@ -201,9 +202,28 @@ void test_circuit_sample_data() {
     assert_true(expected_new_justification_bits == new_justification_bits);
 }
 
+void test_circuit_ssz_json() {
+
+    using namespace nlohmann;
+
+    std::vector<path> result;
+    path my_path("./consensus-spec-tests");
+    find_matching_files(my_path, std::vector<std::string> {"ssz_snappy.json"}, result);
+
+    for (const auto& v : result) {
+        std::cout << "DEBUG: " << v << "\n";
+
+        std::ifstream f(v);
+        json data = json::parse(f);
+        std::cout << "genesis_validators_root = " << data["genesis_validators_root"] << "\n";
+        std::cout << "state_root = " << data["latest_block_header"]["state_root"] << "\n";
+    }
+}
+
 int main(int argc, char* argv[]) {
 
     test_circuit_sample_data();
+    test_circuit_ssz_json();
 
     return 0;
 }
