@@ -33,8 +33,8 @@ cargo fuzz run compute_shuffled_index_minimal -- -rss_limit_mb=4096
 
 The rss_limit_mb flag is optional and can be used to limit the memory usage of the fuzzer. This target needs more memory or it runs out of it so we need to increase the limit.
 
-The mainnet version, for example, consumes even more memory so we need to increase the limit even more:
+The mainnet version, for example, consumes even more memory so we need to increase the limit even more and moreover to adjust the default timeout:
 
 ```bash
-cargo fuzz run compute_shuffled_index_mainnet -- -rss_limit_mb=8192
+cargo fuzz run compute_shuffled_index_mainnet -- -rss_limit_mb=8192 -timeout=100000
 ```
