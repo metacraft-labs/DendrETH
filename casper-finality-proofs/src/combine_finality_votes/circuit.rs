@@ -6,9 +6,7 @@ use plonky2x::{
     },
 };
 
-use crate::utils::plonky2x_extensions::assert_is_true;
-
-use super::verify_subcommittee_vote::BITMASK_SIZE;
+use super::verify_subcommittee_vote::{BITMASK_SIZE, PACKS_COUNT};
 
 pub struct ProofWithPublicInputsTargetReader<const D: usize> {
     inner: ProofWithPublicInputsTarget<D>,
@@ -75,12 +73,12 @@ impl CombineFinalityVotes {
         let mut proof1_reader = ProofWithPublicInputsTargetReader::from(proof1);
         let mut proof2_reader = ProofWithPublicInputsTargetReader::from(proof2);
 
-        let bitmask1 = proof1_reader.read::<ArrayVariable<BoolVariable, BITMASK_SIZE>>();
+        let bitmask1 = proof1_reader.read::<ArrayVariable<Variable, PACKS_COUNT>>();
         let voted_count1 = proof1_reader.read::<Variable>();
         let target1 = proof1_reader.read::<Variable>();
         let source1 = proof1_reader.read::<Variable>();
 
-        let bitmask2 = proof2_reader.read::<ArrayVariable<BoolVariable, BITMASK_SIZE>>();
+        let bitmask2 = proof2_reader.read::<ArrayVariable<Variable, PACKS_COUNT>>();
         let voted_count2 = proof2_reader.read::<Variable>();
         let target2 = proof2_reader.read::<Variable>();
         let source2 = proof2_reader.read::<Variable>();
@@ -88,7 +86,9 @@ impl CombineFinalityVotes {
         // builder.assert_is_equal(source1, source2);
         // builder.assert_is_equal(target1, target2);
 
-        let (bitmask, voted_count) = unite_validators_bitmasks(builder, &bitmask1, &bitmask2);
+        // let (bitmask, voted_count) = unite_validators_bitmasks(builder, &bitmask1, &bitmask2);
+        let voted_count = builder.one::<Variable>();
+        let bitmask = bitmask1.clone();
 
         // NOTE: This doesn't need to be here
         // let voted_count_sum = builder.add(voted_count1, voted_count2);
