@@ -211,12 +211,25 @@ void test_circuit_ssz_json() {
     find_matching_files(my_path, std::vector<std::string> {"ssz_snappy.json"}, result);
 
     for (const auto& v : result) {
-        std::cout << "DEBUG: " << v << "\n";
+        std::cout << "processing file: " << v << " ...\n";
 
         std::ifstream f(v);
         json data = json::parse(f);
-        std::cout << "genesis_validators_root = " << data["genesis_validators_root"] << "\n";
+        std::cout << "slot = " << data["slot"] << "\n";
+        std::cout << "slot_proof = " << data["slot_proof"] << "\n";
+        std::cout << "previous_justified_checkpoint = " << data["previous_justified_checkpoint"] << "\n";
+        std::cout << "previous_justified_checkpoint_proof = " << data["previous_justified_checkpoint_proof"] << "\n";
+        std::cout << "current_justified_checkpoint = " << data["current_justified_checkpoint"] << "\n";
+        std::cout << "current_justified_checkpoint_proof = " << data["current_justified_checkpoint_proof"] << "\n";
+        std::cout << "justification_bits = " << data["justification_bits"] << "\n";
+        std::cout << "justification_bits_proof = " << data["justification_bits_proof"] << "\n";
+        std::cout << "previous_epoch_start_slot_root_in_block_roots = " << data["previous_epoch_start_slot_root_in_block_roots"] << "\n";
+        std::cout << "previous_epoch_start_slot_root_in_block_roots_proof = " << data["previous_epoch_start_slot_root_in_block_roots_proof"] << "\n";
+        std::cout << "current_epoch_start_slot_root_in_block_roots = " << data["current_epoch_start_slot_root_in_block_roots"] << "\n";
+        std::cout << "current_epoch_start_slot_root_in_block_roots_proof = " << data["current_epoch_start_slot_root_in_block_roots_proof"] << "\n";
+        std::cout << "finalized_checkpoint_proof = " << data["finalized_checkpoint_proof"] << "\n";
         std::cout << "state_root = " << data["latest_block_header"]["state_root"] << "\n";
+        std::cout << "slot_proof = " << data["slot_proof"] << "\n";
     }
 }
 
