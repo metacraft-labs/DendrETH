@@ -36,13 +36,12 @@ fn set_nth_bit_in_packed_bitmask<L: PlonkParameters<D>, const D: usize>(
     let (pack_to_modify, bit_to_set_in_pack) = variable_int_div_rem(builder, n, const_pack_size);
 
     for i in 0..packed_bitmask.len() {
+        let pack = packed_bitmask[i];
         let current_pack_idx =
             builder.constant(<L as PlonkParameters<D>>::Field::from_canonical_usize(i));
 
-        let pack = builder.select_array(&packed_bitmask, current_pack_idx);
         let should_modify_pack_pred = builder.is_equal(current_pack_idx, pack_to_modify);
         let modified_pack = variable_set_nth_bit(builder, pack, bit_to_set_in_pack, &powers_of_two);
-
         packed_bitmask[i] = builder.select(should_modify_pack_pred, modified_pack, pack);
     }
 }
@@ -82,7 +81,6 @@ impl Circuit for VerifySubcommitteeVote {
         */
 
         let bitmask: ArrayVariable<Variable, PACKS_COUNT> = ArrayVariable::new(bitmask_data);
-        builder.watch(&bitmask, "bitmask");
 
         builder.write::<Variable>(source);
         builder.write::<Variable>(target);
