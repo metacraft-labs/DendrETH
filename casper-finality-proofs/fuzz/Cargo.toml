@@ -36,3 +36,9 @@ name = "compute_shuffled_index_mainnet"
 path = "fuzz_targets/compute_shuffled_index_mainnet.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "weigh_justification_and_finalization"
+path = "fuzz_targets/weigh_justification_and_finalization.rs"
+test = false
+doc = false

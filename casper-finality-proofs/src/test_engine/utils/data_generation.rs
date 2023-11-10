@@ -5,8 +5,8 @@ use lighthouse_state_processing::{
     per_epoch_processing::altair::ParticipationCache,
 };
 use lighthouse_types::{
-    consts::altair::TIMELY_TARGET_FLAG_INDEX, BeaconState, ChainSpec, Epoch, EthSpec, Hash256,
-    RelativeEpoch,
+    consts::altair::TIMELY_TARGET_FLAG_INDEX, BeaconState, ChainSpec, Epoch, Eth1Data, EthSpec,
+    Hash256, MainnetEthSpec, RelativeEpoch,
 };
 
 use crate::constants::{
@@ -119,4 +119,8 @@ pub fn get_block_root_epoch_start_slot_root<E: EthSpec>(
     epoch: Epoch,
 ) -> Hash256 {
     state.block_roots()[((epoch.as_u64() * SLOTS_PER_EPOCH) % SLOTS_PER_HISTORICAL_ROOT) as usize]
+}
+
+pub fn init_beacon_state(eth1_data: Eth1Data, spec: &ChainSpec) -> BeaconState<MainnetEthSpec> {
+    BeaconState::new(0, eth1_data, spec)
 }
