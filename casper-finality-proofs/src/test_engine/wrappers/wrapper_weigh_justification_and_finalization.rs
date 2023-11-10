@@ -62,6 +62,9 @@ pub struct StateData {
 }
 
 pub fn wrapper(path: String, should_assert: bool) -> Result<String, anyhow::Error> {
+    type L = DefaultParameters;
+    const D: usize = 2;
+
     let spec = &testing_spec::<MainnetEthSpec>(ForkName::Capella);
     let mut state = read_ssz_fixture::<MainnetEthSpec>(
         String::from(path.clone() + "/pre.ssz_snappy").as_str(),
