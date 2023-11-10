@@ -5,9 +5,11 @@ use plonky2x::{
 
 use crate::utils::{bits::variable_set_nth_bit, variable::variable_int_div_rem};
 
-pub const BITMASK_SIZE: usize = 100_000;
+pub const BITMASK_SIZE: usize = 1_000_000;
 pub const PACK_SIZE: usize = 63;
 pub const PACKS_COUNT: usize = BITMASK_SIZE.div_ceil(PACK_SIZE);
+pub const VALIDATORS_PER_COMMITTEE: usize = 128;
+pub const VALIDATOR_SIZE_UPPER_BOUND: usize = 100_009;
 
 fn compute_powers_of_two<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
@@ -55,7 +57,7 @@ impl Circuit for VerifySubcommitteeVote {
         <<L as PlonkParameters<D>>::Config as plonky2::plonk::config::GenericConfig<D>>::Hasher:
             plonky2::plonk::config::AlgebraicHasher<<L as PlonkParameters<D>>::Field>,
     {
-        let set_bit = builder.read::<Variable>();
+        let validator_indices = builder.read::<ArrayVariable<Variable, VALIDATORS_PER_COMMITTEE>>();
 
         let source = builder.zero();
         let target = builder.one();
@@ -65,7 +67,17 @@ impl Circuit for VerifySubcommitteeVote {
         let powers_of_two = compute_powers_of_two(builder);
 
         let mut bitmask_data = vec![builder.zero::<Variable>(); PACKS_COUNT];
-        set_nth_bit_in_packed_bitmask(builder, &mut bitmask_data, set_bit, &powers_of_two);
+
+        for index in 0..VALIDATORS_PER_COMMITTEE {
+            let validator_index = validator_indices[index];
+            set_nth_bit_in_packed_bitmask(
+                builder,
+                &mut bitmask_data,
+                validator_index,
+                &powers_of_two,
+            );
+        }
+
         /*
         for i in 0..PACKS_COUNT {
             let current_pack_idx =
