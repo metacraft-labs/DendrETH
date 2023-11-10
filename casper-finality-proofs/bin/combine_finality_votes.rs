@@ -1,10 +1,12 @@
 use casper_finality_proofs::combine_finality_votes::{
-    verify_subcommittee_vote::{VerifySubcommitteeVote, BITMASK_SIZE},
+    verify_subcommittee_vote::{
+        VerifySubcommitteeVote, BITMASK_SIZE, VALIDATORS_PER_COMMITTEE, VALIDATOR_SIZE_UPPER_BOUND,
+    },
     CombineFinalityVotes,
 };
 use plonky2x::{
     backend::circuit::Circuit,
-    prelude::{CircuitBuilder, DefaultParameters, PlonkParameters, Variable},
+    prelude::{ArrayVariable, CircuitBuilder, DefaultParameters, PlonkParameters, Variable},
 };
 use plonky2x::{backend::circuit::CircuitBuild, prelude::Field};
 use rand::Rng;
@@ -31,15 +33,28 @@ fn main() {
     VerifySubcommitteeVote::define(&mut verify_subcomittee_vote_builder);
     let verify_subcommittee_vote = verify_subcomittee_vote_builder.build();
 
-    let mut rng = rand::thread_rng();
-
+    let rng = rand::thread_rng();
     let mut proofs = vec![];
+
     for _ in 0..2usize.pow(1) {
+        /*
         let random_set_bit: usize = rng.gen::<usize>() % BITMASK_SIZE;
         let mut input = verify_subcommittee_vote.input();
         input.write::<Variable>(<L as PlonkParameters<D>>::Field::from_canonical_usize(
             random_set_bit,
         ));
+        */
+
+        let range = rand::distributions::Uniform::new(0, VALIDATOR_SIZE_UPPER_BOUND as u64);
+        let indices: Vec<<L as PlonkParameters<D>>::Field> = rng
+            .clone()
+            .sample_iter(&range)
+            .map(|num| <L as PlonkParameters<D>>::Field::from_canonical_u64(num))
+            .take(VALIDATORS_PER_COMMITTEE)
+            .collect();
+
+        let mut input = verify_subcommittee_vote.input();
+        input.write::<ArrayVariable<Variable, VALIDATORS_PER_COMMITTEE>>(indices);
 
         let (proof, _) = verify_subcommittee_vote.prove(&input);
         proofs.push(proof);
