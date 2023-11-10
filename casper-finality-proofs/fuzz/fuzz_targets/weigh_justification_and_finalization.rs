@@ -50,6 +50,8 @@ fuzz_target!(|data: TestData| {
     let time = std::time::Instant::now();
     Lazy::force(&CIRCUIT);
 
+    println!("data: {:?}", data);
+
     let mut data = data;
     let epoch = data.slot / 32;
     if epoch < data.previous_epoch_sub {
