@@ -4,14 +4,18 @@ use std::{
     io::{BufWriter, Write},
 };
 
-const PATH: &str = "./results/";
+const BASE_PATH: &str = "./results";
 
-pub unsafe fn json_write(data: serde_json::Value) -> Result<(), Box<dyn Error>> {
+pub unsafe fn json_write(
+    circuit_name: String,
+    data: serde_json::Value,
+) -> Result<(), Box<dyn Error>> {
     let mut count = 0;
 
-    create_dir_all(PATH).unwrap();
+    let dir = &format!("{}/{}/", BASE_PATH, circuit_name);
+    create_dir_all(dir).unwrap();
 
-    for entry in read_dir(PATH).unwrap() {
+    for entry in read_dir(dir).unwrap() {
         let entry = entry.unwrap();
         let path = entry.path();
         if path.is_file() {
@@ -19,7 +23,7 @@ pub unsafe fn json_write(data: serde_json::Value) -> Result<(), Box<dyn Error>> 
         }
     }
 
-    let file = File::create(PATH.to_owned() + format!("data-{}.json", count).as_str())?;
+    let file = File::create(dir.to_owned() + format!("data-{}.json", count).as_str())?;
     let mut writer = BufWriter::new(file);
     serde_json::to_writer(&mut writer, &data)?;
     writer.flush()?;
