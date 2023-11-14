@@ -1,7 +1,8 @@
 use arbitrary::{Arbitrary, Result, Unstructured};
 use primitive_types::{H256, H384};
+use serde_derive::Serialize;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Copy, Clone)]
 pub struct ArbitraryH256(pub H256);
 
 impl Arbitrary<'_> for ArbitraryH256 {
@@ -12,7 +13,7 @@ impl Arbitrary<'_> for ArbitraryH256 {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Copy, Clone)]
 pub struct ArbitraryH384(pub H384);
 
 impl Arbitrary<'_> for ArbitraryH384 {

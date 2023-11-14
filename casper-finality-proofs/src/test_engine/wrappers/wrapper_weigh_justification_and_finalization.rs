@@ -29,6 +29,8 @@ use plonky2x::{
         PlonkParameters, U64Variable,
     },
 };
+use primitive_types::H256;
+use serde_derive::Serialize;
 
 // Singleton-like pattern
 pub static CIRCUIT: Lazy<CircuitBuild<DefaultParameters, 2>> = Lazy::new(|| {
@@ -36,6 +38,28 @@ pub static CIRCUIT: Lazy<CircuitBuild<DefaultParameters, 2>> = Lazy::new(|| {
     WeighJustificationAndFinalization::define(&mut builder);
     builder.build()
 });
+
+#[derive(Debug)]
+pub struct CircuitValues {
+    pub new_previous_justified_checkpoint: CheckpointValue<GoldilocksField>,
+    pub new_current_justified_checkpoint: CheckpointValue<GoldilocksField>,
+    pub new_finalized_checkpoint: CheckpointValue<GoldilocksField>,
+    pub new_justification_bits: JustificationBitsValue<GoldilocksField>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct StateData {
+    pub slot_proof: Vec<H256>,
+    pub beacon_state_root: H256,
+    pub previous_justified_checkpoint_proof: Vec<H256>,
+    pub current_justified_checkpoint_proof: Vec<H256>,
+    pub justification_bits_proof: Vec<H256>,
+    pub previous_epoch_start_slot_root_in_block_roots_proof: Vec<H256>,
+    pub current_epoch_start_slot_root_in_block_roots_proof: Vec<H256>,
+    pub previous_epoch_start_slot_root_in_block_roots: H256,
+    pub current_epoch_start_slot_root_in_block_roots: H256,
+    pub finalized_checkpoint_proof: Vec<H256>,
+}
 
 pub fn wrapper(path: String, should_assert: bool) -> Result<String, anyhow::Error> {
     let spec = &testing_spec::<MainnetEthSpec>(ForkName::Capella);
@@ -51,36 +75,31 @@ pub fn wrapper(path: String, should_assert: bool) -> Result<String, anyhow::Erro
         spec,
     );
 
-    let (
-        new_previous_justified_checkpoint,
-        new_current_justified_checkpoint,
-        new_finalized_checkpoint,
-        new_justification_bits,
-    ) = run(state, balances);
+    let output = run(&mut state, balances);
 
     if should_assert {
         assert_equal!(
-            new_previous_justified_checkpoint.epoch,
+            output.0.new_previous_justified_checkpoint.epoch,
             post_state.previous_justified_checkpoint().epoch.as_u64()
         );
         assert_equal!(
-            new_current_justified_checkpoint.epoch,
+            output.0.new_current_justified_checkpoint.epoch,
             post_state.current_justified_checkpoint().epoch.as_u64()
         );
         assert_equal!(
-            new_current_justified_checkpoint.root,
+            output.0.new_current_justified_checkpoint.root,
             post_state.current_justified_checkpoint().root
         );
         assert_equal!(
-            new_finalized_checkpoint.epoch,
+            output.0.new_finalized_checkpoint.epoch,
             post_state.finalized_checkpoint().epoch.as_u64()
         );
         assert_equal!(
-            new_finalized_checkpoint.root,
+            output.0.new_finalized_checkpoint.root,
             post_state.finalized_checkpoint().root
         );
         assert_equal!(
-            new_justification_bits.bits,
+            output.0.new_justification_bits.bits,
             post_state
                 .justification_bits()
                 .iter()
@@ -89,34 +108,20 @@ pub fn wrapper(path: String, should_assert: bool) -> Result<String, anyhow::Erro
         );
     }
 
-    Ok(format!(
-        "previous_justified_checkpoint: {:?};\n",
-        new_previous_justified_checkpoint
-    ) + format!(
-        "current_justified_checkpoint: {:?};\n",
-        new_current_justified_checkpoint
-    )
-    .as_str()
-        + format!("finalized_checkpoint: {:?};\n", new_finalized_checkpoint).as_str()
-        + format!("justification_bits: {:?};\n", new_justification_bits.bits).as_str())
+    Ok(format!("{:?}", output))
 }
 
 pub fn run(
-    mut state: BeaconState<MainnetEthSpec>,
+    state: &mut BeaconState<MainnetEthSpec>,
     balances: Balances,
-) -> (
-    CheckpointValue<GoldilocksField>,
-    CheckpointValue<GoldilocksField>,
-    CheckpointValue<GoldilocksField>,
-    JustificationBitsValue<GoldilocksField>,
-) {
+) -> (CircuitValues, StateData) {
     type L = DefaultParameters;
     const D: usize = 2;
 
     let slot = state.slot().as_u64();
-    let slot_proof = compute_merkle_proof(&mut state, BEACON_STATE_SLOT_GINDEX as usize);
+    let slot_proof = compute_merkle_proof(state, BEACON_STATE_SLOT_GINDEX as usize);
 
-    let beacon_state_root = compute_beacon_state_tree_hash_root(&mut state);
+    let beacon_state_root = compute_beacon_state_tree_hash_root(state);
 
     let previous_justified_checkpoint = CheckpointValue::<<L as PlonkParameters<D>>::Field> {
         epoch: state.previous_justified_checkpoint().epoch.as_u64(),
@@ -124,7 +129,7 @@ pub fn run(
     };
 
     let previous_justified_checkpoint_proof = compute_merkle_proof(
-        &mut state,
+        state,
         BEACON_STATE_PREVIOUS_JUSTIFIED_CHECKPOINT_GINDEX as usize,
     );
 
@@ -134,7 +139,7 @@ pub fn run(
     };
 
     let current_justified_checkpoint_proof = compute_merkle_proof(
-        &mut state,
+        state,
         BEACON_STATE_CURRENT_JUSTIFIED_CHECKPOINT_GINDEX as usize,
     );
 
@@ -147,15 +152,15 @@ pub fn run(
     };
 
     let justification_bits_proof =
-        compute_merkle_proof(&mut state, BEACON_STATE_JUSTIFICATION_BITS_GINDEX as usize);
+        compute_merkle_proof(state, BEACON_STATE_JUSTIFICATION_BITS_GINDEX as usize);
 
     let previous_epoch = state.previous_epoch();
     let previous_epoch_start_slot_root_in_block_roots_proof =
-        compute_block_roots_start_epoch_slot_to_beacon_state_proof(&mut state, previous_epoch);
+        compute_block_roots_start_epoch_slot_to_beacon_state_proof(state, previous_epoch);
 
     let current_epoch = state.current_epoch();
     let current_epoch_start_slot_root_in_block_roots_proof =
-        compute_block_roots_start_epoch_slot_to_beacon_state_proof(&mut state, current_epoch);
+        compute_block_roots_start_epoch_slot_to_beacon_state_proof(state, current_epoch);
 
     let previous_epoch_start_slot_root_in_block_roots =
         get_block_root_epoch_start_slot_root(&state, state.previous_epoch());
@@ -167,10 +172,8 @@ pub fn run(
         root: state.finalized_checkpoint().root,
     };
 
-    let finalized_checkpoint_proof = compute_merkle_proof(
-        &mut state,
-        BEACON_STATE_FINALIZED_CHECKPOINT_GINDEX as usize,
-    );
+    let finalized_checkpoint_proof =
+        compute_merkle_proof(state, BEACON_STATE_FINALIZED_CHECKPOINT_GINDEX as usize);
 
     let mut input = CIRCUIT.input();
 
@@ -206,9 +209,23 @@ pub fn run(
     let new_justification_bits = output.read::<JustificationBitsVariable>();
 
     (
-        new_previous_justified_checkpoint,
-        new_current_justified_checkpoint,
-        new_finalized_checkpoint,
-        new_justification_bits,
+        CircuitValues {
+            new_previous_justified_checkpoint,
+            new_current_justified_checkpoint,
+            new_finalized_checkpoint,
+            new_justification_bits,
+        },
+        StateData {
+            slot_proof,
+            beacon_state_root,
+            previous_justified_checkpoint_proof,
+            current_justified_checkpoint_proof,
+            justification_bits_proof,
+            previous_epoch_start_slot_root_in_block_roots_proof,
+            current_epoch_start_slot_root_in_block_roots_proof,
+            previous_epoch_start_slot_root_in_block_roots,
+            current_epoch_start_slot_root_in_block_roots,
+            finalized_checkpoint_proof,
+        },
     )
 }
