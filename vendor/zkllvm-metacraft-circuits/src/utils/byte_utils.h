@@ -1,5 +1,7 @@
 #include <array>
 #include "circuit_utils/base_types.h"
+#include <sstream>
+#include <string>
 
 namespace byte_utils {
 
@@ -84,4 +86,23 @@ namespace byte_utils {
         }
         return bytes;
     }
+
+    uint64_t stringToUint64(std::string val) {
+        std::stringstream buff;
+        uint64_t retval;
+        buff << val;
+        buff >> retval;
+        return retval;
+    }
+
+    JustificationBitsVariable hexToBitsVariable(std::string hex) {
+        JustificationBitsVariable retval{};
+        auto bits = hexToBytes<1>(hex);
+        for(int64_t i = (int64_t)retval.bits.size() - 1; i >= 0; i--) {
+            retval.bits[i] = (bits[0] % 2);
+            bits[0] = bits[0] / 2;
+        }
+        return retval;
+    }
+
 }    // namespace byte_utils

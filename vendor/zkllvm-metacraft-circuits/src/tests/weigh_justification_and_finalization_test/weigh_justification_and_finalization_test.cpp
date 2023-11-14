@@ -28,7 +28,7 @@ std::ostream& operator<<(std::ostream& os, const CheckpointVariable& c) {
 
 std::ostream& operator<<(std::ostream& os, const JustificationBitsVariable& j) {
     os << " [" << (j.bits[0] ? "true, " : "false, ") << (j.bits[1] ? "true, " : "false, ")
-       << (j.bits[2] ? "true, " : "false, ") << (j.bits[2] ? "true]" : "false]");
+       << (j.bits[2] ? "true, " : "false, ") << (j.bits[3] ? "true]" : "false]");
     return os;
 }
 
@@ -227,9 +227,152 @@ void test_circuit_ssz_json() {
         std::cout << "previous_epoch_start_slot_root_in_block_roots_proof = " << data["previous_epoch_start_slot_root_in_block_roots_proof"] << "\n";
         std::cout << "current_epoch_start_slot_root_in_block_roots = " << data["current_epoch_start_slot_root_in_block_roots"] << "\n";
         std::cout << "current_epoch_start_slot_root_in_block_roots_proof = " << data["current_epoch_start_slot_root_in_block_roots_proof"] << "\n";
+        std::cout << "finalized_checkpoint = " << data["finalized_checkpoint"] << "\n";
         std::cout << "finalized_checkpoint_proof = " << data["finalized_checkpoint_proof"] << "\n";
         std::cout << "state_root = " << data["latest_block_header"]["state_root"] << "\n";
-        std::cout << "slot_proof = " << data["slot_proof"] << "\n";
+
+        std::stringstream buff;
+        Slot slot { stringToUint64(data["slot"]) }; 
+        BeaconStateLeafProof slot_proof {
+            hexToBytes<32>(data["slot_proof"][0]),
+            hexToBytes<32>(data["slot_proof"][1]),
+            hexToBytes<32>(data["slot_proof"][2]),
+            hexToBytes<32>(data["slot_proof"][3]),
+            hexToBytes<32>(data["slot_proof"][4])
+        };
+        CheckpointVariable previous_justified_checkpoint {
+            stringToUint64(data["previous_justified_checkpoint"]["epoch"]),
+            hexToBytes<32>(data["previous_justified_checkpoint"]["root"])
+        };
+        BeaconStateLeafProof previous_justified_checkpoint_proof {
+            hexToBytes<32>(data["previous_justified_checkpoint_proof"][0]),
+            hexToBytes<32>(data["previous_justified_checkpoint_proof"][1]),
+            hexToBytes<32>(data["previous_justified_checkpoint_proof"][2]),
+            hexToBytes<32>(data["previous_justified_checkpoint_proof"][3]),
+            hexToBytes<32>(data["previous_justified_checkpoint_proof"][4])
+        };
+        CheckpointVariable current_justified_checkpoint {
+            stringToUint64(data["current_justified_checkpoint"]["epoch"]),
+            hexToBytes<32>(data["current_justified_checkpoint"]["root"])
+        };
+        BeaconStateLeafProof current_justified_checkpoint_proof {
+            hexToBytes<32>(data["current_justified_checkpoint_proof"][0]),
+            hexToBytes<32>(data["current_justified_checkpoint_proof"][1]),
+            hexToBytes<32>(data["current_justified_checkpoint_proof"][2]),
+            hexToBytes<32>(data["current_justified_checkpoint_proof"][3]),
+            hexToBytes<32>(data["current_justified_checkpoint_proof"][4])
+        };
+
+        JustificationBitsVariable justification_bits = hexToBitsVariable(data["justification_bits"]);
+
+        BeaconStateLeafProof justification_bits_proof {
+            hexToBytes<32>(data["justification_bits_proof"][0]),
+            hexToBytes<32>(data["justification_bits_proof"][1]),
+            hexToBytes<32>(data["justification_bits_proof"][2]),
+            hexToBytes<32>(data["justification_bits_proof"][3]),
+            hexToBytes<32>(data["justification_bits_proof"][4])
+        };
+
+        auto previous_epoch_start_slot_root_in_block_roots = hexToBytes<32>(data["previous_epoch_start_slot_root_in_block_roots"]);
+        MerkleProof<18> previous_epoch_start_slot_root_in_block_roots_proof {
+            hexToBytes<32>(data["previous_epoch_start_slot_root_in_block_roots_proof"][0]),
+            hexToBytes<32>(data["previous_epoch_start_slot_root_in_block_roots_proof"][1]),
+            hexToBytes<32>(data["previous_epoch_start_slot_root_in_block_roots_proof"][2]),
+            hexToBytes<32>(data["previous_epoch_start_slot_root_in_block_roots_proof"][3]),
+            hexToBytes<32>(data["previous_epoch_start_slot_root_in_block_roots_proof"][4]),
+            hexToBytes<32>(data["previous_epoch_start_slot_root_in_block_roots_proof"][5]),
+            hexToBytes<32>(data["previous_epoch_start_slot_root_in_block_roots_proof"][6]),
+            hexToBytes<32>(data["previous_epoch_start_slot_root_in_block_roots_proof"][7]),
+            hexToBytes<32>(data["previous_epoch_start_slot_root_in_block_roots_proof"][8]),
+            hexToBytes<32>(data["previous_epoch_start_slot_root_in_block_roots_proof"][9]),
+            hexToBytes<32>(data["previous_epoch_start_slot_root_in_block_roots_proof"][10]),
+            hexToBytes<32>(data["previous_epoch_start_slot_root_in_block_roots_proof"][11]),
+            hexToBytes<32>(data["previous_epoch_start_slot_root_in_block_roots_proof"][12]),
+            hexToBytes<32>(data["previous_epoch_start_slot_root_in_block_roots_proof"][13]),
+            hexToBytes<32>(data["previous_epoch_start_slot_root_in_block_roots_proof"][14]),
+            hexToBytes<32>(data["previous_epoch_start_slot_root_in_block_roots_proof"][15]),
+            hexToBytes<32>(data["previous_epoch_start_slot_root_in_block_roots_proof"][16]),
+            hexToBytes<32>(data["previous_epoch_start_slot_root_in_block_roots_proof"][17])
+        };
+
+        auto current_epoch_start_slot_root_in_block_roots = hexToBytes<32>(data["current_epoch_start_slot_root_in_block_roots"]);
+        MerkleProof<18> current_epoch_start_slot_root_in_block_roots_proof {
+             hexToBytes<32>(data["current_epoch_start_slot_root_in_block_roots_proof"][0]),
+             hexToBytes<32>(data["current_epoch_start_slot_root_in_block_roots_proof"][1]),
+             hexToBytes<32>(data["current_epoch_start_slot_root_in_block_roots_proof"][2]),
+             hexToBytes<32>(data["current_epoch_start_slot_root_in_block_roots_proof"][3]),
+             hexToBytes<32>(data["current_epoch_start_slot_root_in_block_roots_proof"][4]),
+             hexToBytes<32>(data["current_epoch_start_slot_root_in_block_roots_proof"][5]),
+             hexToBytes<32>(data["current_epoch_start_slot_root_in_block_roots_proof"][6]),
+             hexToBytes<32>(data["current_epoch_start_slot_root_in_block_roots_proof"][7]),
+             hexToBytes<32>(data["current_epoch_start_slot_root_in_block_roots_proof"][8]),
+             hexToBytes<32>(data["current_epoch_start_slot_root_in_block_roots_proof"][9]),
+             hexToBytes<32>(data["current_epoch_start_slot_root_in_block_roots_proof"][10]),
+             hexToBytes<32>(data["current_epoch_start_slot_root_in_block_roots_proof"][11]),
+             hexToBytes<32>(data["current_epoch_start_slot_root_in_block_roots_proof"][12]),
+             hexToBytes<32>(data["current_epoch_start_slot_root_in_block_roots_proof"][13]),
+             hexToBytes<32>(data["current_epoch_start_slot_root_in_block_roots_proof"][14]),
+             hexToBytes<32>(data["current_epoch_start_slot_root_in_block_roots_proof"][15]),
+             hexToBytes<32>(data["current_epoch_start_slot_root_in_block_roots_proof"][16]),
+             hexToBytes<32>(data["current_epoch_start_slot_root_in_block_roots_proof"][17])
+        };
+        CheckpointVariable finalized_checkpoint {
+            stringToUint64(data["finalized_checkpoint"]["epoch"]),
+            hexToBytes<32>(data["finalized_checkpoint"]["root"])
+        };
+        BeaconStateLeafProof finalized_checkpoint_proof {
+            hexToBytes<32>(data["finalized_checkpoint_proof"][0]),
+            hexToBytes<32>(data["finalized_checkpoint_proof"][1]),
+            hexToBytes<32>(data["finalized_checkpoint_proof"][2]),
+            hexToBytes<32>(data["finalized_checkpoint_proof"][3]),
+            hexToBytes<32>(data["finalized_checkpoint_proof"][4])
+        };
+        auto beacon_state_root = hexToBytes<32>(data["latest_block_header"]["state_root"]);
+
+        CheckpointVariable new_previous_justified_checkpoint;
+        CheckpointVariable new_current_justified_checkpoint;
+        CheckpointVariable new_finalized_checkpoint;
+        JustificationBitsVariable new_justification_bits;
+
+        uint64_t total_active_balance=0,
+                 previous_epoch_target_balance=0,
+                 current_epoch_target_balance=0;
+
+        // weigh_justification_and_finalization(beacon_state_root,
+        //                                      slot,
+        //                                      slot_proof,
+        //                                      previous_justified_checkpoint,
+        //                                      previous_justified_checkpoint_proof,
+        //                                      current_justified_checkpoint,
+        //                                      current_justified_checkpoint_proof,
+        //                                      justification_bits,
+        //                                      justification_bits_proof,
+        //                                      total_active_balance,
+        //                                      previous_epoch_target_balance,
+        //                                      current_epoch_target_balance,
+        //                                      previous_epoch_start_slot_root_in_block_roots,
+        //                                      previous_epoch_start_slot_root_in_block_roots_proof,
+        //                                      current_epoch_start_slot_root_in_block_roots,
+        //                                      current_epoch_start_slot_root_in_block_roots_proof,
+        //                                      finalized_checkpoint,
+        //                                      finalized_checkpoint_proof,
+        //                                      // Outputs:
+        //                                      new_previous_justified_checkpoint,
+        //                                      new_current_justified_checkpoint,
+        //                                      new_finalized_checkpoint,
+        //                                      new_justification_bits);
+
+        std::cout << "outputs:\n";
+        std::cout << "new_previous_justified_checkpoint: " << new_previous_justified_checkpoint << "\n";
+        std::cout << "new_current_justified_checkpoint: " << new_current_justified_checkpoint << "\n";
+        std::cout << "new_finalized_checkpoint: " << new_finalized_checkpoint << "\n";
+        std::cout << "new_justification_bits: " << new_justification_bits << "\n";
+
+        std::cout << "DEBUG:\n";
+        for(const auto v : {"00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0a", "0b", "0c", "0d", "0e", "0f"}) {
+            JustificationBitsVariable justification_bits = hexToBitsVariable(v);
+            std::cout << justification_bits << "\n";
+        }
     }
 }
 
