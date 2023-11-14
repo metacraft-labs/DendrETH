@@ -921,6 +921,7 @@ dependencies = [
  "once_cell",
  "primitive-types 0.12.2",
  "serde",
+ "serde_derive",
  "serde_json",
 ]
 

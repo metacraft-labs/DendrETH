@@ -2,19 +2,24 @@
 
 mod utils {
     pub mod arbitrary_types;
+    pub mod writer;
 }
 
 use casper_finality_proofs::test_engine::utils::data_generation::{init_beacon_state, Balances};
 use casper_finality_proofs::test_engine::wrappers::wrapper_weigh_justification_and_finalization::{
     run, CIRCUIT,
 };
+use casper_finality_proofs::to_string;
 use casper_finality_proofs::types::{BeaconTreeHashCacheType, ChainSpecType, Eth1Type};
 use libfuzzer_sys::arbitrary::Unstructured;
 use libfuzzer_sys::fuzz_target;
 use once_cell::sync::Lazy;
+use serde_derive::Serialize;
 use utils::arbitrary_types::ArbitraryH256;
 
-#[derive(Debug, arbitrary::Arbitrary)]
+use crate::utils::writer::json_write;
+
+#[derive(Debug, Clone, arbitrary::Arbitrary, Serialize)]
 struct TestData {
     #[arbitrary(with = |u: &mut Unstructured| u.int_in_range(1..=u64::MAX))]
     pub slot: u64,
@@ -37,18 +42,17 @@ struct TestData {
     #[arbitrary(with = |u: &mut Unstructured| u.int_in_range(1..=u64::MAX))]
     pub current_target_balance: u64,
     pub eth_1_data: Eth1Type,
+    #[serde(skip)]
     pub chain_spec: ChainSpecType,
 }
 
 fuzz_target!(|data: TestData| {
     Lazy::force(&CIRCUIT);
 
-    println!("data: {:?}", data);
-
     let mut data = data;
     let epoch = data.slot / 32;
     data.chain_spec.genesis_slot = data.slot.into();
-    let mut state = init_beacon_state(data.eth_1_data, &data.chain_spec);
+    let mut state = init_beacon_state(data.eth_1_data.clone(), &data.chain_spec);
 
     *state.tree_hash_cache_mut() = BeaconTreeHashCacheType::new(&state);
 
@@ -77,23 +81,34 @@ fuzz_target!(|data: TestData| {
         current_target_balance: data.current_target_balance,
     };
 
-    let (
-        new_previous_justified_checkpoint,
-        new_current_justified_checkpoint,
-        new_finalized_checkpoint,
-        new_justification_bits,
-    ) = run(state, balances);
+    let output = run(&mut state, balances);
 
-    let res = format!(
-        "previous_justified_checkpoint: {:?};\n",
-        new_previous_justified_checkpoint
-    ) + format!(
-        "current_justified_checkpoint: {:?};\n",
-        new_current_justified_checkpoint
-    )
-    .as_str()
-        + format!("finalized_checkpoint: {:?};\n", new_finalized_checkpoint).as_str()
-        + format!("justification_bits: {:?};\n", new_justification_bits.bits).as_str();
+    let mut value =
+        serde_json::json!({"input":{"state":state, "additional_data":output.1 }, "output":{}});
 
-    println!("res: {}", res);
+    value["output"]["new_previous_justified_checkpoint"]["epoch"] =
+        serde_json::Value::String(output.0.new_previous_justified_checkpoint.epoch.to_string());
+    value["output"]["new_previous_justified_checkpoint"]["root"] =
+        serde_json::Value::String(to_string!(output.0.new_previous_justified_checkpoint.root));
+    value["output"]["new_current_justified_checkpoint"]["epoch"] =
+        serde_json::Value::String(output.0.new_current_justified_checkpoint.epoch.to_string());
+    value["output"]["new_current_justified_checkpoint"]["root"] =
+        serde_json::Value::String(to_string!(output.0.new_current_justified_checkpoint.root));
+    value["output"]["new_finalized_checkpoint"]["epoch"] =
+        serde_json::Value::String(output.0.new_finalized_checkpoint.epoch.to_string());
+    value["output"]["new_finalized_checkpoint"]["root"] =
+        serde_json::Value::String(to_string!(output.0.new_finalized_checkpoint.root));
+    value["output"]["new_justification_bits"]["bits"] = serde_json::Value::Array(
+        output
+            .0
+            .new_justification_bits
+            .bits
+            .iter()
+            .map(|x| serde_json::Value::Bool(*x))
+            .collect(),
+    );
+
+    unsafe {
+        let _ = json_write(value);
+    }
 });
