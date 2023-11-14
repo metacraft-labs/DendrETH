@@ -83,8 +83,7 @@ fuzz_target!(|data: TestData| {
 
     let output = run(&mut state, balances);
 
-    let mut value =
-        serde_json::json!({"input":{"state":state, "additional_data":output.1 }, "output":{}});
+    let mut value = serde_json::json!({ "input": { "state": state, "additional_data": output.1 }, "output": {} });
 
     value["output"]["new_previous_justified_checkpoint"]["epoch"] =
         serde_json::Value::String(output.0.new_previous_justified_checkpoint.epoch.to_string());
@@ -109,6 +108,6 @@ fuzz_target!(|data: TestData| {
     );
 
     unsafe {
-        let _ = json_write(value);
+        let _ = json_write("weigh_justification_and_finalization".to_owned(), value);
     }
 });

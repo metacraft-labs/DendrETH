@@ -2,6 +2,7 @@
 
 mod utils {
     pub mod arbitrary_types;
+    pub mod writer;
 }
 
 use casper_finality_proofs::test_engine::wrappers::compute_shuffled_index::wrapper_minimal::{
@@ -10,10 +11,13 @@ use casper_finality_proofs::test_engine::wrappers::compute_shuffled_index::wrapp
 use libfuzzer_sys::arbitrary::Unstructured;
 use libfuzzer_sys::fuzz_target;
 use once_cell::sync::Lazy;
+use serde_derive::Serialize;
 use std::env::var;
 use utils::arbitrary_types::ArbitraryH256;
 
-#[derive(Debug, arbitrary::Arbitrary)]
+use crate::utils::writer::json_write;
+
+#[derive(Debug, arbitrary::Arbitrary, Serialize)]
 struct TestData {
     pub seed: ArbitraryH256,
     #[arbitrary(with = |u: &mut Unstructured| u.int_in_range(1..=var("MAX_COUNT_COMPUTE_SHUFFLED_INDEX_MINIMAL").unwrap().parse::<u8>().unwrap_or(15)))]
@@ -22,7 +26,7 @@ struct TestData {
 
 fuzz_target!(|data: TestData| {
     Lazy::force(&MINIMAL_CIRCUIT);
-    println!("input: {:?}", data);
+
     let mut indices = Vec::<u64>::new();
 
     let count = data.count as u64;
@@ -35,4 +39,10 @@ fuzz_target!(|data: TestData| {
     assert!(indices
         .iter()
         .all(|&i| indices.iter().filter(|&&j| j == i).count() == 1));
+
+    let value = serde_json::json!({ "input": data, "output": indices });
+
+    unsafe {
+        let _ = json_write("compute_shuffled_index_minimal".to_string(), value);
+    }
 });
