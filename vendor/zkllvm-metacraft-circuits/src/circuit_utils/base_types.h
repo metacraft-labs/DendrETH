@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <cstring>
+#include "constants.h"
 
 //!!!TODO: Use assertion in circuits when introduced in tooling
 #ifdef __ZKLLVM__
@@ -29,6 +30,8 @@ using Gwei = uint64_t;
 template<size_t DEPTH>
 using MerkleProof = std::array<Bytes32, DEPTH>;
 using BeaconStateLeafProof = MerkleProof<5>;
+
+using AttestedValidators = std::array<bool, 16'000'000>;
 
 struct CheckpointVariable {
     Epoch epoch;
@@ -68,3 +71,8 @@ struct JustificationBitsVariable {
 };
 
 constexpr unsigned int MAX_MERKLE_DEPTH = 512;
+
+Epoch get_current_epoch(Slot slot) {
+    auto slots_per_epoch = SLOTS_PER_EPOCH;
+    return slot / slots_per_epoch;
+}

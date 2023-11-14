@@ -5,7 +5,6 @@
 
 #include "utils/picosha2.h"
 #include "circuit_utils/circuit_byte_utils.h"
-#include "circuit_utils/constants.h"
 
 using namespace circuit_byte_utils;
 
@@ -111,11 +110,6 @@ void verify_justification_bits(Root beacon_state_root,
     auto justification_bits_leaf = hash_tree_root(justification_bits);
     auto gindex = BEACON_STATE_JUSTIFICATION_BITS_GINDEX;
     ssz_verify_proof<array_size<BeaconStateLeafProof>::size>(beacon_state_root, justification_bits_leaf, proof, gindex);
-}
-
-Epoch get_current_epoch(Slot slot) {
-    auto slots_per_epoch = SLOTS_PER_EPOCH;
-    return slot / slots_per_epoch;
 }
 
 void assert_epoch_is_not_genesis_epoch(Epoch epoch) {
