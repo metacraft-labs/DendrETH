@@ -5,11 +5,21 @@ use plonky2x::{
 
 use crate::utils::{bits::variable_set_nth_bit, variable::variable_int_div_rem};
 
-pub const BITMASK_SIZE: usize = 1_000_000;
+pub const BITMASK_SIZE: usize = 100_000;
 pub const PACK_SIZE: usize = 63;
 pub const PACKS_COUNT: usize = BITMASK_SIZE.div_ceil(PACK_SIZE);
 pub const VALIDATORS_PER_COMMITTEE: usize = 128;
-pub const VALIDATOR_SIZE_UPPER_BOUND: usize = 100_009;
+pub const VALIDATOR_SIZE_UPPER_BOUND: usize = 100_000;
+
+// deli na 63
+// n - na kolko bitmaski razdelqme mama bitmaska (n trqq da e stepen na dvoikata)
+
+pub const VARIABLES_COUNT_LITTLE_BITMASK: usize = 100;
+pub const BITMASK_SPLITS_COUNT: usize = 2usize.pow(1);
+
+// v - kolko variable-a e edna malka bitmaska
+// razmera na golqmata bitmaska v * n
+// v * n * 63
 
 fn compute_powers_of_two<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
