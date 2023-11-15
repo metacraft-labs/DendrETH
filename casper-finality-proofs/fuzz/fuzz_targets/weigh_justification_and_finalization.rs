@@ -86,15 +86,15 @@ fuzz_target!(|data: TestData| {
     let mut value = serde_json::json!({ "input": { "state": state, "additional_data": output.1 }, "output": {} });
 
     value["output"]["new_previous_justified_checkpoint"]["epoch"] =
-        serde_json::Value::String(output.0.new_previous_justified_checkpoint.epoch.to_string());
+        serde_json::Value::Number(output.0.new_previous_justified_checkpoint.epoch.into());
     value["output"]["new_previous_justified_checkpoint"]["root"] =
         serde_json::Value::String(to_string!(output.0.new_previous_justified_checkpoint.root));
     value["output"]["new_current_justified_checkpoint"]["epoch"] =
-        serde_json::Value::String(output.0.new_current_justified_checkpoint.epoch.to_string());
+        serde_json::Value::Number(output.0.new_current_justified_checkpoint.epoch.into());
     value["output"]["new_current_justified_checkpoint"]["root"] =
         serde_json::Value::String(to_string!(output.0.new_current_justified_checkpoint.root));
     value["output"]["new_finalized_checkpoint"]["epoch"] =
-        serde_json::Value::String(output.0.new_finalized_checkpoint.epoch.to_string());
+        serde_json::Value::Number(output.0.new_finalized_checkpoint.epoch.into());
     value["output"]["new_finalized_checkpoint"]["root"] =
         serde_json::Value::String(to_string!(output.0.new_finalized_checkpoint.root));
     value["output"]["new_justification_bits"]["bits"] = serde_json::Value::Array(
