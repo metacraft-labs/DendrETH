@@ -40,20 +40,23 @@ impl<const LEVEL: usize> ConcatBitmasks<LEVEL> {
                 Variable,
                 { 2usize.pow(LEVEL as u32) * VARIABLES_COUNT_LITTLE_BITMASK },
             >>();
+        let left_range_begin = proof1_reader.read::<Variable>();
         let left_voted_count = proof1_reader.read::<Variable>();
-        let left_target = proof1_reader.read::<Variable>();
+        let left_bls_signature = proof1_reader.read::<Variable>();
         let left_source = proof1_reader.read::<Variable>();
+        let left_target = proof1_reader.read::<Variable>();
 
         // read right proof
         let right_bitmask =
-            proof1_reader.read::<ArrayVariable<
+            proof2_reader.read::<ArrayVariable<
                 Variable,
                 { 2usize.pow(LEVEL as u32) * VARIABLES_COUNT_LITTLE_BITMASK },
             >>();
-
+        let right_range_begin = proof2_reader.read::<Variable>();
         let right_voted_count = proof2_reader.read::<Variable>();
-        let right_target = proof2_reader.read::<Variable>();
+        let right_bls_signature = proof2_reader.read::<Variable>();
         let right_source = proof2_reader.read::<Variable>();
+        let right_target = proof2_reader.read::<Variable>();
 
         let voted_count = builder.one::<Variable>();
 
@@ -69,9 +72,16 @@ impl<const LEVEL: usize> ConcatBitmasks<LEVEL> {
 
         let voted_count = builder.add(left_voted_count, right_voted_count);
 
-        builder.proof_write(left_source);
+        let bls_signature = builder.add(left_bls_signature, right_bls_signature);
+        let range_begin = left_range_begin;
+
         builder.proof_write(left_target);
+        builder.proof_write(left_source);
+
+        builder.proof_write(bls_signature);
         builder.proof_write(voted_count);
+
+        builder.proof_write(range_begin);
         builder.proof_write(bitmask);
     }
 }

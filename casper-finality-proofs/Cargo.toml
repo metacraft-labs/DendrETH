@@ -25,6 +25,10 @@ path = "src/test_engine/bin/main.rs"
 name = "combine_finality_votes"
 path = "bin/combine_finality_votes.rs"
 
+[[bin]]
+name = "verify_subcommittee_vote"
+path = "bin/verify_subcommittee_vote.rs"
+
 [dependencies]
 plonky2 = { git = "https://github.com/mir-protocol/plonky2.git", default-features = false }
 plonky2x = { git = "https://github.com/succinctlabs/succinctx.git", branch = "main" }
