@@ -1,11 +1,11 @@
 use plonky2x::{
     backend::circuit::CircuitBuild,
-    prelude::{ArrayVariable, CircuitBuilder, PlonkParameters, Variable},
+    prelude::{ArrayVariable, CircuitBuilder, Field, PlonkParameters, Variable},
 };
 
 use super::{
     circuit::ProofWithPublicInputsTargetReader,
-    verify_subcommittee_vote::VARIABLES_COUNT_LITTLE_BITMASK,
+    verify_subcommittee_vote::{PACK_SIZE, VARIABLES_COUNT_LITTLE_BITMASK},
 };
 
 #[derive(Debug, Clone)]
@@ -49,11 +49,21 @@ impl<const LEVEL: usize> ConcatBitmasks<LEVEL> {
                 Variable,
                 { 2usize.pow(LEVEL as u32) * VARIABLES_COUNT_LITTLE_BITMASK },
             >>();
-        let _right_range_begin = proof2_reader.read::<Variable>();
+        let right_range_begin = proof2_reader.read::<Variable>();
         let right_voted_count = proof2_reader.read::<Variable>();
         let right_bls_signature = proof2_reader.read::<Variable>();
         let _right_source = proof2_reader.read::<Variable>();
         let _right_target = proof2_reader.read::<Variable>();
+
+        let expected_difference_between_range_starts =
+            builder.constant::<Variable>(<L as PlonkParameters<D>>::Field::from_canonical_usize(
+                2usize.pow(LEVEL as u32) * VARIABLES_COUNT_LITTLE_BITMASK * PACK_SIZE,
+            ));
+        let difference_between_start_ranges = builder.sub(right_range_begin, left_range_begin);
+        builder.assert_is_equal(
+            difference_between_start_ranges,
+            expected_difference_between_range_starts,
+        );
 
         let _voted_count = builder.one::<Variable>();
 
