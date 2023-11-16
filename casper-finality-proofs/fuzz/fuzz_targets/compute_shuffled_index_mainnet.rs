@@ -42,7 +42,5 @@ fuzz_target!(|data: TestData| {
 
     let value = serde_json::json!({ "input": data, "output": indices });
 
-    unsafe {
-        let _ = json_write("compute_shuffled_index_mainnet".to_string(), value);
-    }
+    json_write("compute_shuffled_index_mainnet".to_string(), value).unwrap();
 });

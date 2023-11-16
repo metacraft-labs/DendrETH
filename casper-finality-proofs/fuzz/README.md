@@ -16,7 +16,6 @@ The corpus is located in the `corpus` directory. It should contain files to seed
 ./seed/compute_shuffled_index.sh minimal
 ```
 
-T
 This will create seed files in the corpus/compute_shuffled_index_minimal directory. To seed the corpus for the mainnet target, run the following command respectively:
 
 ```bash
