@@ -1,6 +1,6 @@
 use plonky2x::{
     backend::circuit::Circuit,
-    prelude::{ArrayVariable, CircuitBuilder, Field, PlonkParameters, Variable},
+    prelude::{ArrayVariable, BoolVariable, CircuitBuilder, Field, PlonkParameters, Variable},
 };
 
 use crate::utils::{bits::variable_set_nth_bit, variable::variable_int_div_rem};
@@ -35,11 +35,12 @@ fn compute_powers_of_two<L: PlonkParameters<D>, const D: usize>(
     powers
 }
 
-fn set_nth_bit_in_packed_bitmask<L: PlonkParameters<D>, const D: usize>(
+pub fn maybe_set_nth_bit_in_packed_bitmask<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
     packed_bitmask: &mut [Variable],
     n: Variable,
     powers_of_two: &[Variable],
+    should_set_bit: BoolVariable,
 ) {
     let const_pack_size = builder.constant::<Variable>(
         <L as PlonkParameters<D>>::Field::from_canonical_usize(PACK_SIZE),
@@ -52,7 +53,8 @@ fn set_nth_bit_in_packed_bitmask<L: PlonkParameters<D>, const D: usize>(
         let current_pack_idx =
             builder.constant(<L as PlonkParameters<D>>::Field::from_canonical_usize(i));
 
-        let should_modify_pack_pred = builder.is_equal(current_pack_idx, pack_to_modify);
+        let mut should_modify_pack_pred = builder.is_equal(current_pack_idx, pack_to_modify);
+        should_modify_pack_pred = builder.and(should_modify_pack_pred, should_set_bit);
         let modified_pack = variable_set_nth_bit(builder, pack, bit_to_set_in_pack, &powers_of_two);
         packed_bitmask[i] = builder.select(should_modify_pack_pred, modified_pack, pack);
     }
@@ -78,13 +80,16 @@ impl Circuit for VerifySubcommitteeVote {
 
         let mut bitmask_data = vec![builder.zero::<Variable>(); PACKS_COUNT];
 
+        let _true = builder._true();
+
         for index in 0..VALIDATORS_PER_COMMITTEE {
             let validator_index = validator_indices[index];
-            set_nth_bit_in_packed_bitmask(
+            maybe_set_nth_bit_in_packed_bitmask(
                 builder,
                 &mut bitmask_data,
                 validator_index,
                 &powers_of_two,
+                _true,
             );
         }
 

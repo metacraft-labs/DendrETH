@@ -1,13 +1,17 @@
+/*
+use lighthouse_types::{BeaconBlockHeader, Fork, Slot};
 use plonky2::iop::target::BoolTarget;
 use plonky2x::backend::circuit::{Circuit, PlonkParameters};
 use plonky2x::backend::function::Plonky2xFunction;
 use plonky2x::frontend::eth::beacon::generators::BeaconBalanceBatchWitnessHint;
 use plonky2x::frontend::eth::beacon::vars::BeaconValidatorVariable;
 use plonky2x::frontend::eth::vars::BLSPubkeyVariable;
+use plonky2x::frontend::uint::uint64;
 use plonky2x::prelude::{CircuitBuilder, Variable, U64Variable, Bytes32Variable, ArrayVariable, CircuitVariable, U256Variable, BoolVariable, Field};
 use plonky2x::utils::eth::beacon::{BeaconHeaderContainer, BeaconValidator, BeaconHeader};
 
 use crate::checkpoint::Checkpoint;
+use crate::constants::SLOTS_PER_HISTORICAL_ROOT;
 
 // Constants
 const JUSTIFICATION_BITS_LENGTH: i32 = 4;
@@ -29,9 +33,9 @@ struct BeaconState {
     fork: Fork,
     // History
     latest_block_header: BeaconBlockHeader,
-    
+
     block_roots: ArrayVariable<Bytes32Variable, SLOTS_PER_HISTORICAL_ROOT>,
-    state_roots: ArrayVariable<Bytes32Variable, SLOTS_PER_HISTORICAL_ROOT>, 
+    state_roots: ArrayVariable<Bytes32Variable, SLOTS_PER_HISTORICAL_ROOT>,
     historical_roots: ArrayVariable<Bytes32Variable, HISTORICAL_ROOTS_LIMIT>,
 
     // Eth1
@@ -87,7 +91,7 @@ struct AttestationData {
 
     slot: U256Variable,
     index: U256Variable,
-    
+
     // LMD GHOST vote
     beacon_block_root: Bytes32Variable, //TODO: Type?
 
@@ -107,15 +111,15 @@ struct ValidatorHashData {
 
 impl Circuit for VerifySubcommitteeVotes {
     fn define<L: PlonkParameters<D>, const D: usize>(builder: &mut CircuitBuilder<L, D>) {
-        
+
         let state_root = builder.read::<Bytes32Variable>();
         let validators_root = builder.read::<Bytes32Variable>();
         let validators_proof = builder.read::<ArrayVariable<Bytes32Variable, 5>>();
         let validators_gindex = U64Variable::constant(builder, 43); // Is this correct?
 
-        let validator_list = 
+        let validator_list =
             builder.read::<ArrayVariable<BeaconValidatorVariable>,MAX_VALIDATORS_PER_COMMITTEE>();
-        
+
         verify_state_root(
             builder,
             state_root,
@@ -144,7 +148,7 @@ fn verify_validator<L: PlonkParameters<D>, const D: usize>(
     validator: BeaconValidatorVariable,
     validator_hash: ValidatorHashData
 
-) { 
+) {
     // Ordering check
     let align_epoch1 = builder.lte(validator.activation_eligibility_epoch, validator.activation_epoch);
     let align_epoch2 = builder.lte(validator.activation_epoch, validator.withdrawable_epoch);
@@ -203,3 +207,4 @@ builder.ssz_verify_proof(state_root, validators_root, validators_proof, validato
 // prove poseidon hash tree root maps to sha256 validator hash tree root
 
 }
+*/
