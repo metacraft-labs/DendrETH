@@ -30,8 +30,6 @@ main() {
         exit 0
     fi
 
-    echo "The full path of the directory is: $(realpath "$corpus_dir")"
-
     # Loop through each folder
     for folder in "$seed_dir"/*; do
         if [ -d "$folder" ] && [[ "$(basename "$folder")" == shuffle_* ]]; then
