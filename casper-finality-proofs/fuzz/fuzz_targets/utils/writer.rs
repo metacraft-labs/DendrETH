@@ -6,10 +6,7 @@ use std::{
 
 const BASE_PATH: &str = "./results";
 
-pub unsafe fn json_write(
-    circuit_name: String,
-    data: serde_json::Value,
-) -> Result<(), Box<dyn Error>> {
+pub fn json_write(circuit_name: String, data: serde_json::Value) -> Result<(), Box<dyn Error>> {
     let mut count = 0;
 
     let dir = &format!("{}/{}/", BASE_PATH, circuit_name);

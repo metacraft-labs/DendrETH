@@ -107,7 +107,5 @@ fuzz_target!(|data: TestData| {
             .collect(),
     );
 
-    unsafe {
-        let _ = json_write("weigh_justification_and_finalization".to_owned(), value);
-    }
+    json_write("weigh_justification_and_finalization".to_owned(), value).unwrap();
 });
