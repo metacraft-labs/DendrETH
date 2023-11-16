@@ -1,14 +1,11 @@
-use plonky2::plonk::proof::ProofWithPublicInputsTarget;
 use plonky2x::{
     backend::circuit::CircuitBuild,
-    prelude::{
-        ArrayVariable, BoolVariable, CircuitBuilder, CircuitVariable, PlonkParameters, Variable,
-    },
+    prelude::{ArrayVariable, CircuitBuilder, PlonkParameters, Variable},
 };
 
 use super::{
     circuit::ProofWithPublicInputsTargetReader,
-    verify_subcommittee_vote::{PACKS_COUNT, PACK_SIZE, VARIABLES_COUNT_LITTLE_BITMASK},
+    verify_subcommittee_vote::VARIABLES_COUNT_LITTLE_BITMASK,
 };
 
 #[derive(Debug, Clone)]
@@ -52,18 +49,15 @@ impl<const LEVEL: usize> ConcatBitmasks<LEVEL> {
                 Variable,
                 { 2usize.pow(LEVEL as u32) * VARIABLES_COUNT_LITTLE_BITMASK },
             >>();
-        let right_range_begin = proof2_reader.read::<Variable>();
+        let _right_range_begin = proof2_reader.read::<Variable>();
         let right_voted_count = proof2_reader.read::<Variable>();
         let right_bls_signature = proof2_reader.read::<Variable>();
-        let right_source = proof2_reader.read::<Variable>();
-        let right_target = proof2_reader.read::<Variable>();
+        let _right_source = proof2_reader.read::<Variable>();
+        let _right_target = proof2_reader.read::<Variable>();
 
-        let voted_count = builder.one::<Variable>();
+        let _voted_count = builder.one::<Variable>();
 
-        let mut bitmask_data = vec![];
-
-        bitmask_data.extend_from_slice(&left_bitmask.as_slice());
-        bitmask_data.extend_from_slice(&right_bitmask.as_slice());
+        let bitmask_data = [left_bitmask.as_slice(), right_bitmask.as_slice()].concat();
 
         let bitmask: ArrayVariable<
             Variable,

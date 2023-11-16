@@ -6,7 +6,7 @@ use plonky2x::{
     },
 };
 
-use super::verify_subcommittee_vote::{BITMASK_SIZE, PACKS_COUNT};
+use super::verify_subcommittee_vote::{PACKS_COUNT, VALIDATOR_SIZE_UPPER_BOUND};
 
 pub struct ProofWithPublicInputsTargetReader<const D: usize> {
     inner: ProofWithPublicInputsTarget<D>,
@@ -37,13 +37,16 @@ impl<const D: usize> ProofWithPublicInputsTargetReader<D> {
 
 fn unite_validators_bitmasks<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
-    bitmask1: &ArrayVariable<BoolVariable, BITMASK_SIZE>,
-    bitmask2: &ArrayVariable<BoolVariable, BITMASK_SIZE>,
-) -> (ArrayVariable<BoolVariable, BITMASK_SIZE>, Variable) {
+    bitmask1: &ArrayVariable<BoolVariable, VALIDATOR_SIZE_UPPER_BOUND>,
+    bitmask2: &ArrayVariable<BoolVariable, VALIDATOR_SIZE_UPPER_BOUND>,
+) -> (
+    ArrayVariable<BoolVariable, VALIDATOR_SIZE_UPPER_BOUND>,
+    Variable,
+) {
     let mut voted_count = builder.zero();
-    let mut result_bitmask = vec![builder._false(); BITMASK_SIZE];
+    let mut result_bitmask = vec![builder._false(); VALIDATOR_SIZE_UPPER_BOUND];
 
-    for i in 0..BITMASK_SIZE {
+    for i in 0..VALIDATOR_SIZE_UPPER_BOUND {
         let either_bit_is_set = builder.or(bitmask1[i], bitmask2[i]);
         result_bitmask[i] = either_bit_is_set;
         voted_count = builder.add(voted_count, either_bit_is_set.variable);

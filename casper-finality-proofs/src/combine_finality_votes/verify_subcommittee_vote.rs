@@ -5,17 +5,18 @@ use plonky2x::{
 
 use crate::utils::{bits::variable_set_nth_bit, variable::variable_int_div_rem};
 
-pub const BITMASK_SIZE: usize = 100_000;
+pub const VALIDATOR_SIZE_UPPER_BOUND: usize = 63 * 8;
 pub const PACK_SIZE: usize = 63;
-pub const PACKS_COUNT: usize = BITMASK_SIZE.div_ceil(PACK_SIZE);
-pub const VALIDATORS_PER_COMMITTEE: usize = 128;
-pub const VALIDATOR_SIZE_UPPER_BOUND: usize = 100_000;
+pub const PACKS_COUNT: usize = VALIDATOR_SIZE_UPPER_BOUND.div_ceil(PACK_SIZE);
+pub const VALIDATORS_PER_COMMITTEE: usize = 4;
 
 // deli na 63
 // n - na kolko bitmaski razdelqme mama bitmaska (n trqq da e stepen na dvoikata)
 
-pub const VARIABLES_COUNT_LITTLE_BITMASK: usize = 100;
-pub const BITMASK_SPLITS_COUNT: usize = 2usize.pow(1);
+pub const VARIABLES_COUNT_LITTLE_BITMASK: usize = 2;
+pub const BITMASK_SPLITS_COUNT: usize = 2usize.pow(2);
+pub const VARIABLES_COUNT_BIG_BITMASK: usize =
+    VARIABLES_COUNT_LITTLE_BITMASK * BITMASK_SPLITS_COUNT;
 
 // v - kolko variable-a e edna malka bitmaska
 // razmera na golqmata bitmaska v * n
@@ -92,20 +93,6 @@ impl Circuit for VerifySubcommitteeVote {
                 _true,
             );
         }
-
-        /*
-        for i in 0..PACKS_COUNT {
-            let current_pack_idx =
-                builder.constant(<L as PlonkParameters<D>>::Field::from_canonical_usize(i));
-
-            let pack = builder.select_array(&bitmask_data, current_pack_idx);
-            let should_modify_pack_pred = builder.is_equal(current_pack_idx, pack_to_modify);
-            let modified_pack =
-                variable_set_nth_bit(builder, pack, bit_to_set_in_pack, &powers_of_two);
-
-            bitmask_data[i] = builder.select(should_modify_pack_pred, modified_pack, pack);
-        }
-        */
 
         let bitmask: ArrayVariable<Variable, PACKS_COUNT> = ArrayVariable::new(bitmask_data);
 
