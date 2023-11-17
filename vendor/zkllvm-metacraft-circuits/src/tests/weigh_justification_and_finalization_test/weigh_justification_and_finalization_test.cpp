@@ -229,7 +229,7 @@ void test_circuit_ssz_json() {
         std::cout << "current_epoch_start_slot_root_in_block_roots_proof = " << data["current_epoch_start_slot_root_in_block_roots_proof"] << "\n";
         std::cout << "finalized_checkpoint = " << data["finalized_checkpoint"] << "\n";
         std::cout << "finalized_checkpoint_proof = " << data["finalized_checkpoint_proof"] << "\n";
-        std::cout << "state_root = " << data["latest_block_header"]["state_root"] << "\n";
+        std::cout << "state_root = " << data["beacon_state_root"] << "\n";
 
         std::stringstream buff;
         Slot slot { stringToUint64(data["slot"]) }; 
@@ -327,7 +327,7 @@ void test_circuit_ssz_json() {
             hexToBytes<32>(data["finalized_checkpoint_proof"][3]),
             hexToBytes<32>(data["finalized_checkpoint_proof"][4])
         };
-        auto beacon_state_root = hexToBytes<32>(data["latest_block_header"]["state_root"]);
+        auto beacon_state_root = hexToBytes<32>(data["beacon_state_root"]);
 
         CheckpointVariable new_previous_justified_checkpoint;
         CheckpointVariable new_current_justified_checkpoint;
@@ -338,29 +338,29 @@ void test_circuit_ssz_json() {
                  previous_epoch_target_balance=0,
                  current_epoch_target_balance=0;
 
-        // weigh_justification_and_finalization(beacon_state_root,
-        //                                      slot,
-        //                                      slot_proof,
-        //                                      previous_justified_checkpoint,
-        //                                      previous_justified_checkpoint_proof,
-        //                                      current_justified_checkpoint,
-        //                                      current_justified_checkpoint_proof,
-        //                                      justification_bits,
-        //                                      justification_bits_proof,
-        //                                      total_active_balance,
-        //                                      previous_epoch_target_balance,
-        //                                      current_epoch_target_balance,
-        //                                      previous_epoch_start_slot_root_in_block_roots,
-        //                                      previous_epoch_start_slot_root_in_block_roots_proof,
-        //                                      current_epoch_start_slot_root_in_block_roots,
-        //                                      current_epoch_start_slot_root_in_block_roots_proof,
-        //                                      finalized_checkpoint,
-        //                                      finalized_checkpoint_proof,
-        //                                      // Outputs:
-        //                                      new_previous_justified_checkpoint,
-        //                                      new_current_justified_checkpoint,
-        //                                      new_finalized_checkpoint,
-        //                                      new_justification_bits);
+        weigh_justification_and_finalization(beacon_state_root,
+                                             slot,
+                                             slot_proof,
+                                             previous_justified_checkpoint,
+                                             previous_justified_checkpoint_proof,
+                                             current_justified_checkpoint,
+                                             current_justified_checkpoint_proof,
+                                             justification_bits,
+                                             justification_bits_proof,
+                                             total_active_balance,
+                                             previous_epoch_target_balance,
+                                             current_epoch_target_balance,
+                                             previous_epoch_start_slot_root_in_block_roots,
+                                             previous_epoch_start_slot_root_in_block_roots_proof,
+                                             current_epoch_start_slot_root_in_block_roots,
+                                             current_epoch_start_slot_root_in_block_roots_proof,
+                                             finalized_checkpoint,
+                                             finalized_checkpoint_proof,
+                                             // Outputs:
+                                             new_previous_justified_checkpoint,
+                                             new_current_justified_checkpoint,
+                                             new_finalized_checkpoint,
+                                             new_justification_bits);
 
         std::cout << "outputs:\n";
         std::cout << "new_previous_justified_checkpoint: " << new_previous_justified_checkpoint << "\n";
@@ -368,11 +368,6 @@ void test_circuit_ssz_json() {
         std::cout << "new_finalized_checkpoint: " << new_finalized_checkpoint << "\n";
         std::cout << "new_justification_bits: " << new_justification_bits << "\n";
 
-        std::cout << "DEBUG:\n";
-        for(const auto v : {"00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0a", "0b", "0c", "0d", "0e", "0f"}) {
-            JustificationBitsVariable justification_bits = hexToBitsVariable(v);
-            std::cout << justification_bits << "\n";
-        }
     }
 }
 

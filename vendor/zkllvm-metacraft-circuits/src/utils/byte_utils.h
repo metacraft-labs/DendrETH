@@ -1,3 +1,5 @@
+#pragma once
+
 #include <array>
 #include "circuit_utils/base_types.h"
 #include <sstream>
@@ -98,7 +100,7 @@ namespace byte_utils {
     JustificationBitsVariable hexToBitsVariable(std::string hex) {
         JustificationBitsVariable retval{};
         auto bits = hexToBytes<1>(hex);
-        for(int64_t i = (int64_t)retval.bits.size() - 1; i >= 0; i--) {
+        for(int64_t i = 0; i < (int64_t)retval.bits.size(); i++) {
             retval.bits[i] = (bits[0] % 2);
             bits[0] = bits[0] / 2;
         }
