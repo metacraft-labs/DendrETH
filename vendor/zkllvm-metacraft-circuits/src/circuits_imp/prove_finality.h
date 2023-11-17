@@ -6,6 +6,8 @@
 #include "utils/picosha2.h"
 #include "circuit_utils/circuit_byte_utils.h"
 
+namespace prove_finality {
+
 bool is_supermajority_link_in_votes(
     Gwei total_num_validators,
     Gwei bitmask_attested_validators
@@ -34,10 +36,10 @@ void process_justifications(
 
     const auto current_epoch_supermajority_link_pred = is_supermajority_link_in_votes(
         total_number_of_validators,
-        current_epoch_attested_validators,
+        current_epoch_attested_validators
     );
 
-    auto new_current_justified_checkpoint =
+    new_current_justified_checkpoint =
         previous_epoch_supermajority_link_pred ?
         previous_epoch_checkpoint : current_justified_checkpoint;
 
@@ -47,16 +49,15 @@ void process_justifications(
 
     const auto new_second_justification_bit =
         previous_epoch_supermajority_link_pred ?
-        true, justification_bits.bits[0];
+        true : justification_bits.bits[0];
 
-    JustificationBitsVariable new_justification_bits = justification_bits;
+    new_justification_bits = justification_bits;
     new_justification_bits.shift_right(1);
     new_justification_bits.bits[1] = new_second_justification_bit;
     new_justification_bits.bits[0] = current_epoch_supermajority_link_pred;
-
 }
 
-void prove_finality(
+void prove_finality_imp(
     const Gwei total_number_of_validators,
     const JustificationBitsVariable& justification_bits,
     const CheckpointVariable& current_justified_checkpoint,
@@ -84,17 +85,19 @@ void prove_finality(
     );
 
     auto target_source_difference = target.epoch - source.epoch;
-    auto mapped_source = one_u64 + target_source_difference;
+    auto mapped_source = 1 + target_source_difference;
 
     Epoch accumulator = 0;
     for (int i = 1; i < 4; i++) {
-        if (i <= mapped_source && new_justification_bits[i]) {
+        if (i <= mapped_source && new_justification_bits.bits[i]) {
             accumulator += 1;
         }
     }
 
-    assert_is_equal(accumulator, mapped_source);
+    assert_true(accumulator = mapped_source);
 
     finalized_cp = source;
+
+}
 
 }
