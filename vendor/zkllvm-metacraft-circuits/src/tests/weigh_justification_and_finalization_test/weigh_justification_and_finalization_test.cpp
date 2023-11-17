@@ -18,6 +18,7 @@ using llvm::yaml::Output;
 
 using namespace byte_utils;
 using namespace file_utils;
+using namespace weigh_justification_and_finalization;
 
 using std::cout;
 
@@ -152,7 +153,7 @@ void test_circuit_sample_data() {
     CheckpointVariable new_finalized_checkpoint;
     JustificationBitsVariable new_justification_bits;
 
-    weigh_justification_and_finalization(beacon_state_root,
+    weigh_justification_and_finalization_imp(beacon_state_root,
                                          slot,
                                          slot_proof,
                                          previous_justified_checkpoint,
@@ -338,7 +339,7 @@ void test_circuit_ssz_json() {
                  previous_epoch_target_balance=0,
                  current_epoch_target_balance=0;
 
-        weigh_justification_and_finalization(beacon_state_root,
+        weigh_justification_and_finalization_imp(beacon_state_root,
                                              slot,
                                              slot_proof,
                                              previous_justified_checkpoint,

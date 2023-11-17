@@ -8,6 +8,8 @@
 
 using namespace circuit_byte_utils;
 
+namespace weigh_justification_and_finalization {
+
 Bytes32 sha256_pair(const Bytes32& left, const Bytes32& right) {
     Bytes32 ret_val {};
     Bytes64 combined {};
@@ -243,7 +245,7 @@ CheckpointVariable process_finalizations(const JustificationBitsVariable& justif
     return new_finalized_checkpoint;
 }
 
-void weigh_justification_and_finalization(
+void weigh_justification_and_finalization_imp(
     const Root& beacon_state_root,
     const Slot& slot,
     const BeaconStateLeafProof& slot_proof,
@@ -318,4 +320,6 @@ void weigh_justification_and_finalization(
     out_new_current_justified_checkpoint = new_current_justified_checkpoint;
     out_new_finalized_checkpoint = new_finalized_checkpoint;
     out_new_justification_bits = new_justification_bits;
+}
+
 }
