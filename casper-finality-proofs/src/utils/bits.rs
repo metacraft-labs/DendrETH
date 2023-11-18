@@ -103,7 +103,12 @@ pub fn variable_set_nth_bit<L: PlonkParameters<D>, const D: usize>(
     let generator = SetNthBitGenerator::new(builder, bitset, n);
     builder.add_simple_generator(generator.clone());
 
+    let computed_result = builder.add(bitset, generator.difference);
+    let result_is_valid_pred = builder.is_equal(generator.result, computed_result);
+    assert_is_true(builder, result_is_valid_pred);
+
     let nth_power_of_two = builder.select_array(&powers_of_two, n);
+
     let difference_is_nth_power_of_two_pred =
         builder.is_equal(generator.difference, nth_power_of_two);
     let difference_is_zero_pred = builder.is_zero(generator.difference);
