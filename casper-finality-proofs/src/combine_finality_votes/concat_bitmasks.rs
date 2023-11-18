@@ -22,7 +22,7 @@ type InputBitmask<const LEVEL: usize> =
 type OutputBitmask<const LEVEL: usize> =
     ArrayVariable<Variable, { get_output_bitmask_split_size::<LEVEL>() }>;
 
-fn extract_proof_outputs<const D: usize, const LEVEL: usize>(
+fn read_child_proof_outputs<const D: usize, const LEVEL: usize>(
     proof: ProofWithPublicInputsTarget<D>,
 ) -> (
     InputBitmask<LEVEL>,
@@ -76,17 +76,17 @@ impl<const LEVEL: usize> ConcatBitmasks<LEVEL> {
         [(); get_output_bitmask_split_size::<LEVEL>()]:,
     {
         let verifier_data = builder.constant_verifier_data::<L>(&child_circuit.data);
-        let proof1 = builder.proof_read(&child_circuit).into();
-        let proof2 = builder.proof_read(&child_circuit).into();
+        let left_proof = builder.proof_read(&child_circuit).into();
+        let right_proof = builder.proof_read(&child_circuit).into();
 
-        builder.verify_proof::<L>(&proof1, &verifier_data, &child_circuit.data.common);
-        builder.verify_proof::<L>(&proof2, &verifier_data, &child_circuit.data.common);
+        builder.verify_proof::<L>(&left_proof, &verifier_data, &child_circuit.data.common);
+        builder.verify_proof::<L>(&right_proof, &verifier_data, &child_circuit.data.common);
 
         let (l_bitmask, l_begin, l_voted_count, l_bls_signature, l_source, l_target) =
-            extract_proof_outputs::<D, LEVEL>(proof1);
+            read_child_proof_outputs::<D, LEVEL>(left_proof);
 
         let (r_bitmask, r_begin, r_voted_count, r_bls_signature, _, _) =
-            extract_proof_outputs::<D, LEVEL>(proof2);
+            read_child_proof_outputs::<D, LEVEL>(right_proof);
 
         assert_bitmask_splits_are_incident::<LEVEL, L, D>(builder, l_begin, r_begin);
 
