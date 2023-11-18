@@ -51,14 +51,14 @@ fn assert_bitmask_splits_are_incident<const LEVEL: usize, L: PlonkParameters<D>,
     left_begin: Variable,
     right_begin: Variable,
 ) {
-    let expected_difference_between_begin_indices =
+    let expected_distance_between_begin_indices =
         builder.constant::<Variable>(<L as PlonkParameters<D>>::Field::from_canonical_usize(
             get_input_bitmask_split_size::<LEVEL>() * PACK_SIZE,
         ));
-    let difference_between_begin_indices = builder.sub(right_begin, left_begin);
+    let distance_between_begin_indices = builder.sub(right_begin, left_begin);
     builder.assert_is_equal(
-        difference_between_begin_indices,
-        expected_difference_between_begin_indices,
+        distance_between_begin_indices,
+        expected_distance_between_begin_indices,
     );
 }
 
