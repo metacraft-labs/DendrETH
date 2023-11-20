@@ -423,6 +423,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@chainsafe/as-sha256@npm:^0.4.1":
+  version: 0.4.1
+  resolution: "@chainsafe/as-sha256@npm:0.4.1"
+  checksum: 6d86975e648ecdafd366802278ac15b392b252e967f3681412ec48b5a3518b936cc5e977517499882b084991446d25787d98f8f585891943688cc81549a44e9a
+  languageName: node
+  linkType: hard
+
 "@chainsafe/bls-hd-key@npm:^0.2.0":
   version: 0.2.1
   resolution: "@chainsafe/bls-hd-key@npm:0.2.1"
@@ -529,6 +536,45 @@ __metadata:
   dependencies:
     "@chainsafe/as-sha256": ^0.3.1
   checksum: f9cfcb2132a243992709715dbd28186ab48c7c0c696f29d30857693cca5526bf753974a505ef68ffd5623bbdbcaa10f9083f4dd40bf99eb6408e451cc26a1a9e
+  languageName: node
+  linkType: hard
+
+"@chainsafe/persistent-merkle-tree@npm:^0.5.0":
+  version: 0.5.0
+  resolution: "@chainsafe/persistent-merkle-tree@npm:0.5.0"
+  dependencies:
+    "@chainsafe/as-sha256": ^0.3.1
+  checksum: 2c67203da776c79cd3a6132e2d672fe132393b2e63dc71604e3134acc8c0ec25cc5e431051545939ea0f7c5ff2066fb806b9e5cab974ca085d046226a1671f7d
+  languageName: node
+  linkType: hard
+
+"@chainsafe/persistent-merkle-tree@npm:^0.6.1":
+  version: 0.6.1
+  resolution: "@chainsafe/persistent-merkle-tree@npm:0.6.1"
+  dependencies:
+    "@chainsafe/as-sha256": ^0.4.1
+    "@noble/hashes": ^1.3.0
+  checksum: 74614b8d40970dc930d5bf741619498b0bbbde5ff24ce45fce6ad122143aa77bf57249a28175b1b972cf56bff57d529a4258b7222ab4e60c1261119b5986c51b
+  languageName: node
+  linkType: hard
+
+"@chainsafe/ssz@npm:^0.10.2":
+  version: 0.10.2
+  resolution: "@chainsafe/ssz@npm:0.10.2"
+  dependencies:
+    "@chainsafe/as-sha256": ^0.3.1
+    "@chainsafe/persistent-merkle-tree": ^0.5.0
+  checksum: 6bb70cf741d0a19dd0b28b3f6f067b96fa39f556e2eefa6ac745b21db9c3b3a8393dc3cca8ff4a6ce065ed71ddc3fb1b2b390a92004b9d01067c26e2558e5503
+  languageName: node
+  linkType: hard
+
+"@chainsafe/ssz@npm:^0.14.0":
+  version: 0.14.0
+  resolution: "@chainsafe/ssz@npm:0.14.0"
+  dependencies:
+    "@chainsafe/as-sha256": ^0.4.1
+    "@chainsafe/persistent-merkle-tree": ^0.6.1
+  checksum: fffec7b8966edb24a146b3c4ada23c9d9b2159c60327eaba2174c7175355f8c750646816a187b439da861fc3cdad5e93a9c0387c1758a3e97d7b4d79a36480c9
   languageName: node
   linkType: hard
 
@@ -1871,7 +1917,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@lodestar/params@npm:^1.4.1":
+"@lodestar/params@npm:^1.11.3, @lodestar/params@npm:^1.4.1":
   version: 1.11.3
   resolution: "@lodestar/params@npm:1.11.3"
   checksum: 40cda13be2d90db6fde1313c858abca7f898f600dc75f1cda9b26dddb581e029283e4b10f3c76176baac7742adf26ff3fb664ffc0f1e5fa49735895178636f2d
@@ -1892,6 +1938,16 @@ __metadata:
     "@chainsafe/ssz": ^0.9.2
     "@lodestar/params": ^1.4.1
   checksum: 6d61de7480ea0f5023eff10e3c23e8aa96969805d0ee59bdc1487478e79500f585514528e0fb3e12ebb96be812544c1de3f150e53e41f5610b0c29ee03f17688
+  languageName: node
+  linkType: hard
+
+"@lodestar/types@npm:^1.11.3":
+  version: 1.11.3
+  resolution: "@lodestar/types@npm:1.11.3"
+  dependencies:
+    "@chainsafe/ssz": ^0.10.2
+    "@lodestar/params": ^1.11.3
+  checksum: 5b4f3a7f62abc633d02aa93991c4e633aa864a06c89b24c378db5ed090cd614acebac21b288f7958d7838dcac2127eb689dbbd941c76e5b8c4c936fca987c61a
   languageName: node
   linkType: hard
 
@@ -2019,6 +2075,13 @@ __metadata:
   version: 1.2.0
   resolution: "@noble/hashes@npm:1.2.0"
   checksum: 8ca080ce557b8f40fb2f78d3aedffd95825a415ac8e13d7ffe3643f8626a8c2d99a3e5975b555027ac24316d8b3c02a35b8358567c0c23af681e6573602aa434
+  languageName: node
+  linkType: hard
+
+"@noble/hashes@npm:^1.3.0":
+  version: 1.3.2
+  resolution: "@noble/hashes@npm:1.3.2"
+  checksum: fe23536b436539d13f90e4b9be843cc63b1b17666a07634a2b1259dded6f490be3d050249e6af98076ea8f2ea0d56f578773c2197f2aa0eeaa5fba5bc18ba474
   languageName: node
   linkType: hard
 
@@ -2478,6 +2541,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@redis/client@npm:1.5.11":
+  version: 1.5.11
+  resolution: "@redis/client@npm:1.5.11"
+  dependencies:
+    cluster-key-slot: 1.1.2
+    generic-pool: 3.9.0
+    yallist: 4.0.0
+  checksum: 10f25a74f18b4e87299c11c014840895f387d217f1309a5208939e8bab8c95abecf2ca824f1cd0fe935b8972a18e0c4d6dd25640e742f4b30d38208515cf3a42
+  languageName: node
+  linkType: hard
+
 "@redis/client@npm:1.5.6":
   version: 1.5.6
   resolution: "@redis/client@npm:1.5.6"
@@ -2507,6 +2581,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@redis/json@npm:1.0.6":
+  version: 1.0.6
+  resolution: "@redis/json@npm:1.0.6"
+  peerDependencies:
+    "@redis/client": ^1.0.0
+  checksum: 9fda29abc339c72593f34a23f8023b715c1f8f3d73f7c59889af02f25589bac2ad57073ad08d0b8da42cd8c258665a7b38d39e761e92945cc27aca651c8a93a5
+  languageName: node
+  linkType: hard
+
 "@redis/search@npm:1.1.2":
   version: 1.1.2
   resolution: "@redis/search@npm:1.1.2"
@@ -2516,12 +2599,30 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@redis/search@npm:1.1.5":
+  version: 1.1.5
+  resolution: "@redis/search@npm:1.1.5"
+  peerDependencies:
+    "@redis/client": ^1.0.0
+  checksum: f81771a712957334029f75b4a68f54b0c78abe17d78546f6da9cd5c7e8f768c69f2f9d3c25840053dbe3c1931038f924403fc3f1bb359ac3defdae85e86fd26b
+  languageName: node
+  linkType: hard
+
 "@redis/time-series@npm:1.0.4":
   version: 1.0.4
   resolution: "@redis/time-series@npm:1.0.4"
   peerDependencies:
     "@redis/client": ^1.0.0
   checksum: a5fca079deb04a2f204a7f9a375a6ff698a119d5dd53f7581fa8fd9e3bacacf1ecb0253b97fada484a012fea7a98014bc0f4f79707d4e92ff61c00318f2bfe04
+  languageName: node
+  linkType: hard
+
+"@redis/time-series@npm:1.0.5":
+  version: 1.0.5
+  resolution: "@redis/time-series@npm:1.0.5"
+  peerDependencies:
+    "@redis/client": ^1.0.0
+  checksum: 6bbdb0b793dcbd13518aa60a09a980f953554e4c745bfacc1611baa8098f360e0378e8ee6b7faf600a67f1de83f4b68bbec6f95a0740faee6164c14be3a30752
   languageName: node
   linkType: hard
 
@@ -3248,6 +3349,7 @@ __metadata:
   dependencies:
     "@chainsafe/bls": ^6.0.3
     "@chainsafe/blst": ^0.2.4
+    "@chainsafe/persistent-merkle-tree": ^0.6.1
     "@chainsafe/ssz": ^0.9.2
     "@cosmjs/cosmwasm-stargate": ^0.30.0
     "@cosmjs/proto-signing": ^0.30.0
@@ -3268,10 +3370,12 @@ __metadata:
     crypto-js: ^4.1.1
     dotenv: ^16.0.2
     ethers: ^5.7.0
+    express: ^4.18.2
     ffjavascript: ^0.2.59
     glob: ^8.0.3
     hardhat: ^2.10.2
     hardhat-gas-reporter: ^1.0.8
+    ioredis: ^5.3.2
     jest: ^28.1.1
     prettier: ^2.6.2
     prom-client: ^14.2.0
@@ -3282,12 +3386,13 @@ __metadata:
     snarkjs: "github:metacraft-labs/snarkjs"
     ts-jest: ^28.0.5
     ts-node: ^10.9.1
-    typescript: ^4.7.4
+    typescript: ^5.2.2
     uuid: ^9.0.0
     winston: ^3.10.0
     yargs: ^17.7.1
   bin:
     get-balances-input: dist/beacon-light-client/plonky2/get_balances_input/get_balances_input.js
+    get-changed-validators: dist/beacon-light-client/plonky2/validators_commitment_mapper_tree/get_changed_validators.js
   languageName: unknown
   linkType: soft
 
@@ -3295,8 +3400,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "Relay@workspace:relay"
   dependencies:
+    "@chainsafe/persistent-merkle-tree": ^0.6.1
+    "@chainsafe/ssz": ^0.14.0
     "@effect/schema": ^0.33.0
+    "@lodestar/types": ^1.11.3
     discord.js: ^14.12.1
+    redis: ^4.6.10
     ts-node: ^10.9.1
     web3: ^1.10.0
     winston: ^3.10.0
@@ -6340,7 +6449,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"express@npm:^4.14.0":
+"express@npm:^4.14.0, express@npm:^4.18.2":
   version: 4.18.2
   resolution: "express@npm:4.18.2"
   dependencies:
@@ -11249,6 +11358,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"redis@npm:^4.6.10":
+  version: 4.6.10
+  resolution: "redis@npm:4.6.10"
+  dependencies:
+    "@redis/bloom": 1.2.0
+    "@redis/client": 1.5.11
+    "@redis/graph": 1.1.0
+    "@redis/json": 1.0.6
+    "@redis/search": 1.1.5
+    "@redis/time-series": 1.0.5
+  checksum: eae6e10f6ec8d5c6d6dea04a1ee6f6497319113e07dbf272a2b4b3c461c34d6fda152791f443c93c538ad6477741a6b157886b60d06f5fce2abbf403e6568a2f
+  languageName: node
+  linkType: hard
+
 "redis@npm:^4.6.5":
   version: 4.6.5
   resolution: "redis@npm:4.6.5"
@@ -12922,23 +13045,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^4.7.4":
-  version: 4.9.5
-  resolution: "typescript@npm:4.9.5"
+"typescript@npm:^5.2.2":
+  version: 5.2.2
+  resolution: "typescript@npm:5.2.2"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: ee000bc26848147ad423b581bd250075662a354d84f0e06eb76d3b892328d8d4440b7487b5a83e851b12b255f55d71835b008a66cbf8f255a11e4400159237db
+  checksum: 7912821dac4d962d315c36800fe387cdc0a6298dba7ec171b350b4a6e988b51d7b8f051317786db1094bd7431d526b648aba7da8236607febb26cf5b871d2d3c
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@^4.7.4#~builtin<compat/typescript>":
-  version: 4.9.5
-  resolution: "typescript@patch:typescript@npm%3A4.9.5#~builtin<compat/typescript>::version=4.9.5&hash=289587"
+"typescript@patch:typescript@^5.2.2#~builtin<compat/typescript>":
+  version: 5.2.2
+  resolution: "typescript@patch:typescript@npm%3A5.2.2#~builtin<compat/typescript>::version=5.2.2&hash=f3b441"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 1f8f3b6aaea19f0f67cba79057674ba580438a7db55057eb89cc06950483c5d632115c14077f6663ea76fd09fce3c190e6414bb98582ec80aa5a4eaf345d5b68
+  checksum: 0f4da2f15e6f1245e49db15801dbee52f2bbfb267e1c39225afdab5afee1a72839cd86000e65ee9d7e4dfaff12239d28beaf5ee431357fcced15fb08583d72ca
   languageName: node
   linkType: hard
 

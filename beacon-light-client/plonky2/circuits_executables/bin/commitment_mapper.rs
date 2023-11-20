@@ -90,7 +90,8 @@ async fn async_main() -> Result<()> {
         .unwrap()
         .parse::<u64>()
         .unwrap();
-
+    println!("{}", matches
+        .value_of("lease_for").unwrap());
     let lease_for = matches
         .value_of("lease_for")
         .unwrap()

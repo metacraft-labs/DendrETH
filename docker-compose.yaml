@@ -1,0 +1,61 @@
+services:
+  redis:
+    image: redis
+    environment:
+      - COMPOSE_PROJECT_NAME
+    command: redis-server --appendonly yes --port 6379 
+    ports:
+      - "6379"
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 1s
+      timeout: 3s
+      retries: 5
+  get_changed_validators:
+    image: get_changed_validators
+    environment:
+      - COMPOSE_PROJECT_NAME
+    command: get-changed-validators --redis-host redis --redis-port 6379 --take 32
+    ports:
+      - "6379"
+    depends_on:
+      redis:
+        condition: service_healthy
+  commitment_mapper:
+    image: commitment_mapper
+    environment:
+      - COMPOSE_PROJECT_NAME
+    working_dir: /bin
+    command: commitment_mapper --redis redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "6379"
+  get_balances_input:
+    image: get_balances_input
+    environment:
+      - COMPOSE_PROJECT_NAME
+    command: get-balances-input --redis-host redis --redis-port 6379 --take 32  
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "6379"
+  balance_verifier_level_5:
+    image: balance-verifier-for-level-5
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 5
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+    ports:
+      - "6379"
