@@ -52,8 +52,41 @@ let
       rm $out/.gitignore
     '';
     outputHashMode = "recursive";
-    outputHash = "sha512-Y+BBNVJw5v02qtAx1ee+Gw19MXKJWMMHyxi8yJUf2x8Dd8+KzI0cMGrooNWFjrYK/N7Cwe42I+m2IXt5TUyVSA==";
+    outputHash = "sha512-YU2dbXFg1rDVCA2216Be9Tdr213BsT53h2ZOgUZ68Y1x/fTiqYaoN1tLKp8049b0hbDh+8YKxUF3X5NIlO851g==";
   };
+
+  # Create a derivation that builds a module in isolation.
+  mkIsolatedBuild = { pname, version, reference, locators ? [] }: stdenv.mkDerivation (drvCommon // {
+    inherit pname version;
+    dontUnpack = true;
+
+    configurePhase = ''
+      ${buildVars}
+      unset yarn_enable_nixify # plugin is not present
+    '';
+
+    buildPhase = ''
+      mkdir -p .yarn/cache
+      cp --reflink=auto --recursive ${cacheDrv}/* .yarn/cache/
+
+      echo '{ "dependencies": { "${pname}": "${reference}" } }' > package.json
+      install -m 0600 ${lockfile} ./yarn.lock
+      export yarn_global_folder="$TMP"
+      export yarn_enable_global_cache=false
+      export yarn_enable_immutable_installs=false
+      yarn
+    '';
+
+    installPhase = ''
+      unplugged=( .yarn/unplugged/${pname}-*/node_modules/* )
+      if [[ ! -e "''${unplugged[@]}" ]]; then
+        echo >&2 "Could not find the unplugged path for ${pname}"
+        exit 1
+      fi
+
+      mv "$unplugged" $out
+    '';
+  });
 
   # Main project derivation.
   project = stdenv.mkDerivation (drvCommon // {
@@ -85,6 +118,84 @@ let
       # main project. This is necessary for native bindings that maybe have
       # hardcoded values.
       runHook preConfigure
+
+      # Copy in isolated builds.
+      echo 'injecting build for msgpackr-extract'
+      yarn nixify inject-build \
+        "msgpackr-extract@npm:3.0.0" \
+        ${isolated."msgpackr-extract@npm:3.0.0"} \
+        ".yarn/unplugged/msgpackr-extract-npm-3.0.0-cdff11f83e/node_modules/msgpackr-extract"
+      echo 'injecting build for blake-hash'
+      yarn nixify inject-build \
+        "blake-hash@npm:2.0.0" \
+        ${isolated."blake-hash@npm:2.0.0"} \
+        ".yarn/unplugged/blake-hash-npm-2.0.0-c63b9a2c2d/node_modules/blake-hash"
+      echo 'injecting build for bcrypt'
+      yarn nixify inject-build \
+        "bcrypt@npm:5.0.1" \
+        ${isolated."bcrypt@npm:5.0.1"} \
+        ".yarn/unplugged/bcrypt-npm-5.0.1-6815be1cfe/node_modules/bcrypt"
+      echo 'injecting build for bcrypto'
+      yarn nixify inject-build \
+        "bcrypto@npm:5.4.0" \
+        ${isolated."bcrypto@npm:5.4.0"} \
+        ".yarn/unplugged/bcrypto-npm-5.4.0-8d9b86dfa6/node_modules/bcrypto"
+      echo 'injecting build for keccak'
+      yarn nixify inject-build \
+        "keccak@npm:3.0.3" \
+        ${isolated."keccak@npm:3.0.3"} \
+        ".yarn/unplugged/keccak-npm-3.0.3-0a04b1d590/node_modules/keccak"
+      echo 'injecting build for secp256k1'
+      yarn nixify inject-build \
+        "secp256k1@npm:4.0.3" \
+        ${isolated."secp256k1@npm:4.0.3"} \
+        ".yarn/unplugged/secp256k1-npm-4.0.3-b4e9ce065b/node_modules/secp256k1"
+      echo 'injecting build for classic-level'
+      yarn nixify inject-build \
+        "classic-level@npm:1.2.0" \
+        ${isolated."classic-level@npm:1.2.0"} \
+        ".yarn/unplugged/classic-level-npm-1.2.0-399f00877c/node_modules/classic-level"
+      echo 'injecting build for keccak'
+      yarn nixify inject-build \
+        "keccak@npm:3.0.1" \
+        ${isolated."keccak@npm:3.0.1"} \
+        ".yarn/unplugged/keccak-npm-3.0.1-9f0a714d5c/node_modules/keccak"
+      echo 'injecting build for bufferutil'
+      yarn nixify inject-build \
+        "bufferutil@npm:4.0.5" \
+        ${isolated."bufferutil@npm:4.0.5"} \
+        ".yarn/unplugged/bufferutil-npm-4.0.5-88cc521694/node_modules/bufferutil"
+      echo 'injecting build for keccak'
+      yarn nixify inject-build \
+        "keccak@npm:3.0.2" \
+        ${isolated."keccak@npm:3.0.2"} \
+        ".yarn/unplugged/keccak-npm-3.0.2-6e9dec8765/node_modules/keccak"
+      echo 'injecting build for leveldown'
+      yarn nixify inject-build \
+        "leveldown@npm:6.1.0" \
+        ${isolated."leveldown@npm:6.1.0"} \
+        ".yarn/unplugged/leveldown-npm-6.1.0-c2d7a4250d/node_modules/leveldown"
+      echo 'injecting build for utf-8-validate'
+      yarn nixify inject-build \
+        "utf-8-validate@npm:5.0.7" \
+        ${isolated."utf-8-validate@npm:5.0.7"} \
+        ".yarn/unplugged/utf-8-validate-npm-5.0.7-88d731f8ad/node_modules/utf-8-validate"
+      echo 'injecting build for bufferutil'
+      yarn nixify inject-build \
+        "bufferutil@npm:4.0.7" \
+        ${isolated."bufferutil@npm:4.0.7"} \
+        ".yarn/unplugged/bufferutil-npm-4.0.7-77a45bb7a3/node_modules/bufferutil"
+      echo 'injecting build for utf-8-validate'
+      yarn nixify inject-build \
+        "utf-8-validate@npm:5.0.10" \
+        ${isolated."utf-8-validate@npm:5.0.10"} \
+        ".yarn/unplugged/utf-8-validate-npm-5.0.10-93e9b6f750/node_modules/utf-8-validate"
+      echo 'injecting build for redis-commander'
+      yarn nixify inject-build \
+        "redis-commander@npm:0.8.0" \
+        ${isolated."redis-commander@npm:0.8.0"} \
+        ".yarn/unplugged/redis-commander-npm-0.8.0-4f9397694b/node_modules/redis-commander"
+      echo 'running yarn install'
 
       # Run normal Yarn install to complete dependency installation.
       yarn install --immutable --immutable-cache
@@ -141,4 +252,19 @@ let
 
   overriddenProject = optionalOverride overrideAttrs project;
 
+isolated."msgpackr-extract@npm:3.0.0" = optionalOverride (args.overrideMsgpackrExtractAttrs or null) (mkIsolatedBuild { pname = "msgpackr-extract"; version = "3.0.0"; reference = "npm:3.0.0"; });
+isolated."blake-hash@npm:2.0.0" = optionalOverride (args.overrideBlakeHashAttrs or null) (mkIsolatedBuild { pname = "blake-hash"; version = "2.0.0"; reference = "npm:2.0.0"; });
+isolated."bcrypt@npm:5.0.1" = optionalOverride (args.overrideBcryptAttrs or null) (mkIsolatedBuild { pname = "bcrypt"; version = "5.0.1"; reference = "npm:5.0.1"; });
+isolated."bcrypto@npm:5.4.0" = optionalOverride (args.overrideBcryptoAttrs or null) (mkIsolatedBuild { pname = "bcrypto"; version = "5.4.0"; reference = "npm:5.4.0"; });
+isolated."keccak@npm:3.0.3" = optionalOverride (args.overrideKeccakAttrs or null) (mkIsolatedBuild { pname = "keccak"; version = "3.0.3"; reference = "npm:3.0.3"; });
+isolated."secp256k1@npm:4.0.3" = optionalOverride (args.overrideSecp256k1Attrs or null) (mkIsolatedBuild { pname = "secp256k1"; version = "4.0.3"; reference = "npm:4.0.3"; });
+isolated."classic-level@npm:1.2.0" = optionalOverride (args.overrideClassicLevelAttrs or null) (mkIsolatedBuild { pname = "classic-level"; version = "1.2.0"; reference = "npm:1.2.0"; });
+isolated."keccak@npm:3.0.1" = optionalOverride (args.overrideKeccakAttrs or null) (mkIsolatedBuild { pname = "keccak"; version = "3.0.1"; reference = "npm:3.0.1"; });
+isolated."bufferutil@npm:4.0.5" = optionalOverride (args.overrideBufferutilAttrs or null) (mkIsolatedBuild { pname = "bufferutil"; version = "4.0.5"; reference = "npm:4.0.5"; });
+isolated."keccak@npm:3.0.2" = optionalOverride (args.overrideKeccakAttrs or null) (mkIsolatedBuild { pname = "keccak"; version = "3.0.2"; reference = "npm:3.0.2"; });
+isolated."leveldown@npm:6.1.0" = optionalOverride (args.overrideLeveldownAttrs or null) (mkIsolatedBuild { pname = "leveldown"; version = "6.1.0"; reference = "npm:6.1.0"; });
+isolated."utf-8-validate@npm:5.0.7" = optionalOverride (args.overrideUtf8ValidateAttrs or null) (mkIsolatedBuild { pname = "utf-8-validate"; version = "5.0.7"; reference = "npm:5.0.7"; });
+isolated."bufferutil@npm:4.0.7" = optionalOverride (args.overrideBufferutilAttrs or null) (mkIsolatedBuild { pname = "bufferutil"; version = "4.0.7"; reference = "npm:4.0.7"; });
+isolated."utf-8-validate@npm:5.0.10" = optionalOverride (args.overrideUtf8ValidateAttrs or null) (mkIsolatedBuild { pname = "utf-8-validate"; version = "5.0.10"; reference = "npm:5.0.10"; });
+isolated."redis-commander@npm:0.8.0" = optionalOverride (args.overrideRedisCommanderAttrs or null) (mkIsolatedBuild { pname = "redis-commander"; version = "0.8.0"; reference = "npm:0.8.0"; });
 in overriddenProject

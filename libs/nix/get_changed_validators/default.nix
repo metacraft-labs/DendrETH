@@ -31,7 +31,7 @@
     };
 in
   project.overrideAttrs (oldAttrs: {
-    name = "get-balances-input";
+    name = "get-changed-validators";
     buildInputs = oldAttrs.buildInputs ++ [pkgs.python3 pkgs.sqlite];
     buildPhase = ''
       yarn build-plonky-2
