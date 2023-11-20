@@ -441,6 +441,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@chainsafe/as-sha256@npm:^0.4.1":
+  version: 0.4.1
+  resolution: "@chainsafe/as-sha256@npm:0.4.1"
+  checksum: 10/6337e7a1bb1d36d1629ecfd0d3fc53e5fda20a684ebe3ca4bcbc0783b3df19a11d8cc81d0df761506a2e1e36c87c9f4a5da897efe47b5d6f2d236058eaace5a8
+  languageName: node
+  linkType: hard
+
 "@chainsafe/bls-hd-key@npm:^0.2.0":
   version: 0.2.1
   resolution: "@chainsafe/bls-hd-key@npm:0.2.1"
@@ -547,6 +554,26 @@ __metadata:
   dependencies:
     "@chainsafe/as-sha256": "npm:^0.3.1"
   checksum: 10/a7e59f80be3ce0a86fe452a3c003bd159a1719ed22cae22e9841668f0eda8c35412fa16b3b150d96f583a24f430a5cc2a1bfcabafc1b9cf6e1fdb227e98c4dc7
+  languageName: node
+  linkType: hard
+
+"@chainsafe/persistent-merkle-tree@npm:^0.6.1":
+  version: 0.6.1
+  resolution: "@chainsafe/persistent-merkle-tree@npm:0.6.1"
+  dependencies:
+    "@chainsafe/as-sha256": "npm:^0.4.1"
+    "@noble/hashes": "npm:^1.3.0"
+  checksum: 10/637583aa6f6ac1ce0d4e00bbe526f3594c000ad1d18f590e8ceca4283e700b0ae1f96289cc55f25c7849437c9244ef586ea8fbbac0ffb100a92c80fdcc1e8f13
+  languageName: node
+  linkType: hard
+
+"@chainsafe/ssz@npm:^0.14.0":
+  version: 0.14.3
+  resolution: "@chainsafe/ssz@npm:0.14.3"
+  dependencies:
+    "@chainsafe/as-sha256": "npm:^0.4.1"
+    "@chainsafe/persistent-merkle-tree": "npm:^0.6.1"
+  checksum: 10/a69cfb2499c1cb377fcd6669ba1f63fc7d3b0d5909e2e0b0b2553a8cb894cb064549fed5f7f7dd2136262686a2439675868a64668066120d28c935c0b74203e9
   languageName: node
   linkType: hard
 
@@ -1912,6 +1939,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@lodestar/params@npm:^1.15.1":
+  version: 1.15.1
+  resolution: "@lodestar/params@npm:1.15.1"
+  checksum: 10/ed0b70878de069830fc42f5968ac6660cf9cd433ecb311d963d99ed676db1c1fbf3e2391d0fa4f96a6d78d8bfbeeea6130fd1b5c52eadd097924560a9473789f
+  languageName: node
+  linkType: hard
+
 "@lodestar/params@npm:^1.4.1":
   version: 1.11.3
   resolution: "@lodestar/params@npm:1.11.3"
@@ -1933,6 +1967,16 @@ __metadata:
     "@chainsafe/ssz": "npm:^0.9.2"
     "@lodestar/params": "npm:^1.4.1"
   checksum: 10/eff689779cf9a93215fb6dc7075b65f860b4147461d57c64aabd2582f1334ee632f1cd3a911d6560b0f0eea8c74c4c52444e2dddb99f8ecfe364cb87c192b726
+  languageName: node
+  linkType: hard
+
+"@lodestar/types@npm:^1.11.3":
+  version: 1.15.1
+  resolution: "@lodestar/types@npm:1.15.1"
+  dependencies:
+    "@chainsafe/ssz": "npm:^0.14.0"
+    "@lodestar/params": "npm:^1.15.1"
+  checksum: 10/c58e74e7f65bae7f47102ebca70d93c5130301f22e9ec7a58bb2184c4e7ec58c35603ec755cc9156ae38759ddfa198481e3219a2389fe9bfe2c4b8bbd52ea9c5
   languageName: node
   linkType: hard
 
@@ -2060,6 +2104,13 @@ __metadata:
   version: 1.2.0
   resolution: "@noble/hashes@npm:1.2.0"
   checksum: 10/c295684a2799f4ddad10a855efd9b82c70c27ac5f7437642df9700e120087c796851dd95b12d2e7596802303fe6afbfdf0f8733b5c7453f70c4c080746dde6ff
+  languageName: node
+  linkType: hard
+
+"@noble/hashes@npm:^1.3.0":
+  version: 1.3.3
+  resolution: "@noble/hashes@npm:1.3.3"
+  checksum: 10/1025ddde4d24630e95c0818e63d2d54ee131b980fe113312d17ed7468bc18f54486ac86c907685759f8a7e13c2f9b9e83ec7b67d1cc20836f36b5e4a65bb102d
   languageName: node
   linkType: hard
 
@@ -2519,6 +2570,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@redis/client@npm:1.5.14":
+  version: 1.5.14
+  resolution: "@redis/client@npm:1.5.14"
+  dependencies:
+    cluster-key-slot: "npm:1.1.2"
+    generic-pool: "npm:3.9.0"
+    yallist: "npm:4.0.0"
+  checksum: 10/aab53eff9456e0a5e0ef78ce16db3eca4b837274b8285c5d66ced549573dbacf75972935806911274d6dd906a53d982ef9b1a6f11a8efe4a18efa94ec9c2a4b3
+  languageName: node
+  linkType: hard
+
 "@redis/client@npm:1.5.6":
   version: 1.5.6
   resolution: "@redis/client@npm:1.5.6"
@@ -2539,12 +2601,30 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@redis/graph@npm:1.1.1":
+  version: 1.1.1
+  resolution: "@redis/graph@npm:1.1.1"
+  peerDependencies:
+    "@redis/client": ^1.0.0
+  checksum: 10/96b8ee9bec124947465848b56a014805f9639e09704e03c75a92072a319599ac9dcd4f9ace22970a7f72131a241166ad31db4dc6931b34808d22a5ca94649ba5
+  languageName: node
+  linkType: hard
+
 "@redis/json@npm:1.0.4":
   version: 1.0.4
   resolution: "@redis/json@npm:1.0.4"
   peerDependencies:
     "@redis/client": ^1.0.0
   checksum: 10/531179f2041d53f61660d4bc3203ce9589bbd34c6c6615d287d1a6f47f0250d2b1d8e23d476200095bc662a447bffa800eb17bca1a93b1248f03f1c075a66a9b
+  languageName: node
+  linkType: hard
+
+"@redis/json@npm:1.0.6":
+  version: 1.0.6
+  resolution: "@redis/json@npm:1.0.6"
+  peerDependencies:
+    "@redis/client": ^1.0.0
+  checksum: 10/bedd8b6fd152ed480f993c6372288f210a9c0e60bb39c02861d5ce2cb5452119229435572cd94886cdbde5fbae014471fc179dff1dbc86f045782e0358af1b0f
   languageName: node
   linkType: hard
 
@@ -2557,12 +2637,30 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@redis/search@npm:1.1.6":
+  version: 1.1.6
+  resolution: "@redis/search@npm:1.1.6"
+  peerDependencies:
+    "@redis/client": ^1.0.0
+  checksum: 10/7a2543012fc2c88ff4c6a6c9c1b537b472d5af340c2717f968562ef2ead713b02dd22cfadc5d5e16c0d32279a4c04bee974e0f20de416a3561a1221b3dccc790
+  languageName: node
+  linkType: hard
+
 "@redis/time-series@npm:1.0.4":
   version: 1.0.4
   resolution: "@redis/time-series@npm:1.0.4"
   peerDependencies:
     "@redis/client": ^1.0.0
   checksum: 10/8fb19186e88d1201509589fc35e614c6c8e23db482851ee5208ce909d65d7bc5a7bfd5eb5c6b6e95a24d90ba552936d4bdd9ed8fc0806c2e7847f3c78ac476e6
+  languageName: node
+  linkType: hard
+
+"@redis/time-series@npm:1.0.5":
+  version: 1.0.5
+  resolution: "@redis/time-series@npm:1.0.5"
+  peerDependencies:
+    "@redis/client": ^1.0.0
+  checksum: 10/be735fe7497b157ef8291fed157342a9a5017884488fa519b271745cfb9500a498d6f8e4bee6d34b58892d65f8ef7a3f4c458d083fb19892b4d3633d0d6c7db6
   languageName: node
   linkType: hard
 
@@ -3289,6 +3387,7 @@ __metadata:
   dependencies:
     "@chainsafe/bls": "npm:^6.0.3"
     "@chainsafe/blst": "npm:^0.2.4"
+    "@chainsafe/persistent-merkle-tree": "npm:^0.6.1"
     "@chainsafe/ssz": "npm:^0.9.2"
     "@cosmjs/cosmwasm-stargate": "npm:^0.30.0"
     "@cosmjs/proto-signing": "npm:^0.30.0"
@@ -3309,10 +3408,12 @@ __metadata:
     crypto-js: "npm:^4.1.1"
     dotenv: "npm:^16.0.2"
     ethers: "npm:^5.7.0"
+    express: "npm:^4.18.2"
     ffjavascript: "npm:^0.2.59"
     glob: "npm:^8.0.3"
     hardhat: "npm:^2.10.2"
     hardhat-gas-reporter: "npm:^1.0.8"
+    ioredis: "npm:^5.3.2"
     jest: "npm:^29.7.0"
     prettier: "npm:^2.6.2"
     prom-client: "npm:^14.2.0"
@@ -3329,6 +3430,7 @@ __metadata:
     yargs: "npm:^17.7.1"
   bin:
     get-balances-input: dist/beacon-light-client/plonky2/get_balances_input/get_balances_input.js
+    get-changed-validators: dist/beacon-light-client/plonky2/validators_commitment_mapper_tree/get_changed_validators.js
   languageName: unknown
   linkType: soft
 
@@ -3336,8 +3438,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "Relay@workspace:relay"
   dependencies:
+    "@chainsafe/persistent-merkle-tree": "npm:^0.6.1"
+    "@chainsafe/ssz": "npm:^0.14.0"
     "@effect/schema": "npm:^0.33.0"
+    "@lodestar/types": "npm:^1.11.3"
     discord.js: "npm:^14.12.1"
+    redis: "npm:^4.6.10"
     ts-node: "npm:^10.9.1"
     web3: "npm:^1.10.0"
     winston: "npm:^3.10.0"
@@ -6410,7 +6516,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"express@npm:^4.14.0":
+"express@npm:^4.14.0, express@npm:^4.18.2":
   version: 4.18.2
   resolution: "express@npm:4.18.2"
   dependencies:
@@ -11328,6 +11434,20 @@ __metadata:
   dependencies:
     redis-errors: "npm:^1.0.0"
   checksum: 10/b10846844b4267f19ce1a6529465819c3d78c3e89db7eb0c3bb4eb19f83784797ec411274d15a77dbe08038b48f95f76014b83ca366dc955a016a3a0a0234650
+  languageName: node
+  linkType: hard
+
+"redis@npm:^4.6.10":
+  version: 4.6.13
+  resolution: "redis@npm:4.6.13"
+  dependencies:
+    "@redis/bloom": "npm:1.2.0"
+    "@redis/client": "npm:1.5.14"
+    "@redis/graph": "npm:1.1.1"
+    "@redis/json": "npm:1.0.6"
+    "@redis/search": "npm:1.1.6"
+    "@redis/time-series": "npm:1.0.5"
+  checksum: 10/cc66182b8fa78c2a63b5300b15fa6fbf8908773d78bc5ca3960018f465595b51dfecaebe8c848111a3b723530f17bdaa1c186f73875cd9ba351f32d2e5e14d5f
   languageName: node
   linkType: hard
 
