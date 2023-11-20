@@ -63,6 +63,45 @@ let
       cp ${drv} '${drv.outputFilename}'
     '') drvs);
 
+  # Create a shell snippet to copy dependencies from a list of locators.
+  mkCacheBuilderForLocators = let
+    pickCacheDrvs = map (locator: cacheDrvs.${locator});
+  in locators:
+    mkCacheBuilderForDrvs (pickCacheDrvs locators);
+
+  # Create a derivation that builds a node-pre-gyp module in isolation.
+  mkIsolatedBuild = { pname, version, reference, locators }: stdenv.mkDerivation (drvCommon // {
+    inherit pname version;
+    dontUnpack = true;
+
+    configurePhase = ''
+      ${buildVars}
+      unset yarn_enable_nixify # plugin is not present
+    '';
+
+    buildPhase = ''
+      mkdir -p .yarn/cache
+      pushd .yarn/cache > /dev/null
+      source ${mkCacheBuilderForLocators locators}
+      popd > /dev/null
+
+      echo '{ "dependencies": { "${pname}": "${reference}" } }' > package.json
+      install -m 0600 ${lockfile} ./yarn.lock
+      export yarn_global_folder="$TMP"
+      export YARN_ENABLE_IMMUTABLE_INSTALLS=false
+      yarn --immutable-cache
+    '';
+
+    installPhase = ''
+      unplugged=( .yarn/unplugged/${pname}-*/node_modules/* )
+      if [[ ! -e "''${unplugged[@]}" ]]; then
+        echo >&2 "Could not find the unplugged path for ${pname}"
+        exit 1
+      fi
+
+      mv "$unplugged" $out
+    '';
+  });
 
   # Main project derivation.
   project = stdenv.mkDerivation (drvCommon // {
@@ -92,7 +131,83 @@ let
       # hardcoded values.
       runHook preConfigure
 
-
+      # Copy in isolated builds.
+      echo 'injecting build for msgpackr-extract'
+      yarn nixify inject-build \
+        "msgpackr-extract@npm:3.0.0" \
+        ${isolated."msgpackr-extract@npm:3.0.0"} \
+        ".yarn/unplugged/msgpackr-extract-npm-3.0.0-cdff11f83e/node_modules/msgpackr-extract"
+      echo 'injecting build for blake-hash'
+      yarn nixify inject-build \
+        "blake-hash@npm:2.0.0" \
+        ${isolated."blake-hash@npm:2.0.0"} \
+        ".yarn/unplugged/blake-hash-npm-2.0.0-c63b9a2c2d/node_modules/blake-hash"
+      echo 'injecting build for bcrypt'
+      yarn nixify inject-build \
+        "bcrypt@npm:5.0.1" \
+        ${isolated."bcrypt@npm:5.0.1"} \
+        ".yarn/unplugged/bcrypt-npm-5.0.1-6815be1cfe/node_modules/bcrypt"
+      echo 'injecting build for bcrypto'
+      yarn nixify inject-build \
+        "bcrypto@npm:5.4.0" \
+        ${isolated."bcrypto@npm:5.4.0"} \
+        ".yarn/unplugged/bcrypto-npm-5.4.0-8d9b86dfa6/node_modules/bcrypto"
+      echo 'injecting build for keccak'
+      yarn nixify inject-build \
+        "keccak@npm:3.0.3" \
+        ${isolated."keccak@npm:3.0.3"} \
+        ".yarn/unplugged/keccak-npm-3.0.3-0a04b1d590/node_modules/keccak"
+      echo 'injecting build for secp256k1'
+      yarn nixify inject-build \
+        "secp256k1@npm:4.0.3" \
+        ${isolated."secp256k1@npm:4.0.3"} \
+        ".yarn/unplugged/secp256k1-npm-4.0.3-b4e9ce065b/node_modules/secp256k1"
+      echo 'injecting build for classic-level'
+      yarn nixify inject-build \
+        "classic-level@npm:1.2.0" \
+        ${isolated."classic-level@npm:1.2.0"} \
+        ".yarn/unplugged/classic-level-npm-1.2.0-399f00877c/node_modules/classic-level"
+      echo 'injecting build for keccak'
+      yarn nixify inject-build \
+        "keccak@npm:3.0.1" \
+        ${isolated."keccak@npm:3.0.1"} \
+        ".yarn/unplugged/keccak-npm-3.0.1-9f0a714d5c/node_modules/keccak"
+      echo 'injecting build for bufferutil'
+      yarn nixify inject-build \
+        "bufferutil@npm:4.0.5" \
+        ${isolated."bufferutil@npm:4.0.5"} \
+        ".yarn/unplugged/bufferutil-npm-4.0.5-88cc521694/node_modules/bufferutil"
+      echo 'injecting build for keccak'
+      yarn nixify inject-build \
+        "keccak@npm:3.0.2" \
+        ${isolated."keccak@npm:3.0.2"} \
+        ".yarn/unplugged/keccak-npm-3.0.2-6e9dec8765/node_modules/keccak"
+      echo 'injecting build for leveldown'
+      yarn nixify inject-build \
+        "leveldown@npm:6.1.0" \
+        ${isolated."leveldown@npm:6.1.0"} \
+        ".yarn/unplugged/leveldown-npm-6.1.0-c2d7a4250d/node_modules/leveldown"
+      echo 'injecting build for utf-8-validate'
+      yarn nixify inject-build \
+        "utf-8-validate@npm:5.0.7" \
+        ${isolated."utf-8-validate@npm:5.0.7"} \
+        ".yarn/unplugged/utf-8-validate-npm-5.0.7-88d731f8ad/node_modules/utf-8-validate"
+      echo 'injecting build for bufferutil'
+      yarn nixify inject-build \
+        "bufferutil@npm:4.0.7" \
+        ${isolated."bufferutil@npm:4.0.7"} \
+        ".yarn/unplugged/bufferutil-npm-4.0.7-77a45bb7a3/node_modules/bufferutil"
+      echo 'injecting build for utf-8-validate'
+      yarn nixify inject-build \
+        "utf-8-validate@npm:5.0.10" \
+        ${isolated."utf-8-validate@npm:5.0.10"} \
+        ".yarn/unplugged/utf-8-validate-npm-5.0.10-93e9b6f750/node_modules/utf-8-validate"
+      echo 'injecting build for redis-commander'
+      yarn nixify inject-build \
+        "redis-commander@npm:0.8.0" \
+        ${isolated."redis-commander@npm:0.8.0"} \
+        ".yarn/unplugged/redis-commander-npm-0.8.0-4f9397694b/node_modules/redis-commander"
+      echo 'running yarn install'
 
       # Run normal Yarn install to complete dependency installation.
       yarn install --immutable --immutable-cache
@@ -200,6 +315,7 @@ cacheEntries = {
 "@bcoe/v8-coverage@npm:0.2.3" = { filename = "@bcoe-v8-coverage-npm-0.2.3-9e27b3c57e-850f930553.zip"; sha512 = "850f9305536d0f2bd13e9e0881cb5f02e4f93fad1189f7b2d4bebf694e3206924eadee1068130d43c11b750efcc9405f88a8e42ef098b6d75239c0f047de1a27"; };
 "@chainsafe/as-sha256@npm:0.2.4" = { filename = "@chainsafe-as-sha256-npm-0.2.4-5d3aa6a5f2-635a20eb84.zip"; sha512 = "635a20eb840cd0b5b342286bb84884e96b9d2548dfc5eed757a3e53779e6f85a0e09550bf36929543e91e6c5d2747987f62591e6cc8928f455314d5c933402a0"; };
 "@chainsafe/as-sha256@npm:0.3.1" = { filename = "@chainsafe-as-sha256-npm-0.3.1-02546f2fc1-58ea733be1.zip"; sha512 = "58ea733be1657b0e31dbf48b0dba862da0833df34a81c1460c7352f04ce90874f70003cbf34d0afb9e5e53a33ee2d63a261a8b12462be85b2ba0a6f7f13d6150"; };
+"@chainsafe/as-sha256@npm:0.4.1" = { filename = "@chainsafe-as-sha256-npm-0.4.1-405a4e06e4-6d86975e64.zip"; sha512 = "6d86975e648ecdafd366802278ac15b392b252e967f3681412ec48b5a3518b936cc5e977517499882b084991446d25787d98f8f585891943688cc81549a44e9a"; };
 "@chainsafe/bls-hd-key@npm:0.2.1" = { filename = "@chainsafe-bls-hd-key-npm-0.2.1-08145aff7a-232998a2d8.zip"; sha512 = "232998a2d8d81316f5fbdb658b441ceaab79bfdd61e4050d95aebf766211b7383838e2f65bc2fc459a8d1ed4bbe2320ee3db198275a233d746c17bf7d9213848"; };
 "@chainsafe/bls-keygen@npm:0.3.0" = { filename = "@chainsafe-bls-keygen-npm-0.3.0-43ccdc8863-24b4cd00de.zip"; sha512 = "24b4cd00de664886933d6047b05e5b0d2def06e878643434e996ceb1380b41d99996cac641040cc535d2823f7ddb84d8075ec87d0167c0fabea8acfe43b25c38"; };
 "@chainsafe/bls@npm:6.0.3" = { filename = "@chainsafe-bls-npm-6.0.3-99087dff63-7efbfae52b.zip"; sha512 = "7efbfae52b3574d7149e2d6cf91e57beeeb69e5b1550cb45071cdda7eae1173c094548cfa976327dd3d93f27b9565d0a3435cba6bda4e1ba6285bab1de6ee9fa"; };
@@ -211,8 +327,13 @@ cacheEntries = {
 "@chainsafe/lodestar-types@npm:0.39.0" = { filename = "@chainsafe-lodestar-types-npm-0.39.0-12f50da58b-8c9243d423.zip"; sha512 = "8c9243d423a98bf041e06b04ee4fe4fee7cfcb3a9cd3814816ee8d775deac27dbd734adcb89887e62c359ab23a17977b5c17ffae5983fd90bf0f516c905eae92"; };
 "@chainsafe/persistent-merkle-tree@npm:0.3.7" = { filename = "@chainsafe-persistent-merkle-tree-npm-0.3.7-e2d69eb0de-95b903808d.zip"; sha512 = "95b903808d78c3b9854f2acd90ed2bcbf77e1ed4199569d96f64d7d955cecff510432d260142cd06e810c41ba413e80824a0344bf985ba9367688fd5318968e2"; };
 "@chainsafe/persistent-merkle-tree@npm:0.4.2" = { filename = "@chainsafe-persistent-merkle-tree-npm-0.4.2-c1f20f4351-f9cfcb2132.zip"; sha512 = "f9cfcb2132a243992709715dbd28186ab48c7c0c696f29d30857693cca5526bf753974a505ef68ffd5623bbdbcaa10f9083f4dd40bf99eb6408e451cc26a1a9e"; };
+"@chainsafe/persistent-merkle-tree@npm:0.5.0" = { filename = "@chainsafe-persistent-merkle-tree-npm-0.5.0-995d949fa7-2c67203da7.zip"; sha512 = "2c67203da776c79cd3a6132e2d672fe132393b2e63dc71604e3134acc8c0ec25cc5e431051545939ea0f7c5ff2066fb806b9e5cab974ca085d046226a1671f7d"; };
+"@chainsafe/persistent-merkle-tree@npm:0.6.1" = { filename = "@chainsafe-persistent-merkle-tree-npm-0.6.1-02b87ab227-74614b8d40.zip"; sha512 = "74614b8d40970dc930d5bf741619498b0bbbde5ff24ce45fce6ad122143aa77bf57249a28175b1b972cf56bff57d529a4258b7222ab4e60c1261119b5986c51b"; };
+"@chainsafe/ssz@npm:0.10.2" = { filename = "@chainsafe-ssz-npm-0.10.2-c9313e98c4-6bb70cf741.zip"; sha512 = "6bb70cf741d0a19dd0b28b3f6f067b96fa39f556e2eefa6ac745b21db9c3b3a8393dc3cca8ff4a6ce065ed71ddc3fb1b2b390a92004b9d01067c26e2558e5503"; };
+"@chainsafe/ssz@npm:0.14.0" = { filename = "@chainsafe-ssz-npm-0.14.0-4ab8014119-fffec7b896.zip"; sha512 = "fffec7b8966edb24a146b3c4ada23c9d9b2159c60327eaba2174c7175355f8c750646816a187b439da861fc3cdad5e93a9c0387c1758a3e97d7b4d79a36480c9"; };
 "@chainsafe/ssz@npm:0.8.20" = { filename = "@chainsafe-ssz-npm-0.8.20-23f2a997cf-a4b412b128.zip"; sha512 = "a4b412b128f0bc3ddc54f18e72db04bd96b672323ebb0375ece55f437b2b681b2e86c98fa1790edc0abf2e1abb1ae3e7e667747df7144ee5e8d8dd41a8e22451"; };
 "@chainsafe/ssz@npm:0.9.4" = { filename = "@chainsafe-ssz-npm-0.9.4-c0d8752130-c6eaedeae9.zip"; sha512 = "c6eaedeae9e5618b3c666ff4507a27647f665a8dcf17d5ca86da4ed4788c5a93868f256d0005467d184fdf35ec03f323517ec2e55ec42492d769540a2ec396bc"; };
+"@colors/colors@npm:1.5.0" = { filename = "@colors-colors-npm-1.5.0-875af3a8b4-d64d5260be.zip"; sha512 = "d64d5260bed1d5012ae3fc617d38d1afc0329fec05342f4e6b838f46998855ba56e0a73833f4a80fa8378c84810da254f76a8a19c39d038260dc06dc4e007425"; };
 "@confio/ics23@npm:0.6.8" = { filename = "@confio-ics23-npm-0.6.8-c87607eb2c-376d72f644.zip"; sha512 = "376d72f6440db60611b002b00a13e3a5bfd0d3503e7682358dbcf79641e74d8c26c234c321452fb4a758baf66eecef25d950e08bdea270486d9d03ee489e2960"; };
 "@cosmjs/amino@npm:0.30.1" = { filename = "@cosmjs-amino-npm-0.30.1-fa65a9d84a-aa254f936f.zip"; sha512 = "aa254f936fd95e146e05cc4d6e51f86f4fe7f2048d337d197ccb2cb6e488f8b8061aa6b21e63b1f7001d99b80417f029ef75a12bd0478749286932834157c5aa"; };
 "@cosmjs/cosmwasm-stargate@npm:0.30.1" = { filename = "@cosmjs-cosmwasm-stargate-npm-0.30.1-a370ccd6ea-1fca3cb1fb.zip"; sha512 = "1fca3cb1fbe3bc252d6960a98413afafde0281052dfb82c2b977861655d19255a0f7d62a06b4caff4739b43910b527f2614afa827b1a2ab0238f79ae9b4ba873"; };
@@ -227,6 +348,14 @@ cacheEntries = {
 "@cosmjs/tendermint-rpc@npm:0.30.1" = { filename = "@cosmjs-tendermint-rpc-npm-0.30.1-84cd69c8f1-6900711886.zip"; sha512 = "6900711886d2d9b02dd9ec17d341a174d7d2a20c432618e96d7f33fa6732dcb77fe21f37c67d452c09095f099260a679a4ac5de0caeec376cd683d3d12790ed8"; };
 "@cosmjs/utils@npm:0.30.1" = { filename = "@cosmjs-utils-npm-0.30.1-c5856c2196-64ea16cdeb.zip"; sha512 = "64ea16cdeba64d2b346a0b45ca47059ab4297fdf5c4e5fd89ec262eec488807f49f94dcdc294628142015ce4669c4eaf7426d1f8a6538146da5601dcc484cb19"; };
 "@cspotcode/source-map-support@npm:0.8.1" = { filename = "@cspotcode-source-map-support-npm-0.8.1-964f2de99d-5718f26708.zip"; sha512 = "5718f267085ed8edb3e7ef210137241775e607ee18b77d95aa5bd7514f47f5019aa2d82d96b3bf342ef7aa890a346fa1044532ff7cc3009e7d24fce3ce6200fa"; };
+"@dabh/diagnostics@npm:2.0.3" = { filename = "@dabh-diagnostics-npm-2.0.3-0f2cd64f24-4879600c55.zip"; sha512 = "4879600c55c8315a0fb85fbb19057bad1adc08f0a080a8cb4e2b63f723c379bfc4283b68123a2b078d367b327dd8df12fcb27464efe791addc0a48b9df6d79a1"; };
+"@discordjs/builders@npm:1.6.5" = { filename = "@discordjs-builders-npm-1.6.5-9d05c520ba-9c5c4d483a.zip"; sha512 = "9c5c4d483a79a7c2f73d661433365f2996ae3bc74f95b70a2a31a26b582b7327d45217a78dfe8e304737661731690ef6e34ade7575f63fe8ab61d70ca53b2279"; };
+"@discordjs/collection@npm:1.5.3" = { filename = "@discordjs-collection-npm-1.5.3-ea9e0ca74b-fefed19bea.zip"; sha512 = "fefed19bea0f69053d195f9d9dc8af07ca5d8c9b1064581e0aa14bda2b70e632b93c164d5ef3e4910f5442369612ff4eec8d52a700aec562510c19b223f67023"; };
+"@discordjs/formatters@npm:0.3.2" = { filename = "@discordjs-formatters-npm-0.3.2-01b9de30b3-653c88595f.zip"; sha512 = "653c88595fc6c25c1beedcd88b05a3f1241fef69844cc96e45f2cd34fea9ff07892c7f3b57edb4008ad59f7e62bca1b7b35400c6200b07ed42eef7189672d509"; };
+"@discordjs/rest@npm:2.0.1" = { filename = "@discordjs-rest-npm-2.0.1-0339cfec4f-36e3348929.zip"; sha512 = "36e33489293956e6356e68d69857c2ea910aa376be8c530d6aa640f5887d119d2c0abb736b427353bbdad92c534917fd38adb3a8529c87bdd010c75017ae6b27"; };
+"@discordjs/util@npm:1.0.1" = { filename = "@discordjs-util-npm-1.0.1-5845db7f36-b55d5284cd.zip"; sha512 = "b55d5284cd8306b0e77a303c41fa99dcc650babaf9ef2f02ea38b1f8ecc7218a7694128714343379dbf6b2a402a0851e00862c0d974ad07b8e980722f5139d73"; };
+"@discordjs/ws@npm:1.0.1" = { filename = "@discordjs-ws-npm-1.0.1-31c533a2eb-d34f176466.zip"; sha512 = "d34f17646606dbac82989c3aa3fddd1e2a23da532b96f1fc130a0ddb6735079523f09a70b560b315f3e6634b6336accc48680539e4c62cf34826d79c6304778a"; };
+"@effect/schema@npm:0.33.2" = { filename = "@effect-schema-npm-0.33.2-e9557908e0-066b90505d.zip"; sha512 = "066b90505d63d12537798cd589dcabab708213313b6f3e13faa933826fafabddb85ecd2c9e95745f7b5f90b9c3a276f14639e9a1fe6a57b1399ccd3500ef6719"; };
 "@ethereum-waffle/chai@npm:4.0.10" = { filename = "@ethereum-waffle-chai-npm-4.0.10-27f30f9d47-11a2fa5122.zip"; sha512 = "11a2fa51224e98ee4cbf346a731be68b17b3c172e68391b25fc0027545d7477dbeca916bbd10be0fa9de612eaed6115a0578f9d3e312e9fe95af2b7791fd0981"; };
 "@ethereum-waffle/compiler@npm:4.0.3" = { filename = "@ethereum-waffle-compiler-npm-4.0.3-14ecaf7049-ec7839b0f7.zip"; sha512 = "ec7839b0f79a40a77fa05bb6941e00b2b3b1e0aa5514a617400c988b302bbbc5e9373b25ba52c7319bb00b83923dce42011384883c7a234c52f8c44eb5b571fc"; };
 "@ethereum-waffle/ens@npm:4.0.3" = { filename = "@ethereum-waffle-ens-npm-4.0.3-55d5f2dc14-84435c3dda.zip"; sha512 = "84435c3dda78c416b332c481cfa9322f5bf06168d5887607d320cb30f20283ccde52eabd18adb5791485125d44d99ff7b5f84bd7bbdb1fde86465abb40a81966"; };
@@ -307,7 +436,9 @@ cacheEntries = {
 "@jridgewell/sourcemap-codec@npm:1.4.14" = { filename = "@jridgewell-sourcemap-codec-npm-1.4.14-f5f0630788-61100637b6.zip"; sha512 = "61100637b6d173d3ba786a5dff019e1a74b1f394f323c1fee337ff390239f053b87266c7a948777f4b1ee68c01a8ad0ab61e5ff4abb5a012a0b091bec391ab97"; };
 "@jridgewell/trace-mapping@npm:0.3.17" = { filename = "@jridgewell-trace-mapping-npm-0.3.17-57578fd48c-9d703b859c.zip"; sha512 = "9d703b859cff5cd83b7308fd457a431387db5db96bd781a63bf48e183418dd9d3d44e76b9e4ae13237f6abeeb25d739ec9215c1d5bfdd08f66f750a50074a339"; };
 "@jridgewell/trace-mapping@npm:0.3.9" = { filename = "@jridgewell-trace-mapping-npm-0.3.9-91625cd7fb-d89597752f.zip"; sha512 = "d89597752fd88d3f3480845691a05a44bd21faac18e2185b6f436c3b0fd0c5a859fbbd9aaa92050c4052caf325ad3e10e2e1d1b64327517471b7d51babc0ddef"; };
+"@lodestar/params@npm:1.11.3" = { filename = "@lodestar-params-npm-1.11.3-65a55c63b1-40cda13be2.zip"; sha512 = "40cda13be2d90db6fde1313c858abca7f898f600dc75f1cda9b26dddb581e029283e4b10f3c76176baac7742adf26ff3fb664ffc0f1e5fa49735895178636f2d"; };
 "@lodestar/params@npm:1.4.3" = { filename = "@lodestar-params-npm-1.4.3-5010cc3979-c6285dc00d.zip"; sha512 = "c6285dc00dd402e376739198b014c87207b5ce72cea40386ec351d048606dbbed642b1df8557e958ad98e8de1acea80ad206524b4f3e0e4a84b1a7725d248b13"; };
+"@lodestar/types@npm:1.11.3" = { filename = "@lodestar-types-npm-1.11.3-7a308e052c-5b4f3a7f62.zip"; sha512 = "5b4f3a7f62abc633d02aa93991c4e633aa864a06c89b24c378db5ed090cd614acebac21b288f7958d7838dcac2127eb689dbbd941c76e5b8c4c936fca987c61a"; };
 "@lodestar/types@npm:1.4.1" = { filename = "@lodestar-types-npm-1.4.1-74c4d7b6d2-6d61de7480.zip"; sha512 = "6d61de7480ea0f5023eff10e3c23e8aa96969805d0ee59bdc1487478e79500f585514528e0fb3e12ebb96be812544c1de3f150e53e41f5610b0c29ee03f17688"; };
 "@lodestar/types@npm:1.4.3" = { filename = "@lodestar-types-npm-1.4.3-b7efea0a39-de54c714f3.zip"; sha512 = "de54c714f335d6c70ba2cacdc4957142b854fbcc47b0bf543e4274c6e49b8d4180ad3003c25a1733f7ef2951782374b5a243f0623d90c92fba998af1263a0955"; };
 "@mapbox/node-pre-gyp@npm:1.0.10" = { filename = "@mapbox-node-pre-gyp-npm-1.0.10-1811160047-1a98db05d9.zip"; sha512 = "1a98db05d955b74dad3814679593df293b9194853698f3f5f1ed00ecd93128cdd4b14fb8767fe44ac6981ef05c23effcfdc88710e7c1de99ccb6f647890597c8"; };
@@ -317,6 +448,7 @@ cacheEntries = {
 "@msgpackr-extract/msgpackr-extract-linux-x64@npm:3.0.0" = { filename = "@msgpackr-extract-msgpackr-extract-linux-x64-npm-3.0.0-0c35e8023c-8.zip"; sha512 = "0c79ac145284bcb17b0df2fd230b0b4b1eb5bfff21fcc1a32e23e147c9d560b0e8ff7c1252b15cf8eb7a276c95307ffe5aba46d40f9def1d6db0d276d68414bf"; };
 "@noble/bls12-381@npm:1.4.0" = { filename = "@noble-bls12-381-npm-1.4.0-3bccd3c8cb-6301785d0d.zip"; sha512 = "6301785d0d834ceb4dafc1334582f8bafd8ccb2db1c400b651d43255ab26e8020bf5d2b9d8955066f93cc0481f770b59aa45c6fbc9e2ff6cb347c7280e50e0cb"; };
 "@noble/hashes@npm:1.2.0" = { filename = "@noble-hashes-npm-1.2.0-71d3c56c21-8ca080ce55.zip"; sha512 = "8ca080ce557b8f40fb2f78d3aedffd95825a415ac8e13d7ffe3643f8626a8c2d99a3e5975b555027ac24316d8b3c02a35b8358567c0c23af681e6573602aa434"; };
+"@noble/hashes@npm:1.3.2" = { filename = "@noble-hashes-npm-1.3.2-1e619f9da0-fe23536b43.zip"; sha512 = "fe23536b436539d13f90e4b9be843cc63b1b17666a07634a2b1259dded6f490be3d050249e6af98076ea8f2ea0d56f578773c2197f2aa0eeaa5fba5bc18ba474"; };
 "@noble/secp256k1@npm:1.7.1" = { filename = "@noble-secp256k1-npm-1.7.1-95825e0b99-d2301f1f76.zip"; sha512 = "d2301f1f7690368d8409a3152450458f27e54df47e3f917292de3de82c298770890c2de7c967d237eff9c95b70af485389a9695f73eb05a43e2bd562d18b18cb"; };
 "@nomicfoundation/ethereumjs-block@npm:4.0.0" = { filename = "@nomicfoundation-ethereumjs-block-npm-4.0.0-2250ae77f4-a57a33dda7.zip"; sha512 = "a57a33dda7724f0a46ef2e0ca0dbb1b427268f4135e8c23eee9ab5730a79369d52122faba7a010d71bca3046f7ce644ed95e4a34d5f2221ecaa5d94886d84b11"; };
 "@nomicfoundation/ethereumjs-blockchain@npm:6.0.0" = { filename = "@nomicfoundation-ethereumjs-blockchain-npm-6.0.0-75e1d2def4-5605c1d249.zip"; sha512 = "5605c1d249924321de98c1728b5b832ee6488b690a42c829db21afa96f5c152c73afdec6aa4758cb9b24ec7ac19ec9f3146b63cf837e1b91d364e4c37b497881"; };
@@ -350,15 +482,22 @@ cacheEntries = {
 "@protobufjs/pool@npm:1.1.0" = { filename = "@protobufjs-pool-npm-1.1.0-47a76f96a1-d6a34fbbd2.zip"; sha512 = "d6a34fbbd24f729e2a10ee915b74e1d77d52214de626b921b2d77288bd8f2386808da2315080f2905761527cceffe7ec34c7647bd21a5ae41a25e8212ff79451"; };
 "@protobufjs/utf8@npm:1.1.0" = { filename = "@protobufjs-utf8-npm-1.1.0-02c590807c-f9bf3163d1.zip"; sha512 = "f9bf3163d13aaa3b6f5e6fbf37a116e094ea021c0e1f2a7ccd0e12a29e2ce08dafba4e8b36e13f8ed7397e1591610ce880ed1289af4d66cf4ace8a36a9557278"; };
 "@redis/bloom@npm:1.2.0" = { filename = "@redis-bloom-npm-1.2.0-c3ffcb341a-8c21422728.zip"; sha512 = "8c214227287d6b278109098bca00afc601cf84f7da9c6c24f4fa7d3854b946170e5893aa86ed607ba017a4198231d570541c79931b98b6d50b262971022d1d6c"; };
+"@redis/client@npm:1.5.11" = { filename = "@redis-client-npm-1.5.11-79133d887c-10f25a74f1.zip"; sha512 = "10f25a74f18b4e87299c11c014840895f387d217f1309a5208939e8bab8c95abecf2ca824f1cd0fe935b8972a18e0c4d6dd25640e742f4b30d38208515cf3a42"; };
 "@redis/client@npm:1.5.6" = { filename = "@redis-client-npm-1.5.6-5eec4f429d-df03f77d43.zip"; sha512 = "df03f77d43e95fa4016b0c434cbdbc1822d2f30b2bfba1b046f7f4d0a6ee9ad15f350e56d6f8030b82b47e1cfa1444e7c43d659e27777ac8b66a1d95e6707f6b"; };
 "@redis/graph@npm:1.1.0" = { filename = "@redis-graph-npm-1.1.0-84c3d1d722-d3df807108.zip"; sha512 = "d3df807108a42929ed65269c691fe6ab7eda55de91318f02a22b2d637c1bfef8817fccd17025904f5a0be8cf1cea5941334ec9f10719336da5d8f1c54cd4997e"; };
 "@redis/json@npm:1.0.4" = { filename = "@redis-json-npm-1.0.4-213f95e10f-de07f9c37a.zip"; sha512 = "de07f9c37abed603dec352593eb69fc8a94475e7f86b4f65b9805394492d448a1e4181db74269d80eb9dba6f3ae8a41804204821db36bb801cd7c1e30ac7ec80"; };
+"@redis/json@npm:1.0.6" = { filename = "@redis-json-npm-1.0.6-fc7bbce89a-9fda29abc3.zip"; sha512 = "9fda29abc339c72593f34a23f8023b715c1f8f3d73f7c59889af02f25589bac2ad57073ad08d0b8da42cd8c258665a7b38d39e761e92945cc27aca651c8a93a5"; };
 "@redis/search@npm:1.1.2" = { filename = "@redis-search-npm-1.1.2-19d7088aee-fc3c0bd62c.zip"; sha512 = "fc3c0bd62c150ea7f8b3f08b0e67893b4e8df71b4820d750de6ba00ccff3720fdc5d4f50618e385c9e183c784635185e2e98a3e6c3d20ac30f2c60996f38b992"; };
+"@redis/search@npm:1.1.5" = { filename = "@redis-search-npm-1.1.5-29c39f911a-f81771a712.zip"; sha512 = "f81771a712957334029f75b4a68f54b0c78abe17d78546f6da9cd5c7e8f768c69f2f9d3c25840053dbe3c1931038f924403fc3f1bb359ac3defdae85e86fd26b"; };
 "@redis/time-series@npm:1.0.4" = { filename = "@redis-time-series-npm-1.0.4-1dfa6fdc7e-a5fca079de.zip"; sha512 = "a5fca079deb04a2f204a7f9a375a6ff698a119d5dd53f7581fa8fd9e3bacacf1ecb0253b97fada484a012fea7a98014bc0f4f79707d4e92ff61c00318f2bfe04"; };
+"@redis/time-series@npm:1.0.5" = { filename = "@redis-time-series-npm-1.0.5-5df2dd2005-6bbdb0b793.zip"; sha512 = "6bbdb0b793dcbd13518aa60a09a980f953554e4c745bfacc1611baa8098f360e0378e8ee6b7faf600a67f1de83f4b68bbec6f95a0740faee6164c14be3a30752"; };
 "@resolver-engine/core@npm:0.3.3" = { filename = "@resolver-engine-core-npm-0.3.3-e89eb3222a-e5ac586da2.zip"; sha512 = "e5ac586da2aeb7e384f6841821e528771fca533bf5cf38d7fd0851733bd9b70939e960459f2b841534ecdca6507c9aff71bd317f7481137d7b1d2e87ba15978a"; };
 "@resolver-engine/fs@npm:0.3.3" = { filename = "@resolver-engine-fs-npm-0.3.3-45fa80571b-734577b786.zip"; sha512 = "734577b7864c3aceaaa80b4b74c252d92fb14a6f3c46dfc0a2d4658288dce1b38797578dd6a4ecbde88cbc4a366e8bdbc46451e282cb25dde8479548453c37a3"; };
 "@resolver-engine/imports-fs@npm:0.3.3" = { filename = "@resolver-engine-imports-fs-npm-0.3.3-042599e4d4-d247787889.zip"; sha512 = "d24778788959f8a201bda0a91527cd1703dfbbf3675fd16bd3891046e3f12378be73233bb9d4da19c7247488be38daeab2bdf800317f70553a16fb62208ba2c7"; };
 "@resolver-engine/imports@npm:0.3.3" = { filename = "@resolver-engine-imports-npm-0.3.3-b7447e5316-690cf550fd.zip"; sha512 = "690cf550fd0608e849fcb9c20a08479ce405173f8d0b09141a5bd140c4ae7c887ebcb0532c4ca64b5c1d3039fe77cc94172b7afb51c1a8fe7722475c429e6944"; };
+"@sapphire/async-queue@npm:1.5.0" = { filename = "@sapphire-async-queue-npm-1.5.0-f065e42c78-983dbd1fd1.zip"; sha512 = "983dbd1fd1b1798496e5edb6a0db7e4d90015160e1028f20475eab0a92625513f1e8d938bc0305811a9cec461c94e01b1e4191615ff03ba49356f568f3255250"; };
+"@sapphire/shapeshift@npm:3.9.2" = { filename = "@sapphire-shapeshift-npm-3.9.2-0a1ff5d126-0d4572281a.zip"; sha512 = "0d4572281a2a43dc444f56aef7462d16fdc49cdf0e625d521bfeae4b2219e35b53b7752b4e7396e402ce3b1a21c86afc4c3c82ce1547822a6e844116bb220760"; };
+"@sapphire/snowflake@npm:3.5.1" = { filename = "@sapphire-snowflake-npm-3.5.1-cebf00e703-8fc025020a.zip"; sha512 = "8fc025020adab1a7a1a5d2cf07704d598cc1977b50e5fcd3a5dd239f00934dc936d3a4d5ae336e71d8bf1d88ec27aa814b34de79e38ff097b7b9ba5a7977a683"; };
 "@scure/base@npm:1.1.1" = { filename = "@scure-base-npm-1.1.1-67ec4c3f95-b4fc810b49.zip"; sha512 = "b4fc810b492693e7e8d0107313ac74c3646970c198bbe26d7332820886fa4f09441991023ec9aa3a2a51246b74409ab5ebae2e8ef148bbc253da79ac49130309"; };
 "@scure/bip32@npm:1.1.5" = { filename = "@scure-bip32-npm-1.1.5-e68f3ce3e6-b08494ab0d.zip"; sha512 = "b08494ab0d2b1efee7226d1b5100db5157ebea22a78bb87126982a76a186cb3048413e8be0ba2622d00d048a20acbba527af730de86c132a77de616eb9907a3b"; };
 "@scure/bip39@npm:1.1.1" = { filename = "@scure-bip39-npm-1.1.1-86436221cb-fbb594c506.zip"; sha512 = "fbb594c50696fa9c14e891d872f382e50a3f919b6c96c55ef2fb10c7102c546dafb8f099a62bd114c12a00525b595dcf7381846f383f0ddcedeaa6e210747d2f"; };
@@ -403,6 +542,7 @@ cacheEntries = {
 "@types/istanbul-lib-report@npm:3.0.0" = { filename = "@types-istanbul-lib-report-npm-3.0.0-50de3e6b3b-656398b62d.zip"; sha512 = "656398b62dc288e1b5226f8880af98087233cdb90100655c989a09f3052b5775bf98ba58a16c5ae642fb66c61aba402e07a9f2bff1d1569e3b306026c59f3f36"; };
 "@types/istanbul-reports@npm:3.0.1" = { filename = "@types-istanbul-reports-npm-3.0.1-770e825002-f1ad54bc68.zip"; sha512 = "f1ad54bc68f37f60b30c7915886b92f86b847033e597f9b34f2415acdbe5ed742fa559a0a40050d74cdba3b6a63c342cac1f3a64dba5b68b66a6941f4abd7903"; };
 "@types/jest@npm:28.1.8" = { filename = "@types-jest-npm-28.1.8-c361b866d1-d4cd36158a.zip"; sha512 = "d4cd36158a3ae1d4b42cc48a77c95de74bc56b84cf81e09af3ee0399c34f4a7da8ab9e787570f10004bd642f9e781b0033c37327fbbf4a8e4b6e37e8ee3693a7"; };
+"@types/js-yaml@npm:4.0.5" = { filename = "@types-js-yaml-npm-4.0.5-bb64d71397-7dcac8c50f.zip"; sha512 = "7dcac8c50fec31643cc9d6444b5503239a861414cdfaa7ae9a38bc22597c4d850c4b8cec3d82d73b3fbca408348ce223b0408d598b32e094470dfffc6d486b4d"; };
 "@types/keyv@npm:3.1.4" = { filename = "@types-keyv-npm-3.1.4-a8082ea56b-e009a2bfb5.zip"; sha512 = "e009a2bfb50e90ca9b7c6e8f648f8464067271fd99116f881073fa6fa76dc8d0133181dd65e6614d5fb1220d671d67b0124aef7d97dc02d7e342ab143a47779d"; };
 "@types/level-errors@npm:3.0.0" = { filename = "@types-level-errors-npm-3.0.0-58ecd77a87-ad93926634.zip"; sha512 = "ad9392663439306677ac9cb704f8fa0b64c300dfea4f3494369eb78a2e09c194156cbab2b52c71a361a09b735d54a2de65195dcadba0ec7db1d14a320198133e"; };
 "@types/levelup@npm:4.3.3" = { filename = "@types-levelup-npm-4.3.3-fa2e46a0a1-04969bb805.zip"; sha512 = "04969bb805035960b8d6650e8f76893be7ba70267bb7012f6f00d67a0cf096ada552355629791b3f5925e9cdb6912d3fe08892c33c3c583e8fd02099b573bdd7"; };
@@ -424,8 +564,11 @@ cacheEntries = {
 "@types/secp256k1@npm:4.0.3" = { filename = "@types-secp256k1-npm-4.0.3-945d1c398e-1bd10b9afa.zip"; sha512 = "1bd10b9afa724084b655dc81b7b315def3d2d0e272014ef16009fa76e17537411c07c0695fdea412bc7b36d2a02687f5fea33522d55b8ef29eda42992f812913"; };
 "@types/seedrandom@npm:3.0.1" = { filename = "@types-seedrandom-npm-3.0.1-bfe00cb708-d9755452f2.zip"; sha512 = "d9755452f224a4f5072a1d8738da6c9de3039fc59a2a449b1f658e51087be7b48ada49bcabc8b0f16633c095f55598c32fcd072c448858422a2f6a0566569e4c"; };
 "@types/stack-utils@npm:2.0.1" = { filename = "@types-stack-utils-npm-2.0.1-867718ab70-205fdbe332.zip"; sha512 = "205fdbe3326b7046d7eaf5e494d8084f2659086a266f3f9cf00bccc549c8e36e407f88168ad4383c8b07099957ad669f75f2532ed4bc70be2b037330f7bae019"; };
+"@types/triple-beam@npm:1.3.3" = { filename = "@types-triple-beam-npm-1.3.3-4d273554db-e2d54d2753.zip"; sha512 = "e2d54d27536a7a7cd1e4c6e9f3799a894aa5b2dc00b8dba656be7c038c3c1dedd6236551afa9c9c6ce32b0d691e1468bc124f899be0d832bc6ddea4e830107d6"; };
+"@types/ws@npm:8.5.5" = { filename = "@types-ws-npm-8.5.5-5f5e3bde2d-d00bf8070e.zip"; sha512 = "d00bf8070e6938e3ccf933010921c6ce78ac3606696ce37a393b27a9a603f7bd93ea64f3c5fa295a2f743575ba9c9a9fdb904af0f5fe2229bf2adf0630386e4a"; };
 "@types/yargs-parser@npm:21.0.0" = { filename = "@types-yargs-parser-npm-21.0.0-c8a3b32c52-b2f4c8d12a.zip"; sha512 = "b2f4c8d12ac18a567440379909127cf2cec393daffb73f246d0a25df36ea983b93b7e9e824251f959e9f928cbc7c1aab6728d0a0ff15d6145f66cec2be67d9a2"; };
 "@types/yargs@npm:17.0.22" = { filename = "@types-yargs-npm-17.0.22-35cdb1bdeb-0773523fda.zip"; sha512 = "0773523fda71bafdc52f13f5970039e535a353665a60ba9261149a5c9c2b908242e6e77fbb7a8c06931ec78ce889d64d09673c68ba23eb5f5742d5385d0d1982"; };
+"@vladfrangu/async_event_emitter@npm:2.2.2" = { filename = "@vladfrangu-async_event_emitter-npm-2.2.2-d94a9ff4bf-ed948294fe.zip"; sha512 = "ed948294fea1a2dc8b8f307f4061bf65e2043a946132f288702f0572a806ebe3123b8c7e522e70d2abbd3616f5d67027c9e59df9ef80b0195f7502a848a426ba"; };
 "abbrev@npm:1.1.1" = { filename = "abbrev-npm-1.1.1-3659247eab-a4a97ec07d.zip"; sha512 = "a4a97ec07d7ea112c517036882b2ac22f3109b7b19077dc656316d07d308438aac28e4d9746dc4d84bf6b1e75b4a7b0a5f3cb30592419f128ca9a8cee3bcfa17"; };
 "abort-controller@npm:3.0.0" = { filename = "abort-controller-npm-3.0.0-2f3a9a2bcb-170bdba9b4.zip"; sha512 = "170bdba9b47b7e65906a28c8ce4f38a7a369d78e2271706f020849c1bfe0ee2067d4261df8bbb66eb84f79208fd5b710df759d64191db58cfba7ce8ef9c54b75"; };
 "abortcontroller-polyfill@npm:1.7.5" = { filename = "abortcontroller-polyfill-npm-1.7.5-d5260c03fd-daf4169f42.zip"; sha512 = "daf4169f4228ae0e4f4dbcfa782e501b923667f2666b7c55bd3b7664e5d6b100e333a93371173985fdf21f65d7dfba15bdb2e6031bdc9e57e4ce0297147da3aa"; };
@@ -504,6 +647,7 @@ cacheEntries = {
 "bigint-mod-arith@npm:3.1.2" = { filename = "bigint-mod-arith-npm-3.1.2-c77f54df39-badddd745f.zip"; sha512 = "badddd745f6e6c45674b22335d26a9ea83250e749abde20c5f84b24afbc747e259bc36798530953332349ed898f38ec39125b326cae8b8ee2dddfaea7ddf8448"; };
 "bignumber.js@npm:9.1.1" = { filename = "bignumber.js-npm-9.1.1-5929e8d8dc-ad243b7e2f.zip"; sha512 = "ad243b7e2f9120b112d670bb3d674128f0bd2ca1745b0a6c9df0433bd2c0252c43e6315d944c2ac07b4c639e7496b425e46842773cf89c6a2dcd4f31e5c4b11e"; };
 "binary-extensions@npm:2.2.0" = { filename = "binary-extensions-npm-2.2.0-180c33fec7-ccd267956c.zip"; sha512 = "ccd267956c58d2315f5d3ea6757cf09863c5fc703e50fbeb13a7dc849b812ef76e3cf9ca8f35a0c48498776a7478d7b4a0418e1e2b8cb9cb9731f2922aaad7f8"; };
+"bintrees@npm:1.0.2" = { filename = "bintrees-npm-1.0.2-b28feeda03-56a52b7d36.zip"; sha512 = "56a52b7d3634e30002b1eda740d2517a22fa8e9e2eb088e919f37c030a0ed86e364ab59e472fc770fc8751308054bb1c892979d150e11d9e11ac33bcc1b5d16e"; };
 "bip39@npm:3.0.4" = { filename = "bip39-npm-3.0.4-7c69c9182f-79ce1600a0.zip"; sha512 = "79ce1600a03d1ba5053bdd4e6323f9463ec340764c7e52918b6c6b9dca81221940f2d9a65656447f108f9bc2c8d9ae8df319cca83bbd1dad63f53ef2768d9bae"; };
 "blake-hash@npm:2.0.0" = { filename = "blake-hash-npm-2.0.0-c63b9a2c2d-a0d9a8f395.zip"; sha512 = "a0d9a8f3953b986d3b30a741a6c000dedcc9a03b1318f52cc01ae62d18829ba6cb1a4d8cbe74785abfdc952a21db410984523bd457764aca716162cfd3ca8ea4"; };
 "blake2b-wasm@https://github.com/jbaylina/blake2b-wasm.git#commit=0d5f024b212429c7f50a7f533aa3a2406b5b42b3" = { filename = "blake2b-wasm-https-8fe67bbcaf-6e768fe5d7.zip"; sha512 = "6e768fe5d7de20806f9fed6c155ef6289ceaea78988c12a6827c72331089c190ccb7f82ea34b2c1afb3894d39d5f2976b9d013d2fd31f93666c45ad34d75393e"; };
@@ -599,8 +743,11 @@ cacheEntries = {
 "color-convert@npm:2.0.1" = { filename = "color-convert-npm-2.0.1-79730e935b-79e6bdb9fd.zip"; sha512 = "79e6bdb9fd479a205c71d89574fccfb22bd9053bd98c6c4d870d65c132e5e904e6034978e55b43d69fcaa7433af2016ee203ce76eeba9cfa554b373e7f7db336"; };
 "color-name@npm:1.1.3" = { filename = "color-name-npm-1.1.3-728b7b5d39-09c5d3e33d.zip"; sha512 = "09c5d3e33d2105850153b14466501f2bfb30324a2f76568a408763a3b7433b0e50e5b4ab1947868e65cb101bb7cb75029553f2c333b6d4b8138a73fcc133d69d"; };
 "color-name@npm:1.1.4" = { filename = "color-name-npm-1.1.4-025792b0ea-b044585952.zip"; sha512 = "b0445859521eb4021cd0fb0cc1a75cecf67fceecae89b63f62b201cca8d345baf8b952c966862a9d9a2632987d4f6581f0ec8d957dfacece86f0a7919316f610"; };
+"color-string@npm:1.9.1" = { filename = "color-string-npm-1.9.1-dc020e56be-c13fe7cff7.zip"; sha512 = "c13fe7cff7885f603f49105827d621ce87f4571d78ba28ef4a3f1a104304748f620615e6bf065ecd2145d0d9dad83a3553f52bb25ede7239d18e9f81622f1cc5"; };
 "color-support@npm:1.1.3" = { filename = "color-support-npm-1.1.3-3be5c53455-9b73568176.zip"; sha512 = "9b7356817670b9a13a26ca5af1c21615463b500783b739b7634a0c2047c16cef4b2865d7576875c31c3cddf9dd621fa19285e628f20198b233a5cfdda6d0793b"; };
+"color@npm:3.2.1" = { filename = "color-npm-3.2.1-568cf1014f-f81220e8b7.zip"; sha512 = "f81220e8b774d35865c2561be921f5652117638dcda7ca4029262046e37fc2444ac7bbfdd110cf1fd9c074a4ee5eda8f85944ffbdda26186b602dd9bb05f6400"; };
 "colors@npm:1.4.0" = { filename = "colors-npm-1.4.0-7e2cf12234-98aa2c2418.zip"; sha512 = "98aa2c2418ad87dedf25d781be69dc5fc5908e279d9d30c34d8b702e586a0474605b3a189511482b9d5ed0d20c867515d22749537f7bc546256c6014f3ebdcec"; };
+"colorspace@npm:1.1.4" = { filename = "colorspace-npm-1.1.4-f01655548a-bb3934ef3c.zip"; sha512 = "bb3934ef3c417e961e6d03d7ca60ea6e175947029bfadfcdb65109b01881a1c0ecf9c2b0b59abcd0ee4a0d7c1eae93beed01b0e65848936472270a0b341ebce8"; };
 "combined-stream@npm:1.0.8" = { filename = "combined-stream-npm-1.0.8-dc14d4a63a-49fa4aeb49.zip"; sha512 = "49fa4aeb4916567e33ea81d088f6584749fc90c7abec76fd516bf1c5aa5c79f3584b5ba3de6b86d26ddd64bae5329c4c7479343250cfe71c75bb366eae53bb7c"; };
 "command-exists@npm:1.2.9" = { filename = "command-exists-npm-1.2.9-cc51a1f78a-729ae3d88a.zip"; sha512 = "729ae3d88a2058c93c58840f30341b7f82688a573019535d198b57a4d8cb0135ced0ad7f52b591e5b28a90feb2c675080ce916e56254a0f7c15cb2395277cac3"; };
 "command-line-args@npm:5.2.1" = { filename = "command-line-args-npm-5.2.1-093a68d295-e759519087.zip"; sha512 = "e759519087be3cf2e86af8b9a97d3058b4910cd11ee852495be881a067b72891f6a32718fb685ee6d41531ab76b2b7bfb6602f79f882cd4b7587ff1e827982c7"; };
@@ -666,6 +813,8 @@ cacheEntries = {
 "diff@npm:3.5.0" = { filename = "diff-npm-3.5.0-a321a0df19-00842950a6.zip"; sha512 = "00842950a6551e26ce495bdbce11047e31667deea546527902661f25cc2e73358967ebc78cf86b1a9736ec3e14286433225f9970678155753a6291c3bca5227b"; };
 "diff@npm:4.0.2" = { filename = "diff-npm-4.0.2-73133c7102-f2c09b0ce4.zip"; sha512 = "f2c09b0ce4e6b301c221addd83bf3f454c0bc00caa3dd837cf6c127d6edf7223aa2bbe3b688feea110b7f262adbfc845b757c44c8a9f8c0c5b15d8fa9ce9d20d"; };
 "diff@npm:5.0.0" = { filename = "diff-npm-5.0.0-ad6900db18-f19fe29284.zip"; sha512 = "f19fe29284b633afdb2725c2a8bb7d25761ea54d321d8e67987ac851c5294be4afeab532bd84531e02583a3fe7f4014aa314a3eda84f5590e7a9e6b371ef3b46"; };
+"discord-api-types@npm:0.37.50" = { filename = "discord-api-types-npm-0.37.50-969b9c186e-08dc5145db.zip"; sha512 = "08dc5145dbefda5f52b479cd42d96ac2b8110300861855e1f92cc8a0a6525a4059e32724cd5237490c286f5afd86797a86823238cd5eee016198560bb36f6d43"; };
+"discord.js@npm:14.13.0" = { filename = "discord.js-npm-14.13.0-cee9413e4c-c273645ac2.zip"; sha512 = "c273645ac2f92a5052914261c40d04f7fbf81f8d2542f7f0ec9b2e5f9006ff7436d7c6254db924a12826b7f3b49cbfdd577807a0a4ed396036e106f39701a167"; };
 "dom-walk@npm:0.1.2" = { filename = "dom-walk-npm-0.1.2-7d20a1a8d8-19eb0ce9c6.zip"; sha512 = "19eb0ce9c6de39d5e231530685248545d9cd2bd97b2cb3486e0bfc0f2a393a9addddfd5557463a932b52fdfcf68ad2a619020cd2c74a5fe46fbecaa8e80872f3"; };
 "dotenv@npm:10.0.0" = { filename = "dotenv-npm-10.0.0-36b272df25-f412c5fe8c.zip"; sha512 = "f412c5fe8c24fbe313d302d2500e247ba8a1946492db405a4de4d30dd0eb186a88a43f13c958c5a7de303938949c4231c56994f97d05c4bc1f22478d631b4005"; };
 "dotenv@npm:16.0.3" = { filename = "dotenv-npm-16.0.3-4cc29121dc-afcf03f373.zip"; sha512 = "afcf03f373d7a6d62c7e9afea6328e62851d627a4e73f2e12d0a8deae1cd375892004f3021883f8aec85932cd2834b091f568ced92b4774625b321db83b827f8"; };
@@ -680,6 +829,7 @@ cacheEntries = {
 "emittery@npm:0.10.2" = { filename = "emittery-npm-0.10.2-aac10498b5-ee3e21788b.zip"; sha512 = "ee3e21788b043b90885b18ea756ec3105c1cedc50b29709c92b01e239c7e55345d4bb6d3aef4ddbaf528eef448a40b3bb831bad9ee0fc9c25cbf1367ab1ab5ac"; };
 "emoji-regex@npm:7.0.3" = { filename = "emoji-regex-npm-7.0.3-cfe9479bb3-9159b2228b.zip"; sha512 = "9159b2228b1511f2870ac5920f394c7e041715429a68459ebe531601555f11ea782a8e1718f969df2711d38c66268174407cbca57ce36485544f695c2dfdc96e"; };
 "emoji-regex@npm:8.0.0" = { filename = "emoji-regex-npm-8.0.0-213764015c-d4c5c39d5a.zip"; sha512 = "d4c5c39d5a9868b5fa152f00cada8a936868fd3367f33f71be515ecee4c803132d11b31a6222b2571b1e5f7e13890156a94880345594d0ce7e3c9895f560f192"; };
+"enabled@npm:2.0.0" = { filename = "enabled-npm-2.0.0-bf5d96c9d8-9d256d89f4.zip"; sha512 = "9d256d89f4e8a46ff988c6a79b22fa814b4ffd82826c4fdacd9b42e9b9465709d3b748866d0ab4d442dfc6002d81de7f7b384146ccd1681f6a7f868d2acca063"; };
 "encodeurl@npm:1.0.2" = { filename = "encodeurl-npm-1.0.2-f8c8454c41-e50e3d508c.zip"; sha512 = "e50e3d508cdd9c4565ba72d2012e65038e5d71bdc9198cb125beb6237b5b1ade6c0d343998da9e170fb2eae52c1bed37d4d6d98a46ea423a0cddbed5ac3f780c"; };
 "encoding-down@npm:6.3.0" = { filename = "encoding-down-npm-6.3.0-507c54a059-74043e6d90.zip"; sha512 = "74043e6d9061a470614ff61d708c849259ab32932a428fd5ddfb0878719804f56a52f59b31cccd95fddc2e636c0fd22dc3e02481fb98d5bf1bdbbbc44ca09bdc"; };
 "encoding@npm:0.1.13" = { filename = "encoding-npm-0.1.13-82a1837d30-bb98632f8f.zip"; sha512 = "bb98632f8ffa823996e508ce6a58ffcf5856330fde839ae42c9e1f436cc3b5cc651d4aeae72222916545428e54fd0f6aa8862fd8d25bdbcc4589f1e3f3715e7f"; };
@@ -735,12 +885,14 @@ cacheEntries = {
 "extend@npm:3.0.2" = { filename = "extend-npm-3.0.2-e1ca07ac54-a50a8309ca.zip"; sha512 = "a50a8309ca65ea5d426382ff09f33586527882cf532931cb08ca786ea3146c0553310bda688710ff61d7668eba9f96b923fe1420cdf56a2c3eaf30fcab87b515"; };
 "extsprintf@npm:1.3.0" = { filename = "extsprintf-npm-1.3.0-61a92b324c-cee7a4a1e3.zip"; sha512 = "cee7a4a1e34cffeeec18559109de92c27517e5641991ec6bab849aa64e3081022903dd53084f2080d0d2530803aa5ee84f1e9de642c365452f9e67be8f958ce2"; };
 "extsprintf@npm:1.4.1" = { filename = "extsprintf-npm-1.4.1-140b2f27ab-a2f29b2419.zip"; sha512 = "a2f29b241914a8d2bad64363de684821b6b1609d06ae68d5b539e4de6b28659715b5bea94a7265201603713b7027d35399d10b0548f09071c5513e65e8323d33"; };
+"fast-check@npm:3.13.0" = { filename = "fast-check-npm-3.13.0-d1bc9cf1cb-5bbc41214c.zip"; sha512 = "5bbc41214c8dea95b5e31d67605586c60ba863f3b1c37b447c4f6637c20df4ce0b8fa286a51558fff439625f865be90a2cc07e909545b47f5638efb9e57f8f85"; };
 "fast-deep-equal@npm:3.1.3" = { filename = "fast-deep-equal-npm-3.1.3-790edcfcf5-e21a9d8d84.zip"; sha512 = "e21a9d8d84f53493b6aa15efc9cfd53dd5b714a1f23f67fb5dc8f574af80df889b3bce25dc081887c6d25457cce704e636395333abad896ccdec03abaf1f3f9d"; };
 "fast-json-stable-stringify@npm:2.1.0" = { filename = "fast-json-stable-stringify-npm-2.1.0-02e8905fda-b191531e36.zip"; sha512 = "b191531e36c607977e5b1c47811158733c34ccb3bfde92c44798929e9b4154884378536d26ad90dfecd32e1ffc09c545d23535ad91b3161a27ddbb8ebe0cbecb"; };
 "fastfile@npm:0.0.18" = { filename = "fastfile-npm-0.0.18-548bba7a86-3275de4892.zip"; sha512 = "3275de4892c45bafc6ab6e32bbdf85d7a9bca4750d5664720a873c96085dc56cfc030c2c320c5afcf3ee23eee73f3e77ca3093653ea4484a7849d4437b3ac968"; };
 "fastfile@npm:0.0.19" = { filename = "fastfile-npm-0.0.19-ca448f66ae-6179bdd7c2.zip"; sha512 = "6179bdd7c21be9882294dae66103795c099594098b51958bcf08a4545c91387321b43511730d0542a5a9ed8c5ec9069c065e065fd67255453ac900a23895dac1"; };
 "fastfile@npm:0.0.20" = { filename = "fastfile-npm-0.0.20-4263a2b353-e5d6e5f57a.zip"; sha512 = "e5d6e5f57a9b58c9534202e477cbffbca2182c407171950695ddb5c3e6b89554bc8561fbb6e370c99e371a8f23486a23fbaca527827886cec4897d481cbd03b6"; };
 "fb-watchman@npm:2.0.2" = { filename = "fb-watchman-npm-2.0.2-bcb6f8f831-b15a124cef.zip"; sha512 = "b15a124cef28916fe07b400eb87cbc73ca082c142abf7ca8e8de6af43eca79ca7bd13eb4d4d48240b3bd3136eaac40d16e42d6edf87a8e5d1dd8070626860c78"; };
+"fecha@npm:4.2.3" = { filename = "fecha-npm-4.2.3-75248da3fd-f94e2fb3ac.zip"; sha512 = "f94e2fb3acf5a7754165d04549460d3ae6c34830394d20c552197e3e000035d69732d74af04b9bed3283bf29fe2a9ebdcc0085e640b0be3cc3658b9726265e31"; };
 "ffiasm@npm:0.1.4" = { filename = "ffiasm-npm-0.1.4-47c1d77ef3-59949612d9.zip"; sha512 = "59949612d993c80e63074afd9ae751911d607046d29473f4d8a83bc74fa028d00721d927cdb27cbe78da3e59a3fda075e77b644b3ed4342b65bc26ec6d2a6777"; };
 "ffjavascript@npm:0.2.57" = { filename = "ffjavascript-npm-0.2.57-a4801c15bf-8f3e87b3e2.zip"; sha512 = "8f3e87b3e2739c607dfc2ef8cb36d92202da57b1323987cca09ade378c584a946b9d784607ee5e2193a2de6200afdc254c19f72f79145aa55d9a8688f83f6708"; };
 "filelist@npm:1.0.4" = { filename = "filelist-npm-1.0.4-3a835ae0a7-a303573b08.zip"; sha512 = "a303573b0821e17f2d5e9783688ab6fbfce5d52aaac842790ae85e704a6f5e4e3538660a63183d6453834dedf1e0f19a9dadcebfa3e926c72397694ea11f5160"; };
@@ -753,6 +905,7 @@ cacheEntries = {
 "find-up@npm:5.0.0" = { filename = "find-up-npm-5.0.0-e03e9b796d-07955e3573.zip"; sha512 = "07955e357348f34660bde7920783204ff5a26ac2cafcaa28bace494027158a97b9f56faaf2d89a6106211a8174db650dd9f503f9c0d526b1202d5554a00b9095"; };
 "flat@npm:4.1.1" = { filename = "flat-npm-4.1.1-b787c178f2-398be12185.zip"; sha512 = "398be12185eb0f3c59797c3670a8c35d07020b673363175676afbaf53d6b213660e060488554cf82c25504986e1a6059bdbcc5d562e87ca3e972e8a33148e3ae"; };
 "flat@npm:5.0.2" = { filename = "flat-npm-5.0.2-12748102a5-12a1536ac7.zip"; sha512 = "12a1536ac746db74881316a181499a78ef953632ddd28050b7a3a43c62ef5462e3357c8c29d76072bb635f147f7a9a1f0c02efef6b4be28f8db62ceb3d5c7f5d"; };
+"fn.name@npm:1.1.0" = { filename = "fn.name-npm-1.1.0-b472333184-e357144f48.zip"; sha512 = "e357144f48cfc9a7f52a82bbc6c23df7c8de639fce049cac41d41d62cabb740cdb9f14eddc6485e29c933104455bdd7a69bb14a9012cef9cd4fa252a4d0cf293"; };
 "fnv-plus@npm:1.3.1" = { filename = "fnv-plus-npm-1.3.1-5ed8ca7df0-4d3de8026d.zip"; sha512 = "4d3de8026d538ffab13dfa38ac0662b045b2ad0f920efa54f1ca65f59ad1a49b4d62482c5fcdc9cce0a18d9852df1db97c618937089d85678ce03f2e76b07e8b"; };
 "follow-redirects@npm:1.15.2" = { filename = "follow-redirects-npm-1.15.2-1ec1dd82be-faa66059b6.zip"; sha512 = "faa66059b66358ba65c234c2f2a37fcec029dc22775f35d9ad6abac56003268baf41e55f9ee645957b32c7d9f62baf1f0b906e68267276f54ec4b4c597c2b190"; };
 "for-each@npm:0.3.3" = { filename = "for-each-npm-0.3.3-0010ca8cdd-6c48ff2bc6.zip"; sha512 = "6c48ff2bc63362319c65e2edca4a8e1e3483a2fabc72fbe7feaf8c73db94fc7861bd53bc02c8a66a0c1dd709da6b04eec42e0abdd6b40ce47305ae92a25e5d28"; };
@@ -867,6 +1020,7 @@ cacheEntries = {
 "is-arguments@npm:1.1.1" = { filename = "is-arguments-npm-1.1.1-eff4f6d4d7-7f02700ec2.zip"; sha512 = "7f02700ec2171b691ef3e4d0e3e6c0ba408e8434368504bb593d0d7c891c0dbfda6d19d30808b904a6cb1929bca648c061ba438c39f296c2a8ca083229c49f27"; };
 "is-array-buffer@npm:3.0.1" = { filename = "is-array-buffer-npm-3.0.1-3e93b14326-f26ab87448.zip"; sha512 = "f26ab87448e698285daf707e52a533920449f7abf63714140ffab9d5571aa5a71ac2fa2677e8b793ad0d5d3e40078d4d2c8a0ab39c957e3cfc6513bb6c9dfdc9"; };
 "is-arrayish@npm:0.2.1" = { filename = "is-arrayish-npm-0.2.1-23927dfb15-eef4417e3c.zip"; sha512 = "eef4417e3c10e60e2c810b6084942b3ead455af16c4509959a27e490e7aee87cfb3f38e01bbde92220b528a0ee1a18d52b787e1458ee86174d8c7f0e58cd488f"; };
+"is-arrayish@npm:0.3.2" = { filename = "is-arrayish-npm-0.3.2-f856180f79-977e64f54d.zip"; sha512 = "977e64f54d91c8f169b59afcd80ff19227e9f5c791fa28fa2e5bce355cbaf6c2c356711b734656e80c9dd4a854dd7efcf7894402f1031dfc5de5d620775b4d5f"; };
 "is-bigint@npm:1.0.4" = { filename = "is-bigint-npm-1.0.4-31c2eecbc9-c56edfe09b.zip"; sha512 = "c56edfe09b1154f8668e53ebe8252b6f185ee852a50f9b41e8d921cb2bed425652049fbe438723f6cb48a63ca1aa051e948e7e401e093477c99c84eba244f666"; };
 "is-binary-path@npm:2.1.0" = { filename = "is-binary-path-npm-2.1.0-e61d46f557-84192eb88c.zip"; sha512 = "84192eb88cff70d320426f35ecd63c3d6d495da9d805b19bc65b518984b7c0760280e57dbf119b7e9be6b161784a5a673ab2c6abe83abb5198a432232ad5b35c"; };
 "is-boolean-object@npm:1.1.2" = { filename = "is-boolean-object-npm-1.1.2-ecbd575e6a-c03b23dbaa.zip"; sha512 = "c03b23dbaacadc18940defb12c1c0e3aaece7553ef58b162a0f6bba0c2a7e1551b59f365b91e00d2dbac0522392d576ef322628cb1d036a0fe51eb466db67222"; };
@@ -965,6 +1119,7 @@ cacheEntries = {
 "keyv@npm:4.5.2" = { filename = "keyv-npm-4.5.2-78a8ba8062-13ad58303a.zip"; sha512 = "13ad58303acd2261c0d4831b4658451603fd159e61daea2121fcb15feb623e75ee328cded0572da9ca76b7b3ceaf8e614f1806c6b3af5db73c9c35a345259651"; };
 "klaw@npm:1.3.1" = { filename = "klaw-npm-1.3.1-0adc7be9ec-8f69e4797c.zip"; sha512 = "8f69e4797c26e7c3f2426bfa85f38a3da3c2cb1b4c6bd850d2377aed440d41ce9d806f2885c2e2e224372c56af4b1d43b8a499adecf9a05e7373dc6b8b7c52e4"; };
 "kleur@npm:3.0.3" = { filename = "kleur-npm-3.0.3-f6f53649a4-df82cd1e17.zip"; sha512 = "df82cd1e172f957bae9c536286265a5cdbd5eeca487cb0a3b2a7b41ef959fc61f8e7c0e9aeea9c114ccf2c166b6a8dd45a46fd619c1c569d210ecd2765ad5169"; };
+"kuler@npm:2.0.0" = { filename = "kuler-npm-2.0.0-19e74c9695-9e10b5a165.zip"; sha512 = "9e10b5a1659f9ed8761d38df3c35effabffbd19fc6107324095238e4ef0ff044392cae9ac64a1c2dda26e532426485342226b93806bd97504b174b0dcf04ed81"; };
 "level-codec@npm:9.0.2" = { filename = "level-codec-npm-9.0.2-e778987eb6-289003d51b.zip"; sha512 = "289003d51b8afcdd24c4d318606abf2bae81975e4b527d7349abfdbacc8fef26711f2f24e2d20da0e1dce0bb216a856c9433ccb9ca25fa78a96aed9f51e506ed"; };
 "level-concat-iterator@npm:2.0.1" = { filename = "level-concat-iterator-npm-2.0.1-5179af5bd2-562583ef12.zip"; sha512 = "562583ef1292215f8e749c402510cb61c4d6fccf4541082b3d21dfa5ecde9fcccfe52bdcb5cfff9d2384e7ce5891f44df9439a6ddb39b0ffe31015600b4a828a"; };
 "level-concat-iterator@npm:3.1.0" = { filename = "level-concat-iterator-npm-3.1.0-5b0693a58a-a15bc4c5fb.zip"; sha512 = "a15bc4c5fbbb30c1efa7fad06b72feaac84d90990b356b461593c198a833336f31f6daff8f40c3908fabd14cfd8856d1c5ecae9e1cb0575037b65fa607e760e9"; };
@@ -1002,10 +1157,12 @@ cacheEntries = {
 "lodash.isstring@npm:4.0.1" = { filename = "lodash.isstring-npm-4.0.1-721fee791c-eaac87ae96.zip"; sha512 = "eaac87ae9636848af08021083d796e2eea3d02e80082ab8a9955309569cb3a463ce97fd281d7dc119e402b2e7d8c54a23914b15d2fc7fff56461511dc8937ba0"; };
 "lodash.memoize@npm:4.1.2" = { filename = "lodash.memoize-npm-4.1.2-0e6250041f-9ff3942fee.zip"; sha512 = "9ff3942feeccffa4f1fafa88d32f0d24fdc62fd15ded5a74a5f950ff5f0c6f61916157246744c620173dddf38d37095a92327d5fd3861e2063e736a5c207d089"; };
 "lodash.once@npm:4.1.1" = { filename = "lodash.once-npm-4.1.1-d8ba329ead-d768fa9f9b.zip"; sha512 = "d768fa9f9b4e1dc6453be99b753906f58990e0c45e7b2ca5a3b40a33111e5d17f6edf2f768786e2716af90a8e78f8f91431ab8435f761fef00f9b0c256f6d245"; };
+"lodash.snakecase@npm:4.1.1" = { filename = "lodash.snakecase-npm-4.1.1-b12cdbecb4-1685ed3e83.zip"; sha512 = "1685ed3e83dda6eae5a4dcaee161a51cd210aabb3e1c09c57150e7dd8feda19e4ca0d27d0631eabe8d0f4eaa51e376da64e8c018ae5415417c5890d42feb72a8"; };
 "lodash.truncate@npm:4.4.2" = { filename = "lodash.truncate-npm-4.4.2-bc50fe1663-b463d8a382.zip"; sha512 = "b463d8a382cfb5f0e71c504dcb6f807a7bd379ff1ea216669aa42c52fc28c54e404bfbd96791aa09e6df0de2c1d7b8f1b7f4b1a61f324d38fe98bc535aeee4f5"; };
 "lodash@npm:4.17.21" = { filename = "lodash-npm-4.17.21-6382451519-eb835a2e51.zip"; sha512 = "eb835a2e51d381e561e508ce932ea50a8e5a68f4ebdd771ea240d3048244a8d13658acbd502cd4829768c56f2e16bdd4340b9ea141297d472517b83868e677f7"; };
 "log-symbols@npm:3.0.0" = { filename = "log-symbols-npm-3.0.0-b9d1446657-f2322e1452.zip"; sha512 = "f2322e1452d819050b11aad247660e1494f8b2219d40a964af91d5f9af1a90636f1b3d93f2952090e42af07cc5550aecabf6c1d8ec1181207e95cb66ba112361"; };
 "log-symbols@npm:4.1.0" = { filename = "log-symbols-npm-4.1.0-0a13492d8b-fce1497b31.zip"; sha512 = "fce1497b3135a0198803f9f07464165e9eb83ed02ceb2273930a6f8a508951178d8cf4f0378e9d28300a2ed2bc49050995d2bd5f53ab716bb15ac84d58c6ef74"; };
+"logform@npm:2.5.1" = { filename = "logform-npm-2.5.1-06017d630d-08fdf03be5.zip"; sha512 = "08fdf03be5bb69af33bac214eb4f6a0c83ad3821a30de498925fccb61e993e5a4a87470aab356ca2110c11e4643685bed5597ca5f46dd1cd11437c44a0e0e3c2"; };
 "logplease@npm:1.2.15" = { filename = "logplease-npm-1.2.15-0384871911-c2ac90a75d.zip"; sha512 = "c2ac90a75dfa28234f67c79a112baf3c7d7a3011a6d16b052e299ad2f37430fd17959fa116629e14ef3b56796a2dd7015802d0a835ded107ceacb0ca5a44393f"; };
 "long@npm:4.0.0" = { filename = "long-npm-4.0.0-ecd96a31ed-16afbe8f74.zip"; sha512 = "16afbe8f749c7c849db1f4de4e2e6a31ac6e617cead3bdc4f9605cb703cd20e1e9fc1a7baba674ffcca57d660a6e5b53a9e236d7b25a295d3855cca79cc06744"; };
 "lossless-json@npm:1.0.5" = { filename = "lossless-json-npm-1.0.5-3592be347b-c26a231aaa.zip"; sha512 = "c26a231aaaa334dda42ef74ccf01a8558d15de815fd72fd3e47c549da11e3f47ae8f57c5ea26a298473844f889d1645a8b7835d507db430887dd598e9b0a6648"; };
@@ -1018,6 +1175,7 @@ cacheEntries = {
 "lru_map@npm:0.3.3" = { filename = "lru_map-npm-0.3.3-a038bb3418-ca9dd43c65.zip"; sha512 = "ca9dd43c65ed7a4f117c548028101c5b6855e10923ea9d1f635af53ad20c5868ff428c364d454a7b57fe391b89c704982275410c3c5099cca5aeee00d76e169a"; };
 "ltgt@npm:2.2.1" = { filename = "ltgt-npm-2.2.1-443b5da86d-7e3874296f.zip"; sha512 = "7e3874296f7538bc8087b428ac4208008d7b76916354b34a08818ca7c83958c1df10ec427eeeaad895f6b81e41e24745b18d30f89abcc21d228b94f6961d50a2"; };
 "luxon@npm:3.2.1" = { filename = "luxon-npm-3.2.1-56f8d97395-3fa3def2c5.zip"; sha512 = "3fa3def2c5f5d3032b4c46220c4da8aeb467ac979888fc9d2557adcd22195f93516b4ad5909a75862bec8dc6ddc0953b0f38e6d2f4a8ab8450ddc531a83cf20d"; };
+"magic-bytes.js@npm:1.0.17" = { filename = "magic-bytes.js-npm-1.0.17-8198548bfb-8afda0fee0.zip"; sha512 = "8afda0fee0f834a77304ca8e32e49acde4e0a03c0bee6a629959ae78c8dbf7e007e29395cefadd7205635b52bf4e9575b7c94ef015795b7d720814930723c0db"; };
 "make-dir@npm:3.1.0" = { filename = "make-dir-npm-3.1.0-d1d7505142-484200020a.zip"; sha512 = "484200020ab5a1fdf12f393fe5f385fc8e4378824c940fba1729dcd198ae4ff24867bc7a5646331e50cead8abff5d9270c456314386e629acec6dff4b8016b78"; };
 "make-error@npm:1.3.6" = { filename = "make-error-npm-1.3.6-ccb85d9458-b86e5e0e25.zip"; sha512 = "b86e5e0e25f7f777b77fabd8e2cbf15737972869d852a22b7e73c17623928fccb826d8e46b9951501d3f20e51ad74ba8c59ed584f610526a48f8ccf88aaec402"; };
 "make-fetch-happen@npm:10.2.1" = { filename = "make-fetch-happen-npm-10.2.1-f1cc7cd2df-2332eb9a8e.zip"; sha512 = "2332eb9a8ec96f1ffeeea56ccefabcb4193693597b132cd110734d50f2928842e22b84cfa1508e921b8385cdfd06dda9ad68645fed62b50fff629a580f5fb72c"; };
@@ -1126,6 +1284,7 @@ cacheEntries = {
 "oboe@npm:2.1.5" = { filename = "oboe-npm-2.1.5-b50d4a548b-e6171b3364.zip"; sha512 = "e6171b33645ffc3559688a824a461952380d0b8f6a203b2daf6767647f277554a73fd7ad795629d88cd8eab68c0460aabb1e1b8b52ef80e3ff7621ac39f832ed"; };
 "on-finished@npm:2.4.1" = { filename = "on-finished-npm-2.4.1-907af70f88-d20929a25e.zip"; sha512 = "d20929a25e7f0bb62f937a425b5edeb4e4cde0540d77ba146ec9357f00b0d497cdb3b9b05b9c8e46222407d1548d08166bff69cc56dfa55ba0e4469228920ff0"; };
 "once@npm:1.4.0" = { filename = "once-npm-1.4.0-ccf03ef07a-cd0a885013.zip"; sha512 = "cd0a88501333edd640d95f0d2700fbde6bff20b3d4d9bdc521bdd31af0656b5706570d6c6afe532045a20bb8dc0849f8332d6f2a416e0ba6d3d3b98806c7db68"; };
+"one-time@npm:1.0.0" = { filename = "one-time-npm-1.0.0-aeaad5e524-fd008d7e99.zip"; sha512 = "fd008d7e992bdec1c67f53a2f9b46381ee12a9b8c309f88b21f0223546003fb47e8ad7c1fd5843751920a8d276c63bd4b45670ef80c61fb3e07dbccc962b5c7d"; };
 "onetime@npm:5.1.2" = { filename = "onetime-npm-5.1.2-3ed148fa42-2478859ef8.zip"; sha512 = "2478859ef817fc5d4e9c2f9e5728512ddd1dbc9fb7829ad263765bb6d3b91ce699d6e2332eef6b7dff183c2f490bd3349f1666427eaba4469fba0ac38dfd0d34"; };
 "opener@npm:1.5.2" = { filename = "opener-npm-1.5.2-7a1aa69f14-33b620c0d5.zip"; sha512 = "33b620c0d53d5b883f2abc6687dd1c5fd394d270dbe33a6356f2d71e0a2ec85b100d5bac94694198ccf5c30d592da863b2292c5539009c715a9c80c697b4f6cc"; };
 "os-tmpdir@npm:1.0.2" = { filename = "os-tmpdir-npm-1.0.2-e305b0689b-5666560f7b.zip"; sha512 = "5666560f7b9f10182548bf7013883265be33620b1c1b4a4d405c25be2636f970c5488ff3e6c48de75b55d02bde037249fe5dbfbb4c0fb7714953d56aed062e6d"; };
@@ -1165,6 +1324,7 @@ cacheEntries = {
 "pretty-format@npm:28.1.3" = { filename = "pretty-format-npm-28.1.3-fdf56e33bc-e69f857358.zip"; sha512 = "e69f857358a3e03d271252d7524bec758c35e44680287f36c1cb905187fbc82da9981a6eb07edfd8a03bc3cbeebfa6f5234c13a3d5b59f2bbdf9b4c4053e0a7f"; };
 "process-nextick-args@npm:2.0.1" = { filename = "process-nextick-args-npm-2.0.1-b8d7971609-1d38588e52.zip"; sha512 = "1d38588e520dab7cea67cbbe2efdd86a10cc7a074c09657635e34f035277b59fbb57d09d8638346bf7090f8e8ebc070c96fa5fd183b777fff4f5edff5e9466cf"; };
 "process@npm:0.11.10" = { filename = "process-npm-0.11.10-aeb3b641ae-bfcce49814.zip"; sha512 = "bfcce49814f7d172a6e6a14d5fa3ac92cc3d0c3b9feb1279774708a719e19acd673995226351a082a9ae99978254e320ccda4240ddc474ba31a76c79491ca7c3"; };
+"prom-client@npm:14.2.0" = { filename = "prom-client-npm-14.2.0-67b29e14e5-d4c04e5761.zip"; sha512 = "d4c04e57616c72643dd02862d0d4bde09cf8869a19d0aef5e7b785e6e27d02439b66cdc165e3492f62d579fa91579183820870cc757a09b99399d2d02f46b9f1"; };
 "promise-inflight@npm:1.0.1" = { filename = "promise-inflight-npm-1.0.1-5bb925afac-2274948309.zip"; sha512 = "22749483091d2c594261517f4f80e05226d4d5ecc1fc917e1886929da56e22b5718b7f2a75f3807e7a7d471bc3be2907fe92e6e8f373ddf5c64bae35b5af3981"; };
 "promise-retry@npm:2.0.1" = { filename = "promise-retry-npm-2.0.1-871f0b01b7-f96a3f6d90.zip"; sha512 = "f96a3f6d90b92b568a26f71e966cbbc0f63ab85ea6ff6c81284dc869b41510e6cdef99b6b65f9030f0db422bf7c96652a3fff9f2e8fb4a0f069d8f4430359429"; };
 "promise@npm:8.3.0" = { filename = "promise-npm-8.3.0-fbfb957417-a69f0ddbdd.zip"; sha512 = "a69f0ddbddf78ffc529cffee7ad950d307347615970564b17988ce43fbe767af5c738a9439660b24a9a8cbea106c0dcbb6c2b20e23b7e96a8e89e5c2679e94d5"; };
@@ -1177,6 +1337,7 @@ cacheEntries = {
 "punycode@npm:1.3.2" = { filename = "punycode-npm-1.3.2-3727a84cea-b8807fd594.zip"; sha512 = "b8807fd594b1db33335692d1f03e8beeddde6fda7fbb4a2e32925d88d20a3aa4cd8dcc0c109ccaccbd2ba761c208dfaaada83007087ea8bfb0129c9ef1b99ed6"; };
 "punycode@npm:2.1.0" = { filename = "punycode-npm-2.1.0-57d3205f3e-d125d8f86c.zip"; sha512 = "d125d8f86cd89303c33bad829388c49ca23197e16ccf8cd398dcbd81b026978f6543f5066c66825b25b1dfea7790a42edbeea82908e103474931789714ab86cd"; };
 "punycode@npm:2.3.0" = { filename = "punycode-npm-2.3.0-df4bdce06b-39f760e09a.zip"; sha512 = "39f760e09a2a3bbfe8f5287cf733ecdad69d6af2fe6f97ca95f24b8921858b91e9ea3c9eeec6e08cede96181b3bb33f95c6ffd8c77e63986508aa2e8159fa200"; };
+"pure-rand@npm:6.0.3" = { filename = "pure-rand-npm-6.0.3-a188fb904d-d08701cfd1.zip"; sha512 = "d08701cfd1528c5f9cdca996776c498c92767722561f9b8f9e62645d5025c8a3bf60b90f76f262aaab124e6bb1d58e1b0850722dbca2846a19b708801956e56b"; };
 "qs@npm:6.10.3" = { filename = "qs-npm-6.10.3-172e1a3fb7-0fac5e6c71.zip"; sha512 = "0fac5e6c7191d0295a96d0e83c851aeb015df7e990e4d3b093897d3ac6c94e555dbd0a599739c84d7fa46d7fee282d94ba76943983935cf33bba6769539b8019"; };
 "qs@npm:6.11.0" = { filename = "qs-npm-6.11.0-caf1bc9dea-6e1f29dd53.zip"; sha512 = "6e1f29dd5385f7488ec74ac7b6c92f4d09a90408882d0c208414a34dd33badc1a621019d4c799a3df15ab9b1d0292f97c1dd71dc7c045e69f81a8064e5af7297"; };
 "qs@npm:6.5.3" = { filename = "qs-npm-6.5.3-90b2635484-6f20bf08ca.zip"; sha512 = "6f20bf08cabd90c458e50855559539a28d00b2f2e7dddcb66082b16a43188418cb3cb77cbd09268bcef6022935650f0534357b8af9eeb29bf0f27ccb17655692"; };
@@ -1207,6 +1368,7 @@ cacheEntries = {
 "redis-commands@npm:1.7.0" = { filename = "redis-commands-npm-1.7.0-528f61f9d8-d1ff7fbcb5.zip"; sha512 = "d1ff7fbcb5e54768c77f731f1d49679d2a62c3899522c28addb4e2e5813aea8bcac3f22519d71d330224c3f2937f935dfc3d8dc65e90db0f5fe22dc2c1515aa7"; };
 "redis-errors@npm:1.2.0" = { filename = "redis-errors-npm-1.2.0-a81fd9b0f1-f28ac26921.zip"; sha512 = "f28ac2692113f6f9c222670735aa58aeae413464fd58ccf3fce3f700cae7262606300840c802c64f2b53f19f65993da24dc918afc277e9e33ac1ff09edb394f4"; };
 "redis-parser@npm:3.0.0" = { filename = "redis-parser-npm-3.0.0-7ebe40abcb-89290ae530.zip"; sha512 = "89290ae530332f2ae37577647fa18208d10308a1a6ba750b9d9a093e7398f5e5253f19855b64c98757f7129cccce958e4af2573fdc33bad41405f87f1943459a"; };
+"redis@npm:4.6.10" = { filename = "redis-npm-4.6.10-937ea26aed-eae6e10f6e.zip"; sha512 = "eae6e10f6ec8d5c6d6dea04a1ee6f6497319113e07dbf272a2b4b3c461c34d6fda152791f443c93c538ad6477741a6b157886b60d06f5fce2abbf403e6568a2f"; };
 "redis@npm:4.6.5" = { filename = "redis-npm-4.6.5-c5adfc624d-81696673a4.zip"; sha512 = "81696673a4c3acefcde310289ac83f40fe974af76f6d2f2a682befd6486128f8870f48b9e6fee1213cecfba9ac705649d27b750e853809d734cccce05868f1b7"; };
 "reduce-flatten@npm:2.0.0" = { filename = "reduce-flatten-npm-2.0.0-01bd4936fa-64393ef99a.zip"; sha512 = "64393ef99a16b20692acfd60982d7fdbd7ff8d9f8f185c6023466444c6dd2abb929d67717a83cec7f7f8fb5f46a25d515b3b2bf2238fdbfcdbfd01d2a9e73cb8"; };
 "regexp.prototype.flags@npm:1.4.3" = { filename = "regexp.prototype.flags-npm-1.4.3-df1c08b65d-51228bae73.zip"; sha512 = "51228bae732592adb3ededd5e15426be25f289e9c4ef15212f4da73f4ec3919b6140806374b8894036a86020d054a8d2657d3fee6bb9b4d35d8939c20030b7a6"; };
@@ -1239,6 +1401,7 @@ cacheEntries = {
 "safe-buffer@npm:5.1.2" = { filename = "safe-buffer-npm-5.1.2-c27fedf6c4-f2f1f7943c.zip"; sha512 = "f2f1f7943ca44a594893a852894055cf619c1fbcb611237fc39e461ae751187e7baf4dc391a72125e0ac4fb2d8c5c0b3c71529622e6a58f46b960211e704903c"; };
 "safe-buffer@npm:5.2.1" = { filename = "safe-buffer-npm-5.2.1-3481c8aa9b-b99c4b41fd.zip"; sha512 = "b99c4b41fdd67a6aaf280fcd05e9ffb0813654894223afb78a31f14a19ad220bba8aba1cb14eddce1fcfb037155fe6de4e861784eb434f7d11ed58d1e70dd491"; };
 "safe-regex-test@npm:1.0.0" = { filename = "safe-regex-test-npm-1.0.0-e94a09b84e-bc566d8beb.zip"; sha512 = "bc566d8beb8b43c01b94e67de3f070fd2781685e835959bbbaaec91cc53381145ca91f69bd837ce6ec244817afa0a5e974fc4e40a2957f0aca68ac3add1ddd34"; };
+"safe-stable-stringify@npm:2.4.3" = { filename = "safe-stable-stringify-npm-2.4.3-d895741b40-3aeb644497.zip"; sha512 = "3aeb64449706ee1f5ad2459fc99648b131d48e7a1fbb608d7c628020177512dc9d94108a5cb61bbc953985d313d0afea6566d243237743e02870490afef04b43"; };
 "safer-buffer@npm:2.1.2" = { filename = "safer-buffer-npm-2.1.2-8d5c0b705e-cab8f25ae6.zip"; sha512 = "cab8f25ae6f1434abee8d80023d7e72b598cf1327164ddab31003c51215526801e40b66c5e65d658a0af1e9d6478cadcb4c745f4bd6751f97d8644786c0978b0"; };
 "scrypt-js@npm:2.0.4" = { filename = "scrypt-js-npm-2.0.4-d3712b5675-679e894095.zip"; sha512 = "679e8940953ebbef40863bfcc58f1d3058d4b7af0ca9bd8062d8213c30e14db59c6ebfc82a85fbd3b90b6d46b708be4c53b9c4bb200b6f50767dc08a846315a9"; };
 "scrypt-js@npm:3.0.1" = { filename = "scrypt-js-npm-3.0.1-fd2d3fa606-b7c7d1a68d.zip"; sha512 = "b7c7d1a68d6ca946f2fbb0778e0c4ec63c65501b54023b2af7d7e9f48fdb6c6580d6f7675cd53bda5944c5ebc057560d5a6365079752546865defb3b79dea454"; };
@@ -1266,13 +1429,14 @@ cacheEntries = {
 "signal-exit@npm:3.0.7" = { filename = "signal-exit-npm-3.0.7-bd270458a3-a2f098f247.zip"; sha512 = "a2f098f247adc367dffc27845853e9959b9e88b01cb301658cfe4194352d8d2bb32e18467c786a7fe15f1d44b233ea35633d076d5e737870b7139949d1ab6318"; };
 "simple-concat@npm:1.0.1" = { filename = "simple-concat-npm-1.0.1-48df70de29-4d211042cc.zip"; sha512 = "4d211042cc3d73a718c21ac6c4e7d7a0363e184be6a5ad25c8a1502e49df6d0a0253979e3d50dbdd3f60ef6c6c58d756b5d66ac1e05cda9cacd2e9fc59e3876a"; };
 "simple-get@npm:2.8.2" = { filename = "simple-get-npm-2.8.2-1def2283e8-230bd931d3.zip"; sha512 = "230bd931d3198f21a5a1a566687a5ee1ef651b13b61c7a01b547b2a0c2bf72769b5fe14a3b4dd518e99a18ba1002ba8af3901c0e61e8a0d1e7631a3c2eb1f7a9"; };
+"simple-swizzle@npm:0.2.2" = { filename = "simple-swizzle-npm-0.2.2-8dee37fad1-a7f3f2ab5c.zip"; sha512 = "a7f3f2ab5c76c4472d5c578df892e857323e452d9f392e1b5cf74b74db66e6294a1e1b8b390b519fa1b96b5b613f2a37db6cffef52c3f1f8f3c5ea64eb2d54c0"; };
 "sisteransi@npm:1.0.5" = { filename = "sisteransi-npm-1.0.5-af60cc0cfa-aba6438f46.zip"; sha512 = "aba6438f46d2bfcef94cf112c835ab395172c75f67453fe05c340c770d3c402363018ae1ab4172a1026a90c47eaccf3af7b6ff6fa749a680c2929bd7fa2b37a4"; };
 "slash@npm:3.0.0" = { filename = "slash-npm-3.0.0-b87de2279a-94a93fff61.zip"; sha512 = "94a93fff615f25a999ad4b83c9d5e257a7280c90a32a7cb8b4a87996e4babf322e469c42b7f649fd5796edd8687652f3fb452a86dc97a816f01113183393f11c"; };
 "slice-ansi@npm:4.0.0" = { filename = "slice-ansi-npm-4.0.0-6eeca1d10e-4a82d7f085.zip"; sha512 = "4a82d7f085b0e1b070e004941ada3c40d3818563ac44766cca4ceadd2080427d337554f9f99a13aaeb3b4a94d9964d9466c807b3d7b7541d1ec37ee32d308756"; };
 "smart-buffer@npm:4.2.0" = { filename = "smart-buffer-npm-4.2.0-5ac3f668bb-b5167a7142.zip"; sha512 = "b5167a7142c1da704c0e3af85c402002b597081dd9575031a90b4f229ca5678e9a36e8a374f1814c8156a725d17008ae3bde63b92f9cfd132526379e580bec8b"; };
 "snarkit2@https://github.com/fluidex/snarkit2.git#commit=70142d8bbc5ec79cfa6869205263ff77e8423975" = { filename = "snarkit2-https-edc8d07000-e64e60e2f2.zip"; sha512 = "e64e60e2f2639e18ee49977349236b187ed978dc6a14104c11dd0e055c52dfff89f916d3b75804aa294d2b91291e603acb7e6ced1bae430e2d4a9956218b3a65"; };
 "snarkit2@npm:0.2.0" = { filename = "snarkit2-npm-0.2.0-b5cd4d107a-bad701f720.zip"; sha512 = "bad701f7208ca91cf10626fb0662746ecfdbe79f871b3f47014600c0a40d14bd8ace1e544b77c97bb323b2d369607d9dba472d25b7a3db0516786833b05cfb28"; };
-"snarkjs@https://github.com/metacraft-labs/snarkjs.git#commit=44d4cc150c30a388d9bd8fb4ba9deb39dfb9c57e" = { filename = "snarkjs-https-dc9d72670b-59ca5a35ec.zip"; sha512 = "59ca5a35ec20038589fab2e22f56c61d5cd42706e7a0ce1393fb66580a7ac982c16e8ed0e377c93bf0b5aa6eb105aa9da3bf94eb6e0f0733451d2793cc7d312e"; };
+"snarkjs@https://github.com/metacraft-labs/snarkjs.git#commit=091ee9c3744c660b0ecd961f9197a8249a8f7d3b" = { filename = "snarkjs-https-27058e50dc-91946fe67a.zip"; sha512 = "91946fe67a5d9c002fce1a297200ee46e9505520716255afe5358b847f4715c5da46a83b047419b426bdaa836fdb5ed04ca86c57460a4636564b0fd06ba393d1"; };
 "snarkjs@npm:0.3.60" = { filename = "snarkjs-npm-0.3.60-a2b1caccd8-3067338ef7.zip"; sha512 = "3067338ef7653070e640f5c70e61e30998cf2b999b369d3d1ecb0d6640640b1509c170a72ef8f2336a97ccc379874d191d9b840ee127f94e58372af1f0675adf"; };
 "snarkjs@npm:0.4.10" = { filename = "snarkjs-npm-0.4.10-db11c615b7-2f5a40d2d3.zip"; sha512 = "2f5a40d2d312bf93ea4abb1ba949828f6c9647e9616855a2f5759d5d34703bf71a4eec2071b77f45bce54273219d3af2a79eadd689399926063540eb01a94988"; };
 "snarkjs@npm:0.4.27" = { filename = "snarkjs-npm-0.4.27-03c8eb6e34-5898ee988f.zip"; sha512 = "5898ee988f3e2dfeb9cd25454fce3b185b8f596ae56bbe2faaf0bc6db4e7e6049f296b4e9bddf425fd804775a9d2d7b228d08363452229f57e92cf334156cd01"; };
@@ -1288,6 +1452,7 @@ cacheEntries = {
 "sshpk@npm:1.17.0" = { filename = "sshpk-npm-1.17.0-95f17f597f-ba109f65c8.zip"; sha512 = "ba109f65c8e6c35133b8e6ed5576abeff8aa8d614824b7275ec3ca308f081fef483607c28d97780c1e235818b0f93ed8c8b56d0a5968d5a23fd6af57718c7597"; };
 "ssri@npm:8.0.1" = { filename = "ssri-npm-8.0.1-a369e72ce2-bc447f5af8.zip"; sha512 = "bc447f5af814fa9713aa201ec2522208ae0f4d8f3bda7a1f445a797c7b929a02720436ff7c478fb5edc4045adb02b1b88d2341b436a80798734e2494f1067b36"; };
 "ssri@npm:9.0.1" = { filename = "ssri-npm-9.0.1-33ce27f4f8-fb58f5e46b.zip"; sha512 = "fb58f5e46b6923ae67b87ad5ef1c5ab6d427a17db0bead84570c2df3cd50b4ceb880ebdba2d60726588272890bae842a744e1ecce5bd2a2a582fccd5068309eb"; };
+"stack-trace@npm:0.0.10" = { filename = "stack-trace-npm-0.0.10-9460b173e1-473036ad32.zip"; sha512 = "473036ad32f8c00e889613153d6454f9be0536d430eb2358ca51cad6b95cea08a3cc33cc0e34de66b0dad221582b08ed2e61ef8e13f4087ab690f388362d6610"; };
 "stack-utils@npm:2.0.6" = { filename = "stack-utils-npm-2.0.6-2be1099696-052bf4d25b.zip"; sha512 = "052bf4d25bbf5f78e06c1d5e67de2e088b06871fa04107ca8d3f0e9d9263326e2942c8bedee3545795fc77d787d443a538345eef74db2f8e35db3558c6f91ff7"; };
 "stacktrace-parser@npm:0.1.10" = { filename = "stacktrace-parser-npm-0.1.10-36f3e571bd-f4fbddfc09.zip"; sha512 = "f4fbddfc09121d91e587b60de4beb4941108e967d71ad3a171812dc839b010ca374d064ad0a296295fed13acd103609d99a4224a25b4e67de13cae131f1901ee"; };
 "standard-as-callback@npm:2.1.0" = { filename = "standard-as-callback-npm-2.1.0-8e47620bd4-88bec83ee2.zip"; sha512 = "88bec83ee220687c72d94fd86a98d5272c91d37ec64b66d830dbc0d79b62bfa6e47f53b71646011835fc9ce7fae62739545d13124262b53be4fbb3e2ebad551c"; };
@@ -1327,8 +1492,10 @@ cacheEntries = {
 "table@npm:6.8.1" = { filename = "table-npm-6.8.1-83abb79e20-08249c7046.zip"; sha512 = "08249c7046125d9d0a944a6e96cfe9ec66908d6b8a9db125531be6eb05fa0de047fd5542e9d43b4f987057f00a093b276b8d3e19af162a9c40db2681058fd306"; };
 "tar@npm:4.4.19" = { filename = "tar-npm-4.4.19-5f8e81b87e-423c8259b1.zip"; sha512 = "423c8259b17f8f612cef9c96805d65f90ba9a28e19be582cd9d0fcb217038219f29b7547198e8fd617da5f436376d6a74b99827acd1238d2f49cf62330f9664e"; };
 "tar@npm:6.1.13" = { filename = "tar-npm-6.1.13-3234e72781-8a278bed12.zip"; sha512 = "8a278bed123aa9f53549b256a36b719e317c8b96fe86a63406f3c62887f78267cea9b22dc6f7007009738509800d4a4dccc444abd71d762287c90f35b002eb1c"; };
+"tdigest@npm:0.1.2" = { filename = "tdigest-npm-0.1.2-b73cfcf726-44de824675.zip"; sha512 = "44de8246752b6f8c2924685f969fd3d94c36949f22b0907e99bef2b2220726dd8467f4730ea96b06040b9aa2587c0866049640039d1b956952dfa962bc2075a3"; };
 "terminal-link@npm:2.1.1" = { filename = "terminal-link-npm-2.1.1-de80341758-ce3d2cd3a4.zip"; sha512 = "ce3d2cd3a438c4a9453947aa664581519173ea40e77e2534d08c088ee6dda449eabdbe0a76d2a516b8b73c33262fedd10d5270ccf7576ae316e3db170ce6562f"; };
 "test-exclude@npm:6.0.0" = { filename = "test-exclude-npm-6.0.0-3fb03d69df-3b34a3d771.zip"; sha512 = "3b34a3d77165a2cb82b34014b3aba93b1c4637a5011807557dc2f3da826c59975a5ccad765721c4648b39817e3472789f9b0fa98fc854c5c1c7a1e632aacdc28"; };
+"text-hex@npm:1.0.0" = { filename = "text-hex-npm-1.0.0-22389e4d56-1138f68adc.zip"; sha512 = "1138f68adc97bf4381a302a24e2352f04992b7b1316c5003767e9b0d3367ffd0dc73d65001ea02b07cd0ecc2a9d186de0cf02f3c2d880b8a522d4ccb9342244a"; };
 "then-request@npm:6.0.2" = { filename = "then-request-npm-6.0.2-d89438d618-a24a4fc95d.zip"; sha512 = "a24a4fc95dd8591966bf3752f024f5cd4d53c2b2c29b23b4e40c3322df6a432d939bc17b589d8e9d760b90e92ab860f6f361a4dfcfe3542019e1615fb51afccc"; };
 "timed-out@npm:4.0.1" = { filename = "timed-out-npm-4.0.1-1fe3eee142-98efc5d6fc.zip"; sha512 = "98efc5d6fc0d2a329277bd4d34f65c1bf44d9ca2b14fd267495df92898f522e6f563c5e9e467c418e0836f5ca1f47a84ca3ee1de79b1cc6fe433834b7f02ec54"; };
 "tiny-emitter@npm:2.1.0" = { filename = "tiny-emitter-npm-2.1.0-2a4d94f487-fbcfb51457.zip"; sha512 = "fbcfb5145751a0e3b109507a828eb6d6d4501352ab7bb33eccef46e22e9d9ad3953158870a6966a59e57ab7c3f9cfac7cab8521db4de6a5e757012f4677df2dd"; };
@@ -1341,14 +1508,17 @@ cacheEntries = {
 "toidentifier@npm:1.0.1" = { filename = "toidentifier-npm-1.0.1-f759712599-952c29e2a8.zip"; sha512 = "952c29e2a85d7123239b5cfdd889a0dde47ab0497f0913d70588f19c53f7e0b5327c95f4651e413c74b785147f9637b17410ac8c846d5d4a20a5a33eb6dc3a45"; };
 "tough-cookie@npm:2.5.0" = { filename = "tough-cookie-npm-2.5.0-79a2fe43fe-16a8cd0902.zip"; sha512 = "16a8cd090224dd176eee23837cbe7573ca0fa297d7e468ab5e1c02d49a4e9a97bb05fef11320605eac516f91d54c57838a25864e8680e27b069a5231d8264977"; };
 "tr46@npm:0.0.3" = { filename = "tr46-npm-0.0.3-de53018915-726321c5ea.zip"; sha512 = "726321c5eaf41b5002e17ffbd1fb7245999a073e8979085dacd47c4b4e8068ff5777142fc6726d6ca1fd2ff16921b48788b87225cbc57c72636f6efa8efbffe3"; };
+"triple-beam@npm:1.4.1" = { filename = "triple-beam-npm-1.4.1-d21ba5346a-2e881a3e8e.zip"; sha512 = "2e881a3e8e076b6f2b85b9ec9dd4a900d3f5016e6d21183ed98e78f9abcc0149e7d54d79a3f432b23afde46b0885bdcdcbff789f39bc75de796316961ec07f61"; };
 "true-case-path@npm:2.2.1" = { filename = "true-case-path-npm-2.2.1-0454edfb3a-fd5f1c2a87.zip"; sha512 = "fd5f1c2a87a122a65ffb1f84b580366be08dac7f552ea0fa4b5a6ab0a013af950b0e752beddb1c6c1652e6d6a2b293b7b3fd86a5a1706242ad365b68f1b5c6f1"; };
 "tryer@npm:1.0.1" = { filename = "tryer-npm-1.0.1-f48ab9ec32-1cf14d7f67.zip"; sha512 = "1cf14d7f67c79613f054b569bfc9a89c7020d331573a812dfcf7437244e8f8e6eb6893b210cbd9cc217f67c1d72617f89793df231e4fe7d53634ed91cf3a89d1"; };
 "ts-command-line-args@npm:2.4.2" = { filename = "ts-command-line-args-npm-2.4.2-87034a2566-87670c554e.zip"; sha512 = "87670c554eb23477c777be010ec9cd280187275717d4db002e0d7d1f2a660f9483315a36dc3ea4af714d41b1fc1a3bd242fd538dd76310d9f1a3741502e49fd4"; };
 "ts-essentials@npm:7.0.3" = { filename = "ts-essentials-npm-7.0.3-dbefe5cb3b-74d75868ac.zip"; sha512 = "74d75868acf7f8b95e447d8b3b7442ca21738c6894e576df9917a352423fde5eb43c5651da5f78997da6061458160ae1f6b279150b42f47ccc58b73e55acaa2f"; };
 "ts-jest@npm:28.0.8" = { filename = "ts-jest-npm-28.0.8-eeca582fd6-c72e929270.zip"; sha512 = "c72e9292709e77ce47ac7813cb24feaa9d01dc983598d29a821f224b5cc190dc7d67e17379cef089095404c00b9d582ee91c727916f9ec289cb1b723df408ae3"; };
+"ts-mixer@npm:6.0.3" = { filename = "ts-mixer-npm-6.0.3-d5b44d91b7-7fbaba0a41.zip"; sha512 = "7fbaba0a413bf817835a6a23d46bccf4192dd4d7345b6bae9d594c88acffac35bf4995ef3cce753090c8abcdf2afd16dba8899365584a1f960ccc2a15bf2e2d6"; };
 "ts-node@npm:10.9.1" = { filename = "ts-node-npm-10.9.1-6c268be7f4-090adff130.zip"; sha512 = "090adff1302ab20bd3486e6b4799e90f97726ed39e02b39e566f8ab674fd5bd5f727f43615debbfc580d33c6d9d1c6b1b3ce7d8e3cca3e20530a145ffa232c35"; };
 "tslib@npm:1.14.1" = { filename = "tslib-npm-1.14.1-102499115e-dbe628ef87.zip"; sha512 = "dbe628ef87f66691d5d2959b3e41b9ca0045c3ee3c7c7b906cc1e328b39f199bb1ad9e671c39025bd56122ac57dfbf7385a94843b1cc07c60a4db74795829acd"; };
 "tslib@npm:2.5.0" = { filename = "tslib-npm-2.5.0-bb364efebd-ae3ed5f9ce.zip"; sha512 = "ae3ed5f9ce29932d049908ebfdf21b3a003a85653a9a140d614da6b767a93ef94f460e52c3d787f0e4f383546981713f165037dc2274df212ea9f8a4541004e1"; };
+"tslib@npm:2.6.2" = { filename = "tslib-npm-2.6.2-4fc8c068d9-329ea56123.zip"; sha512 = "329ea56123005922f39642318e3d1f0f8265d1e7fcb92c633e0809521da75eeaca28d2cf96d7248229deb40e5c19adf408259f4b9640afd20d13aecc1430f3ad"; };
 "tsort@npm:0.0.1" = { filename = "tsort-npm-0.0.1-940cbebb9c-581566c248.zip"; sha512 = "581566c248690b9ea7e431e1545affb3d2cab0f5dcd0e45ddef815dfaec4864cb5f0cfd8072924dedbc0de9585ff07e3e65db60f14fab4123737b9bb6e72eacc"; };
 "tunnel-agent@npm:0.6.0" = { filename = "tunnel-agent-npm-0.6.0-64345ab7eb-05f6510358.zip"; sha512 = "05f6510358f8afc62a057b8b692f05d70c1782b70db86d6a1e0d5e28a32389e52fa6e7707b6c5ecccacc031462e4bc35af85ecfe4bbc341767917b7cf6965711"; };
 "tweetnacl-util@npm:0.15.1" = { filename = "tweetnacl-util-npm-0.15.1-1a24bc512a-ae6aa8a52c.zip"; sha512 = "ae6aa8a52cdd21a95103a4cc10657d6a2040b36c7a6da7b9d3ab811c6750a2d5db77e8c36969e75fdee11f511aa2b91c552496c6e8e989b6e490e54aca2864fc"; };
@@ -1364,14 +1534,15 @@ cacheEntries = {
 "typed-array-length@npm:1.0.4" = { filename = "typed-array-length-npm-1.0.4-92771b81fc-2228febc93.zip"; sha512 = "2228febc93c7feff142b8c96a58d4a0d7623ecde6c7a24b2b98eb3170e99f7c7eff8c114f9b283085cd59dcd2bd43aadf20e25bba4b034a53c5bb292f71f8956"; };
 "typedarray-to-buffer@npm:3.1.5" = { filename = "typedarray-to-buffer-npm-3.1.5-aadc11995e-99c11aaa8f.zip"; sha512 = "99c11aaa8f45189fcfba6b8a4825fd684a321caa9bd7a76a27cf0c7732c174d198b99f449c52c3818107430b5f41c0ccbbfb75cb2ee3ca4a9451710986d61a60"; };
 "typedarray@npm:0.0.6" = { filename = "typedarray-npm-0.0.6-37638b2241-33b39f3d0e.zip"; sha512 = "33b39f3d0e8463985eeaeeacc3cb2e28bc3dfaf2a5ed219628c0b629d5d7b810b0eb2165f9f607c34871d5daa92ba1dc69f49051cf7d578b4cbd26c340b9d1b1"; };
-"typescript@npm:4.9.5" = { filename = "typescript-npm-4.9.5-6427b65ee6-ee000bc268.zip"; sha512 = "ee000bc26848147ad423b581bd250075662a354d84f0e06eb76d3b892328d8d4440b7487b5a83e851b12b255f55d71835b008a66cbf8f255a11e4400159237db"; };
-"typescript@patch:typescript@npm%3A4.9.5#~builtin<compat/typescript>::version=4.9.5&hash=289587" = { filename = "typescript-patch-f8edcd7439-1f8f3b6aae.zip"; sha512 = "1f8f3b6aaea19f0f67cba79057674ba580438a7db55057eb89cc06950483c5d632115c14077f6663ea76fd09fce3c190e6414bb98582ec80aa5a4eaf345d5b68"; };
+"typescript@npm:5.2.2" = { filename = "typescript-npm-5.2.2-01717e9f84-7912821dac.zip"; sha512 = "7912821dac4d962d315c36800fe387cdc0a6298dba7ec171b350b4a6e988b51d7b8f051317786db1094bd7431d526b648aba7da8236607febb26cf5b871d2d3c"; };
+"typescript@patch:typescript@npm%3A5.2.2#~builtin<compat/typescript>::version=5.2.2&hash=f3b441" = { filename = "typescript-patch-2e8dbfb8ab-0f4da2f15e.zip"; sha512 = "0f4da2f15e6f1245e49db15801dbee52f2bbfb267e1c39225afdab5afee1a72839cd86000e65ee9d7e4dfaff12239d28beaf5ee431357fcced15fb08583d72ca"; };
 "typical@npm:4.0.0" = { filename = "typical-npm-4.0.0-2255d8d515-a242081956.zip"; sha512 = "a242081956825328f535e6195a924240b34daf6e7fdb573a1809a42b9f37fb8114fa99c7ab89a695e0cdb419d4149d067f6723e4b95855ffd39c6c4ca378efb3"; };
 "typical@npm:5.2.0" = { filename = "typical-npm-5.2.0-d4de46c932-ccaeb151a9.zip"; sha512 = "ccaeb151a9a556291b495571ca44c4660f736fb49c29314bbf773c90fad92e9485d3cc2b074c933866c1595abbbc962f2b8bfc6e0f52a8c6b0cdd205442036ac"; };
 "ultron@npm:1.1.1" = { filename = "ultron-npm-1.1.1-193641dfec-aa7b5ebb1b.zip"; sha512 = "aa7b5ebb1b6e33287b9d873c6756c4b7aa6d1b23d7162ff25b0c0ce5c3c7e26e2ab141a5dc6e96c10ac4d00a372e682ce298d784f06ffcd520936590b4bc0653"; };
 "unbox-primitive@npm:1.0.2" = { filename = "unbox-primitive-npm-1.0.2-cb56a05066-b7a1cf5862.zip"; sha512 = "b7a1cf5862b5e4b5deb091672ffa579aa274f648410009c81cca63fed3b62b610c4f3b773f912ce545bb4e31edc3138975b5bc777fc6e4817dca51affb6380e9"; };
 "underscore@npm:1.13.6" = { filename = "underscore-npm-1.13.6-3ebe9d92fb-d5cedd14a9.zip"; sha512 = "d5cedd14a9d0d91dd38c1ce6169e4455bb931f0aaf354108e47bd46d3f2da7464d49b2171a5cf786d61963204a42d01ea1332a903b7342ad428deaafaf70ec36"; };
 "undici@npm:5.20.0" = { filename = "undici-npm-5.20.0-e0d42e5e9b-25412a785b.zip"; sha512 = "25412a785b2bd0b12f0bb0ec47ef00aa7a611ca0e570cb7af97cffe6a42e0d78e4b15190363a43771e9002defc3c6647c1b2d52201b3f64e2196819db4d150d3"; };
+"undici@npm:5.22.1" = { filename = "undici-npm-5.22.1-ff9b0b961e-048a3365f6.zip"; sha512 = "048a3365f622be44fb319316cedfaa241c59cf7f3368ae7667a12323447e1822e8cc3d00f6956c852d1478a6fde1cbbe753f49e05f2fdaed229693e716ebaf35"; };
 "unique-filename@npm:1.1.1" = { filename = "unique-filename-npm-1.1.1-c885c5095b-cf4998c922.zip"; sha512 = "cf4998c9228cc7647ba7814e255dec51be43673903897b1786eff2ac2d670f54d4d733357eb08dea969aa5e6875d0e1bd391d668fbdb5a179744e7c7551a6f80"; };
 "unique-filename@npm:2.0.1" = { filename = "unique-filename-npm-2.0.1-183c6c7c2b-807acf3381.zip"; sha512 = "807acf3381aff319086b64dc7125a9a37c09c44af7620bd4f7f3247fcd5565660ac12d8b80534dcbfd067e6fe88a67e621386dd796a8af828d1337a8420a255f"; };
 "unique-slug@npm:2.0.2" = { filename = "unique-slug-npm-2.0.2-f6ba1ddeb7-5b6876a645.zip"; sha512 = "5b6876a645da08d505dedb970d1571f6cebdf87044cb6b740c8dbb24f0d6e1dc8bdbf46825fd09f994d7cf50760e6f6e063cfa197d51c5902c00a861702eb75a"; };
@@ -1434,6 +1605,8 @@ cacheEntries = {
 "which@npm:2.0.2" = { filename = "which-npm-2.0.2-320ddf72f7-1a5c563d3c.zip"; sha512 = "1a5c563d3c1b52d5f893c8b61afe11abc3bab4afac492e8da5bde69d550de701cf9806235f20a47b5c8fa8a1d6a9135841de2596535e998027a54589000e66d1"; };
 "wide-align@npm:1.1.3" = { filename = "wide-align-npm-1.1.3-48c7d4953c-d09c801265.zip"; sha512 = "d09c8012652a9e6cab3e82338d1874a4d7db2ad1bd19ab43eb744acf0b9b5632ec406bdbbbb970a8f4771a7d5ef49824d038ba70aa884e7723f5b090ab87134d"; };
 "wide-align@npm:1.1.5" = { filename = "wide-align-npm-1.1.5-889d77e592-d5fc37cd56.zip"; sha512 = "d5fc37cd561f9daee3c80e03b92ed3e84d80dde3365a8767263d03dacfc8fa06b065ffe1df00d8c2a09f731482fcacae745abfbb478d4af36d0a891fad4834d3"; };
+"winston-transport@npm:4.5.0" = { filename = "winston-transport-npm-4.5.0-e10bfb2169-a56e5678a8.zip"; sha512 = "a56e5678a80b88a73e77ed998fc6e19d0db19c989a356b137ec236782f2bf58ae4511b11c29163f99391fa4dc12102c7bc5738dcb6543f28877fa2819adc3ee9"; };
+"winston@npm:3.10.0" = { filename = "winston-npm-3.10.0-f2a209f843-47df036122.zip"; sha512 = "47df0361220d12b46d1b3c98a1c380a3718321739d527a182ce7984fc20715e5b0b55db0bcd3fd076d1b1d3261903b890b053851cfd4bc028bda7951fa8ca2e0"; };
 "wordwrapjs@npm:4.0.1" = { filename = "wordwrapjs-npm-4.0.1-b6c3c84d76-3d927f3c95.zip"; sha512 = "3d927f3c95d0ad990968da54c0ad8cde2801d8e91006cd7474c26e6b742cc8557250ce495c9732b2f9db1f903601cb74ec282e0f122ee0d02d7abe81e150eea8"; };
 "workerpool@npm:6.2.1" = { filename = "workerpool-npm-6.2.1-1486cb2056-c2c6eebbc5.zip"; sha512 = "c2c6eebbc5225f10f758d599a5c016fa04798bcc44e4c1dffb34050cd361d7be2e97891aa44419e7afe647b1f767b1dc0b85a5e046c409d890163f655028b09d"; };
 "wrap-ansi@npm:5.1.0" = { filename = "wrap-ansi-npm-5.1.0-293b407c18-9b48c86222.zip"; sha512 = "9b48c862220e541eb0daa22661b38b947973fc57054e91be5b0f2dcc77741a6875ccab4ebe970a394b4682c8dfc17e888266a105fb8b0a9b23c19245e781ceae"; };
@@ -1444,6 +1617,7 @@ cacheEntries = {
 "ws@npm:3.3.3" = { filename = "ws-npm-3.3.3-30771aa150-20b7bf34bb.zip"; sha512 = "20b7bf34bb88715b9e2d435b76088d770e063641e7ee697b07543815fabdb752335261c507a973955e823229d0af8549f39cc669825e5c8404aa0422615c81d9"; };
 "ws@npm:7.4.6" = { filename = "ws-npm-7.4.6-9c9a725604-3a990b32ed.zip"; sha512 = "3a990b32ed08c72070d5e8913e14dfcd831919205be52a3ff0b4cdd998c8d554f167c9df3841605cde8b11d607768cacab3e823c58c96a5c08c987e093eb767a"; };
 "ws@npm:7.5.9" = { filename = "ws-npm-7.5.9-26f12a5ed6-c3c100a181.zip"; sha512 = "c3c100a181b731f40b7f2fddf004aa023f79d64f489706a28bc23ff88e87f6a64b3c6651fbec3a84a53960b75159574d7a7385709847a62ddb7ad6af76f49138"; };
+"ws@npm:8.14.1" = { filename = "ws-npm-8.14.1-65c71ef1c9-9e310be2b0.zip"; sha512 = "9e310be2b0ff69e1f87d8c6d093ecd17a1ed4c37f281d17c35e8c30e2bd116401775b3d503249651374e6e0e1e9905db62fff096b694371c77561aee06bc3466"; };
 "xhr-request-promise@npm:0.1.3" = { filename = "xhr-request-promise-npm-0.1.3-2ec03e260c-2e127c0de0.zip"; sha512 = "2e127c0de063db0aa704b8d5b805fd34f0f07cac21284a88c81f96727eb71af7d2dfa3ad43e96ed3e851e05a1bd88933048ec183378b48594dfbead1c9043aee"; };
 "xhr-request@npm:1.1.0" = { filename = "xhr-request-npm-1.1.0-9bf1725e4f-fd8186f33e.zip"; sha512 = "fd8186f33e8696dabcd1ad2983f8125366f4cd799c6bf30aa8d942ac481a7e685a5ee8c38eeee6fca715a7084b432a3a326991375557dc4505c928d3f7b0f0a8"; };
 "xhr@npm:2.6.0" = { filename = "xhr-npm-2.6.0-c4a4d64db8-a1db277e37.zip"; sha512 = "a1db277e37737caf3ed363d2a33ce4b4ea5b5fc190b663a6f70bc252799185b840ccaa166eaeeea4841c9c60b87741f0a24e29cbcf6708dd425986d4df186d2f"; };
@@ -1470,5 +1644,1683 @@ cacheEntries = {
 "yn@npm:3.1.1" = { filename = "yn-npm-3.1.1-8ad4259784-2c487b0e14.zip"; sha512 = "2c487b0e149e746ef48cda9f8bad10fc83693cd69d7f9dcd8be4214e985de33a29c9e24f3c0d6bcf2288427040a8947406ab27f7af67ee9456e6b84854f02dd6"; };
 "yocto-queue@npm:0.1.0" = { filename = "yocto-queue-npm-0.1.0-c6c9a7db29-f77b3d8d00.zip"; sha512 = "f77b3d8d00310def622123df93d4ee654fc6a0096182af8bd60679ddcdfb3474c56c6c7190817c84a2785648cdee9d721c0154eb45698c62176c322fb46fc700"; };
 };
-
+isolated."msgpackr-extract@npm:3.0.0" = optionalOverride (args.overrideMsgpackrExtractAttrs or null) (mkIsolatedBuild { pname = "msgpackr-extract"; version = "3.0.0"; reference = "npm:3.0.0"; locators = [
+"@gar/promisify@npm:1.1.3"
+"@msgpackr-extract/msgpackr-extract-linux-x64@npm:3.0.0"
+"@npmcli/fs@npm:2.1.2"
+"@npmcli/move-file@npm:2.0.1"
+"@tootallnate/once@npm:2.0.0"
+"abbrev@npm:1.1.1"
+"agent-base@npm:6.0.2"
+"agentkeepalive@npm:4.2.1"
+"aggregate-error@npm:3.1.0"
+"ansi-regex@npm:5.0.1"
+"aproba@npm:2.0.0"
+"are-we-there-yet@npm:3.0.1"
+"balanced-match@npm:1.0.2"
+"brace-expansion@npm:1.1.11"
+"brace-expansion@npm:2.0.1"
+"cacache@npm:16.1.3"
+"chownr@npm:2.0.0"
+"clean-stack@npm:2.2.0"
+"color-support@npm:1.1.3"
+"concat-map@npm:0.0.1"
+"console-control-strings@npm:1.1.0"
+"debug@npm:4.3.4"
+"delegates@npm:1.0.0"
+"depd@npm:1.1.2"
+"emoji-regex@npm:8.0.0"
+"encoding@npm:0.1.13"
+"env-paths@npm:2.2.1"
+"err-code@npm:2.0.3"
+"fs-minipass@npm:2.1.0"
+"fs.realpath@npm:1.0.0"
+"gauge@npm:4.0.4"
+"glob@npm:7.2.3"
+"glob@npm:8.1.0"
+"graceful-fs@npm:4.2.10"
+"has-unicode@npm:2.0.1"
+"http-cache-semantics@npm:4.1.1"
+"http-proxy-agent@npm:5.0.0"
+"https-proxy-agent@npm:5.0.1"
+"humanize-ms@npm:1.2.1"
+"iconv-lite@npm:0.6.3"
+"imurmurhash@npm:0.1.4"
+"indent-string@npm:4.0.0"
+"infer-owner@npm:1.0.4"
+"inflight@npm:1.0.6"
+"inherits@npm:2.0.4"
+"ip@npm:2.0.0"
+"is-fullwidth-code-point@npm:3.0.0"
+"is-lambda@npm:1.0.1"
+"isexe@npm:2.0.0"
+"lru-cache@npm:6.0.0"
+"lru-cache@npm:7.17.0"
+"make-fetch-happen@npm:10.2.1"
+"minimatch@npm:3.1.2"
+"minimatch@npm:5.1.6"
+"minipass-collect@npm:1.0.2"
+"minipass-fetch@npm:2.1.2"
+"minipass-flush@npm:1.0.5"
+"minipass-pipeline@npm:1.2.4"
+"minipass-sized@npm:1.0.3"
+"minipass@npm:3.3.6"
+"minipass@npm:4.2.0"
+"minizlib@npm:2.1.2"
+"mkdirp@npm:1.0.4"
+"ms@npm:2.1.2"
+"ms@npm:2.1.3"
+"msgpackr-extract@npm:3.0.0"
+"negotiator@npm:0.6.3"
+"node-gyp-build-optional-packages@npm:5.0.7"
+"node-gyp@npm:9.3.1"
+"nopt@npm:6.0.0"
+"npmlog@npm:6.0.2"
+"once@npm:1.4.0"
+"p-map@npm:4.0.0"
+"path-is-absolute@npm:1.0.1"
+"promise-inflight@npm:1.0.1"
+"promise-retry@npm:2.0.1"
+"readable-stream@npm:3.6.1"
+"retry@npm:0.12.0"
+"rimraf@npm:3.0.2"
+"safe-buffer@npm:5.2.1"
+"safer-buffer@npm:2.1.2"
+"semver@npm:7.3.8"
+"set-blocking@npm:2.0.0"
+"signal-exit@npm:3.0.7"
+"smart-buffer@npm:4.2.0"
+"socks-proxy-agent@npm:7.0.0"
+"socks@npm:2.7.1"
+"ssri@npm:9.0.1"
+"string-width@npm:4.2.3"
+"string_decoder@npm:1.3.0"
+"strip-ansi@npm:6.0.1"
+"tar@npm:6.1.13"
+"unique-filename@npm:2.0.1"
+"unique-slug@npm:3.0.0"
+"util-deprecate@npm:1.0.2"
+"which@npm:2.0.2"
+"wide-align@npm:1.1.5"
+"wrappy@npm:1.0.2"
+"yallist@npm:4.0.0"
+]; });
+isolated."blake-hash@npm:2.0.0" = optionalOverride (args.overrideBlakeHashAttrs or null) (mkIsolatedBuild { pname = "blake-hash"; version = "2.0.0"; reference = "npm:2.0.0"; locators = [
+"@gar/promisify@npm:1.1.3"
+"@npmcli/fs@npm:2.1.2"
+"@npmcli/move-file@npm:2.0.1"
+"@tootallnate/once@npm:2.0.0"
+"abbrev@npm:1.1.1"
+"agent-base@npm:6.0.2"
+"agentkeepalive@npm:4.2.1"
+"aggregate-error@npm:3.1.0"
+"ansi-regex@npm:5.0.1"
+"aproba@npm:2.0.0"
+"are-we-there-yet@npm:3.0.1"
+"balanced-match@npm:1.0.2"
+"blake-hash@npm:2.0.0"
+"brace-expansion@npm:1.1.11"
+"brace-expansion@npm:2.0.1"
+"cacache@npm:16.1.3"
+"chownr@npm:2.0.0"
+"clean-stack@npm:2.2.0"
+"color-support@npm:1.1.3"
+"concat-map@npm:0.0.1"
+"console-control-strings@npm:1.1.0"
+"debug@npm:4.3.4"
+"delegates@npm:1.0.0"
+"depd@npm:1.1.2"
+"emoji-regex@npm:8.0.0"
+"encoding@npm:0.1.13"
+"env-paths@npm:2.2.1"
+"err-code@npm:2.0.3"
+"fs-minipass@npm:2.1.0"
+"fs.realpath@npm:1.0.0"
+"gauge@npm:4.0.4"
+"glob@npm:7.2.3"
+"glob@npm:8.1.0"
+"graceful-fs@npm:4.2.10"
+"has-unicode@npm:2.0.1"
+"http-cache-semantics@npm:4.1.1"
+"http-proxy-agent@npm:5.0.0"
+"https-proxy-agent@npm:5.0.1"
+"humanize-ms@npm:1.2.1"
+"iconv-lite@npm:0.6.3"
+"imurmurhash@npm:0.1.4"
+"indent-string@npm:4.0.0"
+"infer-owner@npm:1.0.4"
+"inflight@npm:1.0.6"
+"inherits@npm:2.0.4"
+"ip@npm:2.0.0"
+"is-fullwidth-code-point@npm:3.0.0"
+"is-lambda@npm:1.0.1"
+"isexe@npm:2.0.0"
+"lru-cache@npm:6.0.0"
+"lru-cache@npm:7.17.0"
+"make-fetch-happen@npm:10.2.1"
+"minimatch@npm:3.1.2"
+"minimatch@npm:5.1.6"
+"minipass-collect@npm:1.0.2"
+"minipass-fetch@npm:2.1.2"
+"minipass-flush@npm:1.0.5"
+"minipass-pipeline@npm:1.2.4"
+"minipass-sized@npm:1.0.3"
+"minipass@npm:3.3.6"
+"minipass@npm:4.2.0"
+"minizlib@npm:2.1.2"
+"mkdirp@npm:1.0.4"
+"ms@npm:2.1.2"
+"ms@npm:2.1.3"
+"negotiator@npm:0.6.3"
+"node-addon-api@npm:3.2.1"
+"node-gyp-build@npm:4.6.0"
+"node-gyp@npm:9.3.1"
+"nopt@npm:6.0.0"
+"npmlog@npm:6.0.2"
+"once@npm:1.4.0"
+"p-map@npm:4.0.0"
+"path-is-absolute@npm:1.0.1"
+"promise-inflight@npm:1.0.1"
+"promise-retry@npm:2.0.1"
+"readable-stream@npm:3.6.1"
+"retry@npm:0.12.0"
+"rimraf@npm:3.0.2"
+"safe-buffer@npm:5.2.1"
+"safer-buffer@npm:2.1.2"
+"semver@npm:7.3.8"
+"set-blocking@npm:2.0.0"
+"signal-exit@npm:3.0.7"
+"smart-buffer@npm:4.2.0"
+"socks-proxy-agent@npm:7.0.0"
+"socks@npm:2.7.1"
+"ssri@npm:9.0.1"
+"string-width@npm:4.2.3"
+"string_decoder@npm:1.3.0"
+"strip-ansi@npm:6.0.1"
+"tar@npm:6.1.13"
+"unique-filename@npm:2.0.1"
+"unique-slug@npm:3.0.0"
+"util-deprecate@npm:1.0.2"
+"which@npm:2.0.2"
+"wide-align@npm:1.1.5"
+"wrappy@npm:1.0.2"
+"yallist@npm:4.0.0"
+]; });
+isolated."bcrypt@npm:5.0.1" = optionalOverride (args.overrideBcryptAttrs or null) (mkIsolatedBuild { pname = "bcrypt"; version = "5.0.1"; reference = "npm:5.0.1"; locators = [
+"@gar/promisify@npm:1.1.3"
+"@mapbox/node-pre-gyp@npm:1.0.10"
+"@npmcli/fs@npm:2.1.2"
+"@npmcli/move-file@npm:2.0.1"
+"@tootallnate/once@npm:2.0.0"
+"abbrev@npm:1.1.1"
+"agent-base@npm:6.0.2"
+"agentkeepalive@npm:4.2.1"
+"aggregate-error@npm:3.1.0"
+"ansi-regex@npm:5.0.1"
+"aproba@npm:2.0.0"
+"are-we-there-yet@npm:2.0.0"
+"are-we-there-yet@npm:3.0.1"
+"balanced-match@npm:1.0.2"
+"bcrypt@npm:5.0.1"
+"brace-expansion@npm:1.1.11"
+"brace-expansion@npm:2.0.1"
+"cacache@npm:16.1.3"
+"chownr@npm:2.0.0"
+"clean-stack@npm:2.2.0"
+"color-support@npm:1.1.3"
+"concat-map@npm:0.0.1"
+"console-control-strings@npm:1.1.0"
+"debug@npm:4.3.4"
+"delegates@npm:1.0.0"
+"depd@npm:1.1.2"
+"detect-libc@npm:2.0.1"
+"emoji-regex@npm:8.0.0"
+"encoding@npm:0.1.13"
+"env-paths@npm:2.2.1"
+"err-code@npm:2.0.3"
+"fs-minipass@npm:2.1.0"
+"fs.realpath@npm:1.0.0"
+"gauge@npm:3.0.2"
+"gauge@npm:4.0.4"
+"glob@npm:7.2.3"
+"glob@npm:8.1.0"
+"graceful-fs@npm:4.2.10"
+"has-unicode@npm:2.0.1"
+"http-cache-semantics@npm:4.1.1"
+"http-proxy-agent@npm:5.0.0"
+"https-proxy-agent@npm:5.0.1"
+"humanize-ms@npm:1.2.1"
+"iconv-lite@npm:0.6.3"
+"imurmurhash@npm:0.1.4"
+"indent-string@npm:4.0.0"
+"infer-owner@npm:1.0.4"
+"inflight@npm:1.0.6"
+"inherits@npm:2.0.4"
+"ip@npm:2.0.0"
+"is-fullwidth-code-point@npm:3.0.0"
+"is-lambda@npm:1.0.1"
+"isexe@npm:2.0.0"
+"lru-cache@npm:6.0.0"
+"lru-cache@npm:7.17.0"
+"make-dir@npm:3.1.0"
+"make-fetch-happen@npm:10.2.1"
+"minimatch@npm:3.1.2"
+"minimatch@npm:5.1.6"
+"minipass-collect@npm:1.0.2"
+"minipass-fetch@npm:2.1.2"
+"minipass-flush@npm:1.0.5"
+"minipass-pipeline@npm:1.2.4"
+"minipass-sized@npm:1.0.3"
+"minipass@npm:3.3.6"
+"minipass@npm:4.2.0"
+"minizlib@npm:2.1.2"
+"mkdirp@npm:1.0.4"
+"ms@npm:2.1.2"
+"ms@npm:2.1.3"
+"negotiator@npm:0.6.3"
+"node-addon-api@npm:3.2.1"
+"node-fetch@npm:2.6.9"
+"node-gyp@npm:9.3.1"
+"nopt@npm:5.0.0"
+"nopt@npm:6.0.0"
+"npmlog@npm:5.0.1"
+"npmlog@npm:6.0.2"
+"object-assign@npm:4.1.1"
+"once@npm:1.4.0"
+"p-map@npm:4.0.0"
+"path-is-absolute@npm:1.0.1"
+"promise-inflight@npm:1.0.1"
+"promise-retry@npm:2.0.1"
+"readable-stream@npm:3.6.1"
+"retry@npm:0.12.0"
+"rimraf@npm:3.0.2"
+"safe-buffer@npm:5.2.1"
+"safer-buffer@npm:2.1.2"
+"semver@npm:6.3.0"
+"semver@npm:7.3.8"
+"set-blocking@npm:2.0.0"
+"signal-exit@npm:3.0.7"
+"smart-buffer@npm:4.2.0"
+"socks-proxy-agent@npm:7.0.0"
+"socks@npm:2.7.1"
+"ssri@npm:9.0.1"
+"string-width@npm:4.2.3"
+"string_decoder@npm:1.3.0"
+"strip-ansi@npm:6.0.1"
+"tar@npm:6.1.13"
+"tr46@npm:0.0.3"
+"unique-filename@npm:2.0.1"
+"unique-slug@npm:3.0.0"
+"util-deprecate@npm:1.0.2"
+"webidl-conversions@npm:3.0.1"
+"whatwg-url@npm:5.0.0"
+"which@npm:2.0.2"
+"wide-align@npm:1.1.5"
+"wrappy@npm:1.0.2"
+"yallist@npm:4.0.0"
+]; });
+isolated."bcrypto@npm:5.4.0" = optionalOverride (args.overrideBcryptoAttrs or null) (mkIsolatedBuild { pname = "bcrypto"; version = "5.4.0"; reference = "npm:5.4.0"; locators = [
+"@gar/promisify@npm:1.1.3"
+"@npmcli/fs@npm:2.1.2"
+"@npmcli/move-file@npm:2.0.1"
+"@tootallnate/once@npm:2.0.0"
+"abbrev@npm:1.1.1"
+"agent-base@npm:6.0.2"
+"agentkeepalive@npm:4.2.1"
+"aggregate-error@npm:3.1.0"
+"ansi-regex@npm:5.0.1"
+"aproba@npm:2.0.0"
+"are-we-there-yet@npm:3.0.1"
+"balanced-match@npm:1.0.2"
+"bcrypto@npm:5.4.0"
+"brace-expansion@npm:1.1.11"
+"brace-expansion@npm:2.0.1"
+"bufio@npm:1.0.7"
+"cacache@npm:16.1.3"
+"chownr@npm:2.0.0"
+"clean-stack@npm:2.2.0"
+"color-support@npm:1.1.3"
+"concat-map@npm:0.0.1"
+"console-control-strings@npm:1.1.0"
+"debug@npm:4.3.4"
+"delegates@npm:1.0.0"
+"depd@npm:1.1.2"
+"emoji-regex@npm:8.0.0"
+"encoding@npm:0.1.13"
+"env-paths@npm:2.2.1"
+"err-code@npm:2.0.3"
+"fs-minipass@npm:2.1.0"
+"fs.realpath@npm:1.0.0"
+"gauge@npm:4.0.4"
+"glob@npm:7.2.3"
+"glob@npm:8.1.0"
+"graceful-fs@npm:4.2.10"
+"has-unicode@npm:2.0.1"
+"http-cache-semantics@npm:4.1.1"
+"http-proxy-agent@npm:5.0.0"
+"https-proxy-agent@npm:5.0.1"
+"humanize-ms@npm:1.2.1"
+"iconv-lite@npm:0.6.3"
+"imurmurhash@npm:0.1.4"
+"indent-string@npm:4.0.0"
+"infer-owner@npm:1.0.4"
+"inflight@npm:1.0.6"
+"inherits@npm:2.0.4"
+"ip@npm:2.0.0"
+"is-fullwidth-code-point@npm:3.0.0"
+"is-lambda@npm:1.0.1"
+"isexe@npm:2.0.0"
+"loady@npm:0.0.5"
+"lru-cache@npm:6.0.0"
+"lru-cache@npm:7.17.0"
+"make-fetch-happen@npm:10.2.1"
+"minimatch@npm:3.1.2"
+"minimatch@npm:5.1.6"
+"minipass-collect@npm:1.0.2"
+"minipass-fetch@npm:2.1.2"
+"minipass-flush@npm:1.0.5"
+"minipass-pipeline@npm:1.2.4"
+"minipass-sized@npm:1.0.3"
+"minipass@npm:3.3.6"
+"minipass@npm:4.2.0"
+"minizlib@npm:2.1.2"
+"mkdirp@npm:1.0.4"
+"ms@npm:2.1.2"
+"ms@npm:2.1.3"
+"negotiator@npm:0.6.3"
+"node-gyp@npm:9.3.1"
+"nopt@npm:6.0.0"
+"npmlog@npm:6.0.2"
+"once@npm:1.4.0"
+"p-map@npm:4.0.0"
+"path-is-absolute@npm:1.0.1"
+"promise-inflight@npm:1.0.1"
+"promise-retry@npm:2.0.1"
+"readable-stream@npm:3.6.1"
+"retry@npm:0.12.0"
+"rimraf@npm:3.0.2"
+"safe-buffer@npm:5.2.1"
+"safer-buffer@npm:2.1.2"
+"semver@npm:7.3.8"
+"set-blocking@npm:2.0.0"
+"signal-exit@npm:3.0.7"
+"smart-buffer@npm:4.2.0"
+"socks-proxy-agent@npm:7.0.0"
+"socks@npm:2.7.1"
+"ssri@npm:9.0.1"
+"string-width@npm:4.2.3"
+"string_decoder@npm:1.3.0"
+"strip-ansi@npm:6.0.1"
+"tar@npm:6.1.13"
+"unique-filename@npm:2.0.1"
+"unique-slug@npm:3.0.0"
+"util-deprecate@npm:1.0.2"
+"which@npm:2.0.2"
+"wide-align@npm:1.1.5"
+"wrappy@npm:1.0.2"
+"yallist@npm:4.0.0"
+]; });
+isolated."keccak@npm:3.0.3" = optionalOverride (args.overrideKeccakAttrs or null) (mkIsolatedBuild { pname = "keccak"; version = "3.0.3"; reference = "npm:3.0.3"; locators = [
+"@gar/promisify@npm:1.1.3"
+"@npmcli/fs@npm:2.1.2"
+"@npmcli/move-file@npm:2.0.1"
+"@tootallnate/once@npm:2.0.0"
+"abbrev@npm:1.1.1"
+"agent-base@npm:6.0.2"
+"agentkeepalive@npm:4.2.1"
+"aggregate-error@npm:3.1.0"
+"ansi-regex@npm:5.0.1"
+"aproba@npm:2.0.0"
+"are-we-there-yet@npm:3.0.1"
+"balanced-match@npm:1.0.2"
+"brace-expansion@npm:1.1.11"
+"brace-expansion@npm:2.0.1"
+"cacache@npm:16.1.3"
+"chownr@npm:2.0.0"
+"clean-stack@npm:2.2.0"
+"color-support@npm:1.1.3"
+"concat-map@npm:0.0.1"
+"console-control-strings@npm:1.1.0"
+"debug@npm:4.3.4"
+"delegates@npm:1.0.0"
+"depd@npm:1.1.2"
+"emoji-regex@npm:8.0.0"
+"encoding@npm:0.1.13"
+"env-paths@npm:2.2.1"
+"err-code@npm:2.0.3"
+"fs-minipass@npm:2.1.0"
+"fs.realpath@npm:1.0.0"
+"gauge@npm:4.0.4"
+"glob@npm:7.2.3"
+"glob@npm:8.1.0"
+"graceful-fs@npm:4.2.10"
+"has-unicode@npm:2.0.1"
+"http-cache-semantics@npm:4.1.1"
+"http-proxy-agent@npm:5.0.0"
+"https-proxy-agent@npm:5.0.1"
+"humanize-ms@npm:1.2.1"
+"iconv-lite@npm:0.6.3"
+"imurmurhash@npm:0.1.4"
+"indent-string@npm:4.0.0"
+"infer-owner@npm:1.0.4"
+"inflight@npm:1.0.6"
+"inherits@npm:2.0.4"
+"ip@npm:2.0.0"
+"is-fullwidth-code-point@npm:3.0.0"
+"is-lambda@npm:1.0.1"
+"isexe@npm:2.0.0"
+"keccak@npm:3.0.3"
+"lru-cache@npm:6.0.0"
+"lru-cache@npm:7.17.0"
+"make-fetch-happen@npm:10.2.1"
+"minimatch@npm:3.1.2"
+"minimatch@npm:5.1.6"
+"minipass-collect@npm:1.0.2"
+"minipass-fetch@npm:2.1.2"
+"minipass-flush@npm:1.0.5"
+"minipass-pipeline@npm:1.2.4"
+"minipass-sized@npm:1.0.3"
+"minipass@npm:3.3.6"
+"minipass@npm:4.2.0"
+"minizlib@npm:2.1.2"
+"mkdirp@npm:1.0.4"
+"ms@npm:2.1.2"
+"ms@npm:2.1.3"
+"negotiator@npm:0.6.3"
+"node-addon-api@npm:2.0.2"
+"node-gyp-build@npm:4.6.0"
+"node-gyp@npm:9.3.1"
+"nopt@npm:6.0.0"
+"npmlog@npm:6.0.2"
+"once@npm:1.4.0"
+"p-map@npm:4.0.0"
+"path-is-absolute@npm:1.0.1"
+"promise-inflight@npm:1.0.1"
+"promise-retry@npm:2.0.1"
+"readable-stream@npm:3.6.1"
+"retry@npm:0.12.0"
+"rimraf@npm:3.0.2"
+"safe-buffer@npm:5.2.1"
+"safer-buffer@npm:2.1.2"
+"semver@npm:7.3.8"
+"set-blocking@npm:2.0.0"
+"signal-exit@npm:3.0.7"
+"smart-buffer@npm:4.2.0"
+"socks-proxy-agent@npm:7.0.0"
+"socks@npm:2.7.1"
+"ssri@npm:9.0.1"
+"string-width@npm:4.2.3"
+"string_decoder@npm:1.3.0"
+"strip-ansi@npm:6.0.1"
+"tar@npm:6.1.13"
+"unique-filename@npm:2.0.1"
+"unique-slug@npm:3.0.0"
+"util-deprecate@npm:1.0.2"
+"which@npm:2.0.2"
+"wide-align@npm:1.1.5"
+"wrappy@npm:1.0.2"
+"yallist@npm:4.0.0"
+]; });
+isolated."secp256k1@npm:4.0.3" = optionalOverride (args.overrideSecp256k1Attrs or null) (mkIsolatedBuild { pname = "secp256k1"; version = "4.0.3"; reference = "npm:4.0.3"; locators = [
+"@gar/promisify@npm:1.1.3"
+"@npmcli/fs@npm:2.1.2"
+"@npmcli/move-file@npm:2.0.1"
+"@tootallnate/once@npm:2.0.0"
+"abbrev@npm:1.1.1"
+"agent-base@npm:6.0.2"
+"agentkeepalive@npm:4.2.1"
+"aggregate-error@npm:3.1.0"
+"ansi-regex@npm:5.0.1"
+"aproba@npm:2.0.0"
+"are-we-there-yet@npm:3.0.1"
+"balanced-match@npm:1.0.2"
+"bn.js@npm:4.12.0"
+"brace-expansion@npm:1.1.11"
+"brace-expansion@npm:2.0.1"
+"brorand@npm:1.1.0"
+"cacache@npm:16.1.3"
+"chownr@npm:2.0.0"
+"clean-stack@npm:2.2.0"
+"color-support@npm:1.1.3"
+"concat-map@npm:0.0.1"
+"console-control-strings@npm:1.1.0"
+"debug@npm:4.3.4"
+"delegates@npm:1.0.0"
+"depd@npm:1.1.2"
+"elliptic@npm:6.5.4"
+"emoji-regex@npm:8.0.0"
+"encoding@npm:0.1.13"
+"env-paths@npm:2.2.1"
+"err-code@npm:2.0.3"
+"fs-minipass@npm:2.1.0"
+"fs.realpath@npm:1.0.0"
+"gauge@npm:4.0.4"
+"glob@npm:7.2.3"
+"glob@npm:8.1.0"
+"graceful-fs@npm:4.2.10"
+"has-unicode@npm:2.0.1"
+"hash.js@npm:1.1.7"
+"hmac-drbg@npm:1.0.1"
+"http-cache-semantics@npm:4.1.1"
+"http-proxy-agent@npm:5.0.0"
+"https-proxy-agent@npm:5.0.1"
+"humanize-ms@npm:1.2.1"
+"iconv-lite@npm:0.6.3"
+"imurmurhash@npm:0.1.4"
+"indent-string@npm:4.0.0"
+"infer-owner@npm:1.0.4"
+"inflight@npm:1.0.6"
+"inherits@npm:2.0.4"
+"ip@npm:2.0.0"
+"is-fullwidth-code-point@npm:3.0.0"
+"is-lambda@npm:1.0.1"
+"isexe@npm:2.0.0"
+"lru-cache@npm:6.0.0"
+"lru-cache@npm:7.17.0"
+"make-fetch-happen@npm:10.2.1"
+"minimalistic-assert@npm:1.0.1"
+"minimalistic-crypto-utils@npm:1.0.1"
+"minimatch@npm:3.1.2"
+"minimatch@npm:5.1.6"
+"minipass-collect@npm:1.0.2"
+"minipass-fetch@npm:2.1.2"
+"minipass-flush@npm:1.0.5"
+"minipass-pipeline@npm:1.2.4"
+"minipass-sized@npm:1.0.3"
+"minipass@npm:3.3.6"
+"minipass@npm:4.2.0"
+"minizlib@npm:2.1.2"
+"mkdirp@npm:1.0.4"
+"ms@npm:2.1.2"
+"ms@npm:2.1.3"
+"negotiator@npm:0.6.3"
+"node-addon-api@npm:2.0.2"
+"node-gyp-build@npm:4.6.0"
+"node-gyp@npm:9.3.1"
+"nopt@npm:6.0.0"
+"npmlog@npm:6.0.2"
+"once@npm:1.4.0"
+"p-map@npm:4.0.0"
+"path-is-absolute@npm:1.0.1"
+"promise-inflight@npm:1.0.1"
+"promise-retry@npm:2.0.1"
+"readable-stream@npm:3.6.1"
+"retry@npm:0.12.0"
+"rimraf@npm:3.0.2"
+"safe-buffer@npm:5.2.1"
+"safer-buffer@npm:2.1.2"
+"secp256k1@npm:4.0.3"
+"semver@npm:7.3.8"
+"set-blocking@npm:2.0.0"
+"signal-exit@npm:3.0.7"
+"smart-buffer@npm:4.2.0"
+"socks-proxy-agent@npm:7.0.0"
+"socks@npm:2.7.1"
+"ssri@npm:9.0.1"
+"string-width@npm:4.2.3"
+"string_decoder@npm:1.3.0"
+"strip-ansi@npm:6.0.1"
+"tar@npm:6.1.13"
+"unique-filename@npm:2.0.1"
+"unique-slug@npm:3.0.0"
+"util-deprecate@npm:1.0.2"
+"which@npm:2.0.2"
+"wide-align@npm:1.1.5"
+"wrappy@npm:1.0.2"
+"yallist@npm:4.0.0"
+]; });
+isolated."classic-level@npm:1.2.0" = optionalOverride (args.overrideClassicLevelAttrs or null) (mkIsolatedBuild { pname = "classic-level"; version = "1.2.0"; reference = "npm:1.2.0"; locators = [
+"@gar/promisify@npm:1.1.3"
+"@npmcli/fs@npm:2.1.2"
+"@npmcli/move-file@npm:2.0.1"
+"@tootallnate/once@npm:2.0.0"
+"abbrev@npm:1.1.1"
+"abstract-level@npm:1.0.3"
+"agent-base@npm:6.0.2"
+"agentkeepalive@npm:4.2.1"
+"aggregate-error@npm:3.1.0"
+"ansi-regex@npm:5.0.1"
+"aproba@npm:2.0.0"
+"are-we-there-yet@npm:3.0.1"
+"balanced-match@npm:1.0.2"
+"base64-js@npm:1.5.1"
+"brace-expansion@npm:1.1.11"
+"brace-expansion@npm:2.0.1"
+"buffer@npm:6.0.3"
+"cacache@npm:16.1.3"
+"catering@npm:2.1.1"
+"chownr@npm:2.0.0"
+"classic-level@npm:1.2.0"
+"clean-stack@npm:2.2.0"
+"color-support@npm:1.1.3"
+"concat-map@npm:0.0.1"
+"console-control-strings@npm:1.1.0"
+"debug@npm:4.3.4"
+"delegates@npm:1.0.0"
+"depd@npm:1.1.2"
+"emoji-regex@npm:8.0.0"
+"encoding@npm:0.1.13"
+"env-paths@npm:2.2.1"
+"err-code@npm:2.0.3"
+"fs-minipass@npm:2.1.0"
+"fs.realpath@npm:1.0.0"
+"gauge@npm:4.0.4"
+"glob@npm:7.2.3"
+"glob@npm:8.1.0"
+"graceful-fs@npm:4.2.10"
+"has-unicode@npm:2.0.1"
+"http-cache-semantics@npm:4.1.1"
+"http-proxy-agent@npm:5.0.0"
+"https-proxy-agent@npm:5.0.1"
+"humanize-ms@npm:1.2.1"
+"iconv-lite@npm:0.6.3"
+"ieee754@npm:1.2.1"
+"imurmurhash@npm:0.1.4"
+"indent-string@npm:4.0.0"
+"infer-owner@npm:1.0.4"
+"inflight@npm:1.0.6"
+"inherits@npm:2.0.4"
+"ip@npm:2.0.0"
+"is-buffer@npm:2.0.5"
+"is-fullwidth-code-point@npm:3.0.0"
+"is-lambda@npm:1.0.1"
+"isexe@npm:2.0.0"
+"level-supports@npm:4.0.1"
+"level-transcoder@npm:1.0.1"
+"lru-cache@npm:6.0.0"
+"lru-cache@npm:7.17.0"
+"make-fetch-happen@npm:10.2.1"
+"minimatch@npm:3.1.2"
+"minimatch@npm:5.1.6"
+"minipass-collect@npm:1.0.2"
+"minipass-fetch@npm:2.1.2"
+"minipass-flush@npm:1.0.5"
+"minipass-pipeline@npm:1.2.4"
+"minipass-sized@npm:1.0.3"
+"minipass@npm:3.3.6"
+"minipass@npm:4.2.0"
+"minizlib@npm:2.1.2"
+"mkdirp@npm:1.0.4"
+"module-error@npm:1.0.2"
+"ms@npm:2.1.2"
+"ms@npm:2.1.3"
+"napi-macros@npm:2.0.0"
+"negotiator@npm:0.6.3"
+"node-gyp-build@npm:4.6.0"
+"node-gyp@npm:9.3.1"
+"nopt@npm:6.0.0"
+"npmlog@npm:6.0.2"
+"once@npm:1.4.0"
+"p-map@npm:4.0.0"
+"path-is-absolute@npm:1.0.1"
+"promise-inflight@npm:1.0.1"
+"promise-retry@npm:2.0.1"
+"queue-microtask@npm:1.2.3"
+"readable-stream@npm:3.6.1"
+"retry@npm:0.12.0"
+"rimraf@npm:3.0.2"
+"safe-buffer@npm:5.2.1"
+"safer-buffer@npm:2.1.2"
+"semver@npm:7.3.8"
+"set-blocking@npm:2.0.0"
+"signal-exit@npm:3.0.7"
+"smart-buffer@npm:4.2.0"
+"socks-proxy-agent@npm:7.0.0"
+"socks@npm:2.7.1"
+"ssri@npm:9.0.1"
+"string-width@npm:4.2.3"
+"string_decoder@npm:1.3.0"
+"strip-ansi@npm:6.0.1"
+"tar@npm:6.1.13"
+"unique-filename@npm:2.0.1"
+"unique-slug@npm:3.0.0"
+"util-deprecate@npm:1.0.2"
+"which@npm:2.0.2"
+"wide-align@npm:1.1.5"
+"wrappy@npm:1.0.2"
+"yallist@npm:4.0.0"
+]; });
+isolated."keccak@npm:3.0.1" = optionalOverride (args.overrideKeccakAttrs or null) (mkIsolatedBuild { pname = "keccak"; version = "3.0.1"; reference = "npm:3.0.1"; locators = [
+"@gar/promisify@npm:1.1.3"
+"@npmcli/fs@npm:2.1.2"
+"@npmcli/move-file@npm:2.0.1"
+"@tootallnate/once@npm:2.0.0"
+"abbrev@npm:1.1.1"
+"agent-base@npm:6.0.2"
+"agentkeepalive@npm:4.2.1"
+"aggregate-error@npm:3.1.0"
+"ansi-regex@npm:5.0.1"
+"aproba@npm:2.0.0"
+"are-we-there-yet@npm:3.0.1"
+"balanced-match@npm:1.0.2"
+"brace-expansion@npm:1.1.11"
+"brace-expansion@npm:2.0.1"
+"cacache@npm:16.1.3"
+"chownr@npm:2.0.0"
+"clean-stack@npm:2.2.0"
+"color-support@npm:1.1.3"
+"concat-map@npm:0.0.1"
+"console-control-strings@npm:1.1.0"
+"debug@npm:4.3.4"
+"delegates@npm:1.0.0"
+"depd@npm:1.1.2"
+"emoji-regex@npm:8.0.0"
+"encoding@npm:0.1.13"
+"env-paths@npm:2.2.1"
+"err-code@npm:2.0.3"
+"fs-minipass@npm:2.1.0"
+"fs.realpath@npm:1.0.0"
+"gauge@npm:4.0.4"
+"glob@npm:7.2.3"
+"glob@npm:8.1.0"
+"graceful-fs@npm:4.2.10"
+"has-unicode@npm:2.0.1"
+"http-cache-semantics@npm:4.1.1"
+"http-proxy-agent@npm:5.0.0"
+"https-proxy-agent@npm:5.0.1"
+"humanize-ms@npm:1.2.1"
+"iconv-lite@npm:0.6.3"
+"imurmurhash@npm:0.1.4"
+"indent-string@npm:4.0.0"
+"infer-owner@npm:1.0.4"
+"inflight@npm:1.0.6"
+"inherits@npm:2.0.4"
+"ip@npm:2.0.0"
+"is-fullwidth-code-point@npm:3.0.0"
+"is-lambda@npm:1.0.1"
+"isexe@npm:2.0.0"
+"keccak@npm:3.0.1"
+"lru-cache@npm:6.0.0"
+"lru-cache@npm:7.17.0"
+"make-fetch-happen@npm:10.2.1"
+"minimatch@npm:3.1.2"
+"minimatch@npm:5.1.6"
+"minipass-collect@npm:1.0.2"
+"minipass-fetch@npm:2.1.2"
+"minipass-flush@npm:1.0.5"
+"minipass-pipeline@npm:1.2.4"
+"minipass-sized@npm:1.0.3"
+"minipass@npm:3.3.6"
+"minipass@npm:4.2.0"
+"minizlib@npm:2.1.2"
+"mkdirp@npm:1.0.4"
+"ms@npm:2.1.2"
+"ms@npm:2.1.3"
+"negotiator@npm:0.6.3"
+"node-addon-api@npm:2.0.2"
+"node-gyp-build@npm:4.6.0"
+"node-gyp@npm:9.3.1"
+"nopt@npm:6.0.0"
+"npmlog@npm:6.0.2"
+"once@npm:1.4.0"
+"p-map@npm:4.0.0"
+"path-is-absolute@npm:1.0.1"
+"promise-inflight@npm:1.0.1"
+"promise-retry@npm:2.0.1"
+"readable-stream@npm:3.6.1"
+"retry@npm:0.12.0"
+"rimraf@npm:3.0.2"
+"safe-buffer@npm:5.2.1"
+"safer-buffer@npm:2.1.2"
+"semver@npm:7.3.8"
+"set-blocking@npm:2.0.0"
+"signal-exit@npm:3.0.7"
+"smart-buffer@npm:4.2.0"
+"socks-proxy-agent@npm:7.0.0"
+"socks@npm:2.7.1"
+"ssri@npm:9.0.1"
+"string-width@npm:4.2.3"
+"string_decoder@npm:1.3.0"
+"strip-ansi@npm:6.0.1"
+"tar@npm:6.1.13"
+"unique-filename@npm:2.0.1"
+"unique-slug@npm:3.0.0"
+"util-deprecate@npm:1.0.2"
+"which@npm:2.0.2"
+"wide-align@npm:1.1.5"
+"wrappy@npm:1.0.2"
+"yallist@npm:4.0.0"
+]; });
+isolated."bufferutil@npm:4.0.5" = optionalOverride (args.overrideBufferutilAttrs or null) (mkIsolatedBuild { pname = "bufferutil"; version = "4.0.5"; reference = "npm:4.0.5"; locators = [
+"@gar/promisify@npm:1.1.3"
+"@npmcli/fs@npm:2.1.2"
+"@npmcli/move-file@npm:2.0.1"
+"@tootallnate/once@npm:2.0.0"
+"abbrev@npm:1.1.1"
+"agent-base@npm:6.0.2"
+"agentkeepalive@npm:4.2.1"
+"aggregate-error@npm:3.1.0"
+"ansi-regex@npm:5.0.1"
+"aproba@npm:2.0.0"
+"are-we-there-yet@npm:3.0.1"
+"balanced-match@npm:1.0.2"
+"brace-expansion@npm:1.1.11"
+"brace-expansion@npm:2.0.1"
+"bufferutil@npm:4.0.5"
+"cacache@npm:16.1.3"
+"chownr@npm:2.0.0"
+"clean-stack@npm:2.2.0"
+"color-support@npm:1.1.3"
+"concat-map@npm:0.0.1"
+"console-control-strings@npm:1.1.0"
+"debug@npm:4.3.4"
+"delegates@npm:1.0.0"
+"depd@npm:1.1.2"
+"emoji-regex@npm:8.0.0"
+"encoding@npm:0.1.13"
+"env-paths@npm:2.2.1"
+"err-code@npm:2.0.3"
+"fs-minipass@npm:2.1.0"
+"fs.realpath@npm:1.0.0"
+"gauge@npm:4.0.4"
+"glob@npm:7.2.3"
+"glob@npm:8.1.0"
+"graceful-fs@npm:4.2.10"
+"has-unicode@npm:2.0.1"
+"http-cache-semantics@npm:4.1.1"
+"http-proxy-agent@npm:5.0.0"
+"https-proxy-agent@npm:5.0.1"
+"humanize-ms@npm:1.2.1"
+"iconv-lite@npm:0.6.3"
+"imurmurhash@npm:0.1.4"
+"indent-string@npm:4.0.0"
+"infer-owner@npm:1.0.4"
+"inflight@npm:1.0.6"
+"inherits@npm:2.0.4"
+"ip@npm:2.0.0"
+"is-fullwidth-code-point@npm:3.0.0"
+"is-lambda@npm:1.0.1"
+"isexe@npm:2.0.0"
+"lru-cache@npm:6.0.0"
+"lru-cache@npm:7.17.0"
+"make-fetch-happen@npm:10.2.1"
+"minimatch@npm:3.1.2"
+"minimatch@npm:5.1.6"
+"minipass-collect@npm:1.0.2"
+"minipass-fetch@npm:2.1.2"
+"minipass-flush@npm:1.0.5"
+"minipass-pipeline@npm:1.2.4"
+"minipass-sized@npm:1.0.3"
+"minipass@npm:3.3.6"
+"minipass@npm:4.2.0"
+"minizlib@npm:2.1.2"
+"mkdirp@npm:1.0.4"
+"ms@npm:2.1.2"
+"ms@npm:2.1.3"
+"negotiator@npm:0.6.3"
+"node-gyp-build@npm:4.6.0"
+"node-gyp@npm:9.3.1"
+"nopt@npm:6.0.0"
+"npmlog@npm:6.0.2"
+"once@npm:1.4.0"
+"p-map@npm:4.0.0"
+"path-is-absolute@npm:1.0.1"
+"promise-inflight@npm:1.0.1"
+"promise-retry@npm:2.0.1"
+"readable-stream@npm:3.6.1"
+"retry@npm:0.12.0"
+"rimraf@npm:3.0.2"
+"safe-buffer@npm:5.2.1"
+"safer-buffer@npm:2.1.2"
+"semver@npm:7.3.8"
+"set-blocking@npm:2.0.0"
+"signal-exit@npm:3.0.7"
+"smart-buffer@npm:4.2.0"
+"socks-proxy-agent@npm:7.0.0"
+"socks@npm:2.7.1"
+"ssri@npm:9.0.1"
+"string-width@npm:4.2.3"
+"string_decoder@npm:1.3.0"
+"strip-ansi@npm:6.0.1"
+"tar@npm:6.1.13"
+"unique-filename@npm:2.0.1"
+"unique-slug@npm:3.0.0"
+"util-deprecate@npm:1.0.2"
+"which@npm:2.0.2"
+"wide-align@npm:1.1.5"
+"wrappy@npm:1.0.2"
+"yallist@npm:4.0.0"
+]; });
+isolated."keccak@npm:3.0.2" = optionalOverride (args.overrideKeccakAttrs or null) (mkIsolatedBuild { pname = "keccak"; version = "3.0.2"; reference = "npm:3.0.2"; locators = [
+"@gar/promisify@npm:1.1.3"
+"@npmcli/fs@npm:2.1.2"
+"@npmcli/move-file@npm:2.0.1"
+"@tootallnate/once@npm:2.0.0"
+"abbrev@npm:1.1.1"
+"agent-base@npm:6.0.2"
+"agentkeepalive@npm:4.2.1"
+"aggregate-error@npm:3.1.0"
+"ansi-regex@npm:5.0.1"
+"aproba@npm:2.0.0"
+"are-we-there-yet@npm:3.0.1"
+"balanced-match@npm:1.0.2"
+"brace-expansion@npm:1.1.11"
+"brace-expansion@npm:2.0.1"
+"cacache@npm:16.1.3"
+"chownr@npm:2.0.0"
+"clean-stack@npm:2.2.0"
+"color-support@npm:1.1.3"
+"concat-map@npm:0.0.1"
+"console-control-strings@npm:1.1.0"
+"debug@npm:4.3.4"
+"delegates@npm:1.0.0"
+"depd@npm:1.1.2"
+"emoji-regex@npm:8.0.0"
+"encoding@npm:0.1.13"
+"env-paths@npm:2.2.1"
+"err-code@npm:2.0.3"
+"fs-minipass@npm:2.1.0"
+"fs.realpath@npm:1.0.0"
+"gauge@npm:4.0.4"
+"glob@npm:7.2.3"
+"glob@npm:8.1.0"
+"graceful-fs@npm:4.2.10"
+"has-unicode@npm:2.0.1"
+"http-cache-semantics@npm:4.1.1"
+"http-proxy-agent@npm:5.0.0"
+"https-proxy-agent@npm:5.0.1"
+"humanize-ms@npm:1.2.1"
+"iconv-lite@npm:0.6.3"
+"imurmurhash@npm:0.1.4"
+"indent-string@npm:4.0.0"
+"infer-owner@npm:1.0.4"
+"inflight@npm:1.0.6"
+"inherits@npm:2.0.4"
+"ip@npm:2.0.0"
+"is-fullwidth-code-point@npm:3.0.0"
+"is-lambda@npm:1.0.1"
+"isexe@npm:2.0.0"
+"keccak@npm:3.0.2"
+"lru-cache@npm:6.0.0"
+"lru-cache@npm:7.17.0"
+"make-fetch-happen@npm:10.2.1"
+"minimatch@npm:3.1.2"
+"minimatch@npm:5.1.6"
+"minipass-collect@npm:1.0.2"
+"minipass-fetch@npm:2.1.2"
+"minipass-flush@npm:1.0.5"
+"minipass-pipeline@npm:1.2.4"
+"minipass-sized@npm:1.0.3"
+"minipass@npm:3.3.6"
+"minipass@npm:4.2.0"
+"minizlib@npm:2.1.2"
+"mkdirp@npm:1.0.4"
+"ms@npm:2.1.2"
+"ms@npm:2.1.3"
+"negotiator@npm:0.6.3"
+"node-addon-api@npm:2.0.2"
+"node-gyp-build@npm:4.6.0"
+"node-gyp@npm:9.3.1"
+"nopt@npm:6.0.0"
+"npmlog@npm:6.0.2"
+"once@npm:1.4.0"
+"p-map@npm:4.0.0"
+"path-is-absolute@npm:1.0.1"
+"promise-inflight@npm:1.0.1"
+"promise-retry@npm:2.0.1"
+"readable-stream@npm:3.6.1"
+"retry@npm:0.12.0"
+"rimraf@npm:3.0.2"
+"safe-buffer@npm:5.2.1"
+"safer-buffer@npm:2.1.2"
+"semver@npm:7.3.8"
+"set-blocking@npm:2.0.0"
+"signal-exit@npm:3.0.7"
+"smart-buffer@npm:4.2.0"
+"socks-proxy-agent@npm:7.0.0"
+"socks@npm:2.7.1"
+"ssri@npm:9.0.1"
+"string-width@npm:4.2.3"
+"string_decoder@npm:1.3.0"
+"strip-ansi@npm:6.0.1"
+"tar@npm:6.1.13"
+"unique-filename@npm:2.0.1"
+"unique-slug@npm:3.0.0"
+"util-deprecate@npm:1.0.2"
+"which@npm:2.0.2"
+"wide-align@npm:1.1.5"
+"wrappy@npm:1.0.2"
+"yallist@npm:4.0.0"
+]; });
+isolated."leveldown@npm:6.1.0" = optionalOverride (args.overrideLeveldownAttrs or null) (mkIsolatedBuild { pname = "leveldown"; version = "6.1.0"; reference = "npm:6.1.0"; locators = [
+"@gar/promisify@npm:1.1.3"
+"@npmcli/fs@npm:2.1.2"
+"@npmcli/move-file@npm:2.0.1"
+"@tootallnate/once@npm:2.0.0"
+"abbrev@npm:1.1.1"
+"abstract-leveldown@npm:7.2.0"
+"agent-base@npm:6.0.2"
+"agentkeepalive@npm:4.2.1"
+"aggregate-error@npm:3.1.0"
+"ansi-regex@npm:5.0.1"
+"aproba@npm:2.0.0"
+"are-we-there-yet@npm:3.0.1"
+"balanced-match@npm:1.0.2"
+"base64-js@npm:1.5.1"
+"brace-expansion@npm:1.1.11"
+"brace-expansion@npm:2.0.1"
+"buffer@npm:6.0.3"
+"cacache@npm:16.1.3"
+"catering@npm:2.1.1"
+"chownr@npm:2.0.0"
+"clean-stack@npm:2.2.0"
+"color-support@npm:1.1.3"
+"concat-map@npm:0.0.1"
+"console-control-strings@npm:1.1.0"
+"debug@npm:4.3.4"
+"delegates@npm:1.0.0"
+"depd@npm:1.1.2"
+"emoji-regex@npm:8.0.0"
+"encoding@npm:0.1.13"
+"env-paths@npm:2.2.1"
+"err-code@npm:2.0.3"
+"fs-minipass@npm:2.1.0"
+"fs.realpath@npm:1.0.0"
+"gauge@npm:4.0.4"
+"glob@npm:7.2.3"
+"glob@npm:8.1.0"
+"graceful-fs@npm:4.2.10"
+"has-unicode@npm:2.0.1"
+"http-cache-semantics@npm:4.1.1"
+"http-proxy-agent@npm:5.0.0"
+"https-proxy-agent@npm:5.0.1"
+"humanize-ms@npm:1.2.1"
+"iconv-lite@npm:0.6.3"
+"ieee754@npm:1.2.1"
+"imurmurhash@npm:0.1.4"
+"indent-string@npm:4.0.0"
+"infer-owner@npm:1.0.4"
+"inflight@npm:1.0.6"
+"inherits@npm:2.0.4"
+"ip@npm:2.0.0"
+"is-buffer@npm:2.0.5"
+"is-fullwidth-code-point@npm:3.0.0"
+"is-lambda@npm:1.0.1"
+"isexe@npm:2.0.0"
+"level-concat-iterator@npm:3.1.0"
+"level-supports@npm:2.1.0"
+"leveldown@npm:6.1.0"
+"lru-cache@npm:6.0.0"
+"lru-cache@npm:7.17.0"
+"make-fetch-happen@npm:10.2.1"
+"minimatch@npm:3.1.2"
+"minimatch@npm:5.1.6"
+"minipass-collect@npm:1.0.2"
+"minipass-fetch@npm:2.1.2"
+"minipass-flush@npm:1.0.5"
+"minipass-pipeline@npm:1.2.4"
+"minipass-sized@npm:1.0.3"
+"minipass@npm:3.3.6"
+"minipass@npm:4.2.0"
+"minizlib@npm:2.1.2"
+"mkdirp@npm:1.0.4"
+"ms@npm:2.1.2"
+"ms@npm:2.1.3"
+"napi-macros@npm:2.0.0"
+"negotiator@npm:0.6.3"
+"node-gyp-build@npm:4.6.0"
+"node-gyp@npm:9.3.1"
+"nopt@npm:6.0.0"
+"npmlog@npm:6.0.2"
+"once@npm:1.4.0"
+"p-map@npm:4.0.0"
+"path-is-absolute@npm:1.0.1"
+"promise-inflight@npm:1.0.1"
+"promise-retry@npm:2.0.1"
+"queue-microtask@npm:1.2.3"
+"readable-stream@npm:3.6.1"
+"retry@npm:0.12.0"
+"rimraf@npm:3.0.2"
+"safe-buffer@npm:5.2.1"
+"safer-buffer@npm:2.1.2"
+"semver@npm:7.3.8"
+"set-blocking@npm:2.0.0"
+"signal-exit@npm:3.0.7"
+"smart-buffer@npm:4.2.0"
+"socks-proxy-agent@npm:7.0.0"
+"socks@npm:2.7.1"
+"ssri@npm:9.0.1"
+"string-width@npm:4.2.3"
+"string_decoder@npm:1.3.0"
+"strip-ansi@npm:6.0.1"
+"tar@npm:6.1.13"
+"unique-filename@npm:2.0.1"
+"unique-slug@npm:3.0.0"
+"util-deprecate@npm:1.0.2"
+"which@npm:2.0.2"
+"wide-align@npm:1.1.5"
+"wrappy@npm:1.0.2"
+"yallist@npm:4.0.0"
+]; });
+isolated."utf-8-validate@npm:5.0.7" = optionalOverride (args.overrideUtf8ValidateAttrs or null) (mkIsolatedBuild { pname = "utf-8-validate"; version = "5.0.7"; reference = "npm:5.0.7"; locators = [
+"@gar/promisify@npm:1.1.3"
+"@npmcli/fs@npm:2.1.2"
+"@npmcli/move-file@npm:2.0.1"
+"@tootallnate/once@npm:2.0.0"
+"abbrev@npm:1.1.1"
+"agent-base@npm:6.0.2"
+"agentkeepalive@npm:4.2.1"
+"aggregate-error@npm:3.1.0"
+"ansi-regex@npm:5.0.1"
+"aproba@npm:2.0.0"
+"are-we-there-yet@npm:3.0.1"
+"balanced-match@npm:1.0.2"
+"brace-expansion@npm:1.1.11"
+"brace-expansion@npm:2.0.1"
+"cacache@npm:16.1.3"
+"chownr@npm:2.0.0"
+"clean-stack@npm:2.2.0"
+"color-support@npm:1.1.3"
+"concat-map@npm:0.0.1"
+"console-control-strings@npm:1.1.0"
+"debug@npm:4.3.4"
+"delegates@npm:1.0.0"
+"depd@npm:1.1.2"
+"emoji-regex@npm:8.0.0"
+"encoding@npm:0.1.13"
+"env-paths@npm:2.2.1"
+"err-code@npm:2.0.3"
+"fs-minipass@npm:2.1.0"
+"fs.realpath@npm:1.0.0"
+"gauge@npm:4.0.4"
+"glob@npm:7.2.3"
+"glob@npm:8.1.0"
+"graceful-fs@npm:4.2.10"
+"has-unicode@npm:2.0.1"
+"http-cache-semantics@npm:4.1.1"
+"http-proxy-agent@npm:5.0.0"
+"https-proxy-agent@npm:5.0.1"
+"humanize-ms@npm:1.2.1"
+"iconv-lite@npm:0.6.3"
+"imurmurhash@npm:0.1.4"
+"indent-string@npm:4.0.0"
+"infer-owner@npm:1.0.4"
+"inflight@npm:1.0.6"
+"inherits@npm:2.0.4"
+"ip@npm:2.0.0"
+"is-fullwidth-code-point@npm:3.0.0"
+"is-lambda@npm:1.0.1"
+"isexe@npm:2.0.0"
+"lru-cache@npm:6.0.0"
+"lru-cache@npm:7.17.0"
+"make-fetch-happen@npm:10.2.1"
+"minimatch@npm:3.1.2"
+"minimatch@npm:5.1.6"
+"minipass-collect@npm:1.0.2"
+"minipass-fetch@npm:2.1.2"
+"minipass-flush@npm:1.0.5"
+"minipass-pipeline@npm:1.2.4"
+"minipass-sized@npm:1.0.3"
+"minipass@npm:3.3.6"
+"minipass@npm:4.2.0"
+"minizlib@npm:2.1.2"
+"mkdirp@npm:1.0.4"
+"ms@npm:2.1.2"
+"ms@npm:2.1.3"
+"negotiator@npm:0.6.3"
+"node-gyp-build@npm:4.6.0"
+"node-gyp@npm:9.3.1"
+"nopt@npm:6.0.0"
+"npmlog@npm:6.0.2"
+"once@npm:1.4.0"
+"p-map@npm:4.0.0"
+"path-is-absolute@npm:1.0.1"
+"promise-inflight@npm:1.0.1"
+"promise-retry@npm:2.0.1"
+"readable-stream@npm:3.6.1"
+"retry@npm:0.12.0"
+"rimraf@npm:3.0.2"
+"safe-buffer@npm:5.2.1"
+"safer-buffer@npm:2.1.2"
+"semver@npm:7.3.8"
+"set-blocking@npm:2.0.0"
+"signal-exit@npm:3.0.7"
+"smart-buffer@npm:4.2.0"
+"socks-proxy-agent@npm:7.0.0"
+"socks@npm:2.7.1"
+"ssri@npm:9.0.1"
+"string-width@npm:4.2.3"
+"string_decoder@npm:1.3.0"
+"strip-ansi@npm:6.0.1"
+"tar@npm:6.1.13"
+"unique-filename@npm:2.0.1"
+"unique-slug@npm:3.0.0"
+"utf-8-validate@npm:5.0.7"
+"util-deprecate@npm:1.0.2"
+"which@npm:2.0.2"
+"wide-align@npm:1.1.5"
+"wrappy@npm:1.0.2"
+"yallist@npm:4.0.0"
+]; });
+isolated."bufferutil@npm:4.0.7" = optionalOverride (args.overrideBufferutilAttrs or null) (mkIsolatedBuild { pname = "bufferutil"; version = "4.0.7"; reference = "npm:4.0.7"; locators = [
+"@gar/promisify@npm:1.1.3"
+"@npmcli/fs@npm:2.1.2"
+"@npmcli/move-file@npm:2.0.1"
+"@tootallnate/once@npm:2.0.0"
+"abbrev@npm:1.1.1"
+"agent-base@npm:6.0.2"
+"agentkeepalive@npm:4.2.1"
+"aggregate-error@npm:3.1.0"
+"ansi-regex@npm:5.0.1"
+"aproba@npm:2.0.0"
+"are-we-there-yet@npm:3.0.1"
+"balanced-match@npm:1.0.2"
+"brace-expansion@npm:1.1.11"
+"brace-expansion@npm:2.0.1"
+"bufferutil@npm:4.0.7"
+"cacache@npm:16.1.3"
+"chownr@npm:2.0.0"
+"clean-stack@npm:2.2.0"
+"color-support@npm:1.1.3"
+"concat-map@npm:0.0.1"
+"console-control-strings@npm:1.1.0"
+"debug@npm:4.3.4"
+"delegates@npm:1.0.0"
+"depd@npm:1.1.2"
+"emoji-regex@npm:8.0.0"
+"encoding@npm:0.1.13"
+"env-paths@npm:2.2.1"
+"err-code@npm:2.0.3"
+"fs-minipass@npm:2.1.0"
+"fs.realpath@npm:1.0.0"
+"gauge@npm:4.0.4"
+"glob@npm:7.2.3"
+"glob@npm:8.1.0"
+"graceful-fs@npm:4.2.10"
+"has-unicode@npm:2.0.1"
+"http-cache-semantics@npm:4.1.1"
+"http-proxy-agent@npm:5.0.0"
+"https-proxy-agent@npm:5.0.1"
+"humanize-ms@npm:1.2.1"
+"iconv-lite@npm:0.6.3"
+"imurmurhash@npm:0.1.4"
+"indent-string@npm:4.0.0"
+"infer-owner@npm:1.0.4"
+"inflight@npm:1.0.6"
+"inherits@npm:2.0.4"
+"ip@npm:2.0.0"
+"is-fullwidth-code-point@npm:3.0.0"
+"is-lambda@npm:1.0.1"
+"isexe@npm:2.0.0"
+"lru-cache@npm:6.0.0"
+"lru-cache@npm:7.17.0"
+"make-fetch-happen@npm:10.2.1"
+"minimatch@npm:3.1.2"
+"minimatch@npm:5.1.6"
+"minipass-collect@npm:1.0.2"
+"minipass-fetch@npm:2.1.2"
+"minipass-flush@npm:1.0.5"
+"minipass-pipeline@npm:1.2.4"
+"minipass-sized@npm:1.0.3"
+"minipass@npm:3.3.6"
+"minipass@npm:4.2.0"
+"minizlib@npm:2.1.2"
+"mkdirp@npm:1.0.4"
+"ms@npm:2.1.2"
+"ms@npm:2.1.3"
+"negotiator@npm:0.6.3"
+"node-gyp-build@npm:4.6.0"
+"node-gyp@npm:9.3.1"
+"nopt@npm:6.0.0"
+"npmlog@npm:6.0.2"
+"once@npm:1.4.0"
+"p-map@npm:4.0.0"
+"path-is-absolute@npm:1.0.1"
+"promise-inflight@npm:1.0.1"
+"promise-retry@npm:2.0.1"
+"readable-stream@npm:3.6.1"
+"retry@npm:0.12.0"
+"rimraf@npm:3.0.2"
+"safe-buffer@npm:5.2.1"
+"safer-buffer@npm:2.1.2"
+"semver@npm:7.3.8"
+"set-blocking@npm:2.0.0"
+"signal-exit@npm:3.0.7"
+"smart-buffer@npm:4.2.0"
+"socks-proxy-agent@npm:7.0.0"
+"socks@npm:2.7.1"
+"ssri@npm:9.0.1"
+"string-width@npm:4.2.3"
+"string_decoder@npm:1.3.0"
+"strip-ansi@npm:6.0.1"
+"tar@npm:6.1.13"
+"unique-filename@npm:2.0.1"
+"unique-slug@npm:3.0.0"
+"util-deprecate@npm:1.0.2"
+"which@npm:2.0.2"
+"wide-align@npm:1.1.5"
+"wrappy@npm:1.0.2"
+"yallist@npm:4.0.0"
+]; });
+isolated."utf-8-validate@npm:5.0.10" = optionalOverride (args.overrideUtf8ValidateAttrs or null) (mkIsolatedBuild { pname = "utf-8-validate"; version = "5.0.10"; reference = "npm:5.0.10"; locators = [
+"@gar/promisify@npm:1.1.3"
+"@npmcli/fs@npm:2.1.2"
+"@npmcli/move-file@npm:2.0.1"
+"@tootallnate/once@npm:2.0.0"
+"abbrev@npm:1.1.1"
+"agent-base@npm:6.0.2"
+"agentkeepalive@npm:4.2.1"
+"aggregate-error@npm:3.1.0"
+"ansi-regex@npm:5.0.1"
+"aproba@npm:2.0.0"
+"are-we-there-yet@npm:3.0.1"
+"balanced-match@npm:1.0.2"
+"brace-expansion@npm:1.1.11"
+"brace-expansion@npm:2.0.1"
+"cacache@npm:16.1.3"
+"chownr@npm:2.0.0"
+"clean-stack@npm:2.2.0"
+"color-support@npm:1.1.3"
+"concat-map@npm:0.0.1"
+"console-control-strings@npm:1.1.0"
+"debug@npm:4.3.4"
+"delegates@npm:1.0.0"
+"depd@npm:1.1.2"
+"emoji-regex@npm:8.0.0"
+"encoding@npm:0.1.13"
+"env-paths@npm:2.2.1"
+"err-code@npm:2.0.3"
+"fs-minipass@npm:2.1.0"
+"fs.realpath@npm:1.0.0"
+"gauge@npm:4.0.4"
+"glob@npm:7.2.3"
+"glob@npm:8.1.0"
+"graceful-fs@npm:4.2.10"
+"has-unicode@npm:2.0.1"
+"http-cache-semantics@npm:4.1.1"
+"http-proxy-agent@npm:5.0.0"
+"https-proxy-agent@npm:5.0.1"
+"humanize-ms@npm:1.2.1"
+"iconv-lite@npm:0.6.3"
+"imurmurhash@npm:0.1.4"
+"indent-string@npm:4.0.0"
+"infer-owner@npm:1.0.4"
+"inflight@npm:1.0.6"
+"inherits@npm:2.0.4"
+"ip@npm:2.0.0"
+"is-fullwidth-code-point@npm:3.0.0"
+"is-lambda@npm:1.0.1"
+"isexe@npm:2.0.0"
+"lru-cache@npm:6.0.0"
+"lru-cache@npm:7.17.0"
+"make-fetch-happen@npm:10.2.1"
+"minimatch@npm:3.1.2"
+"minimatch@npm:5.1.6"
+"minipass-collect@npm:1.0.2"
+"minipass-fetch@npm:2.1.2"
+"minipass-flush@npm:1.0.5"
+"minipass-pipeline@npm:1.2.4"
+"minipass-sized@npm:1.0.3"
+"minipass@npm:3.3.6"
+"minipass@npm:4.2.0"
+"minizlib@npm:2.1.2"
+"mkdirp@npm:1.0.4"
+"ms@npm:2.1.2"
+"ms@npm:2.1.3"
+"negotiator@npm:0.6.3"
+"node-gyp-build@npm:4.6.0"
+"node-gyp@npm:9.3.1"
+"nopt@npm:6.0.0"
+"npmlog@npm:6.0.2"
+"once@npm:1.4.0"
+"p-map@npm:4.0.0"
+"path-is-absolute@npm:1.0.1"
+"promise-inflight@npm:1.0.1"
+"promise-retry@npm:2.0.1"
+"readable-stream@npm:3.6.1"
+"retry@npm:0.12.0"
+"rimraf@npm:3.0.2"
+"safe-buffer@npm:5.2.1"
+"safer-buffer@npm:2.1.2"
+"semver@npm:7.3.8"
+"set-blocking@npm:2.0.0"
+"signal-exit@npm:3.0.7"
+"smart-buffer@npm:4.2.0"
+"socks-proxy-agent@npm:7.0.0"
+"socks@npm:2.7.1"
+"ssri@npm:9.0.1"
+"string-width@npm:4.2.3"
+"string_decoder@npm:1.3.0"
+"strip-ansi@npm:6.0.1"
+"tar@npm:6.1.13"
+"unique-filename@npm:2.0.1"
+"unique-slug@npm:3.0.0"
+"utf-8-validate@npm:5.0.10"
+"util-deprecate@npm:1.0.2"
+"which@npm:2.0.2"
+"wide-align@npm:1.1.5"
+"wrappy@npm:1.0.2"
+"yallist@npm:4.0.0"
+]; });
+isolated."redis-commander@npm:0.8.0" = optionalOverride (args.overrideRedisCommanderAttrs or null) (mkIsolatedBuild { pname = "redis-commander"; version = "0.8.0"; reference = "npm:0.8.0"; locators = [
+"@gar/promisify@npm:1.1.3"
+"@mapbox/node-pre-gyp@npm:1.0.10"
+"@npmcli/fs@npm:2.1.2"
+"@npmcli/move-file@npm:2.0.1"
+"@tootallnate/once@npm:2.0.0"
+"abbrev@npm:1.1.1"
+"accepts@npm:1.3.8"
+"agent-base@npm:6.0.2"
+"agentkeepalive@npm:4.2.1"
+"aggregate-error@npm:3.1.0"
+"ansi-regex@npm:5.0.1"
+"ansi-styles@npm:4.3.0"
+"aproba@npm:2.0.0"
+"are-we-there-yet@npm:2.0.0"
+"are-we-there-yet@npm:3.0.1"
+"array-flatten@npm:1.1.1"
+"async@npm:0.1.22"
+"async@npm:3.2.3"
+"async@npm:3.2.4"
+"balanced-match@npm:1.0.2"
+"bcrypt@npm:5.0.1"
+"bcryptjs@npm:2.4.3"
+"body-parser@npm:1.20.0"
+"brace-expansion@npm:1.1.11"
+"brace-expansion@npm:2.0.1"
+"buffer-equal-constant-time@npm:1.0.1"
+"bytes@npm:3.1.2"
+"cacache@npm:16.1.3"
+"call-bind@npm:1.0.2"
+"chalk@npm:4.1.2"
+"chownr@npm:2.0.0"
+"clean-stack@npm:2.2.0"
+"clipboard@npm:2.0.10"
+"cliui@npm:7.0.4"
+"cluster-key-slot@npm:1.1.2"
+"cmdparser@npm:0.0.3"
+"color-convert@npm:2.0.1"
+"color-name@npm:1.1.4"
+"color-support@npm:1.1.3"
+"concat-map@npm:0.0.1"
+"config@npm:3.3.7"
+"console-control-strings@npm:1.1.0"
+"content-disposition@npm:0.5.4"
+"content-type@npm:1.0.5"
+"cookie-signature@npm:1.0.6"
+"cookie@npm:0.5.0"
+"dateformat@npm:3.0.3"
+"debug@npm:2.6.9"
+"debug@npm:4.3.4"
+"delegate@npm:3.2.0"
+"delegates@npm:1.0.0"
+"denque@npm:1.5.1"
+"depd@npm:1.1.2"
+"depd@npm:2.0.0"
+"destroy@npm:1.2.0"
+"detect-libc@npm:2.0.1"
+"ecdsa-sig-formatter@npm:1.0.11"
+"ee-first@npm:1.1.1"
+"ejs@npm:3.1.7"
+"emoji-regex@npm:8.0.0"
+"encodeurl@npm:1.0.2"
+"encoding@npm:0.1.13"
+"env-paths@npm:2.2.1"
+"err-code@npm:2.0.3"
+"escalade@npm:3.1.1"
+"escape-html@npm:1.0.3"
+"etag@npm:1.8.1"
+"express-partials@npm:0.3.0"
+"express@npm:4.18.1"
+"filelist@npm:1.0.4"
+"finalhandler@npm:1.2.0"
+"forwarded@npm:0.2.0"
+"fresh@npm:0.5.2"
+"fs-minipass@npm:2.1.0"
+"fs.realpath@npm:1.0.0"
+"function-bind@npm:1.1.1"
+"gauge@npm:3.0.2"
+"gauge@npm:4.0.4"
+"get-caller-file@npm:2.0.5"
+"get-intrinsic@npm:1.2.0"
+"glob@npm:7.2.3"
+"glob@npm:8.1.0"
+"good-listener@npm:1.2.2"
+"graceful-fs@npm:4.2.10"
+"has-flag@npm:4.0.0"
+"has-symbols@npm:1.0.3"
+"has-unicode@npm:2.0.1"
+"has@npm:1.0.3"
+"http-cache-semantics@npm:4.1.1"
+"http-errors@npm:2.0.0"
+"http-proxy-agent@npm:5.0.0"
+"https-proxy-agent@npm:5.0.1"
+"humanize-ms@npm:1.2.1"
+"iconv-lite@npm:0.4.24"
+"iconv-lite@npm:0.6.3"
+"imurmurhash@npm:0.1.4"
+"indent-string@npm:4.0.0"
+"infer-owner@npm:1.0.4"
+"inflection@npm:1.13.2"
+"inflight@npm:1.0.6"
+"inherits@npm:2.0.4"
+"ioredis@npm:4.28.5"
+"ip@npm:2.0.0"
+"ipaddr.js@npm:1.9.1"
+"is-fullwidth-code-point@npm:3.0.0"
+"is-lambda@npm:1.0.1"
+"isexe@npm:2.0.0"
+"jake@npm:10.8.5"
+"jquery.json-viewer@npm:1.5.0"
+"jquery@npm:3.6.4"
+"json5@npm:2.2.3"
+"jsonwebtoken@npm:8.5.1"
+"jstree@npm:3.3.12"
+"jwa@npm:1.4.1"
+"jws@npm:3.2.2"
+"lodash.defaults@npm:4.2.0"
+"lodash.flatten@npm:4.4.0"
+"lodash.includes@npm:4.3.0"
+"lodash.isarguments@npm:3.1.0"
+"lodash.isboolean@npm:3.0.3"
+"lodash.isequal@npm:4.5.0"
+"lodash.isinteger@npm:4.0.4"
+"lodash.isnumber@npm:3.0.3"
+"lodash.isplainobject@npm:4.0.6"
+"lodash.isstring@npm:4.0.1"
+"lodash.once@npm:4.1.1"
+"lossless-json@npm:1.0.5"
+"lru-cache@npm:6.0.0"
+"lru-cache@npm:7.17.0"
+"make-dir@npm:3.1.0"
+"make-fetch-happen@npm:10.2.1"
+"media-typer@npm:0.3.0"
+"merge-descriptors@npm:1.0.1"
+"methods@npm:1.1.2"
+"mime-db@npm:1.52.0"
+"mime-types@npm:2.1.35"
+"mime@npm:1.6.0"
+"minimatch@npm:3.1.2"
+"minimatch@npm:5.1.6"
+"minipass-collect@npm:1.0.2"
+"minipass-fetch@npm:2.1.2"
+"minipass-flush@npm:1.0.5"
+"minipass-pipeline@npm:1.2.4"
+"minipass-sized@npm:1.0.3"
+"minipass@npm:3.3.6"
+"minipass@npm:4.2.0"
+"minizlib@npm:2.1.2"
+"mkdirp@npm:1.0.4"
+"ms@npm:2.0.0"
+"ms@npm:2.1.2"
+"ms@npm:2.1.3"
+"negotiator@npm:0.6.3"
+"node-addon-api@npm:3.2.1"
+"node-fetch@npm:2.6.9"
+"node-gyp@npm:9.3.1"
+"node-redis-dump2@npm:0.5.0"
+"nopt@npm:5.0.0"
+"nopt@npm:6.0.0"
+"npmlog@npm:5.0.1"
+"npmlog@npm:6.0.2"
+"object-assign@npm:4.1.1"
+"object-inspect@npm:1.12.3"
+"on-finished@npm:2.4.1"
+"once@npm:1.4.0"
+"opener@npm:1.5.2"
+"p-map@npm:2.1.0"
+"p-map@npm:4.0.0"
+"parseurl@npm:1.3.3"
+"path-is-absolute@npm:1.0.1"
+"path-to-regexp@npm:0.1.7"
+"promise-inflight@npm:1.0.1"
+"promise-retry@npm:2.0.1"
+"proxy-addr@npm:2.0.7"
+"qs@npm:6.10.3"
+"range-parser@npm:1.2.1"
+"raw-body@npm:2.5.1"
+"readable-stream@npm:3.6.1"
+"readline-browserify@npm:0.0.4"
+"redis-commander@npm:0.8.0"
+"redis-commands@npm:1.7.0"
+"redis-errors@npm:1.2.0"
+"redis-parser@npm:3.0.0"
+"require-directory@npm:2.1.1"
+"retry@npm:0.12.0"
+"rimraf@npm:3.0.2"
+"safe-buffer@npm:5.2.1"
+"safer-buffer@npm:2.1.2"
+"select@npm:1.1.2"
+"semver@npm:5.7.1"
+"semver@npm:6.3.0"
+"semver@npm:7.3.8"
+"send@npm:0.18.0"
+"serve-static@npm:1.15.0"
+"set-blocking@npm:2.0.0"
+"setprototypeof@npm:1.2.0"
+"side-channel@npm:1.0.4"
+"signal-exit@npm:3.0.7"
+"smart-buffer@npm:4.2.0"
+"socks-proxy-agent@npm:7.0.0"
+"socks@npm:2.7.1"
+"ssri@npm:9.0.1"
+"standard-as-callback@npm:2.1.0"
+"statuses@npm:2.0.1"
+"string-width@npm:4.2.3"
+"string_decoder@npm:1.3.0"
+"strip-ansi@npm:6.0.1"
+"supports-color@npm:7.2.0"
+"tar@npm:6.1.13"
+"tiny-emitter@npm:2.1.0"
+"toidentifier@npm:1.0.1"
+"tr46@npm:0.0.3"
+"type-is@npm:1.6.18"
+"underscore@npm:1.13.6"
+"unique-filename@npm:2.0.1"
+"unique-slug@npm:3.0.0"
+"unpipe@npm:1.0.0"
+"util-deprecate@npm:1.0.2"
+"utils-merge@npm:1.0.1"
+"vary@npm:1.1.2"
+"webidl-conversions@npm:3.0.1"
+"whatwg-url@npm:5.0.0"
+"which@npm:2.0.2"
+"wide-align@npm:1.1.5"
+"wrap-ansi@npm:7.0.0"
+"wrappy@npm:1.0.2"
+"y18n@npm:5.0.8"
+"yallist@npm:4.0.0"
+"yargs-parser@npm:21.1.1"
+"yargs@npm:17.4.1"
+]; });
 in overriddenProject
