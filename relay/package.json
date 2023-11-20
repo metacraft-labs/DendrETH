@@ -11,8 +11,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@chainsafe/persistent-merkle-tree": "^0.6.1",
+    "@chainsafe/ssz": "^0.14.0",
     "@effect/schema": "^0.33.0",
+    "@lodestar/types": "^1.11.3",
     "discord.js": "^14.12.1",
+    "redis": "^4.6.10",
     "ts-node": "^10.9.1",
     "web3": "^1.10.0",
     "winston": "^3.10.0",
