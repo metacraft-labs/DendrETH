@@ -1,4 +1,4 @@
-#include "../circuits_imp/weigh_justification_and_finalization.h"
+#include "../circuits_impl/weigh_justification_and_finalization.h"
 
 using namespace weigh_justification_and_finalization_;
 
@@ -37,7 +37,7 @@ struct weigh_justification_and_finalization_result {
 )
 {
     weigh_justification_and_finalization_result result;
-    weigh_justification_and_finalization_imp(
+    weigh_justification_and_finalization_impl(
         beacon_state_root,
         slot,
         slot_proof,

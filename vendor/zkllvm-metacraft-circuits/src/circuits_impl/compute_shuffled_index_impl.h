@@ -6,13 +6,13 @@
 #include <algorithm>
 #include <array>
 
-#include "compute_shuffled_index_imp.h"
+#include "compute_shuffled_index_impl.h"
 #include "../circuit_utils/circuit_byte_utils.h"
 #include "../utils/picosha2.h"
 
 using namespace circuit_byte_utils;
 
-uint64_t compute_shuffled_index_imp(uint64_t index, uint64_t index_count, std::array<Byte, 32> seed,
+uint64_t compute_shuffled_index_impl(uint64_t index, uint64_t index_count, std::array<Byte, 32> seed,
                                             int SHUFFLE_ROUND_COUNT = 90) {
     assert_true(index < index_count);
 

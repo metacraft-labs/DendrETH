@@ -7,7 +7,7 @@
 #include <fstream>
 #include <streambuf>
 
-#include "circuits_imp/weigh_justification_and_finalization.h"
+#include "circuits_impl/weigh_justification_and_finalization.h"
 #include "utils/byte_utils.h"
 #include "utils/file_utils.h"
 
@@ -153,7 +153,7 @@ void test_circuit_sample_data() {
     CheckpointVariable new_finalized_checkpoint;
     JustificationBitsVariable new_justification_bits;
 
-    weigh_justification_and_finalization_imp(beacon_state_root,
+    weigh_justification_and_finalization_impl(beacon_state_root,
                                          slot,
                                          slot_proof,
                                          previous_justified_checkpoint,
@@ -339,7 +339,7 @@ void test_circuit_ssz_json() {
                  previous_epoch_target_balance=0,
                  current_epoch_target_balance=0;
 
-        weigh_justification_and_finalization_imp(beacon_state_root,
+        weigh_justification_and_finalization_impl(beacon_state_root,
                                              slot,
                                              slot_proof,
                                              previous_justified_checkpoint,

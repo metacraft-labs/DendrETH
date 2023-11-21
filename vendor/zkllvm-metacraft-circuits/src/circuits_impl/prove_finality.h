@@ -57,7 +57,7 @@ void process_justifications(
     new_justification_bits.bits[0] = current_epoch_supermajority_link_pred;
 }
 
-void prove_finality_imp(
+void prove_finality_impl(
     const Gwei total_number_of_validators,
     const JustificationBitsVariable& justification_bits,
     const CheckpointVariable& current_justified_checkpoint,

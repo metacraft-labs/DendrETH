@@ -245,7 +245,7 @@ CheckpointVariable process_finalizations(const JustificationBitsVariable& justif
     return new_finalized_checkpoint;
 }
 
-void weigh_justification_and_finalization_imp(
+void weigh_justification_and_finalization_impl(
     const Root& beacon_state_root,
     const Slot& slot,
     const BeaconStateLeafProof& slot_proof,

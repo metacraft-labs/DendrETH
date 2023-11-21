@@ -1,7 +1,7 @@
 #include <nil/crypto3/hash/algorithm/hash.hpp>
 #include <nil/crypto3/hash/sha2.hpp>
 #include "circuit_utils/circuit_byte_utils.h"
-#include "circuits_imp/compute_shuffled_index_imp.h"
+#include "circuits_impl/compute_shuffled_index_impl.h"
 
 #include <algorithm>
 #include <array>
@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
             // std::cout << "\n";
             std::vector<uint64_t> mapping_result;
             for (size_t i = 0; i < doc.mapping.size(); i++) {
-                auto result = compute_shuffled_index_imp(i, doc.mapping.size(), seed_bytes, SHUFFLE_ROUND_COUNT);
+                auto result = compute_shuffled_index_impl(i, doc.mapping.size(), seed_bytes, SHUFFLE_ROUND_COUNT);
                 mapping_result.push_back(result);
             }
             for (size_t i = 0; i < mapping_result.size(); i++) {
