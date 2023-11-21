@@ -18,7 +18,7 @@ using llvm::yaml::Output;
 
 using namespace byte_utils;
 using namespace file_utils;
-using namespace weigh_justification_and_finalization;
+using namespace weigh_justification_and_finalization_;
 
 using std::cout;
 

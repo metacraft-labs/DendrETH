@@ -3,12 +3,12 @@
 #include <array>
 #include <algorithm>
 
-#include "utils/picosha2.h"
-#include "circuit_utils/circuit_byte_utils.h"
+#include "../utils/picosha2.h"
+#include "../circuit_utils/circuit_byte_utils.h"
 
 using namespace circuit_byte_utils;
 
-namespace weigh_justification_and_finalization {
+namespace weigh_justification_and_finalization_ {
 
 Bytes32 sha256_pair(const Bytes32& left, const Bytes32& right) {
     Bytes32 ret_val {};

@@ -3,8 +3,8 @@
 #include <array>
 #include <algorithm>
 
-#include "utils/picosha2.h"
-#include "circuit_utils/circuit_byte_utils.h"
+#include "../utils/picosha2.h"
+#include "../circuit_utils/circuit_byte_utils.h"
 
 namespace prove_finality {
 
