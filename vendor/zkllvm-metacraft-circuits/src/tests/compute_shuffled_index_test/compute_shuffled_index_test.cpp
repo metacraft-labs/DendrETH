@@ -72,17 +72,7 @@ int main(int argc, char* argv[]) {
             }
 
             auto seed_bytes = byte_utils::hexToBytes<32>(doc.seed);
-            // std::cout << "seed=" << doc.seed << "\n";
-            // std::cout << "count=" << doc.count << "\n";
-            // for(const auto& v : doc.mapping) {
-            //     std::cout << v << " ";
-            // }
-            // std::cout << "\n\n";
-            // std::cout << "seed_bytes = ";
-            // for(const auto& v : seed_bytes) {
-            //     std::cout << (int)v << " ";
-            // }
-            // std::cout << "\n";
+
             std::vector<uint64_t> mapping_result;
             for (size_t i = 0; i < doc.mapping.size(); i++) {
                 auto result = compute_shuffled_index_impl(i, doc.mapping.size(), seed_bytes, SHUFFLE_ROUND_COUNT);
@@ -97,14 +87,25 @@ int main(int argc, char* argv[]) {
 
     std::vector<path> result;
     path my_path("./consensus-spec-tests");
-    find_matching_files(my_path, std::vector<std::string> {"minimal", "mapping.yaml"}, result);
+    try {
+        find_matching_files(my_path, std::vector<std::string> {"minimal", "mapping.yaml"}, result);
+    } catch (const non_existing_path& e) {
+        std::cerr << "ERROR: non existing path " << e.what() << "\n";
+        return 1;
+    }
 
     if (!process_test_input(result, 10)) {
         return 1;
     }
 
     result.clear();
-    find_matching_files(my_path, std::vector<std::string> {"mainnet", "mapping.yaml"}, result);
+
+    try {
+        find_matching_files(my_path, std::vector<std::string> {"mainnet", "mapping.yaml"}, result);
+    } catch (const non_existing_path& e) {
+        std::cerr << "ERROR: non existing path " << e.what() << "\n";
+        return 1;
+    }
 
     if (!process_test_input(result, 90)) {
         return 1;

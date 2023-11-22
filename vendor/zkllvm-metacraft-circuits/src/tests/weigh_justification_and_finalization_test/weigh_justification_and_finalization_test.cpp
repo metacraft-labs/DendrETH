@@ -209,7 +209,12 @@ void test_circuit_ssz_json() {
 
     std::vector<path> result;
     path my_path("./consensus-spec-tests");
-    find_matching_files(my_path, std::vector<std::string> {"ssz_snappy.json"}, result);
+    try {
+        find_matching_files(my_path, std::vector<std::string> {"ssz_snappy.json"}, result);
+    } catch (const non_existing_path& e) {
+        std::cerr << "ERROR: non existing path " << e.what() << "\n";
+        exit(1);
+    }
 
     for (const auto& v : result) {
         std::cout << "processing file: " << v << " ...\n";

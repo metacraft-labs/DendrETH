@@ -8,34 +8,36 @@ using namespace nil::crypto3;
 
 namespace circuit_byte_utils {
 
+#define countof(array) (sizeof(array) / sizeof(array[0]))
+
     using sha256_t = typename hashes::sha2<256>::block_type;
 
     bool is_same(sha256_t block0, sha256_t block1) {
 
         bool result = true;
-        for (auto i = 0; i < sizeof(block0) / sizeof(block0[0]) && result; i++) {
-            printf("Element found %d\n", i);
-            result = result && (block0[0] == block1[0]);
+        for (auto i = 0; i < countof(block0) && result; ++i) {
+            result = result && (block0[i] == block1[i]);
         }
 
         return result;
     }
 
     template<typename T>
-    char get_nth_byte(const T& val, unsigned int n) {
+    Byte get_nth_byte(const T& val, unsigned int n) {
         static_assert(std::is_integral<typename std::remove_reference<T>::type>::value, "T must be integral");
         assert_true(n < sizeof(T));
 
         return val >> (n * 8);
     }
 
-    unsigned char get_nth_bit(uint64_t gindex, short i) {
-        return 1 & (gindex >> i);
+    bool get_nth_bit(uint64_t value, short i) {
+        return 1 & (value >> i);
     }
 
-    void set_nth_bit(Byte& gindex, short i) {
+    Byte set_nth_bit(Byte& value, short i) {
         assert_true(i < 8);
-        gindex = gindex | (Byte(1) << i);
+        value = value | (Byte(1) << i);
+        return value;
     }
 
     template<typename T>
@@ -53,7 +55,7 @@ namespace circuit_byte_utils {
     std::array<T, N> take_n_elements(const std::array<T, inCount>& val) {
         static_assert(N <= inCount);
         std::array<T, N> ret {};
-        for (auto i = 0u; i < N; i++) {
+        for (auto i = 0u; i < N; ++i) {
             ret[i] = val[i];
         }
         return ret;
@@ -62,17 +64,17 @@ namespace circuit_byte_utils {
     template<typename T>
     std::array<Byte, sizeof(T)> int_to_bytes(const T& paramInt, bool little_endian = true) {
         static_assert(std::is_integral<typename std::remove_reference<T>::type>::value, "T must be integral");
-        std::array<Byte, sizeof(T)> arrayOfByte {};
+        std::array<Byte, sizeof(T)> bytes {};
         if (little_endian) {
-            for (int i = 0; i < sizeof(T); i++) {
-                arrayOfByte[i] = (paramInt >> (i * 8));
+            for (int i = 0; i < sizeof(T); ++i) {
+                bytes[i] = (paramInt >> (i * 8));
             }
         } else {
             for (int i = sizeof(T) - 1; i >= 0; i--) {
-                arrayOfByte[i] = (paramInt >> (i * 8));
+                bytes[i] = (paramInt >> (i * 8));
             }
         }
-        return arrayOfByte;
+        return bytes;
     }
 
     template<typename T>
@@ -84,7 +86,7 @@ namespace circuit_byte_utils {
                 result = (result << 8) + paramVec[i];
             }
         } else {
-            for (unsigned i = 0; i < sizeof(T); i++) {
+            for (unsigned i = 0; i < sizeof(T); ++i) {
                 result = (result << 8) + paramVec[i];
             }
         }

@@ -52,7 +52,7 @@ Bytes32 ssz_restore_merkle_root(const Bytes32& leaf, const std::array<Bytes32, M
     return hash;
 }
 
-template<uint32_t MERKLE_DEPTH>
+template<size_t MERKLE_DEPTH>
 void ssz_verify_proof(const Bytes32& root,
                       const Bytes32& leaf,
                       const std::array<Bytes32, MERKLE_DEPTH>& branch,
@@ -87,7 +87,7 @@ Bytes32 hash_tree_root(const JustificationBitsVariable& checkpoint) {
 void verify_slot(const Root& beacon_state_root, const Slot& slot, const BeaconStateLeafProof& proof) {
     auto slot_leaf = hash_tree_root(slot);
     auto gindex = BEACON_STATE_SLOT_GINDEX;
-    ssz_verify_proof<array_size<BeaconStateLeafProof>::size>(beacon_state_root, slot_leaf, proof, gindex);
+    ssz_verify_proof(beacon_state_root, slot_leaf, proof, gindex);
 }
 
 void verify_previous_justified_checkpoint(const Root& beacon_state_root,
@@ -95,7 +95,7 @@ void verify_previous_justified_checkpoint(const Root& beacon_state_root,
                                           const BeaconStateLeafProof& proof) {
     const auto checkpoint_leaf = hash_tree_root(checkpoint);
     const auto gindex = BEACON_STATE_PREVIOUS_JUSTIFIED_CHECKPOINT_GINDEX;
-    ssz_verify_proof<array_size<BeaconStateLeafProof>::size>(beacon_state_root, checkpoint_leaf, proof, gindex);
+    ssz_verify_proof(beacon_state_root, checkpoint_leaf, proof, gindex);
 }
 
 void verify_current_justified_checkpoint(Root beacon_state_root,
@@ -103,7 +103,7 @@ void verify_current_justified_checkpoint(Root beacon_state_root,
                                          BeaconStateLeafProof proof) {
     auto checkpoint_leaf = hash_tree_root(checkpoint);
     auto gindex = BEACON_STATE_CURRENT_JUSTIFIED_CHECKPOINT_GINDEX;
-    ssz_verify_proof<array_size<BeaconStateLeafProof>::size>(beacon_state_root, checkpoint_leaf, proof, gindex);
+    ssz_verify_proof(beacon_state_root, checkpoint_leaf, proof, gindex);
 }
 
 void verify_justification_bits(Root beacon_state_root,
@@ -111,7 +111,7 @@ void verify_justification_bits(Root beacon_state_root,
                                BeaconStateLeafProof proof) {
     auto justification_bits_leaf = hash_tree_root(justification_bits);
     auto gindex = BEACON_STATE_JUSTIFICATION_BITS_GINDEX;
-    ssz_verify_proof<array_size<BeaconStateLeafProof>::size>(beacon_state_root, justification_bits_leaf, proof, gindex);
+    ssz_verify_proof(beacon_state_root, justification_bits_leaf, proof, gindex);
 }
 
 void assert_epoch_is_not_genesis_epoch(Epoch epoch) {
@@ -137,7 +137,7 @@ void verify_epoch_start_slot_root_in_block_roots(Root beacon_state_root,
     auto start_block_roots_gindex = DEPTH18_START_BLOCK_ROOTS_GINDEX;
     auto index_in_block_roots = compute_start_slot_at_epoch_in_block_roots(epoch);
     auto gindex = start_block_roots_gindex + index_in_block_roots;
-    ssz_verify_proof<array_size<decltype(proof)>::size>(beacon_state_root, block_root, proof, gindex);
+    ssz_verify_proof(beacon_state_root, block_root, proof, gindex);
 }
 
 void verify_finalized_checkpoint(Root beacon_state_root,
@@ -145,7 +145,7 @@ void verify_finalized_checkpoint(Root beacon_state_root,
                                  BeaconStateLeafProof proof) {
     auto finalized_checkpoint_leaf = hash_tree_root(finalized_checkpoint);
     auto gindex = BEACON_STATE_FINALIZED_CHECKPOINT_GINDEX;
-    ssz_verify_proof<array_size<BeaconStateLeafProof>::size>(
+    ssz_verify_proof(
         beacon_state_root, finalized_checkpoint_leaf, proof, gindex);
 }
 

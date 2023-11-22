@@ -12,7 +12,7 @@
 
 using namespace circuit_byte_utils;
 
-uint64_t compute_shuffled_index_impl(uint64_t index, uint64_t index_count, std::array<Byte, 32> seed,
+uint64_t compute_shuffled_index_impl(uint64_t index, uint64_t index_count, Bytes32 seed,
                                             int SHUFFLE_ROUND_COUNT = 90) {
     assert_true(index < index_count);
 
@@ -27,12 +27,12 @@ uint64_t compute_shuffled_index_impl(uint64_t index, uint64_t index_count, std::
         source_buffer[32] = current_round;
 
         //!!! auto eth2digest = hash<hashes::sha2<256>>(source_buffer.begin(), source_buffer.begin() + 33);
-        std::array<Byte, 32> eth2digest_bytes;
+        Bytes32 eth2digest_bytes;
         picosha2::hash256(source_buffer.begin(), source_buffer.begin() + 33, eth2digest_bytes.begin(),
                           eth2digest_bytes.end());
         ///!!! sha256_to_bytes_array(eth2digest, eth2digest_bytes);
         auto first8bytes = take_n_elements<Byte, eth2digest_bytes.size(), 8>(eth2digest_bytes);
-        // PrintContainer(first8bytes);
+
         auto first8bytes_int = bytes_to_int<uint64_t>(first8bytes);
         auto pivot = first8bytes_int % index_count;
         uint64_t flip = (pivot + index_count - index) % index_count;
@@ -43,10 +43,10 @@ uint64_t compute_shuffled_index_impl(uint64_t index, uint64_t index_count, std::
             source_buffer[33 + i] = source_buffer_additional_bytes[i];
         }
         ///!!! auto source = hash<hashes::sha2<256>>(source_buffer.begin(), source_buffer.end());
-        std::array<Byte, 32> source_to_bytes;
-        picosha2::hash256(source_buffer.begin(), source_buffer.end(), source_to_bytes.begin(), source_to_bytes.end());
-        ///!!! sha256_to_bytes_array(source, source_to_bytes);
-        auto byte_value = source_to_bytes[(position % 256) >> 3];
+        Bytes32 source_buffer_hash;
+        picosha2::hash256(source_buffer.begin(), source_buffer.end(), source_buffer_hash.begin(), source_buffer_hash.end());
+        ///!!! sha256_to_bytes_array(source, source_buffer_hash);
+        auto byte_value = source_buffer_hash[(position % 256) >> 3];
         auto bit = (byte_value >> (position % 8)) % 2;
 
         if (bit != 0) {
