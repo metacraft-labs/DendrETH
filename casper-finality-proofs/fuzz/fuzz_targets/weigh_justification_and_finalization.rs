@@ -2,26 +2,26 @@
 
 mod utils {
     pub mod arbitrary_types;
-    pub mod writer;
 }
 
 use casper_finality_proofs::test_engine::utils::data_generation::{init_beacon_state, Balances};
 use casper_finality_proofs::test_engine::wrappers::wrapper_weigh_justification_and_finalization::{
     run, CIRCUIT,
 };
-use casper_finality_proofs::to_string;
 use casper_finality_proofs::types::{BeaconTreeHashCacheType, ChainSpecType, Eth1Type};
 use libfuzzer_sys::arbitrary::Unstructured;
 use libfuzzer_sys::fuzz_target;
+use lighthouse_state_processing::per_epoch_processing::{
+    weigh_justification_and_finalization, JustificationAndFinalizationState,
+};
+use lighthouse_types::{EthSpec, MainnetEthSpec};
 use once_cell::sync::Lazy;
 use serde_derive::Serialize;
 use utils::arbitrary_types::ArbitraryH256;
 
-use crate::utils::writer::json_write;
-
 #[derive(Debug, Clone, arbitrary::Arbitrary, Serialize)]
 struct TestData {
-    #[arbitrary(with = |u: &mut Unstructured| u.int_in_range(1..=u64::MAX))]
+    #[arbitrary(with = |u: &mut Unstructured| u.int_in_range(33..=u64::MAX-2u64.pow(13)-1))]
     pub slot: u64,
     #[arbitrary(with = |u: &mut Unstructured| u.int_in_range(1..=2))]
     pub current_epoch_sub: u64,
@@ -35,11 +35,11 @@ struct TestData {
     pub finalized_checkpoint_root: ArbitraryH256,
     #[arbitrary(with = |u: &mut Unstructured| u.int_in_range(1..=u64::MAX))]
     pub finalized_checkpoint_epoch: u64,
-    #[arbitrary(with = |u: &mut Unstructured| u.int_in_range(1..=u64::MAX))]
+    #[arbitrary(with = |u: &mut Unstructured| u.int_in_range(1..=u64::MAX/3))]
     pub total_active_balance: u64,
-    #[arbitrary(with = |u: &mut Unstructured| u.int_in_range(1..=u64::MAX))]
+    #[arbitrary(with = |u: &mut Unstructured| u.int_in_range(1..=u64::MAX/3))]
     pub previous_target_balance: u64,
-    #[arbitrary(with = |u: &mut Unstructured| u.int_in_range(1..=u64::MAX))]
+    #[arbitrary(with = |u: &mut Unstructured| u.int_in_range(1..=u64::MAX/3))]
     pub current_target_balance: u64,
     pub eth_1_data: Eth1Type,
     #[serde(skip)]
@@ -47,12 +47,27 @@ struct TestData {
 }
 
 fuzz_target!(|data: TestData| {
+    let time = std::time::Instant::now();
     Lazy::force(&CIRCUIT);
 
     let mut data = data;
     let epoch = data.slot / 32;
+    if epoch < data.previous_epoch_sub {
+        return;
+    }
+
     data.chain_spec.genesis_slot = data.slot.into();
     let mut state = init_beacon_state(data.eth_1_data.clone(), &data.chain_spec);
+
+    if data.slot
+        == state
+            .current_epoch()
+            .start_slot(MainnetEthSpec::slots_per_epoch())
+            .as_u64()
+    {
+        // Invalid input
+        return;
+    }
 
     *state.tree_hash_cache_mut() = BeaconTreeHashCacheType::new(&state);
 
@@ -83,29 +98,44 @@ fuzz_target!(|data: TestData| {
 
     let output = run(&mut state, balances);
 
-    let mut value = serde_json::json!({ "input": { "state": state, "additional_data": output.1 }, "output": {} });
+    let new_state = JustificationAndFinalizationState::<MainnetEthSpec>::new(&state);
+    let output_ref = weigh_justification_and_finalization(
+        new_state,
+        data.total_active_balance,
+        data.previous_target_balance,
+        data.current_target_balance,
+    )
+    .unwrap();
 
-    value["output"]["new_previous_justified_checkpoint"]["epoch"] =
-        serde_json::Value::Number(output.0.new_previous_justified_checkpoint.epoch.into());
-    value["output"]["new_previous_justified_checkpoint"]["root"] =
-        serde_json::Value::String(to_string!(output.0.new_previous_justified_checkpoint.root));
-    value["output"]["new_current_justified_checkpoint"]["epoch"] =
-        serde_json::Value::Number(output.0.new_current_justified_checkpoint.epoch.into());
-    value["output"]["new_current_justified_checkpoint"]["root"] =
-        serde_json::Value::String(to_string!(output.0.new_current_justified_checkpoint.root));
-    value["output"]["new_finalized_checkpoint"]["epoch"] =
-        serde_json::Value::Number(output.0.new_finalized_checkpoint.epoch.into());
-    value["output"]["new_finalized_checkpoint"]["root"] =
-        serde_json::Value::String(to_string!(output.0.new_finalized_checkpoint.root));
-    value["output"]["new_justification_bits"]["bits"] = serde_json::Value::Array(
-        output
-            .0
-            .new_justification_bits
-            .bits
-            .iter()
-            .map(|x| serde_json::Value::Bool(*x))
-            .collect(),
+    assert!(
+        output_ref.previous_justified_checkpoint().epoch
+            == output.0.new_previous_justified_checkpoint.epoch
+    );
+    assert!(
+        output_ref.previous_justified_checkpoint().root
+            == output.0.new_previous_justified_checkpoint.root
     );
 
-    json_write("weigh_justification_and_finalization".to_owned(), value).unwrap();
+    assert!(
+        output_ref.current_justified_checkpoint().epoch
+            == output.0.new_current_justified_checkpoint.epoch
+    );
+    assert!(
+        output_ref.current_justified_checkpoint().root
+            == output.0.new_current_justified_checkpoint.root
+    );
+
+    assert!(output_ref.finalized_checkpoint().epoch == output.0.new_finalized_checkpoint.epoch);
+    assert!(output_ref.finalized_checkpoint().root == output.0.new_finalized_checkpoint.root);
+
+    output_ref
+        .justification_bits()
+        .iter()
+        .map(|x| x)
+        .enumerate()
+        .for_each(|(i, x)| {
+            assert!(x == output.0.new_justification_bits.bits[i]);
+        });
+
+    println!("test took: {:?}", time.elapsed());
 });
