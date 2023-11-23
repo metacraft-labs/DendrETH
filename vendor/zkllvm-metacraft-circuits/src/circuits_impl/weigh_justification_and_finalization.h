@@ -37,16 +37,7 @@ Bytes32 ssz_restore_merkle_root(const Bytes32& leaf, const std::array<Bytes32, M
             left = hash;
         }
 
-        std::array<unsigned char, 64> data {};
-        size_t data_index = 0;
-        for (size_t j = 0; j < 32; j++) {
-            data[data_index++] = left[j];
-        }
-        for (size_t j = 0; j < 32; j++) {
-            data[data_index++] = right[j];
-        }
-
-        picosha2::hash256(data.begin(), data.end(), hash.begin(), hash.end());
+        hash = sha256_pair(left, right);
     }
 
     return hash;
@@ -84,36 +75,6 @@ Bytes32 hash_tree_root(const JustificationBitsVariable& checkpoint) {
     return ret_val;
 }
 
-void verify_slot(const Root& beacon_state_root, const Slot& slot, const BeaconStateLeafProof& proof) {
-    auto slot_leaf = hash_tree_root(slot);
-    auto gindex = BEACON_STATE_SLOT_GINDEX;
-    ssz_verify_proof(beacon_state_root, slot_leaf, proof, gindex);
-}
-
-void verify_previous_justified_checkpoint(const Root& beacon_state_root,
-                                          const CheckpointVariable& checkpoint,
-                                          const BeaconStateLeafProof& proof) {
-    const auto checkpoint_leaf = hash_tree_root(checkpoint);
-    const auto gindex = BEACON_STATE_PREVIOUS_JUSTIFIED_CHECKPOINT_GINDEX;
-    ssz_verify_proof(beacon_state_root, checkpoint_leaf, proof, gindex);
-}
-
-void verify_current_justified_checkpoint(Root beacon_state_root,
-                                         CheckpointVariable checkpoint,
-                                         BeaconStateLeafProof proof) {
-    auto checkpoint_leaf = hash_tree_root(checkpoint);
-    auto gindex = BEACON_STATE_CURRENT_JUSTIFIED_CHECKPOINT_GINDEX;
-    ssz_verify_proof(beacon_state_root, checkpoint_leaf, proof, gindex);
-}
-
-void verify_justification_bits(Root beacon_state_root,
-                               JustificationBitsVariable justification_bits,
-                               BeaconStateLeafProof proof) {
-    auto justification_bits_leaf = hash_tree_root(justification_bits);
-    auto gindex = BEACON_STATE_JUSTIFICATION_BITS_GINDEX;
-    ssz_verify_proof(beacon_state_root, justification_bits_leaf, proof, gindex);
-}
-
 void assert_epoch_is_not_genesis_epoch(Epoch epoch) {
     assert_true(epoch >= 1);
 }
@@ -123,10 +84,7 @@ Epoch get_previous_epoch(Epoch current_epoch) {
 }
 
 Slot compute_start_slot_at_epoch_in_block_roots(Epoch epoch) {
-    auto slots_per_epoch = SLOTS_PER_EPOCH;
-    auto slots_per_historical_root = SLOTS_PER_HISTORICAL_ROOT;
-    auto start_slot_at_epoch = epoch * slots_per_epoch;
-    return start_slot_at_epoch % slots_per_historical_root;
+    return (epoch * SLOTS_PER_EPOCH) % SLOTS_PER_HISTORICAL_ROOT;
 }
 
 void verify_epoch_start_slot_root_in_block_roots(Root beacon_state_root,
@@ -196,51 +154,16 @@ CheckpointVariable process_finalizations(const JustificationBitsVariable& justif
                                          const CheckpointVariable& current_justified_checkpoint,
                                          const Epoch& current_epoch,
                                          const CheckpointVariable& finalized_checkpoint) {
-    const uint64_t one = 1;
-    const uint64_t two = 2;
-    const uint64_t three = 3;
-
-    const auto bits_set_1_through_4_pred = justification_bits.test_range(1, 4);
-    const auto bits_set_1_through_3_pred = justification_bits.test_range(1, 3);
-    const auto bits_set_0_through_3_pred = justification_bits.test_range(0, 3);
-    const auto bits_set_0_through_2_pred = justification_bits.test_range(0, 2);
-
-    const auto previous_justified_checkpoint_epoch_plus_three = previous_justified_checkpoint.epoch + three;
-    const auto previous_justified_checkpoint_epoch_plus_two = previous_justified_checkpoint.epoch + two;
-    const auto current_justified_checkpoint_epoch_plus_two = current_justified_checkpoint.epoch + two;
-    const auto current_justified_checkpoint_epoch_plus_one = current_justified_checkpoint.epoch + one;
-
-    const auto second_using_fourth_as_source_pred = previous_justified_checkpoint_epoch_plus_three == current_epoch;
-
-    const auto second_using_third_as_source_pred = previous_justified_checkpoint_epoch_plus_two == current_epoch;
-
-    const auto first_using_third_as_source_pred = current_justified_checkpoint_epoch_plus_two == current_epoch;
-
-    const auto first_using_second_as_source_pred = current_justified_checkpoint_epoch_plus_one == current_epoch;
-
-    const auto should_finalize_previous_justified_checkpoint_1_pred =
-        bits_set_1_through_4_pred && second_using_fourth_as_source_pred;
-
-    const auto should_finalize_previous_justified_checkpoint_2_pred =
-        bits_set_1_through_3_pred && second_using_third_as_source_pred;
-
-    const auto should_finalize_previous_justified_checkpoint_pred =
-        should_finalize_previous_justified_checkpoint_1_pred || should_finalize_previous_justified_checkpoint_2_pred;
-
-    const auto should_finalize_current_justified_checkpoint_1_pred =
-        bits_set_0_through_3_pred && first_using_third_as_source_pred;
-
-    const auto should_finalize_current_justified_checkpoint_2_pred =
-        bits_set_0_through_2_pred && first_using_second_as_source_pred;
-
-    const auto should_finalize_current_justified_checkpoint_pred =
-        should_finalize_current_justified_checkpoint_1_pred || should_finalize_current_justified_checkpoint_2_pred;
 
     auto new_finalized_checkpoint =
-        should_finalize_previous_justified_checkpoint_pred ? previous_justified_checkpoint : finalized_checkpoint;
+        ((justification_bits.test_range(1, 4) && (previous_justified_checkpoint.epoch + 3 == current_epoch)) ||
+         (justification_bits.test_range(1, 3) && (previous_justified_checkpoint.epoch + 2 == current_epoch))) 
+         ? previous_justified_checkpoint : finalized_checkpoint;
 
     new_finalized_checkpoint =
-        should_finalize_current_justified_checkpoint_pred ? current_justified_checkpoint : new_finalized_checkpoint;
+        ((justification_bits.test_range(0, 3) && (current_justified_checkpoint.epoch + 2 == current_epoch)) ||
+         (justification_bits.test_range(0, 2) && (current_justified_checkpoint.epoch + 1 == current_epoch)))
+         ? current_justified_checkpoint : new_finalized_checkpoint;
 
     return new_finalized_checkpoint;
 }
@@ -270,15 +193,13 @@ void weigh_justification_and_finalization_impl(
     CheckpointVariable& out_new_finalized_checkpoint,
     JustificationBitsVariable& out_new_justification_bits) {
     assert_slot_is_not_first_in_epoch(slot);
-    verify_slot(beacon_state_root, slot, slot_proof);
+    ssz_verify_proof(beacon_state_root, hash_tree_root(slot), slot_proof, BEACON_STATE_SLOT_GINDEX);
 
-    verify_previous_justified_checkpoint(
-        beacon_state_root, previous_justified_checkpoint, previous_justified_checkpoint_proof);
+    ssz_verify_proof(beacon_state_root, hash_tree_root(previous_justified_checkpoint), previous_justified_checkpoint_proof, BEACON_STATE_PREVIOUS_JUSTIFIED_CHECKPOINT_GINDEX);
 
-    verify_current_justified_checkpoint(
-        beacon_state_root, current_justified_checkpoint, current_justified_checkpoint_proof);
+    ssz_verify_proof(beacon_state_root, hash_tree_root(current_justified_checkpoint), current_justified_checkpoint_proof, BEACON_STATE_CURRENT_JUSTIFIED_CHECKPOINT_GINDEX);
 
-    verify_justification_bits(beacon_state_root, justification_bits, justification_bits_proof);
+    ssz_verify_proof(beacon_state_root, hash_tree_root(justification_bits), justification_bits_proof, BEACON_STATE_JUSTIFICATION_BITS_GINDEX);
 
     auto current_epoch = get_current_epoch(slot);
     assert_epoch_is_not_genesis_epoch(current_epoch);
