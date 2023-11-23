@@ -22,7 +22,7 @@ This will create seed files in the corpus/compute_shuffled_index_minimal directo
 ./seed/compute_shuffled_index.sh mainnet
 ```
 
-## Running the fuzzer
+## Running the fuzzer with coverage (slow)
 
 To run the compute shuffled index minimal target, run the following command:
 
@@ -37,3 +37,19 @@ The mainnet version, for example, consumes even more memory so we need to increa
 ```bash
 cargo fuzz run compute_shuffled_index_mainnet -- -rss_limit_mb=8192 -timeout=100000
 ```
+
+## Running the fuzzer without coverage (fast)
+
+To run the compute shuffled index minimal target, run the following command (from the fuzz directory):
+
+```bash
+./scripts/fuzz.sh compute_shuffled_index_minimal -rss_limit_mb=4096
+```
+
+Like when using the `cargo fuzz` command, any flag can be passed to the fuzzer after the name of the fuzz target.
+
+**Note**: The fuzzer will run much faster without coverage but it will not be able to detect any new code coverage. It is recommended to run the fuzzer with coverage from time to time to detect new code coverage according to the libfuzzer documentation.
+
+## Differential fuzzing
+
+Currently, the fuzz targets compare the result from the circuits against the result from the lighthouse implementation. This is how we achieve differential fuzzing and are able to detect bugs in the circuits. In order for this to work in a sensible amount of time, the coverage is disabled. This way each test passes for the amount of time it takes to run in the test engine.
