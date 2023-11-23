@@ -12,12 +12,12 @@ CORPUS_DIR="$FUZZ_DIR/corpus/$FUZZ_TEST_NAME"
 ADDITIONAL_ARGS=("${@:2}")
 
 # Create directories with sudo if necessary
-sudo mkdir -p "$ARTIFACTS_DIR"
-sudo mkdir -p "$CORPUS_DIR"
+mkdir -p "$ARTIFACTS_DIR"
+mkdir -p "$CORPUS_DIR"
 
 # Run the fuzzing command with additional arguments
-RUSTFLAGS="-fsanitize-coverage=0 --cfg fuzzing -Clink-dead-code -Cdebug-assertions -C codegen-units=1" \
-    sudo cargo run \
+RUSTFLAGS="--cfg fuzzing -Clink-dead-code -Cdebug-assertions -C codegen-units=1" \
+    cargo run \
     --manifest-path "$FUZZ_DIR/Cargo.toml" \
     --target aarch64-apple-darwin \
     --release \
