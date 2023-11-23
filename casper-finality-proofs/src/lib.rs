@@ -1,4 +1,5 @@
 #![feature(generic_const_exprs)]
+#![feature(int_roundings)]
 pub mod combine_finality_votes;
 pub mod compute_shuffled_index;
 pub mod constants;

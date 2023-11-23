@@ -5,16 +5,17 @@ use plonky2x::{
 
 use crate::utils::{bits::variable_set_nth_bit, variable::variable_int_div_rem};
 
-pub const VALIDATOR_SIZE_UPPER_BOUND: usize = 63 * 8;
+
 pub const PACK_SIZE: usize = 63;
+pub const VALIDATORS_PER_COMMITTEE: usize = 256;
+pub const VALIDATOR_SIZE_UPPER_BOUND: usize = PACK_SIZE * 10_000; // 16mil. (253_969)
 pub const PACKS_COUNT: usize = VALIDATOR_SIZE_UPPER_BOUND.div_ceil(PACK_SIZE);
-pub const VALIDATORS_PER_COMMITTEE: usize = 4;
 
 // deli na 63
 // n - na kolko bitmaski razdelqme mama bitmaska (n trqq da e stepen na dvoikata)
 
-pub const VARIABLES_COUNT_LITTLE_BITMASK: usize = 2;
-pub const BITMASK_SPLITS_COUNT: usize = 2usize.pow(2);
+pub const VARIABLES_COUNT_LITTLE_BITMASK: usize = 32;
+pub const BITMASK_SPLITS_COUNT: usize = 2usize.pow(13);
 pub const VARIABLES_COUNT_BIG_BITMASK: usize =
     VARIABLES_COUNT_LITTLE_BITMASK * BITMASK_SPLITS_COUNT;
 

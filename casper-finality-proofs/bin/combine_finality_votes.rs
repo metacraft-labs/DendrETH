@@ -3,7 +3,7 @@ use casper_finality_proofs::{
         concat_bitmasks::ConcatBitmasks,
         verify_subcommittee_vote::{
             BITMASK_SPLITS_COUNT, PACK_SIZE, VALIDATORS_PER_COMMITTEE, VALIDATOR_SIZE_UPPER_BOUND,
-            VARIABLES_COUNT_BIG_BITMASK, VARIABLES_COUNT_LITTLE_BITMASK,
+            VARIABLES_COUNT_BIG_BITMASK, VARIABLES_COUNT_LITTLE_BITMASK
         },
     },
     verify_attestation_data::verify_split_bitmask::ValidatorBitmask,
@@ -41,6 +41,53 @@ fn main() {
         ConcatBitmasks::<1>::define(&mut builder, &circuits.last().unwrap());
         circuits.push(builder.build());
     }
+    {
+        let mut builder = CircuitBuilder::<L, D>::new();
+        ConcatBitmasks::<2>::define(&mut builder, &circuits.last().unwrap());
+        circuits.push(builder.build());
+    }
+    {
+        let mut builder = CircuitBuilder::<L, D>::new();
+        ConcatBitmasks::<3>::define(&mut builder, &circuits.last().unwrap());
+        circuits.push(builder.build());
+    }
+    {
+        let mut builder = CircuitBuilder::<L, D>::new();
+        ConcatBitmasks::<4>::define(&mut builder, &circuits.last().unwrap());
+        circuits.push(builder.build());
+    }
+    {
+        let mut builder = CircuitBuilder::<L, D>::new();
+        ConcatBitmasks::<5>::define(&mut builder, &circuits.last().unwrap());
+        circuits.push(builder.build());
+    }
+    {
+        let mut builder = CircuitBuilder::<L, D>::new();
+        ConcatBitmasks::<6>::define(&mut builder, &circuits.last().unwrap());
+        circuits.push(builder.build());
+    }
+    {
+        let mut builder = CircuitBuilder::<L, D>::new();
+        ConcatBitmasks::<7>::define(&mut builder, &circuits.last().unwrap());
+        circuits.push(builder.build());
+    }
+    {
+        let mut builder = CircuitBuilder::<L, D>::new();
+        ConcatBitmasks::<8>::define(&mut builder, &circuits.last().unwrap());
+        circuits.push(builder.build());
+    }
+    {
+        let mut builder = CircuitBuilder::<L, D>::new();
+        ConcatBitmasks::<9>::define(&mut builder, &circuits.last().unwrap());
+        circuits.push(builder.build());
+    }
+    {
+        let mut builder = CircuitBuilder::<L, D>::new();
+        ConcatBitmasks::<10>::define(&mut builder, &circuits.last().unwrap());
+        circuits.push(builder.build());
+    }
+    
+
 
     let range = rand::distributions::Uniform::new(0, VALIDATOR_SIZE_UPPER_BOUND as u64);
     let indices: Vec<<L as PlonkParameters<D>>::Field> = rng
@@ -50,7 +97,8 @@ fn main() {
         .take(VALIDATORS_PER_COMMITTEE)
         .collect();
 
-    for i in 0..BITMASK_SPLITS_COUNT {
+    const PROOFS_COUNT: usize = 1024; // iztrii go tva
+    for i in 0..PROOFS_COUNT {
         let mut input = validator_bitmasks.input();
         input.write::<ArrayVariable<Variable, VALIDATORS_PER_COMMITTEE>>(indices.clone());
         input.write::<Variable>(<L as PlonkParameters<D>>::Field::from_canonical_usize(
@@ -90,8 +138,8 @@ fn main() {
             let _voted_count = final_output.proof_read::<Variable>();
             let _range_begin = final_output.proof_read::<Variable>();
             let bitmask =
-                final_output.proof_read::<ArrayVariable<Variable, VARIABLES_COUNT_BIG_BITMASK>>();
-
+                // final_output.proof_read::<ArrayVariable<Variable, VARIABLES_COUNT_BIG_BITMASK>>();
+                final_output.proof_read::<ArrayVariable<Variable, {VARIABLES_COUNT_LITTLE_BITMASK * PROOFS_COUNT}>>();
             println!("validators: {:?}", indices);
             println!("packed bitmask: {:?}", bitmask);
             break;
