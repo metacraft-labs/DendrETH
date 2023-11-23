@@ -48,12 +48,6 @@ namespace llvm {
 
 int main(int argc, char* argv[]) {
 
-    typename hashes::sha2<256>::block_type sha;
-
-    std::array<Byte, 32> source_buffer;
-
-    // sha = hash<hashes::sha2<256>>(source_buffer.begin(), source_buffer.end());
-
     auto process_test_input = [](const std::vector<path>& cases, int SHUFFLE_ROUND_COUNT) {
         for (const auto& v : cases) {
             std::cout << v.string() << ":\n";
