@@ -131,7 +131,6 @@ fuzz_target!(|data: TestData| {
     output_ref
         .justification_bits()
         .iter()
-        .map(|x| x)
         .enumerate()
         .for_each(|(i, x)| {
             assert!(x == output.0.new_justification_bits.bits[i]);
