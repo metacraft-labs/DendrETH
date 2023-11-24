@@ -42,6 +42,99 @@ services:
         condition: service_healthy
     ports:
       - "6379"
+  balance_verifier_level_0:
+    image: balance-verifier-for-level-0
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 0
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+    ports:
+      - "6379"
+  balance_verifier_level_1:
+    image: balance-verifier-for-level-1
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 1
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_0:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_2:
+    image: balance-verifier-for-level-2
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 2
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_1:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_3:
+    image: balance-verifier-for-level-3
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 3
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_2:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_4:
+    image: balance-verifier-for-level-4
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 4
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_3:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
   balance_verifier_level_5:
     image: balance-verifier-for-level-5
     environment:
@@ -57,5 +150,615 @@ services:
         condition: service_completed_successfully
       commitment_mapper:
         condition: service_started
+      balance_verifier_level_4:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_6:
+    image: balance-verifier-for-level-6
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 6
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_5:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_7:
+    image: balance-verifier-for-level-7
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 7
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_6:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_8:
+    image: balance-verifier-for-level-8
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 8
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_7:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_9:
+    image: balance-verifier-for-level-9
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 9
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_8:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_10:
+    image: balance-verifier-for-level-10
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 10
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_9:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_11:
+    image: balance-verifier-for-level-11
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 11
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_10:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_12:
+    image: balance-verifier-for-level-12
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 12
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_11:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_13:
+    image: balance-verifier-for-level-13
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 13
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_12:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_14:
+    image: balance-verifier-for-level-14
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 14
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_13:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_15:
+    image: balance-verifier-for-level-15
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 15
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_14:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_16:
+    image: balance-verifier-for-level-16
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 16
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_15:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_17:
+    image: balance-verifier-for-level-17
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 17
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_16:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_18:
+    image: balance-verifier-for-level-18
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 18
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_17:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_19:
+    image: balance-verifier-for-level-19
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 19
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_18:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_20:
+    image: balance-verifier-for-level-20
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 20
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_19:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_21:
+    image: balance-verifier-for-level-21
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 21
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_20:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_22:
+    image: balance-verifier-for-level-22
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 22
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_21:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_23:
+    image: balance-verifier-for-level-23
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 23
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_22:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_24:
+    image: balance-verifier-for-level-24
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 24
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_23:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_25:
+    image: balance-verifier-for-level-25
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 25
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_24:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_26:
+    image: balance-verifier-for-level-26
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 26
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_25:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_27:
+    image: balance-verifier-for-level-27
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 27
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_26:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_28:
+    image: balance-verifier-for-level-21
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 28
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_27:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_29:
+    image: balance-verifier-for-level-29
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 29
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_28:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_30:
+    image: balance-verifier-for-level-30
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 30
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_29:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_31:
+    image: balance-verifier-for-level-31
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 31
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_30:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_32:
+    image: balance-verifier-for-level-32
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 32
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_31:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_33:
+    image: balance-verifier-for-level-31
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 33
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_32:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_34:
+    image: balance-verifier-for-level-34
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 34
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_33:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_35:
+    image: balance-verifier-for-level-35
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 35
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_34:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_36:
+    image: balance-verifier-for-level-36
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 36
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_35:
+        condition: service_completed_successfully
+    ports:
+      - "6379"
+  balance_verifier_level_37:
+    image: balance-verifier-for-level-37
+    environment:
+      - COMPOSE_PROJECT_NAME
+    entrypoint: ''
+    command: balance_verification --redis redis://redis:6379 --level 37
+    depends_on:
+      redis:
+        condition: service_healthy
+      get_changed_validators:
+        condition: service_started
+      get_balances_input:
+        condition: service_completed_successfully
+      commitment_mapper:
+        condition: service_started
+      balance_verifier_level_36:
+        condition: service_completed_successfully
     ports:
       - "6379"
