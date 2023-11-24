@@ -35,7 +35,7 @@ add_test(weigh_justification_and_finalization_test weigh_justification_and_final
 target_include_directories(weigh_justification_and_finalization_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
 
 add_custom_command(TARGET weigh_justification_and_finalization_test POST_BUILD
-    COMMAND cp -r ${CMAKE_CURRENT_SOURCE_DIR}/consensus-spec-tests ${CMAKE_CURRENT_BINARY_DIR}
+    COMMAND cp -r ${CMAKE_CURRENT_SOURCE_DIR}/ssz_files ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS compile_commands.json
     VERBATIM ON
 )

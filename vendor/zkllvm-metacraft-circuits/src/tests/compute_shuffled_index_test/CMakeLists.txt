@@ -34,9 +34,4 @@ add_test(compute_shuffled_index_test compute_shuffled_index_test)
 
 target_include_directories(compute_shuffled_index_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
 
-add_custom_command(TARGET compute_shuffled_index_test POST_BUILD
-    COMMAND cp -r ${CMAKE_CURRENT_SOURCE_DIR}/consensus-spec-tests ${CMAKE_CURRENT_BINARY_DIR}
-    DEPENDS compile_commands.json
-    VERBATIM ON
-)
 
