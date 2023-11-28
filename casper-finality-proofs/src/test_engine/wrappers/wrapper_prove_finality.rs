@@ -48,6 +48,16 @@ pub fn wrapper(path: &str, _should_assert: bool) -> Result<String, anyhow::Error
         bits: json_data.justification_bits,
     };
 
+    let previous_justified_checkpoint = CheckpointValue {
+        epoch: json_data.previous_justified_checkpoint.epoch,
+        root: json_data.previous_justified_checkpoint.root,
+    };
+
+    let current_justified_checkpoint = CheckpointValue {
+        epoch: json_data.current_justified_checkpoint.epoch,
+        root: json_data.current_justified_checkpoint.root,
+    };
+
     input.write::<CheckpointVariable>(source.clone());
     input.write::<CheckpointVariable>(target);
     input.write::<U64Variable>(slot);
@@ -55,6 +65,8 @@ pub fn wrapper(path: &str, _should_assert: bool) -> Result<String, anyhow::Error
     input.write::<JustificationBitsVariable>(justification_bits);
     input.write::<U64Variable>(previous_epoch_attested_validators);
     input.write::<U64Variable>(current_epoch_attested_validators);
+    input.write::<CheckpointVariable>(previous_justified_checkpoint);
+    input.write::<CheckpointVariable>(current_justified_checkpoint);
 
     let (proof, output) = CIRCUIT.prove(&input);
     CIRCUIT.verify(&proof, &input, &output);

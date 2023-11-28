@@ -9,12 +9,24 @@
         "root": "0x0000000000000000000000000000000000000000000000000000000000000000"
     },
     "total_number_of_validators": 65536,
-    "previous_epoch_attested_validators": 52430,
+    "previous_epoch_attested_validators": 0,
     "current_epoch_attested_validators": 52430,
     "justification_bits": [
         true,
         true,
         false,
         false
-    ]
+    ],
+    "previous_justified_checkpoint": {
+        "epoch": 0,
+        "root": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "current_justified_checkpoint": {
+        "epoch": 123456788,
+        "root": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "finalized_checkpoint": {
+        "epoch": 0,
+        "root": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    }
 }

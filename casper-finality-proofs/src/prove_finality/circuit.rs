@@ -17,33 +17,15 @@ impl Circuit for ProveFinality {
     fn define<L: PlonkParameters<D>, const D: usize>(builder: &mut CircuitBuilder<L, D>) {
         let source = builder.read::<CheckpointVariable>();
         let target = builder.read::<CheckpointVariable>();
-        let target_source_difference = builder.sub(target.epoch, source.epoch);
-
-        let one = builder.constant::<U64Variable>(1);
-        let two = builder.constant::<U64Variable>(2);
-        let target_source_difference_equals_one = builder.is_equal(target_source_difference, one);
-        let target_source_difference_equals_two = builder.is_equal(target_source_difference, two);
-        let target_source_difference_equals_one_or_two = builder.or(
-            target_source_difference_equals_one,
-            target_source_difference_equals_two,
-        );
-        assert_is_true(builder, target_source_difference_equals_one_or_two);
-
         let slot = builder.read::<Gwei>();
-        let zero = builder.constant::<U64Variable>(0);
-        let thirty_two = builder.constant::<U64Variable>(32);
-
-        let current_epoch = builder.div(slot, thirty_two);
-        let current_epoch_target_difference = builder.sub(current_epoch, target.epoch);
-        let target_is_first_bit = builder.is_equal(current_epoch_target_difference, zero);
-        let target_is_second_bit = builder.is_equal(current_epoch_target_difference, one);
-        let is_target_first_or_second_bit = builder.or(target_is_first_bit, target_is_second_bit);
-        assert_is_true(builder, is_target_first_or_second_bit);
-
         let total_number_of_validators = builder.read::<Gwei>();
         let justification_bits = builder.read::<JustificationBitsVariable>();
         let previous_epoch_attested_validators = builder.read::<Gwei>();
         let current_epoch_attested_validators = builder.read::<Gwei>();
+        let previous_justified_checkpoint = builder.read::<CheckpointVariable>();
+        let current_justified_checkpoint = builder.read::<CheckpointVariable>();
+
+        validate_target_source_difference(builder, source.clone(), target.clone());
 
         let new_justification_bits = process_justifications(
             builder,
@@ -53,24 +35,21 @@ impl Circuit for ProveFinality {
             current_epoch_attested_validators,
         );
 
+        let thirty_two = builder.constant::<U64Variable>(32);
         let new_justification_bits = new_justification_bits.bits.as_slice();
+        let current_epoch = builder.div(slot, thirty_two);
         let source_index = builder.sub(current_epoch, source.epoch);
         let target_index = builder.sub(current_epoch, target.epoch);
-        for i in 0..4 {
-            let current_index = builder.constant::<U64Variable>(i as u64);
-            let in_range_source_index = builder.lte(current_index, source_index);
-            let in_range_target_index = builder.gte(current_index, target_index);
 
-            let in_range = builder.and(in_range_source_index, in_range_target_index);
+        validate_source(
+            builder,
+            source,
+            target_index,
+            previous_justified_checkpoint,
+            current_justified_checkpoint,
+        );
 
-            let in_range_or_justification_bits_value =
-                builder.or(new_justification_bits[i], in_range);
-
-            builder.assert_is_equal(
-                new_justification_bits[i],
-                in_range_or_justification_bits_value,
-            );
-        }
+        validate_justification_bits(builder, source_index, target_index, new_justification_bits);
     }
 }
 
@@ -122,4 +101,71 @@ fn is_supermajority_link_in_votes<L: PlonkParameters<D>, const D: usize>(
         bitmask_attested_validators_five_times,
         total_num_validators_four_times,
     )
+}
+
+pub fn validate_target_source_difference<L: PlonkParameters<D>, const D: usize>(
+    builder: &mut CircuitBuilder<L, D>,
+    source: CheckpointVariable,
+    target: CheckpointVariable,
+) {
+    let one = builder.one();
+    let two = builder.constant::<U64Variable>(2);
+
+    let target_source_difference = builder.sub(target.epoch, source.epoch);
+    let target_source_difference_equals_one = builder.is_equal(target_source_difference, one);
+    let target_source_difference_equals_two = builder.is_equal(target_source_difference, two);
+    let target_source_difference_equals_one_or_two = builder.or(
+        target_source_difference_equals_one,
+        target_source_difference_equals_two,
+    );
+    assert_is_true(builder, target_source_difference_equals_one_or_two);
+}
+
+pub fn validate_source<L: PlonkParameters<D>, const D: usize>(
+    builder: &mut CircuitBuilder<L, D>,
+    source: CheckpointVariable,
+    target_idx: U64Variable,
+    previous_justified_checkpoint: CheckpointVariable,
+    current_justified_checkpoint: CheckpointVariable,
+) {
+    let zero = builder.zero();
+    let one = builder.one();
+
+    let source_is_current_justified_checkpoint_pred =
+        builder.is_equal(source.clone(), current_justified_checkpoint);
+    let source_is_previous_justified_checkpoint_pred =
+        builder.is_equal(source.clone(), previous_justified_checkpoint);
+
+    let target_is_current_epoch_pred = builder.is_equal(target_idx, zero);
+    let target_is_previous_epoch_pred = builder.is_equal(target_idx, one);
+
+    let is_valid_pair_1_pred = builder.and(
+        target_is_current_epoch_pred,
+        source_is_current_justified_checkpoint_pred,
+    );
+    let is_valid_pair_2_pred = builder.and(
+        target_is_previous_epoch_pred,
+        source_is_previous_justified_checkpoint_pred,
+    );
+    let is_valid_pair_pred = builder.or(is_valid_pair_1_pred, is_valid_pair_2_pred);
+    assert_is_true(builder, is_valid_pair_pred);
+}
+
+pub fn validate_justification_bits<L: PlonkParameters<D>, const D: usize>(
+    builder: &mut CircuitBuilder<L, D>,
+    source_index_epoch: U64Variable,
+    target_index_epoch: U64Variable,
+    justification_bits: &[BoolVariable],
+) {
+    for i in 0..4 {
+        let current_index = builder.constant::<U64Variable>(i as u64);
+        let in_range_source_index = builder.lte(current_index, source_index_epoch);
+        let in_range_target_index = builder.gte(current_index, target_index_epoch);
+
+        let in_range = builder.and(in_range_source_index, in_range_target_index);
+
+        let in_range_or_justification_bits_value = builder.or(justification_bits[i], in_range);
+
+        builder.assert_is_equal(justification_bits[i], in_range_or_justification_bits_value);
+    }
 }
