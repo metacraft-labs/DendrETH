@@ -11,6 +11,8 @@ pub struct ProveFinalityData {
     pub source: CheckpointBlockData,
     pub target: CheckpointBlockData,
     pub justification_bits: Vec<bool>,
+    pub previous_justified_checkpoint: CheckpointBlockData,
+    pub current_justified_checkpoint: CheckpointBlockData,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize, Serialize)]
