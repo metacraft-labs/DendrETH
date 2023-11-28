@@ -19,7 +19,6 @@ mkdir -p "$CORPUS_DIR"
 RUSTFLAGS="--cfg fuzzing -Clink-dead-code -Cdebug-assertions -C codegen-units=1" \
     cargo run \
     --manifest-path "$FUZZ_DIR/Cargo.toml" \
-    --target aarch64-apple-darwin \
     --release \
     --bin "$FUZZ_TEST_NAME" \
     -- -artifact_prefix="$FUZZ_DIR/artifacts/$FUZZ_TEST_NAME/" "$FUZZ_DIR/corpus/$FUZZ_TEST_NAME" "${ADDITIONAL_ARGS[@]}"
