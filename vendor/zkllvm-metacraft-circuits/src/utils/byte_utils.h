@@ -8,6 +8,7 @@
 #include <string_view>
 #include <sstream>
 #include <iomanip>
+#include <cctype>
 
 namespace byte_utils {
 
@@ -26,8 +27,8 @@ namespace byte_utils {
             }
         };
 
-        convert(hex[0], first_nibble);
-        convert(hex[1], second_nibble);
+        convert(std::tolower(hex[0]), first_nibble);
+        convert(std::tolower(hex[1]), second_nibble);
 
         return (first_nibble << 4) + second_nibble;
     }
