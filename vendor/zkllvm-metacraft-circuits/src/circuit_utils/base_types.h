@@ -2,11 +2,15 @@
 
 #include <stdint.h>
 #include <cstring>
+
+#include <nil/crypto3/hash/algorithm/hash.hpp>
+#include <nil/crypto3/hash/sha2.hpp>
+
 #include "constants.h"
 
-//!!!TODO: Use assertion in circuits when introduced in tooling
 #ifdef __ZKLLVM__
-#define assert_true(c)
+#define assert_true(c) \
+    { __builtin_assigner_exit_check(c); }
 #else
 #define assert_true(c) \
     { assert(c); }
@@ -23,21 +27,46 @@
 
 using Byte = unsigned char;
 using Bytes32 = std::array<Byte, 32>;
+using Bytes48 = std::array<Byte, 48>;
 using Bytes64 = std::array<Byte, 64>;
+using Bytes96 = std::array<Byte, 96>;
+
+using sha256_t = typename nil::crypto3::hashes::sha2<256>::block_type;
+
+#ifdef __ZKLLVM__
+using HashType = sha256_t;
+#else
+using HashType = Bytes32;
+#endif
 
 using Epoch = uint64_t;
 using Slot = uint64_t;
-using Root = Bytes32;
+using Root = HashType;
 using Gwei = uint64_t;
 template<size_t DEPTH>
-using MerkleProof = std::array<Bytes32, DEPTH>;
+using MerkleProof = std::array<HashType, DEPTH>;
 using BeaconStateLeafProof = MerkleProof<5>;
+
+#define countof(array) (sizeof(array) / sizeof(array[0]))
+
+bool sha256_equals(sha256_t hash1, sha256_t hash2) {
+    bool result = true;
+    for (auto i = 0; i < countof(hash1); ++i) {
+        result = result && (hash1[i] == hash2[i]);
+    }
+
+    return result;
+}
+
+bool sha256_equals(Bytes32 hash1, Bytes32 hash2) {
+    return hash1 == hash2;
+}
 
 struct CheckpointVariable {
     Epoch epoch;
     Root root;
     bool operator==(const CheckpointVariable &c) const {
-        return (epoch == c.epoch && root == c.root);
+        return (epoch == c.epoch && sha256_equals(root, c.root));
     }
 };
 
