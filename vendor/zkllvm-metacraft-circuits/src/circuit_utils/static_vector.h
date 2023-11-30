@@ -61,9 +61,11 @@ struct static_vector {
         return CAPACITY;
     }
     constexpr auto push_back(T const& val) -> void {
+        assert_true(size_ < CAPACITY);
         content_[size_++] = val;
     }
     constexpr auto pop_back(T const& val) -> void {
+        assert_true(size_ > 0);
         --size_;
     }
 };

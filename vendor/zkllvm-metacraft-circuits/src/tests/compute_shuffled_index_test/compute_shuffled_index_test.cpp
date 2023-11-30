@@ -17,6 +17,8 @@
 
 #include "llvm/Support/JSON.h"
 
+#include "circuits_impl/verify_attestation_data_imp.h"
+
 using llvm::yaml::Input;
 using llvm::yaml::IO;
 using llvm::yaml::MappingTraits;
