@@ -89,13 +89,6 @@ struct VoteToken {
 
 using TransitionKey = Bytes32;
 
-
-VoteToken verify_attestation_data(
-        Bytes32 block_root_,
-        Attestation attestation,
-        int sigma
-)
-{
+VoteToken verify_attestation_data(Bytes32 block_root_, Attestation attestation, int sigma) {
     assert_true(sigma != 0);
-
 }

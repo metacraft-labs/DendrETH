@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-echo "using nilfoundation/zkllvm-template:${ZKLLVM_VERSION:=0.0.86}"
-
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 echo "SCRIPT_DIR = " $SCRIPT_DIR
 

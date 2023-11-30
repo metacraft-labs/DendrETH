@@ -5,14 +5,14 @@
 
 #include "circuit_byte_utils.h"
 
-template <typename T, std::size_t CAPACITY>
+template<typename T, std::size_t CAPACITY>
 struct static_vector {
 
     std::array<T, CAPACITY> content_;
     size_t size_;
 
     template<std::size_t SIZE>
-    constexpr static_vector(std::array<T, SIZE> const & rhs) {
+    constexpr static_vector(std::array<T, SIZE> const& rhs) {
         static_assert(SIZE <= CAPACITY);
         circuit_byte_utils::copy(rhs.begin(), rhs.end(), begin());
         size_ = SIZE;
@@ -24,7 +24,7 @@ struct static_vector {
         content_ = std::move(rhs);
         size_ = rhs.size_;
     }
-    constexpr static_vector(static_vector const & rhs) {
+    constexpr static_vector(static_vector const& rhs) {
         content_ = rhs;
         size_ = rhs.size_;
     }
@@ -37,12 +37,12 @@ struct static_vector {
         size_ = rhs.size_;
         return *this;
     }
-    constexpr auto operator=(static_vector const & rhs) -> static_vector& {
+    constexpr auto operator=(static_vector const& rhs) -> static_vector& {
         content_ = std::move(rhs);
         size_ = rhs.size_;
         return *this;
     }
-    constexpr auto data() -> T * {
+    constexpr auto data() -> T* {
         return &content_;
     }
     constexpr auto operator[](std::size_t index) -> T& {

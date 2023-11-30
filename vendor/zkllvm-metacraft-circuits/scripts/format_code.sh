@@ -1,5 +1,5 @@
 #!/bin/sh
-echo "using nilfoundation/zkllvm-template:${ZKLLVM_VERSION:=0.0.86}"
+echo "using ghcr.io/nilfoundation/toolchain:${ZKLLVM_VERSION:=0.1.8}"
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CURRENT_DIR=$(pwd)
@@ -9,5 +9,5 @@ docker run --rm -it --name code_formatter \
        --volume ${SCRIPT_DIR}/../src:/src \
        --user $(id -u ${USER}):$(id -g ${USER}) \
        -w /src \
-       ghcr.io/nilfoundation/zkllvm-template:${ZKLLVM_VERSION} \
+       ghcr.io/nilfoundation/toolchain:${ZKLLVM_VERSION} \
        /bin/bash -c "$COMMAND"

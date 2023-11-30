@@ -7,11 +7,13 @@ using namespace circuit_byte_utils;
 namespace ssz_utils {
 
     template<size_t MERKLE_DEPTH>
-    Bytes32
-        ssz_restore_merkle_root(const Bytes32& leaf, const std::array<Bytes32, MERKLE_DEPTH>& branch, uint64_t gindex) {
+    Bytes32 ssz_restore_merkle_root(const Bytes32& leaf,
+                                    const std::array<Bytes32, MERKLE_DEPTH>& branch,
+                                    uint64_t gindex,
+                                    const uint64_t depth = MERKLE_DEPTH) {
         auto hash = leaf;
 
-        for (size_t i = 0; i < MERKLE_DEPTH; i++) {
+        for (size_t i = 0; i < depth; i++) {
             Bytes32 left;
             Bytes32 right;
 
@@ -35,8 +37,9 @@ namespace ssz_utils {
     void ssz_verify_proof(const Bytes32& root,
                           const Bytes32& leaf,
                           const std::array<Bytes32, MERKLE_DEPTH>& branch,
-                          const uint64_t gindex) {
-        auto expected_root = ssz_restore_merkle_root(leaf, branch, gindex);
+                          const uint64_t gindex,
+                          const uint64_t depth = MERKLE_DEPTH) {
+        auto expected_root = ssz_restore_merkle_root(leaf, branch, gindex, depth);
         assert_true(root == expected_root);
     }
 
