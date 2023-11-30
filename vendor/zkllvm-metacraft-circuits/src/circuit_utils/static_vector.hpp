@@ -3,6 +3,8 @@
 #include <array>
 #include <cstdint>
 
+#include "circuit_byte_utils.h"
+
 template <typename T, std::size_t CAPACITY>
 struct static_vector {
 
@@ -12,7 +14,7 @@ struct static_vector {
     template<std::size_t SIZE>
     constexpr static_vector(std::array<T, SIZE> const & rhs) {
         static_assert(SIZE <= CAPACITY);
-        std::copy(rhs.begin(), rhs.end(), begin());
+        circuit_byte_utils::copy(rhs.begin(), rhs.end(), begin());
         size_ = SIZE;
     }
     constexpr static_vector() {
@@ -26,9 +28,10 @@ struct static_vector {
         content_ = rhs;
         size_ = rhs.size_;
     }
-    ~static_vector() {
-        size_ = 0;
-    }
+    // For some reason, this triggers a circuit compilation error
+    // ~static_vector() {
+    //     size_ = 0;
+    // }
     constexpr auto operator=(static_vector&& rhs) -> static_vector& {
         content_ = std::move(rhs);
         size_ = rhs.size_;
@@ -41,6 +44,9 @@ struct static_vector {
     }
     constexpr auto data() -> T * {
         return &content_;
+    }
+    constexpr auto operator[](std::size_t index) -> T& {
+        return content_[index];
     }
     constexpr auto begin() {
         return content_.begin();

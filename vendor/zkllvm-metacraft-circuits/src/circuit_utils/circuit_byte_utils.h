@@ -9,6 +9,16 @@ using namespace nil::crypto3;
 
 namespace circuit_byte_utils {
 
+    template<class InputIt, class OutputIt>
+    OutputIt copy(InputIt first, InputIt last,
+                  OutputIt d_first)
+    {
+        for (; first != last; (void)++first, (void)++d_first)
+            *d_first = *first;
+     
+        return d_first;
+    }
+
 #define countof(array) (sizeof(array) / sizeof(array[0]))
 
     using sha256_t = typename hashes::sha2<256>::block_type;
