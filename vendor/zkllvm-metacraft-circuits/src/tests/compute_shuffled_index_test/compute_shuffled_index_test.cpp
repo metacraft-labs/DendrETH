@@ -48,6 +48,22 @@ namespace llvm {
 
 int main(int argc, char* argv[]) {
 
+    static_vector<Bytes32> hashes;
+
+    hashes.push_back(byte_utils::hexToBytes<32>("0x0000000000000000000000000000000000000000000000000000000000000000"));
+    hashes.push_back(byte_utils::hexToBytes<32>("0x12343211234120302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b"));
+    hashes.push_back(byte_utils::hexToBytes<32>("0x111111111111d4c1f85c892bf35ac9a89289aaecb1ebd0a96cde606a748b5d71"));
+    hashes.push_back(byte_utils::hexToBytes<32>("0x222222222222c56a11f122370658a353aaa542ed63e44c4bc15ff4cd105ab33c"));
+    hashes.push_back(byte_utils::hexToBytes<32>("0x333333333333d165a55d5eeae91485954472d56f246df256bf3cae19352a123c"));
+    hashes.push_back(byte_utils::hexToBytes<32>("0x444444444444429fae05bad4d0b1d7c64da64d03d7a1854a588c2cb8430c0d30"));
+    hashes.push_back(byte_utils::hexToBytes<32>("0x5555555555555555555555555555555555555555555555555555555555555555"));
+
+    auto modified = fill_zero_hashes(hashes, 2);
+
+    for(auto it = modified.begin(); it != modified.end(); it++) {
+        std::cout << byte_utils::bytesToHex(*it) << "\n";
+    }
+
     auto process_test_input = [](const std::vector<path>& cases, int SHUFFLE_ROUND_COUNT) {
         for (const auto& v : cases) {
             std::cout << v.string() << ":\n";

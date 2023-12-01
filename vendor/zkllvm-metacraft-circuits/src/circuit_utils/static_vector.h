@@ -5,7 +5,7 @@
 
 #include "circuit_byte_utils.h"
 
-template<typename T, std::size_t CAPACITY>
+template<typename T, std::size_t CAPACITY = 2048>
 struct static_vector {
 
     std::array<T, CAPACITY> content_;
@@ -21,11 +21,11 @@ struct static_vector {
         size_ = 0;
     }
     constexpr static_vector(static_vector&& rhs) {
-        content_ = std::move(rhs);
+        content_ = std::move(rhs.content_);
         size_ = rhs.size_;
     }
     constexpr static_vector(static_vector const& rhs) {
-        content_ = rhs;
+        content_ = rhs.content_;
         size_ = rhs.size_;
     }
     // For some reason, this triggers a circuit compilation error
@@ -33,19 +33,25 @@ struct static_vector {
     //     size_ = 0;
     // }
     constexpr auto operator=(static_vector&& rhs) -> static_vector& {
-        content_ = std::move(rhs);
+        content_ = std::move(rhs.content_);
         size_ = rhs.size_;
         return *this;
     }
     constexpr auto operator=(static_vector const& rhs) -> static_vector& {
-        content_ = std::move(rhs);
+        content_ = rhs.content_;
         size_ = rhs.size_;
         return *this;
     }
     constexpr auto data() -> T* {
         return &content_;
     }
+    constexpr auto content() -> std::array<T, CAPACITY>& {
+        return content_;
+    }
     constexpr auto operator[](std::size_t index) -> T& {
+        return content_[index];
+    }
+    constexpr auto operator[](std::size_t index) const -> const T& {
         return content_[index];
     }
     constexpr auto begin() {
@@ -54,7 +60,13 @@ struct static_vector {
     constexpr auto end() {
         return content_.begin() + size_;
     }
-    constexpr auto size() {
+    constexpr const auto begin() const {
+        return content_.begin();
+    }
+    constexpr const auto end() const {
+        return content_.begin() + size_;
+    }
+    constexpr auto size() const {
         return size_;
     }
     constexpr auto capacity() -> std::size_t {

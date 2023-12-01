@@ -9,6 +9,20 @@ using namespace nil::crypto3;
 
 namespace circuit_byte_utils {
 
+    template <typename T, size_t COUNT>
+    void zero_elements(std::array<T, COUNT>& arr) {
+        for(size_t i = 0; i < COUNT; i++) {
+            arr[i] = 0;
+        }
+    }
+
+    template <size_t COUNT>
+    std::array<Byte, COUNT> get_empty_byte_array() {
+        std::array<Byte, COUNT> arr;
+        zero_elements(arr);
+        return arr;
+    }
+
     template<class InputIt, class OutputIt>
     OutputIt copy(InputIt first, InputIt last, OutputIt d_first) {
         for (; first != last; (void)++first, (void)++d_first)
