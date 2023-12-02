@@ -255,9 +255,9 @@ checksum = "bddcadddf5e9015d310179a59bb28c4d4b9920ad0f11e8e14dbadf654890c9a6"
 
 [[package]]
 name = "array-macro"
-version = "2.1.5"
+version = "2.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "457661fa6716c30b73d7c41400a8a78780d20523b83a9441dabec28e93f27cf4"
+checksum = "220a2c618ab466efe41d0eace94dfeff1c35e3aa47891bdb95e1c0fefffd3c99"
 
 [[package]]
 name = "arrayref"
@@ -883,6 +883,7 @@ name = "casper-finality-proofs"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "array-macro",
  "cached_tree_hash",
  "clap 4.4.7",
  "colored",

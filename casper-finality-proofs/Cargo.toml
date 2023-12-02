@@ -26,8 +26,12 @@ name = "combine_finality_votes"
 path = "bin/combine_finality_votes.rs"
 
 [[bin]]
-name = "verify_subcommittee_vote"
-path = "bin/verify_subcommittee_vote.rs"
+name = "combine_finality_votes2"
+path = "bin/combine_finality_votes2.rs"
+
+[[bin]]
+name = "count_unique_pubkeys"
+path = "bin/count_unique_pubkeys.rs"
 
 [dependencies]
 plonky2 = { git = "https://github.com/mir-protocol/plonky2.git", default-features = false }
