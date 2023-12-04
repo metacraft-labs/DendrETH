@@ -10,6 +10,12 @@
 #include "../circuit_utils/ssz_utils.h"
 #include "../utils/picosha2.h"
 #include "../circuit_utils/static_vector.h"
+#include "nil/crypto3/multiprecision/cpp_int.hpp"
+using namespace nil::crypto3::multiprecision;
+
+///! #include <boost/multiprecision/cpp_int.hpp>
+///! using namespace boost::multiprecision;
+
 
 using namespace circuit_byte_utils;
 using namespace ssz_utils;
@@ -17,8 +23,8 @@ using namespace ssz_utils;
 using Proof = static_vector<Bytes32>;
 
 struct AttestationData {
-    int slot;
-    int index;
+    int64_t slot;
+    int64_t index;
     Root beacon_block_root;
     CheckpointVariable source;
     CheckpointVariable target;
@@ -27,7 +33,7 @@ struct AttestationData {
 struct Fork {
     Bytes32 previous_version;
     Bytes32 current_version;
-    int epoch;
+    int64_t epoch;
 };
 
 struct Validator {
@@ -35,16 +41,16 @@ struct Validator {
     // source state and can, therefore, be trusted.
     bool trusted;
     // These fields are always present.
-    int validator_index;
-    Bytes32 pubkey;
+    int64_t validator_index;
+    Bytes48 pubkey;
     // These fields are meaningful iff `trusted` is True.
-    Bytes32 withdrawal_credentials;
-    int effective_balance;
+    Bytes64 withdrawal_credentials;
+    int64_t effective_balance;
     bool slashed;
-    int activation_eligibility_epoch;
-    int activation_epoch;
-    int exit_epoch;
-    int withdrawable_epoch;
+    int64_t activation_eligibility_epoch;
+    int64_t activation_epoch;
+    int64_t exit_epoch;
+    int64_t withdrawable_epoch;
     Proof validator_list_proof;
 };
 
@@ -86,7 +92,7 @@ struct Merged {
 
 struct VoteToken {
     Transition transition;
-    int count;
+    int64_t count;
 };
 
 using TransitionKey = Bytes32;
@@ -134,5 +140,56 @@ VoteToken verify_attestation_data(Bytes32 block_root, Attestation attestation, i
         5
     );
 
+    // We aggregate all validator pubkeys to verify the `signature`
+    // field at the end.
+    ///! aggregated_point = bls.Z1
+
+    // Iterate over each validator that participates in this aggregated
+    // attestation.
+    int token = 0;
+    uint256_t ui256;
+    ui256 = 111;
+    //auto data = int_to_bytes(ui256);
+
+    
+    /*
+    for (auto it = attestation.validators.begin(); it != attestation.validators.end(); it++) {
+        // Aggregate this validator's public key.
+        auto validator_pubkey = v.pubkey
+        pubkey_point = pubkey_to_G1(validator_pubkey)
+        ///! aggregated_point = bls.add(aggregated_point, pubkey_point)
+
+        // Check if this validator was part of the source state.
+        if (v.trusted)
+            leaf: bytes = spec.hash_validator(
+                v['pubkey'],
+                v.get('withdrawal_credentials', ''),
+                v.get('effective_balance', 0),
+                v.get('activation_eligibility_epoch', 0),
+                v.get('activation_epoch', 0),
+                v.get('exit_epoch', 0),
+                v.get('withdrawable_epoch', 0),
+            )
+            // Hash the validator data and make sure it's part of:
+            // validators_root -> state_root -> block_root.
+            assert spec.is_valid_merkle_branch(
+                leaf,
+                utils.fill_zero_hashes(v.get('validator_list_proof', [])),
+                41,
+                0x020000000000 + v['validator_index'],
+                validators_root,
+            )
+            // TODO: Needed?
+            // assert spec.is_active_validator(
+            //     v['activation_epoch'],
+            //     v['exit_epoch'],
+            //     EPOCH,
+            // )
+
+            // Include this validator's pubkey in the result.
+            int element = v.pubkey;
+            token = (token + element*sigma) % MODULUS;
+    }
+*/
     return {};
 }

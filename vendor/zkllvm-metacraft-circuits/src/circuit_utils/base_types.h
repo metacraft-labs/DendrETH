@@ -23,6 +23,7 @@
 
 using Byte = unsigned char;
 using Bytes32 = std::array<Byte, 32>;
+using Bytes48 = std::array<Byte, 48>;
 using Bytes64 = std::array<Byte, 64>;
 
 using Epoch = uint64_t;
