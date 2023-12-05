@@ -87,10 +87,19 @@ namespace circuit_byte_utils {
         return ret;
     }
 
-    template<typename T, bool LittleEndian = true>
-    std::array<Byte, sizeof(T)> int_to_bytes(const T& paramInt) {
+    template<std::size_t N, typename T, std::size_t InputSize>
+    std::array<T, N> expand(const std::array<T, InputSize>& val) {
+        static_assert(N >= InputSize);
+        std::array<T, N> ret {};
+        std::copy(val.begin(), val.end(), ret.begin());
+
+        return ret;
+    }
+
+    template<typename T, size_t SIZE = sizeof(T), bool LittleEndian = true>
+    std::array<Byte, SIZE> int_to_bytes(const T& paramInt) {
         static_assert(std::is_integral_v<typename std::remove_reference_t<T>>, "T must be integral");
-        std::array<Byte, sizeof(T)> bytes {};
+        std::array<Byte, SIZE> bytes {};
         if constexpr (LittleEndian) {
             for (int i = 0; i < sizeof(T); ++i) {
                 bytes[i] = (paramInt >> (i * 8));
@@ -103,8 +112,8 @@ namespace circuit_byte_utils {
         return bytes;
     }
 
-    template<typename T, bool LittleEndian = true>
-    T bytes_to_int(const std::array<Byte, sizeof(T)>& bytes) {
+    template<typename T, size_t SIZE = sizeof(T), bool LittleEndian = true>
+    T bytes_to_int(const std::array<Byte, SIZE>& bytes) {
         static_assert(std::is_integral_v<typename std::remove_reference_t<T>>, "T must be integral");
         T result = 0;
         if constexpr (LittleEndian) {

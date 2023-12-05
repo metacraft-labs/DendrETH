@@ -44,10 +44,8 @@ namespace ssz_utils {
     }
 
     Bytes32 hash_tree_root(uint64_t val) {
-        auto bytes = int_to_bytes(val);
-        Bytes32 return_val {};
-        std::copy(bytes.begin(), bytes.end(), return_val.begin());
-        return return_val;
+        auto bytes = int_to_bytes<uint64_t, 32, true>(val);
+        return bytes;
     }
 
     Bytes32 hash_tree_root(const CheckpointVariable& checkpoint) {
