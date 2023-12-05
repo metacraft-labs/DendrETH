@@ -67,8 +67,8 @@ impl CombineFinalityVotes {
             plonky2::plonk::config::AlgebraicHasher<<L as PlonkParameters<D>>::Field>,
     {
         let verifier_data = builder.constant_verifier_data::<L>(&child_circuit.data);
-        let proof1 = builder.proof_read(&child_circuit).into();
-        let proof2 = builder.proof_read(&child_circuit).into();
+        let proof1 = builder.proof_read(&child_circuit.data.common).into();
+        let proof2 = builder.proof_read(&child_circuit.data.common).into();
 
         builder.verify_proof::<L>(&proof1, &verifier_data, &child_circuit.data.common);
         builder.verify_proof::<L>(&proof2, &verifier_data, &child_circuit.data.common);

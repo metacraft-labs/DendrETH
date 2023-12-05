@@ -76,8 +76,8 @@ impl<const LEVEL: usize> ConcatBitmasks<LEVEL> {
         [(); get_output_bitmask_split_size::<LEVEL>()]:,
     {
         let verifier_data = builder.constant_verifier_data::<L>(&child_circuit.data);
-        let left_proof = builder.proof_read(&child_circuit).into();
-        let right_proof = builder.proof_read(&child_circuit).into();
+        let left_proof = builder.proof_read(&child_circuit.data.common).into();
+        let right_proof = builder.proof_read(&child_circuit.data.common).into();
 
         builder.verify_proof::<L>(&left_proof, &verifier_data, &child_circuit.data.common);
         builder.verify_proof::<L>(&right_proof, &verifier_data, &child_circuit.data.common);
