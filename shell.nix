@@ -8,7 +8,7 @@ in
   mkShell {
     packages = shell-pkgs;
 
-    nativeBuildInputs = [pkg-config openssl];
+    nativeBuildInputs = [pkg-config openssl cmake gnumake];
 
     shellHook = ''
       set -e
