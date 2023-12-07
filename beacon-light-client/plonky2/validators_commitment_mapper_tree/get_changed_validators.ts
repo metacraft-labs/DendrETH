@@ -56,7 +56,7 @@ let MOCK: boolean;
       alias: 'take',
       describe: 'The number of validators to take',
       type: 'number',
-      default: undefined,
+      default: Infinity,
       description: 'Sets the number of validators to take',
     })
     .option('mock', {
