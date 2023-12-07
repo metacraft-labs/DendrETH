@@ -1,32 +1,28 @@
 {
-    "slot": 3950617312,
-    "target": {
-        "epoch": 123456790,
-        "root": "0x0000000000000000000000000000000000000000000000000000000000000000"
-    },
-    "source": {
-        "epoch": 123456788,
-        "root": "0x0000000000000000000000000000000000000000000000000000000000000000"
-    },
-    "total_number_of_validators": 65536,
-    "previous_epoch_attested_validators": 52430,
-    "current_epoch_attested_validators": 1,
-    "justification_bits": [
-        false,
-        false,
-        false,
-        false
-    ],
-    "previous_justified_checkpoint": {
-        "epoch": 0,
-        "root": "0x0000000000000000000000000000000000000000000000000000000000000000"
-    },
-    "current_justified_checkpoint": {
-        "epoch": 123456788,
-        "root": "0x0000000000000000000000000000000000000000000000000000000000000000"
-    },
-    "finalized_checkpoint": {
-        "epoch": 0,
-        "root": "0x0000000000000000000000000000000000000000000000000000000000000000"
-    }
+  "slot": 3950617312,
+  "target": {
+    "epoch": 123456790,
+    "root": "b85c1507c01db2a58ffcb044a4a785232f5a216b76377c2618a186577d6ec88a"
+  },
+  "source": {
+    "epoch": 123456788,
+    "root": "0xc014dab4e45229aa677898bac663fe791c2d4ec62af0e328f02c5a0ba3f1eeb1"
+  },
+  "total_number_of_validators": 65536,
+  "previous_epoch_attested_validators": 52430,
+  "current_epoch_attested_validators": 1,
+  "justification_bits": [
+    false,
+    false,
+    false,
+    false
+  ],
+  "previous_justified_checkpoint": {
+    "epoch": 0,
+    "root": "0x0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "current_justified_checkpoint": {
+    "epoch": 123456788,
+    "root": "0xc014dab4e45229aa677898bac663fe791c2d4ec62af0e328f02c5a0ba3f1eeb1"
+  }
 }

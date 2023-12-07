@@ -31,12 +31,23 @@ fn main() {
 
     let source = CheckpointValue::<<L as PlonkParameters<D>>::Field> {
         epoch: 123456788,
-        root: bytes32!("0x0000000000000000000000000000000000000000000000000000000000000000"),
+        root: bytes32!("0x0000000000000000000000000000000000000000000000000000000000000002"),
     };
 
     let target = CheckpointValue::<<L as PlonkParameters<D>>::Field> {
         epoch: 123456790,
         root: bytes32!("0x0000000000000000000000000000000000000000000000000000000000000000"),
+    };
+
+
+    let current_justified_checkpoint = CheckpointValue::<<L as PlonkParameters<D>>::Field> {
+        epoch: 123456788,
+        root: bytes32!("0x0000000000000000000000000000000000000000000000000000000000000002"),
+    };
+
+    let previous_justified_checkpoint = CheckpointValue::<<L as PlonkParameters<D>>::Field> {
+        epoch: 123456787,
+        root: bytes32!("0x0000000000000000000000000000000000000000000000000000000000000001"),
     };
 
     let slot = 3950617280;
@@ -48,6 +59,8 @@ fn main() {
     input.write::<JustificationBitsVariable>(justification_bits);
     input.write::<U64Variable>(previous_epoch_attested_validators);
     input.write::<U64Variable>(current_epoch_attested_validators);
+    input.write::<CheckpointVariable>(previous_justified_checkpoint);
+    input.write::<CheckpointVariable>(current_justified_checkpoint);
 
     let (_witness, mut _output) = circuit.prove(&input);
     println!("Successfully passed!");
