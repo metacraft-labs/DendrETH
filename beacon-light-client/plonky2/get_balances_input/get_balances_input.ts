@@ -49,7 +49,7 @@ let TAKE;
       alias: 'take',
       describe: 'The number of validators to take',
       type: 'number',
-      default: 1024,
+      default: Infinity,
       description: 'Sets the number of validators to take',
     }).argv;
 
@@ -86,6 +86,7 @@ let TAKE;
   const { beaconState } = await beaconApi.getBeaconState(6953401);
 
   const validators = beaconState.validators.slice(0, TAKE);
+  TAKE = validators.length;
 
   beaconState.validators = validators;
   beaconState.balances = beaconState.balances.slice(0, TAKE);
