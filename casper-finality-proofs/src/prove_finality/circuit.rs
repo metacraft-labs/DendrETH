@@ -151,6 +151,7 @@ pub fn validate_source<L: PlonkParameters<D>, const D: usize>(
     assert_is_true(builder, is_valid_pair_pred);
 }
 
+// Is this consistent with the consensus spec equivalent - # Process finalizations ?
 pub fn validate_justification_bits<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
     source_index_epoch: U64Variable,
