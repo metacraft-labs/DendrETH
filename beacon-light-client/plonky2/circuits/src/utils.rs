@@ -1,5 +1,10 @@
 use plonky2::{
-    field::extension::Extendable, hash::hash_types::RichField, iop::target::BoolTarget,
+    field::{extension::Extendable, types::Field},
+    hash::hash_types::RichField,
+    iop::{
+        target::BoolTarget,
+        witness::{PartialWitness, WitnessWrite},
+    },
     plonk::circuit_builder::CircuitBuilder,
 };
 use plonky2_u32::gadgets::arithmetic_u32::U32Target;
@@ -10,39 +15,10 @@ use crate::biguint::{BigUintTarget, CircuitBuilderBiguint};
 pub const ETH_SHA256_BIT_SIZE: usize = 256;
 pub const POSEIDON_HASH_SIZE: usize = 4;
 
-pub fn hash_bit_array(validator_pubkey: Vec<&str>) -> Vec<String> {
-    // Concatenate the array into a single binary string
-    let binary_string: String = validator_pubkey.join("");
-
-    // Convert binary string to bytes
-    let mut byte_string: Vec<u8> = binary_string
-        .as_str()
-        .chars()
-        .collect::<Vec<char>>()
-        .chunks(8)
-        .map(|chunk| {
-            let byte_str: String = chunk.into_iter().collect();
-            u8::from_str_radix(&byte_str, 2).unwrap()
-        })
-        .collect();
-
-    byte_string.resize(64, 0);
-
+pub fn hash_bytes(bytes: &[u8]) -> Vec<u8> {
     let mut hasher = Sha256::new();
-    hasher.update(byte_string);
-    let result = hasher.finalize();
-
-    let pubkey_binary_result: Vec<String> = result
-        .iter()
-        .map(|byte| {
-            format!("{:08b}", byte)
-                .chars()
-                .map(|ch| ch.to_string())
-                .collect::<Vec<String>>()
-        })
-        .flatten()
-        .collect();
-    pubkey_binary_result
+    hasher.update(bytes);
+    hasher.finalize().to_vec()
 }
 
 pub fn biguint_is_equal<F: RichField + Extendable<D>, const D: usize>(
@@ -185,6 +161,57 @@ pub fn if_biguint<F: RichField + Extendable<D>, const D: usize>(
     result.limbs.pop();
 
     result
+}
+
+pub fn bytes_to_bools(bytes: &[u8]) -> Vec<bool> {
+    let mut bool_values = Vec::new();
+
+    for value in bytes {
+        for i in (0..8).rev() {
+            let mask = 1 << i;
+            bool_values.push(value & mask != 0);
+        }
+    }
+
+    bool_values
+}
+
+pub fn bools_to_bytes(bools: &[bool]) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    let mut byte = 0u8;
+
+    for (index, bit) in bools.iter().enumerate() {
+        if *bit {
+            byte |= 1 << (7 - (index % 8));
+        }
+
+        if index % 8 == 7 {
+            bytes.push(byte);
+            byte = 0;
+        }
+    }
+
+    if bools.len() % 8 != 0 {
+        bytes.push(byte);
+    }
+
+    bytes
+}
+
+pub trait SetBytesArray<F: Field> {
+    fn set_bytes_array(&mut self, targets: &[BoolTarget], values: &[u8]);
+}
+
+impl<F: Field> SetBytesArray<F> for PartialWitness<F> {
+    fn set_bytes_array(&mut self, targets: &[BoolTarget], values: &[u8]) {
+        assert!(targets.len() == values.len() * 8);
+
+        let bool_values = bytes_to_bools(values);
+
+        for i in 0..targets.len() {
+            self.set_bool_target(targets[i], bool_values[i]);
+        }
+    }
 }
 
 #[cfg(test)]

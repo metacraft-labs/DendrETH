@@ -282,6 +282,7 @@ dependencies = [
  "circuits",
  "clap",
  "futures-lite",
+ "hex",
  "jemallocator",
  "num",
  "plonky2",
