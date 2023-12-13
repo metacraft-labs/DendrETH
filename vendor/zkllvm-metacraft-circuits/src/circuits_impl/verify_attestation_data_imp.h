@@ -1,6 +1,7 @@
 #pragma once
 
 #include <nil/crypto3/hash/algorithm/hash.hpp>
+#include <nil/crypto3/algebra/curves/pallas.hpp>
 #include <nil/crypto3/hash/sha2.hpp>
 
 #include <algorithm>
@@ -10,15 +11,10 @@
 #include "../circuit_utils/ssz_utils.h"
 #include "../utils/picosha2.h"
 #include "../circuit_utils/static_vector.h"
-#include "nil/crypto3/multiprecision/cpp_int.hpp"
-using namespace nil::crypto3::multiprecision;
-
-///! #include <boost/multiprecision/cpp_int.hpp>
-///! using namespace boost::multiprecision;
-
 
 using namespace circuit_byte_utils;
 using namespace ssz_utils;
+using namespace nil::crypto3::algebra::curves;
 
 using Proof = static_vector<Bytes32>;
 
@@ -90,9 +86,11 @@ struct Merged {
     static_vector<TransitionKeys> trusted_pubkeys;
 };
 
+using base_field_type = typename pallas::base_field_type::value_type;
+
 struct VoteToken {
     Transition transition;
-    int64_t count;
+    base_field_type token;
 };
 
 using TransitionKey = Bytes32;
@@ -161,7 +159,7 @@ Bytes32 hash_validator(
     return retval;
 }
 
-VoteToken verify_attestation_data(Bytes32 block_root, Attestation attestation, int sigma) {
+VoteToken verify_attestation_data(Bytes32 block_root, Attestation attestation, base_field_type sigma) {
     assert_true(sigma != 0);
 
     ssz_verify_proof(
@@ -186,11 +184,9 @@ VoteToken verify_attestation_data(Bytes32 block_root, Attestation attestation, i
 
     // Iterate over each validator that participates in this aggregated
     // attestation.
-    int token = 0;
-    uint256_t ui256;
-    ui256 = 111;
-    //auto data = int_to_bytes(ui256);
-    
+
+    base_field_type token = 0;
+
     for (auto v = attestation.validators.begin(); v != attestation.validators.end(); v++) {
         // Aggregate this validator's public key.
         auto validator_pubkey = v->pubkey;
@@ -226,10 +222,28 @@ VoteToken verify_attestation_data(Bytes32 block_root, Attestation attestation, i
             // )
 
             // Include this validator's pubkey in the result.
-            ///! int element = v->pubkey;
-            ///! token = (token + element*sigma) % MODULUS;
+            base_field_type element; 
+            memcpy(&element, &(v->pubkey), sizeof(element));
+            token = (token + (element * sigma) );
         }
     }
+    // Verify the aggregated signature.
+    // aggregated_pubkey: BLSPubkey = G1_to_pubkey(aggregated_point)
+    // signing_root: bytes = spec.compute_attestation_signing_root(
+    //     attestation['fork'],
+    //     attestation['genesis_validators_root'],
+    //     attestation['data'],
+    // )
+    // signature: BLSSignature = BLSSignature(to_bytes(hexstr=attestation['signature']))
+    // assert bls_pop.Verify(
+    //     aggregated_pubkey,
+    //     signing_root,
+    //     signature,
+    // )
 
-    return {};
+    return VoteToken {
+        { attestation.data.source,
+          attestation.data.target },
+        token
+    };
 }

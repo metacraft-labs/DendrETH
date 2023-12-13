@@ -1,4 +1,6 @@
 #include <nil/crypto3/hash/algorithm/hash.hpp>
+#include <nil/crypto3/algebra/curves/pallas.hpp>
+
 #include <nil/crypto3/hash/sha2.hpp>
 #include "circuit_utils/circuit_byte_utils.h"
 #include "circuits_impl/compute_shuffled_index_impl.h"
@@ -19,6 +21,7 @@
 
 #include "circuits_impl/verify_attestation_data_imp.h"
 
+using namespace nil::crypto3::algebra::curves;
 using llvm::yaml::Input;
 using llvm::yaml::IO;
 using llvm::yaml::MappingTraits;
@@ -170,6 +173,17 @@ int main(int argc, char* argv[]) {
             41
         );
         printf("Done\n");
+
+
+        std::array<unsigned char, 32> key;
+        typename pallas::base_field_type::value_type pkey;
+
+        static_assert(sizeof(pkey) >= sizeof(key));
+
+        memcpy(&pkey, &key, sizeof(key));
+
+        std::cout << "sizeof(pkey) = " << sizeof(pkey) << "\n";
+
     }
 
     // print(f"uint_to_b32(1234512345) = {uint_to_b32(1234512345)}")

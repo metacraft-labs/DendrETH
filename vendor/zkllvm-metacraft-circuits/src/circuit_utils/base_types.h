@@ -4,9 +4,9 @@
 #include <cstring>
 #include "constants.h"
 
-//!!!TODO: Use assertion in circuits when introduced in tooling
 #ifdef __ZKLLVM__
-#define assert_true(c)
+#define assert_true(c) \
+    { __builtin_assigner_exit_check(c); }
 #else
 #define assert_true(c) \
     { assert(c); }
