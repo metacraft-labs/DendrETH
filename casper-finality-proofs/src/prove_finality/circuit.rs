@@ -1,5 +1,5 @@
 use crate::{
-    types::{Epoch, Gwei},
+    types::{Epoch, Gwei, Slot},
     utils::plonky2x_extensions::assert_is_true,
     weigh_justification_and_finalization::{
         checkpoint::CheckpointVariable, justification_bits::JustificationBitsVariable,
@@ -8,7 +8,7 @@ use crate::{
 use plonky2x::{
     backend::circuit::Circuit,
     prelude::{BoolVariable, CircuitBuilder, PlonkParameters, U64Variable},
-    utils,
+    utils, frontend::vars::{Bytes32Variable, CircuitVariable},
 };
 
 #[derive(Debug, Clone)]
@@ -51,24 +51,45 @@ impl Circuit for ProveFinality {
         let current_justified_checkpoint = builder.read::<CheckpointVariable>();
         let finalized_checkpoint = builder.read::<CheckpointVariable>();
 
-        let new_justification_bits = process_justifications(
+        let current_epoch = get_current_epoch(builder, slot);
+
+        let previous_epoch = get_previous_epoch(builder, current_epoch);
+
+        let previous_epoch_root = Bytes32Variable::init_unsafe(builder);
+        let current_epoch_root = Bytes32Variable::init_unsafe(builder);
+
+        let (_, new_justification_bits) = process_justifications(
             builder,
             total_number_of_validators,
-            justification_bits,
             previous_epoch_attested_validators,
             current_epoch_attested_validators,
+            justification_bits,
+            current_justified_checkpoint.clone(),
+            CheckpointVariable {
+                epoch: previous_epoch,
+                root: previous_epoch_root,
+            },
+            CheckpointVariable {
+                epoch: current_epoch,
+                root: current_epoch_root,
+            },
         );
 
         let new_finalized_checkpoint = process_finalizations(
             builder,
             new_justification_bits,
             previous_justified_checkpoint,
-            current_justified_checkpoint,
+            current_justified_checkpoint.clone(),
             current_epoch,
             finalized_checkpoint,
         );
 
-        builder.watch(&new_finalized_checkpoint, "new_finalized_checkpoint");
+        builder.watch(&new_finalized_checkpoint.epoch, "new_finalized_checkpoint epoch");
+        builder.watch(&source.epoch, "source epoch");
+        // let new_finalized_checkpoint_equals_source = builder.is_equal(new_finalized_checkpoint.epoch, source.epoch);
+        // builder.watch(&new_finalized_checkpoint_equals_source.variable, "new_finalized_checkpoint_equals_source");
+        // assert_is_true(builder, new_finalized_checkpoint_equals_source);
+        builder.assert_is_equal(new_finalized_checkpoint.epoch, source.epoch);
 
         // let bits_set_1_through_4_pred = new_justification_bits.test_range(builder, 1, 4);
         // let bits_set_1_through_3_pred = new_justification_bits.test_range(builder, 1, 3);
@@ -108,23 +129,39 @@ impl Circuit for ProveFinality {
     }
 }
 
-fn process_justifications<L: PlonkParameters<D>, const D: usize>(
+pub fn get_previous_epoch<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
-    total_number_of_validators: Gwei,
+    current_epoch: Epoch,
+) -> Epoch {
+    let one = builder.one();
+    builder.sub(current_epoch, one)
+}
+
+pub fn process_justifications<L: PlonkParameters<D>, const D: usize>(
+    builder: &mut CircuitBuilder<L, D>,
+    total_active_balance: Gwei,
+    previous_epoch_target_balance: Gwei,
+    current_epoch_target_balance: Gwei,
     justification_bits: JustificationBitsVariable,
-    previous_epoch_attested_validators: Gwei,
-    current_epoch_attested_validators: Gwei,
-) -> JustificationBitsVariable {
-    let previous_epoch_supermajority_link_pred = is_supermajority_link_in_votes(
-        builder,
-        total_number_of_validators,
-        previous_epoch_attested_validators,
+    current_justified_checkpoint: CheckpointVariable,
+    previous_epoch_checkpoint: CheckpointVariable,
+    current_epoch_checkpoint: CheckpointVariable,
+) -> (CheckpointVariable, JustificationBitsVariable) {
+    let previous_epoch_supermajority_link_pred =
+        is_supermajority_link_in_votes(builder, previous_epoch_target_balance, total_active_balance);
+    let current_epoch_supermajority_link_pred =
+        is_supermajority_link_in_votes(builder, current_epoch_target_balance, total_active_balance);
+
+    let mut new_current_justified_checkpoint = builder.select(
+        previous_epoch_supermajority_link_pred,
+        previous_epoch_checkpoint,
+        current_justified_checkpoint,
     );
 
-    let current_epoch_supermajority_link_pred = is_supermajority_link_in_votes(
-        builder,
-        total_number_of_validators,
-        current_epoch_attested_validators,
+    new_current_justified_checkpoint = builder.select(
+        current_epoch_supermajority_link_pred,
+        current_epoch_checkpoint,
+        new_current_justified_checkpoint,
     );
 
     let _true = builder._true();
@@ -139,8 +176,50 @@ fn process_justifications<L: PlonkParameters<D>, const D: usize>(
     new_justification_bits =
         new_justification_bits.assign_nth_bit(0, current_epoch_supermajority_link_pred);
 
-    new_justification_bits
+    (new_current_justified_checkpoint, new_justification_bits)
 }
+
+pub fn get_current_epoch<L: PlonkParameters<D>, const D: usize>(
+    builder: &mut CircuitBuilder<L, D>,
+    slot: Slot,
+) -> Epoch {
+    let slots_per_epoch = builder.constant::<U64Variable>(32);
+    builder.div(slot, slots_per_epoch)
+}
+
+// fn process_justifications<L: PlonkParameters<D>, const D: usize>(
+//     builder: &mut CircuitBuilder<L, D>,
+//     total_number_of_validators: Gwei,
+//     justification_bits: JustificationBitsVariable,
+//     previous_epoch_attested_validators: Gwei,
+//     current_epoch_attested_validators: Gwei,
+// ) -> JustificationBitsVariable {
+//     let previous_epoch_supermajority_link_pred = is_supermajority_link_in_votes(
+//         builder,
+//         total_number_of_validators,
+//         previous_epoch_attested_validators,
+//     );
+
+//     let current_epoch_supermajority_link_pred = is_supermajority_link_in_votes(
+//         builder,
+//         total_number_of_validators,
+//         current_epoch_attested_validators,
+//     );
+
+//     let _true = builder._true();
+//     let new_second_justification_bit = builder.select(
+//         previous_epoch_supermajority_link_pred,
+//         _true,
+//         justification_bits.bits[0],
+//     );
+
+//     let mut new_justification_bits = justification_bits.shift_right(builder);
+//     new_justification_bits = new_justification_bits.assign_nth_bit(1, new_second_justification_bit);
+//     new_justification_bits =
+//         new_justification_bits.assign_nth_bit(0, current_epoch_supermajority_link_pred);
+
+//     new_justification_bits
+// }
 
 pub fn process_finalizations<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
@@ -156,8 +235,8 @@ pub fn process_finalizations<L: PlonkParameters<D>, const D: usize>(
 
     let bits_set_1_through_4_pred = justification_bits.test_range(builder, 1, 4);
     let bits_set_1_through_3_pred = justification_bits.test_range(builder, 1, 3);
-    let bits_set_0_through_3_pred = justification_bits.test_range(builder, 0, 3);
-    let bits_set_0_through_2_pred = justification_bits.test_range(builder, 0, 2);
+    // let bits_set_0_through_3_pred = justification_bits.test_range(builder, 0, 3);
+    // let bits_set_0_through_2_pred = justification_bits.test_range(builder, 0, 2);
 
     let previous_justified_checkpoint_epoch_plus_three =
         builder.add(previous_justified_checkpoint.epoch, three);
@@ -195,16 +274,13 @@ pub fn process_finalizations<L: PlonkParameters<D>, const D: usize>(
         should_finalize_previous_justified_checkpoint_2_pred,
     );
 
-    let should_finalize_current_justified_checkpoint_1_pred =
-        builder.and(bits_set_0_through_3_pred, first_using_third_as_source_pred);
+    // let should_finalize_current_justified_checkpoint_1_pred =
+    //     builder.and(bits_set_0_through_3_pred, first_using_third_as_source_pred);
 
-    let should_finalize_current_justified_checkpoint_2_pred =
-        builder.and(bits_set_0_through_2_pred, first_using_second_as_source_pred);
+    // let should_finalize_current_justified_checkpoint_2_pred =
+    //     builder.and(bits_set_0_through_2_pred, first_using_second_as_source_pred);
 
-    let should_finalize_current_justified_checkpoint_pred = builder.or(
-        should_finalize_current_justified_checkpoint_1_pred,
-        should_finalize_current_justified_checkpoint_2_pred,
-    );
+    let should_finalize_current_justified_checkpoint_pred = builder.constant::<BoolVariable>(true);
 
     let mut new_finalized_checkpoint = builder.select(
         should_finalize_previous_justified_checkpoint_pred,
