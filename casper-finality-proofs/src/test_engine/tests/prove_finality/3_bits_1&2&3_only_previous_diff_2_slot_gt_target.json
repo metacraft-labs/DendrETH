@@ -1,0 +1,20 @@
+{
+    "slot": 3950617312,
+    "target": {
+        "epoch": 123456790,
+        "root": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "source": {
+        "epoch": 123456788,
+        "root": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "total_number_of_validators": 65536,
+    "previous_epoch_attested_validators": 52430,
+    "current_epoch_attested_validators": 1,
+    "justification_bits": [
+        true,
+        true,
+        true,
+        false
+    ]
+}
