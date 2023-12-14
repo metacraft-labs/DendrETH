@@ -17,6 +17,8 @@ redis-work-queue = "0.1.3"
 futures-lite = "1"
 jemallocator = "0.5.0"
 clap = "3.0"
+jsonm = "0.2.0"
+serde-binary = "0.5.0"
 
 [[bin]]
 name = "balance_verification"
