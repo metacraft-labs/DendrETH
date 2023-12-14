@@ -17,7 +17,7 @@ use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     iop::witness::PartialWitness,
-    plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig},
+    plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs},
     util::serialization::Buffer,
 };
 use redis_work_queue::{KeyPrefix, WorkQueue};
@@ -26,6 +26,11 @@ use std::{format, print, println, thread, time::Duration};
 use validator_commitment_constants::get_validator_commitment_constants;
 
 use jemallocator::Jemalloc;
+
+use serde::{Deserialize, Serialize};
+use std::fs::File;
+use std::io::Write;
+use serde_binary::binary_stream;
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -59,12 +64,21 @@ async fn async_main() -> Result<()> {
         .help("Sets for how long the task will be leased and then possibly requeued if not finished")
         .takes_value(true)
         .default_value("30"))
+    .arg(
+        Arg::with_name("mock")
+        .long("mock")
+        .help("Sets mock mode")
+        .takes_value(false)
+        .default_value("false")
+    )
     .get_matches();
 
     let redis_connection = matches.value_of("redis_connection").unwrap();
 
     let client = redis::Client::open(redis_connection)?;
     let mut con = client.get_async_connection().await?;
+
+    println!("Connected to redis");
 
     let queue = WorkQueue::new(KeyPrefix::new(
         get_validator_commitment_constants().validator_proofs_queue,
@@ -97,6 +111,14 @@ async fn async_main() -> Result<()> {
         .unwrap()
         .parse::<u64>()
         .unwrap();
+    let mock = matches
+        .value_of("mock")
+        .unwrap()
+        .parse::<bool>()
+        .unwrap();
+
+    let inner_proof_mock_binary = include_bytes!("../mock_data/inner_proof_mapper.mock");
+    let proof_mock_binary = include_bytes!("../mock_data/proof_mapper.mock");
 
     loop {
         println!("Waiting for job...");
@@ -130,8 +152,15 @@ async fn async_main() -> Result<()> {
                     validator_commitment
                         .validator
                         .set_pw_values(&mut pw, &validator);
+                    
+                    
 
-                    let proof = first_level_circuit_data.prove(pw)?;
+                    let proof = if mock {
+                        let proof_mock: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> = serde_binary::from_slice(proof_mock_binary, binary_stream::Endian::Big).unwrap();
+                        proof_mock
+                    } else {
+                        first_level_circuit_data.prove(pw)?
+                    };
 
                     match save_validator_proof(&mut con, proof, 0, validator_index).await {
                         Err(err) => {
@@ -166,14 +195,18 @@ async fn async_main() -> Result<()> {
                         &first_level_circuit_data
                     };
 
-                    let proof = handle_commitment_mapper_inner_level_proof(
-                        proofs.0,
-                        proofs.1,
-                        inner_circuit_data,
-                        &inner_circuits[proof_indexes[0]].0,
-                        &inner_circuits[proof_indexes[0]].1,
-                        proof_indexes[2] == VALIDATOR_REGISTRY_LIMIT && proof_indexes[0] == 0,
-                    )?;
+                    let proof = if mock {
+                        let inner_proof_mock: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> = serde_binary::from_slice(inner_proof_mock_binary, binary_stream::Endian::Big).unwrap();
+                        inner_proof_mock
+                    } else {
+                        handle_commitment_mapper_inner_level_proof(
+                            proofs.0,
+                            proofs.1,
+                            inner_circuit_data,
+                            &inner_circuits[proof_indexes[0]].0,
+                            &inner_circuits[proof_indexes[0]].1,
+                            proof_indexes[2] == VALIDATOR_REGISTRY_LIMIT && proof_indexes[0] == 0,
+                        )?};
 
                     match save_validator_proof(
                         &mut con,

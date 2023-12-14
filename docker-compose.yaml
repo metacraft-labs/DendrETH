@@ -15,7 +15,7 @@ services:
     image: get_changed_validators
     environment:
       - COMPOSE_PROJECT_NAME
-    command: get-changed-validators --redis-host redis --redis-port 6379 --take 32
+    command: get-changed-validators --redis-host redis --redis-port 6379 --mock
     ports:
       - '6379'
     depends_on:
@@ -26,7 +26,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     working_dir: /bin
-    command: commitment_mapper --redis redis://redis:6379
+    command: commitment_mapper --redis redis://redis:6379 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -36,7 +36,7 @@ services:
     image: get_balances_input
     environment:
       - COMPOSE_PROJECT_NAME
-    command: get-balances-input --redis-host redis --redis-port 6379 --take 32
+    command: get-balances-input --redis-host redis --redis-port 6379 --mock
     depends_on:
       redis:
         condition: service_healthy
@@ -47,7 +47,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 0
+    command: balance_verification --redis redis://redis:6379 --level 0 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -64,7 +64,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 1
+    command: balance_verification --redis redis://redis:6379 --level 1 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -83,7 +83,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 2
+    command: balance_verification --redis redis://redis:6379 --level 2 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -102,7 +102,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 3
+    command: balance_verification --redis redis://redis:6379 --level 3 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -121,7 +121,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 4
+    command: balance_verification --redis redis://redis:6379 --level 4 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -140,7 +140,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 5
+    command: balance_verification --redis redis://redis:6379 --level 5 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -159,7 +159,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 6
+    command: balance_verification --redis redis://redis:6379 --level 6 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -178,7 +178,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 7
+    command: balance_verification --redis redis://redis:6379 --level 7 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -197,7 +197,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 8
+    command: balance_verification --redis redis://redis:6379 --level 8 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -216,7 +216,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 9
+    command: balance_verification --redis redis://redis:6379 --level 9 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -235,7 +235,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 10
+    command: balance_verification --redis redis://redis:6379 --level 10 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -254,7 +254,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 11
+    command: balance_verification --redis redis://redis:6379 --level 11 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -273,7 +273,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 12
+    command: balance_verification --redis redis://redis:6379 --level 12 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -292,7 +292,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 13
+    command: balance_verification --redis redis://redis:6379 --level 13 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -311,7 +311,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 14
+    command: balance_verification --redis redis://redis:6379 --level 14 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -330,7 +330,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 15
+    command: balance_verification --redis redis://redis:6379 --level 15 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -349,7 +349,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 16
+    command: balance_verification --redis redis://redis:6379 --level 16 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -368,7 +368,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 17
+    command: balance_verification --redis redis://redis:6379 --level 17 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -387,7 +387,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 18
+    command: balance_verification --redis redis://redis:6379 --level 18 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -406,7 +406,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 19
+    command: balance_verification --redis redis://redis:6379 --level 19 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -425,7 +425,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 20
+    command: balance_verification --redis redis://redis:6379 --level 20 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -444,7 +444,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 21
+    command: balance_verification --redis redis://redis:6379 --level 21 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -463,7 +463,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 22
+    command: balance_verification --redis redis://redis:6379 --level 22 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -482,7 +482,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 23
+    command: balance_verification --redis redis://redis:6379 --level 23 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -501,7 +501,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 24
+    command: balance_verification --redis redis://redis:6379 --level 24 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -520,7 +520,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 25
+    command: balance_verification --redis redis://redis:6379 --level 25 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -539,7 +539,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 26
+    command: balance_verification --redis redis://redis:6379 --level 26 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -558,7 +558,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 27
+    command: balance_verification --redis redis://redis:6379 --level 27 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -577,7 +577,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 28
+    command: balance_verification --redis redis://redis:6379 --level 28 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -596,7 +596,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 29
+    command: balance_verification --redis redis://redis:6379 --level 29 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -615,7 +615,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 30
+    command: balance_verification --redis redis://redis:6379 --level 30 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -634,7 +634,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 31
+    command: balance_verification --redis redis://redis:6379 --level 31 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -653,7 +653,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 32
+    command: balance_verification --redis redis://redis:6379 --level 32 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -672,7 +672,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 33
+    command: balance_verification --redis redis://redis:6379 --level 33 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -691,7 +691,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 34
+    command: balance_verification --redis redis://redis:6379 --level 34 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -710,7 +710,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 35
+    command: balance_verification --redis redis://redis:6379 --level 35 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -729,7 +729,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 36
+    command: balance_verification --redis redis://redis:6379 --level 36 --mock true
     depends_on:
       redis:
         condition: service_healthy
@@ -748,7 +748,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME
     entrypoint: ''
-    command: balance_verification --redis redis://redis:6379 --level 37
+    command: balance_verification --redis redis://redis:6379 --level 37 --mock true
     depends_on:
       redis:
         condition: service_healthy
