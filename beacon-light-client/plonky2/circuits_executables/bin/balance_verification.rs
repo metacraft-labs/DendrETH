@@ -16,12 +16,13 @@ use circuits_executables::{
     },
     provers::{handle_balance_inner_level_proof, SetPWValues},
     validator_commitment_constants::get_validator_commitment_constants,
+    validator_balances_input::ValidatorBalancesInput,
 };
 use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     iop::witness::PartialWitness,
-    plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig},
+    plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs},
     util::serialization::Buffer,
 };
 
@@ -32,8 +33,14 @@ use redis_work_queue::{Item, KeyPrefix, WorkQueue};
 
 use jemallocator::Jemalloc;
 
+use std::fs::File;
+use std::io::Write;
+use serde_binary::binary_stream;
+
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
+static INNER_PROOF_MOCK_BINARY: &[u8; 214532] = include_bytes!("../mock_data/inner_proof_verified.mock");
+static PROOF_MOCK_BINARY: &[u8; 204016] = include_bytes!("../mock_data/proof_verified.mock");
 
 enum Targets {
     FirstLevel(Option<ValidatorBalanceVerificationTargets>),
@@ -85,6 +92,13 @@ async fn async_main() -> Result<()> {
                 .takes_value(true)
                 .default_value("infinity"),
         )
+        .arg(
+            Arg::with_name("mock")
+            .long("mock")
+            .help("Sets mock mode")
+            .takes_value(false)
+            .default_value("false")
+        )
         .get_matches();
 
     let level = matches
@@ -113,6 +127,12 @@ async fn async_main() -> Result<()> {
         .value_of("lease_for")
         .unwrap()
         .parse::<u64>()
+        .unwrap();
+
+    let mock = matches
+        .value_of("mock")
+        .unwrap()
+        .parse::<bool>()
         .unwrap();
 
     let redis_connection = matches.value_of("redis_connection").unwrap();
@@ -163,6 +183,7 @@ async fn async_main() -> Result<()> {
         time_to_run,
         stop_after,
         lease_for,
+        mock
     )
     .await
 }
@@ -178,6 +199,7 @@ async fn process_queue(
     time_to_run: Option<Duration>,
     stop_after: u64,
     lease_for: u64,
+    mock: bool,
 ) -> Result<()> {
     while time_to_run.is_none() || start.elapsed() < time_to_run.unwrap() {
         let job = match queue
@@ -213,6 +235,7 @@ async fn process_queue(
                     job,
                     circuit_data,
                     targets.as_ref().unwrap(),
+                    mock
                 )
                 .await
                 {
@@ -232,6 +255,7 @@ async fn process_queue(
                     inner_circuit_data.unwrap(),
                     inner_circuit_targets,
                     level,
+                    mock
                 )
                 .await
                 {
@@ -251,11 +275,18 @@ async fn process_first_level_job(
     job: Item,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     targets: &ValidatorBalanceVerificationTargets,
+    mock: bool,
 ) -> Result<()> {
     let balance_input_index = u64::from_be_bytes(job.data[0..8].try_into().unwrap()) as usize;
 
     let start = Instant::now();
-    let validator_balance_input = fetch_validator_balance_input(con, balance_input_index).await?;
+
+    let validator_balance_input_mock: ValidatorBalancesInput = serde_json::from_str(r#"{"validators":[{"pubkey":"28155455410776443498482448245529435809359956175169908048702124937172512699631467778238641261986684575799579397993811","withdrawalCredentials":"382737961640003689533910812141398037732875097701826973858731813319968970850","effectiveBalance":"32000000000","slashed":0,"activationEligibilityEpoch":"0","activationEpoch":"0","exitEpoch":"18446744073709551615","withdrawableEpoch":"18446744073709551615"},{"pubkey":"26979846440152886011310362764920484765984271438301878724818610563677684689774592103308019846399354324216936243366261","withdrawalCredentials":"334836033201229227961245502702526419573885144848257583169567123681803257233","effectiveBalance":"32000000000","slashed":0,"activationEligibilityEpoch":"0","activationEpoch":"0","exitEpoch":"18446744073709551615","withdrawableEpoch":"18446744073709551615"},{"pubkey":"27801740282514395063227256283476233197453489056913878482578327955357746398789954319627803579173623839636086204205312","withdrawalCredentials":"452312848583266388373324161311539720301441557426889082580326305166421027472","effectiveBalance":"32000000000","slashed":0,"activationEligibilityEpoch":"0","activationEpoch":"0","exitEpoch":"18446744073709551615","withdrawableEpoch":"18446744073709551615"},{"pubkey":"21527346288222609476208495591203643471148391088705253248992136372752069313676131849343273583439774745199246011648576","withdrawalCredentials":"367671889103706031716807112321536209552784367704779136855912917662270427673","effectiveBalance":"32000000000","slashed":0,"activationEligibilityEpoch":"0","activationEpoch":"0","exitEpoch":"18446744073709551615","withdrawableEpoch":"18446744073709551615"},{"pubkey":"22320248583573513380499645876659337063375986179485491270050641054377962534820064449058321021365382800967547431872178","withdrawalCredentials":"452312848583266388373324160271404058109911226905144332655132243525891128419","effectiveBalance":"32000000000","slashed":0,"activationEligibilityEpoch":"0","activationEpoch":"0","exitEpoch":"18446744073709551615","withdrawableEpoch":"18446744073709551615"},{"pubkey":"21619640184761671406845477913809792923864724567879069222980681511978293118339791878883269161616622145838709233406408","withdrawalCredentials":"13798419507846026553622359324325711518785000279005931307706727393517509549","effectiveBalance":"32000000000","slashed":0,"activationEligibilityEpoch":"0","activationEpoch":"0","exitEpoch":"18446744073709551615","withdrawableEpoch":"18446744073709551615"},{"pubkey":"28315493868134351375148990743790149058304089158549908131347185017299284710487426690336332785304639119792063400013028","withdrawalCredentials":"3043153795794382687251851273790182871169017274083796406622225121057728559","effectiveBalance":"32000000000","slashed":0,"activationEligibilityEpoch":"0","activationEpoch":"0","exitEpoch":"18446744073709551615","withdrawableEpoch":"18446744073709551615"},{"pubkey":"25138136466776665720292214356534543105788238163001562454030604153595944200262426495626688131184611875744151551092852","withdrawalCredentials":"452312848583266388373324160200794100136802167846724101891059603667205939461","effectiveBalance":"32000000000","slashed":0,"activationEligibilityEpoch":"0","activationEpoch":"0","exitEpoch":"18446744073709551615","withdrawableEpoch":"18446744073709551615"}],"balances":[[0,1,1,0,0,1,0,0,0,1,0,0,0,0,0,1,0,0,1,0,1,1,0,1,1,0,0,0,1,1,1,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,1,0,0,0,1,1,0,0,1,1,0,1,1,0,1,1,0,1,0,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,1,1,1,1,0,1,0,0,0,1,0,0,1,0,1,1,1,0,1,1,0,1,1,1,0,0,1,1,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,1,0,0,1,0,0,0,0,0,1,0,1,0,0,0,1,0,0,1,0,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,1,0,1,0,0,0,1,1,1,1,1,0,1,1,1,0,1,0,0,1,1,1,0,0,1,1,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,1,0,0,0,0,1,0,0,0,0,0,1,1,1,1,0,1,0,0,0,0,1,0,0,1,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,1,0,0,0,1,1,1,0,0,0,1,1,1,1,1,1,0,1,0,1,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,1,0,1,0,0,0,1,1,0,1,1,1,0,1,1,0,1,1,1,0,0,1,1,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],"withdrawalCredentials":"452312848583266388373324160315533450859862645952655026790676503269398455083","currentEpoch":"217293","validatorIsZero":[0,0,0,0,0,0,0,0]}"#).unwrap();
+    let validator_balance_input = if mock {
+        validator_balance_input_mock
+    } else {
+        fetch_validator_balance_input(con, balance_input_index).await?
+    };
 
     let elapsed = start.elapsed();
 
@@ -267,7 +298,10 @@ async fn process_first_level_job(
 
     targets.set_pw_values(&mut pw, &validator_balance_input);
 
-    let proof = circuit_data.prove(pw)?;
+    let proof = if mock {
+        let proof_mock: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> = serde_binary::from_slice(PROOF_MOCK_BINARY, binary_stream::Endian::Big).unwrap();
+        proof_mock
+    } else { circuit_data.prove(pw)?};
 
     match save_balance_proof(con, proof, 0, balance_input_index).await {
         Err(err) => {
@@ -295,6 +329,7 @@ async fn process_inner_level_job(
     inner_circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     inner_circuit_targets: &Option<BalanceInnerCircuitTargets>,
     level: usize,
+    mock: bool,
 ) -> Result<()> {
     let proof_indexes = job
         .data
@@ -312,13 +347,16 @@ async fn process_inner_level_job(
         Ok(proofs) => {
             let start = Instant::now();
 
-            let proof = handle_balance_inner_level_proof(
+            let proof = if mock {
+                let inner_proof_mock: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> = serde_binary::from_slice(INNER_PROOF_MOCK_BINARY, binary_stream::Endian::Big).unwrap();
+                inner_proof_mock
+            } else {  handle_balance_inner_level_proof(
                 proofs.0,
                 proofs.1,
                 &inner_circuit_data,
                 &inner_circuit_targets.as_ref().unwrap(),
                 &circuit_data,
-            )?;
+            )?};
 
             match save_balance_proof(con, proof, level, proof_indexes[1]).await {
                 Err(err) => {

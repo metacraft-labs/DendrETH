@@ -5,6 +5,7 @@ import { BeaconApi } from '../../../relay/implementations/beacon-api';
 import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
 import { hexToBits } from '../../../libs/typescript/ts-utils/hex-utils';
 import { bigint_to_array } from '../../solidity/test/utils/bls';
+import * as fs from 'fs';
 const {
   KeyPrefix,
   WorkQueue,
@@ -13,7 +14,6 @@ const {
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
 import yargs from 'yargs';
 import { computeEpochAt } from '../../../libs/typescript/ts-utils/ssz-utils';
-
 const CIRCUIT_SIZE = 8;
 let TAKE;
 
@@ -51,6 +51,13 @@ let TAKE;
       type: 'number',
       default: Infinity,
       description: 'Sets the number of validators to take',
+    })
+    .option('mock', {
+      alias: 'mock',
+      describe: 'Runs the tool without doing actual calculations',
+      type: 'boolean',
+      default: false,
+      description: 'Runs the tool without doing actual calculations.'
     }).argv;
 
   const redis = new RedisLocal(options['redis-host'], options['redis-port']);
@@ -60,6 +67,7 @@ let TAKE;
   );
 
   TAKE = options['take'];
+  let MOCK = options['mock'];
 
   const queues: any[] = [];
 
@@ -83,7 +91,7 @@ let TAKE;
 
   const beaconApi = new BeaconApi([options['beacon-node']]);
 
-  const { beaconState } = await beaconApi.getBeaconState(6953401);
+  const { beaconState } = MOCK ? {beaconState: ssz.capella.BeaconState.deserialize(fs.readFileSync('mock_data/beaconState.bin'))} : await beaconApi.getBeaconState(6953401);
 
   const validators = beaconState.validators.slice(0, TAKE);
   TAKE = validators.length;
