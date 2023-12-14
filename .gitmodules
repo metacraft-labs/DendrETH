@@ -55,3 +55,6 @@
 [submodule "vendor/consensus-spec-tests"]
 	path = vendor/consensus-spec-tests
 	url = https://github.com/ethereum/consensus-spec-tests.git
+[submodule "casper-finality-proofs/vendor"]
+	path = casper-finality-proofs/vendor
+	url = https://github.com/ethereum/consensus-spec-tests
