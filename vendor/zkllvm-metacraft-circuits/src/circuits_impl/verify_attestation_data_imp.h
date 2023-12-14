@@ -17,6 +17,7 @@ using namespace ssz_utils;
 using namespace nil::crypto3::algebra::curves;
 
 using Proof = static_vector<Bytes32>;
+using PubKey = Bytes48;
 
 struct AttestationData {
     int64_t slot;
@@ -38,7 +39,7 @@ struct Validator {
     bool trusted;
     // These fields are always present.
     int64_t validator_index;
-    Bytes48 pubkey;
+    PubKey pubkey;
     // These fields are meaningful iff `trusted` is True.
     Bytes32 withdrawal_credentials;
     int64_t effective_balance;
@@ -74,6 +75,9 @@ struct Attestation {
 struct Transition {
     CheckpointVariable source;
     CheckpointVariable target;
+    bool operator==(const Transition &c) const {
+        return (source == c.source && target == c.target);
+    }
 };
 
 struct TransitionKeys {
@@ -247,3 +251,52 @@ VoteToken verify_attestation_data(Bytes32 block_root, Attestation attestation, b
         token
     };
 }
+
+/*
+def combine_finality_votes(tokens: Iterable[VoteToken]) -> Mapping[TransitionKey, int]:
+    f: Callable[[int, int], int] = lambda memo, x: (memo + x) % MODULUS
+    g: Callable[[Iterator[VoteToken]], int] = lambda xs: reduce(f, [x[1] for x in xs], 0)
+    grouped: groupby[Transition, VoteToken] = groupby(tokens, key=itemgetter(0))
+    return {
+        transition_to_key(transition): g(group)
+        for (transition, group) in grouped
+    }
+*/
+
+VoteToken combine_finality_votes(static_vector<VoteToken, 8192> tokens)
+{
+    VoteToken result;
+    result.transition = tokens[0].transition;
+    result.token = 0;
+    for(auto it = tokens.begin(); it != tokens.end(); it++) {
+        assert_true(result.transition == it->transition);
+        result.token += it->token;
+    }
+    return result;
+}
+
+void prove_finality(
+        VoteToken token,
+        static_vector<PubKey> trustedKeys,
+        Transition votedTransition,
+        int sigma,
+        int64_t active_validators_count
+)
+{
+    assert_true(votedTransition == token.transition);
+    int64_t votes_count = 0;
+    PubKey* prev = nullptr;
+    base_field_type reconstructed_token = 0;
+    for(auto it = trustedKeys.begin(); it != trustedKeys.end(); it++) {
+        auto& pubkey = *it;
+        base_field_type element;
+        memcpy(&element, &pubkey, sizeof(element));
+        reconstructed_token = (reconstructed_token + element*sigma);
+        if(prev && pubkey != *prev) {
+            votes_count++;
+        }
+        prev = &pubkey;
+    }
+    assert_true(reconstructed_token == token.token);
+}
+   
