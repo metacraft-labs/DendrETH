@@ -7,8 +7,9 @@ use crate::{
 };
 use plonky2x::{
     backend::circuit::Circuit,
+    frontend::vars::{ByteVariable, Bytes32Variable, BytesVariable},
     prelude::{BoolVariable, CircuitBuilder, PlonkParameters, U64Variable},
-    utils, frontend::vars::{Bytes32Variable, CircuitVariable},
+    utils,
 };
 
 #[derive(Debug, Clone)]
@@ -55,8 +56,12 @@ impl Circuit for ProveFinality {
 
         let previous_epoch = get_previous_epoch(builder, current_epoch);
 
-        let previous_epoch_root = Bytes32Variable::init_unsafe(builder);
-        let current_epoch_root = Bytes32Variable::init_unsafe(builder);
+        let zero_byte = ByteVariable([builder._false(); 8]);
+        let zero_bytes32 =
+            Bytes32Variable(BytesVariable::<32>(vec![zero_byte; 32].try_into().unwrap()));
+        let previous_epoch_root = zero_bytes32;
+
+        let current_epoch_root = zero_bytes32;
 
         let (_, new_justification_bits) = process_justifications(
             builder,
@@ -84,48 +89,9 @@ impl Circuit for ProveFinality {
             finalized_checkpoint,
         );
 
-        builder.watch(&new_finalized_checkpoint.epoch, "new_finalized_checkpoint epoch");
-        builder.watch(&source.epoch, "source epoch");
-        // let new_finalized_checkpoint_equals_source = builder.is_equal(new_finalized_checkpoint.epoch, source.epoch);
-        // builder.watch(&new_finalized_checkpoint_equals_source.variable, "new_finalized_checkpoint_equals_source");
-        // assert_is_true(builder, new_finalized_checkpoint_equals_source);
+        builder.write::<CheckpointVariable>(target.clone());
+        builder.write::<CheckpointVariable>(source.clone());
         builder.assert_is_equal(new_finalized_checkpoint.epoch, source.epoch);
-
-        // let bits_set_1_through_4_pred = new_justification_bits.test_range(builder, 1, 4);
-        // let bits_set_1_through_3_pred = new_justification_bits.test_range(builder, 1, 3);
-        // let bits_set_0_through_3_pred = new_justification_bits.test_range(builder, 0, 3);
-        // let bits_set_0_through_2_pred = new_justification_bits.test_range(builder, 0, 2);
-
-        // let bits_set_1_through_3_or_1_through_4 =
-        //     builder.or(bits_set_1_through_3_pred, bits_set_1_through_4_pred);
-        // let bits_set_0_through_2_or_0_through_3 =
-        //     builder.or(bits_set_0_through_2_pred, bits_set_0_through_3_pred);
-
-        // let finalization_cases = builder.or(
-        //     bits_set_1_through_3_or_1_through_4,
-        //     bits_set_0_through_2_or_0_through_3,
-        // );
-
-        // assert_is_true(builder, finalization_cases);
-
-        // let new_justification_bits = new_justification_bits.bits.as_slice();
-        // let source_index = builder.sub(current_epoch, source.epoch);
-        // let target_index = builder.sub(current_epoch, target.epoch);
-        // for i in 0..4 {
-        //     let current_index = builder.constant::<U64Variable>(i as u64);
-        //     let in_range_source_index = builder.lte(current_index, source_index);
-        //     let in_range_target_index = builder.gte(current_index, target_index);
-
-        //     let in_range = builder.and(in_range_source_index, in_range_target_index);
-
-        //     let in_range_or_justification_bits_value =
-        //         builder.or(new_justification_bits[i], in_range);
-
-        //     builder.assert_is_equal(
-        //         new_justification_bits[i],
-        //         in_range_or_justification_bits_value,
-        //     );
-        // }
     }
 }
 
@@ -147,10 +113,13 @@ pub fn process_justifications<L: PlonkParameters<D>, const D: usize>(
     previous_epoch_checkpoint: CheckpointVariable,
     current_epoch_checkpoint: CheckpointVariable,
 ) -> (CheckpointVariable, JustificationBitsVariable) {
-    let previous_epoch_supermajority_link_pred =
-        is_supermajority_link_in_votes(builder, previous_epoch_target_balance, total_active_balance);
+    let previous_epoch_supermajority_link_pred = is_supermajority_link_in_votes(
+        builder,
+        total_active_balance,
+        previous_epoch_target_balance,
+    );
     let current_epoch_supermajority_link_pred =
-        is_supermajority_link_in_votes(builder, current_epoch_target_balance, total_active_balance);
+        is_supermajority_link_in_votes(builder, total_active_balance, current_epoch_target_balance);
 
     let mut new_current_justified_checkpoint = builder.select(
         previous_epoch_supermajority_link_pred,
@@ -187,40 +156,6 @@ pub fn get_current_epoch<L: PlonkParameters<D>, const D: usize>(
     builder.div(slot, slots_per_epoch)
 }
 
-// fn process_justifications<L: PlonkParameters<D>, const D: usize>(
-//     builder: &mut CircuitBuilder<L, D>,
-//     total_number_of_validators: Gwei,
-//     justification_bits: JustificationBitsVariable,
-//     previous_epoch_attested_validators: Gwei,
-//     current_epoch_attested_validators: Gwei,
-// ) -> JustificationBitsVariable {
-//     let previous_epoch_supermajority_link_pred = is_supermajority_link_in_votes(
-//         builder,
-//         total_number_of_validators,
-//         previous_epoch_attested_validators,
-//     );
-
-//     let current_epoch_supermajority_link_pred = is_supermajority_link_in_votes(
-//         builder,
-//         total_number_of_validators,
-//         current_epoch_attested_validators,
-//     );
-
-//     let _true = builder._true();
-//     let new_second_justification_bit = builder.select(
-//         previous_epoch_supermajority_link_pred,
-//         _true,
-//         justification_bits.bits[0],
-//     );
-
-//     let mut new_justification_bits = justification_bits.shift_right(builder);
-//     new_justification_bits = new_justification_bits.assign_nth_bit(1, new_second_justification_bit);
-//     new_justification_bits =
-//         new_justification_bits.assign_nth_bit(0, current_epoch_supermajority_link_pred);
-
-//     new_justification_bits
-// }
-
 pub fn process_finalizations<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
     justification_bits: JustificationBitsVariable,
@@ -235,8 +170,8 @@ pub fn process_finalizations<L: PlonkParameters<D>, const D: usize>(
 
     let bits_set_1_through_4_pred = justification_bits.test_range(builder, 1, 4);
     let bits_set_1_through_3_pred = justification_bits.test_range(builder, 1, 3);
-    // let bits_set_0_through_3_pred = justification_bits.test_range(builder, 0, 3);
-    // let bits_set_0_through_2_pred = justification_bits.test_range(builder, 0, 2);
+    let bits_set_0_through_3_pred = justification_bits.test_range(builder, 0, 3);
+    let bits_set_0_through_2_pred = justification_bits.test_range(builder, 0, 2);
 
     let previous_justified_checkpoint_epoch_plus_three =
         builder.add(previous_justified_checkpoint.epoch, three);
@@ -274,13 +209,16 @@ pub fn process_finalizations<L: PlonkParameters<D>, const D: usize>(
         should_finalize_previous_justified_checkpoint_2_pred,
     );
 
-    // let should_finalize_current_justified_checkpoint_1_pred =
-    //     builder.and(bits_set_0_through_3_pred, first_using_third_as_source_pred);
+    let should_finalize_current_justified_checkpoint_1_pred =
+        builder.and(bits_set_0_through_3_pred, first_using_third_as_source_pred);
 
-    // let should_finalize_current_justified_checkpoint_2_pred =
-    //     builder.and(bits_set_0_through_2_pred, first_using_second_as_source_pred);
+    let should_finalize_current_justified_checkpoint_2_pred =
+        builder.and(bits_set_0_through_2_pred, first_using_second_as_source_pred);
 
-    let should_finalize_current_justified_checkpoint_pred = builder.constant::<BoolVariable>(true);
+    let should_finalize_current_justified_checkpoint_pred = builder.or(
+        should_finalize_current_justified_checkpoint_1_pred,
+        should_finalize_current_justified_checkpoint_2_pred,
+    );
 
     let mut new_finalized_checkpoint = builder.select(
         should_finalize_previous_justified_checkpoint_pred,

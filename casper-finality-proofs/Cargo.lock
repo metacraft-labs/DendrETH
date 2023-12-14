@@ -5892,7 +5892,7 @@ source = "git+https://github.com/mir-protocol/plonky2.git#605932d149eeba4558b404
 [[package]]
 name = "plonky2x"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/succinctx.git?branch=main#fcf983d5ab78128636718d0827cc4a218017e5d0"
+source = "git+https://github.com/succinctlabs/succinctx.git?branch=main#92f14c044e6351d4b87845cc6149bb8c4591f714"
 dependencies = [
  "anyhow",
  "array-macro",
