@@ -18,6 +18,7 @@ import validator_commitment_constants from '../constants/validator_commitment_co
 import yargs from 'yargs';
 
 let TAKE: number | undefined;
+let MOCK: boolean;
 
 (async () => {
   const { ssz } = await import('@lodestar/types');
@@ -53,6 +54,13 @@ let TAKE: number | undefined;
       type: 'number',
       default: Infinity,
       description: 'Sets the number of validators to take',
+    })
+    .option('mock', {
+      alias: 'mock',
+      describe: 'Runs the tool without doing actual calculations',
+      type: 'boolean',
+      default: false,
+      description: 'Runs the tool without doing actual calculations.'
     }).argv;
 
   const redis = new RedisLocal(options['redis-host'], options['redis-port']);
@@ -62,6 +70,7 @@ let TAKE: number | undefined;
   );
 
   TAKE = options['take'];
+  MOCK = options['mock'];
 
   const work_queue = new WorkQueue(
     new KeyPrefix(`${validator_commitment_constants.validatorProofsQueue}`),
@@ -130,7 +139,28 @@ let TAKE: number | undefined;
   while (true) {
     const timeBefore = Date.now();
 
-    const validators = (await beaconApi.getValidators()).slice(0, TAKE);
+    const validators = MOCK ? Array(TAKE).fill( {
+      pubkey:  [
+        147,  58, 217,  73,  27,  98,   5, 157, 208,
+        101, 181,  96, 210,  86, 216, 149, 122, 140,
+        64,  44, 198, 232, 216, 238, 114, 144, 174,
+        17, 232, 247,  50, 146, 103, 168, 129,  28,
+        57, 117,  41, 218, 197,  42, 225,  52,  43,
+        165, 140, 149
+      ],
+      withdrawalCredentials: [
+        1,   0,   0,  0,   0,   0,   0,   0,   0,
+        0,   0,   0, 13,  54, 155, 180, 158, 250,
+        81,   0, 253, 59, 134, 169, 248,  40, 197,
+        93, 160,  77, 45,  80
+      ],
+      effectiveBalance: 32000000000,
+      slashed: false,
+      activationEligibilityEpoch: 0,
+      activationEpoch: 0,
+      exitEpoch: Infinity,
+      withdrawableEpoch: Infinity
+    }) :(await beaconApi.getValidators()).slice(0, TAKE);
 
     if (prevValidators.length === 0) {
       console.log('prev validators are empty. Saving to redis');
@@ -151,13 +181,15 @@ let TAKE: number | undefined;
 
       prevValidators = validators;
 
-      await sleep(384000);
+      if (!MOCK) {
+        await sleep(384000);
+      }
       continue;
     }
 
     const changedValidators = validators
       .map((validator, index) => ({ validator, index }))
-      .filter(hasValidatorChanged(prevValidators));
+      .filter(() => {return MOCK ? true : hasValidatorChanged(prevValidators)});
 
     await saveValidatorsInBatches(changedValidators);
 
@@ -168,7 +200,7 @@ let TAKE: number | undefined;
     const timeAfter = Date.now();
 
     // wait for the next epoch
-    if (timeAfter - timeBefore < 384000) {
+    if (!MOCK && timeAfter - timeBefore < 384000) {
       await sleep(384000 - (timeBefore - timeAfter));
     }
   }
@@ -239,6 +271,10 @@ let TAKE: number | undefined;
 
   function calculateIndexes(validator_index: bigint, depth: bigint) {
     let first: bigint, second: bigint;
+
+    if (MOCK) {
+      return { first: BigInt(0), second: BigInt(0) };
+    }
 
     if (validator_index % 2n == 0n) {
       first = validator_index;
