@@ -1,17 +1,18 @@
-use std::{fs, marker::PhantomData, ops::RangeInclusive, path::Path, process};
-use num::clamp;
 use anyhow::Result;
 use circuits::{
     build_balance_inner_level_circuit::build_inner_level_circuit,
     build_validator_balance_circuit::build_validator_balance_circuit,
-    generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer}, targets_serialization::WriteTargets,
+    generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
+    targets_serialization::WriteTargets,
 };
+use num::clamp;
+use std::{fs, marker::PhantomData, path::Path};
 
 use clap::{App, Arg};
 use futures_lite::future;
 
 use jemallocator::Jemalloc;
-use plonky2::{plonk::config::PoseidonGoldilocksConfig};
+use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -21,11 +22,11 @@ fn write_to_file(file_path: &str, data: &[u8]) -> Result<()> {
     Ok(())
 }
 
-fn main() -> Result<(),String> {
+fn main() -> Result<(), String> {
     future::block_on(async_main())
 }
 
-pub async fn async_main() -> Result<(),String> {
+pub async fn async_main() -> Result<(), String> {
     let matches = App::new("")
         .arg(
             Arg::with_name("circuit_level")
@@ -60,7 +61,10 @@ pub async fn async_main() -> Result<(),String> {
     };
 
     if level != None && level.unwrap() > 37 {
-        return Err(String::from(format!("Supplied level {} is larger than the maximum allowed level 37",level.unwrap())));
+        return Err(String::from(format!(
+            "Supplied level {} is larger than the maximum allowed level 37",
+            level.unwrap()
+        )));
     }
 
     if level == None || level == Some(0) {
@@ -77,7 +81,11 @@ pub async fn async_main() -> Result<(),String> {
     }
 
     let mut prev_circuit_data = first_level_data;
-    let max_level = if level == None {37} else {clamp(level.unwrap(),1,37)};
+    let max_level = if level == None {
+        37
+    } else {
+        clamp(level.unwrap(), 1, 37)
+    };
     for i in 1..=max_level {
         let (targets, data) = build_inner_level_circuit(&prev_circuit_data);
         if level == Some(i) || level == None {
@@ -101,13 +109,18 @@ pub async fn async_main() -> Result<(),String> {
 
     let mut exists = false;
     for i in 1..=max_level {
-        if Path::new(&format!("{}.plonky2_circuit",i)).exists() || Path::new(&format!("{}.plonky2_targets",i)).exists() {
+        if Path::new(&format!("{}.plonky2_circuit", i)).exists()
+            || Path::new(&format!("{}.plonky2_targets", i)).exists()
+        {
             exists = true;
             break;
         }
     }
     if !exists {
-        return Err(String::from(format!("No plonky2 output created. Level used was: {}", level_str)));
+        return Err(String::from(format!(
+            "No plonky2 output created. Level used was: {}",
+            level_str
+        )));
     }
 
     Ok(())
@@ -129,7 +142,9 @@ fn write_first_level_circuit(
 
     write_to_file(&format!("{}.plonky2_circuit", 0), &circuit_bytes).unwrap();
 
-    let validator_balance_verification_targets_bytes = validators_balance_verification_targets.write_targets().unwrap();
+    let validator_balance_verification_targets_bytes = validators_balance_verification_targets
+        .write_targets()
+        .unwrap();
 
     write_to_file(
         &format!("{}.plonky2_targets", 0),
