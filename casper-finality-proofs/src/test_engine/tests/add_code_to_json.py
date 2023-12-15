@@ -14,7 +14,7 @@ for filename in os.listdir(folder_path):
             data = json.load(file)
 
         # Add your code to the JSON data
-        data[",previous_justified_checkpoint"] = {
+        data["previous_justified_checkpoint"] = {
             "epoch": 0,
             "root": "0x0000000000000000000000000000000000000000000000000000000000000000"
         }

@@ -78,7 +78,7 @@ pub fn init_tests() -> Vec<TestCase> {
     ));
     tests.push(TestCase::new(
         TestWrappers::WrapperProveFinality,
-        "./src/test_engine/tests/test".to_string(),
+        "./src/test_engine/tests/prove_finality".to_string(),
         false,
     ));
 

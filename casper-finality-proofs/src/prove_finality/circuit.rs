@@ -89,8 +89,6 @@ impl Circuit for ProveFinality {
             finalized_checkpoint,
         );
 
-        builder.write::<CheckpointVariable>(target.clone());
-        builder.write::<CheckpointVariable>(source.clone());
         builder.assert_is_equal(new_finalized_checkpoint.epoch, source.epoch);
     }
 }
