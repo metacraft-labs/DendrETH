@@ -15,14 +15,16 @@ use circuits_executables::{
         save_balance_proof, BalanceProof,
     },
     provers::{handle_balance_inner_level_proof, SetPWValues},
-    validator_commitment_constants::get_validator_commitment_constants,
     validator_balances_input::ValidatorBalancesInput,
+    validator_commitment_constants::get_validator_commitment_constants,
 };
 use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     iop::witness::PartialWitness,
-    plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs},
+    plonk::{
+        circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs,
+    },
     util::serialization::Buffer,
 };
 
@@ -33,13 +35,12 @@ use redis_work_queue::{Item, KeyPrefix, WorkQueue};
 
 use jemallocator::Jemalloc;
 
-use std::fs::File;
-use std::io::Write;
 use serde_binary::binary_stream;
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
-static INNER_PROOF_MOCK_BINARY: &[u8; 214532] = include_bytes!("../mock_data/inner_proof_verified.mock");
+static INNER_PROOF_MOCK_BINARY: &[u8; 214532] =
+    include_bytes!("../mock_data/inner_proof_verified.mock");
 static PROOF_MOCK_BINARY: &[u8; 204016] = include_bytes!("../mock_data/proof_verified.mock");
 
 enum Targets {
@@ -129,11 +130,7 @@ async fn async_main() -> Result<()> {
         .parse::<u64>()
         .unwrap();
 
-    let mock = matches
-        .value_of("mock")
-        .unwrap()
-        .parse::<bool>()
-        .unwrap();
+    let mock = matches.value_of("mock").unwrap().parse::<bool>().unwrap();
 
     let redis_connection = matches.value_of("redis_connection").unwrap();
 
@@ -183,7 +180,7 @@ async fn async_main() -> Result<()> {
         time_to_run,
         stop_after,
         lease_for,
-        mock
+        mock,
     )
     .await
 }
@@ -235,7 +232,7 @@ async fn process_queue(
                     job,
                     circuit_data,
                     targets.as_ref().unwrap(),
-                    mock
+                    mock,
                 )
                 .await
                 {
@@ -255,7 +252,7 @@ async fn process_queue(
                     inner_circuit_data.unwrap(),
                     inner_circuit_targets,
                     level,
-                    mock
+                    mock,
                 )
                 .await
                 {
@@ -299,9 +296,12 @@ async fn process_first_level_job(
     targets.set_pw_values(&mut pw, &validator_balance_input);
 
     let proof = if mock {
-        let proof_mock: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> = serde_binary::from_slice(PROOF_MOCK_BINARY, binary_stream::Endian::Big).unwrap();
+        let proof_mock: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> =
+            serde_binary::from_slice(PROOF_MOCK_BINARY, binary_stream::Endian::Big).unwrap();
         proof_mock
-    } else { circuit_data.prove(pw)?};
+    } else {
+        circuit_data.prove(pw)?
+    };
 
     match save_balance_proof(con, proof, 0, balance_input_index).await {
         Err(err) => {
@@ -348,15 +348,22 @@ async fn process_inner_level_job(
             let start = Instant::now();
 
             let proof = if mock {
-                let inner_proof_mock: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> = serde_binary::from_slice(INNER_PROOF_MOCK_BINARY, binary_stream::Endian::Big).unwrap();
+                let inner_proof_mock: ProofWithPublicInputs<
+                    GoldilocksField,
+                    PoseidonGoldilocksConfig,
+                    2,
+                > = serde_binary::from_slice(INNER_PROOF_MOCK_BINARY, binary_stream::Endian::Big)
+                    .unwrap();
                 inner_proof_mock
-            } else {  handle_balance_inner_level_proof(
-                proofs.0,
-                proofs.1,
-                &inner_circuit_data,
-                &inner_circuit_targets.as_ref().unwrap(),
-                &circuit_data,
-            )?};
+            } else {
+                handle_balance_inner_level_proof(
+                    proofs.0,
+                    proofs.1,
+                    &inner_circuit_data,
+                    &inner_circuit_targets.as_ref().unwrap(),
+                    &circuit_data,
+                )?
+            };
 
             match save_balance_proof(con, proof, level, proof_indexes[1]).await {
                 Err(err) => {
