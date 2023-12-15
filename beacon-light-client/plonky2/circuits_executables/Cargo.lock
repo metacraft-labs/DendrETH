@@ -303,6 +303,7 @@ dependencies = [
  "circuits",
  "clap",
  "futures-lite",
+ "hex",
  "jemallocator",
  "jsonm",
  "num",
