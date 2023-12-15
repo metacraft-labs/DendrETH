@@ -6,6 +6,7 @@ import { Redis as RedisLocal } from '../../../relay/implementations/redis';
 import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
 import { Validator } from '../../../relay/types/types';
 import { hexToBits } from '../../../libs/typescript/ts-utils/hex-utils';
+import * as fs from 'fs';
 import Redis from 'ioredis';
 const {
   KeyPrefix,
@@ -140,24 +141,9 @@ let MOCK: boolean;
     const timeBefore = Date.now();
 
     const validators = MOCK
-      ? Array(TAKE).fill({
-          pubkey: [
-            147, 58, 217, 73, 27, 98, 5, 157, 208, 101, 181, 96, 210, 86, 216,
-            149, 122, 140, 64, 44, 198, 232, 216, 238, 114, 144, 174, 17, 232,
-            247, 50, 146, 103, 168, 129, 28, 57, 117, 41, 218, 197, 42, 225, 52,
-            43, 165, 140, 149,
-          ],
-          withdrawalCredentials: [
-            1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 54, 155, 180, 158, 250, 81,
-            0, 253, 59, 134, 169, 248, 40, 197, 93, 160, 77, 45, 80,
-          ],
-          effectiveBalance: 32000000000,
-          slashed: false,
-          activationEligibilityEpoch: 0,
-          activationEpoch: 0,
-          exitEpoch: Infinity,
-          withdrawableEpoch: Infinity,
-        })
+      ? ssz.capella.BeaconState.deserialize(
+          fs.readFileSync('mock_data/beaconState.bin'),
+        ).validators
       : (await beaconApi.getValidators()).slice(0, TAKE);
 
     if (prevValidators.length === 0) {
