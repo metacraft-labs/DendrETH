@@ -17,7 +17,9 @@ use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     iop::witness::PartialWitness,
-    plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs},
+    plonk::{
+        circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs,
+    },
     util::serialization::Buffer,
 };
 use redis_work_queue::{KeyPrefix, WorkQueue};
@@ -27,9 +29,6 @@ use validator_commitment_constants::get_validator_commitment_constants;
 
 use jemallocator::Jemalloc;
 
-use serde::{Deserialize, Serialize};
-use std::fs::File;
-use std::io::Write;
 use serde_binary::binary_stream;
 
 #[global_allocator]
@@ -104,18 +103,13 @@ async fn async_main() -> Result<()> {
         .unwrap()
         .parse::<u64>()
         .unwrap();
-    println!("{}", matches
-        .value_of("lease_for").unwrap());
+
     let lease_for = matches
         .value_of("lease_for")
         .unwrap()
         .parse::<u64>()
         .unwrap();
-    let mock = matches
-        .value_of("mock")
-        .unwrap()
-        .parse::<bool>()
-        .unwrap();
+    let mock = matches.value_of("mock").unwrap().parse::<bool>().unwrap();
 
     let inner_proof_mock_binary = include_bytes!("../mock_data/inner_proof_mapper.mock");
     let proof_mock_binary = include_bytes!("../mock_data/proof_mapper.mock");
@@ -152,12 +146,10 @@ async fn async_main() -> Result<()> {
                     validator_commitment
                         .validator
                         .set_pw_values(&mut pw, &validator);
-                    
-                    
 
                     let proof = if mock {
-                        let proof_mock: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> = serde_binary::from_slice(proof_mock_binary, binary_stream::Endian::Big).unwrap();
-                        proof_mock
+                        serde_binary::from_slice(proof_mock_binary, binary_stream::Endian::Big)
+                            .unwrap()
                     } else {
                         first_level_circuit_data.prove(pw)?
                     };
@@ -196,7 +188,15 @@ async fn async_main() -> Result<()> {
                     };
 
                     let proof = if mock {
-                        let inner_proof_mock: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> = serde_binary::from_slice(inner_proof_mock_binary, binary_stream::Endian::Big).unwrap();
+                        let inner_proof_mock: ProofWithPublicInputs<
+                            GoldilocksField,
+                            PoseidonGoldilocksConfig,
+                            2,
+                        > = serde_binary::from_slice(
+                            inner_proof_mock_binary,
+                            binary_stream::Endian::Big,
+                        )
+                        .unwrap();
                         inner_proof_mock
                     } else {
                         handle_commitment_mapper_inner_level_proof(
@@ -206,7 +206,8 @@ async fn async_main() -> Result<()> {
                             &inner_circuits[proof_indexes[0]].0,
                             &inner_circuits[proof_indexes[0]].1,
                             proof_indexes[2] == VALIDATOR_REGISTRY_LIMIT && proof_indexes[0] == 0,
-                        )?};
+                        )?
+                    };
 
                     match save_validator_proof(
                         &mut con,
