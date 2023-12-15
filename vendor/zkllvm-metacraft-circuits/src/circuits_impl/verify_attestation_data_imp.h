@@ -263,12 +263,12 @@ def combine_finality_votes(tokens: Iterable[VoteToken]) -> Mapping[TransitionKey
     }
 */
 
-VoteToken combine_finality_votes(static_vector<VoteToken, 8192> tokens)
+VoteToken combine_finality_votes(const static_vector<VoteToken, 8192>& tokens)
 {
     VoteToken result;
     result.transition = tokens[0].transition;
     result.token = 0;
-    for(auto it = tokens.begin(); it != tokens.end(); it++) {
+    for(auto it = tokens.begin(); it != tokens.end(); ++it) {
         assert_true(result.transition == it->transition);
         result.token += it->token;
     }
@@ -276,27 +276,27 @@ VoteToken combine_finality_votes(static_vector<VoteToken, 8192> tokens)
 }
 
 void prove_finality(
-        VoteToken token,
-        static_vector<PubKey> trustedKeys,
-        Transition votedTransition,
-        int sigma,
-        int64_t active_validators_count
+        const VoteToken& token,
+        const static_vector<PubKey>& trustedKeys,
+        const Transition& votedTransition,
+        const int sigma,
+        const int64_t active_validators_count
 )
 {
     assert_true(votedTransition == token.transition);
     int64_t votes_count = 0;
-    PubKey* prev = nullptr;
+    const PubKey* prev = nullptr;
     base_field_type reconstructed_token = 0;
-    for(auto it = trustedKeys.begin(); it != trustedKeys.end(); it++) {
-        auto& pubkey = *it;
+    for(auto it = trustedKeys.begin(); it != trustedKeys.end(); ++it) {
+        const auto& pubkey = *it;
         base_field_type element;
         memcpy(&element, &pubkey, sizeof(element));
         reconstructed_token = (reconstructed_token + element*sigma);
         if(prev && pubkey != *prev) {
-            votes_count++;
+            ++votes_count;
         }
         prev = &pubkey;
     }
     assert_true(reconstructed_token == token.token);
 }
-   
+
