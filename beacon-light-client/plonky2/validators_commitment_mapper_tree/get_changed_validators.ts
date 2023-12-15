@@ -173,7 +173,7 @@ let MOCK: boolean;
 
     const changedValidators = validators
       .map((validator, index) => ({ validator, index }))
-      .filter(() => hasValidatorChanged(prevValidators));
+      .filter(hasValidatorChanged(prevValidators));
 
     await saveValidatorsInBatches(changedValidators);
 
