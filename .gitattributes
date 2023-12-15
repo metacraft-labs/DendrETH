@@ -3,4 +3,4 @@
 /.yarn/plugins/**/*  binary
 /.pnp.*              binary linguist-generated
 
-beacon-light-client/plonky2/get_balances_input/mock_data/beaconState.bin filter=lfs diff=lfs merge=lfs -text
+beacon-light-client/plonky2/mock_data/beaconState.bin filter=lfs diff=lfs merge=lfs -text
