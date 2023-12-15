@@ -142,7 +142,7 @@ let MOCK: boolean;
 
     const validators = MOCK
       ? ssz.capella.BeaconState.deserialize(
-          fs.readFileSync('mock_data/beaconState.bin'),
+          fs.readFileSync('../mock_data/beaconState.bin'),
         ).validators
       : (await beaconApi.getValidators()).slice(0, TAKE);
 
