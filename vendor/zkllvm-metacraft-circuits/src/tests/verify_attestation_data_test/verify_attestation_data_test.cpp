@@ -3,7 +3,6 @@
 
 #include <nil/crypto3/hash/sha2.hpp>
 #include "circuit_utils/circuit_byte_utils.h"
-#include "circuits_impl/compute_shuffled_index_impl.h"
 
 #include <algorithm>
 #include <array>
@@ -17,7 +16,9 @@
 #include "utils/byte_utils.h"
 #include "utils/file_utils.h"
 
-#include "llvm/Support/JSON.h"
+#include "json/json.hpp"
+using namespace nlohmann;
+
 
 #include "circuits_impl/verify_attestation_data_imp.h"
 
@@ -174,6 +175,32 @@ int main(int argc, char* argv[]) {
     Bytes32 val = int_to_bytes<uint64_t, 32, true>(1234512345);
     std::cout << bytesToHex(val) << "\n";
     std::cout << bytes_to_int<uint64_t, 32>(val) << "\n";
+
+    path my_path("/finalizer-data/merged_234400.json");
+    std::ifstream f(my_path);
+    auto data = json::parse(f);
+
+    // Yep, this was value was chosen randomly.
+    base_field_type sigma = 0x69;
+
+    // Run the first circuit for each attestation.
+    /*
+    tokens: List[VoteToken] = []
+    n: int = len(inp['attestations'])
+    for i, attestation in enumerate(inp['attestations']):
+        print(f'Processing attestation {i}/{n}...')
+        vote: VoteToken = circuits.verify_attestation_data(
+            'd5c0418465ffab221522a6991c2d4c0041f1b8e91d01b1ea3f6b882369f689b7',
+            attestation,
+            sigma,
+        )
+        tokens.append(vote)
+    with open(BASE_DIR / 'tests/cache.json', 'wb') as f:
+        f.write(TypeAdapter(List[VoteToken]).dump_json(tokens))
+    */
+    // for(const auto& attestation : data["attestations"]) {
+
+    // }
 
     return 0;
 }

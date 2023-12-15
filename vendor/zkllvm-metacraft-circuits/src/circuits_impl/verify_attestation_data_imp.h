@@ -4,7 +4,6 @@
 #include <nil/crypto3/algebra/curves/pallas.hpp>
 #include <nil/crypto3/hash/sha2.hpp>
 
-#include <algorithm>
 #include <array>
 
 #include "../circuit_utils/circuit_byte_utils.h"
