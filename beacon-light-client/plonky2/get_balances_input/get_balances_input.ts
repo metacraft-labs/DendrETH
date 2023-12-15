@@ -91,7 +91,7 @@ let TAKE;
 
   const beaconApi = new BeaconApi([options['beacon-node']]);
 
-  const { beaconState } = MOCK ? {beaconState: ssz.capella.BeaconState.deserialize(fs.readFileSync('mock_data/beaconState.bin'))} : await beaconApi.getBeaconState(6953401);
+  const { beaconState } = MOCK ? {beaconState: ssz.capella.BeaconState.deserialize(fs.readFileSync('../mock_data/beaconState.bin'))} : await beaconApi.getBeaconState(6953401);
 
   const validators = beaconState.validators.slice(0, TAKE);
   TAKE = validators.length;
