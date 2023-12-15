@@ -60,7 +60,7 @@ let MOCK: boolean;
       describe: 'Runs the tool without doing actual calculations',
       type: 'boolean',
       default: false,
-      description: 'Runs the tool without doing actual calculations.'
+      description: 'Runs the tool without doing actual calculations.',
     }).argv;
 
   const redis = new RedisLocal(options['redis-host'], options['redis-port']);
@@ -139,28 +139,26 @@ let MOCK: boolean;
   while (true) {
     const timeBefore = Date.now();
 
-    const validators = MOCK ? Array(TAKE).fill( {
-      pubkey:  [
-        147,  58, 217,  73,  27,  98,   5, 157, 208,
-        101, 181,  96, 210,  86, 216, 149, 122, 140,
-        64,  44, 198, 232, 216, 238, 114, 144, 174,
-        17, 232, 247,  50, 146, 103, 168, 129,  28,
-        57, 117,  41, 218, 197,  42, 225,  52,  43,
-        165, 140, 149
-      ],
-      withdrawalCredentials: [
-        1,   0,   0,  0,   0,   0,   0,   0,   0,
-        0,   0,   0, 13,  54, 155, 180, 158, 250,
-        81,   0, 253, 59, 134, 169, 248,  40, 197,
-        93, 160,  77, 45,  80
-      ],
-      effectiveBalance: 32000000000,
-      slashed: false,
-      activationEligibilityEpoch: 0,
-      activationEpoch: 0,
-      exitEpoch: Infinity,
-      withdrawableEpoch: Infinity
-    }) :(await beaconApi.getValidators()).slice(0, TAKE);
+    const validators = MOCK
+      ? Array(TAKE).fill({
+          pubkey: [
+            147, 58, 217, 73, 27, 98, 5, 157, 208, 101, 181, 96, 210, 86, 216,
+            149, 122, 140, 64, 44, 198, 232, 216, 238, 114, 144, 174, 17, 232,
+            247, 50, 146, 103, 168, 129, 28, 57, 117, 41, 218, 197, 42, 225, 52,
+            43, 165, 140, 149,
+          ],
+          withdrawalCredentials: [
+            1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 54, 155, 180, 158, 250, 81,
+            0, 253, 59, 134, 169, 248, 40, 197, 93, 160, 77, 45, 80,
+          ],
+          effectiveBalance: 32000000000,
+          slashed: false,
+          activationEligibilityEpoch: 0,
+          activationEpoch: 0,
+          exitEpoch: Infinity,
+          withdrawableEpoch: Infinity,
+        })
+      : (await beaconApi.getValidators()).slice(0, TAKE);
 
     if (prevValidators.length === 0) {
       console.log('prev validators are empty. Saving to redis');
@@ -189,7 +187,7 @@ let MOCK: boolean;
 
     const changedValidators = validators
       .map((validator, index) => ({ validator, index }))
-      .filter(() => {return MOCK ? true : hasValidatorChanged(prevValidators)});
+      .filter(() => hasValidatorChanged(prevValidators));
 
     await saveValidatorsInBatches(changedValidators);
 
@@ -200,7 +198,7 @@ let MOCK: boolean;
     const timeAfter = Date.now();
 
     // wait for the next epoch
-    if (!MOCK && timeAfter - timeBefore < 384000) {
+    if (timeAfter - timeBefore < 384000) {
       await sleep(384000 - (timeBefore - timeAfter));
     }
   }
