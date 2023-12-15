@@ -49,40 +49,35 @@ export class Redis implements IRedis {
         const redisValidatorJSON = JSON.parse(batchValidators[j]!);
         try {
           let validatorJSON: Validator = {
-            pubkey: hexToBytes(bitsToBytes(redisValidatorJSON.pubkey)),
+            pubkey: hexToBytes(redisValidatorJSON.pubkey),
             withdrawalCredentials: hexToBytes(
-              bitsToBytes(redisValidatorJSON.withdrawalCredentials),
+              redisValidatorJSON.withdrawalCredentials,
             ),
             effectiveBalance:
               ssz.phase0.Validator.fields.effectiveBalance.deserialize(
-                hexToBytes(
-                  bitsToBytes(redisValidatorJSON.effectiveBalance),
-                ).slice(0, 8),
+                hexToBytes(redisValidatorJSON.effectiveBalance).slice(0, 8),
               ),
 
             slashed: ssz.phase0.Validator.fields.slashed.deserialize(
-              hexToBytes(bitsToBytes(redisValidatorJSON.slashed)).slice(0, 1),
+              hexToBytes(redisValidatorJSON.slashed).slice(0, 1),
             ),
             activationEligibilityEpoch:
               ssz.phase0.Validator.fields.activationEligibilityEpoch.deserialize(
-                hexToBytes(
-                  bitsToBytes(redisValidatorJSON.activationEligibilityEpoch),
-                ).slice(0, 8),
+                hexToBytes(redisValidatorJSON.activationEligibilityEpoch).slice(
+                  0,
+                  8,
+                ),
               ),
             activationEpoch:
               ssz.phase0.Validator.fields.activationEpoch.deserialize(
-                hexToBytes(
-                  bitsToBytes(redisValidatorJSON.activationEpoch),
-                ).slice(0, 8),
+                hexToBytes(redisValidatorJSON.activationEpoch).slice(0, 8),
               ),
             exitEpoch: ssz.phase0.Validator.fields.exitEpoch.deserialize(
-              hexToBytes(bitsToBytes(redisValidatorJSON.exitEpoch)).slice(0, 8),
+              hexToBytes(redisValidatorJSON.exitEpoch).slice(0, 8),
             ),
             withdrawableEpoch:
               ssz.phase0.Validator.fields.withdrawableEpoch.deserialize(
-                hexToBytes(
-                  bitsToBytes(redisValidatorJSON.withdrawableEpoch),
-                ).slice(0, 8),
+                hexToBytes(redisValidatorJSON.withdrawableEpoch).slice(0, 8),
               ),
           };
 

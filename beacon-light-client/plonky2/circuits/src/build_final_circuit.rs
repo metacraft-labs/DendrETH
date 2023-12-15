@@ -331,6 +331,7 @@ fn create_and_connect_merkle_branch(
     merkle_branch
 }
 
+#[allow(dead_code)]
 fn create_final_config() -> CircuitConfig {
     let standard_recursion_config = CircuitConfig::standard_recursion_config();
 
