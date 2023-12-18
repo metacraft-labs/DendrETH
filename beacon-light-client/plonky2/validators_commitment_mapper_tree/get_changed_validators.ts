@@ -136,15 +136,16 @@ let MOCK: boolean;
   let prevValidators = await redis.getValidatorsBatched(ssz);
 
   console.log('Loaded all batches');
-  const beaconState_bin = fs.existsSync('../mock_data/beaconState.bin') ? '../mock_data/beaconState.bin' : 'mock_data/beaconState.bin';
+  const beaconState_bin = fs.existsSync('../mock_data/beaconState.bin')
+    ? '../mock_data/beaconState.bin'
+    : 'mock_data/beaconState.bin';
 
   while (true) {
     const timeBefore = Date.now();
 
     const validators = MOCK
-      ? ssz.capella.BeaconState.deserialize(
-          fs.readFileSync(beaconState_bin),
-        ).validators
+      ? ssz.capella.BeaconState.deserialize(fs.readFileSync(beaconState_bin))
+          .validators
       : (await beaconApi.getValidators()).slice(0, TAKE);
 
     if (prevValidators.length === 0) {
@@ -179,6 +180,10 @@ let MOCK: boolean;
     await saveValidatorsInBatches(changedValidators);
 
     console.log('#changedValidators', changedValidators.length);
+
+    if (MOCK) {
+      process.exit(0);
+    }
 
     prevValidators = validators;
 
