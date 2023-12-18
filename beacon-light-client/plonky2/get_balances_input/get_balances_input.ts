@@ -68,6 +68,7 @@ let TAKE;
 
   TAKE = options['take'];
   let MOCK = options['mock'];
+  let GRANULITY = MOCK ? 1000 : 1;
 
   const queues: any[] = [];
 
@@ -169,6 +170,7 @@ let TAKE;
 
     await queues[i + 1].addItem(db, new Item(buffer));
 
+    if (i % 10 === 0 && i !== 0)
     console.log('Added zeros tasks');
   }
 
@@ -216,7 +218,8 @@ let TAKE;
 
     await redis.saveValidatorBalancesInput(batch);
 
-    console.log('saved batch', i);
+    if (i % GRANULITY === 0 && i !== 0)
+      console.log('saved batch', i);
   }
 
   for (let i = 0; i < TAKE / CIRCUIT_SIZE; i++) {
@@ -225,7 +228,8 @@ let TAKE;
     view.setBigUint64(0, BigInt(i * CIRCUIT_SIZE), false);
 
     await queues[0].addItem(db, new Item(buffer));
-    console.log(`added ${i * CIRCUIT_SIZE}`);
+    if (i % (GRANULITY*100) === 0 && i !== 0)
+      console.log(`added ${i * CIRCUIT_SIZE}`);
   }
 
   for (let j = 1; j < 38; j++) {
@@ -250,8 +254,8 @@ let TAKE;
         BigInt(i * CIRCUIT_SIZE),
         BigInt(j),
       );
-
-      console.log(`added ${j}:${first}:${second}`);
+      if (i % (GRANULITY*100) === 0 && i !== 0)
+        console.log(`added ${j}:${first}:${second}`);
 
       view.setBigUint64(0, BigInt(j - 1), false);
       view.setBigUint64(8, first, false);
