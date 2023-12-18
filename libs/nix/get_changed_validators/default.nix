@@ -36,4 +36,7 @@ in
     buildPhase = ''
       yarn build-plonky-2
     '';
+    postInstall = ''
+      mkdir -p $out/bin
+      cp -r beacon-light-client/plonky2/mock_data $out/bin'';
   })
