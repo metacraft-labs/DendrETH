@@ -38,5 +38,5 @@ in
     '';
     postInstall = ''
       mkdir -p $out/bin
-      cp -r beacon-light-client/plonky2/get_balances_input/mock_data $out/bin'';
+      cp -r beacon-light-client/plonky2/mock_data $out/bin'';
   })
