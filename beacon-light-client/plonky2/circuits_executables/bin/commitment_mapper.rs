@@ -109,13 +109,16 @@ async fn async_main() -> Result<()> {
         .unwrap()
         .parse::<u64>()
         .unwrap();
+
     let mock = matches.value_of("mock").unwrap().parse::<bool>().unwrap();
 
     let inner_proof_mock_binary = include_bytes!("../mock_data/inner_proof_mapper.mock");
     let proof_mock_binary = include_bytes!("../mock_data/proof_mapper.mock");
 
     loop {
-        println!("Waiting for job...");
+        if !mock {
+            println!("Waiting for job...");
+        }
 
         let job = match queue
             .lease(
@@ -129,10 +132,14 @@ async fn async_main() -> Result<()> {
             None => continue,
         };
 
-        println!("Got job: {:?}", job.data);
-
         if job.data.len() == 8 {
             let validator_index = u64::from_be_bytes(job.data[0..8].try_into().unwrap()) as usize;
+
+            if !mock {
+                println!("Validator index {}", validator_index);
+            } else if validator_index % 1000 == 0 {
+                println!("Validator index {}", validator_index);
+            }
 
             match fetch_validator(&mut con, validator_index).await {
                 Err(err) => {
@@ -173,7 +180,11 @@ async fn async_main() -> Result<()> {
                 .map(|chunk| u64::from_be_bytes(chunk.try_into().unwrap()) as usize)
                 .collect::<Vec<usize>>();
 
-            println!("Got indexes: {:?}", proof_indexes);
+            if !mock {
+                println!("Got indexes: {:?}", proof_indexes);
+            } else if proof_indexes[1] % 1024 == 0 {
+                println!("Got indexes: {:?}", proof_indexes);
+            }
 
             match fetch_proofs::<ValidatorProof>(&mut con, &proof_indexes).await {
                 Err(err) => {
