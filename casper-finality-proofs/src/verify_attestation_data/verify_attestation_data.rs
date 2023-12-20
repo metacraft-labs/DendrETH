@@ -4,9 +4,10 @@ use plonky2x::{
     backend::circuit::{Circuit, DefaultParameters},
     prelude::{bytes32,CircuitVariable,ArrayVariable, BoolVariable, CircuitBuilder, Field, PlonkParameters, Variable}, frontend::{eth::{beacon::vars::BeaconValidatorVariable, vars::BLSPubkeyVariable}, vars::{Bytes32Variable, U256Variable}, uint::uint64::U64Variable, hash::poseidon::poseidon256::PoseidonHashOutVariable},
 };
+
+use crate::utils::eth_objects::{ValidatorHashData, Fork, AttestationData, Attestation};
+use super::super::constants::{VALIDATORS_HASH_TREE_DEPTH, VALIDATORS_PER_COMMITTEE,VALIDATORS_ROOT_PROOF_LEN, STATE_ROOT_PROOF_LEN};
 use super::super::combine_finality_votes::count_unique_pubkeys::ssz_verify_proof_poseidon;
-const VALIDATORS_PER_COMMITTEE: usize = 2048; //2048;
-const VALIDATOR_HASH_TREE_DEPTH: usize = 11;
 const PLACEHOLDER: usize = 11;
 
 #[derive(Debug, Clone)]
@@ -26,66 +27,6 @@ pub struct VerifyAttestationData;
 // validator_list_proof: seq[string]
 // 
 
-#[derive(Debug, Clone)]
-struct ValidatorHashData { 
-    validator_index: U64Variable,
-
-    // Equivalent to `validator_list_proof` in ref?
-    is_trusted_validator: BoolVariable,
-    
-    validator_state_root: PoseidonHashOutVariable,
-    validator_leaf: PoseidonHashOutVariable,
-    validator_branch: ArrayVariable<PoseidonHashOutVariable,VALIDATOR_HASH_TREE_DEPTH>,
-    validator_gindex: U64Variable,
-}
-#[derive(Debug, Clone)]
-struct Fork {
-    previous_version: Bytes32Variable,
-    current_version: Bytes32Variable,
-    epoch: Variable
-}
-
-// Used as message in BLS Signature
-#[derive(Debug, Clone)]
-struct AttestationData {
-    slot: U256Variable,
-    index: U256Variable,
-
-    // LMD GHOST vote
-    beacon_block_root: Bytes32Variable,
-
-    // FFG vote
-    source: Bytes32Variable,
-    target: Bytes32Variable,
-
-}
-
-
-#[derive(Debug, Clone)]
-struct Attestation {
-    // Standard attestation data
-    data: AttestationData,
-    signature: BLSPubkeyVariable,
-
-    // Needed to compute the `signing_root` and verify the `signature`
-    fork: Fork,
-    genesis_validators_root: Bytes32Variable,
-
-    /*
-    We should be able to prove that the majority of validators
-    participating in this attestation are part of the validator set
-    associated with the state of the last trusted block.
-    */
-    state_root: Bytes32Variable,
-    state_root_proof: ArrayVariable<Bytes32Variable, PLACEHOLDER>,
-
-    validators_root: Bytes32Variable,
-    validators_root_proof: ArrayVariable<Bytes32Variable, PLACEHOLDER>,
-
-    validators: ArrayVariable<BeaconValidatorVariable, VALIDATORS_PER_COMMITTEE>,
-}
-
-
 impl Circuit for VerifyAttestationData {
     fn define<L: PlonkParameters<D>, const D: usize>(builder: &mut CircuitBuilder<L, D>)
     where
@@ -102,42 +43,44 @@ impl Circuit for VerifyAttestationData {
         let mut validator_hash_vec: Vec<ValidatorHashData> = Vec::new();
         for _ in 0..VALIDATORS_PER_COMMITTEE {
             
-            validator_hash_vec.push( ValidatorHashData {
-                validator_state_root: builder.read::<PoseidonHashOutVariable>(),
-                is_trusted_validator: builder.read::<BoolVariable>(),
-                validator_leaf: builder.read::<PoseidonHashOutVariable>(),
-                validator_branch: builder.read::<ArrayVariable<PoseidonHashOutVariable, VALIDATOR_HASH_TREE_DEPTH>>(),
-                validator_gindex: builder.read::<U64Variable>(),
-                validator_index: builder.read::<U64Variable>()
-            })
+            let validator_hash_data = ValidatorHashData::new(
+                builder.read::<U64Variable>(), // PoseidonHashOutIndex
+                builder.read::<BoolVariable>(),
+                builder.read::<PoseidonHashOutVariable>(),
+                builder.read::<PoseidonHashOutVariable>(),
+                builder.read::<ArrayVariable<PoseidonHashOutVariable, VALIDATORS_HASH_TREE_DEPTH>>(),
+                builder.read::<U64Variable>(),
+            );
+
+            validator_hash_vec.push(validator_hash_data);
         }
 
         // Read Attestation
-        let attestation =  Attestation {
-            data: AttestationData {
-                slot: builder.read::<U256Variable>(),
-                index: builder.read::<U256Variable>(), 
-                beacon_block_root: builder.read::<Bytes32Variable>(),
-                source: builder.read::<Bytes32Variable>(),
-                target: builder.read::<Bytes32Variable>(),
-            },
-            signature: builder.read::<BLSPubkeyVariable>(),
+        let attestation =  Attestation::new(
+            AttestationData::new(
+                builder.read::<U256Variable>(),
+                builder.read::<U256Variable>(), 
+                builder.read::<Bytes32Variable>(),
+                builder.read::<Bytes32Variable>(),
+                builder.read::<Bytes32Variable>(),
+            ),
+            builder.read::<BLSPubkeyVariable>(),
 
-            fork: Fork {
-                previous_version: builder.read::<Bytes32Variable>(),
-                current_version: builder.read::<Bytes32Variable>(),
-                epoch: builder.read::<Variable>()
-            },
-            genesis_validators_root: builder.read::<Bytes32Variable>(),
+            Fork::new(
+                builder.read::<Bytes32Variable>(),
+                builder.read::<Bytes32Variable>(),
+                builder.read::<Variable>()
+            ),
+            builder.read::<Bytes32Variable>(),
 
-            state_root: builder.read::<Bytes32Variable>(),
-            state_root_proof: builder.read::<ArrayVariable<Bytes32Variable, PLACEHOLDER>>(),
+            builder.read::<Bytes32Variable>(),
+            builder.read::<ArrayVariable<Bytes32Variable, STATE_ROOT_PROOF_LEN>>(),
 
-            validators_root: builder.read::<Bytes32Variable>(),
-            validators_root_proof: builder.read::<ArrayVariable<Bytes32Variable, PLACEHOLDER>>(),
+            builder.read::<Bytes32Variable>(),
+            builder.read::<ArrayVariable<Bytes32Variable, VALIDATORS_ROOT_PROOF_LEN>>(),
 
-            validators: builder.read::<ArrayVariable<BeaconValidatorVariable,VALIDATORS_PER_COMMITTEE>>(),
-        };
+            builder.read::<ArrayVariable<BeaconValidatorVariable,VALIDATORS_PER_COMMITTEE>>(),
+        );
 
         // 2. 3.
         block_merkle_branch_proof(

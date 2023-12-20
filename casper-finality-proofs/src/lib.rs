@@ -9,3 +9,4 @@ pub mod types;
 mod utils;
 pub mod verify_attestation_data;
 pub mod weigh_justification_and_finalization;
+pub mod prove_casper;
