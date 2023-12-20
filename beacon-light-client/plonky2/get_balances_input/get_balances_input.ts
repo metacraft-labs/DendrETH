@@ -170,7 +170,7 @@ let TAKE;
 
     await queues[i + 1].addItem(db, new Item(buffer));
 
-    if (i % 10 === 0 && i !== 0)
+    if (i % (GRANULITY/10) === 0 && i !== 0)
     console.log('Added zeros tasks');
   }
 
