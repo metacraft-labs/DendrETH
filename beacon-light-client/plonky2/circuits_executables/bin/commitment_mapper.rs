@@ -137,7 +137,7 @@ async fn async_main() -> Result<()> {
 
             if !mock {
                 println!("Validator index {}", validator_index);
-            } else if validator_index % 1000 == 0 {
+            } else if validator_index % 10000 == 0 {
                 println!("Validator index {}", validator_index);
             }
 
@@ -182,7 +182,7 @@ async fn async_main() -> Result<()> {
 
             if !mock {
                 println!("Got indexes: {:?}", proof_indexes);
-            } else if proof_indexes[1] % 1024 == 0 {
+            } else if proof_indexes[1] % 2048 == 0 {
                 println!("Got indexes: {:?}", proof_indexes);
             }
 
