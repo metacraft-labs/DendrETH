@@ -53,7 +53,7 @@ struct Validator {
 struct Attestation {
     // Standard attestation data.
     AttestationData data;
-    Bytes32 signature;
+    Bytes96 signature;
 
     // Needed to compute the `signing_root` and verify the `signature`.
     Fork fork;
@@ -68,7 +68,7 @@ struct Attestation {
     Bytes32 validators_root;
     MerkleProof<5> validators_root_proof;
 
-    static_vector<Validator> validators;
+    static_vector<Validator, 1024> validators;
 };
 
 struct Transition {

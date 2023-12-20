@@ -5,7 +5,7 @@
 
 #include "circuit_byte_utils.h"
 
-template<typename T, std::size_t CAPACITY = 2048>
+template<typename T, std::size_t CAPACITY = 128>
 struct static_vector {
 
     std::array<T, CAPACITY> content_;

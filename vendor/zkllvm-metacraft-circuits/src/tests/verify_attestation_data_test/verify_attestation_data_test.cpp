@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstring>
 
 #include <llvm/ObjectYAML/YAML.h>
 #include <iostream>
@@ -19,7 +20,6 @@
 #include "json/json.hpp"
 using namespace nlohmann;
 
-
 #include "circuits_impl/verify_attestation_data_imp.h"
 
 using namespace nil::crypto3::algebra::curves;
@@ -29,12 +29,13 @@ using llvm::yaml::MappingTraits;
 using llvm::yaml::Output;
 
 using namespace circuit_byte_utils;
+using namespace byte_utils;
 using namespace file_utils;
 
 using std::cout;
 
-int main(int argc, char* argv[]) {
 
+void basic_tests() {
     static_vector<Bytes32> hashes;
 
     hashes.push_back(byte_utils::hexToBytes<32>("0x0000000000000000000000000000000000000000000000000000000000000000"));
@@ -175,6 +176,45 @@ int main(int argc, char* argv[]) {
     Bytes32 val = int_to_bytes<uint64_t, 32, true>(1234512345);
     std::cout << bytesToHex(val) << "\n";
     std::cout << bytes_to_int<uint64_t, 32>(val) << "\n";
+}
+
+AttestationData parse_attestation_data(const json& json_attestation_data) {
+    AttestationData attestation_data;
+    attestation_data.slot = json_attestation_data["slot"];
+    attestation_data.index = json_attestation_data["index"];
+    attestation_data.beacon_block_root = hexToBytes<32>(json_attestation_data["beacon_block_root"]);
+    attestation_data.source.epoch = json_attestation_data["source"]["epoch"];
+    attestation_data.source.root = hexToBytes<32>(json_attestation_data["source"]["root"]);
+    attestation_data.target.epoch = json_attestation_data["target"]["epoch"];
+    attestation_data.target.root = hexToBytes<32>(json_attestation_data["target"]["root"]);
+    return attestation_data;
+}
+
+Fork parse_fork(const json& json_fork) {
+    Fork fork;
+    fork.current_version = circuit_byte_utils::expand<32>(hexToBytes<4>(json_fork["current_version"]));
+    fork.previous_version =  circuit_byte_utils::expand<32>(hexToBytes<4>(json_fork["previous_version"]));
+    fork.epoch = json_fork["epoch"];
+    return fork;
+}
+
+Attestation parse_attestation(const json& json_attestation) {
+    Attestation attestation;
+    attestation.data = parse_attestation_data(json_attestation["data"]);
+    attestation.signature = hexToBytes<96>(json_attestation["signature"]);
+    attestation.fork = parse_fork(json_attestation["fork"]);
+    attestation.genesis_validators_root = hexToBytes<32>(json_attestation["genesis_validators_root"]);
+    attestation.state_root = hexToBytes<32>(json_attestation["state_root"]);
+    for(size_t i = 0; i < json_attestation["state_root_proof"].size(); i++) {
+        std::cout << "json_attestation[\"state_root_proof\"][" << i << "] = " << json_attestation["state_root_proof"][i] << "\n";
+        attestation.state_root_proof.at(i) = hexToBytes<32>(json_attestation["state_root_proof"][i]);
+    }
+    return attestation;
+}
+
+int main(int argc, char* argv[]) {
+
+    basic_tests();
 
     path my_path("/finalizer-data/merged_234400.json");
     std::ifstream f(my_path);
@@ -198,9 +238,45 @@ int main(int argc, char* argv[]) {
     with open(BASE_DIR / 'tests/cache.json', 'wb') as f:
         f.write(TypeAdapter(List[VoteToken]).dump_json(tokens))
     */
-    // for(const auto& attestation : data["attestations"]) {
+    int i = 1;
 
-    // }
+    int attestation_signature_size = -1;
+    int max_validators_size = 0;
+
+    for(const auto& json_attestation : data["attestations"]) {
+        // if(i++ == 5) {
+        //     std::cout << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n";
+        //     std::cout << json_attestation.dump(4) << "\n";
+        //     std::cout << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n";
+        // }
+
+        if(attestation_signature_size < 0) {
+            attestation_signature_size = strlen(std::string(json_attestation["signature"]).c_str());
+        }
+        std::cout << "Processing attestation " << i++ << "/" << data["attestations"].size() << "...\n";
+
+        assert_true(attestation_signature_size == strlen(std::string(json_attestation["signature"]).c_str()));
+
+        std::cout << json_attestation["signature"] << " " << strlen(std::string(json_attestation["signature"]).c_str()) << "\n";
+        
+        std::cout << "json_attestation[\"validators\"].size() = " << json_attestation["validators"].size() << "\n";
+
+        if(json_attestation["validators"].size() > max_validators_size)
+        {
+            max_validators_size = json_attestation["validators"].size();
+        }
+
+        Attestation attestation = parse_attestation(json_attestation);
+
+        // auto vote = verify_attestation_data(
+        //     hexToBytes<32>("d5c0418465ffab221522a6991c2d4c0041f1b8e91d01b1ea3f6b882369f689b7"),
+        //     attestation,
+        //     sigma
+        // );
+
+    }
+
+    std::cout << "max_validators_size = " << max_validators_size << "\n";
 
     return 0;
 }
