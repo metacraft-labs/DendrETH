@@ -72,6 +72,7 @@ let MOCK: boolean;
 
   TAKE = options['take'];
   MOCK = options['mock'];
+  let GRANULITY = MOCK ? 1000 : 1;
 
   const work_queue = new WorkQueue(
     new KeyPrefix(`${validator_commitment_constants.validatorProofsQueue}`),
@@ -126,7 +127,8 @@ let MOCK: boolean;
       );
 
       await work_queue.addItem(db, new Item(buffer));
-
+      
+      if (i % 10 === 0 && i !== 0)
       console.log('Added zeros tasks');
     }
   }
@@ -190,7 +192,7 @@ let MOCK: boolean;
     const timeAfter = Date.now();
 
     // wait for the next epoch
-    if (timeAfter - timeBefore < 384000) {
+    if (timeAfter - timeBefore < 384000 && !MOCK) {
       await sleep(384000 - (timeBefore - timeAfter));
     }
   }
@@ -217,8 +219,8 @@ let MOCK: boolean;
         await work_queue.addItem(db, new Item(buffer));
       }
 
-      if (i % 25 == 0) {
-        console.log('Saved 25 batches and added first level of proofs');
+      if (i % GRANULITY == 0) {
+        console.log(`Saved ${GRANULITY} batches and added first level of proofs`);
       }
     }
 
@@ -231,7 +233,8 @@ let MOCK: boolean;
     validators: { index: number; validator: Validator }[],
   ) {
     for (let j = 0n; j < 40n; j++) {
-      console.log('Added inner level of proofs', j);
+      if (j % 10n === 0n && j !== 0n)
+        console.log('Added inner level of proofs', j);
 
       let prev_index = 2199023255552n;
       for (let i = 0; i < validators.length; i++) {
