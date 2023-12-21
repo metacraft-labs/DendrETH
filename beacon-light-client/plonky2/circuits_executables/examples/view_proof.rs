@@ -44,7 +44,7 @@ async fn async_main() -> Result<()> {
     println!("Up to here");
     let plonky2_proof =
         ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
-            proof.proof,
+            proof.proof_index,
             &first_level_circuit_data.common,
         )?;
 

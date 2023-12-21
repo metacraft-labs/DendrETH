@@ -20,6 +20,9 @@ jemallocator = "0.5.0"
 clap = "3.0"
 jsonm = "0.2.0"
 serde-binary = "0.5.0"
+ssz_rs = "0.9.0"
+base64 = "0.21.5"
+async-trait = "0.1.74"
 
 [[bin]]
 name = "balance_verification"

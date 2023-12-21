@@ -1,5 +1,9 @@
 use std::{
-    println, thread,
+    cell::RefCell,
+    println,
+    rc::Rc,
+    sync::Arc,
+    thread,
     time::{Duration, Instant},
 };
 
@@ -12,7 +16,7 @@ use circuits::{
 use circuits_executables::{
     crud::{
         fetch_proofs, fetch_validator_balance_input, load_circuit_data, read_from_file,
-        save_balance_proof, BalanceProof,
+        save_balance_proof, BalanceProof, ProofStorage, RedisStorage,
     },
     provers::{handle_balance_inner_level_proof, SetPWValues},
     validator_balances_input::ValidatorBalancesInput,
@@ -136,7 +140,11 @@ async fn async_main() -> Result<()> {
 
     let start = Instant::now();
     let client = redis::Client::open(redis_connection)?;
-    let mut con = client.get_async_connection().await?;
+    let mut con =Rc::new(RefCell::new(client.get_async_connection().await?));
+
+    let proof_storage = RedisStorage::new(con);
+
+    let con: &mut Connection = con.get_mut();
 
     let elapsed = start.elapsed();
 
@@ -171,6 +179,7 @@ async fn async_main() -> Result<()> {
 
     process_queue(
         &mut con,
+        &mut proof_storage,
         &queue,
         &circuit_data,
         inner_circuit_data.as_ref(),
@@ -187,6 +196,7 @@ async fn async_main() -> Result<()> {
 
 async fn process_queue(
     con: &mut redis::aio::Connection,
+    proof_storage: &mut dyn ProofStorage,
     queue: &WorkQueue,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     inner_circuit_data: Option<&CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>>,
@@ -228,6 +238,7 @@ async fn process_queue(
             Targets::FirstLevel(targets) => {
                 match process_first_level_job(
                     con,
+                    proof_storage,
                     queue,
                     job,
                     circuit_data,
@@ -246,6 +257,7 @@ async fn process_queue(
             Targets::InnerLevel(inner_circuit_targets) => {
                 match process_inner_level_job(
                     con,
+                    proof_storage,
                     queue,
                     job,
                     circuit_data,
@@ -268,6 +280,7 @@ async fn process_queue(
 
 async fn process_first_level_job(
     con: &mut Connection,
+    proof_storage: &mut dyn ProofStorage,
     queue: &WorkQueue,
     job: Item,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
@@ -303,7 +316,7 @@ async fn process_first_level_job(
         circuit_data.prove(pw)?
     };
 
-    match save_balance_proof(con, proof, 0, balance_input_index).await {
+    match save_balance_proof(con, proof_storage, proof, 0, balance_input_index).await {
         Err(err) => {
             print!("Error: {}", err);
             thread::sleep(Duration::from_secs(5));
@@ -323,6 +336,7 @@ async fn process_first_level_job(
 
 async fn process_inner_level_job(
     con: &mut Connection,
+    proof_storage: &mut dyn ProofStorage,
     queue: &WorkQueue,
     job: Item,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
@@ -339,7 +353,7 @@ async fn process_inner_level_job(
 
     println!("Got indexes: {:?}", proof_indexes);
 
-    match fetch_proofs::<BalanceProof>(con, &proof_indexes).await {
+    match fetch_proofs::<BalanceProof>(con, proof_storage, &proof_indexes).await {
         Err(err) => {
             print!("Error: {}", err);
             return Err(err);
@@ -365,7 +379,7 @@ async fn process_inner_level_job(
                 )?
             };
 
-            match save_balance_proof(con, proof, level, proof_indexes[1]).await {
+            match save_balance_proof(con, proof_storage, proof, level, proof_indexes[1]).await {
                 Err(err) => {
                     print!("Error: {}", err);
                     thread::sleep(Duration::from_secs(5));
