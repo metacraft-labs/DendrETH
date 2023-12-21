@@ -7,15 +7,17 @@ use circuits::{
     validator_balance_circuit::ValidatorBalanceVerificationTargets,
 };
 use circuits_executables::{
-    crud::{fetch_validator_balance_input, read_from_file},
+    crud::common::{fetch_validator_balance_input, read_from_file},
     provers::SetPWValues,
 };
 use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
-    iop::{witness::PartialWitness},
-    plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig},
-    util::serialization::{Buffer},
+    iop::witness::PartialWitness,
+    plonk::{
+        circuit_data::CircuitData, config::PoseidonGoldilocksConfig,
+    },
+    util::serialization::Buffer,
 };
 
 use jemallocator::Jemalloc;
@@ -30,13 +32,13 @@ fn main() -> Result<()> {
 async fn async_main() -> Result<()> {
     let start = Instant::now();
 
-    let target_bytes = read_from_file("targets")?;
+    let target_bytes = read_from_file("0.plonky2_targets")?;
     let mut target_buffer = Buffer::new(&target_bytes);
 
     let validator_targets =
         ValidatorBalanceVerificationTargets::read_targets(&mut target_buffer).unwrap();
 
-    let circuit_data_bytes = read_from_file("validator_balance_circuit")?;
+    let circuit_data_bytes = read_from_file("0.plonky2_circuit")?;
 
     let gate_serializer = DendrETHGateSerializer;
 
@@ -76,6 +78,8 @@ async fn async_main() -> Result<()> {
     validator_targets.set_pw_values(&mut pw, &validator_balance_input);
 
     let proof = data.prove(pw)?;
+
+    println!("proof size {}", proof.to_bytes().len());
 
     let elapsed = start.elapsed();
 
