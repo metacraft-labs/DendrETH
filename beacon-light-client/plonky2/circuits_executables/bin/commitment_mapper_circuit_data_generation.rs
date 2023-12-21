@@ -13,7 +13,7 @@ use clap::{App, Arg};
 use futures_lite::future;
 
 use jemallocator::Jemalloc;
-use plonky2::{plonk::config::PoseidonGoldilocksConfig};
+use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;

@@ -1,5 +1,5 @@
 use crate::{
-    crud::{biguint_to_str, parse_biguint},
+    crud::common::{biguint_to_str, parse_biguint},
     validator::{bool_vec_as_int_vec, bool_vec_as_int_vec_nested},
 };
 use num::BigUint;
