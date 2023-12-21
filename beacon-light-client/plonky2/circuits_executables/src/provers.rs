@@ -21,7 +21,7 @@ use plonky2::{
 };
 
 use crate::{
-    crud::FinalCircuitInput,
+    crud::common::FinalCircuitInput,
     validator::ValidatorShaInput,
     validator_balances_input::{ValidatorBalancesInput, ValidatorPoseidonInput},
 };
