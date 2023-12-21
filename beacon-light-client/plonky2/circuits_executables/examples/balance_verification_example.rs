@@ -7,13 +7,12 @@ use circuits::{
     targets_serialization::WriteTargets,
 };
 use circuits_executables::{
-    crud::{fetch_validator_balance_input, write_to_file},
+    crud::common::{fetch_validator_balance_input, write_to_file},
     provers::SetPWValues,
 };
 use futures_lite::future;
 use plonky2::{
     iop::witness::PartialWitness, plonk::config::PoseidonGoldilocksConfig,
-    util::serialization::Write,
 };
 
 use jemallocator::Jemalloc;
