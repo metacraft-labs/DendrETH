@@ -1,9 +1,5 @@
 use std::{
-    cell::RefCell,
-    println,
-    rc::Rc,
-    sync::Arc,
-    thread,
+    println, thread,
     time::{Duration, Instant},
 };
 
@@ -16,7 +12,7 @@ use circuits::{
 use circuits_executables::{
     crud::{
         fetch_proofs, fetch_validator_balance_input, load_circuit_data, read_from_file,
-        save_balance_proof, BalanceProof, ProofStorage, RedisStorage,
+        save_balance_proof, BalanceProof, FileStorage, ProofStorage,
     },
     provers::{handle_balance_inner_level_proof, SetPWValues},
     validator_balances_input::ValidatorBalancesInput,
@@ -140,11 +136,10 @@ async fn async_main() -> Result<()> {
 
     let start = Instant::now();
     let client = redis::Client::open(redis_connection)?;
-    let mut con =Rc::new(RefCell::new(client.get_async_connection().await?));
 
-    let proof_storage = RedisStorage::new(con);
+    let mut con = client.get_async_connection().await?;
 
-    let con: &mut Connection = con.get_mut();
+    let mut proof_storage = FileStorage::new();
 
     let elapsed = start.elapsed();
 

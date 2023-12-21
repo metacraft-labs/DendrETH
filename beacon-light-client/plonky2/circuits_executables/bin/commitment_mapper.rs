@@ -6,7 +6,7 @@ use circuits::{
 use circuits_executables::{
     crud::{
         fetch_proofs, fetch_validator, load_circuit_data, read_from_file, save_validator_proof,
-        RedisStorage, ValidatorProof,
+        FileStorage, ValidatorProof, RedisStorage,
     },
     provers::{handle_commitment_mapper_inner_level_proof, SetPWValues},
     validator::VALIDATOR_REGISTRY_LIMIT,
@@ -22,17 +22,9 @@ use plonky2::{
     },
     util::serialization::Buffer,
 };
-use redis::{aio::Connection};
+
 use redis_work_queue::{KeyPrefix, WorkQueue};
-use std::{
-    borrow::BorrowMut,
-    cell::RefCell,
-    format, print, println,
-    rc::Rc,
-    sync::{Arc, Mutex},
-    thread,
-    time::Duration,
-};
+use std::{format, print, println, thread, time::Duration};
 
 use validator_commitment_constants::get_validator_commitment_constants;
 
@@ -84,9 +76,9 @@ async fn async_main() -> Result<()> {
     let redis_connection = matches.value_of("redis_connection").unwrap();
 
     let client = redis::Client::open(redis_connection)?;
-    let con = Arc::new(Mutex::new(client.get_async_connection().await?));
+    let mut con = client.get_async_connection().await?;
 
-    let mut proof_storage = RedisStorage::new(con.clone());
+    let mut proof_storage = FileStorage::new();
 
     println!("Connected to redis");
 
@@ -125,8 +117,6 @@ async fn async_main() -> Result<()> {
 
     let inner_proof_mock_binary = include_bytes!("../mock_data/inner_proof_mapper.mock");
     let proof_mock_binary = include_bytes!("../mock_data/proof_mapper.mock");
-
-    let mut con: Connection = con.lock().unwrap();
 
     loop {
         if !mock {

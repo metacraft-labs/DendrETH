@@ -23,6 +23,9 @@ serde-binary = "0.5.0"
 ssz_rs = "0.9.0"
 base64 = "0.21.5"
 async-trait = "0.1.74"
+aws-config = { version = "1.0.1", features = ["behavior-version-latest"] }
+tokio = { version = "1.35.1", features = ["full"] }
+aws-sdk-s3 = { version = "1.4.0" }
 
 [[bin]]
 name = "balance_verification"
@@ -36,9 +39,9 @@ path = "bin/commitment_mapper.rs"
 name = "balance_verification_circuit_data_generation"
 path = "bin/balance_verification_circuit_data_generation.rs"
 
-[[bin]]
-name = "final_layer"
-path = "bin/final_layer.rs"
+# [[bin]]
+# name = "final_layer"
+# path = "bin/final_layer.rs"
 
 [[bin]]
 name = "commitment_mapper_circuit_data_generation"

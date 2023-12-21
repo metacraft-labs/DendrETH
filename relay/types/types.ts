@@ -165,7 +165,7 @@ export interface Validator {
 
 export interface ValidatorProof {
   needsChange: boolean;
-  proof: number[];
+  proofIndex: string;
   poseidonHash: number[];
   sha256Hash: number[];
 }
@@ -174,7 +174,7 @@ export interface BalanceProof {
   needsChange: boolean;
   rangeTotalValue: string;
   validatorsCommitment: number[];
-  proof: number[];
+  proofIndex: string;
   balancesHash: number[];
   withdrawalCredentials: string;
 }

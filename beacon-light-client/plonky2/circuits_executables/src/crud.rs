@@ -1,12 +1,4 @@
-use std::{
-    cell::RefCell,
-    fs,
-    marker::PhantomData,
-    rc::Rc,
-    sync::{Arc, Mutex},
-    thread,
-    time::Duration,
-};
+use std::{fs, marker::PhantomData, thread, time::Duration, todo};
 
 use crate::{
     validator::{
@@ -16,9 +8,8 @@ use crate::{
     validator_balances_input::ValidatorBalancesInput,
     validator_commitment_constants::get_validator_commitment_constants,
 };
-use anyhow::Result;
+use anyhow::{Ok, Result};
 use async_trait::async_trait;
-use base64::{engine::general_purpose, Engine as _};
 
 use circuits::{
     build_commitment_mapper_first_level_circuit::CommitmentMapperProofExt,
@@ -86,18 +77,45 @@ pub trait ProofStorage {
     async fn set_proof(&mut self, identifier: String, proof: &[u8]) -> Result<()>;
 }
 
-pub struct RedisStorage {
-    connection: &mut Connection,
+pub struct RedisStorage<'a> {
+    connection: &'a mut Connection,
 }
 
-impl RedisStorage {
+impl RedisStorage<'_> {
     pub fn new(connection: &mut Connection) -> RedisStorage {
         RedisStorage { connection }
     }
 }
 
+pub struct FileStorage;
+
+impl FileStorage {
+    pub fn new() -> FileStorage {
+        if !fs::metadata("proofs").is_ok() {
+            fs::create_dir_all("proofs").unwrap();
+        }
+
+        FileStorage
+    }
+}
+
 #[async_trait(?Send)]
-impl ProofStorage for RedisStorage {
+impl ProofStorage for FileStorage {
+    async fn get_proof(&mut self, identifier: String) -> Result<Vec<u8>> {
+        let result = fs::read(format!("{}/{}.{}", "proofs", identifier, "bin")).unwrap();
+
+        Ok(result)
+    }
+
+    async fn set_proof(&mut self, identifier: String, proof: &[u8]) -> Result<()> {
+        fs::write(format!("{}/{}.{}", "proofs", identifier, "bin"), proof).unwrap();
+
+        Ok(())
+    }
+}
+
+#[async_trait(?Send)]
+impl ProofStorage for RedisStorage<'_> {
     async fn get_proof(&mut self, identifier: String) -> Result<Vec<u8>> {
         let result: Vec<u8> = self.connection.get(&identifier).await?;
 
@@ -233,9 +251,7 @@ pub async fn save_balance_proof(
 ) -> Result<()> {
     let proof_index = format!(
         "{}:{}:{}",
-        get_validator_commitment_constants().balance_verification_proof_key,
-        depth,
-        index
+        "balance_verification_proof_storage", depth, index
     );
 
     let balance_proof = serde_json::to_string(&BalanceProof {
@@ -248,7 +264,9 @@ pub async fn save_balance_proof(
         proof_index: proof_index.clone(),
     })?;
 
-    proof_storage.set_proof(proof_index, &proof.to_bytes());
+    proof_storage
+        .set_proof(proof_index, &proof.to_bytes())
+        .await?;
 
     let _: () = con
         .set(
@@ -310,12 +328,7 @@ pub async fn save_validator_proof(
     depth: usize,
     index: usize,
 ) -> Result<()> {
-    let proof_index = format!(
-        "{}:{}:{}",
-        get_validator_commitment_constants().validator_proof_key,
-        depth,
-        index
-    );
+    let proof_index = format!("{}:{}:{}", "validator_proof_storage", depth, index);
 
     let validator_proof = serde_json::to_string(&ValidatorProof {
         poseidon_hash: proof
@@ -326,7 +339,9 @@ pub async fn save_validator_proof(
         needs_change: false,
     })?;
 
-    proof_storage.set_proof(proof_index, &proof.to_bytes());
+    proof_storage
+        .set_proof(proof_index, &proof.to_bytes())
+        .await?;
 
     let _: () = con
         .set(
