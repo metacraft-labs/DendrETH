@@ -12,7 +12,7 @@ struct static_vector {
     size_t size_;
 
     template<std::size_t SIZE>
-    constexpr static_vector(std::array<T, SIZE> const& rhs) {
+    constexpr explicit static_vector(std::array<T, SIZE> const& rhs) {
         static_assert(SIZE <= CAPACITY);
         circuit_byte_utils::copy(rhs.begin(), rhs.end(), begin());
         size_ = SIZE;

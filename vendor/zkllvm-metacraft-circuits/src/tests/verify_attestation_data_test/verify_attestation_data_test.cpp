@@ -36,7 +36,7 @@ using std::cout;
 
 
 void basic_tests() {
-    static_vector<Bytes32> hashes;
+    Proof hashes;
 
     hashes.push_back(byte_utils::hexToBytes<32>("0x0000000000000000000000000000000000000000000000000000000000000000"));
     hashes.push_back(byte_utils::hexToBytes<32>("0x12343211234120302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b"));
@@ -100,7 +100,7 @@ void basic_tests() {
         printf("Calculated: %s\n", byte_utils::bytesToHex(hashed_validator).c_str());
     }
     {
-        static_vector<Bytes32> proof;
+        Proof proof;
         proof.push_back(byte_utils::hexToBytes<32>("6823ef320178e99dbb3437e283fb8ec25b870c2ceac62d3db549ca21c9cd7ec4"));
         proof.push_back(byte_utils::hexToBytes<32>("38864832a7e2e17e177cf615cf04ed5a4c9f3b10e9bc271fd1c4a3efe2a78529"));
         proof.push_back(byte_utils::hexToBytes<32>("e8baa1746a3bbab8401b41a9e20a289c582b8c3a04dc5e25aba00e6d37cb1b64"));
@@ -198,6 +198,48 @@ Fork parse_fork(const json& json_fork) {
     return fork;
 }
 
+Validator parse_validator(const json& json_validator) {
+    Validator validator;
+    validator.trusted = json_validator["trusted"];
+    validator.validator_index = json_validator["validator_index"];
+    validator.pubkey = hexToBytes<48>(json_validator["pubkey"]);
+    std::string withdrawal_credentials;
+    if(json_validator.contains("withdrawal_credentials")) { 
+        withdrawal_credentials = json_validator["withdrawal_credentials"];
+    } else {
+        withdrawal_credentials.assign(64, '0');
+    }
+    validator.withdrawal_credentials = hexToBytes<32>(withdrawal_credentials);
+    if(json_validator.contains("effective_balance")) {
+        validator.effective_balance = json_validator["effective_balance"];
+    }
+    if(json_validator.contains("slashed")) {
+        validator.slashed = json_validator["slashed"];
+    }
+    if(json_validator.contains("activation_eligibility_epoch")) {
+        validator.activation_eligibility_epoch = json_validator["activation_eligibility_epoch"];
+    }
+    if(json_validator.contains("activation_epoch")) {
+        validator.activation_epoch = json_validator["activation_epoch"];
+    }
+    if(json_validator.contains("exit_epoch")) {
+        validator.exit_epoch = json_validator["exit_epoch"];
+    }
+    if(json_validator.contains("withdrawable_epoch")) {
+        validator.withdrawable_epoch = json_validator["withdrawable_epoch"];
+    }
+    if(json_validator.contains("validator_list_proof")) {
+        for(size_t i = 0; i < json_validator["validator_list_proof"].size(); i++) {
+            std::string element = json_validator["validator_list_proof"][i];
+            if(element.size() == 0) {
+                element.assign(64, '0');
+            }
+            validator.validator_list_proof.push_back(hexToBytes<32>(element));
+        }
+    }
+    return validator;
+}
+
 Attestation parse_attestation(const json& json_attestation) {
     Attestation attestation;
     attestation.data = parse_attestation_data(json_attestation["data"]);
@@ -206,8 +248,14 @@ Attestation parse_attestation(const json& json_attestation) {
     attestation.genesis_validators_root = hexToBytes<32>(json_attestation["genesis_validators_root"]);
     attestation.state_root = hexToBytes<32>(json_attestation["state_root"]);
     for(size_t i = 0; i < json_attestation["state_root_proof"].size(); i++) {
-        std::cout << "json_attestation[\"state_root_proof\"][" << i << "] = " << json_attestation["state_root_proof"][i] << "\n";
         attestation.state_root_proof.at(i) = hexToBytes<32>(json_attestation["state_root_proof"][i]);
+    }
+    attestation.validators_root = hexToBytes<32>(json_attestation["validators_root"]);
+    for(size_t i = 0; i < json_attestation["validators_root_proof"].size(); i++) {
+        attestation.validators_root_proof.at(i) = hexToBytes<32>(json_attestation["validators_root_proof"][i]);
+    }
+    for(size_t i = 0; i < json_attestation["validators"].size(); i++) {
+        attestation.validators.push_back(parse_validator(json_attestation["validators"][i]));
     }
     return attestation;
 }
@@ -243,6 +291,8 @@ int main(int argc, char* argv[]) {
     int attestation_signature_size = -1;
     int max_validators_size = 0;
 
+    int validators_list_proof_size = -1;
+
     for(const auto& json_attestation : data["attestations"]) {
         // if(i++ == 5) {
         //     std::cout << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n";
@@ -268,6 +318,22 @@ int main(int argc, char* argv[]) {
 
         Attestation attestation = parse_attestation(json_attestation);
 
+        for(size_t i = 0; i < json_attestation["validators"].size(); i++) {
+            // size_t new_size = json_attestation["validators"][i]["validator_list_proof"].size();
+            // if(validators_list_proof_size < 0) {
+            //     validators_list_proof_size = new_size;
+            // }
+            // assert_true(validators_list_proof_size == new_size);
+            const auto& validator = json_attestation["validators"][i];
+            if(validator.contains("validator_list_proof")) {
+                size_t new_size = validator["validator_list_proof"].size();
+                if(validators_list_proof_size < 0) {
+                    validators_list_proof_size = new_size;
+                }
+                assert_true(validators_list_proof_size == new_size);
+            }
+        }
+
         // auto vote = verify_attestation_data(
         //     hexToBytes<32>("d5c0418465ffab221522a6991c2d4c0041f1b8e91d01b1ea3f6b882369f689b7"),
         //     attestation,
@@ -277,6 +343,6 @@ int main(int argc, char* argv[]) {
     }
 
     std::cout << "max_validators_size = " << max_validators_size << "\n";
-
+    std::cout << "validators_list_proof_size = " << validators_list_proof_size << "\n";
     return 0;
 }
