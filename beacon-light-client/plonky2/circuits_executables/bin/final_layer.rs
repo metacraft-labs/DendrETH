@@ -1,6 +1,7 @@
 use std::{println, time::Instant};
 
 use anyhow::Result;
+use base64::{engine::general_purpose, Engine};
 use circuits::build_final_circuit::build_final_circuit;
 use circuits_executables::{
     crud::{
@@ -59,7 +60,7 @@ async fn async_main() -> Result<()> {
 
     let balance_final_proof =
         ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
-            balance_proof.proof,
+            balance_proof.proof_index,
             &balance_data.common,
         )?;
 
@@ -90,7 +91,7 @@ async fn async_main() -> Result<()> {
         GoldilocksField,
         PoseidonGoldilocksConfig,
         2,
-    >::from_bytes(commitment_proof.proof, &commitment_data.common)?;
+    >::from_bytes(general_purpose::STANDARD_NO_PAD.decode(&commitment_proof.proof).unwrap(), &commitment_data.common)?;
 
     pw.set_proof_with_pis_target(
         &circuit_targets.commitment_mapper_circuit_targets.proof,
