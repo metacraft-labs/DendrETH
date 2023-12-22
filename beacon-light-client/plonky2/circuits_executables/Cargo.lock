@@ -268,9 +268,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-s3"
-version = "1.9.0"
+version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27f89aed8bb54ff816b860cda5d6f010cf54b7b64a46bb66e3edd1063ac5f36e"
+checksum = "37dc95e83ed001fd28f90c925ee30fc6eedd31886fa769476594604e5f89dffd"
 dependencies = [
  "aws-credential-types",
  "aws-http",
@@ -298,9 +298,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-sso"
-version = "1.8.0"
+version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c8539671a6e0ca087464f784576b42796ed934a566b3c1263dcf2a88494d067"
+checksum = "da9d9a8ac4cdb8df39f9777fd41e15a9ae0d0b622b00909ae0322b4d2f9e6ac8"
 dependencies = [
  "aws-credential-types",
  "aws-http",
@@ -321,9 +321,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-ssooidc"
-version = "1.8.0"
+version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f96ac3757df21b29102edd909884ceb8d118b96b5e45546b8bb59b8a9a8eb85a"
+checksum = "56ba4a42aa91acecd5ca43b330b5c8eb7f8808d720b6a6f796a35faa302fc73d"
 dependencies = [
  "aws-credential-types",
  "aws-http",
@@ -344,9 +344,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-sts"
-version = "1.8.0"
+version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4fe238802a9ad92721c23fd0b1d52284ec9e3565d6d0a12243608833e2655abb"
+checksum = "8e3c7c3dcec7cccd24a13953eedf0f2964c2d728d22112744274cf0098ad2e35"
 dependencies = [
  "aws-credential-types",
  "aws-http",

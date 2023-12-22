@@ -1,20 +1,29 @@
+use anyhow::Result;
+use aws_config::meta::region::RegionProviderChain;
+use aws_config::Region;
+use aws_sdk_s3::config::endpoint::Endpoint;
+use aws_sdk_s3::config::Builder;
+use aws_sdk_s3::primitives::ByteStream;
+use aws_sdk_s3::{Client, Config};
 use std::env;
 
-use aws_config::{meta::region::RegionProviderChain, Region};
-use aws_sdk_s3::{primitives::ByteStream, Client, Error};
-
 #[tokio::main]
-async fn main() -> Result<(), Error> {
+async fn main() -> Result<()> {
     env::set_var("AWS_ACCESS_KEY_ID", "test");
     env::set_var("AWS_SECRET_ACCESS_KEY", "test");
 
-    let config = aws_config::from_env()
+    let aws_config = aws_config::from_env().load().await;
+
+    let s3_config = Config::builder()
+        .credentials_provider(aws_config.credentials_provider().unwrap())
+        .behavior_version_latest()
         .region(Region::new("us-west-2"))
         .endpoint_url("http://localhost:4566")
-        .load()
-        .await;
+        .force_path_style(true)
+        .clone()
+        .build();
 
-    let client = Client::new(&config);
+    let client = Client::from_conf(s3_config);
 
     let resp = client.list_buckets().send().await?;
     println!("Buckets:");
@@ -23,21 +32,48 @@ async fn main() -> Result<(), Error> {
         println!("{}", bucket.name().unwrap_or_default());
     }
 
-    let bucket = "your-bucket-name";
-    let key = "your-object-key";
+    let bucket_name = "your-bucket-name";
 
-    let data: Vec<u8> = vec![13, 123, 23];
+    let resp = client.list_objects_v2().bucket(bucket_name).send().await?;
 
-    let byte_stream = ByteStream::from(data);
+    println!("Objects in bucket {}:", bucket_name);
 
-    // Put object
+    let contents = resp.contents();
+
+    for object in contents {
+        println!("Key: {}", object.key().unwrap_or_default());
+
+        let key = object.key().unwrap_or_default();
+
+        let resp = client
+            .get_object()
+            .bucket(bucket_name)
+            .key(key)
+            .send()
+            .await?;
+
+        let mut body = resp.body.collect().await?;
+        let mut content = body.into_bytes().to_vec();
+
+        let content_str = String::from_utf8_lossy(&content);
+
+        println!("Value: {}", content_str);
+    }
+
+    let key = "proof.bin";
+
+    let data = "basi maikata lelelelelelel";
+    let byte_stream = ByteStream::from(data.as_bytes().to_vec());
+
+    // Upload the object
     client
         .put_object()
-        .bucket(bucket)
+        .bucket(bucket_name)
         .key(key)
         .body(byte_stream)
         .send()
-        .await?;
+        .await
+        .unwrap();
 
     Ok(())
 }
