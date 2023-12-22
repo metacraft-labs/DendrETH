@@ -19,8 +19,8 @@ using Proof = static_vector<Bytes32, 64>;
 using PubKey = Bytes48;
 
 struct AttestationData {
-    int64_t slot;
-    int64_t index;
+    uint64_t slot;
+    uint64_t index;
     Root beacon_block_root;
     CheckpointVariable source;
     CheckpointVariable target;
@@ -29,7 +29,7 @@ struct AttestationData {
 struct Fork {
     Bytes32 previous_version;
     Bytes32 current_version;
-    int64_t epoch;
+    uint64_t epoch;
 };
 
 struct Validator {
@@ -37,16 +37,16 @@ struct Validator {
     // source state and can, therefore, be trusted.
     bool trusted;
     // These fields are always present.
-    int64_t validator_index;
+    uint64_t validator_index;
     PubKey pubkey;
     // These fields are meaningful iff `trusted` is True.
     Bytes32 withdrawal_credentials;
-    int64_t effective_balance;
+    uint64_t effective_balance;
     bool slashed;
-    int64_t activation_eligibility_epoch;
-    int64_t activation_epoch;
-    int64_t exit_epoch;
-    int64_t withdrawable_epoch;
+    uint64_t activation_eligibility_epoch;
+    uint64_t activation_epoch;
+    uint64_t exit_epoch;
+    uint64_t withdrawable_epoch;
     Proof validator_list_proof;
 };
 
