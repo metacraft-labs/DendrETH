@@ -1,4 +1,5 @@
 use casper_finality_proofs::compute_shuffled_index::circuit::define;
+use plonky2x::backend::circuit::{GateRegistry, HintRegistry};
 use plonky2x::prelude::{
     bytes, ArrayVariable, ByteVariable, CircuitBuilder, DefaultParameters, U64Variable,
 };
@@ -16,7 +17,16 @@ fn main() {
     let mut builder = CircuitBuilder::<DefaultParameters, 2>::new();
     define(&mut builder, SHUFFLE_ROUND_COUNT);
 
-    let circuit = builder.mock_build();
+    let circuit = builder.build();
+
+    let hint_serializer = HintRegistry::<DefaultParameters, 2>::new();
+    let gate_serializer = GateRegistry::<DefaultParameters, 2>::new();
+
+    circuit.save(
+        &"build/compute_shuffled_index".to_string(),
+        &gate_serializer,
+        &hint_serializer,
+    );
 
     const START_IDX: u64 = 0;
     const COUNT: u64 = 100;
@@ -34,7 +44,7 @@ fn main() {
         input.write::<U64Variable>(COUNT);
         input.write::<ArrayVariable<ByteVariable, 32>>(seed_bytes_fixed_size.to_vec());
 
-        let (_witness, mut _output) = circuit.mock_prove(&input);
+        let (_witness, mut _output) = circuit.prove(&input);
         let shuffled_index_res = _output.read::<U64Variable>();
 
         println!("{} {}", mapping[i as usize], shuffled_index_res);
