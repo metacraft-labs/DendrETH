@@ -925,6 +925,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
+ "serde_with 3.4.0",
  "serde_yaml 0.9.27",
  "snap",
  "state_processing",
