@@ -16,9 +16,6 @@ use super::super::constants::{
     VALIDATORS_PER_COMMITTEE, VALIDATORS_HASH_TREE_DEPTH, VALIDATORS_ROOT_PROOF_LEN, STATE_ROOT_PROOF_LEN
 };
 
-type L = DefaultParameters;
-const D: usize = 2;
-
 #[derive(Debug, Clone)]
 pub struct ValidatorHashData { 
     validator_index: U64Variable,
@@ -139,7 +136,7 @@ impl Fork {
 pub struct Attestation {
     // Standard attestation data
     data: AttestationData,
-    pub signature: BLSPubkeyVariable,
+    pub signature: BLSPubkeyVariable, //TODO: BLSVariable 
 
     // Needed to compute the `signing_root` and verify the `signature`
     fork: Fork,

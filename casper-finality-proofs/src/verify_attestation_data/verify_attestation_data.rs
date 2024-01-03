@@ -44,7 +44,7 @@ impl Circuit for VerifyAttestationData {
         for _ in 0..VALIDATORS_PER_COMMITTEE {
 
             let validator_hash_data = ValidatorHashData::circuit_input(builder);
-            
+
             validator_hash_vec.push(validator_hash_data);
         }
 

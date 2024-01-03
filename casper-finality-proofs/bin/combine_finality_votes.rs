@@ -6,7 +6,7 @@ use casper_finality_proofs::{
             VARIABLES_COUNT_BIG_BITMASK, VARIABLES_COUNT_LITTLE_BITMASK
         },
     },
-    verify_attestation_data::verify_split_bitmask::ValidatorBitmask,
+    verify_attestation_data::verify_split_bitmask_deprecated::ValidatorBitmask,
 };
 use plonky2x::prelude::Field;
 use plonky2x::{
