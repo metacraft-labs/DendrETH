@@ -1,6 +1,12 @@
+use ethers::abi::parse_abi;
+use ethers::core::k256::U256;
+// use ethers::types::U256;
+use plonky2x::backend::circuit::PublicInput;
+use plonky2x::frontend::uint::uint64;
 use serde_json::{Value, Error};
 use serde::Deserialize;
 use serde_with::serde_as;
+use snap::write;
 use std::any;
 use std::fs::File;
 use std::io::{Read, Error as IOError};
@@ -13,259 +19,167 @@ use plonky2x::{
     // frontend::{eth::vars::BLSPubkeyVariable,
         vars::{Bytes32Variable}, uint::uint64::U64Variable, hash::poseidon::poseidon256::PoseidonHashOutVariable},
 };
+use crate::verify_attestation_data::verify_attestation_data::VerifyAttestationData;
+
+use super::super::utils::eth_objects::{Fork};
 
 const VALIDATORS_PER_COMMITTEE: usize = 412; // 2048
 const PLACEHOLDER: usize = 11;
 
+struct ForkInput {
+    previous_version: String,
+    current_version: String,
+    epoch: u64
+}
+
+impl ForkInput {
+    pub fn write<L: PlonkParameters<D>, const D: usize>(&self, input: &mut PublicInput<L, D>) {
+        input.write::<Bytes32Variable>(bytes32!(self.previous_version));
+        input.write::<Bytes32Variable>(bytes32!(self.previous_version));
+        input.write::<U64Variable>(self.epoch); //TODO: U64 should be U256 by spec definition
+    }
+}
+
+struct AttestationDataInput {
+    slot: u64, // Plonky2X parses it as U256
+    index: u64,
+
+    beacon_block_root: String,
+
+    source: String,
+    target: String
+}
+
+impl AttestationDataInput {
+    pub fn write<L: PlonkParameters<D>, const D: usize>(&self, input: &mut PublicInput<L, D>) {
+        input.write::<U64Variable>(self.slot); //TODO: U64 should be U256 by spec definition
+        input.write::<U64Variable>(self.index); //TODO: U64 should be U256 by spec definition
+        println!("THIS: {:?}",self.beacon_block_root);
+        println!("THAT: {:?}", bytes32!(self.beacon_block_root.trim_matches('"')));
+        input.write::<Bytes32Variable>(bytes32!(self.beacon_block_root.trim_matches('"')));
+        input.write::<Bytes32Variable>(bytes32!(self.source));
+        input.write::<Bytes32Variable>(bytes32!(self.target));
+    } 
+}
+
+struct AttestationInput {
+    data: AttestationDataInput,
+    signature: String,
+    fork: ForkInput,
+    genesis_validators_root: String,
+    state_root: String,
+    state_root_proof: Vec<String>,
+    validators_root: String,
+    validators_root_proof: Vec<String>,
+    // validators - array of BeaconValidatorVariables not passed
+    // validator_list_proof - not passed
+}
+
+impl AttestationInput {
+    pub fn write<L: PlonkParameters<D>, const D: usize>(&self,mut input: &mut PublicInput<L, D>) {
+        self.data.write(&mut input);
+        input.write::<Bytes32Variable>(bytes32!(self.signature));
+        self.fork.write(&mut input);
+        input.write::<Bytes32Variable>(bytes32!(self.genesis_validators_root));
+
+        input.write::<Bytes32Variable>(bytes32!(self.state_root));
+        input.write::<ArrayVariable<Bytes32Variable, 3>>(self.state_root_proof
+            .iter()
+            .map(|element| bytes32!(element))
+            .collect()
+        );
+
+        input.write::<Bytes32Variable>(bytes32!(self.validators_root));
+        input.write::<ArrayVariable<Bytes32Variable, 5>>(self.validators_root_proof
+            .iter()
+            .map(|element| bytes32!(element))
+            .collect()
+        );
+    }
+}
+
+fn parse_fork_json(fork: &Value) -> ForkInput {
+    ForkInput {
+        previous_version: fork.get("previous_version").unwrap().to_string(),
+        current_version: fork.get("current_version").unwrap().to_string(),
+        epoch: fork.get("epoch").unwrap().as_u64().unwrap() // Why unwrap twice?
+    }
+}
 
 
-// #[derive(Debug, Clone, Copy)]
-// pub struct BeaconValidatorVariable {
-//     pub pubkey: BLSPubkeyVariable,
-//     pub withdrawal_credentials: Bytes32Variable,
-//     pub effective_balance: U256Variable,
-//     pub slashed: BoolVariable,
-//     pub activation_eligibility_epoch: U256Variable,
-//     pub activation_epoch: U256Variable,
-//     pub exit_epoch: U256Variable,
-//     pub withdrawable_epoch: U256Variable,
-// }
+pub fn parse_attestation_data_json(data: &Value) -> AttestationDataInput {
+    AttestationDataInput {
+        slot: data.get("slot").unwrap().as_u64().unwrap(),
+        index: data.get("index").unwrap().as_u64().unwrap(),
+        beacon_block_root: data.get("beacon_block_root").unwrap().to_string(),
+        source: data.get("source").unwrap().to_string(),
+        target: data.get("target").unwrap().to_string(),
+    }
+}
 
-// /// The beacon validator struct according to the consensus spec.
-// /// Reference: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
-// #[derive(Debug, Clone, Deserialize)]
-// #[serde(rename_all = "camelCase")]
-// #[serde_as]
-// pub struct BeaconValidator {
-//     pub pubkey: String,
-//     pub withdrawal_credentials: String,
-//     pub effective_balance: u64,
-//     pub slashed: bool,
-//     pub activation_eligibility_epoch: String,
-//     pub activation_epoch: String,
-//     pub exit_epoch: String,
-//     pub withdrawable_epoch: String,
-// }
+pub fn parse_attestation(attestation: &Value) -> AttestationInput {
+    let attestation_data = parse_attestation_data_json(attestation.get("data").unwrap());
 
-// impl CircuitVariable for BeaconValidatorVariable {
-//     type ValueType<F: RichField> = BeaconValidator;
+    let signature = attestation.get("signature").unwrap().to_string();
 
-//     fn init_unsafe<L: PlonkParameters<D>, const D: usize>(
-//         builder: &mut CircuitBuilder<L, D>,
-//     ) -> Self {
-//         Self {
-//             pubkey: BLSPubkeyVariable::init_unsafe(builder),
-//             withdrawal_credentials: Bytes32Variable::init_unsafe(builder),
-//             effective_balance: U256Variable::init_unsafe(builder),
-//             slashed: BoolVariable::init_unsafe(builder),
-//             activation_eligibility_epoch: U256Variable::init_unsafe(builder),
-//             activation_epoch: U256Variable::init_unsafe(builder),
-//             exit_epoch: U256Variable::init_unsafe(builder),
-//             withdrawable_epoch: U256Variable::init_unsafe(builder),
-//         }
-//     }
+    let fork = parse_fork_json(attestation.get("fork").unwrap());
 
-//     fn nb_elements() -> usize {
-//         let pubkey = BLSPubkeyVariable::nb_elements();
-//         let withdrawal_credentials = Bytes32Variable::nb_elements();
-//         let effective_balance = U256Variable::nb_elements();
-//         let slashed = BoolVariable::nb_elements();
-//         let activation_eligibility_epoch = U256Variable::nb_elements();
-//         let activation_epoch = U256Variable::nb_elements();
-//         let exit_epoch = U256Variable::nb_elements();
-//         let withdrawable_epoch = U256Variable::nb_elements();
-//         pubkey
-//             + withdrawal_credentials
-//             + effective_balance
-//             + slashed
-//             + activation_eligibility_epoch
-//             + activation_epoch
-//             + exit_epoch
-//             + withdrawable_epoch
-//     }
+    let genesis_validators_root = attestation.get("genesis_validators_root").unwrap().to_string();
 
-    // fn elements<F: RichField>(value: Self::ValueType<F>) -> Vec<F> {
-    //     let pubkey = BLSPubkeyVariable::elements(bytes!(value.pubkey));
-    //     let withdrawal_credentials =
-    //         Bytes32Variable::elements(bytes32!(value.withdrawal_credentials));
-    //     let effective_balance = U256Variable::elements(value.effective_balance.into());
-    //     let slashed = BoolVariable::elements(value.slashed);
-    //     let activation_eligibility_epoch = U256Variable::elements(
-    //         value
-    //             .activation_eligibility_epoch
-    //             .parse::<u64>()
-    //             .unwrap()
-    //             .into(),
-    //     );
-    //     let activation_epoch =
-    //         U256Variable::elements(value.activation_epoch.parse::<u64>().unwrap().into());
-    //     let exit_epoch = U256Variable::elements(value.exit_epoch.parse::<u64>().unwrap().into());
-    //     let withdrawable_epoch =
-    //         U256Variable::elements(value.withdrawable_epoch.parse::<u64>().unwrap().into());
-    //     pubkey
-    //         .into_iter()
-    //         .chain(withdrawal_credentials)
-    //         .chain(effective_balance)
-    //         .chain(slashed)
-    //         .chain(activation_eligibility_epoch)
-    //         .chain(activation_epoch)
-    //         .chain(exit_epoch)
-    //         .chain(withdrawable_epoch)
-    //         .collect()
-    // }
+    let state_root = attestation.get("state_root").unwrap().to_string();
 
-    // fn from_elements<F: RichField>(elements: &[F]) -> Self::ValueType<F> {
-    //     let pubkey = BLSPubkeyVariable::from_elements(&elements[0..384]);
-    //     let withdrawal_credentials = Bytes32Variable::from_elements(&elements[384..640]);
-    //     let effective_balance = U256Variable::from_elements(&elements[640..648]);
-    //     let slashed = BoolVariable::from_elements(&elements[648..649]);
-    //     let activation_eligibility_epoch = U256Variable::from_elements(&elements[649..657]);
-    //     let activation_epoch = U256Variable::from_elements(&elements[657..665]);
-    //     let exit_epoch = U256Variable::from_elements(&elements[665..673]);
-    //     let withdrawable_epoch = U256Variable::from_elements(&elements[673..681]);
-    //     BeaconValidator {
-    //         pubkey: hex!(pubkey),
-    //         withdrawal_credentials: hex!(withdrawal_credentials),
-    //         effective_balance: effective_balance.as_u64(),
-    //         slashed,
-    //         activation_eligibility_epoch: activation_eligibility_epoch.as_u64().to_string(),
-    //         activation_epoch: activation_epoch.as_u64().to_string(),
-    //         exit_epoch: exit_epoch.as_u64().to_string(),
-    //         withdrawable_epoch: withdrawable_epoch.as_u64().to_string(),
-    //     }
-    // }
+    let state_root_proof: Vec<String> = attestation
+                            .get("state_root_proof")
+                            .and_then(Value::as_array)
+                            .unwrap()
+                            .iter()
+                            .filter_map(|v| Some(v.to_string()))
+                            .collect();
 
-//     fn variables(&self) -> Vec<Variable> {
-//         let mut vars = Vec::new();
-//         vars.extend(self.pubkey.variables());
-//         vars.extend(self.withdrawal_credentials.variables());
-//         vars.extend(self.effective_balance.variables());
-//         vars.extend(self.slashed.variables());
-//         vars.extend(self.activation_eligibility_epoch.variables());
-//         vars.extend(self.activation_epoch.variables());
-//         vars.extend(self.exit_epoch.variables());
-//         vars.extend(self.withdrawable_epoch.variables());
-//         vars
-//     }
+    let validators_root = attestation.get("validators_root").unwrap().to_string();
 
-//     fn from_variables_unsafe(variables: &[Variable]) -> Self {
-//         let pubkey = BLSPubkeyVariable::from_variables_unsafe(&variables[0..384]);
-//         let withdrawal_credentials = Bytes32Variable::from_variables_unsafe(&variables[384..640]);
-//         let effective_balance = U256Variable::from_variables_unsafe(&variables[640..648]);
-//         let slashed = BoolVariable::from_variables_unsafe(&variables[648..649]);
-//         let activation_eligibility_epoch =
-//             U256Variable::from_variables_unsafe(&variables[649..657]);
-//         let activation_epoch = U256Variable::from_variables_unsafe(&variables[657..665]);
-//         let exit_epoch = U256Variable::from_variables_unsafe(&variables[665..673]);
-//         let withdrawable_epoch = U256Variable::from_variables_unsafe(&variables[673..681]);
-//         Self {
-//             pubkey,
-//             withdrawal_credentials,
-//             effective_balance,
-//             slashed,
-//             activation_eligibility_epoch,
-//             activation_epoch,
-//             exit_epoch,
-//             withdrawable_epoch,
-//         }
-//     }
+    let validators_root_proof: Vec<String> = attestation
+                            .get("validators_root_proof")
+                            .and_then(Value::as_array)
+                            .unwrap()
+                            .iter()
+                            .filter_map(|v| Some(v.to_string()))
+                            .collect();
 
-//     fn assert_is_valid<L: PlonkParameters<D>, const D: usize>(
-//         &self,
-//         builder: &mut CircuitBuilder<L, D>,
-//     ) {
-//         self.pubkey.assert_is_valid(builder);
-//         self.withdrawal_credentials.assert_is_valid(builder);
-//         self.effective_balance.assert_is_valid(builder);
-//         self.slashed.assert_is_valid(builder);
-//         self.activation_eligibility_epoch.assert_is_valid(builder);
-//         self.activation_epoch.assert_is_valid(builder);
-//         self.exit_epoch.assert_is_valid(builder);
-//         self.withdrawable_epoch.assert_is_valid(builder);
-//     }
-// }
+    AttestationInput {
+        data: attestation_data,
+        signature: signature,
+        fork: fork,
+        genesis_validators_root: genesis_validators_root,
+        state_root: state_root,
+        state_root_proof: state_root_proof,
+        validators_root: validators_root,
+        validators_root_proof: validators_root_proof
+    }
 
+}
 
-pub fn prove_verify_attestation_data(attestations: &Vec<Value>, mut builder: CircuitBuilder<DefaultParameters, 2>) {
+pub fn prove_verify_attestation_data<L: PlonkParameters<D>, const D: usize>(attestations: &Vec<Value>) 
+where
+    <<L as PlonkParameters<D>>::Config as plonky2::plonk::config::GenericConfig<D>>::Hasher:
+        plonky2::plonk::config::AlgebraicHasher<<L as PlonkParameters<D>>::Field>,
+{
+
     // For each attestation run VerifyAttestationData (TODO: Missing validator_list_proof from original object)
     for attestation in attestations {
         // Parse Data and register as inputs for circuit
-
-        //data
-        if let Some(data) = attestation.get("data") {
-            if let Some(slot) = data.get("slot") {
-                println!("AttestationData Slot: {}", slot);
-                builder.read::<U256Variable>();
-
-            }
-            if let Some(index) = data.get("index") {
-                println!("AttestationData Index: {}", index);
-            }
-            if let Some(beacon_block_root) = data.get("beacon_block_root") {
-                println!("AttestationData Beacon Block Root: {}", beacon_block_root);
-            }
-            if let Some(source) = data.get("source") {
-                if let Some(epoch) = source.get("epoch") {
-                    println!("==>Epoch: {}", epoch);
-                }
-                if let Some(root) = source.get("root") {
-                    println!("==>Root: {}", root);
-                }
-            }
-            if let Some(source) = data.get("target") {
-                if let Some(epoch) = source.get("epoch") {
-                    println!("==>Epoch: {}", epoch);
-                }
-                if let Some(root) = source.get("root") {
-                    println!("==>Root: {}", root);
-                }
-            }
-        }
-
-        //signature
-        if let Some(signature) = attestation.get("signature").and_then(Value::as_str) {
-            println!("Signature: {}", signature);
-        }
-        //fork
-        if let Some(fork) = attestation.get("fork") {
-            if let Some(previous_version) = fork.get("previous_version") {
-                println!("Fork Previous Version: {}", previous_version);
-            }
-            if let Some(current_version) = fork.get("current_version") {
-                println!("Fork Current Version: {}", current_version);
-            }
-            if let Some(epoch) = fork.get("epoch") {
-                println!("Fork Epoch: {}", epoch);
-            }
-        }
-
-        //genesis_validators_root
-        if let Some(state_root) = attestation.get("state_root").and_then(Value::as_str) {
-            println!("State Root: {}", state_root);
-        }
-
-        //state_root_proof
-        if let Some(state_root_proof) = attestation.get("state_root_proof")
-            .and_then(Value::as_array) {
-                println!("State_root_proof: ");
-                for branch in state_root_proof {
-                    println!("==> {}", branch);
-                }
-            }
-
-        //validators_root
-        if let Some(validators_root) = attestation.get("validators_root").and_then(Value::as_str) {
-            println!("Validators Root: {}", validators_root)
-        }
+        let attestation_input = parse_attestation(attestation);
         
-        //validators_root_proof
-        if let Some(validators_root_proof) = attestation.get("validators_root_proof")
-            .and_then(Value::as_array) {
-                println!("Validators_root_proof: ");
-                for branch in validators_root_proof {
-                    println!("==> {}", branch);
-                }
-            }
+        let mut builder = CircuitBuilder::<L, D>::new();
+        VerifyAttestationData::define(&mut builder);
+
+        let circuit = builder.build();
+        let mut input = circuit.input();
+        attestation_input.write(&mut input);
+
+        let (proof, mut output) = circuit.prove(&input);
+        println!("OUTPUT: {:?}", output);
+
         }
 }
 

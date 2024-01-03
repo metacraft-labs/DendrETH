@@ -42,45 +42,14 @@ impl Circuit for VerifyAttestationData {
         // Read ValidatorHashData
         let mut validator_hash_vec: Vec<ValidatorHashData> = Vec::new();
         for _ in 0..VALIDATORS_PER_COMMITTEE {
-            
-            let validator_hash_data = ValidatorHashData::new(
-                builder.read::<U64Variable>(), // PoseidonHashOutIndex
-                builder.read::<BoolVariable>(),
-                builder.read::<PoseidonHashOutVariable>(),
-                builder.read::<PoseidonHashOutVariable>(),
-                builder.read::<ArrayVariable<PoseidonHashOutVariable, VALIDATORS_HASH_TREE_DEPTH>>(),
-                builder.read::<U64Variable>(),
-            );
 
+            let validator_hash_data = ValidatorHashData::circuit_input(builder);
+            
             validator_hash_vec.push(validator_hash_data);
         }
 
         // Read Attestation
-        let attestation =  Attestation::new(
-            AttestationData::new(
-                builder.read::<U256Variable>(),
-                builder.read::<U256Variable>(), 
-                builder.read::<Bytes32Variable>(),
-                builder.read::<Bytes32Variable>(),
-                builder.read::<Bytes32Variable>(),
-            ),
-            builder.read::<BLSPubkeyVariable>(),
-
-            Fork::new(
-                builder.read::<Bytes32Variable>(),
-                builder.read::<Bytes32Variable>(),
-                builder.read::<Variable>()
-            ),
-            builder.read::<Bytes32Variable>(),
-
-            builder.read::<Bytes32Variable>(),
-            builder.read::<ArrayVariable<Bytes32Variable, STATE_ROOT_PROOF_LEN>>(),
-
-            builder.read::<Bytes32Variable>(),
-            builder.read::<ArrayVariable<Bytes32Variable, VALIDATORS_ROOT_PROOF_LEN>>(),
-
-            builder.read::<ArrayVariable<BeaconValidatorVariable,VALIDATORS_PER_COMMITTEE>>(),
-        );
+        let attestation = Attestation::circuit_input(builder);
 
         // 2. 3.
         block_merkle_branch_proof(

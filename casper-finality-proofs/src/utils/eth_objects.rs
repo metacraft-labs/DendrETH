@@ -9,7 +9,7 @@ use plonky2x::{
     prelude::{
         CircuitBuilder, Variable, BoolVariable, U256Variable, U64Variable, Bytes32Variable, ArrayVariable
     },
-    backend::circuit::DefaultParameters,
+    backend::circuit::{DefaultParameters, PlonkParameters},
 };
 
 use super::super::constants::{
@@ -51,9 +51,9 @@ impl ValidatorHashData {
         }
     }
 
-    pub fn circuit_input(builder: &mut CircuitBuilder<L,D>) -> Self{ 
+    pub fn circuit_input<L: PlonkParameters<D>, const D: usize>(builder: &mut CircuitBuilder<L,D>) -> Self{ 
         ValidatorHashData::new(
-            builder.read::<U64Variable>(), // PoseidonHashOutIndex
+            builder.read::<U64Variable>(), //TODO: PoseidonHashOutIndex
             builder.read::<BoolVariable>(),
             builder.read::<PoseidonHashOutVariable>(),
             builder.read::<PoseidonHashOutVariable>(),
@@ -61,6 +61,7 @@ impl ValidatorHashData {
             builder.read::<U64Variable>(),
         )
     }
+
 }
 
 #[derive(Debug, Clone)]
@@ -94,7 +95,7 @@ impl AttestationData {
         }
     }
 
-    pub fn circuit_input(builder: &mut CircuitBuilder<L,D>) -> Self {
+    pub fn circuit_input<L: PlonkParameters<D>, const D: usize>(builder: &mut CircuitBuilder<L,D>) -> Self {
         AttestationData::new(
             builder.read::<U256Variable>(),
             builder.read::<U256Variable>(), 
@@ -125,7 +126,7 @@ impl Fork {
         }
     }
 
-    pub fn circuit_input(builder: &mut CircuitBuilder<L,D>) -> Self {
+    pub fn circuit_input<L: PlonkParameters<D>, const D: usize>(builder: &mut CircuitBuilder<L,D>) -> Self {
         Fork::new(
             builder.read::<Bytes32Variable>(),
             builder.read::<Bytes32Variable>(),
@@ -133,7 +134,6 @@ impl Fork {
         )
     }
 }
-
 
 #[derive(Debug, Clone)]
 pub struct Attestation {
@@ -188,11 +188,11 @@ impl Attestation {
         }
     }
 
-    pub fn circuit_input(builder: &mut CircuitBuilder<L,D>) -> Self {
+    pub fn circuit_input<L: PlonkParameters<D>, const D: usize>(builder: &mut CircuitBuilder<L,D>) -> Self {
         Attestation::new(
-            AttestationData::circuit_input(&builder),
+            AttestationData::circuit_input(builder),
             builder.read::<BLSPubkeyVariable>(),
-            Fork::circuit_input(&builder),
+            Fork::circuit_input(builder),
             builder.read::<Bytes32Variable>(),
             builder.read::<Bytes32Variable>(),
             builder.read::<ArrayVariable<Bytes32Variable, STATE_ROOT_PROOF_LEN>>(),

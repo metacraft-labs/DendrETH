@@ -42,11 +42,7 @@ fn main() -> Result<(), IOError> {
     if let Some(attestations) = 
         json_value.get("attestations")
         .and_then(Value::as_array) {
-
-            let mut builder = CircuitBuilder::<L, D>::new();
-            VerifyAttestationData::define(&mut builder);
-
-            prove_verify_attestation_data(attestations, builder)
+            prove_verify_attestation_data::<L,D>(attestations)
         }
     else {
         panic!("No attestations found!");
