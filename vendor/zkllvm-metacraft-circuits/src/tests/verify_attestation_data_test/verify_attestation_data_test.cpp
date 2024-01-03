@@ -413,6 +413,8 @@ int main(int argc, char* argv[]) {
     // Yep, this was value was chosen randomly.
     base_field_type sigma = 0x69;
 
+    int i = 0;
+
     // Run the first circuit for each attestation.
     /*
     tokens: List[VoteToken] = []
@@ -428,78 +430,73 @@ int main(int argc, char* argv[]) {
     with open(BASE_DIR / 'tests/cache.json', 'wb') as f:
         f.write(TypeAdapter(List[VoteToken]).dump_json(tokens))
     */
-    int i = 1;
 
-    int attestation_signature_size = -1;
-    int max_validators_size = 0;
-
-    int validators_list_proof_size = -1;
-
-    bool b_checked = false;
+    static_vector<VoteToken, 8192> tokens;
+    const auto attestations_count = data["attestations"].size();
 
     for(const auto& json_attestation : data["attestations"]) {
-        // if(i++ == 5) {
-        //     std::cout << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n";
-        //     std::cout << json_attestation.dump(4) << "\n";
-        //     std::cout << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n";
-        // }
-
-        if(attestation_signature_size < 0) {
-            attestation_signature_size = strlen(std::string(json_attestation["signature"]).c_str());
-        }
-        // std::cout << "Processing attestation " << i++ << "/" << data["attestations"].size() << "...\n";
-
-        assert_true(attestation_signature_size == strlen(std::string(json_attestation["signature"]).c_str()));
-
-        // std::cout << json_attestation["signature"] << " " << strlen(std::string(json_attestation["signature"]).c_str()) << "\n";
-        
-        // std::cout << "json_attestation[\"validators\"].size() = " << json_attestation["validators"].size() << "\n";
-
-        if(json_attestation["validators"].size() > max_validators_size)
-        {
-            max_validators_size = json_attestation["validators"].size();
-        }
+        std::cout << "Processing attestation " << ++i << "/" << attestations_count << "\n";
 
         Attestation attestation = parse_attestation(json_attestation);
 
         verify_attestation(attestation, json_attestation);
 
-        // if(!b_checked) {
+        auto vote = verify_attestation_data(
+            hexToBytes<32>("d5c0418465ffab221522a6991c2d4c0041f1b8e91d01b1ea3f6b882369f689b7"),
+            attestation,
+            sigma
+        );
 
-        //     // return 0;
-
-        //     b_checked = true;
-        //     std::cout << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n";
-        //     print_attestation(attestation);
-        //     std::cout << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n";
-        //     std::cout << json_attestation.dump(4) << "\n";
-        // }
-
-        for(size_t i = 0; i < json_attestation["validators"].size(); i++) {
-            // size_t new_size = json_attestation["validators"][i]["validator_list_proof"].size();
-            // if(validators_list_proof_size < 0) {
-            //     validators_list_proof_size = new_size;
-            // }
-            // assert_true(validators_list_proof_size == new_size);
-            const auto& validator = json_attestation["validators"][i];
-            if(validator.contains("validator_list_proof")) {
-                size_t new_size = validator["validator_list_proof"].size();
-                if(validators_list_proof_size < 0) {
-                    validators_list_proof_size = new_size;
-                }
-                assert_true(validators_list_proof_size == new_size);
-            }
-        }
-
-        // auto vote = verify_attestation_data(
-        //     hexToBytes<32>("d5c0418465ffab221522a6991c2d4c0041f1b8e91d01b1ea3f6b882369f689b7"),
-        //     attestation,
-        //     sigma
-        // );
-
+        tokens.push_back(std::move(vote));
     }
 
-    std::cout << "max_validators_size = " << max_validators_size << "\n";
-    std::cout << "validators_list_proof_size = " << validators_list_proof_size << "\n";
+    auto combined_token = combine_finality_votes(tokens);
+
+    {
+        static_vector<PubKey, 8192> trusted_pubkeys;
+        static_vector<CombinePubkeysResult, 8192> partial_conbined_pubkeys;
+        size_t i = 0;
+        for(auto& keys_set : data["trusted_pubkeys"]) {
+            for(auto& keys : keys_set) {
+                for(auto& key : keys) {
+                    if(i >= 2) {
+                        std::string prev = "";
+                        if(prev != std::string(key)) {
+                            trusted_pubkeys.push_back(byte_utils::hexToBytes<48>(key));
+                        }
+                        prev = key;
+                        if(trusted_pubkeys.full()) {
+                            partial_conbined_pubkeys.push_back(
+                                combine_pubkeys(
+                                    combined_token,
+                                    trusted_pubkeys,
+                                    combined_token.transition,
+                                    sigma));
+                            trusted_pubkeys.clear();
+                        }
+                    }
+                    ++i;
+                }
+            }
+        }
+        if(trusted_pubkeys.size() > 0) {
+            partial_conbined_pubkeys.push_back(
+                combine_pubkeys(
+                    combined_token,
+                    trusted_pubkeys,
+                    combined_token.transition,
+                    sigma));
+        }
+        std::cout << "all_keys = " << i << "\n";
+        std::cout << "unique_keys = " << partial_conbined_pubkeys.size() << "\n";
+
+        prove_finality(
+            combined_token,
+            partial_conbined_pubkeys,
+            combined_token.transition,
+            100
+        );
+    }
+
     return 0;
 }

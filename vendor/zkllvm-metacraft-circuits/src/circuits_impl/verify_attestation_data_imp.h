@@ -89,11 +89,18 @@ struct Merged {
     static_vector<TransitionKeys> trusted_pubkeys;
 };
 
-using base_field_type = typename pallas::base_field_type::value_type;
+// using base_field_type = typename pallas::base_field_type::value_type;
+using base_field_type = uint64_t;
+
 
 struct VoteToken {
     Transition transition;
     base_field_type token;
+};
+
+struct CombinePubkeysResult {
+    base_field_type partial_token;
+    int64_t votes_count;
 };
 
 using TransitionKey = Bytes32;
@@ -162,7 +169,7 @@ Bytes32 hash_validator(
     return retval;
 }
 
-VoteToken verify_attestation_data(Bytes32 block_root, Attestation attestation, base_field_type sigma) {
+VoteToken verify_attestation_data(const Bytes32& block_root, const Attestation& attestation, base_field_type sigma) {
     assert_true(sigma != 0);
 
     ssz_verify_proof(
@@ -227,7 +234,7 @@ VoteToken verify_attestation_data(Bytes32 block_root, Attestation attestation, b
             // Include this validator's pubkey in the result.
             base_field_type element; 
             memcpy(&element, &(v->pubkey), sizeof(element));
-            token = (token + (element * sigma) );
+            token = (token + (element * sigma));
         }
     }
     // Verify the aggregated signature.
@@ -276,9 +283,8 @@ VoteToken combine_finality_votes(const static_vector<VoteToken, 8192>& tokens)
 
 void prove_finality(
         const VoteToken& token,
-        const static_vector<PubKey>& trustedKeys,
+        const static_vector<CombinePubkeysResult, 8192>& trustedKeys,
         const Transition& votedTransition,
-        const int sigma,
         const int64_t active_validators_count
 )
 {
@@ -287,15 +293,30 @@ void prove_finality(
     const PubKey* prev = nullptr;
     base_field_type reconstructed_token = 0;
     for(auto it = trustedKeys.begin(); it != trustedKeys.end(); ++it) {
+        reconstructed_token += it->partial_token;
+        votes_count += it->votes_count;
+    }
+    assert_true(reconstructed_token == token.token);
+}
+
+CombinePubkeysResult combine_pubkeys(
+        const VoteToken& token,
+        const static_vector<PubKey, 8192>& trustedKeys,
+        const Transition& votedTransition,
+        const int sigma
+)
+{
+    assert_true(votedTransition == token.transition);
+    CombinePubkeysResult result;
+    result.partial_token = 0;
+    result.votes_count = 0;
+    for(auto it = trustedKeys.begin(); it != trustedKeys.end(); ++it) {
         const auto& pubkey = *it;
         base_field_type element;
         memcpy(&element, &pubkey, sizeof(element));
-        reconstructed_token = (reconstructed_token + element*sigma);
-        if(prev && pubkey != *prev) {
-            ++votes_count;
-        }
-        prev = &pubkey;
+        result.partial_token = (result.partial_token + (element * sigma));
+        ++result.votes_count;
     }
-    assert_true(reconstructed_token == token.token);
+    return result;
 }
 
