@@ -3,24 +3,22 @@ use plonky2x::backend::circuit::{GateRegistry, HintRegistry};
 use plonky2x::prelude::{
     bytes, ArrayVariable, ByteVariable, CircuitBuilder, DefaultParameters, U64Variable,
 };
-use plonky2x::utils;
 
 fn main() {
-    utils::setup_logger();
+    type L = DefaultParameters;
+    const D: usize = 2;
+    let mut builder = CircuitBuilder::<DefaultParameters, D>::new();
+    define(&mut builder, SHUFFLE_ROUND_COUNT);
 
     let seed_bytes: Vec<u8> =
         bytes!("0x4ac96f664a6cafd300b161720809b9e17905d4d8fed7a97ff89cf0080a953fe7");
-
     let seed_bytes_fixed_size: [u8; 32] = seed_bytes.try_into().unwrap();
-
     const SHUFFLE_ROUND_COUNT: u8 = 90;
-    let mut builder = CircuitBuilder::<DefaultParameters, 2>::new();
-    define(&mut builder, SHUFFLE_ROUND_COUNT);
 
     let circuit = builder.build();
 
-    let hint_serializer = HintRegistry::<DefaultParameters, 2>::new();
-    let gate_serializer = GateRegistry::<DefaultParameters, 2>::new();
+    let hint_serializer = HintRegistry::<L, D>::new();
+    let gate_serializer = GateRegistry::<L, D>::new();
 
     circuit.save(
         &"build/compute_shuffled_index".to_string(),

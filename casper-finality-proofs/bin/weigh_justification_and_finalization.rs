@@ -20,8 +20,8 @@ fn main() {
     WeighJustificationAndFinalization::define(&mut builder);
     let circuit = builder.build();
 
-    let hint_serializer = HintRegistry::<DefaultParameters, 2>::new();
-    let gate_serializer = GateRegistry::<DefaultParameters, 2>::new();
+    let hint_serializer = HintRegistry::<L, D>::new();
+    let gate_serializer = GateRegistry::<L, D>::new();
 
     circuit.save(
         &"build/weigh_justification_and_finalization".to_string(),
