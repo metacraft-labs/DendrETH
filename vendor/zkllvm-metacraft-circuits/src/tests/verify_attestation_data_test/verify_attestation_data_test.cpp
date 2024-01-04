@@ -35,7 +35,6 @@ using namespace file_utils;
 
 using std::cout;
 
-
 void basic_tests() {
     Proof hashes;
 
@@ -49,53 +48,47 @@ void basic_tests() {
 
     auto modified = fill_zero_hashes(hashes, 2);
 
-    for(auto it = modified.begin(); it != modified.end(); it++) {
+    for (auto it = modified.begin(); it != modified.end(); it++) {
         std::cout << byte_utils::bytesToHex(*it) << "\n";
     }
     {
         auto hashed_validator = hash_validator(
-            circuit_byte_utils::expand<64>(
-                byte_utils::hexToBytes<48>(
-                    "8dac0b1f39066e1c902dfe24f45bc473e8894959ad8da765a447c108fe754ab07a4eeec1e59dea3ef961bf190c22ad82")),
+            circuit_byte_utils::expand<64>(byte_utils::hexToBytes<48>(
+                "8dac0b1f39066e1c902dfe24f45bc473e8894959ad8da765a447c108fe754ab07a4eeec1e59dea3ef961bf190c22ad82")),
             byte_utils::hexToBytes<32>("01000000000000000000000061fa6204b232b3e8f3eb388b50a2f2574c9052a6"),
             32000000000ul,
             226977ul,
             230998ul,
             18446744073709551615ul,
-            18446744073709551615ul
-        );
+            18446744073709551615ul);
 
         printf("Expected:   40f8fcd65d42c86a6ad0ac9dea4ca6fa83364f500f11a748d18b158e2e3e6594\n");
         printf("Calculated: %s\n", byte_utils::bytesToHex(hashed_validator).c_str());
     }
     {
         auto hashed_validator = hash_validator(
-            circuit_byte_utils::expand<64>(
-                byte_utils::hexToBytes<48>(
-                    "a601a72aeb69888c426dae588ee0ef79cb7d3a1389d6955a4b979cea48a069068b230d733cb0a47db2b1db2cd517ca28")),
+            circuit_byte_utils::expand<64>(byte_utils::hexToBytes<48>(
+                "a601a72aeb69888c426dae588ee0ef79cb7d3a1389d6955a4b979cea48a069068b230d733cb0a47db2b1db2cd517ca28")),
             byte_utils::hexToBytes<32>("005235facd5c0beff85310b0aadf7306c9f11c0d92af36530f1c51e84ee0526b"),
             32000000000ul,
             148259ul,
             148274ul,
             18446744073709551615ul,
-            18446744073709551615ul
-        );
+            18446744073709551615ul);
 
         printf("Expected:   496b1e4562f133ebad777d05695cab85835052243a931d91e6d59d69241d309e\n");
         printf("Calculated: %s\n", byte_utils::bytesToHex(hashed_validator).c_str());
     }
     {
         auto hashed_validator = hash_validator(
-            circuit_byte_utils::expand<64>(
-                byte_utils::hexToBytes<48>(
-                    "87cbc98ab8a333c199fbf5ba562083e823b48a0e411dfc7492f039e863b6d68764fed36ca1efa1a46b5a779055b46468")),
+            circuit_byte_utils::expand<64>(byte_utils::hexToBytes<48>(
+                "87cbc98ab8a333c199fbf5ba562083e823b48a0e411dfc7492f039e863b6d68764fed36ca1efa1a46b5a779055b46468")),
             byte_utils::hexToBytes<32>("010000000000000000000000e839a3e9efb32c6a56ab7128e51056585275506c"),
             32000000000ul,
             200484ul,
             204972ul,
             18446744073709551615ul,
-            18446744073709551615ul
-        );
+            18446744073709551615ul);
 
         printf("Expected:   c5f5ad3d3adb399b15b1d1513207e9c5d4cdb7234019a62fa0774ef3f67772e3\n");
         printf("Calculated: %s\n", byte_utils::bytesToHex(hashed_validator).c_str());
@@ -121,44 +114,41 @@ void basic_tests() {
         proof.push_back(byte_utils::hexToBytes<32>("e8a2578efdd81b84840886cf1ed6eca7837843404236d55271deca7fac9fab79"));
         proof.push_back(byte_utils::hexToBytes<32>("4f836bbdb1d3bea778141dcfb130425f538a4f2b5d2b4b3e243c0fcab0afba4a"));
         proof.push_back(byte_utils::hexToBytes<32>("e0047ed3ca8e8420ba23bed3c866b72e6404c7661d73d5ddc65e401a8344dee8"));
-		proof.push_back(byte_utils::hexToBytes<32>("9e83394871b3b699f1bc6bbf83bc657fb2dfbeca2db7758812a9261189e0ba23"));
-        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000")); 
-        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000")); 
-        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000")); 
-        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000")); 
-        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000")); 
-        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000")); 
-        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000")); 
-        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000")); 
-        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000")); 
-        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000")); 
-        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000")); 
-        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000")); 
-        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000")); 
-        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000")); 
-        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000")); 
-        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000")); 
-        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000")); 
-        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000")); 
-        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000")); 
+        proof.push_back(byte_utils::hexToBytes<32>("9e83394871b3b699f1bc6bbf83bc657fb2dfbeca2db7758812a9261189e0ba23"));
         proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000"));
-		proof.push_back(byte_utils::hexToBytes<32>("6bab0e0000000000000000000000000000000000000000000000000000000000"));
+        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000"));
+        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000"));
+        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000"));
+        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000"));
+        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000"));
+        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000"));
+        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000"));
+        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000"));
+        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000"));
+        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000"));
+        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000"));
+        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000"));
+        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000"));
+        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000"));
+        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000"));
+        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000"));
+        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000"));
+        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000"));
+        proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000"));
+        proof.push_back(byte_utils::hexToBytes<32>("6bab0e0000000000000000000000000000000000000000000000000000000000"));
 
         auto res123 = fill_zero_hashes(proof);
-        for(auto it = res123.begin(); it != res123.end(); it++) {
+        for (auto it = res123.begin(); it != res123.end(); it++) {
             std::cout << byte_utils::bytesToHex(*it) << "\n";
         }
 
         printf("ssz_verify_proof ... ");
-        ssz_verify_proof(
-            byte_utils::hexToBytes<32>("b45a79b3d4ed0bce770893498237fafc26885ca1a23a1e77933de33c02802db5"),
-            byte_utils::hexToBytes<32>("64df3a60d06291506b1e0de11ce4bac1e1cd0e2e3f639d786128c9b79475a78c"),
-            fill_zero_hashes(proof).content(),
-            0x020000000000ul + 818904,
-            41
-        );
+        ssz_verify_proof(byte_utils::hexToBytes<32>("b45a79b3d4ed0bce770893498237fafc26885ca1a23a1e77933de33c02802db5"),
+                         byte_utils::hexToBytes<32>("64df3a60d06291506b1e0de11ce4bac1e1cd0e2e3f639d786128c9b79475a78c"),
+                         fill_zero_hashes(proof).content(),
+                         0x020000000000ul + 818904,
+                         41);
         printf("Done\n");
-
 
         std::array<unsigned char, 32> key;
         typename pallas::base_field_type::value_type pkey;
@@ -168,7 +158,6 @@ void basic_tests() {
         memcpy(&pkey, &key, sizeof(key));
 
         std::cout << "sizeof(pkey) = " << sizeof(pkey) << "\n";
-
     }
 
     // print(f"uint_to_b32(1234512345) = {uint_to_b32(1234512345)}")
@@ -194,7 +183,7 @@ AttestationData parse_attestation_data(const json& json_attestation_data) {
 Fork parse_fork(const json& json_fork) {
     Fork fork;
     fork.current_version = circuit_byte_utils::expand<32>(hexToBytes<4>(json_fork["current_version"]));
-    fork.previous_version =  circuit_byte_utils::expand<32>(hexToBytes<4>(json_fork["previous_version"]));
+    fork.previous_version = circuit_byte_utils::expand<32>(hexToBytes<4>(json_fork["previous_version"]));
     fork.epoch = json_fork["epoch"];
     return fork;
 }
@@ -205,46 +194,46 @@ Validator parse_validator(const json& json_validator) {
     validator.validator_index = json_validator["validator_index"];
     validator.pubkey = hexToBytes<48>(json_validator["pubkey"]);
     std::string withdrawal_credentials;
-    if(json_validator.contains("withdrawal_credentials")) { 
+    if (json_validator.contains("withdrawal_credentials")) {
         withdrawal_credentials = json_validator["withdrawal_credentials"];
     } else {
         withdrawal_credentials.assign(64, '0');
     }
     validator.withdrawal_credentials = hexToBytes<32>(withdrawal_credentials);
-    if(json_validator.contains("effective_balance")) {
+    if (json_validator.contains("effective_balance")) {
         validator.effective_balance = json_validator["effective_balance"];
     } else {
         validator.effective_balance = 0;
     }
-    if(json_validator.contains("slashed")) {
+    if (json_validator.contains("slashed")) {
         validator.slashed = json_validator["slashed"];
     } else {
         validator.slashed = false;
     }
-    if(json_validator.contains("activation_eligibility_epoch")) {
+    if (json_validator.contains("activation_eligibility_epoch")) {
         validator.activation_eligibility_epoch = json_validator["activation_eligibility_epoch"];
     } else {
         validator.activation_eligibility_epoch = 0;
     }
-    if(json_validator.contains("activation_epoch")) {
+    if (json_validator.contains("activation_epoch")) {
         validator.activation_epoch = json_validator["activation_epoch"];
     } else {
         validator.activation_epoch = 0;
     }
-    if(json_validator.contains("exit_epoch")) {
+    if (json_validator.contains("exit_epoch")) {
         validator.exit_epoch = json_validator["exit_epoch"];
     } else {
         validator.exit_epoch = 0;
     }
-    if(json_validator.contains("withdrawable_epoch")) {
+    if (json_validator.contains("withdrawable_epoch")) {
         validator.withdrawable_epoch = json_validator["withdrawable_epoch"];
     } else {
         validator.withdrawable_epoch = 0;
     }
-    if(json_validator.contains("validator_list_proof")) {
-        for(size_t i = 0; i < json_validator["validator_list_proof"].size(); i++) {
+    if (json_validator.contains("validator_list_proof")) {
+        for (size_t i = 0; i < json_validator["validator_list_proof"].size(); i++) {
             std::string element = json_validator["validator_list_proof"][i];
-            if(element.size() == 0) {
+            if (element.size() == 0) {
                 element.assign(64, '0');
             }
             validator.validator_list_proof.push_back(hexToBytes<32>(element));
@@ -260,14 +249,14 @@ Attestation parse_attestation(const json& json_attestation) {
     attestation.fork = parse_fork(json_attestation["fork"]);
     attestation.genesis_validators_root = hexToBytes<32>(json_attestation["genesis_validators_root"]);
     attestation.state_root = hexToBytes<32>(json_attestation["state_root"]);
-    for(size_t i = 0; i < json_attestation["state_root_proof"].size(); i++) {
+    for (size_t i = 0; i < json_attestation["state_root_proof"].size(); i++) {
         attestation.state_root_proof.at(i) = hexToBytes<32>(json_attestation["state_root_proof"][i]);
     }
     attestation.validators_root = hexToBytes<32>(json_attestation["validators_root"]);
-    for(size_t i = 0; i < json_attestation["validators_root_proof"].size(); i++) {
+    for (size_t i = 0; i < json_attestation["validators_root_proof"].size(); i++) {
         attestation.validators_root_proof.at(i) = hexToBytes<32>(json_attestation["validators_root_proof"][i]);
     }
-    for(size_t i = 0; i < json_attestation["validators"].size(); i++) {
+    for (size_t i = 0; i < json_attestation["validators"].size(); i++) {
         attestation.validators.push_back(parse_validator(json_attestation["validators"][i]));
     }
     return attestation;
@@ -297,30 +286,36 @@ void print_attestation(const Attestation& a) {
     std::cout << "a.validators_root_proof[3] =   " << byte_utils::bytesToHex(a.validators_root_proof[3]) << "\n";
     std::cout << "a.validators_root_proof[4] =   " << byte_utils::bytesToHex(a.validators_root_proof[4]) << "\n";
     std::cout << "a.validators.size() =          " << a.validators.size() << "\n";
-    for(size_t i = 0; i < a.validators.size(); ++i) {
+    for (size_t i = 0; i < a.validators.size(); ++i) {
         std::cout << "a.validators[" << i << "].trusted =                      " << a.validators[i].trusted << "\n";
-        std::cout << "a.validators[" << i << "].validator_index =              " << a.validators[i].validator_index << "\n";
-        std::cout << "a.validators[" << i << "].pubkey =                       " << byte_utils::bytesToHex(a.validators[i].pubkey) << "\n";
-        std::cout << "a.validators[" << i << "].withdrawal_credentials =       " << byte_utils::bytesToHex(a.validators[i].withdrawal_credentials) << "\n";
-        std::cout << "a.validators[" << i << "].effective_balance =            " << a.validators[i].effective_balance << "\n";
+        std::cout << "a.validators[" << i << "].validator_index =              " << a.validators[i].validator_index
+                  << "\n";
+        std::cout << "a.validators[" << i
+                  << "].pubkey =                       " << byte_utils::bytesToHex(a.validators[i].pubkey) << "\n";
+        std::cout << "a.validators[" << i << "].withdrawal_credentials =       "
+                  << byte_utils::bytesToHex(a.validators[i].withdrawal_credentials) << "\n";
+        std::cout << "a.validators[" << i << "].effective_balance =            " << a.validators[i].effective_balance
+                  << "\n";
         std::cout << "a.validators[" << i << "].slashed =                      " << a.validators[i].slashed << "\n";
-        std::cout << "a.validators[" << i << "].activation_eligibility_epoch = " << a.validators[i].activation_eligibility_epoch << "\n";
-        std::cout << "a.validators[" << i << "].activation_epoch =             " << a.validators[i].activation_epoch << "\n";
+        std::cout << "a.validators[" << i
+                  << "].activation_eligibility_epoch = " << a.validators[i].activation_eligibility_epoch << "\n";
+        std::cout << "a.validators[" << i << "].activation_epoch =             " << a.validators[i].activation_epoch
+                  << "\n";
         std::cout << "a.validators[" << i << "].exit_epoch =                   " << a.validators[i].exit_epoch << "\n";
-        std::cout << "a.validators[" << i << "].withdrawable_epoch =           " << a.validators[i].withdrawable_epoch << "\n";
-        std::cout << "a.validators[" << i << "].validator_list_proof(" << a.validators[i].validator_list_proof.size() << ") = {\n";
-        for(size_t j = 0; j < a.validators[i].validator_list_proof.size(); ++j) {
+        std::cout << "a.validators[" << i << "].withdrawable_epoch =           " << a.validators[i].withdrawable_epoch
+                  << "\n";
+        std::cout << "a.validators[" << i << "].validator_list_proof(" << a.validators[i].validator_list_proof.size()
+                  << ") = {\n";
+        for (size_t j = 0; j < a.validators[i].validator_list_proof.size(); ++j) {
             std::cout << byte_utils::bytesToHex(a.validators[i].validator_list_proof[j]) << "\n";
         }
         std::cout << "}\n";
     }
 }
 
-std::string str_tolower(std::string s)
-{
-    std::transform(s.begin(), s.end(), s.begin(), 
-                   [](unsigned char c){ return std::tolower(c); } // correct
-                  );
+std::string str_tolower(std::string s) {
+    std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return std::tolower(c); }    // correct
+    );
     return s;
 }
 
@@ -337,7 +332,7 @@ void verify_attestation(const Attestation& a, const json& j_a) {
     assert_true(expand<32>(byte_utils::hexToBytes<4>(j_a["fork"]["current_version"])) == a.fork.current_version);
     assert_true(j_a["fork"]["epoch"] == a.fork.epoch);
     assert_true(std::string(j_a["genesis_validators_root"]) == byte_utils::bytesToHex(a.genesis_validators_root))
-    assert_true(std::string(j_a["state_root"]) == byte_utils::bytesToHex(a.state_root));
+        assert_true(std::string(j_a["state_root"]) == byte_utils::bytesToHex(a.state_root));
     assert_true(std::string(j_a["state_root_proof"][0]) == byte_utils::bytesToHex(a.state_root_proof[0]));
     assert_true(std::string(j_a["state_root_proof"][1]) == byte_utils::bytesToHex(a.state_root_proof[1]));
     assert_true(std::string(j_a["state_root_proof"][2]) == byte_utils::bytesToHex(a.state_root_proof[2]));
@@ -349,50 +344,54 @@ void verify_attestation(const Attestation& a, const json& j_a) {
     assert_true(std::string(j_a["validators_root_proof"][4]) == byte_utils::bytesToHex(a.validators_root_proof[4]));
     assert_true(j_a["validators"].size() == a.validators.size());
     auto the_size = a.validators.size();
-    for(size_t i = 0; i < a.validators.size(); ++i) {
+    for (size_t i = 0; i < a.validators.size(); ++i) {
         assert_true(j_a["validators"][i]["trusted"] == a.validators[i].trusted);
         assert_true(j_a["validators"][i]["validator_index"] == a.validators[i].validator_index);
         assert_true(std::string(j_a["validators"][i]["pubkey"]) == byte_utils::bytesToHex(a.validators[i].pubkey));
-        if(j_a["validators"][i].contains("withdrawal_credentials")) {
-            assert_true(std::string(j_a["validators"][i]["withdrawal_credentials"]) == byte_utils::bytesToHex(a.validators[i].withdrawal_credentials));
+        if (j_a["validators"][i].contains("withdrawal_credentials")) {
+            assert_true(std::string(j_a["validators"][i]["withdrawal_credentials"]) ==
+                        byte_utils::bytesToHex(a.validators[i].withdrawal_credentials));
         } else {
-            assert_true(byte_utils::bytesToHex(a.validators[i].withdrawal_credentials) == "0000000000000000000000000000000000000000000000000000000000000000");
+            assert_true(byte_utils::bytesToHex(a.validators[i].withdrawal_credentials) ==
+                        "0000000000000000000000000000000000000000000000000000000000000000");
         }
-        if(j_a["validators"][i].contains("effective_balance")) {
+        if (j_a["validators"][i].contains("effective_balance")) {
             assert_true(j_a["validators"][i]["effective_balance"] == a.validators[i].effective_balance);
         } else {
             assert_true(a.validators[i].effective_balance == 0);
         }
-        if(j_a["validators"][i].contains("slashed")) {
+        if (j_a["validators"][i].contains("slashed")) {
             assert_true(j_a["validators"][i]["slashed"] == a.validators[i].slashed);
         } else {
             assert_true(a.validators[i].slashed == false);
         }
-        if(j_a["validators"][i].contains("activation_eligibility_epoch")) {
-            assert_true(j_a["validators"][i]["activation_eligibility_epoch"] == a.validators[i].activation_eligibility_epoch);
+        if (j_a["validators"][i].contains("activation_eligibility_epoch")) {
+            assert_true(j_a["validators"][i]["activation_eligibility_epoch"] ==
+                        a.validators[i].activation_eligibility_epoch);
         } else {
             assert_true(a.validators[i].activation_eligibility_epoch == 0);
         }
-        if(j_a["validators"][i].contains("activation_epoch")) {
+        if (j_a["validators"][i].contains("activation_epoch")) {
             assert_true(j_a["validators"][i]["activation_epoch"] == a.validators[i].activation_epoch);
         } else {
             assert_true(a.validators[i].activation_epoch == 0);
         }
-        if(j_a["validators"][i].contains("exit_epoch")) {
+        if (j_a["validators"][i].contains("exit_epoch")) {
             assert_true(j_a["validators"][i]["exit_epoch"] == a.validators[i].exit_epoch);
         } else {
             assert_true(a.validators[i].exit_epoch == 0);
         }
-        if(j_a["validators"][i].contains("withdrawable_epoch")) {
+        if (j_a["validators"][i].contains("withdrawable_epoch")) {
             assert_true(j_a["validators"][i]["withdrawable_epoch"] == a.validators[i].withdrawable_epoch);
         } else {
             assert_true(a.validators[i].withdrawable_epoch == 0)
         }
-        if(j_a["validators"][i].contains("validator_list_proof")) {
-            assert_true(j_a["validators"][i]["validator_list_proof"].size() == a.validators[i].validator_list_proof.size());
-            for(size_t j = 0; j < a.validators[i].validator_list_proof.size(); ++j) {
+        if (j_a["validators"][i].contains("validator_list_proof")) {
+            assert_true(j_a["validators"][i]["validator_list_proof"].size() ==
+                        a.validators[i].validator_list_proof.size());
+            for (size_t j = 0; j < a.validators[i].validator_list_proof.size(); ++j) {
                 std::string hash = "0000000000000000000000000000000000000000000000000000000000000000";
-                if(j_a["validators"][i]["validator_list_proof"][j] != "") {
+                if (j_a["validators"][i]["validator_list_proof"][j] != "") {
                     hash = j_a["validators"][i]["validator_list_proof"][j];
                 }
                 assert_true(hash == byte_utils::bytesToHex(a.validators[i].validator_list_proof[j]));
@@ -435,7 +434,7 @@ int main(int argc, char* argv[]) {
     static_vector<VoteToken, 8192> tokens;
     const auto attestations_count = data["attestations"].size();
 
-    for(const auto& json_attestation : data["attestations"]) {
+    for (const auto& json_attestation : data["attestations"]) {
         std::cout << "Processing attestation " << ++i << "/" << attestations_count << "\n";
 
         Attestation attestation = parse_attestation(json_attestation);
@@ -443,75 +442,73 @@ int main(int argc, char* argv[]) {
         verify_attestation(attestation, json_attestation);
 
         auto vote = verify_attestation_data(
-            hexToBytes<32>("d5c0418465ffab221522a6991c2d4c0041f1b8e91d01b1ea3f6b882369f689b7"),
-            attestation,
-            sigma
-        );
+            hexToBytes<32>("d5c0418465ffab221522a6991c2d4c0041f1b8e91d01b1ea3f6b882369f689b7"), attestation, sigma);
 
         tokens.push_back(std::move(vote));
     }
 
     auto combined_token = combine_finality_votes(tokens);
 
-    if(0) { // split combination of pubkeys into separate steps.
+    if (0) {    // split combination of pubkeys into separate steps.
+        Transition voted_transition;
         static_vector<PubKey, 8192> trusted_pubkeys;
         static_vector<CombinePubkeysResult, 8192> partial_conbined_pubkeys;
         size_t i = 0;
-        for(auto& keys_set : data["trusted_pubkeys"]) {
-            for(auto& keys : keys_set) {
-                for(auto& key : keys) {
-                    if(i >= 2) {
+        for (auto& keys_set : data["trusted_pubkeys"]) {
+            for (auto& keys : keys_set) {
+                for (auto& key : keys) {
+                    if (i >= 2) {
                         std::string prev = "";
-                        if(prev != std::string(key)) {
+                        if (prev != std::string(key)) {
                             trusted_pubkeys.push_back(byte_utils::hexToBytes<48>(key));
                         }
                         prev = key;
-                        if(trusted_pubkeys.full()) {
+                        if (trusted_pubkeys.full()) {
                             partial_conbined_pubkeys.push_back(
-                                combine_pubkeys(
-                                    combined_token,
-                                    trusted_pubkeys,
-                                    combined_token.transition,
-                                    sigma));
+                                combine_pubkeys(combined_token, trusted_pubkeys, combined_token.transition, sigma));
                             trusted_pubkeys.clear();
                         }
+                    } else if (i == 0) {
+                        voted_transition.source.epoch = key["epoch"];
+                        voted_transition.source.root = byte_utils::hexToBytes<32>(key["root"]);
+                    } else if (i == 1) {
+                        voted_transition.target.epoch = key["epoch"];
+                        voted_transition.target.root = byte_utils::hexToBytes<32>(key["root"]);
                     }
                     ++i;
                 }
             }
         }
-        if(trusted_pubkeys.size() > 0) {
+        if (trusted_pubkeys.size() > 0) {
             partial_conbined_pubkeys.push_back(
-                combine_pubkeys(
-                    combined_token,
-                    trusted_pubkeys,
-                    combined_token.transition,
-                    sigma));
+                combine_pubkeys(combined_token, trusted_pubkeys, voted_transition, sigma));
         }
         std::cout << "all_keys = " << i << "\n";
         std::cout << "unique_keys = " << partial_conbined_pubkeys.size() << "\n";
 
-        prove_finality(
-            combined_token,
-            partial_conbined_pubkeys,
-            combined_token.transition,
-            100
-        );
+        prove_finality(combined_token, partial_conbined_pubkeys, voted_transition, 100);
     }
 
-    { // process all pubkeys at once
-        PubKey *trusted_pubkeys = (PubKey *)malloc(sizeof(PubKey) * 1'000'000);
+    {    // process all pubkeys at once
+        Transition voted_transition;
+        PubKey* trusted_pubkeys = (PubKey*)malloc(sizeof(PubKey) * 1'000'000);
         size_t i = 0;
         size_t unique_keys_count = 0;
-        for(auto& keys_set : data["trusted_pubkeys"]) {
-            for(auto& keys : keys_set) {
-                for(auto& key : keys) {
-                    if(i >= 2) {
+        for (auto& keys_set : data["trusted_pubkeys"]) {
+            for (auto& keys : keys_set) {
+                for (auto& key : keys) {
+                    if (i >= 2) {
                         std::string prev = "";
-                        if(prev != std::string(key)) {
+                        if (prev != std::string(key)) {
                             trusted_pubkeys[unique_keys_count++] = byte_utils::hexToBytes<48>(key);
                         }
                         prev = key;
+                    } else if (i == 0) {
+                        voted_transition.source.epoch = key["epoch"];
+                        voted_transition.source.root = byte_utils::hexToBytes<32>(key["root"]);
+                    } else if (i == 1) {
+                        voted_transition.target.epoch = key["epoch"];
+                        voted_transition.target.root = byte_utils::hexToBytes<32>(key["root"]);
                     }
                     ++i;
                 }
@@ -520,14 +517,7 @@ int main(int argc, char* argv[]) {
         std::cout << "all_keys = " << i << "\n";
         std::cout << "unique_keys_count = " << unique_keys_count << "\n";
 
-        prove_finality(
-            combined_token,
-            trusted_pubkeys,
-            unique_keys_count,
-            combined_token.transition,
-            sigma,
-            100
-        );
+        prove_finality(combined_token, trusted_pubkeys, unique_keys_count, voted_transition, sigma, 100);
         free(trusted_pubkeys);
     }
 
