@@ -5,7 +5,7 @@ use casper_finality_proofs::weigh_justification_and_finalization::{
 };
 use ethers::types::H256;
 use plonky2x::{
-    backend::circuit::{Circuit, GateRegistry, HintRegistry},
+    backend::circuit::Circuit,
     prelude::{
         ArrayVariable, Bytes32Variable, CircuitBuilder, DefaultParameters, PlonkParameters,
         U64Variable,
@@ -19,15 +19,6 @@ fn main() {
     let mut builder = CircuitBuilder::<L, D>::new();
     WeighJustificationAndFinalization::define(&mut builder);
     let circuit = builder.build();
-
-    let hint_serializer = HintRegistry::<L, D>::new();
-    let gate_serializer = GateRegistry::<L, D>::new();
-
-    circuit.save(
-        &"build/weigh_justification_and_finalization".to_string(),
-        &gate_serializer,
-        &hint_serializer,
-    );
 
     let mut input = circuit.input();
 
