@@ -12,6 +12,7 @@
 #include <iostream>
 #include <fstream>
 #include <streambuf>
+#include <memory>
 
 #include "utils/picosha2.h"
 #include "utils/byte_utils.h"
@@ -452,7 +453,7 @@ int main(int argc, char* argv[]) {
 
     auto combined_token = combine_finality_votes(tokens);
 
-    {
+    if(0) { // split combination of pubkeys into separate steps.
         static_vector<PubKey, 8192> trusted_pubkeys;
         static_vector<CombinePubkeysResult, 8192> partial_conbined_pubkeys;
         size_t i = 0;
@@ -496,6 +497,38 @@ int main(int argc, char* argv[]) {
             combined_token.transition,
             100
         );
+    }
+
+    { // process all pubkeys at once
+        PubKey *trusted_pubkeys = (PubKey *)malloc(sizeof(PubKey) * 1'000'000);
+        size_t i = 0;
+        size_t unique_keys_count = 0;
+        for(auto& keys_set : data["trusted_pubkeys"]) {
+            for(auto& keys : keys_set) {
+                for(auto& key : keys) {
+                    if(i >= 2) {
+                        std::string prev = "";
+                        if(prev != std::string(key)) {
+                            trusted_pubkeys[unique_keys_count++] = byte_utils::hexToBytes<48>(key);
+                        }
+                        prev = key;
+                    }
+                    ++i;
+                }
+            }
+        }
+        std::cout << "all_keys = " << i << "\n";
+        std::cout << "unique_keys_count = " << unique_keys_count << "\n";
+
+        prove_finality(
+            combined_token,
+            trusted_pubkeys,
+            unique_keys_count,
+            combined_token.transition,
+            sigma,
+            100
+        );
+        free(trusted_pubkeys);
     }
 
     return 0;

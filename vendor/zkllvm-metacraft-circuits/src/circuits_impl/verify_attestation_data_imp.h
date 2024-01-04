@@ -89,9 +89,11 @@ struct Merged {
     static_vector<TransitionKeys> trusted_pubkeys;
 };
 
-// using base_field_type = typename pallas::base_field_type::value_type;
+#ifdef __ZKLLVM__
+using base_field_type = typename pallas::base_field_type::value_type;
+#else
 using base_field_type = uint64_t;
-
+#endif
 
 struct VoteToken {
     Transition transition;
@@ -318,5 +320,31 @@ CombinePubkeysResult combine_pubkeys(
         ++result.votes_count;
     }
     return result;
+}
+
+void prove_finality(
+        const VoteToken& token,
+        const PubKey* trustedKeys,
+        const size_t pubkeysCount,
+        const Transition& votedTransition,
+        const int sigma,
+        const int64_t active_validators_count
+)
+{
+    assert_true(votedTransition == token.transition);
+    int64_t votes_count = 0;
+    const PubKey* prev = nullptr;
+    base_field_type reconstructed_token = 0;
+    for(size_t i = 0; i < pubkeysCount; i++) {
+        const auto& pubkey = trustedKeys[i];
+        base_field_type element;
+        memcpy(&element, &pubkey, sizeof(element));
+        reconstructed_token = (reconstructed_token + element*sigma);
+        if(prev && pubkey != *prev) {
+            ++votes_count;
+        }
+        prev = &pubkey;
+    }
+    assert_true(reconstructed_token == token.token);
 }
 
