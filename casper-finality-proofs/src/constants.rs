@@ -13,3 +13,5 @@ pub const VALIDATORS_PER_COMMITTEE: usize = 128; // 2048
 pub const VALIDATORS_HASH_TREE_DEPTH: usize = 41;
 pub const VALIDATORS_ROOT_PROOF_LEN: usize = 5;
 pub const STATE_ROOT_PROOF_LEN: usize = 3;
+
+pub const VERSION_OBJ_BYTES: usize = 4;

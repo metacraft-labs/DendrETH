@@ -22,11 +22,13 @@ use plonky2x::{
 use crate::verify_attestation_data::verify_attestation_data::VerifyAttestationData;
 
 use super::super::utils::eth_objects::{Fork};
+use super::super::constants::{
+    VALIDATORS_PER_COMMITTEE, VALIDATORS_HASH_TREE_DEPTH, VALIDATORS_ROOT_PROOF_LEN, STATE_ROOT_PROOF_LEN
+};
 
-const VALIDATORS_PER_COMMITTEE: usize = 412; // 2048
 const PLACEHOLDER: usize = 11;
 
-struct ForkInput {
+pub struct ForkInput {
     previous_version: String,
     current_version: String,
     epoch: u64
@@ -40,7 +42,7 @@ impl ForkInput {
     }
 }
 
-struct AttestationDataInput {
+pub struct AttestationDataInput {
     slot: u64, // Plonky2X parses it as U256
     index: u64,
 
@@ -60,9 +62,9 @@ impl AttestationDataInput {
     } 
 }
 
-struct AttestationInput {
+pub struct AttestationInput {
     data: AttestationDataInput,
-    signature: String,
+    // signature: String,
     fork: ForkInput,
     genesis_validators_root: String,
     state_root: String,
@@ -82,14 +84,14 @@ impl AttestationInput {
         input.write::<Bytes32Variable>(bytes32!(self.genesis_validators_root));
 
         input.write::<Bytes32Variable>(bytes32!(self.state_root));
-        input.write::<ArrayVariable<Bytes32Variable, 3>>(self.state_root_proof
+        input.write::<ArrayVariable<Bytes32Variable, STATE_ROOT_PROOF_LEN>>(self.state_root_proof
             .iter()
             .map(|element| bytes32!(element))
             .collect()
         );
 
         input.write::<Bytes32Variable>(bytes32!(self.validators_root));
-        input.write::<ArrayVariable<Bytes32Variable, 5>>(self.validators_root_proof
+        input.write::<ArrayVariable<Bytes32Variable, VALIDATORS_ROOT_PROOF_LEN>>(self.validators_root_proof
             .iter()
             .map(|element| bytes32!(element))
             .collect()
@@ -97,7 +99,7 @@ impl AttestationInput {
     }
 }
 
-fn parse_fork_json(fork: &Value) -> ForkInput {
+pub fn parse_fork_json(fork: &Value) -> ForkInput {
     ForkInput {
         previous_version: fork.get("previous_version")
             .unwrap()
@@ -120,36 +122,34 @@ fn parse_fork_json(fork: &Value) -> ForkInput {
 pub fn parse_attestation_data_json(data: &Value) -> AttestationDataInput {
     AttestationDataInput {
         slot: data.get("slot")
-            .unwrap()
-            .as_u64()
+            .and_then(Value::as_u64)
             .unwrap(),
         index: data.get("index")
-            .unwrap()
-            .as_u64()
+            .and_then(Value::as_u64)
             .unwrap(),
         beacon_block_root: data.get("beacon_block_root")
+            .and_then(Value::as_str)
             .unwrap()
-            .to_string()
             .trim_matches('"')
             .to_string(),
         source: data.get("source")
             .unwrap()
             .get("root")
+            .and_then(Value::as_str)
             .unwrap()
-            .to_string()
             .trim_matches('"')
             .to_string(),
         target: data.get("target")
             .unwrap()
             .get("root")
+            .and_then(Value::as_str)
             .unwrap()
-            .to_string()
             .trim_matches('"')
             .to_string()
     }
 }
 
-pub fn parse_attestation(attestation: &Value) -> AttestationInput {
+pub fn parse_attestation_json(attestation: &Value) -> AttestationInput {
     let attestation_data = parse_attestation_data_json(attestation.get("data").unwrap());
 
     let signature = attestation.get("signature")
@@ -202,7 +202,7 @@ pub fn parse_attestation(attestation: &Value) -> AttestationInput {
 
     AttestationInput {
         data: attestation_data,
-        signature: signature,
+        // signature: signature,
         fork: fork,
         genesis_validators_root: genesis_validators_root,
         state_root: state_root,
@@ -221,22 +221,27 @@ where
 
     let mut counter = 0;
     // For each attestation run VerifyAttestationData (TODO: Missing validator_list_proof from original object)
-    for attestation in attestations.iter().take(10) { //TODO: Only 1st 10
+    for attestation in attestations.iter().take(10) { //TODO: Only 1st 8
         counter = counter+1;
         println!("====Attestation {}====",counter);
         // Parse Data and register as inputs for circuit
-        let attestation_input = parse_attestation(attestation);
+        let attestation_input = parse_attestation_json(attestation);
         
         let mut builder = CircuitBuilder::<L, D>::new();
         VerifyAttestationData::define(&mut builder);
 
         let circuit = builder.build();
         let mut input = circuit.input();
-        attestation_input.write(&mut input);
-        //WORKS
-        let (proof, mut output) = circuit.prove(&input);
+        
+        //TODO: prev_block_root should be part of attestation_input and not hardcoded
+        let prev_block_root: String = "d5c0418465ffab221522a6991c2d4c0041f1b8e91d01b1ea3f6b882369f689b7".to_string();
+        input.write::<Bytes32Variable>(bytes32!(prev_block_root));
 
-        println!("OUTPUT: {:?}", output);
+        attestation_input.write(&mut input);
+
+        // let (proof, mut output) = circuit.prove(&input);
+
+        // println!("OUTPUT: {:?}", output);
 
         }
 }

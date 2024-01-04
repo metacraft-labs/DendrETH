@@ -28,6 +28,8 @@ fn main() -> Result<(), IOError> {
     type L = DefaultParameters;
     const D: usize = 2;
 
+    plonky2x::utils::setup_logger();
+
     let file_path = "./data/merged_234400.json";
 
     let mut file = File::open(file_path)?;
