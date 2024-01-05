@@ -48,9 +48,6 @@ void basic_tests() {
 
     auto modified = fill_zero_hashes(hashes, 2);
 
-    for (auto it = modified.begin(); it != modified.end(); it++) {
-        std::cout << byte_utils::bytesToHex(*it) << "\n";
-    }
     {
         auto hashed_validator = hash_validator(
             circuit_byte_utils::expand<64>(byte_utils::hexToBytes<48>(
@@ -62,8 +59,8 @@ void basic_tests() {
             18446744073709551615ul,
             18446744073709551615ul);
 
-        printf("Expected:   40f8fcd65d42c86a6ad0ac9dea4ca6fa83364f500f11a748d18b158e2e3e6594\n");
-        printf("Calculated: %s\n", byte_utils::bytesToHex(hashed_validator).c_str());
+        assert_true(std::string("40f8fcd65d42c86a6ad0ac9dea4ca6fa83364f500f11a748d18b158e2e3e6594") ==
+                    byte_utils::bytesToHex(hashed_validator));
     }
     {
         auto hashed_validator = hash_validator(
@@ -76,8 +73,8 @@ void basic_tests() {
             18446744073709551615ul,
             18446744073709551615ul);
 
-        printf("Expected:   496b1e4562f133ebad777d05695cab85835052243a931d91e6d59d69241d309e\n");
-        printf("Calculated: %s\n", byte_utils::bytesToHex(hashed_validator).c_str());
+        assert_true(std::string("496b1e4562f133ebad777d05695cab85835052243a931d91e6d59d69241d309e") ==
+                    byte_utils::bytesToHex(hashed_validator));
     }
     {
         auto hashed_validator = hash_validator(
@@ -90,8 +87,8 @@ void basic_tests() {
             18446744073709551615ul,
             18446744073709551615ul);
 
-        printf("Expected:   c5f5ad3d3adb399b15b1d1513207e9c5d4cdb7234019a62fa0774ef3f67772e3\n");
-        printf("Calculated: %s\n", byte_utils::bytesToHex(hashed_validator).c_str());
+        assert_true(std::string("c5f5ad3d3adb399b15b1d1513207e9c5d4cdb7234019a62fa0774ef3f67772e3") ==
+                    byte_utils::bytesToHex(hashed_validator));
     }
     {
         Proof proof;
@@ -137,18 +134,13 @@ void basic_tests() {
         proof.push_back(byte_utils::hexToBytes<32>("0000000000000000000000000000000000000000000000000000000000000000"));
         proof.push_back(byte_utils::hexToBytes<32>("6bab0e0000000000000000000000000000000000000000000000000000000000"));
 
-        auto res123 = fill_zero_hashes(proof);
-        for (auto it = res123.begin(); it != res123.end(); it++) {
-            std::cout << byte_utils::bytesToHex(*it) << "\n";
-        }
-
-        printf("ssz_verify_proof ... ");
+        std::cout << "ssz_verify_proof ... ";
         ssz_verify_proof(byte_utils::hexToBytes<32>("b45a79b3d4ed0bce770893498237fafc26885ca1a23a1e77933de33c02802db5"),
                          byte_utils::hexToBytes<32>("64df3a60d06291506b1e0de11ce4bac1e1cd0e2e3f639d786128c9b79475a78c"),
                          fill_zero_hashes(proof).content(),
                          0x020000000000ul + 818904,
                          41);
-        printf("Done\n");
+        std::cout << "Done\n";
 
         std::array<unsigned char, 32> key;
         typename pallas::base_field_type::value_type pkey;
@@ -156,16 +148,14 @@ void basic_tests() {
         static_assert(sizeof(pkey) >= sizeof(key));
 
         memcpy(&pkey, &key, sizeof(key));
-
-        std::cout << "sizeof(pkey) = " << sizeof(pkey) << "\n";
     }
 
-    // print(f"uint_to_b32(1234512345) = {uint_to_b32(1234512345)}")
-    // print(f"bytes_to_u64(var) = {bytes_to_u64(var)}")
     using namespace byte_utils;
-    Bytes32 val = int_to_bytes<uint64_t, 32, true>(1234512345);
-    std::cout << bytesToHex(val) << "\n";
-    std::cout << bytes_to_int<uint64_t, 32>(val) << "\n";
+    uint64_t val = 1234512345;
+    Bytes32 bytesVal = int_to_bytes<uint64_t, 32, true>(val);
+
+    assert_true(hexToBytes<32>(bytesToHex(bytesVal)) == bytesVal);
+    assert_true((bytes_to_int<uint64_t, 32>(bytesVal)) == val);
 }
 
 AttestationData parse_attestation_data(const json& json_attestation_data) {
@@ -449,11 +439,21 @@ int main(int argc, char* argv[]) {
 
     auto combined_token = combine_finality_votes(tokens);
 
-    if (0) {    // split combination of pubkeys into separate steps.
+    {    // split combination of pubkeys into separate steps.
         Transition voted_transition;
         static_vector<PubKey, 8192> trusted_pubkeys;
         static_vector<CombinePubkeysResult, 8192> partial_conbined_pubkeys;
         size_t i = 0;
+        size_t unique_keys_count = 0;
+
+        auto process_pub_key_batch = [&unique_keys_count, &partial_conbined_pubkeys, &combined_token, &trusted_pubkeys,
+                                      &voted_transition, sigma]() {
+            partial_conbined_pubkeys.push_back(
+                combine_pubkeys(combined_token, trusted_pubkeys, voted_transition, sigma));
+            unique_keys_count += trusted_pubkeys.size();
+            trusted_pubkeys.clear();
+        };
+
         for (auto& keys_set : data["trusted_pubkeys"]) {
             for (auto& keys : keys_set) {
                 for (auto& key : keys) {
@@ -464,9 +464,7 @@ int main(int argc, char* argv[]) {
                         }
                         prev = key;
                         if (trusted_pubkeys.full()) {
-                            partial_conbined_pubkeys.push_back(
-                                combine_pubkeys(combined_token, trusted_pubkeys, combined_token.transition, sigma));
-                            trusted_pubkeys.clear();
+                            process_pub_key_batch();
                         }
                     } else if (i == 0) {
                         voted_transition.source.epoch = key["epoch"];
@@ -480,11 +478,10 @@ int main(int argc, char* argv[]) {
             }
         }
         if (trusted_pubkeys.size() > 0) {
-            partial_conbined_pubkeys.push_back(
-                combine_pubkeys(combined_token, trusted_pubkeys, voted_transition, sigma));
+            process_pub_key_batch();
         }
         std::cout << "all_keys = " << i << "\n";
-        std::cout << "unique_keys = " << partial_conbined_pubkeys.size() << "\n";
+        std::cout << "unique_keys_count = " << unique_keys_count << "\n";
 
         prove_finality(combined_token, partial_conbined_pubkeys, voted_transition, 100);
     }
