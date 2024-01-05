@@ -8,7 +8,7 @@ use plonky2x::{
         hash::poseidon::poseidon256::PoseidonHashOutVariable, vars::BytesVariable
     },
     prelude::{
-        CircuitBuilder, Variable, BoolVariable, U256Variable, U64Variable, Bytes32Variable, ArrayVariable, CircuitVariable, RichField
+        CircuitBuilder, Variable, BoolVariable, U64Variable, Bytes32Variable, ArrayVariable, CircuitVariable, RichField
     },
     backend::circuit::{DefaultParameters, PlonkParameters},
 };
@@ -64,10 +64,10 @@ impl ValidatorData {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, CircuitVariable)]
 pub struct AttestationData {
-    slot: U64Variable, //TODO: U256Variable by spec
-    index: U64Variable, //TODO: U256Variable by spec
+    slot: U64Variable,
+    index: U64Variable, 
 
     // LMD GHOST vote
     beacon_block_root: Bytes32Variable,
@@ -75,7 +75,6 @@ pub struct AttestationData {
     // FFG vote
     source: Bytes32Variable,
     target: Bytes32Variable,
-
 }
 
 impl AttestationData {

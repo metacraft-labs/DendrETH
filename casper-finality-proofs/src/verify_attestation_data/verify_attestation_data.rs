@@ -13,20 +13,6 @@ const PLACEHOLDER: usize = 11;
 #[derive(Debug, Clone)]
 pub struct VerifyAttestationData;
 
-
-// XValidator = object
-// validator_index: ValidatorIndex
-// pubkey: ValidatorPubKey
-// withdrawal_credentials: Eth2Digest
-// effective_balance: Gwei
-// slashed: bool
-// activation_eligibility_epoch: Epoch
-// activation_epoch: Epoch
-// exit_epoch: Epoch
-// withdrawable_epoch: Epoch
-// validator_list_proof: seq[string]
-// 
-
 impl Circuit for VerifyAttestationData {
     fn define<L: PlonkParameters<D>, const D: usize>(builder: &mut CircuitBuilder<L, D>)
     where
@@ -51,34 +37,36 @@ impl Circuit for VerifyAttestationData {
         //Assert that BLS Signature is correct
         // builder.assert_is_equal(attestation.signature, pk_accumulator);
 
-        let validator_vec: Vec<ValidatorData> = (0..VALIDATORS_PER_COMMITTEE)
-            .map(|_| ValidatorData::circuit_input(builder))
-            .collect();
+        // let random_validator = builder.read::<ValidatorData>();
 
-        // Private BLS Accumulator for the recurssive proof
-        let zero_bls = validator_vec[0].beacon_validator_variable.pubkey;
-        let mut private_accumulator = validator_vec[0].beacon_validator_variable.pubkey; // TODO: validator hash
+        // let validator_vec: Vec<ValidatorData> = (0..VALIDATORS_PER_COMMITTEE)
+        //     .map(|_| ValidatorData::circuit_input(builder))
+        //     .collect();
+
+        // // Private BLS Accumulator for the recurssive proof
+        // let zero_bls = validator_vec[0].beacon_validator_variable.pubkey;
+        // let mut private_accumulator = validator_vec[0].beacon_validator_variable.pubkey; // TODO: validator hash
         
 
-        // Add validator pubkey to commitment if validator is trusted
-        for i in 1..VALIDATORS_PER_COMMITTEE {
-                let value_to_add = builder.select(
-                    validator_vec[i].is_trusted_validator,
-                    validator_vec[i].beacon_validator_variable.pubkey, // TODO: validator hash
-                    zero_bls
-                ); 
-                accumulate_bls(builder,private_accumulator, value_to_add); // TODO: validator hash
-        }
+        // // Add validator pubkey to commitment if validator is trusted
+        // for i in 1..VALIDATORS_PER_COMMITTEE {
+        //         let value_to_add = builder.select(
+        //             validator_vec[i].is_trusted_validator,
+        //             validator_vec[i].beacon_validator_variable.pubkey, // TODO: validator hash
+        //             zero_bls
+        //         ); 
+        //         accumulate_bls(builder,private_accumulator, value_to_add); // TODO: validator hash
+        // }
 
-        let mut pk_accumulator = validator_vec[0].beacon_validator_variable.pubkey;
-        for i in 1..VALIDATORS_PER_COMMITTEE {
+        // let mut pk_accumulator = validator_vec[0].beacon_validator_variable.pubkey;
+        // for i in 1..VALIDATORS_PER_COMMITTEE {
 
-            // 4. Accumulate BLS Signature
-            pk_accumulator = accumulate_bls(builder,pk_accumulator, validator_vec[i].beacon_validator_variable.pubkey);
+        //     // 4. Accumulate BLS Signature
+        //     pk_accumulator = accumulate_bls(builder,pk_accumulator, validator_vec[i].beacon_validator_variable.pubkey);
 
-            // 5. Verify Validator set
-            verify_validator(builder, validator_vec[i].clone());
-        }
+        //     // 5. Verify Validator set
+        //     verify_validator(builder, validator_vec[i].clone());
+        // }
 
         //Will accumulate sorted validator index hash messages 
     }
