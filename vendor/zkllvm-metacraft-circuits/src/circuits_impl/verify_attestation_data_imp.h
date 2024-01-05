@@ -232,17 +232,6 @@ VoteToken verify_attestation_data(const Bytes32& block_root, const Attestation& 
     return VoteToken {{attestation.data.source, attestation.data.target}, token};
 }
 
-/*
-def combine_finality_votes(tokens: Iterable[VoteToken]) -> Mapping[TransitionKey, int]:
-    f: Callable[[int, int], int] = lambda memo, x: (memo + x) % MODULUS
-    g: Callable[[Iterator[VoteToken]], int] = lambda xs: reduce(f, [x[1] for x in xs], 0)
-    grouped: groupby[Transition, VoteToken] = groupby(tokens, key=itemgetter(0))
-    return {
-        transition_to_key(transition): g(group)
-        for (transition, group) in grouped
-    }
-*/
-
 VoteToken combine_finality_votes(const static_vector<VoteToken, 8192>& tokens) {
     VoteToken result;
     result.transition = tokens[0].transition;

@@ -321,8 +321,8 @@ void verify_attestation(const Attestation& a, const json& j_a) {
     assert_true(expand<32>(byte_utils::hexToBytes<4>(j_a["fork"]["previous_version"])) == a.fork.previous_version);
     assert_true(expand<32>(byte_utils::hexToBytes<4>(j_a["fork"]["current_version"])) == a.fork.current_version);
     assert_true(j_a["fork"]["epoch"] == a.fork.epoch);
-    assert_true(std::string(j_a["genesis_validators_root"]) == byte_utils::bytesToHex(a.genesis_validators_root))
-        assert_true(std::string(j_a["state_root"]) == byte_utils::bytesToHex(a.state_root));
+    assert_true(std::string(j_a["genesis_validators_root"]) == byte_utils::bytesToHex(a.genesis_validators_root));
+    assert_true(std::string(j_a["state_root"]) == byte_utils::bytesToHex(a.state_root));
     assert_true(std::string(j_a["state_root_proof"][0]) == byte_utils::bytesToHex(a.state_root_proof[0]));
     assert_true(std::string(j_a["state_root_proof"][1]) == byte_utils::bytesToHex(a.state_root_proof[1]));
     assert_true(std::string(j_a["state_root_proof"][2]) == byte_utils::bytesToHex(a.state_root_proof[2]));
@@ -405,25 +405,10 @@ int main(int argc, char* argv[]) {
 
     int i = 0;
 
-    // Run the first circuit for each attestation.
-    /*
-    tokens: List[VoteToken] = []
-    n: int = len(inp['attestations'])
-    for i, attestation in enumerate(inp['attestations']):
-        print(f'Processing attestation {i}/{n}...')
-        vote: VoteToken = circuits.verify_attestation_data(
-            'd5c0418465ffab221522a6991c2d4c0041f1b8e91d01b1ea3f6b882369f689b7',
-            attestation,
-            sigma,
-        )
-        tokens.append(vote)
-    with open(BASE_DIR / 'tests/cache.json', 'wb') as f:
-        f.write(TypeAdapter(List[VoteToken]).dump_json(tokens))
-    */
-
     static_vector<VoteToken, 8192> tokens;
     const auto attestations_count = data["attestations"].size();
 
+    // Run the first circuit for each attestation.
     for (const auto& json_attestation : data["attestations"]) {
         std::cout << "Processing attestation " << ++i << "/" << attestations_count << "\n";
 
@@ -437,7 +422,10 @@ int main(int argc, char* argv[]) {
         tokens.push_back(std::move(vote));
     }
 
+    // Run the second circuit to combine all vote tokens.
     auto combined_token = combine_finality_votes(tokens);
+
+    // Run the third circuit to prove the finalization of the target.
 
     {    // split combination of pubkeys into separate steps.
         Transition voted_transition;
