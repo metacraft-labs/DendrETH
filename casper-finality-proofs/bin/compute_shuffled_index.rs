@@ -4,7 +4,6 @@ use plonky2x::prelude::{
 };
 
 fn main() {
-    type L = DefaultParameters;
     const D: usize = 2;
     let mut builder = CircuitBuilder::<DefaultParameters, D>::new();
     const SHUFFLE_ROUND_COUNT: u8 = 90;
