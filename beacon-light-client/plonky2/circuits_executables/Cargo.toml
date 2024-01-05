@@ -26,6 +26,11 @@ async-trait = "0.1.74"
 tokio = { version = "1.35.1", features = ["full"] }
 aws-config = "1.1.1"
 aws-sdk-s3 = "1.10.0"
+azure_storage_blobs = "0.18.0"
+azure_core = "0.18.0"
+azure_storage = "0.18.0"
+futures = "0.3.30"
+dotenv = "0.15.0"
 
 [[bin]]
 name = "balance_verification"

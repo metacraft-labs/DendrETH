@@ -5,12 +5,14 @@ use circuits::{
 };
 use circuits_executables::{
     crud::{
-        fetch_proofs, fetch_validator, load_circuit_data, read_from_file, save_validator_proof,
-        FileStorage, ValidatorProof, RedisStorage,
+        common::fetch_proofs, common::fetch_validator, common::load_circuit_data,
+        common::read_from_file, common::save_validator_proof, common::save_validator_proof,
+        common::ValidatorProof, proof_storage::file_proof_storage::FileStorage,
+        proof_storage::redis_proof_storage::RedisStorage,
     },
+    proof_storage::FileStorage,
     provers::{handle_commitment_mapper_inner_level_proof, SetPWValues},
     validator::VALIDATOR_REGISTRY_LIMIT,
-    validator_commitment_constants,
 };
 use clap::{App, Arg};
 use futures_lite::future;

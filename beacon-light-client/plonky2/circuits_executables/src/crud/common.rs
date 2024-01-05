@@ -27,6 +27,8 @@ use plonky2::{
 use redis::{aio::Connection, AsyncCommands, RedisError};
 use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize, Serializer};
 
+use super::proof_storage::proof_storage::ProofStorage;
+
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidatorProof {
@@ -68,65 +70,6 @@ where
     str_value
         .parse::<BigUint>()
         .map_err(serde::de::Error::custom)
-}
-
-#[async_trait(?Send)]
-pub trait ProofStorage {
-    async fn get_proof(&mut self, identifier: String) -> Result<Vec<u8>>;
-
-    async fn set_proof(&mut self, identifier: String, proof: &[u8]) -> Result<()>;
-}
-
-pub struct RedisStorage<'a> {
-    connection: &'a mut Connection,
-}
-
-impl RedisStorage<'_> {
-    pub fn new(connection: &mut Connection) -> RedisStorage {
-        RedisStorage { connection }
-    }
-}
-
-pub struct FileStorage;
-
-impl FileStorage {
-    pub fn new() -> FileStorage {
-        if !fs::metadata("proofs").is_ok() {
-            fs::create_dir_all("proofs").unwrap();
-        }
-
-        FileStorage
-    }
-}
-
-#[async_trait(?Send)]
-impl ProofStorage for FileStorage {
-    async fn get_proof(&mut self, identifier: String) -> Result<Vec<u8>> {
-        let result = fs::read(format!("{}/{}.{}", "proofs", identifier, "bin")).unwrap();
-
-        Ok(result)
-    }
-
-    async fn set_proof(&mut self, identifier: String, proof: &[u8]) -> Result<()> {
-        fs::write(format!("{}/{}.{}", "proofs", identifier, "bin"), proof).unwrap();
-
-        Ok(())
-    }
-}
-
-#[async_trait(?Send)]
-impl ProofStorage for RedisStorage<'_> {
-    async fn get_proof(&mut self, identifier: String) -> Result<Vec<u8>> {
-        let result: Vec<u8> = self.connection.get(&identifier).await?;
-
-        Ok(result)
-    }
-
-    async fn set_proof(&mut self, identifier: String, proof: &[u8]) -> Result<()> {
-        self.connection.set(&identifier, proof).await?;
-
-        Ok(())
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
