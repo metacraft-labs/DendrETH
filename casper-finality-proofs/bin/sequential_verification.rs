@@ -40,6 +40,7 @@ fn main() -> Result<(), IOError> {
     // Parse JSON into a serde_json::Value
     let json_value: Value = serde_json::from_str(&contents)?;
 
+
     // VerifyAttestationData
     if let Some(attestations) = 
         json_value.get("attestations")

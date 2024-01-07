@@ -219,7 +219,17 @@ pub fn prove_verify_attestation_data<L: PlonkParameters<D>, const D: usize>(
         println!("====Attestation {}====", counter);
         // Parse Data and register as inputs for circuit
         // let attestation_input = parse_attestation_json(attestation);
+        
+
         let attestation_input: AttestationInput = serde_json::from_value(attestation.clone()).unwrap();
+
+        let validators: Vec<ValidatorDataInput>= attestation.get("validators").clone()
+            .and_then(Value::as_array)
+            .unwrap()
+            .iter()
+            .take(10)
+            .map(|validator|serde_json::from_value(validator.clone()).unwrap())
+            .collect();
 
         let mut builder = CircuitBuilder::<L, D>::new();
         VerifyAttestationData::define(&mut builder);
@@ -232,9 +242,13 @@ pub fn prove_verify_attestation_data<L: PlonkParameters<D>, const D: usize>(
             "d5c0418465ffab221522a6991c2d4c0041f1b8e91d01b1ea3f6b882369f689b7".to_string();
         input.write::<Bytes32Variable>(bytes32!(prev_block_root));
 
-        // attestation_input.write(&mut input);
+        attestation_input.write(&mut input);
 
-        // let (proof, mut output) = circuit.prove(&input);
+        for validator in validators {
+            validator.write(&mut input);
+        }
+
+        let (proof, mut output) = circuit.prove(&input);
 
         // println!("OUTPUT: {:?}", output);
     }

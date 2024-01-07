@@ -61,10 +61,10 @@ fn main() {
     println!("\nAttestation Read!\n");
     // let beacon_validator = validator_sample.get("") ;
     
-    for i in 0..N {
+    // for i in 0..N {
         // let validator_sample_input: ValidatorDataInput = serde_json::from_value(validator_samples[i].clone()).unwrap();
         // validator_sample_input.write(&mut input);
-    }
+    // }
 
     // let samples = serde_json::from_value(validator_samples.clone()).unwrap();
 
