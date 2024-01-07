@@ -1,14 +1,17 @@
-use curta::chip::field;
+use array_macro::array;
+use ethers::core::k256::elliptic_curve::generic_array::arr;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2x::{
     backend::circuit::{Circuit, DefaultParameters},
-    prelude::{bytes32,CircuitVariable,ArrayVariable, BoolVariable, CircuitBuilder, Field, PlonkParameters, Variable}, frontend::{eth::{beacon::vars::BeaconValidatorVariable, vars::BLSPubkeyVariable}, vars::{Bytes32Variable, U256Variable}, uint::uint64::U64Variable, hash::poseidon::poseidon256::PoseidonHashOutVariable},
+    prelude::{bytes32,CircuitVariable,ArrayVariable, BoolVariable, CircuitBuilder, Field, PlonkParameters}, 
+    frontend::{eth::vars::BLSPubkeyVariable, vars::{Bytes32Variable, SSZVariable, ByteVariable, BytesVariable}, 
+    uint::uint64::U64Variable, 
+    hash::poseidon::poseidon256::PoseidonHashOutVariable},
 };
 
-use crate::utils::eth_objects::{ValidatorData, Fork, AttestationData, Attestation};
-use super::super::constants::{VALIDATORS_HASH_TREE_DEPTH, VALIDATORS_PER_COMMITTEE,VALIDATORS_ROOT_PROOF_LEN, STATE_ROOT_PROOF_LEN};
-use super::super::combine_finality_votes::count_unique_pubkeys::ssz_verify_proof_poseidon;
-const PLACEHOLDER: usize = 11;
+use crate::utils::eth_objects::{ValidatorData, Fork, AttestationData, Attestation, BeaconValidatorVariable};
+use crate::constants::{VALIDATORS_HASH_TREE_DEPTH, VALIDATORS_PER_COMMITTEE,VALIDATORS_ROOT_PROOF_LEN, STATE_ROOT_PROOF_LEN};
+use crate::combine_finality_votes::count_unique_pubkeys::ssz_verify_proof_poseidon;
 
 #[derive(Debug, Clone)]
 pub struct VerifyAttestationData;
@@ -28,17 +31,20 @@ impl Circuit for VerifyAttestationData {
 
         //TODO: This should be part of the final proof as it is only needed once
         // 2. 3.
-        block_merkle_branch_proof(
-            builder,
-            prev_block_root,
-            attestation.clone()
-        );
+        // block_merkle_branch_proof(
+        //     builder,
+        //     prev_block_root,
+        //     attestation.clone()
+        // );
 
-        //Assert that BLS Signature is correct
+        //TODO: Assert that BLS Signature is correct
         // builder.assert_is_equal(attestation.signature, pk_accumulator);
 
-        // let random_validator = builder.read::<ValidatorData>();
-
+        for i in 0..10 {
+            let random_validator = builder.read::<ValidatorData>();
+            verify_validator(builder, random_validator.clone(), attestation.validators_root);
+        }
+        
         // let validator_vec: Vec<ValidatorData> = (0..VALIDATORS_PER_COMMITTEE)
         //     .map(|_| ValidatorData::circuit_input(builder))
         //     .collect();
@@ -106,8 +112,8 @@ fn block_merkle_branch_proof<L: PlonkParameters<D>, const D: usize>(
 
 fn verify_validator<L: PlonkParameters<D>, const D: usize>( // TODO: Should pass only trusted_validators
     builder: &mut CircuitBuilder<L, D>,
-    validator: ValidatorData
-
+    validator: ValidatorData,
+    validators_root: Bytes32Variable
 ) 
 where
     <<L as PlonkParameters<D>>::Config as plonky2::plonk::config::GenericConfig<D>>::Hasher:
@@ -138,13 +144,19 @@ where
 
     // Prove validator is part of the validator set
 
-    //TODO: BeaconValidatorVariable and ValidatorData should be the same object
+    let validator_leaf = hash_validator(builder, validator.beacon_validator_variable);
+
+    let first_validators_gindex: U64Variable = builder.constant(2u64.pow(41));
+    let gindex = builder.add(first_validators_gindex, validator.validator_index);
+
+    builder.watch(&validators_root, "validators_root");
+    builder.watch(&validators_root, "validators_root");
 
     builder.ssz_verify_proof(
-        validator.validator_state_root,
-        validator.validator_leaf,
+        validators_root,
+        validator_leaf,
         validator.validator_root_proof.as_slice(),
-        validator.validator_gindex
+        gindex,
     );
     // ssz_verify_proof_poseidon( //TODO: PoseidonHash
         // builder,
@@ -155,6 +167,51 @@ where
     // );
     //TODO: I need access to validator.slot to prove slot is part of beacon state [NOT RELEVANT?]
 
+}
+
+/*
+    # Python reference implementation
+    digest(
+            digest(
+                digest(digest(pubkey)              , withdrawal_credentials),
+                digest(effective_balance           , slashed),
+            ),
+            digest(
+                digest(activation_eligibility_epoch, activation_epoch),
+                digest(exit_epoch                  , withdrawable_epoch),
+            ),
+        )
+*/
+pub fn hash_validator<L: PlonkParameters<D>, const D: usize>(builder: &mut CircuitBuilder<L, D>, validator: BeaconValidatorVariable) -> Bytes32Variable {
+
+    let zero: BoolVariable = builder._false();
+
+    let mut pubkey_bytes: Vec<ByteVariable> = Vec::new();
+    pubkey_bytes.extend(&validator.pubkey.0.0);
+    pubkey_bytes.extend(&[builder.zero::<ByteVariable>(); 16]);
+    let pubkey_bytes32 = builder.curta_sha256(&pubkey_bytes);
+
+    let effective_balance_bytes32 = builder.ssz_hash_tree_root(validator.effective_balance);
+
+    let mut slashed_bytes32 = Bytes32Variable(BytesVariable::<32>(vec![builder.zero::<ByteVariable>();32].try_into().unwrap()));
+    let slashed_byte_variable = ByteVariable([validator.slashed, zero, zero, zero, zero, zero, zero, zero]);
+    slashed_bytes32.0.0[0] = slashed_byte_variable;
+    
+    let activation_eligibility_epoch_bytes32 = builder.ssz_hash_tree_root(validator.activation_eligibility_epoch);
+    let activation_epoch_bytes32 = builder.ssz_hash_tree_root(validator.activation_epoch);
+    let exit_epoch_bytes32 = builder.ssz_hash_tree_root(validator.exit_epoch);
+    let withdrawable_epoch_bytes32 = builder.ssz_hash_tree_root(validator.withdrawable_epoch);
+
+    // let digest_pubkey = builder.curta_sha256(&validator.pubkey.0.0);
+    let digest_pk_wc = builder.curta_sha256_pair(pubkey_bytes32, validator.withdrawal_credentials);
+    let digest_eb_sl = builder.curta_sha256_pair(effective_balance_bytes32, slashed_bytes32);
+    let digest_comp1 = builder.curta_sha256_pair(digest_pk_wc, digest_eb_sl);
+
+    let digest_aee_ae = builder.curta_sha256_pair(activation_eligibility_epoch_bytes32, activation_epoch_bytes32);
+    let digest_ee_we = builder.curta_sha256_pair(exit_epoch_bytes32, withdrawable_epoch_bytes32);
+    let digest_comp2 = builder.curta_sha256_pair(digest_aee_ae, digest_ee_we);
+
+    builder.curta_sha256_pair(digest_comp1, digest_comp2)
 }
 
 fn accumulate_bls<L: PlonkParameters<D>, const D: usize>( // Definition may change

@@ -2,7 +2,6 @@ use curta::maybe_rayon::rayon::str::Bytes;
 use plonky2x::{
     frontend::{
         eth::{
-            beacon::vars::BeaconValidatorVariable,
             vars::BLSPubkeyVariable
         },
         hash::poseidon::poseidon256::PoseidonHashOutVariable, vars::BytesVariable
@@ -17,37 +16,86 @@ use crate::constants::{
     VALIDATORS_HASH_TREE_DEPTH, VALIDATORS_ROOT_PROOF_LEN, STATE_ROOT_PROOF_LEN, VERSION_OBJ_BYTES
 };
 
+#[derive(Debug, Clone, Copy, CircuitVariable)]
+pub struct BeaconValidatorVariable {
+    pub pubkey: BLSPubkeyVariable,
+    pub withdrawal_credentials: Bytes32Variable,
+    pub effective_balance: U64Variable,
+    pub slashed: BoolVariable,
+    pub activation_eligibility_epoch: U64Variable,
+    pub activation_epoch: U64Variable,
+    pub exit_epoch: U64Variable,
+    pub withdrawable_epoch: U64Variable,
+}
+
+impl BeaconValidatorVariable {
+    pub fn new(
+        pubkey: BLSPubkeyVariable,
+        withdrawal_credentials: Bytes32Variable,
+        effective_balance: U64Variable,
+        slashed: BoolVariable,
+        activation_eligibility_epoch: U64Variable,
+        activation_epoch: U64Variable,
+        exit_epoch: U64Variable,
+        withdrawable_epoch: U64Variable,
+    ) -> Self {
+        BeaconValidatorVariable {
+            pubkey: pubkey,
+            withdrawal_credentials: withdrawal_credentials,
+            effective_balance: effective_balance,
+            slashed: slashed,
+            activation_eligibility_epoch: activation_eligibility_epoch,
+            activation_epoch: activation_epoch,
+            exit_epoch: exit_epoch,
+            withdrawable_epoch: withdrawable_epoch,
+        }
+    }
+
+    pub fn circuit_input<L: PlonkParameters<D>, const D: usize>(builder: &mut CircuitBuilder<L,D>) -> Self{ 
+        BeaconValidatorVariable::new(
+            builder.read::<BLSPubkeyVariable>(),
+            builder.read::<Bytes32Variable>(),
+            builder.read::<U64Variable>(),
+            builder.read::<BoolVariable>(),
+            builder.read::<U64Variable>(),
+            builder.read::<U64Variable>(),
+            builder.read::<U64Variable>(),
+            builder.read::<U64Variable>()
+        )
+    }
+}
+
 #[derive(Debug, Clone, CircuitVariable)]
 pub struct ValidatorData { 
-    pub is_trusted_validator: BoolVariable,
-
-    validator_index: U64Variable, //TODO: Why is this here? TODO: PoseidonHashOutIndex
+    pub trusted: BoolVariable,
+    
+    pub validator_index: U64Variable, // validator_gindex
     pub beacon_validator_variable: BeaconValidatorVariable,
 
-    pub validator_state_root: Bytes32Variable, // TODO: PoseidonHashOutVariable
-    pub validator_leaf: Bytes32Variable, //TODO: PoseidonHashOutVariable
+    // pub validator_state_root: Bytes32Variable, // TODO: PoseidonHashOutVariable
+    // pub validator_leaf: Bytes32Variable, //TODO: PoseidonHashOutVariable
     pub validator_root_proof: ArrayVariable<Bytes32Variable,VALIDATORS_HASH_TREE_DEPTH>, //TODO: PoseidonHashOutVariable
-    pub validator_gindex: U64Variable,
 }
 
 impl ValidatorData {
     pub fn new(
-        is_trusted_validator: BoolVariable,
+        trusted: BoolVariable,
         validator_index: U64Variable,
+
         beacon_validator_variable: BeaconValidatorVariable,
-        validator_state_root: Bytes32Variable, 
-        validator_leaf: Bytes32Variable, 
+        // validator_state_root: Bytes32Variable, 
+        // validator_leaf: Bytes32Variable, 
         validator_root_proof: ArrayVariable<Bytes32Variable,VALIDATORS_HASH_TREE_DEPTH>,  
-        validator_gindex: U64Variable,
+        // validator_gindex: U64Variable,
     ) -> Self {
         ValidatorData {
-            is_trusted_validator: is_trusted_validator,
+            trusted: trusted,
             validator_index: validator_index,
             beacon_validator_variable: beacon_validator_variable,
-            validator_state_root: validator_state_root,
-            validator_leaf: validator_leaf,
+            // validator_state_root: validator_state_root,
+            // validator_leaf: validator_leaf,
             validator_root_proof: validator_root_proof,
-            validator_gindex: validator_gindex, 
+            // validator_gindex: validator_gindex, 
         }
     }
 
@@ -56,10 +104,10 @@ impl ValidatorData {
             builder.read::<BoolVariable>(),
             builder.read::<U64Variable>(),
             builder.read::<BeaconValidatorVariable>(),
-            builder.read::<Bytes32Variable>(),
-            builder.read::<Bytes32Variable>(),
+            // builder.read::<Bytes32Variable>(),
+            // builder.read::<Bytes32Variable>(),
             builder.read::<ArrayVariable<Bytes32Variable, VALIDATORS_HASH_TREE_DEPTH>>(),
-            builder.read::<U64Variable>(),
+            // builder.read::<U64Variable>(),
         )
     }
 }

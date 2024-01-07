@@ -12,12 +12,14 @@ use std::any;
 use std::fs::File;
 use std::io::{Error as IOError, Read};
 
-use crate::verify_attestation_data::verify_attestation_data::VerifyAttestationData;
 use plonky2::hash::hash_types::RichField;
 use plonky2x::{
     backend::circuit::{Circuit, DefaultParameters},
     frontend::{
-        eth::{beacon::vars::BeaconValidatorVariable, vars::BLSPubkeyVariable},
+        eth::{
+            // beacon::vars::BeaconValidatorVariable,
+            vars::BLSPubkeyVariable
+        },
         hash::poseidon::poseidon256::PoseidonHashOutVariable,
         uint::uint64::U64Variable,
         vars::Bytes32Variable,
@@ -27,12 +29,12 @@ use plonky2x::{
         PlonkParameters, U256Variable, Variable,
     },
 };
-
-use super::super::constants::{
+use crate::verify_attestation_data::verify_attestation_data::VerifyAttestationData;
+use crate::constants::{
     STATE_ROOT_PROOF_LEN, VALIDATORS_HASH_TREE_DEPTH, VALIDATORS_PER_COMMITTEE,
-    VALIDATORS_ROOT_PROOF_LEN, VERSION_OBJ_BYTES
+    VALIDATORS_ROOT_PROOF_LEN, VERSION_OBJ_BYTES, ZERO_HASHES
 };
-use super::super::utils::eth_objects::Fork;
+use crate::utils::eth_objects::BeaconValidatorVariable;
 
 fn deserialize_checkpoint<'de, D>(deserializer: D) -> Result<String, D::Error>
 where
@@ -42,37 +44,81 @@ where
     Ok(checkpoint.root)
 }
 
-pub fn parse_u256<'de, D>(deserializer: D) -> Result<U256, D::Error>
+fn deserialize_validator_list_proof<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let str_value = U256::deserialize(deserializer)?;
+    let list_proof: Vec<String> = Deserialize::deserialize(deserializer)?;
 
-    Ok(U256::from(str_value))
+    let padded_result: Vec<String> = list_proof.into_iter()
+        .enumerate()
+        .map(|(index, item)|
+            if item.is_empty() {
+                 ZERO_HASHES[index].to_string()
+                } 
+            else { item.to_string() })
+        .collect();
+
+    Ok(padded_result)
+}
+    
+#[derive(Debug, Clone, Deserialize)]
+pub struct BeaconValidatorInput {
+    pub pubkey: String,
+    pub withdrawal_credentials: String,
+    pub effective_balance: u64,
+    pub slashed: bool,
+    pub activation_eligibility_epoch: u64,
+    pub activation_epoch: u64,
+    pub exit_epoch: u64,
+    pub withdrawable_epoch: u64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BeaconValidatorVariableInput {
-    pubkey: String,
-    withdrawal_credentials: String,
-    effective_balance: U256,
-    slashed: bool,
-    activation_eligibility_epoch: U256,
-    activation_epoch: U256,
-    exit_epoch: U256,
-    withdrawable_epoch: U256,
+impl BeaconValidatorInput {
+    pub fn write<L: PlonkParameters<D>, const D: usize>(&self, input: &mut PublicInput<L, D>){
+        input.write::<BLSPubkeyVariable>(bytes!(self.pubkey.clone())); 
+        input.write::<Bytes32Variable>(bytes32!(self.withdrawal_credentials)); 
+        input.write::<U64Variable>(self.effective_balance);
+        input.write::<BoolVariable>(self.slashed);
+        input.write::<U64Variable>(self.activation_eligibility_epoch); 
+        input.write::<U64Variable>(self.activation_epoch); 
+        input.write::<U64Variable>(self.exit_epoch); 
+        input.write::<U64Variable>(self.withdrawable_epoch); 
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ValidatorDataInput {
-    is_trusted_validator: bool,
+    trusted: bool,
     validator_index: u64,
-    beacon_validator_variable: BeaconValidatorVariableInput,
 
-    validator_state_root: String,
-    validator_leaf: String,
-    validator_root_proof: Vec<String>,
-    validator_gindex: u64,
+    #[serde(flatten)]
+    beacon_validator_variable: BeaconValidatorInput,
+
+    #[serde(deserialize_with="deserialize_validator_list_proof")]
+    validator_list_proof: Vec<String>,
+}
+
+impl ValidatorDataInput {
+    pub fn write<L: PlonkParameters<D>, const D: usize>(&self, mut input: &mut PublicInput<L, D>) {
+        input.write::<BoolVariable>(self.trusted); 
+        input.write::<U64Variable>(self.validator_index); 
+        self.beacon_validator_variable.write(&mut input);
+
+        // input.write::<Bytes32Variable>(bytes32!(self.validator_state_root));
+        // input.write::<Bytes32Variable>(bytes32!(self.validator_leaf));
+        input.write::<ArrayVariable<Bytes32Variable, VALIDATORS_HASH_TREE_DEPTH>>(
+            self.validator_list_proof
+            .iter()
+            .map(|element| {
+                println!("{}",element);
+                bytes32!(element)
+                }
+            )
+            .collect()
+        );
+        // input.write::<U64Variable>(self.validator_gindex);
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
