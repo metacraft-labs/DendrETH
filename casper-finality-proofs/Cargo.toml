@@ -14,8 +14,8 @@ name = "compute_shuffled_index"
 path = "bin/compute_shuffled_index.rs"
 
 [[bin]]
-name = "build_all_circuits"
-path = "bin/build_all_circuits.rs"
+name = "build_circuits"
+path = "bin/build_circuits.rs"
 
 [[bin]]
 name = "test_engine"
