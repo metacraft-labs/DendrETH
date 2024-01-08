@@ -38,7 +38,7 @@ impl ProofStorage for AwsStorage {
         let resp = self
             .client
             .get_object()
-            .bucket(self.bucket_name)
+            .bucket(self.bucket_name.clone())
             .key(identifier)
             .send()
             .await?;
@@ -54,7 +54,7 @@ impl ProofStorage for AwsStorage {
 
         self.client
             .put_object()
-            .bucket(self.bucket_name)
+            .bucket(self.bucket_name.clone())
             .key(identifier)
             .body(byte_stream)
             .send()

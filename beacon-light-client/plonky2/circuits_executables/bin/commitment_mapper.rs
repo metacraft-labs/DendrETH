@@ -5,14 +5,14 @@ use circuits::{
 };
 use circuits_executables::{
     crud::{
-        common::fetch_proofs, common::fetch_validator, common::load_circuit_data,
-        common::read_from_file, common::save_validator_proof, common::save_validator_proof,
-        common::ValidatorProof, proof_storage::file_proof_storage::FileStorage,
-        proof_storage::redis_proof_storage::RedisStorage,
+        common::{
+            fetch_proofs, fetch_validator, load_circuit_data, read_from_file, save_validator_proof,
+            ValidatorProof,
+        },
+        proof_storage::{file_proof_storage::FileStorage, redis_proof_storage::RedisStorage},
     },
-    proof_storage::FileStorage,
     provers::{handle_commitment_mapper_inner_level_proof, SetPWValues},
-    validator::VALIDATOR_REGISTRY_LIMIT,
+    validator::VALIDATOR_REGISTRY_LIMIT, validator_commitment_constants::get_validator_commitment_constants,
 };
 use clap::{App, Arg};
 use futures_lite::future;
@@ -27,8 +27,6 @@ use plonky2::{
 
 use redis_work_queue::{KeyPrefix, WorkQueue};
 use std::{format, print, println, thread, time::Duration};
-
-use validator_commitment_constants::get_validator_commitment_constants;
 
 use jemallocator::Jemalloc;
 
@@ -80,7 +78,7 @@ async fn async_main() -> Result<()> {
     let client = redis::Client::open(redis_connection)?;
     let mut con = client.get_async_connection().await?;
 
-    let mut proof_storage = FileStorage::new();
+    let mut proof_storage = FileStorage::new("proofs".to_string());
 
     println!("Connected to redis");
 

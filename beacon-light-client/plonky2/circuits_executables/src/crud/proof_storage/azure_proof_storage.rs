@@ -3,6 +3,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use azure_storage::StorageCredentials;
 use azure_storage_blobs::prelude::{ClientBuilder, ContainerClient};
+use futures::StreamExt;
 
 pub struct AzureStorage {
     container_client: ContainerClient,
@@ -33,14 +34,16 @@ impl ProofStorage for AzureStorage {
             .unwrap()
             .unwrap();
 
-        Ok(result)
+        let bytes_result = result.data.collect().await.unwrap().to_vec();
+
+        Ok(bytes_result)
     }
 
     async fn set_proof(&mut self, identifier: String, proof: &[u8]) -> Result<()> {
         let blob_client = self.container_client.blob_client(identifier);
 
         blob_client
-            .put_block_blob(proof)
+            .put_block_blob(proof.to_vec())
             .content_type("application/octet-stream")
             .await?;
 

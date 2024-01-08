@@ -4,24 +4,22 @@ use async_trait::async_trait;
 use redis::aio::Connection;
 use redis::AsyncCommands;
 
-pub struct RedisStorage<'a> {
-    connection: &'a mut Connection,
+pub struct RedisStorage {
+    connection: Connection,
 }
 
-impl RedisStorage<'_> {
-    pub async fn new(connection_string: String) -> RedisStorage {
-        let client = redis::Client::open(connection_string).unwrap();
+impl RedisStorage {
+    pub async fn new(connection_string: String) -> Result<RedisStorage, redis::RedisError> {
+        let client = redis::Client::open(connection_string)?;
 
-        let mut connection = client.get_async_connection().await.unwrap();
+        let connection = client.get_async_connection().await?;
 
-        RedisStorage {
-            connection: &mut connection,
-        }
+        Ok(RedisStorage { connection })
     }
 }
 
 #[async_trait(?Send)]
-impl ProofStorage for RedisStorage<'_> {
+impl ProofStorage for RedisStorage {
     async fn get_proof(&mut self, identifier: String) -> Result<Vec<u8>> {
         let result: Vec<u8> = self.connection.get(&identifier).await?;
 

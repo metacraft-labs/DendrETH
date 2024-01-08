@@ -14,30 +14,36 @@ pub trait ProofStorage {
     async fn set_proof(&mut self, identifier: String, proof: &[u8]) -> Result<()>;
 }
 
-enum ProofStorageType {
+pub enum ProofStorageType {
     Redis,
     File,
     Azure,
     Aws,
 }
 
-pub fn create_proof_storage(
+pub async fn create_proof_storage(
     proof_storage_type: ProofStorageType,
     args: ArgMatches,
-) -> dyn ProofStorage {
+) -> Box<dyn ProofStorage> {
     match proof_storage_type {
         ProofStorageType::Redis => {
             let redis_connection = args.value_of("redis_connection").unwrap();
 
-            RedisStorage::new(redis_connection.to_string())
+            Box::new(
+                RedisStorage::new(redis_connection.to_string())
+                    .await
+                    .unwrap(),
+            )
         }
         ProofStorageType::File => {
             let folder_name = args.value_of("folder_name").unwrap();
 
-            FileStorage::new(folder_name.to_string())
+            Box::new(FileStorage::new(folder_name.to_string()))
         }
         ProofStorageType::Azure => {
             let access_key = env::var("STORAGE_ACCESS_KEY").expect("missing STORAGE_ACCOUNT_KEY");
+
+            todo!()
         }
         ProofStorageType::Aws => {
             todo!()

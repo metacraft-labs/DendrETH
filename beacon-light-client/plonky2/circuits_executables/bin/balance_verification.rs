@@ -11,8 +11,11 @@ use circuits::{
 };
 use circuits_executables::{
     crud::{
-        fetch_proofs, fetch_validator_balance_input, load_circuit_data, read_from_file,
-        save_balance_proof, BalanceProof, FileStorage, ProofStorage,
+        common::{
+            fetch_proofs, fetch_validator_balance_input, load_circuit_data, read_from_file,
+            save_balance_proof, BalanceProof,
+        },
+        proof_storage::{file_proof_storage::FileStorage, proof_storage::ProofStorage},
     },
     provers::{handle_balance_inner_level_proof, SetPWValues},
     validator_balances_input::ValidatorBalancesInput,
@@ -139,7 +142,7 @@ async fn async_main() -> Result<()> {
 
     let mut con = client.get_async_connection().await?;
 
-    let mut proof_storage = FileStorage::new();
+    let mut proof_storage = FileStorage::new("proofs".to_string());
 
     let elapsed = start.elapsed();
 
