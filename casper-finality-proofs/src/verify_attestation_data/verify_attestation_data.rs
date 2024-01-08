@@ -52,10 +52,20 @@ impl Circuit for VerifyAttestationData {
         // // Private BLS Accumulator for the recurssive proof
         // let zero_bls = validator_vec[0].beacon_validator_variable.pubkey;
         // let mut private_accumulator = validator_vec[0].beacon_validator_variable.pubkey; // TODO: validator hash
-        
+
+        // let mut pk_accumulator = validator_vec[0].beacon_validator_variable.pubkey;
+        // for i in 1..VALIDATORS_PER_COMMITTEE {
+
+        //     // 4. Accumulate BLS Signature
+        //     pk_accumulator = accumulate_bls(builder,pk_accumulator, validator_vec[i].beacon_validator_variable.pubkey);
+               //TODO: Verify that BLS checks out
+
+        //     // 5. Verify Validator set
+        //     verify_validator(builder, validator_vec[i].clone());
+        // }
 
         // // Add validator pubkey to commitment if validator is trusted
-        // for i in 1..VALIDATORS_PER_COMMITTEE {
+        // for i in 1..VALIDATORS_PER_COMMITTEE { //TODO: (token + element*sigma) % MODULUS
         //         let value_to_add = builder.select(
         //             validator_vec[i].is_trusted_validator,
         //             validator_vec[i].beacon_validator_variable.pubkey, // TODO: validator hash
@@ -64,16 +74,8 @@ impl Circuit for VerifyAttestationData {
         //         accumulate_bls(builder,private_accumulator, value_to_add); // TODO: validator hash
         // }
 
-        // let mut pk_accumulator = validator_vec[0].beacon_validator_variable.pubkey;
-        // for i in 1..VALIDATORS_PER_COMMITTEE {
-
-        //     // 4. Accumulate BLS Signature
-        //     pk_accumulator = accumulate_bls(builder,pk_accumulator, validator_vec[i].beacon_validator_variable.pubkey);
-
-        //     // 5. Verify Validator set
-        //     verify_validator(builder, validator_vec[i].clone());
-        // }
-
+        //TODO: Compare if BLSSignature of Committee equals pk_accumulator
+        //TODO: Returns private_accumulator & sigma
         //Will accumulate sorted validator index hash messages 
     }
 }
@@ -149,9 +151,6 @@ where
     let first_validators_gindex: U64Variable = builder.constant(2u64.pow(41));
     let gindex = builder.add(first_validators_gindex, validator.validator_index);
 
-    builder.watch(&validators_root, "validators_root");
-    builder.watch(&validators_root, "validators_root");
-
     builder.ssz_verify_proof(
         validators_root,
         validator_leaf,
@@ -202,12 +201,11 @@ pub fn hash_validator<L: PlonkParameters<D>, const D: usize>(builder: &mut Circu
     let exit_epoch_bytes32 = builder.ssz_hash_tree_root(validator.exit_epoch);
     let withdrawable_epoch_bytes32 = builder.ssz_hash_tree_root(validator.withdrawable_epoch);
 
-    // let digest_pubkey = builder.curta_sha256(&validator.pubkey.0.0);
     let digest_pk_wc = builder.curta_sha256_pair(pubkey_bytes32, validator.withdrawal_credentials);
     let digest_eb_sl = builder.curta_sha256_pair(effective_balance_bytes32, slashed_bytes32);
     let digest_comp1 = builder.curta_sha256_pair(digest_pk_wc, digest_eb_sl);
 
-    let digest_aee_ae = builder.curta_sha256_pair(activation_eligibility_epoch_bytes32, activation_epoch_bytes32);
+    let digest_aee_ae: Bytes32Variable = builder.curta_sha256_pair(activation_eligibility_epoch_bytes32, activation_epoch_bytes32);
     let digest_ee_we = builder.curta_sha256_pair(exit_epoch_bytes32, withdrawable_epoch_bytes32);
     let digest_comp2 = builder.curta_sha256_pair(digest_aee_ae, digest_ee_we);
 
@@ -237,3 +235,4 @@ fn init_bls<L: PlonkParameters<D>, const D: usize>( // Definition may change
     todo!();
 
 }
+

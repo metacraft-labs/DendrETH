@@ -40,16 +40,27 @@ fn main() -> Result<(), IOError> {
     // Parse JSON into a serde_json::Value
     let json_value: Value = serde_json::from_str(&contents)?;
 
+    let mut vad_proofs = vec![];
 
     // VerifyAttestationData
     if let Some(attestations) = 
         json_value.get("attestations")
         .and_then(Value::as_array) {
-            prove_verify_attestation_data::<L,D>(attestations)
+
+            let mut builder = CircuitBuilder::<L, D>::new();
+            VerifyAttestationData::define(&mut builder);
+            let circuit = builder.build();
+
+            for attestation in attestations.iter().take(4) {
+                let proof = prove_verify_attestation_data::<L,D>(&circuit,attestation);
+                vad_proofs.push(proof);
+            }
         }
     else {
         panic!("No attestations found!");
     }
+    
+
     // let result = serde_json::from_value(struct_definition);
 
     // Print the structure

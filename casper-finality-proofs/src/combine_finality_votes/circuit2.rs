@@ -6,8 +6,8 @@ use plonky2x::prelude::{
     ArrayVariable, BoolVariable, CircuitBuilder, PlonkParameters, U256Variable, Variable,
 };
 use plonky2x::prelude::{CircuitVariable, Field};
+use crate:: constants::VALIDATORS_PER_COMMITTEE;
 
-pub const VALIDATORS_PER_SUBCOMMITTEE: usize = 64;
 pub type PublicKey = U256Variable;
 pub type Commitment = PublicKey;
 
@@ -66,27 +66,27 @@ pub fn compute_commitment<L: PlonkParameters<D>, const D: usize>(
     commitment
 }
 
-fn validate_pubkeys_input<L: PlonkParameters<D>, const D: usize>(
-    builder: &mut CircuitBuilder<L, D>,
-    pubkeys: &[PublicKey],
-    count: Variable,
-) {
-    let mut input_is_valid_pred = builder._true();
+// fn validate_pubkeys_input<L: PlonkParameters<D>, const D: usize>(
+//     builder: &mut CircuitBuilder<L, D>,
+//     pubkeys: &[PublicKey],
 
-    for i in 0..pubkeys.len() {
-        let idx = builder.constant(<L as PlonkParameters<D>>::Field::from_canonical_usize(i));
-        let in_range_pred = builder.lt(idx, count);
-        let not_in_range_pred = builder.not(in_range_pred);
+// ) {
+//     let mut input_is_valid_pred = builder._true();
 
-        let zero = builder.zero();
-        let is_zero_pred = builder.is_equal(pubkeys[i], zero);
+//     for i in 0..pubkeys.len() {
+//         let idx = builder.constant(<L as PlonkParameters<D>>::Field::from_canonical_usize(i));
+//         let in_range_pred = builder.lt(idx, count);
+//         let not_in_range_pred = builder.not(in_range_pred);
 
-        let not_in_range_and_zero_pred = builder.and(not_in_range_pred, is_zero_pred);
-        let is_valid_pred = builder.or(in_range_pred, not_in_range_and_zero_pred);
-        input_is_valid_pred = builder.and(input_is_valid_pred, is_valid_pred);
-    }
-    assert_is_true(builder, input_is_valid_pred);
-}
+//         let zero = builder.zero();
+//         let is_zero_pred = builder.is_equal(pubkeys[i], zero);
+
+//         let not_in_range_and_zero_pred = builder.and(not_in_range_pred, is_zero_pred);
+//         let is_valid_pred = builder.or(in_range_pred, not_in_range_and_zero_pred);
+//         input_is_valid_pred = builder.and(input_is_valid_pred, is_valid_pred);
+//     }
+//     assert_is_true(builder, input_is_valid_pred);
+// }
 
 #[derive(Debug, Clone)]
 pub struct CommitTrustedValidatorPubkeys;
@@ -102,13 +102,11 @@ impl Circuit for CommitTrustedValidatorPubkeys {
         let source = builder.read::<CheckpointVariable>();
         let target = builder.read::<CheckpointVariable>();
 
-        let pubkeys = builder.read::<ArrayVariable<PublicKey, VALIDATORS_PER_SUBCOMMITTEE>>();
+        let pubkeys = builder.read::<ArrayVariable<PublicKey, VALIDATORS_PER_COMMITTEE>>();
         let trusted_validators_bitmask =
-            builder.read::<ArrayVariable<BoolVariable, VALIDATORS_PER_SUBCOMMITTEE>>();
+            builder.read::<ArrayVariable<BoolVariable, VALIDATORS_PER_COMMITTEE>>();
 
-        let validators_count = builder.read::<Variable>();
-
-        validate_pubkeys_input(builder, pubkeys.as_slice(), validators_count);
+        // validate_pubkeys_input(builder, pubkeys.as_slice()); 
 
         let commitment = compute_commitment(
             builder,

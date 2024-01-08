@@ -1,7 +1,7 @@
 use casper_finality_proofs::{
     combine_finality_votes::{
         circuit2::{
-            CommitTrustedValidatorPubkeys, Commitment, PublicKey, VALIDATORS_PER_SUBCOMMITTEE,
+            CommitTrustedValidatorPubkeys, Commitment, PublicKey,
         },
         commitment_accumulator_inner::CommitmentAccumulatorInner,
     },
@@ -17,6 +17,7 @@ use plonky2x::{
     utils::bytes32,
 };
 use primitive_types::U256;
+use casper_finality_proofs::constants::{VALIDATORS_PER_COMMITTEE};
 
 struct Subcommittee {
     pub pubkeys: Vec<U256>,
@@ -28,11 +29,11 @@ struct Subcommittee {
 impl Subcommittee {
     pub fn normalize(&mut self) {
         self.pubkeys
-            .resize_with(VALIDATORS_PER_SUBCOMMITTEE, Default::default);
+            .resize_with(VALIDATORS_PER_COMMITTEE, Default::default);
         self.indices
-            .resize_with(VALIDATORS_PER_SUBCOMMITTEE, Default::default);
+            .resize_with(VALIDATORS_PER_COMMITTEE, Default::default);
         self.trusted_bitmask
-            .resize_with(VALIDATORS_PER_SUBCOMMITTEE, Default::default);
+            .resize_with(VALIDATORS_PER_COMMITTEE, Default::default);
     }
 }
 
@@ -129,10 +130,10 @@ fn main() {
         input.write::<Variable>(random_value);
         input.write::<CheckpointVariable>(source_checkpoint.clone());
         input.write::<CheckpointVariable>(target_checkpoint.clone());
-        input.write::<ArrayVariable<PublicKey, VALIDATORS_PER_SUBCOMMITTEE>>(
+        input.write::<ArrayVariable<PublicKey, VALIDATORS_PER_COMMITTEE>>(
             subcommittees[i].pubkeys.clone(),
         );
-        input.write::<ArrayVariable<BoolVariable, VALIDATORS_PER_SUBCOMMITTEE>>(
+        input.write::<ArrayVariable<BoolVariable, VALIDATORS_PER_COMMITTEE>>(
             subcommittees[i].trusted_bitmask.clone(),
         );
         input.write::<Variable>(<L as PlonkParameters<D>>::Field::from_canonical_u64(

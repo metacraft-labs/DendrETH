@@ -12,7 +12,6 @@ use plonky2x::prelude::{
 use plonky2x::prelude::{CircuitVariable, Field};
 use plonky2x::utils::eth::BLSPubkey;
 
-use super::circuit2::VALIDATORS_PER_SUBCOMMITTEE;
 
 const VALIDATORS_IN_SPLIT: usize = 20;
 
@@ -122,7 +121,7 @@ impl CommitmentMapperVariable for BLSPubkeyVariable {
             plonky2::plonk::config::AlgebraicHasher<<L as PlonkParameters<D>>::Field>,
     {
         builder.watch(self, "pubkey");
-        builder.poseidon_hash(&self.variables())
+        builder.poseidon_hash(&self.variables()) //TODO: extend pubkey with ByteVariable<16> zeroes to the right
     }
 }
 
@@ -199,10 +198,6 @@ impl CountUniquePubkeys {
         <<L as PlonkParameters<D>>::Config as plonky2::plonk::config::GenericConfig<D>>::Hasher:
             plonky2::plonk::config::AlgebraicHasher<<L as PlonkParameters<D>>::Field>,
     {
-        let pubkey = builder.read::<BLSPubkeyVariable>();
-        let tree_root = pubkey.hash_tree_root(builder);
-        builder.watch(&tree_root, "tree root");
-
         let random_value = builder.read::<Variable>();
         let source = builder.read::<CheckpointVariable>();
         let target = builder.read::<CheckpointVariable>();
