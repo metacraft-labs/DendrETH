@@ -1,10 +1,11 @@
 use array_macro::array;
 use ethers::core::k256::elliptic_curve::generic_array::arr;
+use lighthouse_types::typenum::U6;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2x::{
     backend::circuit::{Circuit, DefaultParameters},
     prelude::{bytes32,CircuitVariable,ArrayVariable, BoolVariable, CircuitBuilder, Field, PlonkParameters}, 
-    frontend::{eth::vars::BLSPubkeyVariable, vars::{Bytes32Variable, SSZVariable, ByteVariable, BytesVariable}, 
+    frontend::{eth::vars::BLSPubkeyVariable, vars::{Bytes32Variable,Variable, SSZVariable, ByteVariable, BytesVariable}, 
     uint::uint64::U64Variable, 
     hash::poseidon::poseidon256::PoseidonHashOutVariable},
 };
@@ -23,7 +24,13 @@ impl Circuit for VerifyAttestationData {
             plonky2::plonk::config::AlgebraicHasher<<L as PlonkParameters<D>>::Field>,
     {
 
-        // //TODO: 1. Sigma <- Challenge Assrt != 0
+        //TODO: Sigma <-- Challange
+        let sigma: U64Variable = builder.one();
+        let _false: BoolVariable = builder._false();
+
+        //TODO: Sigma != 0
+        // let is_zero_sigma_pred = builder.is_zero(sigma);
+        // builder.assert_is_equal(is_zero_sigma_pred, _false);
 
         let prev_block_root = builder.read::<Bytes32Variable>(); 
 
@@ -31,28 +38,46 @@ impl Circuit for VerifyAttestationData {
 
         //TODO: This should be part of the final proof as it is only needed once
         // 2. 3.
-        // block_merkle_branch_proof(
-        //     builder,
-        //     prev_block_root,
-        //     attestation.clone()
-        // );
+        block_merkle_branch_proof(
+            builder,
+            prev_block_root,
+            attestation.clone()
+        );
 
-        //TODO: Assert that BLS Signature is correct
-        // builder.assert_is_equal(attestation.signature, pk_accumulator);
+        let first_validator = builder.read::<ValidatorData>();
+        // Private Accumulator 
+        let mut private_accumulator = builder.zero();
+        private_accumulator = accumulate_private(
+            builder,
+            private_accumulator,
+            first_validator.validator_index,
+            sigma,
+        );
 
-        for i in 0..10 {
-            let random_validator = builder.read::<ValidatorData>();
-            verify_validator(builder, random_validator.clone(), attestation.validators_root);
-        }
+        //BLS Accumulator
+        let mut bls_accumulator = first_validator.beacon_validator_variable.pubkey;
+        bls_accumulator = accumulate_bls(builder,bls_accumulator, first_validator.beacon_validator_variable.pubkey);
         
-        // let validator_vec: Vec<ValidatorData> = (0..VALIDATORS_PER_COMMITTEE)
-        //     .map(|_| ValidatorData::circuit_input(builder))
-        //     .collect();
+        verify_validator(builder, first_validator.clone(), attestation.validators_root);
+
+        for _ in 1..10 {
+            let cur_validator = builder.read::<ValidatorData>();
+            verify_validator(builder, cur_validator.clone(), attestation.validators_root);
+            
+            private_accumulator = accumulate_private(
+                builder,
+                private_accumulator,
+                first_validator.validator_index,
+                sigma,
+            );
+
+            bls_accumulator = accumulate_bls(builder,bls_accumulator, first_validator.beacon_validator_variable.pubkey);
+        }
+
+        //TODO: 
+        // builder.assert_is_equal(attestation.signature, bls_accumulator);
 
         // // Private BLS Accumulator for the recurssive proof
-        // let zero_bls = validator_vec[0].beacon_validator_variable.pubkey;
-        // let mut private_accumulator = validator_vec[0].beacon_validator_variable.pubkey; // TODO: validator hash
-
         // let mut pk_accumulator = validator_vec[0].beacon_validator_variable.pubkey;
         // for i in 1..VALIDATORS_PER_COMMITTEE {
 
@@ -74,12 +99,22 @@ impl Circuit for VerifyAttestationData {
         //         accumulate_bls(builder,private_accumulator, value_to_add); // TODO: validator hash
         // }
 
-        //TODO: Compare if BLSSignature of Committee equals pk_accumulator
-        //TODO: Returns private_accumulator & sigma
-        //Will accumulate sorted validator index hash messages 
+        builder.write(private_accumulator);
+        builder.write(sigma); // Ingested by CombineFinalityVotes2
     }
 }
 
+
+fn accumulate_private<L: PlonkParameters<D>, const D: usize>(
+    builder: &mut CircuitBuilder<L, D>,
+    private_accumulator: U64Variable,
+    validator_index: U64Variable,
+    sigma: U64Variable,
+    
+) -> U64Variable {
+    let multiplied = builder.mul(validator_index,sigma);
+    builder.add(private_accumulator, multiplied)
+}
 
 fn block_merkle_branch_proof<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
@@ -122,7 +157,7 @@ where
         plonky2::plonk::config::AlgebraicHasher<<L as PlonkParameters<D>>::Field>,
 {
     
-    // Ordering check
+    // Ordering check TODO: Maybe not needed?
     let align_epoch1 = builder.lte(
         validator.beacon_validator_variable.activation_eligibility_epoch,
         validator.beacon_validator_variable.activation_epoch
@@ -212,10 +247,10 @@ pub fn hash_validator<L: PlonkParameters<D>, const D: usize>(builder: &mut Circu
     builder.curta_sha256_pair(digest_comp1, digest_comp2)
 }
 
-fn accumulate_bls<L: PlonkParameters<D>, const D: usize>( // Definition may change
+fn accumulate_bls<L: PlonkParameters<D>, const D: usize>( //TODO:
     builder: &mut CircuitBuilder<L, D>,
     accumulator: BLSPubkeyVariable,
-    attestation: BLSPubkeyVariable, 
+    pubkey: BLSPubkeyVariable, 
 ) -> BLSPubkeyVariable{
 
     // Apply BLS signature and return

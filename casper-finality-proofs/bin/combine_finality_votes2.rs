@@ -5,6 +5,7 @@ use casper_finality_proofs::{
         },
         commitment_accumulator_inner::CommitmentAccumulatorInner,
     },
+    verify_attestation_data::verify_attestation_data::VerifyAttestationData,
     weigh_justification_and_finalization::checkpoint::{CheckpointValue, CheckpointVariable},
 };
 use itertools::{izip, multiunzip};
@@ -43,7 +44,7 @@ fn main() {
 
     plonky2x::utils::setup_logger();
 
-    let mut subcommittees = [
+    let mut subcommittees = [ 
         Subcommittee {
             pubkeys: vec![U256::from(1), U256::from(2), U256::from(3)],
             indices: vec![20, 10, 15],
@@ -83,7 +84,7 @@ fn main() {
     println!("\nresult = {}", result);
 
     let mut builder = CircuitBuilder::<L, D>::new();
-    CommitTrustedValidatorPubkeys::define(&mut builder);
+    VerifyAttestationData::define(&mut builder);
     let leaf_circuit = builder.build();
     // let input = leaf_circuit.input();
 
