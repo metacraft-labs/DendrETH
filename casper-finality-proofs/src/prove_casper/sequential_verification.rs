@@ -214,11 +214,6 @@ where
     <<L as PlonkParameters<D>>::Config as plonky2::plonk::config::GenericConfig<D>>::Hasher:
         plonky2::plonk::config::AlgebraicHasher<<L as PlonkParameters<D>>::Field>,
 {
-    let mut counter = 0;
-    // For each attestation run VerifyAttestationData (TODO: Missing validator_list_proof from original object)
-    //TODO: Only 1st 8
-    counter = counter + 1;
-    println!("====Attestation {}====", counter);
     // Parse Data and register as inputs for circuit
     // let attestation_input = parse_attestation_json(attestation);
     

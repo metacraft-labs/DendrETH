@@ -39,6 +39,7 @@ impl Subcommittee {
 }
 
 fn main() {
+    //TODO: Deprecated
     type L = DefaultParameters;
     const D: usize = 2;
 
@@ -84,7 +85,7 @@ fn main() {
     println!("\nresult = {}", result);
 
     let mut builder = CircuitBuilder::<L, D>::new();
-    VerifyAttestationData::define(&mut builder);
+    CommitTrustedValidatorPubkeys::define(&mut builder);
     let leaf_circuit = builder.build();
     // let input = leaf_circuit.input();
 

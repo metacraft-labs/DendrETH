@@ -40,8 +40,8 @@ fn main() -> Result<(), IOError> {
     // Parse JSON into a serde_json::Value
     let json_value: Value = serde_json::from_str(&contents)?;
 
-    let mut vad_proofs = vec![];
-
+    let mut attestation_data_proofs = vec![];
+    
     // VerifyAttestationData
     if let Some(attestations) = 
         json_value.get("attestations")
@@ -50,17 +50,23 @@ fn main() -> Result<(), IOError> {
             let mut builder = CircuitBuilder::<L, D>::new();
             VerifyAttestationData::define(&mut builder);
             let circuit = builder.build();
-
+            
+            let mut counter = 1;
             for attestation in attestations.iter().take(4) {
+                println!("====Attestation {}====", counter);
+                counter = counter + 1;
+
                 let proof = prove_verify_attestation_data::<L,D>(&circuit,attestation);
-                vad_proofs.push(proof);
+                attestation_data_proofs.push(proof);
             }
         }
     else {
         panic!("No attestations found!");
     }
-    
 
+    //CombineAttestationData
+    const chunk_size: usize = 2;
+    
     // let result = serde_json::from_value(struct_definition);
 
     // Print the structure
