@@ -86,5 +86,5 @@ pub const ZERO_HASHES: [&str; 64] = [
     "ecc502c9b1145f3950cb7d3e3842446f81a4f0df1df537cee139ef64ea984bd9",
 ];
 
-pub const TEST_VALIDATORS_IN_COMMITMENT_SIZE: usize = 3;
+pub const TEST_VALIDATORS_IN_COMMITMENT_SIZE: usize = 1;
 pub const TEST_ATTESTATIONS_READ: usize = 8;

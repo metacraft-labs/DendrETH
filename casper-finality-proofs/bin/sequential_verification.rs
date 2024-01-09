@@ -61,26 +61,33 @@ fn main() -> Result<(), IOError> {
     let mut proofs = attestation_data_proofs;
 
     println!("SIZE: {}", proofs.len());
-    let child_circuit = vad_circuit;
+    let mut child_circuit = vad_circuit;
     let mut level = 0;
+    let mut leaf_builder = CircuitBuilder::<L, D>::new();
+    CommitmentAccumulatorInner::define(&mut leaf_builder, &child_circuit);
+    // let leaf_circuit = leaf_builder.build();
+    
+    println!("Proving {}-th layer", level + 1);
+
     loop {
+        let mut inner_builder = CircuitBuilder::<L, D>::new();
+        CommitmentAccumulatorInner::define(&mut inner_builder, &child_circuit);
+        child_circuit = inner_builder.build();
+
         println!("Proving {}-th layer", level + 1);
 
-        let mut builder = CircuitBuilder::<L, D>::new();
-        CommitmentAccumulatorInner::define(&mut builder, &child_circuit);
-        let inner_circuit = builder.build();
-
         let mut final_output: Option<PublicOutput<L, D>> = None;
-
         let mut new_proofs = vec![];
         for i in (0..proofs.len()).step_by(2) {
-            println!("{}th pair", i / 2 + 1);
-            let mut input = inner_circuit.input();
+            println!("Pair [{}]", i / 2 + 1);
+            let mut input = child_circuit.input();
+            
             input.proof_write(proofs[i].clone());
             input.proof_write(proofs[i + 1].clone());
-            let (proof, output) = inner_circuit.prove(&input);
+
+            let (proof, output) = child_circuit.prove(&input);
             final_output = Some(output);
-            println!("OUTPUT {}: {:?}",i, final_output);
+            // println!("OUTPUT {}: {:?}",i, final_output);
             new_proofs.push(proof);
             
         }
