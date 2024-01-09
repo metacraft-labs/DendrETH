@@ -4,11 +4,11 @@ use plonky2x::frontend::uint::uint64::U64Variable;
 use plonky2x::frontend::vars::Bytes32Variable;
 use serde_json::Value;
 use std::fs::File;
-use std::io::{Read, Error as IOError};
+use std::io::{Error as IOError, Read};
 
 use plonky2x::{
     backend::circuit::{Circuit, DefaultParameters, PublicOutput},
-    prelude::CircuitBuilder, 
+    prelude::CircuitBuilder,
 };
 
 use casper_finality_proofs::{
@@ -17,7 +17,6 @@ use casper_finality_proofs::{
 };
 
 fn main() -> Result<(), IOError> {
-
     type L = DefaultParameters;
     const D: usize = 2;
 
@@ -29,31 +28,27 @@ fn main() -> Result<(), IOError> {
 
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
-    
+
     // Parse JSON into a serde_json::Value
     let json_value: Value = serde_json::from_str(&contents)?;
 
     // VerifyAttestationData
     let mut attestation_data_proofs = vec![];
-    
+
     let mut vad_builder = CircuitBuilder::<L, D>::new();
     VerifyAttestationData::define(&mut vad_builder);
     let vad_circuit = vad_builder.build();
-    
-    if let Some(attestations) = 
-        json_value.get("attestations")
-        .and_then(Value::as_array) {
-            
-            let mut counter = 1;
-            for attestation in attestations.iter().take(TEST_ATTESTATIONS_READ) {
-                println!("====Attestation {}====", counter);
-                counter += 1;
 
-                let proof = prove_verify_attestation_data::<L,D>(&vad_circuit,attestation);
-                attestation_data_proofs.push(proof);
-            }
+    if let Some(attestations) = json_value.get("attestations").and_then(Value::as_array) {
+        let mut counter = 1;
+        for attestation in attestations.iter().take(TEST_ATTESTATIONS_READ) {
+            println!("====Attestation {}====", counter);
+            counter += 1;
+
+            let proof = prove_verify_attestation_data::<L, D>(&vad_circuit, attestation);
+            attestation_data_proofs.push(proof);
         }
-    else {
+    } else {
         panic!("No attestations found!");
     }
 
@@ -66,7 +61,7 @@ fn main() -> Result<(), IOError> {
     let mut leaf_builder = CircuitBuilder::<L, D>::new();
     CommitmentAccumulatorInner::define(&mut leaf_builder, &child_circuit);
     // let leaf_circuit = leaf_builder.build();
-    
+
     println!("Proving {}-th layer", level + 1);
 
     loop {
@@ -81,7 +76,12 @@ fn main() -> Result<(), IOError> {
         for i in (0..proofs.len()).step_by(2) {
             println!("Pair [{}]", i / 2 + 1);
             let mut input = child_circuit.input();
-            
+
+            println!(
+                "Proof public inputs size: {}",
+                proofs[i].public_inputs.len()
+            );
+
             input.proof_write(proofs[i].clone());
             input.proof_write(proofs[i + 1].clone());
 
@@ -89,7 +89,6 @@ fn main() -> Result<(), IOError> {
             final_output = Some(output);
             // println!("OUTPUT {}: {:?}",i, final_output);
             new_proofs.push(proof);
-            
         }
 
         proofs = new_proofs;
@@ -103,17 +102,15 @@ fn main() -> Result<(), IOError> {
             let _sigma = final_output.proof_read::<U64Variable>();
             let _source = final_output.proof_read::<Bytes32Variable>();
             let _target = final_output.proof_read::<Bytes32Variable>();
-            println!("\n\n=====FINAL PROOF====\n\n{:?}",final_output);
-            println!("\nCOMMITMENT: {}",vad_aggregated_commitment);
+            println!("\n\n=====FINAL PROOF====\n\n{:?}", final_output);
+            println!("\nCOMMITMENT: {}", vad_aggregated_commitment);
             break;
         }
-    }   
+    }
     // let result = serde_json::from_value(struct_definition);
 
     // Print the structure
     // print_json_value(&json_value, 0);
-
-
 
     Ok(())
 }

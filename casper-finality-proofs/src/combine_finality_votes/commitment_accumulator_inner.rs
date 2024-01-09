@@ -27,15 +27,15 @@ impl CommitmentAccumulatorInner {
         let mut left_proof_reader = ProofWithPublicInputsTargetReader::from(left_proof);
         let mut right_proof_reader = ProofWithPublicInputsTargetReader::from(right_proof);
 
-        let l_source = left_proof_reader.read::<Bytes32Variable>();
-        let l_target = left_proof_reader.read::<Bytes32Variable>();
-        let l_commitment = left_proof_reader.read::<U64Variable>();
         let l_sigma =  left_proof_reader.read::<U64Variable>();
+        let l_commitment = left_proof_reader.read::<U64Variable>();
+        let l_target = left_proof_reader.read::<Bytes32Variable>();
+        let l_source = left_proof_reader.read::<Bytes32Variable>();
 
-        let r_source = right_proof_reader.read::<Bytes32Variable>();
-        let r_target = right_proof_reader.read::<Bytes32Variable>();
+        let r_sigma =  right_proof_reader.read::<U64Variable>();
         let r_commitment = right_proof_reader.read::<U64Variable>();
-        let r_sigma =  left_proof_reader.read::<U64Variable>();
+        let r_target = right_proof_reader.read::<Bytes32Variable>();
+        let r_source = right_proof_reader.read::<Bytes32Variable>();
 
         //TODO: Figure out why asserts FAIL!
         // builder.assert_is_equal(l_sigma, r_sigma);
@@ -49,7 +49,7 @@ impl CommitmentAccumulatorInner {
         builder.proof_write(l_target);
         builder.proof_write(commitment);
         builder.proof_write(l_sigma);
-        
-        
+
+
     }
 }
