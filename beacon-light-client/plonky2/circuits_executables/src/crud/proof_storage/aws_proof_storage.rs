@@ -1,6 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use aws_config::Region;
+use aws_config::{BehaviorVersion, Region};
 use aws_sdk_s3::{primitives::ByteStream, Client, Config};
 
 use super::proof_storage::ProofStorage;
@@ -12,7 +12,7 @@ pub struct AwsStorage {
 
 impl AwsStorage {
     pub async fn new(endpoint_url: String, region: String, bucket_name: String) -> AwsStorage {
-        let aws_config = aws_config::from_env().load().await;
+        let aws_config = aws_config::defaults(BehaviorVersion::latest()).load().await;
 
         let s3_config = Config::builder()
             .credentials_provider(aws_config.credentials_provider().unwrap())
@@ -43,8 +43,8 @@ impl ProofStorage for AwsStorage {
             .send()
             .await?;
 
-        let mut body = resp.body.collect().await?;
-        let mut content = body.into_bytes().to_vec();
+        let body = resp.body.collect().await?;
+        let content = body.into_bytes().to_vec();
 
         Ok(content)
     }

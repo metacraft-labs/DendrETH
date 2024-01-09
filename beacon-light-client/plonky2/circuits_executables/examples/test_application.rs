@@ -1,8 +1,5 @@
 use anyhow::Result;
-use aws_config::meta::region::RegionProviderChain;
 use aws_config::Region;
-use aws_sdk_s3::config::endpoint::Endpoint;
-use aws_sdk_s3::config::Builder;
 use aws_sdk_s3::primitives::ByteStream;
 use aws_sdk_s3::{Client, Config};
 use std::env;
@@ -34,36 +31,38 @@ async fn main() -> Result<()> {
 
     let bucket_name = "your-bucket-name";
 
-    let resp = client.list_objects_v2().bucket(bucket_name).send().await?;
+    // let resp = client.list_objects_v2().bucket(bucket_name).send().await?;
 
-    println!("Objects in bucket {}:", bucket_name);
+    // println!("Objects in bucket {}:", bucket_name);
 
-    let contents = resp.contents();
+    // let contents = resp.contents();
 
-    for object in contents {
-        println!("Key: {}", object.key().unwrap_or_default());
+    // for object in contents {
+    //     println!("Key: {}", object.key().unwrap_or_default());
 
-        let key = object.key().unwrap_or_default();
+    //     let key = object.key().unwrap_or_default();
 
-        let resp = client
-            .get_object()
-            .bucket(bucket_name)
-            .key(key)
-            .send()
-            .await?;
+    //     let resp = client
+    //         .get_object()
+    //         .bucket(bucket_name)
+    //         .key(key)
+    //         .send()
+    //         .await?;
 
-        let mut body = resp.body.collect().await?;
-        let mut content = body.into_bytes().to_vec();
+    //     let mut body = resp.body.collect().await?;
+    //     let mut content = body.into_bytes().to_vec();
 
-        let content_str = String::from_utf8_lossy(&content);
+    //     let content_str = String::from_utf8_lossy(&content);
 
-        println!("Value: {}", content_str);
-    }
+    //     println!("Value: {}", content_str);
+    // }
 
     let key = "proof.bin";
 
     let data = "basi maikata lelelelelelel";
     let byte_stream = ByteStream::from(data.as_bytes().to_vec());
+
+    // client.create_bucket().bucket(bucket_name).send().await?;
 
     // Upload the object
     client

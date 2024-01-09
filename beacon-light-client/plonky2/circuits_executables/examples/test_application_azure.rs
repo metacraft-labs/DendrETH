@@ -1,4 +1,3 @@
-use azure_core::error::{ErrorKind, ResultExt};
 use azure_storage::prelude::*;
 use azure_storage_blobs::prelude::*;
 use futures::stream::StreamExt;

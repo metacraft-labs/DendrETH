@@ -15,13 +15,12 @@ use circuits_executables::{
             fetch_proofs, fetch_validator_balance_input, load_circuit_data, read_from_file,
             save_balance_proof, BalanceProof,
         },
-        proof_storage::{file_proof_storage::FileStorage, proof_storage::ProofStorage},
+        proof_storage::proof_storage::{create_proof_storage, ProofStorage},
     },
     provers::{handle_balance_inner_level_proof, SetPWValues},
     validator_balances_input::ValidatorBalancesInput,
     validator_commitment_constants::get_validator_commitment_constants,
 };
-use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     iop::witness::PartialWitness,
@@ -51,11 +50,8 @@ enum Targets {
     InnerLevel(Option<BalanceInnerCircuitTargets>),
 }
 
-fn main() -> Result<()> {
-    future::block_on(async_main())
-}
-
-async fn async_main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let matches = App::new("")
         .arg(
             Arg::with_name("redis_connection")
@@ -103,6 +99,57 @@ async fn async_main() -> Result<()> {
             .takes_value(false)
             .default_value("false")
         )
+        .arg(
+            Arg::with_name("proof_storage_type")
+                .long("proof-storage-type")
+                .value_name("proof_storage_type")
+                .help("Sets the type of proof storage")
+                .takes_value(true)
+                .required(true)
+                .possible_values(&["redis", "file", "azure", "aws"])
+        )
+        .arg(
+            Arg::with_name("folder_name")
+                .long("folder-name")
+                .value_name("folder_name")
+                .help("Sets the name of the folder proofs will be stored in")
+                .takes_value(true)
+        )
+        .arg(
+            Arg::with_name("azure_account")
+                .long("azure-account-name")
+                .value_name("azure_account")
+                .help("Sets the name of the azure account")
+                .takes_value(true)
+        )
+        .arg(
+            Arg::with_name("azure_container")
+                .long("azure-container-name")
+                .value_name("azure_container")
+                .help("Sets the name of the azure container")
+                .takes_value(true)
+        )
+        .arg(
+            Arg::with_name("aws_endpoint_url")
+                .long("aws-endpoint-url")
+                .value_name("aws_endpoint_url")
+                .help("Sets the aws endpoint url")
+                .takes_value(true)
+        )
+        .arg(
+            Arg::with_name("aws_region")
+                .long("aws-region")
+                .value_name("aws_region")
+                .help("Sets the aws region")
+                .takes_value(true)
+        )
+        .arg(
+            Arg::with_name("aws_bucket_name")
+                .long("aws-bucket-name")
+                .value_name("aws_bucket_name")
+                .help("Sets the aws bucket name")
+                .takes_value(true)
+        )
         .get_matches();
 
     let level = matches
@@ -142,7 +189,7 @@ async fn async_main() -> Result<()> {
 
     let mut con = client.get_async_connection().await?;
 
-    let mut proof_storage = FileStorage::new("proofs".to_string());
+    let mut proof_storage = create_proof_storage(&matches).await;
 
     let elapsed = start.elapsed();
 
@@ -177,7 +224,7 @@ async fn async_main() -> Result<()> {
 
     process_queue(
         &mut con,
-        &mut proof_storage,
+        proof_storage.as_mut(),
         &queue,
         &circuit_data,
         inner_circuit_data.as_ref(),

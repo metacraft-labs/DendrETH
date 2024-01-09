@@ -7,14 +7,16 @@ use circuits::{
     validator_balance_circuit::ValidatorBalanceVerificationTargets,
 };
 use circuits_executables::{
-    crud::{fetch_validator_balance_input, read_from_file},
+    crud::common::{fetch_validator_balance_input, read_from_file},
     provers::SetPWValues,
 };
 use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     iop::witness::PartialWitness,
-    plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs},
+    plonk::{
+        circuit_data::CircuitData, config::PoseidonGoldilocksConfig,
+    },
     util::serialization::Buffer,
 };
 
@@ -77,10 +79,7 @@ async fn async_main() -> Result<()> {
 
     let proof = data.prove(pw)?;
 
-    println!(
-        "proof size {}",
-        proof.to_bytes().len()
-    );
+    println!("proof size {}", proof.to_bytes().len());
 
     let elapsed = start.elapsed();
 
