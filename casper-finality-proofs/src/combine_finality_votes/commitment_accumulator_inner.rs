@@ -38,10 +38,10 @@ impl CommitmentAccumulatorInner {
         let r_source = right_proof_reader.read::<Bytes32Variable>();
 
         //TODO: Figure out why asserts FAIL!
-        // builder.assert_is_equal(l_sigma, r_sigma);
+        builder.assert_is_equal(l_sigma, r_sigma);
 
-        // builder.assert_is_equal(l_source, r_source);
-        // builder.assert_is_equal(l_target, r_target);
+        builder.assert_is_equal(l_source, r_source);
+        builder.assert_is_equal(l_target, r_target);
 
         let commitment = builder.add(l_commitment, r_commitment);
 
