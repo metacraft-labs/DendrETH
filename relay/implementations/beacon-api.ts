@@ -220,8 +220,7 @@ export class BeaconApi implements IBeaconApi {
 
     const prevFinalizedHeaderResult = await (
       await this.fetchWithFallback(
-        `/eth/v1/beacon/headers/${
-          '0x' + bytesToHex(prevBeaconSate.finalizedCheckpoint.root)
+        `/eth/v1/beacon/headers/${'0x' + bytesToHex(prevBeaconSate.finalizedCheckpoint.root)
         }`,
       )
     ).json();
@@ -270,7 +269,7 @@ export class BeaconApi implements IBeaconApi {
         bytesToHex(
           prevFinalizedBeaconState[
             prevUpdateFinalizedSyncCommmitteePeriod ===
-            currentSyncCommitteePeriod
+              currentSyncCommitteePeriod
               ? 'currentSyncCommittee'
               : 'nextSyncCommittee'
           ].aggregatePubkey,
@@ -304,8 +303,7 @@ export class BeaconApi implements IBeaconApi {
 
     const finalizedHeaderResult = await (
       await this.fetchWithFallback(
-        `/eth/v1/beacon/headers/${
-          '0x' + bytesToHex(beaconState.finalizedCheckpoint.root)
+        `/eth/v1/beacon/headers/${'0x' + bytesToHex(beaconState.finalizedCheckpoint.root)
         }`,
       )
     ).json();
@@ -397,14 +395,19 @@ export class BeaconApi implements IBeaconApi {
 
   async getValidators(
     state_id: number | string = 'head',
+    validators_count: number | undefined = undefined,
   ): Promise<Validator[]> {
     const { ssz } = await import('@lodestar/types');
 
-    const validators = await (
-      await this.fetchWithFallback(
-        `/eth/v1/beacon/states/${state_id}/validators`,
-      )
-    ).json();
+    let url = `/eth/v1/beacon/states/${state_id}/validators`;
+    if (validators_count !== undefined) {
+      const range = [...Array(validators_count).keys()];
+      url = url + `?id=${range.join(',')}`;
+    }
+
+    console.log(url);
+    const validators = await (await this.fetchWithFallback(url)).json();
+    console.log(validators);
 
     return ssz.phase0.Validators.fromJson(
       validators.data.map(x => x.validator),
@@ -450,6 +453,7 @@ export class BeaconApi implements IBeaconApi {
     let retries = 0;
     while (true) {
       try {
+        console.log('suburl', subUrl);
         const result = await fetch(this.concatUrl(subUrl), init);
         if (result.status === 429) {
           logger.warn('Rate limit exceeded');
@@ -477,9 +481,11 @@ export class BeaconApi implements IBeaconApi {
   }
 
   private concatUrl(urlPath: string): string {
-    const url = new URL(this.getCurrentApi());
-    url.pathname = path.join(url.pathname, urlPath);
+    //const url = new URL(this.getCurrentApi());
+    return this.getCurrentApi() + urlPath;
+    //url.pathname = path.join(url.pathname, urlPath);
 
-    return url.href;
+    //console.log('url href', url.href);
+    //return url.href;
   }
 }

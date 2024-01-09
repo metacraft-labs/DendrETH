@@ -1,4 +1,4 @@
-use std::{fs, marker::PhantomData, thread, time::Duration};
+use std::{fs, marker::PhantomData};
 
 use crate::{
     validator::{
@@ -6,26 +6,31 @@ use crate::{
         VALIDATOR_REGISTRY_LIMIT,
     },
     validator_balances_input::ValidatorBalancesInput,
-    validator_commitment_constants::get_validator_commitment_constants,
+    validator_commitment_constants::VALIDATOR_COMMITMENT_CONSTANTS,
 };
 use anyhow::Result;
 use circuits::{
     build_commitment_mapper_first_level_circuit::CommitmentMapperProofExt,
     build_final_circuit::FinalCircuitProofExt,
-    build_validator_balance_circuit::{
-        ValidatorBalanceProofExt,
-    },
+    build_validator_balance_circuit::ValidatorBalanceProofExt,
     generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
 };
 use num::BigUint;
 use plonky2::{
-    field::{goldilocks_field::GoldilocksField},
+    field::goldilocks_field::GoldilocksField,
     plonk::{
         circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs,
     },
 };
 use redis::{aio::Connection, AsyncCommands, RedisError};
 use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize, Serializer};
+
+#[derive(Debug, Deserialize)]
+pub struct ProofTaskData {
+    pub level: usize,
+    pub left_proof_index: usize,
+    pub right_proof_index: usize,
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -119,7 +124,9 @@ impl NeedsChange for ValidatorProof {
 
 impl KeyProvider for ValidatorProof {
     fn get_key() -> String {
-        get_validator_commitment_constants().validator_proof_key
+        VALIDATOR_COMMITMENT_CONSTANTS
+            .validator_proof_key
+            .to_owned()
     }
 }
 
@@ -131,7 +138,9 @@ impl NeedsChange for BalanceProof {
 
 impl KeyProvider for BalanceProof {
     fn get_key() -> String {
-        get_validator_commitment_constants().balance_verification_proof_key
+        VALIDATOR_COMMITMENT_CONSTANTS
+            .balance_verification_proof_key
+            .to_owned()
     }
 }
 
@@ -154,7 +163,9 @@ pub async fn fetch_validator_balance_input(
     let json_str: String = con
         .get(format!(
             "{}:{}",
-            get_validator_commitment_constants().validator_balance_input_key,
+            VALIDATOR_COMMITMENT_CONSTANTS
+                .validator_balance_input_key
+                .to_owned(),
             index
         ))
         .await?;
@@ -166,7 +177,11 @@ pub async fn fetch_validator_balance_input(
 
 pub async fn fetch_final_layer_input(con: &mut Connection) -> Result<FinalCircuitInput> {
     let json_str: String = con
-        .get(get_validator_commitment_constants().final_proof_input_key)
+        .get(
+            VALIDATOR_COMMITMENT_CONSTANTS
+                .final_proof_input_key
+                .to_owned(),
+        )
         .await?;
 
     let final_layer_input: FinalCircuitInput = serde_json::from_str(&json_str)?;
@@ -177,7 +192,7 @@ pub async fn fetch_final_layer_input(con: &mut Connection) -> Result<FinalCircui
 pub async fn save_balance_proof(
     con: &mut Connection,
     proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    depth: usize,
+    level: usize,
     index: usize,
 ) -> Result<()> {
     let balance_proof = serde_json::to_string(&BalanceProof {
@@ -194,8 +209,10 @@ pub async fn save_balance_proof(
         .set(
             format!(
                 "{}:{}:{}",
-                get_validator_commitment_constants().balance_verification_proof_key,
-                depth,
+                VALIDATOR_COMMITMENT_CONSTANTS
+                    .balance_verification_proof_key
+                    .to_owned(),
+                level,
                 index
             ),
             balance_proof,
@@ -219,7 +236,9 @@ pub async fn save_final_proof(
 
     let _: () = con
         .set(
-            get_validator_commitment_constants().final_layer_proof_key,
+            VALIDATOR_COMMITMENT_CONSTANTS
+                .final_layer_proof_key
+                .to_owned(),
             final_proof,
         )
         .await?;
@@ -234,7 +253,7 @@ pub async fn fetch_validator(
     let json_str: String = con
         .get(format!(
             "{}:{}",
-            get_validator_commitment_constants().validator_key,
+            VALIDATOR_COMMITMENT_CONSTANTS.validator_key.to_owned(),
             validator_index
         ))
         .await?;
@@ -246,11 +265,13 @@ pub async fn fetch_validator(
 pub async fn save_validator_proof(
     con: &mut Connection,
     proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    depth: usize,
+    level: usize,
     index: usize,
 ) -> Result<()> {
     let validator_proof = serde_json::to_string(&ValidatorProof {
-        poseidon_hash: proof.get_commitment_mapper_poseidon_hash_tree_root().to_vec(),
+        poseidon_hash: proof
+            .get_commitment_mapper_poseidon_hash_tree_root()
+            .to_vec(),
         sha256_hash: proof.get_commitment_mapper_sha256_hash_tree_root().to_vec(),
         proof: proof.to_bytes(),
         needs_change: false,
@@ -260,8 +281,10 @@ pub async fn save_validator_proof(
         .set(
             format!(
                 "{}:{}:{}",
-                get_validator_commitment_constants().validator_proof_key,
-                depth,
+                VALIDATOR_COMMITMENT_CONSTANTS
+                    .validator_proof_key
+                    .to_owned(),
+                level,
                 index
             ),
             validator_proof,
@@ -273,7 +296,7 @@ pub async fn save_validator_proof(
 
 pub async fn fetch_proof<T: NeedsChange + KeyProvider + DeserializeOwned>(
     con: &mut Connection,
-    depth: usize,
+    level: usize,
     index: usize,
 ) -> Result<T> {
     let mut retries = 0;
@@ -284,7 +307,7 @@ pub async fn fetch_proof<T: NeedsChange + KeyProvider + DeserializeOwned>(
         }
 
         let mut proof_result: Result<String, RedisError> = con
-            .get(format!("{}:{}:{}", T::get_key(), depth, index))
+            .get(format!("{}:{}:{}", T::get_key(), level, index))
             .await;
 
         if proof_result.is_err() {
@@ -293,7 +316,7 @@ pub async fn fetch_proof<T: NeedsChange + KeyProvider + DeserializeOwned>(
                 .get(format!(
                     "{}:{}:{}",
                     T::get_key(),
-                    depth,
+                    level,
                     VALIDATOR_REGISTRY_LIMIT
                 ))
                 .await;
@@ -303,7 +326,7 @@ pub async fn fetch_proof<T: NeedsChange + KeyProvider + DeserializeOwned>(
 
         if proof.needs_change() {
             // Wait a bit and try again
-            thread::sleep(Duration::from_secs(10));
+            // thread::sleep(Duration::from_secs(10));
             retries += 1;
 
             continue;
@@ -315,10 +338,10 @@ pub async fn fetch_proof<T: NeedsChange + KeyProvider + DeserializeOwned>(
 
 pub async fn fetch_proofs<T: NeedsChange + KeyProvider + ProofProvider + DeserializeOwned>(
     con: &mut Connection,
-    indexes: &Vec<usize>,
+    task_data: &ProofTaskData,
 ) -> Result<(Vec<u8>, Vec<u8>)> {
-    let proof1 = fetch_proof::<T>(con, indexes[0], indexes[1]).await?;
-    let proof2 = fetch_proof::<T>(con, indexes[0], indexes[2]).await?;
+    let proof1 = fetch_proof::<T>(con, task_data.level, task_data.left_proof_index).await?;
+    let proof2 = fetch_proof::<T>(con, task_data.level, task_data.right_proof_index).await?;
 
     Ok((proof1.get_proof(), proof2.get_proof()))
 }

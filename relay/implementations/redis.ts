@@ -28,7 +28,7 @@ export class Redis implements IRedis {
     this.pubSub.publish('proofs_channel', 'proof');
   }
 
-  async getValidatorsBatched(ssz, batchSize = 1000) {
+  async getValidatorsBatched(ssz, batchSize = 1000): Promise<Validator[]> {
     await this.waitForConnection();
 
     const keys = await this.redisClient.keys(
@@ -116,13 +116,11 @@ export class Redis implements IRedis {
     return result == null;
   }
 
-  async saveValidators(
-    validatorsWithIndices: { index: number; validator: string }[],
-  ) {
+  async saveValidators(validatorsWithIndices: { index: number; validatorJSON: string }[]) {
     await this.waitForConnection();
     const result: [string, string][] = validatorsWithIndices.map(vi => [
       `${validator_commitment_constants.validatorKey}:${vi.index}`,
-      vi.validator,
+      vi.validatorJSON,
     ]);
 
     await this.redisClient.mSet(result);
@@ -159,8 +157,8 @@ export class Redis implements IRedis {
   }
 
   async saveValidatorProof(
-    depth: bigint,
-    index: bigint,
+    gindex: bigint,
+    epoch: bigint,
     proof: ValidatorProof = {
       needsChange: true,
       proof: [],
@@ -171,9 +169,8 @@ export class Redis implements IRedis {
     await this.waitForConnection();
 
     await this.redisClient.set(
-      `${
-        validator_commitment_constants.validatorProofKey
-      }:${depth.toString()}:${index.toString()}`,
+      `${validator_commitment_constants.validatorProofKey
+      }:${gindex}:${epoch}`,
       JSON.stringify(proof),
     );
   }
@@ -193,8 +190,7 @@ export class Redis implements IRedis {
     await this.waitForConnection();
 
     await this.redisClient.set(
-      `${
-        validator_commitment_constants.balanceVerificationProofKey
+      `${validator_commitment_constants.balanceVerificationProofKey
       }:${depth.toString()}:${index.toString()}`,
       JSON.stringify(proof),
     );
@@ -260,6 +256,63 @@ export class Redis implements IRedis {
     await this.pubSub.subscribe('proofs_channel', listener);
   }
 
+  async getEpochsCount(gindex: number): Promise<number> {
+    await this.waitForConnection();
+
+    const result = await this.redisClient.keys(
+      `${validator_commitment_constants.validatorProofKey}:${gindex}:*`,
+    );
+
+    if (result == null) {
+      return 0;
+    }
+
+    return Number(result);
+  }
+
+  async getPathForEpoch(
+    validatorIndex: number,
+    epoch: number,
+  ): Promise<ValidatorProof[]> {
+    await this.waitForConnection();
+
+    let gindex = 2 ** 40 - 1 + validatorIndex;
+
+    let path: ValidatorProof[] = [];
+
+    for (let i = 0; i < 40; i++) {
+      let siblingGindex = getSiblingGindex(gindex);
+      const changes = await this.redisClient.keys(
+        `${validator_commitment_constants.validatorProofKey}:${siblingGindex}:*`,
+      );
+
+      if (changes.length == 0) {
+        const level = Math.floor(Math.log2(gindex + 1));
+        path.push(await this.getZeroPerLevel(level));
+      } else {
+        let lowerBoundEpoch = lowerBound(changes.map(Number), epoch);
+        const commitmentMapping = JSON.parse((await this.redisClient.get(
+          `${validator_commitment_constants.validatorProofKey}:${siblingGindex}:${lowerBoundEpoch}`
+        ))!);
+        path.push(commitmentMapping);
+      }
+
+      gindex = Math.floor((gindex - 1) / 2);
+    }
+
+    return path
+  }
+
+  private async getZeroPerLevel(level: number): Promise<ValidatorProof> {
+    await this.waitForConnection();
+
+    const result = await this.redisClient.get(
+      `${validator_commitment_constants.zeroHashesForLevelKey}:${level}`,
+    );
+
+    return JSON.parse(result!);
+  }
+
   private async waitForConnection() {
     if (!this.redisClient.isOpen) {
       await this.redisClient.connect();
@@ -269,4 +322,29 @@ export class Redis implements IRedis {
       await this.pubSub.connect();
     }
   }
+}
+
+function getSiblingGindex(gindex: number): number {
+  if (gindex % 2 == 0) {
+    // node is right sibling
+    return gindex - 1;
+  } else {
+    // node is left sibling
+    return gindex + 1;
+  }
+}
+
+function lowerBound(arr: number[], elem: number): number {
+  let low = 0;
+  let high = arr.length;
+  while (low < high) {
+    let mid = Math.floor((high + low) / 2);
+    if (elem + 1 <= arr[mid]) {
+      high = mid;
+    } else {
+      low = mid + 1;
+    }
+  }
+
+  return arr[low - 1];
 }

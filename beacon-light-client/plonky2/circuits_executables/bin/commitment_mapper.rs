@@ -6,7 +6,7 @@ use circuits::{
 use circuits_executables::{
     crud::{
         fetch_proofs, fetch_validator, load_circuit_data, read_from_file, save_validator_proof,
-        ValidatorProof,
+        ProofTaskData, ValidatorProof,
     },
     provers::{handle_commitment_mapper_inner_level_proof, SetPWValues},
     validator::VALIDATOR_REGISTRY_LIMIT,
@@ -21,20 +21,50 @@ use plonky2::{
     util::serialization::Buffer,
 };
 use redis_work_queue::{KeyPrefix, WorkQueue};
+use serde::{Deserialize, Serialize};
 use std::{format, print, println, thread, time::Duration};
 
-use validator_commitment_constants::get_validator_commitment_constants;
+use validator_commitment_constants::VALIDATOR_COMMITMENT_CONSTANTS;
 
+use bincode::Options;
 use jemallocator::Jemalloc;
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
+
+#[repr(u8)]
+#[derive(Debug, Serialize, Deserialize)]
+enum CommitmentMapperTask {
+    UpdateValidator(usize),
+    UpdateProofNode(usize),
+}
 
 fn main() -> Result<()> {
     future::block_on(async_main())
 }
 
 async fn async_main() -> Result<()> {
+    let options = bincode::DefaultOptions::new()
+        .with_fixint_encoding()
+        .with_big_endian();
+
+    let task = CommitmentMapperTask::UpdateProofNode(10);
+    let bytes = options.serialize(&task).unwrap();
+    println!("bytes: {:?}", bytes);
+
+    let data: &[u8] = &[
+        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11,
+    ];
+
+    println!(
+        "size of enum: {}",
+        std::mem::size_of::<CommitmentMapperTask>()
+    );
+    let task: CommitmentMapperTask = options.deserialize(data).unwrap();
+    println!("{:?}", task);
+
+    return Ok(());
+
     let matches = App::new("")
     .arg(
         Arg::with_name("redis_connection")
@@ -67,7 +97,9 @@ async fn async_main() -> Result<()> {
     let mut con = client.get_async_connection().await?;
 
     let queue = WorkQueue::new(KeyPrefix::new(
-        get_validator_commitment_constants().validator_proofs_queue,
+        VALIDATOR_COMMITMENT_CONSTANTS
+            .validator_proofs_queue
+            .to_owned(),
     ));
 
     let first_level_circuit_data = load_circuit_data("commitment_mapper_0")?;
@@ -114,6 +146,21 @@ async fn async_main() -> Result<()> {
 
         println!("Got job: {:?}", job.data);
 
+        let options = bincode::DefaultOptions::new()
+            .with_fixint_encoding()
+            .with_big_endian();
+
+        let task_data: CommitmentMapperTask = options.deserialize(&job.data).unwrap();
+        match task_data {
+            CommitmentMapperTask::UpdateValidator(index) => {
+                println!("validator index is {}", index);
+            }
+            CommitmentMapperTask::UpdateProofNode(gindex) => {
+                println!("proof gindex is {}", gindex);
+            }
+        };
+        std::thread::sleep(Duration::from_secs(1));
+
         if job.data.len() == 8 {
             let validator_index = u64::from_be_bytes(job.data[0..8].try_into().unwrap()) as usize;
 
@@ -145,22 +192,23 @@ async fn async_main() -> Result<()> {
                 }
             }
         } else if job.data.len() == 24 {
-            let proof_indexes = job
-                .data
-                .chunks(8)
-                .map(|chunk| u64::from_be_bytes(chunk.try_into().unwrap()) as usize)
-                .collect::<Vec<usize>>();
+            let options = bincode::DefaultOptions::new()
+                .with_fixint_encoding()
+                .with_big_endian();
 
-            println!("Got indexes: {:?}", proof_indexes);
+            let task_data: ProofTaskData = options.deserialize(&*job.data).unwrap();
+            println!("Task data: {:?}", task_data);
 
-            match fetch_proofs::<ValidatorProof>(&mut con, &proof_indexes).await {
+            match fetch_proofs::<ValidatorProof>(&mut con, &task_data).await {
                 Err(err) => {
-                    print!("Error: {}", err);
+                    // queue.add_item(&mut con, &job).await?;
+                    println!("Error: {}", err);
+                    thread::sleep(Duration::from_secs(1));
                     continue;
                 }
                 Ok(proofs) => {
-                    let inner_circuit_data = if proof_indexes[0] > 0 {
-                        &inner_circuits[proof_indexes[0] - 1].1
+                    let inner_circuit_data = if task_data.level > 0 {
+                        &inner_circuits[task_data.level - 1].1
                     } else {
                         &first_level_circuit_data
                     };
@@ -169,22 +217,31 @@ async fn async_main() -> Result<()> {
                         proofs.0,
                         proofs.1,
                         inner_circuit_data,
-                        &inner_circuits[proof_indexes[0]].0,
-                        &inner_circuits[proof_indexes[0]].1,
-                        proof_indexes[2] == VALIDATOR_REGISTRY_LIMIT && proof_indexes[0] == 0,
+                        &inner_circuits[task_data.level].0,
+                        &inner_circuits[task_data.level].1,
+                        task_data.right_proof_index == VALIDATOR_REGISTRY_LIMIT
+                            && task_data.level == 0,
                     )?;
+
+                    // Don't change the index for a zero hash
+                    let parent_validator_proof_index =
+                        if task_data.left_proof_index != VALIDATOR_REGISTRY_LIMIT {
+                            task_data.left_proof_index / 2
+                        } else {
+                            task_data.left_proof_index
+                        };
 
                     match save_validator_proof(
                         &mut con,
                         proof,
-                        proof_indexes[0] + 1,
-                        proof_indexes[1],
+                        task_data.level + 1,
+                        parent_validator_proof_index,
                     )
                     .await
                     {
                         Err(err) => {
-                            print!("Error: {}", err);
-                            thread::sleep(Duration::from_secs(10));
+                            println!("Error: {}", err);
+                            thread::sleep(Duration::from_secs(1));
                             continue;
                         }
                         Ok(_) => {

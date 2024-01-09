@@ -178,3 +178,8 @@ export interface BalanceProof {
   balancesHash: number[];
   withdrawalCredentials: string;
 }
+
+export interface IndexedValidator {
+  index: number;
+  validator: Validator;
+}
