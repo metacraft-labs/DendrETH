@@ -1,27 +1,20 @@
-use serde_json::{Value, Error};
-use serde::Deserialize;
-use serde_with::serde_as;
-use std::any;
+use casper_finality_proofs::combine_finality_votes::commitment_accumulator_inner::CommitmentAccumulatorInner;
+use casper_finality_proofs::constants::TEST_ATTESTATIONS_READ;
+use plonky2x::frontend::uint::uint64::U64Variable;
+use plonky2x::frontend::vars::Bytes32Variable;
+use serde_json::Value;
 use std::fs::File;
 use std::io::{Read, Error as IOError};
 
-use plonky2::hash::hash_types::RichField;
 use plonky2x::{
-    backend::circuit::{Circuit, DefaultParameters},
-    prelude::{bytes32,CircuitVariable,ArrayVariable, BoolVariable, CircuitBuilder, Field, PlonkParameters, Variable, U256Variable}, 
-    frontend::{eth::{beacon::vars::BeaconValidatorVariable, vars::BLSPubkeyVariable},
-    // frontend::{eth::vars::BLSPubkeyVariable,
-        vars::{Bytes32Variable}, uint::uint64::U64Variable, hash::poseidon::poseidon256::PoseidonHashOutVariable},
+    backend::circuit::{Circuit, DefaultParameters, PublicOutput},
+    prelude::CircuitBuilder, 
 };
 
 use casper_finality_proofs::{
     prove_casper::sequential_verification::prove_verify_attestation_data,
     verify_attestation_data::verify_attestation_data::VerifyAttestationData,
 };
-
-const VALIDATORS_PER_COMMITTEE: usize = 412; // 2048
-const PLACEHOLDER: usize = 11;
-
 
 fn main() -> Result<(), IOError> {
 
@@ -40,23 +33,23 @@ fn main() -> Result<(), IOError> {
     // Parse JSON into a serde_json::Value
     let json_value: Value = serde_json::from_str(&contents)?;
 
+    // VerifyAttestationData
     let mut attestation_data_proofs = vec![];
     
-    // VerifyAttestationData
+    let mut vad_builder = CircuitBuilder::<L, D>::new();
+    VerifyAttestationData::define(&mut vad_builder);
+    let vad_circuit = vad_builder.build();
+    
     if let Some(attestations) = 
         json_value.get("attestations")
         .and_then(Value::as_array) {
-
-            let mut builder = CircuitBuilder::<L, D>::new();
-            VerifyAttestationData::define(&mut builder);
-            let circuit = builder.build();
             
             let mut counter = 1;
-            for attestation in attestations.iter().take(4) {
+            for attestation in attestations.iter().take(TEST_ATTESTATIONS_READ) {
                 println!("====Attestation {}====", counter);
-                counter = counter + 1;
+                counter += 1;
 
-                let proof = prove_verify_attestation_data::<L,D>(&circuit,attestation);
+                let proof = prove_verify_attestation_data::<L,D>(&vad_circuit,attestation);
                 attestation_data_proofs.push(proof);
             }
         }
@@ -65,8 +58,49 @@ fn main() -> Result<(), IOError> {
     }
 
     //CombineAttestationData
-    const chunk_size: usize = 2;
-    
+    let mut proofs = attestation_data_proofs;
+
+    println!("SIZE: {}", proofs.len());
+    let child_circuit = vad_circuit;
+    let mut level = 0;
+    loop {
+        println!("Proving {}-th layer", level + 1);
+
+        let mut builder = CircuitBuilder::<L, D>::new();
+        CommitmentAccumulatorInner::define(&mut builder, &child_circuit);
+        let inner_circuit = builder.build();
+
+        let mut final_output: Option<PublicOutput<L, D>> = None;
+
+        let mut new_proofs = vec![];
+        for i in (0..proofs.len()).step_by(2) {
+            println!("{}th pair", i / 2 + 1);
+            let mut input = inner_circuit.input();
+            input.proof_write(proofs[i].clone());
+            input.proof_write(proofs[i + 1].clone());
+            let (proof, output) = inner_circuit.prove(&input);
+            final_output = Some(output);
+            println!("OUTPUT {}: {:?}",i, final_output);
+            new_proofs.push(proof);
+            
+        }
+
+        proofs = new_proofs;
+        println!("Proofs size: {}", proofs.len());
+        level += 1;
+
+        if proofs.len() == 1 {
+            println!("FINAL PROOF!!!");
+            let mut final_output = final_output.unwrap();
+            let vad_aggregated_commitment = final_output.proof_read::<U64Variable>();
+            let _sigma = final_output.proof_read::<U64Variable>();
+            let _source = final_output.proof_read::<Bytes32Variable>();
+            let _target = final_output.proof_read::<Bytes32Variable>();
+            println!("\n\n=====FINAL PROOF====\n\n{:?}",final_output);
+            println!("\nCOMMITMENT: {}",vad_aggregated_commitment);
+            break;
+        }
+    }   
     // let result = serde_json::from_value(struct_definition);
 
     // Print the structure

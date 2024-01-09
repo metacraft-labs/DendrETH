@@ -121,8 +121,8 @@ pub struct AttestationData {
     beacon_block_root: Bytes32Variable,
 
     // FFG vote
-    source: Bytes32Variable,
-    target: Bytes32Variable,
+    pub source: Bytes32Variable,
+    pub target: Bytes32Variable,
 }
 
 impl AttestationData {
@@ -190,7 +190,7 @@ impl Fork {
 #[derive(Debug, Clone)]
 pub struct Attestation {
     // Standard attestation data
-    data: AttestationData,
+    pub data: AttestationData,
     // pub signature: BLSPubkeyVariable, //TODO: BLSVariable 
 
     // Needed to compute the `signing_root` and verify the `signature`

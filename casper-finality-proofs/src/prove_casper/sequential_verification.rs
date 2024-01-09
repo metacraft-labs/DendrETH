@@ -30,12 +30,13 @@ use plonky2x::{
         PlonkParameters, U256Variable, Variable,
     },
 };
-use crate::verify_attestation_data::verify_attestation_data::VerifyAttestationData;
+use plonky2::field::goldilocks_field::GoldilocksField;
+
 use crate::constants::{
     STATE_ROOT_PROOF_LEN, VALIDATORS_HASH_TREE_DEPTH, VALIDATORS_PER_COMMITTEE,
-    VALIDATORS_ROOT_PROOF_LEN, VERSION_OBJ_BYTES, ZERO_HASHES
+    VALIDATORS_ROOT_PROOF_LEN, VERSION_OBJ_BYTES, ZERO_HASHES, TEST_VALIDATORS_IN_COMMITMENT_SIZE
 };
-use crate::utils::eth_objects::BeaconValidatorVariable;
+use crate::weigh_justification_and_finalization::checkpoint::{CheckpointValue, CheckpointVariable};
 
 fn deserialize_checkpoint<'de, D>(deserializer: D) -> Result<String, D::Error>
 where
@@ -106,19 +107,12 @@ impl ValidatorDataInput {
         input.write::<U64Variable>(self.validator_index); 
         self.beacon_validator_variable.write(&mut input);
 
-        // input.write::<Bytes32Variable>(bytes32!(self.validator_state_root));
-        // input.write::<Bytes32Variable>(bytes32!(self.validator_leaf));
         input.write::<ArrayVariable<Bytes32Variable, VALIDATORS_HASH_TREE_DEPTH>>(
             self.validator_list_proof
             .iter()
-            .map(|element| {
-                println!("{}",element);
-                bytes32!(element)
-                }
-            )
+            .map(|element| bytes32!(element))
             .collect()
         );
-        // input.write::<U64Variable>(self.validator_gindex);
     }
 }
 
@@ -142,7 +136,8 @@ impl ForkInput {
         input.write::<U64Variable>(self.epoch); 
     }
 }
-#[derive(Debug, Clone, Serialize, Deserialize)]
+
+#[derive(Debug, Clone, Deserialize)]
 pub struct AttestationDataInput {
     slot: u64,
     index: u64,
@@ -156,6 +151,7 @@ pub struct AttestationDataInput {
     target: String,
 }
 
+
 impl AttestationDataInput {
     pub fn write<L: PlonkParameters<D>, const D: usize>(&self, input: &mut PublicInput<L, D>) {
         input.write::<U64Variable>(self.slot); 
@@ -166,7 +162,7 @@ impl AttestationDataInput {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct AttestationInput {
     data: AttestationDataInput,
     // signature: String,
@@ -176,8 +172,6 @@ pub struct AttestationInput {
     state_root_proof: Vec<String>,
     validators_root: String,
     validators_root_proof: Vec<String>,
-    // validators - array of BeaconValidatorVariables not passed
-    // validator_list_proof - not passed
 }
 
 impl AttestationInput {
@@ -216,15 +210,13 @@ where
 {
     // Parse Data and register as inputs for circuit
     // let attestation_input = parse_attestation_json(attestation);
-    
-
     let attestation_input: AttestationInput = serde_json::from_value(attestation.clone()).unwrap();
 
     let validators: Vec<ValidatorDataInput>= attestation.get("validators").clone()
         .and_then(Value::as_array)
         .unwrap()
         .iter()
-        .take(10)
+        .take(TEST_VALIDATORS_IN_COMMITMENT_SIZE)
         .map(|validator|serde_json::from_value(validator.clone()).unwrap())
         .collect();
     
@@ -241,9 +233,8 @@ where
         validator.write(&mut input);
     }
 
-    let (proof, mut output) = circuit.prove(&input);
+    let (proof, _output) = circuit.prove(&input);
 
-    println!("\n\nOUTPUT: {:?}", output);
     proof
 }
 

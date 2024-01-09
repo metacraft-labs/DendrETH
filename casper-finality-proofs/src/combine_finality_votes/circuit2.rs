@@ -1,11 +1,10 @@
-use crate::utils::plonky2x_extensions::assert_is_true;
-use crate::weigh_justification_and_finalization::checkpoint::CheckpointVariable;
 
 use plonky2x::backend::circuit::Circuit;
+use plonky2x::frontend::vars::Bytes32Variable;
 use plonky2x::prelude::{
     ArrayVariable, BoolVariable, CircuitBuilder, PlonkParameters, U256Variable, Variable,
 };
-use plonky2x::prelude::{CircuitVariable, Field};
+use plonky2x::prelude::CircuitVariable;
 use crate:: constants::VALIDATORS_PER_COMMITTEE;
 
 pub type PublicKey = U256Variable;
@@ -99,8 +98,8 @@ impl Circuit for CommitTrustedValidatorPubkeys {
     {
         // padded with zeroes until the end for validator keys that haven't signed
         let random_value = builder.read::<Variable>();
-        let source = builder.read::<CheckpointVariable>();
-        let target = builder.read::<CheckpointVariable>();
+        let source = builder.read::<Bytes32Variable>();
+        let target = builder.read::<Bytes32Variable>();
 
         let pubkeys = builder.read::<ArrayVariable<PublicKey, VALIDATORS_PER_COMMITTEE>>();
         let trusted_validators_bitmask =

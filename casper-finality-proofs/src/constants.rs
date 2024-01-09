@@ -16,6 +16,9 @@ pub const STATE_ROOT_PROOF_LEN: usize = 3;
 
 pub const VERSION_OBJ_BYTES: usize = 4;
 
+pub const VALIDATOR_ROOT_GINDEX: usize = 11;
+pub const STATE_ROOT_GINDEX: usize = 43;
+
 pub const ZERO_HASHES: [&str; 64] = [
     "0000000000000000000000000000000000000000000000000000000000000000",
     "f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b",
@@ -82,3 +85,6 @@ pub const ZERO_HASHES: [&str; 64] = [
     "2f8a181f7c99dd215a7529bfe296a9603a1446737186d21aeb8bc7ae59e1fd21",
     "ecc502c9b1145f3950cb7d3e3842446f81a4f0df1df537cee139ef64ea984bd9",
 ];
+
+pub const TEST_VALIDATORS_IN_COMMITMENT_SIZE: usize = 3;
+pub const TEST_ATTESTATIONS_READ: usize = 8;

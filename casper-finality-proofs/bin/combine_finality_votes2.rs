@@ -147,8 +147,9 @@ fn main() {
     }
 
     let mut child_circuit = leaf_circuit;
-
     let mut level = 0;
+
+    
     loop {
         println!("Proving {}th layer", level + 1);
 

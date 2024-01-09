@@ -1,7 +1,3 @@
-use array_macro::array;
-use ethers::core::k256::elliptic_curve::generic_array::arr;
-use lighthouse_types::typenum::U6;
-use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2x::{
     backend::circuit::{Circuit, DefaultParameters},
     prelude::{bytes32,CircuitVariable,ArrayVariable, BoolVariable, CircuitBuilder, Field, PlonkParameters}, 
@@ -10,7 +6,7 @@ use plonky2x::{
     hash::poseidon::poseidon256::PoseidonHashOutVariable},
 };
 
-use crate::utils::eth_objects::{ValidatorData, Fork, AttestationData, Attestation, BeaconValidatorVariable};
+use crate::{utils::eth_objects::{ValidatorData, Fork, AttestationData, Attestation, BeaconValidatorVariable}, constants::{TEST_VALIDATORS_IN_COMMITMENT_SIZE, VALIDATOR_ROOT_GINDEX, STATE_ROOT_GINDEX}};
 use crate::constants::{VALIDATORS_HASH_TREE_DEPTH, VALIDATORS_PER_COMMITTEE,VALIDATORS_ROOT_PROOF_LEN, STATE_ROOT_PROOF_LEN};
 use crate::combine_finality_votes::count_unique_pubkeys::ssz_verify_proof_poseidon;
 
@@ -60,7 +56,7 @@ impl Circuit for VerifyAttestationData {
         
         verify_validator(builder, first_validator.clone(), attestation.validators_root);
 
-        for _ in 1..10 {
+        for _ in 1..TEST_VALIDATORS_IN_COMMITMENT_SIZE {
             let cur_validator = builder.read::<ValidatorData>();
             verify_validator(builder, cur_validator.clone(), attestation.validators_root);
             
@@ -98,7 +94,8 @@ impl Circuit for VerifyAttestationData {
         //         ); 
         //         accumulate_bls(builder,private_accumulator, value_to_add); // TODO: validator hash
         // }
-        
+        builder.write(attestation.data.source);
+        builder.write(attestation.data.target);
         builder.write(private_accumulator);
         builder.write(sigma); // Ingested by CombineFinalityVotes2
     }
@@ -122,8 +119,8 @@ fn block_merkle_branch_proof<L: PlonkParameters<D>, const D: usize>(
     attestation: Attestation
 ) {
     // let field_eleven = <L as PlonkParameters<D>>::Field::from_canonical_u64(11);
-    let const11 = builder.constant(11 as u64);
-    let const43 = builder.constant(43 as u64);
+    let const11 = builder.constant(VALIDATOR_ROOT_GINDEX as u64);
+    let const43 = builder.constant(STATE_ROOT_GINDEX as u64);
 
     // Verify that the given `state_root` is in the last trusted `block_root`
     builder.ssz_verify_proof(
@@ -183,7 +180,7 @@ where
 
     let validator_leaf = hash_validator(builder, validator.beacon_validator_variable);
 
-    let first_validators_gindex: U64Variable = builder.constant(2u64.pow(41));
+    let first_validators_gindex: U64Variable = builder.constant(2u64.pow(VALIDATORS_HASH_TREE_DEPTH as u32));
     let gindex = builder.add(first_validators_gindex, validator.validator_index);
 
     builder.ssz_verify_proof(
