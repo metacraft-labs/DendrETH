@@ -1,0 +1,11 @@
+{
+	"/": [
+		"src/routes/+page.js"
+	],
+	"/docs": [
+		"src/routes/docs/+page.js"
+	],
+	"/explorer": [
+		"src/routes/explorer/+page.server.js"
+	]
+}
