@@ -26,8 +26,7 @@ enum TypeResult {
 }
 
 #[derive(Parser, Debug)]
-#[clap(author, version, about, long_about = None)]
-struct CircuitSerializer {
+struct CommandLineCircuit {
     /// Enter name of circuit
     #[clap(value_delimiter = ' ', num_args = 0..)]
     name: Circuits,
@@ -69,14 +68,14 @@ fn main() {
     let circuit = builder.build();
     let hint_serializer = HintRegistry::<L, D>::new();
     let gate_serializer = GateRegistry::<L, D>::new();
-    let circuit_serializer: CircuitSerializer = CircuitSerializer::parse();
+    let command_line_circuit: CommandLineCircuit = CommandLineCircuit::parse();
     let command_line_arguments: Vec<String> = args().skip(1).collect();
 
-    if circuit_serializer.name != Circuits::all {
+    if command_line_circuit.name != Circuits::all {
         for (_, arg) in command_line_arguments.iter().enumerate() {
-            for word in arg.split_whitespace() {
-                build_circuit(word);
-                let path = format!("build/{}", word);
+            for _circuit in arg.split_whitespace() {
+                build_circuit(_circuit);
+                let path = format!("build/{}", _circuit);
                 circuit.save(&path, &gate_serializer, &hint_serializer);
             }
         }
