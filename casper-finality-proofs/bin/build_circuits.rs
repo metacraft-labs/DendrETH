@@ -12,11 +12,12 @@ use plonky2x::{
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 
 #[derive(Debug, Eq, Hash, PartialEq, Copy, Clone, EnumString, Display, EnumIter)]
+#[allow(non_camel_case_types)]
 enum Circuits {
-    ComputeShuffledIndexMainnet,
-    ComputeShuffledIndexMinimal,
-    WeighJustificationAndFinalization,
-    All,
+    compute_shuffled_index_mainnet,
+    compute_shuffled_index_minimal,
+    weigh_justification_and_finalization,
+    all,
 }
 
 enum TypeResult {
@@ -33,19 +34,19 @@ struct CircuitSerializer {
 
 fn build_specific_circuit(circuit: Circuits) -> (Box<dyn Fn() -> () + Send + Sync>, String) {
     match circuit {
-        Circuits::ComputeShuffledIndexMainnet => (
+        Circuits::compute_shuffled_index_mainnet => (
             Box::new(|| {
                 Lazy::force(&circuit_mainnet);
             }),
             "compute_shuffled_index_mainnet".to_string(),
         ),
-        Circuits::ComputeShuffledIndexMinimal => (
+        Circuits::compute_shuffled_index_minimal => (
             Box::new(|| {
                 Lazy::force(&circuit_minimal);
             }),
             "compute_shuffled_index_minimal".to_string(),
         ),
-        Circuits::WeighJustificationAndFinalization => (
+        Circuits::weigh_justification_and_finalization => (
             Box::new(|| {
                 Lazy::force(&circuit_weigh_justification_and_finalization);
             }),
@@ -61,71 +62,63 @@ fn build_specific_circuit(circuit: Circuits) -> (Box<dyn Fn() -> () + Send + Syn
 }
 
 // No need of returning strings as we will be building and executing every circuit anyway
-fn build_all_circuits() -> Vec<(Box<dyn Fn() -> () + Send + Sync>, String)> {
+// Remove () before Box::new() if not using Vec<tuple>
+fn build_all_circuits() -> Vec<Box<dyn Fn() -> () + Send + Sync>> {
     vec![
-        (
-            Box::new(|| {
-                Lazy::force(&circuit_mainnet);
-            }),
-            "compute_shuffled_index_mainnet".to_string(),
-        ),
-        (
-            Box::new(|| {
-                Lazy::force(&circuit_minimal);
-            }),
-            "compute_shuffled_index_minimal".to_string(),
-        ),
-        (
-            Box::new(|| {
-                Lazy::force(&circuit_weigh_justification_and_finalization);
-            }),
-            "weigh_justification_and_finalization".to_string(),
-        ),
+        (Box::new(|| {
+            Lazy::force(&circuit_mainnet);
+        })),
+        (Box::new(|| {
+            Lazy::force(&circuit_minimal);
+        })),
+        (Box::new(|| {
+            Lazy::force(&circuit_weigh_justification_and_finalization);
+        })),
     ]
 }
 
-fn build_circuit(circuits: Circuits) -> TypeResult {
-    match circuits {
-        Circuits::ComputeShuffledIndexMainnet => TypeResult::OneCircuit((
-            Box::new(|| {
-                Lazy::force(&circuit_mainnet);
-            }),
-            "compute_shuffled_index_mainnet".to_string(),
-        )),
-        Circuits::ComputeShuffledIndexMinimal => TypeResult::OneCircuit((
-            Box::new(|| {
-                Lazy::force(&circuit_minimal);
-            }),
-            "compute_shuffled_index_minimal".to_string(),
-        )),
-        Circuits::WeighJustificationAndFinalization => TypeResult::OneCircuit((
-            Box::new(|| {
-                Lazy::force(&circuit_weigh_justification_and_finalization);
-            }),
-            "weigh_justification_and_finalization".to_string(),
-        )),
-        Circuits::All => TypeResult::AllCircuits(vec![
-            (
-                Box::new(|| {
-                    Lazy::force(&circuit_mainnet);
-                }),
-                "compute_shuffled_index_mainnet".to_string(),
-            ),
-            (
-                Box::new(|| {
-                    Lazy::force(&circuit_minimal);
-                }),
-                "compute_shuffled_index_minimal".to_string(),
-            ),
-            (
-                Box::new(|| {
-                    Lazy::force(&circuit_weigh_justification_and_finalization);
-                }),
-                "weigh_justification_and_finalization".to_string(),
-            ),
-        ]),
-    }
-}
+// fn build_circuit(circuits: Circuits) -> TypeResult {
+//     match circuits {
+//         Circuits::ComputeShuffledIndexMainnet => TypeResult::OneCircuit((
+//             Box::new(|| {
+//                 Lazy::force(&circuit_mainnet);
+//             }),
+//             "compute_shuffled_index_mainnet".to_string(),
+//         )),
+//         Circuits::ComputeShuffledIndexMinimal => TypeResult::OneCircuit((
+//             Box::new(|| {
+//                 Lazy::force(&circuit_minimal);
+//             }),
+//             "compute_shuffled_index_minimal".to_string(),
+//         )),
+//         Circuits::WeighJustificationAndFinalization => TypeResult::OneCircuit((
+//             Box::new(|| {
+//                 Lazy::force(&circuit_weigh_justification_and_finalization);
+//             }),
+//             "weigh_justification_and_finalization".to_string(),
+//         )),
+//         Circuits::All => TypeResult::AllCircuits(vec![
+//             (
+//                 Box::new(|| {
+//                     Lazy::force(&circuit_mainnet);
+//                 }),
+//                 "compute_shuffled_index_mainnet".to_string(),
+//             ),
+//             (
+//                 Box::new(|| {
+//                     Lazy::force(&circuit_minimal);
+//                 }),
+//                 "compute_shuffled_index_minimal".to_string(),
+//             ),
+//             (
+//                 Box::new(|| {
+//                     Lazy::force(&circuit_weigh_justification_and_finalization);
+//                 }),
+//                 "weigh_justification_and_finalization".to_string(),
+//             ),
+//         ]),
+//     }
+// }
 
 fn main() {
     type L = DefaultParameters;
@@ -137,21 +130,17 @@ fn main() {
     let gate_serializer = GateRegistry::<L, D>::new();
     let circuit_serializer: CircuitSerializer = CircuitSerializer::parse();
 
-    if circuit_serializer.name != Circuits::All {
-        // let my_variable: Box<dyn Fn() -> () + Send + Sync> = Box::new(|| {
-        //     Lazy::force(&circuit_minimal);
-        // });
-        // my_variable = build_circuit(circuit_serializer.name);
-        // let mut test: TypeResult = TypeResult::OneCircuit((_, "asd".to_string()));
-        // [()] or ()
+    if circuit_serializer.name != Circuits::all {
         let (_, circuit_name) = build_specific_circuit(circuit_serializer.name);
-        let path = format!("build/${}", circuit_name);
+        let path = format!("build/{}", circuit_name);
         circuit.save(&path, &gate_serializer, &hint_serializer);
     } else {
         build_all_circuits();
-        for i in 0..Circuits::iter().count() {
-            let path = format!("build/${}", circuit_name);
-            circuit.save(&path, &gate_serializer, &hint_serializer);
+        for _circuit in Circuits::iter() {
+            if _circuit != Circuits::all {
+                let path = format!("build/{}", _circuit.to_string());
+                circuit.save(&path, &gate_serializer, &hint_serializer);
+            }
         }
     }
 }
