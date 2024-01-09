@@ -9,8 +9,8 @@ use plonky2x::{
     backend::circuit::{DefaultParameters, GateRegistry, HintRegistry},
     frontend::builder::CircuitBuilder,
 };
+use std::env::args;
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
-
 #[derive(Debug, Eq, Hash, PartialEq, Copy, Clone, EnumString, Display, EnumIter)]
 #[allow(non_camel_case_types)]
 enum Circuits {
@@ -20,49 +20,37 @@ enum Circuits {
     all,
 }
 
-enum TypeResult {
-    OneCircuit((Box<dyn Fn() -> () + Send + Sync>, String)),
-    AllCircuits(Vec<(Box<dyn Fn() -> () + Send + Sync>, String)>),
-}
+// enum TypeResult {
+//     OneCircuit((Box<dyn Fn() -> () + Send + Sync>, String)),
+//     AllCircuits(Vec<(Box<dyn Fn() -> () + Send + Sync>, String)>),
+// }
 
-#[derive(Parser)]
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
 struct CircuitSerializer {
     /// Enter name of circuit
-    #[arg(long)]
+    // #[arg(long)]
+    #[clap(value_delimiter = ' ', num_args = 0.., use_value_delimiter = true)]
     name: Circuits,
 }
 
-fn build_specific_circuit(circuit: Circuits) -> (Box<dyn Fn() -> () + Send + Sync>, String) {
+fn build_specific_circuit(circuit: &str) -> Box<dyn Fn() -> () + Send + Sync> {
     match circuit {
-        Circuits::compute_shuffled_index_mainnet => (
-            Box::new(|| {
-                Lazy::force(&circuit_mainnet);
-            }),
-            "compute_shuffled_index_mainnet".to_string(),
-        ),
-        Circuits::compute_shuffled_index_minimal => (
-            Box::new(|| {
-                Lazy::force(&circuit_minimal);
-            }),
-            "compute_shuffled_index_minimal".to_string(),
-        ),
-        Circuits::weigh_justification_and_finalization => (
-            Box::new(|| {
-                Lazy::force(&circuit_weigh_justification_and_finalization);
-            }),
-            "weigh_justification_and_finalization".to_string(),
-        ),
-        _ => (
-            Box::new(|| {
-                Lazy::force(&circuit_weigh_justification_and_finalization);
-            }),
-            "weigh_justification_and_finalization".to_string(),
-        ),
+        "compute_shuffled_index_mainnet" => Box::new(|| {
+            Lazy::force(&circuit_mainnet);
+        }),
+        "compute_shuffled_index_minimal" => Box::new(|| {
+            Lazy::force(&circuit_minimal);
+        }),
+        "weigh_justification_and_finalization" => Box::new(|| {
+            Lazy::force(&circuit_weigh_justification_and_finalization);
+        }),
+        _ => Box::new(|| {
+            Lazy::force(&circuit_weigh_justification_and_finalization);
+        }),
     }
 }
 
-// No need of returning strings as we will be building and executing every circuit anyway
-// Remove () before Box::new() if not using Vec<tuple>
 fn build_all_circuits() -> Vec<Box<dyn Fn() -> () + Send + Sync>> {
     vec![
         (Box::new(|| {
@@ -129,11 +117,26 @@ fn main() {
     let hint_serializer = HintRegistry::<L, D>::new();
     let gate_serializer = GateRegistry::<L, D>::new();
     let circuit_serializer: CircuitSerializer = CircuitSerializer::parse();
+    let command_line_arguments: Vec<String> = args().skip(1).collect();
+
+    println!(
+        "command_line_arguments are: {:?}",
+        command_line_arguments.as_slice()
+    );
 
     if circuit_serializer.name != Circuits::all {
-        let (_, circuit_name) = build_specific_circuit(circuit_serializer.name);
-        let path = format!("build/{}", circuit_name);
-        circuit.save(&path, &gate_serializer, &hint_serializer);
+        for (index, arg) in command_line_arguments.iter().enumerate() {
+            println!(
+                "command_line_arguments are: {:?}",
+                &command_line_arguments[index]
+            );
+            for word in arg.split_whitespace() {
+                println!("word: {:?}", word);
+                build_specific_circuit(word);
+                let path = format!("build/{}", word);
+                circuit.save(&path, &gate_serializer, &hint_serializer);
+            }
+        }
     } else {
         build_all_circuits();
         for _circuit in Circuits::iter() {
