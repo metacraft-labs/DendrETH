@@ -21,7 +21,11 @@ impl<const D: usize> From<ProofWithPublicInputsTarget<D>> for ProofWithPublicInp
         }
     }
 }
-
+/*
+[NOTE] 
+    Reader takes public inputs from last to first, when running recurssive proofs
+    The order of writing public inputs should be inverse to the order of reading 
+ */
 impl<const D: usize> ProofWithPublicInputsTargetReader<D> {
     pub fn read<V: CircuitVariable>(&mut self) -> V {
         let public_inputs_len = self.inner.public_inputs.len();
