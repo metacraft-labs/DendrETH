@@ -21,6 +21,8 @@ let TAKE: number | undefined;
 enum TaskTag {
   UPDATE_VALIDATOR_LEAF = 0,
   UPDATE_PROOF_NODE_TASK = 1,
+  PROVE_ZERO_FOR_LEVEL = 2,
+  UPDATE_VALIDATOR_PROOF = 3,
 }
 
 (async () => {
@@ -59,6 +61,17 @@ enum TaskTag {
       description: 'Sets the number of validators to take',
     }).argv;
 
+  /*
+{
+  const beaconApi = new BeaconApi([options['beacon-node']]);
+  const { beaconState } = await beaconApi.getBeaconState(8172466);
+  const validatorsRoot = ssz.capella.BeaconState.fields.validators.hashTreeRoot(beaconState.validators);
+  const validatorsRootHex = bytesToHex(validatorsRoot);
+  console.log(validatorsRootHex);
+}
+*/
+
+
   const redis = new RedisLocal(options['redis-host'], options['redis-port']);
 
   const db = new Redis(
@@ -72,6 +85,8 @@ enum TaskTag {
   );
 
   const beaconApi = new BeaconApi([options['beacon-node']]);
+
+  let epoch = 189000n;
 
   // handle zeros validators
   if (await redis.isZeroValidatorEmpty()) {
@@ -92,37 +107,13 @@ enum TaskTag {
       },
     ]);
 
-    const buffer = new ArrayBuffer(8);
-    const dataView = new DataView(buffer);
+    scheduleValidatorProof(epoch, BigInt(validator_commitment_constants.validatorRegistryLimit));
 
-    dataView.setBigUint64(
-      0,
-      BigInt(validator_commitment_constants.validatorRegistryLimit),
-      false,
-    );
-
-    work_queue.addItem(db, new Item(buffer));
-
-    for (let i = 0; i < 40; i++) {
-      const buffer = new ArrayBuffer(24);
-      const dataView = new DataView(buffer);
-
-      dataView.setBigUint64(0, BigInt(i), false);
-      dataView.setBigUint64(
-        8,
-        BigInt(validator_commitment_constants.validatorRegistryLimit),
-        false,
-      );
-      dataView.setBigUint64(
-        16,
-        BigInt(validator_commitment_constants.validatorRegistryLimit),
-        false,
-      );
-
-      work_queue.addItem(db, new Item(buffer));
-
+    for (let level = 39n; level >= 0n; level--) {
+      scheduleProveZeroForLevel(level);
       console.log('Added zeros tasks');
     }
+
   }
 
   console.log('Loading validators');
@@ -130,8 +121,6 @@ enum TaskTag {
   let prevValidators = await redis.getValidatorsBatched(ssz);
 
   console.log('Loaded all batches');
-
-  let epoch = 189000n;
 
   while (true) {
     const timeBefore = Date.now();
@@ -144,6 +133,7 @@ enum TaskTag {
       const before = Date.now();
 
       await saveValidatorsInBatches(
+        epoch,
         validators.map((validator, index) => ({
           index,
           validator,
@@ -165,7 +155,7 @@ enum TaskTag {
       .map((validator, index) => ({ validator, index }))
       .filter(hasValidatorChanged(prevValidators));
 
-    await saveValidatorsInBatches(changedValidators);
+    await saveValidatorsInBatches(epoch, changedValidators);
 
     console.log('#changedValidators', changedValidators.length);
 
@@ -179,7 +169,7 @@ enum TaskTag {
     }
   }
 
-  async function saveValidatorsInBatches(validators: IndexedValidator[], batchSize = 200) {
+  async function saveValidatorsInBatches(epoch: bigint, validators: IndexedValidator[], batchSize = 200) {
     const validatorBatches = splitIntoBatches(validators, batchSize);
 
     // Save each batch
@@ -192,10 +182,7 @@ enum TaskTag {
       );
 
       for (const vi of validatorBatches[i]) {
-        const buffer = new ArrayBuffer(8);
-        const dataView = new DataView(buffer);
-        dataView.setBigUint64(0, BigInt(vi.index), false);
-        work_queue.addItem(db, new Item(buffer));
+        scheduleValidatorProof(epoch, BigInt(vi.index));
       }
 
       if (i % 25 == 0) {
@@ -208,13 +195,22 @@ enum TaskTag {
     }
   }
 
+  function scheduleValidatorProof(epoch: bigint, validatorIndex: bigint) {
+    const buffer = new ArrayBuffer(17);
+    const dataView = new DataView(buffer);
+    dataView.setUint8(0, TaskTag.UPDATE_VALIDATOR_PROOF);
+    dataView.setBigUint64(1, epoch, false);
+    dataView.setBigUint64(9, validatorIndex, false);
+    work_queue.addItem(db, new Item(buffer));
+  }
+
   function scheduleUpdateProofNodeTask(epoch: bigint, gindex: bigint) {
-    const buffer = new ArrayBuffer(12);
+    const buffer = new ArrayBuffer(17);
     const dataView = new DataView(buffer);
 
-    dataView.setUint32(0, TaskTag.UPDATE_PROOF_NODE_TASK, false);
-    dataView.setBigUint64(4, epoch, false);
-    dataView.setBigUint64(12, gindex, false);
+    dataView.setUint8(0, TaskTag.UPDATE_PROOF_NODE_TASK);
+    dataView.setBigUint64(1, epoch, false);
+    dataView.setBigUint64(9, gindex, false);
 
     work_queue.addItem(db, new Item(buffer));
   }
@@ -247,6 +243,15 @@ enum TaskTag {
     }
   }
 
+  function scheduleProveZeroForLevel(level: bigint) {
+    const buffer = new ArrayBuffer(9);
+    const dataView = new DataView(buffer);
+
+    dataView.setUint8(0, TaskTag.PROVE_ZERO_FOR_LEVEL);
+    dataView.setBigUint64(1, level, false);
+
+    work_queue.addItem(db, new Item(buffer));
+  }
 
   function convertValidatorToProof(validator: Validator): string {
     return JSON.stringify({

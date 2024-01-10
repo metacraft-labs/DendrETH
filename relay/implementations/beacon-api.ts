@@ -405,9 +405,7 @@ export class BeaconApi implements IBeaconApi {
       url = url + `?id=${range.join(',')}`;
     }
 
-    console.log(url);
     const validators = await (await this.fetchWithFallback(url)).json();
-    console.log(validators);
 
     return ssz.phase0.Validators.fromJson(
       validators.data.map(x => x.validator),

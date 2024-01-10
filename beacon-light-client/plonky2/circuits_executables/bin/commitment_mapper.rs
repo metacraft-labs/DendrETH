@@ -5,8 +5,8 @@ use circuits::{
 };
 use circuits_executables::{
     crud::{
-        fetch_proofs, fetch_validator, load_circuit_data, read_from_file, save_validator_proof,
-        ProofTaskData, ValidatorProof,
+        fetch_proofs, fetch_validator, fetch_zero_proof, load_circuit_data, read_from_file,
+        save_validator_proof, save_zero_validator_proof, ProofProvider, ValidatorProof,
     },
     provers::{handle_commitment_mapper_inner_level_proof, SetPWValues},
     validator::VALIDATOR_REGISTRY_LIMIT,
@@ -14,6 +14,8 @@ use circuits_executables::{
 };
 use clap::{App, Arg};
 use futures_lite::future;
+use num::FromPrimitive;
+use num_derive::FromPrimitive;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     iop::witness::PartialWitness,
@@ -32,11 +34,66 @@ use jemallocator::Jemalloc;
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
+/*
 #[repr(u8)]
 #[derive(Debug, Serialize, Deserialize)]
 enum CommitmentMapperTask {
     UpdateValidator(usize),
     UpdateProofNode(usize),
+}
+*/
+
+#[derive(FromPrimitive)]
+#[repr(u8)]
+enum CommitmentMapperTaskType {
+    UpdateValidator,
+    UpdateProofNode,
+    ProveZeroForLevel,
+    UpdateValidatorProof,
+    None,
+}
+
+#[derive(Debug)]
+enum CommitmentMapperTask {
+    UpdateValidator(u64, u64),      // epoch, validator index
+    UpdateProofNode(u64, u64),      // epoch, gindex
+    ProveZeroForLevel(u64),         // level
+    UpdateValidatorProof(u64, u64), // epoch, validator index
+    None,
+}
+
+fn deserialize_task(bytes: &[u8]) -> CommitmentMapperTask {
+    let options = bincode::DefaultOptions::new()
+        .with_fixint_encoding()
+        .with_big_endian();
+
+    let task_type: Option<CommitmentMapperTaskType> =
+        FromPrimitive::from_u8(u8::from_be_bytes(bytes[0..1].try_into().unwrap()));
+
+    if task_type.is_none() {
+        return CommitmentMapperTask::None;
+    }
+
+    let task_type = task_type.unwrap();
+
+    match task_type {
+        CommitmentMapperTaskType::UpdateValidator => CommitmentMapperTask::UpdateValidator(0, 0),
+        CommitmentMapperTaskType::UpdateProofNode => CommitmentMapperTask::UpdateProofNode(0, 0),
+        CommitmentMapperTaskType::ProveZeroForLevel => {
+            let level = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
+            CommitmentMapperTask::ProveZeroForLevel(level)
+        }
+        CommitmentMapperTaskType::UpdateValidatorProof => {
+            let epoch = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
+            let validator_index = u64::from_be_bytes(bytes[9..17].try_into().unwrap());
+            CommitmentMapperTask::UpdateValidatorProof(epoch, validator_index)
+        }
+        CommitmentMapperTaskType::None => unreachable!(),
+    }
+}
+
+fn gindex_from_validator_index(index: u64) -> u64 {
+    return 2u64.pow(40) - 1 + index;
 }
 
 fn main() -> Result<()> {
@@ -44,27 +101,6 @@ fn main() -> Result<()> {
 }
 
 async fn async_main() -> Result<()> {
-    let options = bincode::DefaultOptions::new()
-        .with_fixint_encoding()
-        .with_big_endian();
-
-    let task = CommitmentMapperTask::UpdateProofNode(10);
-    let bytes = options.serialize(&task).unwrap();
-    println!("bytes: {:?}", bytes);
-
-    let data: &[u8] = &[
-        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11,
-    ];
-
-    println!(
-        "size of enum: {}",
-        std::mem::size_of::<CommitmentMapperTask>()
-    );
-    let task: CommitmentMapperTask = options.deserialize(data).unwrap();
-    println!("{:?}", task);
-
-    return Ok(());
-
     let matches = App::new("")
     .arg(
         Arg::with_name("redis_connection")
@@ -146,11 +182,8 @@ async fn async_main() -> Result<()> {
 
         println!("Got job: {:?}", job.data);
 
-        let options = bincode::DefaultOptions::new()
-            .with_fixint_encoding()
-            .with_big_endian();
-
-        let task_data: CommitmentMapperTask = options.deserialize(&job.data).unwrap();
+        // let task_data: CommitmentMapperTask = options.deserialize(&job.data).unwrap();
+        /*
         match task_data {
             CommitmentMapperTask::UpdateValidator(index) => {
                 println!("validator index is {}", index);
@@ -160,102 +193,206 @@ async fn async_main() -> Result<()> {
             }
         };
         std::thread::sleep(Duration::from_secs(1));
+        */
 
-        if job.data.len() == 8 {
-            let validator_index = u64::from_be_bytes(job.data[0..8].try_into().unwrap()) as usize;
+        let task = deserialize_task(&job.data);
 
-            match fetch_validator(&mut con, validator_index).await {
-                Err(err) => {
-                    print!("Error: {}", err);
-                    thread::sleep(Duration::from_secs(10));
-                    continue;
-                }
-                Ok(validator) => {
-                    let mut pw = PartialWitness::new();
+        match task {
+            CommitmentMapperTask::UpdateValidatorProof(epoch, validator_index) => {
+                match fetch_validator(&mut con, validator_index).await {
+                    Ok(validator) => {
+                        let mut pw = PartialWitness::new();
 
-                    validator_commitment
-                        .validator
-                        .set_pw_values(&mut pw, &validator);
+                        validator_commitment
+                            .validator
+                            .set_pw_values(&mut pw, &validator);
 
-                    let proof = first_level_circuit_data.prove(pw)?;
+                        let proof = first_level_circuit_data.prove(pw)?;
 
-                    match save_validator_proof(&mut con, proof, 0, validator_index).await {
-                        Err(err) => {
-                            print!("Error: {}", err);
-                            thread::sleep(Duration::from_secs(10));
-                            continue;
-                        }
-                        Ok(_) => {
-                            queue.complete(&mut con, &job).await?;
+                        if validator_index as usize != VALIDATOR_REGISTRY_LIMIT {
+                            match save_validator_proof(
+                                &mut con,
+                                proof,
+                                gindex_from_validator_index(validator_index),
+                                epoch,
+                            )
+                            .await
+                            {
+                                Ok(_) => {
+                                    queue.complete(&mut con, &job).await?;
+                                }
+                                Err(err) => {
+                                    print!("Error: {}", err);
+                                    thread::sleep(Duration::from_secs(10));
+                                    continue;
+                                }
+                            }
+                        } else {
+                            match save_zero_validator_proof(&mut con, proof, 40).await {
+                                Ok(_) => {
+                                    queue.complete(&mut con, &job).await?;
+                                }
+                                Err(err) => {
+                                    print!("Error: {}", err);
+                                    thread::sleep(Duration::from_secs(10));
+                                    continue;
+                                }
+                            }
                         }
                     }
-                }
+                    Err(err) => {
+                        print!("Error: {}", err);
+                        thread::sleep(Duration::from_secs(10));
+                        continue;
+                    }
+                };
             }
-        } else if job.data.len() == 24 {
-            let options = bincode::DefaultOptions::new()
-                .with_fixint_encoding()
-                .with_big_endian();
+            CommitmentMapperTask::ProveZeroForLevel(depth) => {
+                println!("depth: {}", depth);
+                // this is the level of the inner proofs tree
+                let level = 39 - depth as usize;
 
-            let task_data: ProofTaskData = options.deserialize(&*job.data).unwrap();
-            println!("Task data: {:?}", task_data);
-
-            match fetch_proofs::<ValidatorProof>(&mut con, &task_data).await {
-                Err(err) => {
-                    // queue.add_item(&mut con, &job).await?;
-                    println!("Error: {}", err);
-                    thread::sleep(Duration::from_secs(1));
-                    continue;
-                }
-                Ok(proofs) => {
-                    let inner_circuit_data = if task_data.level > 0 {
-                        &inner_circuits[task_data.level - 1].1
-                    } else {
-                        &first_level_circuit_data
-                    };
-
-                    let proof = handle_commitment_mapper_inner_level_proof(
-                        proofs.0,
-                        proofs.1,
-                        inner_circuit_data,
-                        &inner_circuits[task_data.level].0,
-                        &inner_circuits[task_data.level].1,
-                        task_data.right_proof_index == VALIDATOR_REGISTRY_LIMIT
-                            && task_data.level == 0,
-                    )?;
-
-                    // Don't change the index for a zero hash
-                    let parent_validator_proof_index =
-                        if task_data.left_proof_index != VALIDATOR_REGISTRY_LIMIT {
-                            task_data.left_proof_index / 2
+                match fetch_zero_proof::<ValidatorProof>(&mut con, depth + 1).await {
+                    Ok(proof) => {
+                        let inner_circuit_data = if level > 0 {
+                            &inner_circuits[level - 1].1
                         } else {
-                            task_data.left_proof_index
+                            &first_level_circuit_data
                         };
 
-                    match save_validator_proof(
-                        &mut con,
-                        proof,
-                        task_data.level + 1,
-                        parent_validator_proof_index,
-                    )
-                    .await
-                    {
-                        Err(err) => {
-                            println!("Error: {}", err);
-                            thread::sleep(Duration::from_secs(1));
-                            continue;
+                        let proof = handle_commitment_mapper_inner_level_proof(
+                            proof.get_proof(),
+                            proof.get_proof(),
+                            inner_circuit_data,
+                            &inner_circuits[level].0,
+                            &inner_circuits[level].1,
+                            true,
+                        )?;
+                        println!("sled");
+
+                        match save_zero_validator_proof(&mut con, proof, depth).await {
+                            Ok(_) => queue.complete(&mut con, &job).await?,
+                            Err(err) => {
+                                println!("tuk2? Error: {}", err);
+                                thread::sleep(Duration::from_secs(1));
+                                continue;
+                            }
                         }
-                        Ok(_) => {
-                            queue.complete(&mut con, &job).await?;
+                    }
+                    Err(err) => {
+                        println!("tuk? Error: {}", err);
+                        thread::sleep(Duration::from_secs(1));
+                        continue;
+                    }
+                };
+            }
+            _ => {
+                println!("Invalid job data");
+                println!("This is bug from somewhere");
+
+                queue.complete(&mut con, &job).await?;
+            }
+        };
+
+        continue;
+
+        /*
+            if job.data.len() == 8 {
+                let validator_index = u64::from_be_bytes(job.data[0..8].try_into().unwrap()) as usize;
+
+                match fetch_validator(&mut con, validator_index).await {
+                    Err(err) => {
+                        print!("Error: {}", err);
+                        thread::sleep(Duration::from_secs(10));
+                        continue;
+                    }
+                    Ok(validator) => {
+                        let mut pw = PartialWitness::new();
+
+                        validator_commitment
+                            .validator
+                            .set_pw_values(&mut pw, &validator);
+
+                        let proof = first_level_circuit_data.prove(pw)?;
+
+                        match save_validator_proof(&mut con, proof, 0, validator_index).await {
+                            Err(err) => {
+                                print!("Error: {}", err);
+                                thread::sleep(Duration::from_secs(10));
+                                continue;
+                            }
+                            Ok(_) => {
+                                queue.complete(&mut con, &job).await?;
+                            }
                         }
                     }
                 }
-            };
-        } else {
-            println!("Invalid job data");
-            println!("This is bug from somewhere");
+            } else if job.data.len() == 24 {
+                let options = bincode::DefaultOptions::new()
+                    .with_fixint_encoding()
+                    .with_big_endian();
 
-            queue.complete(&mut con, &job).await?;
-        }
+                let task_data: ProofTaskData = options.deserialize(&*job.data).unwrap();
+                println!("Task data: {:?}", task_data);
+
+                match fetch_proofs::<ValidatorProof>(&mut con, &task_data).await {
+                    Err(err) => {
+                        // queue.add_item(&mut con, &job).await?;
+                        println!("Error: {}", err);
+                        thread::sleep(Duration::from_secs(1));
+                        continue;
+                    }
+                    Ok(proofs) => {
+                        let inner_circuit_data = if task_data.level > 0 {
+                            &inner_circuits[task_data.level - 1].1
+                        } else {
+                            &first_level_circuit_data
+                        };
+
+                        let proof = handle_commitment_mapper_inner_level_proof(
+                            proofs.0,
+                            proofs.1,
+                            inner_circuit_data,
+                            &inner_circuits[task_data.level].0,
+                            &inner_circuits[task_data.level].1,
+                            task_data.right_proof_index == VALIDATOR_REGISTRY_LIMIT
+                                && task_data.level == 0,
+                        )?;
+
+                        // Don't change the index for a zero hash
+                        let parent_validator_proof_index =
+                            if task_data.left_proof_index != VALIDATOR_REGISTRY_LIMIT {
+                                task_data.left_proof_index / 2
+                            } else {
+                                task_data.left_proof_index
+                            };
+
+                        match save_validator_proof(
+                            &mut con,
+                            proof,
+                            task_data.level + 1,
+                            parent_validator_proof_index,
+                        )
+                        .await
+                        {
+                            Err(err) => {
+                                println!("Error: {}", err);
+                                thread::sleep(Duration::from_secs(1));
+                                continue;
+                            }
+                            Ok(_) => {
+                                queue.complete(&mut con, &job).await?;
+                            }
+                        }
+                    }
+                };
+            } else {
+                println!("Invalid job data");
+                println!("This is bug from somewhere");
+
+                queue.complete(&mut con, &job).await?;
+            }
+        */
     }
 }
 

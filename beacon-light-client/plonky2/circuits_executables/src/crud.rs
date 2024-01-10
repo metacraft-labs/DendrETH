@@ -8,7 +8,7 @@ use crate::{
     validator_balances_input::ValidatorBalancesInput,
     validator_commitment_constants::VALIDATOR_COMMITMENT_CONSTANTS,
 };
-use anyhow::Result;
+use anyhow::{Error, Result};
 use circuits::{
     build_commitment_mapper_first_level_circuit::CommitmentMapperProofExt,
     build_final_circuit::FinalCircuitProofExt,
@@ -24,13 +24,6 @@ use plonky2::{
 };
 use redis::{aio::Connection, AsyncCommands, RedisError};
 use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize, Serializer};
-
-#[derive(Debug, Deserialize)]
-pub struct ProofTaskData {
-    pub level: usize,
-    pub left_proof_index: usize,
-    pub right_proof_index: usize,
-}
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -248,7 +241,7 @@ pub async fn save_final_proof(
 
 pub async fn fetch_validator(
     con: &mut Connection,
-    validator_index: usize,
+    validator_index: u64,
 ) -> Result<ValidatorShaInput> {
     let json_str: String = con
         .get(format!(
@@ -262,12 +255,9 @@ pub async fn fetch_validator(
     Ok(validator)
 }
 
-pub async fn save_validator_proof(
-    con: &mut Connection,
-    proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    level: usize,
-    index: usize,
-) -> Result<()> {
+fn validator_proof_to_json(
+    proof: &ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+) -> Result<String, Error> {
     let validator_proof = serde_json::to_string(&ValidatorProof {
         poseidon_hash: proof
             .get_commitment_mapper_poseidon_hash_tree_root()
@@ -275,8 +265,38 @@ pub async fn save_validator_proof(
         sha256_hash: proof.get_commitment_mapper_sha256_hash_tree_root().to_vec(),
         proof: proof.to_bytes(),
         needs_change: false,
-    })?;
+    });
 
+    Ok(validator_proof?)
+}
+
+pub async fn save_zero_validator_proof(
+    con: &mut Connection,
+    proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    depth: u64,
+) -> Result<()> {
+    let _: () = con
+        .set(
+            format!(
+                "{}:zeroes:{}",
+                VALIDATOR_COMMITMENT_CONSTANTS
+                    .validator_proof_key
+                    .to_owned(),
+                depth,
+            ),
+            validator_proof_to_json(&proof)?,
+        )
+        .await?;
+
+    Ok(())
+}
+
+pub async fn save_validator_proof(
+    con: &mut Connection,
+    proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>, // borrow this? @TODO
+    gindex: u64,
+    epoch: u64,
+) -> Result<()> {
     let _: () = con
         .set(
             format!(
@@ -284,20 +304,29 @@ pub async fn save_validator_proof(
                 VALIDATOR_COMMITMENT_CONSTANTS
                     .validator_proof_key
                     .to_owned(),
-                level,
-                index
+                gindex,
+                epoch
             ),
-            validator_proof,
+            validator_proof_to_json(&proof)?,
         )
         .await?;
 
     Ok(())
 }
 
+pub async fn fetch_zero_proof<T: NeedsChange + KeyProvider + DeserializeOwned>(
+    con: &mut Connection,
+    depth: u64,
+) -> Result<T> {
+    let proof_result: Result<String, RedisError> =
+        con.get(format!("{}:zeroes:{}", T::get_key(), depth)).await;
+    Ok(serde_json::from_str::<T>(&proof_result?)?)
+}
+
 pub async fn fetch_proof<T: NeedsChange + KeyProvider + DeserializeOwned>(
     con: &mut Connection,
-    level: usize,
-    index: usize,
+    gindex: u64,
+    epoch: u64,
 ) -> Result<T> {
     let mut retries = 0;
 
@@ -306,23 +335,14 @@ pub async fn fetch_proof<T: NeedsChange + KeyProvider + DeserializeOwned>(
             return Err(anyhow::anyhow!("Not able to complete, try again"));
         }
 
-        let mut proof_result: Result<String, RedisError> = con
-            .get(format!("{}:{}:{}", T::get_key(), level, index))
+        let proof_result: Result<String, RedisError> = con
+            .get(format!("{}:{}:{}", T::get_key(), gindex, epoch))
             .await;
 
-        if proof_result.is_err() {
-            // get the zeroth proof
-            proof_result = con
-                .get(format!(
-                    "{}:{}:{}",
-                    T::get_key(),
-                    level,
-                    VALIDATOR_REGISTRY_LIMIT
-                ))
-                .await;
-        }
-
-        let proof = serde_json::from_str::<T>(&proof_result?)?;
+        let proof = match proof_result {
+            Ok(_) => serde_json::from_str::<T>(&proof_result?)?,
+            Err(_) => fetch_zero_proof::<T>(con, get_depth_for_gindex(gindex)).await?,
+        };
 
         if proof.needs_change() {
             // Wait a bit and try again
@@ -338,10 +358,11 @@ pub async fn fetch_proof<T: NeedsChange + KeyProvider + DeserializeOwned>(
 
 pub async fn fetch_proofs<T: NeedsChange + KeyProvider + ProofProvider + DeserializeOwned>(
     con: &mut Connection,
-    task_data: &ProofTaskData,
+    gindex: u64,
+    epoch: u64,
 ) -> Result<(Vec<u8>, Vec<u8>)> {
-    let proof1 = fetch_proof::<T>(con, task_data.level, task_data.left_proof_index).await?;
-    let proof2 = fetch_proof::<T>(con, task_data.level, task_data.right_proof_index).await?;
+    let proof1 = fetch_proof::<T>(con, gindex, epoch).await?;
+    let proof2 = fetch_proof::<T>(con, gindex, epoch).await?;
 
     Ok((proof1.get_proof(), proof2.get_proof()))
 }
@@ -374,4 +395,8 @@ pub fn load_circuit_data(
         )
         .unwrap(),
     )
+}
+
+fn get_depth_for_gindex(gindex: u64) -> u64 {
+    (gindex - 1).ilog2() as u64
 }

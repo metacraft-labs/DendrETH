@@ -53,7 +53,7 @@ pub fn handle_generic_inner_level_proof(
 
     let mut pw = PartialWitness::new();
 
-    pw.set_proof_with_pis_target(proof1_target, &inner_proof1);
+    pw.set_proof_with_pis_target(proof1_target, &inner_proof1); // gurmi
     pw.set_proof_with_pis_target(proof2_target, &inner_proof2);
 
     pw.set_cap_target(
