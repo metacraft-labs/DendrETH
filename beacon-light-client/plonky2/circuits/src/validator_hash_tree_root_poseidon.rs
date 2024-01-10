@@ -4,7 +4,7 @@ use plonky2::{
         hash_types::{HashOutTarget, RichField},
         poseidon::PoseidonHash,
     },
-    iop::target::{BoolTarget},
+    iop::target::BoolTarget,
     plonk::circuit_builder::CircuitBuilder,
     util::serialization::{Buffer, IoResult, Read, Write},
 };
@@ -17,11 +17,11 @@ use crate::{
 
 #[derive(Clone, Debug)]
 pub struct ValidatorPoseidonTargets {
-    pub pubkey: BigUintTarget,
-    pub withdrawal_credentials: BigUintTarget,
-    pub effective_balance: BigUintTarget,
+    pub pubkey: BigUintTarget,                 // [BoolTarget; 384]
+    pub withdrawal_credentials: BigUintTarget, // [BoolTarget; 256]
+    pub effective_balance: BigUintTarget,      // u64
     pub slashed: BoolTarget,
-    pub activation_eligibility_epoch: BigUintTarget,
+    pub activation_eligibility_epoch: BigUintTarget, // u64
     pub activation_epoch: BigUintTarget,
     pub exit_epoch: BigUintTarget,
     pub withdrawable_epoch: BigUintTarget,
