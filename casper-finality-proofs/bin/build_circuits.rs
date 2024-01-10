@@ -20,7 +20,20 @@ enum Circuits {
     all,
 }
 
-enum TypeResult {
+impl Circuits {
+    fn from_str(circuit_as_str: &str) -> Option<Circuits> {
+        match circuit_as_str {
+            "compute_shuffled_index_mainnet" => Some(Circuits::compute_shuffled_index_mainnet),
+            "compute_shuffled_index_minimal" => Some(Circuits::compute_shuffled_index_minimal),
+            "weigh_justification_and_finalization" => {
+                Some(Circuits::weigh_justification_and_finalization)
+            }
+            _ => None,
+        }
+    }
+}
+
+enum OneOrAllCircuits {
     OneCircuit(Box<dyn Fn() -> () + Send + Sync>),
     AllCircuits(Vec<Box<dyn Fn() -> () + Send + Sync>>),
 }
@@ -32,18 +45,20 @@ struct CommandLineCircuit {
     name: Circuits,
 }
 
-fn build_circuit(circuits: &str) -> TypeResult {
-    match circuits {
-        "compute_shuffled_index_mainnet" => TypeResult::OneCircuit(Box::new(|| {
+fn build_circuit(circuit: Circuits) -> OneOrAllCircuits {
+    match circuit {
+        Circuits::compute_shuffled_index_mainnet => OneOrAllCircuits::OneCircuit(Box::new(|| {
             Lazy::force(&circuit_mainnet);
         })),
-        "compute_shuffled_index_minimal" => TypeResult::OneCircuit(Box::new(|| {
+        Circuits::compute_shuffled_index_minimal => OneOrAllCircuits::OneCircuit(Box::new(|| {
             Lazy::force(&circuit_minimal);
         })),
-        "weigh_justification_and_finalization" => TypeResult::OneCircuit(Box::new(|| {
-            Lazy::force(&circuit_weigh_justification_and_finalization);
-        })),
-        "all" => TypeResult::AllCircuits(vec![
+        Circuits::weigh_justification_and_finalization => {
+            OneOrAllCircuits::OneCircuit(Box::new(|| {
+                Lazy::force(&circuit_weigh_justification_and_finalization);
+            }))
+        }
+        Circuits::all => OneOrAllCircuits::AllCircuits(vec![
             Box::new(|| {
                 Lazy::force(&circuit_mainnet);
             }),
@@ -54,9 +69,6 @@ fn build_circuit(circuits: &str) -> TypeResult {
                 Lazy::force(&circuit_weigh_justification_and_finalization);
             }),
         ]),
-        _ => TypeResult::OneCircuit(Box::new(|| {
-            Lazy::force(&circuit_weigh_justification_and_finalization);
-        })),
     }
 }
 
@@ -73,16 +85,15 @@ fn main() {
 
     if command_line_circuit.name != Circuits::all {
         for (_, arg) in command_line_arguments.iter().enumerate() {
-            for _circuit in arg.split_whitespace() {
-                build_circuit(_circuit);
-                let path = format!("build/{}", _circuit);
-                circuit.save(&path, &gate_serializer, &hint_serializer);
-            }
+            let arg_as_circuit = Circuits::from_str(&arg);
+            build_circuit(arg_as_circuit.unwrap());
+            let path = format!("build/{}", arg_as_circuit.unwrap().to_string());
+            circuit.save(&path, &gate_serializer, &hint_serializer);
         }
     } else {
         for _circuit in Circuits::iter() {
             if _circuit != Circuits::all {
-                build_circuit(&_circuit.to_string());
+                build_circuit(_circuit);
                 let path = format!("build/{}", _circuit.to_string());
                 circuit.save(&path, &gate_serializer, &hint_serializer);
             }
