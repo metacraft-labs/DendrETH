@@ -13,6 +13,9 @@ const {
   WorkQueue,
   Item,
 } = require('@mevitae/redis-work-queue/dist/WorkQueue');
+
+import colors from 'colors/safe';
+
 import { BeaconApi } from '../../../relay/implementations/beacon-api';
 
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
@@ -127,9 +130,10 @@ let MOCK: boolean;
       );
 
       await work_queue.addItem(db, new Item(buffer));
-      
-      if (i % 10 === 0 && i !== 0)
-      console.log('Added zeros tasks');
+
+      if (i % 10 === 0 && i !== 0) {
+        console.log('Added zeros tasks');
+      }
     }
   }
 
@@ -138,17 +142,35 @@ let MOCK: boolean;
   let prevValidators = await redis.getValidatorsBatched(ssz);
 
   console.log('Loaded all batches');
-  const beaconState_bin = fs.existsSync('../mock_data/beaconState.bin')
-    ? '../mock_data/beaconState.bin'
-    : 'mock_data/beaconState.bin';
 
   while (true) {
     const timeBefore = Date.now();
 
-    const validators = MOCK
-      ? ssz.capella.BeaconState.deserialize(fs.readFileSync(beaconState_bin))
-          .validators
-      : (await beaconApi.getValidators()).slice(0, TAKE);
+    let validators: Validator[];
+
+    if (MOCK) {
+      const beaconState_bin = fs.existsSync('../mock_data/beaconState.bin')
+        ? '../mock_data/beaconState.bin'
+        : 'mock_data/beaconState.bin';
+
+      const serializedState = fs.readFileSync(beaconState_bin);
+
+      if (serializedState.byteLength < 1000) {
+        console.error(
+          colors.red(
+            'Error: Unexpectedly small beacon state file.\n' +
+              'Please ensure Git LFS is enabled and run the following:\n' +
+              colors.bold('git lfs fetch; git lfs checkout'),
+          ),
+        );
+        process.exit(1);
+      }
+
+      validators =
+        ssz.capella.BeaconState.deserialize(serializedState).validators;
+    } else {
+      validators = (await beaconApi.getValidators()).slice(0, TAKE);
+    }
 
     if (prevValidators.length === 0) {
       console.log('prev validators are empty. Saving to redis');
@@ -220,7 +242,9 @@ let MOCK: boolean;
       }
 
       if (i % GRANULITY == 0) {
-        console.log(`Saved ${GRANULITY} batches and added first level of proofs`);
+        console.log(
+          `Saved ${GRANULITY} batches and added first level of proofs`,
+        );
       }
     }
 
