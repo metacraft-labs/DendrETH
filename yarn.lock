@@ -3028,6 +3028,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/colors@npm:^1.2.1":
+  version: 1.2.1
+  resolution: "@types/colors@npm:1.2.1"
+  dependencies:
+    colors: "*"
+  checksum: 6602c4805242bd9197de50559883980ec7c58f440ceb6b74d5fc8e85a0992b5fc765e208ce94b3455789f00e33f75d8f8000ac8e597295e2f1bf86de2c161b94
+  languageName: node
+  linkType: hard
+
 "@types/concat-stream@npm:^1.6.0":
   version: 1.6.1
   resolution: "@types/concat-stream@npm:1.6.1"
@@ -3361,12 +3370,14 @@ __metadata:
     "@nomiclabs/hardhat-ethers": ^2.1.1
     "@nomiclabs/hardhat-etherscan": ^3.1.0
     "@nomiclabs/hardhat-waffle": ^2.0.3
+    "@types/colors": ^1.2.1
     "@types/glob": ^7.2.0
     "@types/jest": ^28.1.2
     "@types/node": ^18.0.0
     bullmq: ^3.7.1
     circom_tester: ^0.0.14
     circomlibjs: ^0.1.7
+    colors: ^1.4.0
     crypto-js: ^4.1.1
     dotenv: ^16.0.2
     ethers: ^5.7.0
@@ -5126,7 +5137,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"colors@npm:1.4.0, colors@npm:^1.1.2":
+"colors@npm:*, colors@npm:1.4.0, colors@npm:^1.1.2, colors@npm:^1.4.0":
   version: 1.4.0
   resolution: "colors@npm:1.4.0"
   checksum: 98aa2c2418ad87dedf25d781be69dc5fc5908e279d9d30c34d8b702e586a0474605b3a189511482b9d5ed0d20c867515d22749537f7bc546256c6014f3ebdcec
