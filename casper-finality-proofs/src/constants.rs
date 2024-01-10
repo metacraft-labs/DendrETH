@@ -88,3 +88,4 @@ pub const ZERO_HASHES: [&str; 64] = [
 
 pub const TEST_VALIDATORS_IN_COMMITMENT_SIZE: usize = 1;
 pub const TEST_ATTESTATIONS_READ: usize = 8;
+pub const VALIDATOR_INDICES_IN_SPLIT: usize = 20;

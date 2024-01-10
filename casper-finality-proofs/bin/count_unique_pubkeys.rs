@@ -1,3 +1,5 @@
+pub mod count_unique_validators;
+
 use casper_finality_proofs::combine_finality_votes::count_unique_pubkeys::CountUniquePubkeys;
 use plonky2x::{
     frontend::eth::vars::BLSPubkeyVariable,
