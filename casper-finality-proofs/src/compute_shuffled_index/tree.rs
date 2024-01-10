@@ -1,21 +1,18 @@
-use plonky2::{
-    field::{goldilocks_field::GoldilocksField, types::Field, extension::Extendable},
-    hash::{
-        hashing::hash_n_to_hash_no_pad,
-        poseidon::{self, PoseidonHash, PoseidonPermutation}, hash_types::RichField,
-    },
+use plonky2::hash::{
+    hash_types::RichField, hashing::hash_n_to_hash_no_pad, poseidon::PoseidonHash,
 };
-use plonky2::prelude::{CircuitBuilder, DefaultParameters};
-use plonky2::iop::target::BoolTarget;
+use plonky2x::backend::circuit::{DefaultParameters, PlonkParameters};
+use plonky2x::frontend::builder::CircuitBuilder;
 use plonky2x::frontend::uint::uint64::U64Variable;
-use crate::{
-    biguint::{BigUintTarget, CircuitBuilderBiguint},}
+use plonky2x::frontend::vars::{BoolVariable, Bytes32Variable, CircuitVariable};
+use plonky2x::utils::bytes32;
+use primitive_types::H256;
 
 pub struct Validator {
-    pub pubkey: [BoolTarget; 384],
-    pub withdrawal_credentials: [BoolTarget; 256], // Change to Bytes32Variable?
+    pub pubkey: [BoolVariable; 384],
+    pub withdrawal_credentials: Bytes32Variable,
     pub effective_balance: U64Variable,
-    pub slashed: BoolTarget,
+    pub slashed: BoolVariable,
     pub activation_eligibility_epoch: U64Variable,
     pub activation_epoch: U64Variable,
     pub exit_epoch: U64Variable,
@@ -23,18 +20,20 @@ pub struct Validator {
 }
 
 impl Validator {
-    pub fn new<F: RichField + Extendable<D>, const D: usize>(
-        builder: &mut CircuitBuilder<F, D>,
+    pub fn new<L: PlonkParameters<D>, const D: usize>(
+        builder: &mut CircuitBuilder<L, D>,
     ) -> Validator {
+        let empty_h256: H256 =
+            bytes32!("0x0000000000000000000000000000000000000000000000000000000000000000");
         Validator {
-            pubkey: builder.add_virtual_biguint_target(12),
-            withdrawal_credentials: builder.add_virtual_biguint_target(8),
-            effective_balance: builder.add_virtual_biguint_target(2),
-            slashed: builder.add_virtual_bool_target_safe(),
-            activation_eligibility_epoch: builder.add_virtual_biguint_target(2),
-            activation_epoch: builder.add_virtual_biguint_target(2),
-            exit_epoch: builder.add_virtual_biguint_target(2),
-            withdrawable_epoch: builder.add_virtual_biguint_target(2),
+            pubkey: [BoolVariable::constant(builder, false); 384],
+            withdrawal_credentials: Bytes32Variable::constant(builder, empty_h256),
+            effective_balance: U64Variable::constant(builder, 0),
+            slashed: BoolVariable::constant(builder, false),
+            activation_eligibility_epoch: U64Variable::constant(builder, 0),
+            activation_epoch: U64Variable::constant(builder, 0),
+            exit_epoch: U64Variable::constant(builder, 0),
+            withdrawable_epoch: U64Variable::constant(builder, 0),
         }
     }
 }
@@ -48,12 +47,14 @@ pub fn do_something() {
 
     let validator = Validator::new(builder);
 
+    // builder.hash_n_to_hash_no_pad::<PoseidonPermutation<GoldilocksField>>
     let leaves = vec![
-        // builder.hash_n_to_hash_no_pad::<PoseidonPermutation<GoldilocksField>>
-        builder.hash_n_to_hash_no_pad::<PoseidonHash>(
-            validator.pubkey.limbs.iter().map(|x| x.0).collect(),
+        // SHOULD USE:
+        // builder.api.hash_n_to_hash_no_pad(inputs);
+        builder.api.hash_n_to_hash_no_pad::<PoseidonHash>(
+            // validator.pubkey.limbs.iter().map(|x| x.0).collect(),
         ),
-        builder.hash_n_to_hash_no_pad::<PoseidonHash>(
+        builder.api.hash_n_to_hash_no_pad::<PoseidonHash>(
             validator
                 .withdrawal_credentials
                 .limbs

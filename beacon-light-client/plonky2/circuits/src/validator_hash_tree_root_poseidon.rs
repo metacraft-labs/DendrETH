@@ -22,7 +22,7 @@ pub struct ValidatorPoseidonTargets {
     pub withdrawal_credentials: [BoolTarget; ETH_SHA256_BIT_SIZE],
     pub effective_balance: BigUintTarget,
     pub slashed: BoolTarget,
-    pub activation_eligibility_epoch: BigUintTarget,
+    pub activation_eligibility_epoch: BigUintTarget, // u64
     pub activation_epoch: BigUintTarget,
     pub exit_epoch: BigUintTarget,
     pub withdrawable_epoch: BigUintTarget,
