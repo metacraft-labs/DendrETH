@@ -218,20 +218,24 @@ enum TaskTag {
     return (gindex - (2n ** n) + 1n) / (2n ** n);
   }
 
+  function getParent(gindex: bigint) {
+    return getNthParent(gindex, 1n);
+  }
+
   async function addInnerLevelProofs(epoch: bigint, validators: IndexedValidator[]) {
     const changedValidatorGindices = validators.map(validator => gindexFromValidatorIndex(BigInt(validator.index)));
 
-    let nodesNeedingUpdate = new Set<bigint>();
-    changedValidatorGindices.forEach(gindex => {
-      nodesNeedingUpdate.add(getNthParent(gindex, 1n));
-    });
+    let nodesNeedingUpdate = changedValidatorGindices.reduce(
+      (set, gindex) => set.add(getParent(gindex)),
+      new Set<bigint>()
+    );
 
     while (nodesNeedingUpdate.size !== 0) {
       const newNodesNeedingUpdate = new Set<bigint>();
 
       for (const gindex of nodesNeedingUpdate) {
         if (gindex !== 0n) {
-          newNodesNeedingUpdate.add(getNthParent(gindex, 1n));
+          newNodesNeedingUpdate.add(getParent(gindex));
         }
 
         await redis.saveValidatorProof(gindex, epoch);
