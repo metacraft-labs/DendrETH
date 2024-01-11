@@ -80,8 +80,8 @@ fn deserialize_task(bytes: &[u8]) -> CommitmentMapperTask {
     match task_type {
         CommitmentMapperTaskType::UpdateValidator => CommitmentMapperTask::UpdateValidator(0, 0),
         CommitmentMapperTaskType::UpdateProofNode => {
-            let epoch = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
-            let gindex = u64::from_be_bytes(bytes[9..17].try_into().unwrap());
+            let gindex = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
+            let epoch = u64::from_be_bytes(bytes[9..17].try_into().unwrap());
             CommitmentMapperTask::UpdateProofNode(gindex, epoch)
         }
         CommitmentMapperTaskType::ProveZeroForLevel => {
@@ -89,8 +89,8 @@ fn deserialize_task(bytes: &[u8]) -> CommitmentMapperTask {
             CommitmentMapperTask::ProveZeroForLevel(level)
         }
         CommitmentMapperTaskType::UpdateValidatorProof => {
-            let epoch = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
-            let validator_index = u64::from_be_bytes(bytes[9..17].try_into().unwrap());
+            let validator_index = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
+            let epoch = u64::from_be_bytes(bytes[9..17].try_into().unwrap());
             CommitmentMapperTask::UpdateValidatorProof(validator_index, epoch)
         }
         CommitmentMapperTaskType::None => unreachable!(),

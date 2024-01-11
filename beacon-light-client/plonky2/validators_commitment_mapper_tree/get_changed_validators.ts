@@ -106,7 +106,7 @@ enum TaskTag {
       },
     ]);
 
-    scheduleValidatorProof(epoch, BigInt(validator_commitment_constants.validatorRegistryLimit));
+    scheduleValidatorProof(BigInt(validator_commitment_constants.validatorRegistryLimit), epoch);
 
     for (let level = 39n; level >= 0n; level--) {
       scheduleProveZeroForLevel(level);
@@ -151,7 +151,7 @@ enum TaskTag {
         })),
       );
 
-      batch.forEach((validator: IndexedValidator) => scheduleValidatorProof(epoch, BigInt(validator.index)));
+      batch.forEach((validator: IndexedValidator) => scheduleValidatorProof(BigInt(validator.index), epoch));
 
       if (batchIndex % 25 === 0) {
         console.log('Saved 25 batches and added first level of proofs');
@@ -161,22 +161,22 @@ enum TaskTag {
     await updateBranches(epoch, validators);
   }
 
-  function scheduleValidatorProof(epoch: bigint, validatorIndex: bigint) {
+  function scheduleValidatorProof(validatorIndex: bigint, epoch: bigint) {
     const buffer = new ArrayBuffer(17);
     const dataView = new DataView(buffer);
     dataView.setUint8(0, TaskTag.UPDATE_VALIDATOR_PROOF);
-    dataView.setBigUint64(1, epoch, false);
-    dataView.setBigUint64(9, validatorIndex, false);
+    dataView.setBigUint64(1, validatorIndex, false);
+    dataView.setBigUint64(9, epoch, false);
     work_queue.addItem(db, new Item(buffer));
   }
 
-  function scheduleUpdateProofNodeTask(epoch: bigint, gindex: bigint) {
+  function scheduleUpdateProofNodeTask(gindex: bigint, epoch: bigint) {
     const buffer = new ArrayBuffer(17);
     const dataView = new DataView(buffer);
 
     dataView.setUint8(0, TaskTag.UPDATE_PROOF_NODE_TASK);
-    dataView.setBigUint64(1, epoch, false);
-    dataView.setBigUint64(9, gindex, false);
+    dataView.setBigUint64(1, gindex, false);
+    dataView.setBigUint64(9, epoch, false);
 
     work_queue.addItem(db, new Item(buffer));
   }
@@ -196,10 +196,7 @@ enum TaskTag {
   async function updateBranches(epoch: bigint, validators: IndexedValidator[]) {
     const changedValidatorGindices = validators.map(validator => gindexFromValidatorIndex(BigInt(validator.index)));
 
-    let nodesNeedingUpdate = changedValidatorGindices.reduce(
-      (set, gindex) => set.add(getParent(gindex)),
-      new Set<bigint>()
-    );
+    let nodesNeedingUpdate = new Set(changedValidatorGindices.map(getParent));
 
     while (nodesNeedingUpdate.size !== 0) {
       const newNodesNeedingUpdate = new Set<bigint>();
@@ -210,7 +207,7 @@ enum TaskTag {
         }
 
         await redis.saveValidatorProof(gindex, epoch);
-        scheduleUpdateProofNodeTask(epoch, gindex);
+        scheduleUpdateProofNodeTask(gindex, epoch);
       }
 
       nodesNeedingUpdate = newNodesNeedingUpdate;
