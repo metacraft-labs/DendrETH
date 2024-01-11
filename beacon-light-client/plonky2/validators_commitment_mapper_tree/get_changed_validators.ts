@@ -71,7 +71,6 @@ enum TaskTag {
 }
 */
 
-
   const redis = new RedisLocal(options['redis-host'], options['redis-port']);
 
   const db = new Redis(
@@ -173,26 +172,22 @@ enum TaskTag {
     const validatorBatches = splitIntoBatches(validators, batchSize);
 
     // Save each batch
-    for (let i = 0; i < validatorBatches.length; i++) {
+    validatorBatches.forEach(async (batch: IndexedValidator[], iteration: number) => {
       await redis.saveValidators(
-        validatorBatches[i].map(vi => ({
-          index: vi.index,
-          validatorJSON: convertValidatorToProof(vi.validator),
+        batch.map((validator: IndexedValidator) => ({
+          index: validator.index,
+          validatorJSON: convertValidatorToProof(validator.validator),
         })),
       );
 
-      for (const vi of validatorBatches[i]) {
-        scheduleValidatorProof(epoch, BigInt(vi.index));
-      }
+      batch.forEach((validator: IndexedValidator) => scheduleValidatorProof(epoch, BigInt(validator.index)));
 
-      if (i % 25 == 0) {
+      if (iteration % 25 === 0) {
         console.log('Saved 25 batches and added first level of proofs');
       }
-    }
 
-    if (validators.length > 0) {
       await addInnerLevelProofs(epoch, validators);
-    }
+    });
   }
 
   function scheduleValidatorProof(epoch: bigint, validatorIndex: bigint) {
@@ -230,16 +225,20 @@ enum TaskTag {
     changedValidatorGindices.forEach(gindex => {
       nodesNeedingUpdate.add(getNthParent(gindex, 1n));
     });
-    const newNodesNeedingUpdate = new Set<bigint>();
-    for (const gindex of nodesNeedingUpdate) {
-      if (gindex !== 0n) {
-        newNodesNeedingUpdate.add(getNthParent(gindex, 1n));
+
+    while (nodesNeedingUpdate.size !== 0) {
+      const newNodesNeedingUpdate = new Set<bigint>();
+
+      for (const gindex of nodesNeedingUpdate) {
+        if (gindex !== 0n) {
+          newNodesNeedingUpdate.add(getNthParent(gindex, 1n));
+        }
 
         await redis.saveValidatorProof(gindex, epoch);
         scheduleUpdateProofNodeTask(epoch, gindex);
-
-        nodesNeedingUpdate = newNodesNeedingUpdate;
       }
+
+      nodesNeedingUpdate = newNodesNeedingUpdate;
     }
   }
 

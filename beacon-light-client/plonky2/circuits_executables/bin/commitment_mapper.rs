@@ -5,8 +5,9 @@ use circuits::{
 };
 use circuits_executables::{
     crud::{
-        fetch_proofs, fetch_validator, fetch_zero_proof, load_circuit_data, read_from_file,
-        save_validator_proof, save_zero_validator_proof, ProofProvider, ValidatorProof,
+        fetch_proofs, fetch_validator, fetch_zero_proof, get_depth_for_gindex, load_circuit_data,
+        read_from_file, save_validator_proof, save_zero_validator_proof, ProofProvider,
+        ValidatorProof,
     },
     provers::{handle_commitment_mapper_inner_level_proof, SetPWValues},
     validator::VALIDATOR_REGISTRY_LIMIT,
@@ -55,10 +56,10 @@ enum CommitmentMapperTaskType {
 
 #[derive(Debug)]
 enum CommitmentMapperTask {
-    UpdateValidator(u64, u64),      // epoch, validator index
-    UpdateProofNode(u64, u64),      // epoch, gindex
+    UpdateValidator(u64, u64),      // validator index, epoch
+    UpdateProofNode(u64, u64),      // gindex, epoch
     ProveZeroForLevel(u64),         // level
-    UpdateValidatorProof(u64, u64), // epoch, validator index
+    UpdateValidatorProof(u64, u64), // validator index, epoch
     None,
 }
 
@@ -78,7 +79,11 @@ fn deserialize_task(bytes: &[u8]) -> CommitmentMapperTask {
 
     match task_type {
         CommitmentMapperTaskType::UpdateValidator => CommitmentMapperTask::UpdateValidator(0, 0),
-        CommitmentMapperTaskType::UpdateProofNode => CommitmentMapperTask::UpdateProofNode(0, 0),
+        CommitmentMapperTaskType::UpdateProofNode => {
+            let epoch = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
+            let gindex = u64::from_be_bytes(bytes[9..17].try_into().unwrap());
+            CommitmentMapperTask::UpdateProofNode(gindex, epoch)
+        }
         CommitmentMapperTaskType::ProveZeroForLevel => {
             let level = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
             CommitmentMapperTask::ProveZeroForLevel(level)
@@ -86,7 +91,7 @@ fn deserialize_task(bytes: &[u8]) -> CommitmentMapperTask {
         CommitmentMapperTaskType::UpdateValidatorProof => {
             let epoch = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
             let validator_index = u64::from_be_bytes(bytes[9..17].try_into().unwrap());
-            CommitmentMapperTask::UpdateValidatorProof(epoch, validator_index)
+            CommitmentMapperTask::UpdateValidatorProof(validator_index, epoch)
         }
         CommitmentMapperTaskType::None => unreachable!(),
     }
@@ -198,7 +203,7 @@ async fn async_main() -> Result<()> {
         let task = deserialize_task(&job.data);
 
         match task {
-            CommitmentMapperTask::UpdateValidatorProof(epoch, validator_index) => {
+            CommitmentMapperTask::UpdateValidatorProof(validator_index, epoch) => {
                 match fetch_validator(&mut con, validator_index).await {
                     Ok(validator) => {
                         let mut pw = PartialWitness::new();
@@ -247,9 +252,44 @@ async fn async_main() -> Result<()> {
                     }
                 };
             }
+            CommitmentMapperTask::UpdateProofNode(gindex, epoch) => {
+                let level = 39 - get_depth_for_gindex(gindex) as usize;
+
+                match fetch_proofs::<ValidatorProof>(&mut con, gindex, epoch).await {
+                    Ok(proofs) => {
+                        let inner_circuit_data = if level > 0 {
+                            &inner_circuits[level - 1].1
+                        } else {
+                            &first_level_circuit_data
+                        };
+
+                        let proof = handle_commitment_mapper_inner_level_proof(
+                            proofs.0,
+                            proofs.1,
+                            inner_circuit_data,
+                            &inner_circuits[level].0,
+                            &inner_circuits[level].1,
+                            false,
+                        )?;
+
+                        match save_validator_proof(&mut con, proof, gindex, epoch).await {
+                            Ok(_) => queue.complete(&mut con, &job).await?,
+                            Err(err) => {
+                                println!("Error: {}", err);
+                                thread::sleep(Duration::from_secs(1));
+                                continue;
+                            }
+                        }
+                    }
+                    Err(err) => {
+                        println!("Error: {}", err);
+                        thread::sleep(Duration::from_secs(1));
+                        continue;
+                    }
+                };
+            }
             CommitmentMapperTask::ProveZeroForLevel(depth) => {
-                println!("depth: {}", depth);
-                // this is the level of the inner proofs tree
+                // the level in the inner proofs tree
                 let level = 39 - depth as usize;
 
                 match fetch_zero_proof::<ValidatorProof>(&mut con, depth + 1).await {
@@ -268,19 +308,18 @@ async fn async_main() -> Result<()> {
                             &inner_circuits[level].1,
                             true,
                         )?;
-                        println!("sled");
 
                         match save_zero_validator_proof(&mut con, proof, depth).await {
                             Ok(_) => queue.complete(&mut con, &job).await?,
                             Err(err) => {
-                                println!("tuk2? Error: {}", err);
+                                println!("Error: {}", err);
                                 thread::sleep(Duration::from_secs(1));
                                 continue;
                             }
                         }
                     }
                     Err(err) => {
-                        println!("tuk? Error: {}", err);
+                        println!("Error: {}", err);
                         thread::sleep(Duration::from_secs(1));
                         continue;
                     }

@@ -361,8 +361,11 @@ pub async fn fetch_proofs<T: NeedsChange + KeyProvider + ProofProvider + Deseria
     gindex: u64,
     epoch: u64,
 ) -> Result<(Vec<u8>, Vec<u8>)> {
-    let proof1 = fetch_proof::<T>(con, gindex, epoch).await?;
-    let proof2 = fetch_proof::<T>(con, gindex, epoch).await?;
+    let left_child_gindex = gindex * 2 + 1;
+    let right_child_gindex = gindex * 2 + 2;
+
+    let proof1 = fetch_proof::<T>(con, left_child_gindex, epoch).await?;
+    let proof2 = fetch_proof::<T>(con, right_child_gindex, epoch).await?;
 
     Ok((proof1.get_proof(), proof2.get_proof()))
 }
@@ -397,6 +400,6 @@ pub fn load_circuit_data(
     )
 }
 
-fn get_depth_for_gindex(gindex: u64) -> u64 {
-    (gindex - 1).ilog2() as u64
+pub fn get_depth_for_gindex(gindex: u64) -> u64 {
+    (gindex + 1).ilog2() as u64
 }
