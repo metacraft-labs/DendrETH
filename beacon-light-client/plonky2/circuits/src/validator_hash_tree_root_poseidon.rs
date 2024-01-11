@@ -17,11 +17,11 @@ use crate::{
 
 #[derive(Clone, Debug)]
 pub struct ValidatorPoseidonTargets {
-    pub pubkey: BigUintTarget,                 // [BoolTarget; 384]
-    pub withdrawal_credentials: BigUintTarget, // [BoolTarget; 256]
-    pub effective_balance: BigUintTarget,      // u64
+    pub pubkey: BigUintTarget,
+    pub withdrawal_credentials: BigUintTarget,
+    pub effective_balance: BigUintTarget,
     pub slashed: BoolTarget,
-    pub activation_eligibility_epoch: BigUintTarget, // u64
+    pub activation_eligibility_epoch: BigUintTarget,
     pub activation_epoch: BigUintTarget,
     pub exit_epoch: BigUintTarget,
     pub withdrawable_epoch: BigUintTarget,
