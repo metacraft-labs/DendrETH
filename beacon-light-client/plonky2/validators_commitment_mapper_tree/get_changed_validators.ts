@@ -116,39 +116,13 @@ enum TaskTag {
   }
 
   console.log('Loading validators');
-
   let prevValidators = await redis.getValidatorsBatched(ssz);
-
   console.log('Loaded all batches');
 
   while (true) {
     const timeBefore = Date.now();
 
     const validators = await beaconApi.getValidators(8166208, TAKE);
-
-    if (prevValidators.length === 0) {
-      console.log('prev validators are empty. Saving to redis');
-
-      const before = Date.now();
-
-      await saveValidatorsInBatches(
-        epoch,
-        validators.map((validator, index) => ({
-          index,
-          validator,
-        })),
-      );
-
-      const after = Date.now();
-
-      console.log('Saved validators to redis');
-      console.log('Time taken', after - before, 'ms');
-
-      prevValidators = validators;
-
-      await sleep(384000);
-      continue;
-    }
 
     const changedValidators = validators
       .map((validator, index) => ({ validator, index }))
