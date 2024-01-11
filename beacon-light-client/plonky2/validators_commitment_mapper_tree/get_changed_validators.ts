@@ -169,10 +169,7 @@ enum TaskTag {
   }
 
   async function saveValidatorsInBatches(epoch: bigint, validators: IndexedValidator[], batchSize = 200) {
-    const validatorBatches = splitIntoBatches(validators, batchSize);
-
-    // Save each batch
-    validatorBatches.forEach(async (batch: IndexedValidator[], iteration: number) => {
+    splitIntoBatches(validators, batchSize).forEach(async (batch, batchIndex) => {
       await redis.saveValidators(
         batch.map((validator: IndexedValidator) => ({
           index: validator.index,
@@ -182,12 +179,12 @@ enum TaskTag {
 
       batch.forEach((validator: IndexedValidator) => scheduleValidatorProof(epoch, BigInt(validator.index)));
 
-      if (iteration % 25 === 0) {
+      if (batchIndex % 25 === 0) {
         console.log('Saved 25 batches and added first level of proofs');
       }
-
-      await addInnerLevelProofs(epoch, validators);
     });
+
+    await updateBranches(epoch, validators);
   }
 
   function scheduleValidatorProof(epoch: bigint, validatorIndex: bigint) {
@@ -222,7 +219,7 @@ enum TaskTag {
     return getNthParent(gindex, 1n);
   }
 
-  async function addInnerLevelProofs(epoch: bigint, validators: IndexedValidator[]) {
+  async function updateBranches(epoch: bigint, validators: IndexedValidator[]) {
     const changedValidatorGindices = validators.map(validator => gindexFromValidatorIndex(BigInt(validator.index)));
 
     let nodesNeedingUpdate = changedValidatorGindices.reduce(
