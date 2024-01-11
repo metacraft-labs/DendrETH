@@ -38,6 +38,10 @@ name = "count_unique_pubkeys"
 path = "bin/count_unique_pubkeys.rs"
 
 [[bin]]
+name = "count_unique_validators"
+path = "bin/count_unique_validators.rs"
+
+[[bin]]
 name = "sequential_verification"
 path = "bin/sequential_verification.rs"
 

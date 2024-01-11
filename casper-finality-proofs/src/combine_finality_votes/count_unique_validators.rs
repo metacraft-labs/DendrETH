@@ -20,9 +20,9 @@ impl CountUniqueValidators {
         let _one: U64Variable = builder.one();
 
         let mut set_is_ordered_pred = builder._true();
-        let mut total_unique: U64Variable = builder.zero();
+        let mut total_unique: U64Variable = builder.one();
 
-        let mut private_accumulator = builder.add(sigma, validator_indices[0]);
+        let mut private_accumulator = builder.mul(sigma, validator_indices[0]);
         for i in 1..VALIDATOR_INDICES_IN_SPLIT {
             let validator_sigma_mul = builder.mul(validator_indices[i], sigma);
             private_accumulator = builder.add(private_accumulator, validator_sigma_mul);

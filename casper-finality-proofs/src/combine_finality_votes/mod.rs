@@ -6,3 +6,4 @@ pub mod concat_bitmasks;
 pub mod count_unique_pubkeys;
 pub mod verify_subcommittee_vote;
 pub mod count_unique_validators;
+pub mod unique_validators_accumulator;

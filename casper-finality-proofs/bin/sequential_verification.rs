@@ -1,6 +1,8 @@
 use anyhow::Error;
 use casper_finality_proofs::combine_finality_votes::commitment_accumulator_inner::CommitmentAccumulatorInner;
-use casper_finality_proofs::constants::TEST_ATTESTATIONS_READ;
+use casper_finality_proofs::combine_finality_votes::count_unique_validators::CountUniqueValidators;
+use casper_finality_proofs::combine_finality_votes::unique_validators_accumulator::UniqueValidatorsAccumulatorInner;
+use casper_finality_proofs::constants::{TEST_ATTESTATIONS_READ, VALIDATOR_INDICES_IN_SPLIT};
 use plonky2x::frontend::uint::uint64::U64Variable;
 use plonky2x::frontend::vars::Bytes32Variable;
 use serde_json::Value;
@@ -89,10 +91,75 @@ fn main() -> Result<(), IOError> {
         }
     }
 
-
     //CountUniquePubkeys
-    let file_path_sorted_pubkeys = "./data/sorted_pubkeys.json";
-    let sorted_pubkeys_json = read_json_from_file(file_path_sorted_pubkeys).unwrap();
+    let file_path_sorted_validators = "./data/sorted_validator_indices.json";
+    let sorted_validators_json = read_json_from_file(file_path_sorted_validators).unwrap();
+
+    let mut cuv_builder = CircuitBuilder::<L, D>::new();
+    CountUniqueValidators::define(&mut cuv_builder);
+    let cuv_circuit = cuv_builder.build();
+    let mut input = cuv_circuit.input();
+
+    let sorted_validators: Vec<u64> = sorted_validators_json.as_array()
+        .unwrap()
+        .iter()
+        .take(160) //TODO: This is Test Size
+        .map(|validator| serde_json::from_value(validator.clone()).unwrap())
+        .collect();
+
+    let chunk_size = VALIDATOR_INDICES_IN_SPLIT;
+    let chunked_iter = sorted_validators.chunks_exact(chunk_size);
+    //TODO: Use chunked_iter.into_remainder to parse final slice of validators
+
+    let mut counter = 0;
+    let sigma: u64 = 1;
+    for chunk in chunked_iter { 
+        println!("===Proving Chunk {}====",counter);
+        counter += 1;
+
+        for validator_index in chunk {
+            input.write::<U64Variable>(sigma);
+            input.write::<U64Variable>(validator_index.clone());
+        }
+        let (_proof, _output) = cuv_circuit.prove(&input);
+    }
+    println!("Sorted_validators: {:?}", sorted_validators);
+    // Recurssive CountUniqueValidators
+    
+    loop {
+        let mut inner_builder = CircuitBuilder::<L, D>::new();
+        UniqueValidatorsAccumulatorInner::define(&mut inner_builder, &cuv_circuit);
+        child_circuit = inner_builder.build();
+
+        println!("Proving layer {}..", level + 1);
+
+        let mut final_output: Option<PublicOutput<L, D>> = None;
+        let mut new_proofs = vec![];
+        for i in (0..proofs.len()).step_by(2) {
+            println!("Pair [{}]", i / 2 + 1);
+            let mut input = child_circuit.input();
+
+            input.proof_write(proofs[i].clone());
+            input.proof_write(proofs[i + 1].clone());
+
+            let (proof, output) = child_circuit.prove(&input);
+            final_output = Some(output);
+            new_proofs.push(proof);
+        }
+
+        proofs = new_proofs;
+        level += 1;
+
+        if proofs.len() == 1 {
+            let mut final_output = final_output.unwrap();
+            let _validator_right = final_output.proof_read::<U64Variable>();
+            let _validator_left = final_output.proof_read::<U64Variable>();
+            let final_commitment = final_output.proof_read::<U64Variable>();
+            let total_unique = final_output.proof_read::<U64Variable>();
+            println!("\nFinal Commitment\n: {}", vad_aggregated_commitment);
+            break;
+        }
+    }
 
     Ok(())
 }
