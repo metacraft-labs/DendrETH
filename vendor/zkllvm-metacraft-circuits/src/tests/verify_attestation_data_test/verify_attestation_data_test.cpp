@@ -427,53 +427,6 @@ int main(int argc, char* argv[]) {
 
     // Run the third circuit to prove the finalization of the target.
 
-    {    // split combination of pubkeys into separate steps.
-        Transition voted_transition;
-        static_vector<PubKey, 8192> trusted_pubkeys;
-        static_vector<CombinePubkeysResult, 8192> partial_conbined_pubkeys;
-        size_t i = 0;
-        size_t unique_keys_count = 0;
-
-        auto process_pub_key_batch = [&unique_keys_count, &partial_conbined_pubkeys, &combined_token, &trusted_pubkeys,
-                                      &voted_transition, sigma]() {
-            partial_conbined_pubkeys.push_back(
-                combine_pubkeys(combined_token, trusted_pubkeys, voted_transition, sigma));
-            unique_keys_count += trusted_pubkeys.size();
-            trusted_pubkeys.clear();
-        };
-
-        for (auto& keys_set : data["trusted_pubkeys"]) {
-            for (auto& keys : keys_set) {
-                for (auto& key : keys) {
-                    if (i >= 2) {
-                        std::string prev = "";
-                        if (prev != std::string(key)) {
-                            trusted_pubkeys.push_back(byte_utils::hexToBytes<48>(key));
-                        }
-                        prev = key;
-                        if (trusted_pubkeys.full()) {
-                            process_pub_key_batch();
-                        }
-                    } else if (i == 0) {
-                        voted_transition.source.epoch = key["epoch"];
-                        voted_transition.source.root = byte_utils::hexToBytes<32>(key["root"]);
-                    } else if (i == 1) {
-                        voted_transition.target.epoch = key["epoch"];
-                        voted_transition.target.root = byte_utils::hexToBytes<32>(key["root"]);
-                    }
-                    ++i;
-                }
-            }
-        }
-        if (trusted_pubkeys.size() > 0) {
-            process_pub_key_batch();
-        }
-        std::cout << "all_keys = " << i << "\n";
-        std::cout << "unique_keys_count = " << unique_keys_count << "\n";
-
-        prove_finality(combined_token, partial_conbined_pubkeys, voted_transition, 100);
-    }
-
     {    // process all pubkeys at once
         Transition voted_transition;
         PubKey* trusted_pubkeys = (PubKey*)malloc(sizeof(PubKey) * 1'000'000);

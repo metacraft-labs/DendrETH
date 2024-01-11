@@ -100,10 +100,6 @@ struct VoteToken {
     base_field_type token;
 };
 
-struct CombinePubkeysResult {
-    base_field_type partial_token;
-    int64_t votes_count;
-};
 
 using TransitionKey = Bytes32;
 
@@ -243,38 +239,6 @@ VoteToken combine_finality_votes(const static_vector<VoteToken, 8192>& tokens) {
     return result;
 }
 
-void prove_finality(const VoteToken& token,
-                    const static_vector<CombinePubkeysResult, 8192>& trustedKeys,
-                    const Transition& votedTransition,
-                    const int64_t active_validators_count) {
-    assert_true(votedTransition == token.transition);
-    int64_t votes_count = 0;
-    const PubKey* prev = nullptr;
-    base_field_type reconstructed_token = 0;
-    for (auto it = trustedKeys.begin(); it != trustedKeys.end(); ++it) {
-        reconstructed_token += it->partial_token;
-        votes_count += it->votes_count;
-    }
-    assert_true(reconstructed_token == token.token);
-}
-
-CombinePubkeysResult combine_pubkeys(const VoteToken& token,
-                                     const static_vector<PubKey, 8192>& trustedKeys,
-                                     const Transition& votedTransition,
-                                     const int sigma) {
-    assert_true(votedTransition == token.transition);
-    CombinePubkeysResult result;
-    result.partial_token = 0;
-    result.votes_count = 0;
-    for (auto it = trustedKeys.begin(); it != trustedKeys.end(); ++it) {
-        const auto& pubkey = *it;
-        base_field_type element;
-        memcpy(&element, &pubkey, sizeof(element));
-        result.partial_token = (result.partial_token + (element * sigma));
-        ++result.votes_count;
-    }
-    return result;
-}
 
 void prove_finality(const VoteToken& token,
                     const PubKey* trustedKeys,
