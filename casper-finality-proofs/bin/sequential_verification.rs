@@ -1,6 +1,6 @@
 use anyhow::Error;
 use casper_finality_proofs::combine_finality_votes::commitment_accumulator_inner::CommitmentAccumulatorInner;
-use casper_finality_proofs::combine_finality_votes::count_unique_validators::CountUniqueValidators;
+use casper_finality_proofs::combine_finality_votes::count_unique_validators::{CountUniqueValidators, self};
 use casper_finality_proofs::combine_finality_votes::unique_validators_accumulator::UniqueValidatorsAccumulatorInner;
 use casper_finality_proofs::constants::{TEST_ATTESTATIONS_READ, VALIDATOR_INDICES_IN_SPLIT};
 use plonky2x::frontend::uint::uint64::U64Variable;
@@ -53,8 +53,9 @@ fn main() -> Result<(), IOError> {
     let mut proofs = attestation_data_proofs;
     let mut child_circuit = vad_circuit;
     let mut level = 0;
-    let mut leaf_builder = CircuitBuilder::<L, D>::new();
-    CommitmentAccumulatorInner::define(&mut leaf_builder, &child_circuit);
+    // let mut leaf_builder: CircuitBuilder<DefaultParameters, 2> = CircuitBuilder::<L, D>::new();
+    // CountUniqueValidators::define(&mut leaf_builder);
+    // leaf_builder.build();
 
     loop {
         let mut inner_builder = CircuitBuilder::<L, D>::new();
@@ -62,7 +63,6 @@ fn main() -> Result<(), IOError> {
         child_circuit = inner_builder.build();
 
         println!("Proving layer {}..", level + 1);
-
         let mut final_output: Option<PublicOutput<L, D>> = None;
         let mut new_proofs = vec![];
         for i in (0..proofs.len()).step_by(2) {
@@ -86,7 +86,7 @@ fn main() -> Result<(), IOError> {
             let _sigma = final_output.proof_read::<U64Variable>();
             let _source = final_output.proof_read::<Bytes32Variable>();
             let _target = final_output.proof_read::<Bytes32Variable>();
-            println!("\nFinal Commitment\n: {}", vad_aggregated_commitment);
+            println!("\nFinal Commitment: {}\n", vad_aggregated_commitment);
             break;
         }
     }
@@ -98,12 +98,12 @@ fn main() -> Result<(), IOError> {
     let mut cuv_builder = CircuitBuilder::<L, D>::new();
     CountUniqueValidators::define(&mut cuv_builder);
     let cuv_circuit = cuv_builder.build();
-    let mut input = cuv_circuit.input();
+    
 
     let sorted_validators: Vec<u64> = sorted_validators_json.as_array()
         .unwrap()
         .iter()
-        .take(160) //TODO: This is Test Size
+        .take(320) //TODO: This is Test Size
         .map(|validator| serde_json::from_value(validator.clone()).unwrap())
         .collect();
 
@@ -111,24 +111,41 @@ fn main() -> Result<(), IOError> {
     let chunked_iter = sorted_validators.chunks_exact(chunk_size);
     //TODO: Use chunked_iter.into_remainder to parse final slice of validators
 
+    let mut count_unique_validators_proofs = vec![];
     let mut counter = 0;
     let sigma: u64 = 1;
     for chunk in chunked_iter { 
         println!("===Proving Chunk {}====",counter);
         counter += 1;
-
+        let mut input = cuv_circuit.input();
+        input.write::<U64Variable>(sigma);
         for validator_index in chunk {
-            input.write::<U64Variable>(sigma);
             input.write::<U64Variable>(validator_index.clone());
         }
-        let (_proof, _output) = cuv_circuit.prove(&input);
+        println!("CHONK: {:?}", chunk);
+        let (proof, mut _output) = cuv_circuit.prove(&input);
+        count_unique_validators_proofs.push(proof);
+        let first = _output.read::<U64Variable>();
+        let second = _output.read::<U64Variable>();
+        let third = _output.read::<U64Variable>();
+        let fourth = _output.read::<U64Variable>();
+
+        println!("elements {:?}", [first, second, third, fourth]);
+        println!("Output: {:?}", _output);
     }
     println!("Sorted_validators: {:?}", sorted_validators);
+
     // Recurssive CountUniqueValidators
+    let mut proofs = count_unique_validators_proofs;
+    let mut child_circuit = cuv_circuit;
+    let mut level = 0;
+    // let mut leaf_builder = CircuitBuilder::<L, D>::new();
+    // CountUniqueValidators::define(&mut leaf_builder);
+    // leaf_builder.build();
     
     loop {
         let mut inner_builder = CircuitBuilder::<L, D>::new();
-        UniqueValidatorsAccumulatorInner::define(&mut inner_builder, &cuv_circuit);
+        UniqueValidatorsAccumulatorInner::define(&mut inner_builder, &child_circuit);
         child_circuit = inner_builder.build();
 
         println!("Proving layer {}..", level + 1);
@@ -142,21 +159,31 @@ fn main() -> Result<(), IOError> {
             input.proof_write(proofs[i].clone());
             input.proof_write(proofs[i + 1].clone());
 
-            let (proof, output) = child_circuit.prove(&input);
+            let (proof, mut output) = child_circuit.prove(&input);
+            // let first = output.proof_read::<U64Variable>();
+            // let second = output.proof_read::<U64Variable>();
+            // let third = output.proof_read::<U64Variable>();
+            // let fourth = output.proof_read::<U64Variable>();
+
+            // println!("Proof Elements {:?}", [first, second, third, fourth]);
+            println!("Current Unique: {:?}", output);
+
             final_output = Some(output);
             new_proofs.push(proof);
         }
 
+        
         proofs = new_proofs;
         level += 1;
 
         if proofs.len() == 1 {
             let mut final_output = final_output.unwrap();
-            let _validator_right = final_output.proof_read::<U64Variable>();
-            let _validator_left = final_output.proof_read::<U64Variable>();
-            let final_commitment = final_output.proof_read::<U64Variable>();
             let total_unique = final_output.proof_read::<U64Variable>();
-            println!("\nFinal Commitment\n: {}", vad_aggregated_commitment);
+            let final_commitment = final_output.proof_read::<U64Variable>();
+            let validator_left = final_output.proof_read::<U64Variable>();
+            let validator_right = final_output.proof_read::<U64Variable>();
+
+            println!("\nFinal Commitment: {}\nTotal Unique: {}\nRight: {}\nLeft: {}\n", final_commitment, total_unique, validator_right,validator_left);
             break;
         }
     }

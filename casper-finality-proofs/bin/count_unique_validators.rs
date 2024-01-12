@@ -33,10 +33,9 @@ fn main() {
 
     println!("Sorted_validators: {:?}", sorted_validators);
 
-
     let sigma: u64 = 1;
+    input.write::<U64Variable>(sigma);
     for validator_index in sorted_validators {
-        input.write::<U64Variable>(sigma);
         input.write::<U64Variable>(validator_index);
     }
     let (_proof, output) = circuit.prove(&input);
