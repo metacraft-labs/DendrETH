@@ -1,9 +1,13 @@
 use num_bigint::BigUint;
 use plonky2::field::{extension::Extendable, goldilocks_field::GoldilocksField, types::Field};
-use plonky2::hash::hash_types::{HashOut, RichField};
+use plonky2::hash::hash_types::{HashOut, RichField, NUM_HASH_OUT_ELTS};
 use plonky2::hash::hashing::hash_n_to_hash_no_pad;
 use plonky2::hash::poseidon::PoseidonPermutation;
-use plonky2::plonk::circuit_builder::CircuitBuilder;
+
+struct HashTreeRoot {
+    pub leaves: Vec<HashOut<GoldilocksField>>,
+    pub hash_tree_root: HashOut<GoldilocksField>,
+}
 
 pub struct Validator {
     pub pubkey: [bool; 384],
@@ -16,8 +20,8 @@ pub struct Validator {
     pub withdrawable_epoch: BigUint,
 }
 
-struct HashTreeRoot {
-    pub leaves: Vec<HashOut<GoldilocksField>>,
+pub struct ValidatorPoseidonHashTreeRoot {
+    pub validator: Validator,
     pub hash_tree_root: HashOut<GoldilocksField>,
 }
 
@@ -104,30 +108,32 @@ fn hash_tree_root<F: RichField + Extendable<D>, const D: usize>(leaves_len: usiz
 }
 
 pub fn hash_tree_root_validator<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-) {
+) -> ValidatorPoseidonHashTreeRoot {
     let validator = Validator::new::<F, D>();
     let leaves = vec![
         hash_bits_arr_in_goldilocks_to_hash_no_pad::<F, D>(&validator.pubkey),
         hash_bits_arr_in_goldilocks_to_hash_no_pad::<F, D>(&validator.withdrawal_credentials),
-        hash_biguint_in_goldilocks_to_hash_no_pad::<F, D>(validator.effective_balance),
+        hash_biguint_in_goldilocks_to_hash_no_pad::<F, D>(validator.effective_balance.clone()),
         hash_n_to_hash_no_pad::<GoldilocksField, PoseidonPermutation<GoldilocksField>>(&[
             GoldilocksField::from_bool(validator.slashed),
         ]),
-        hash_biguint_in_goldilocks_to_hash_no_pad::<F, D>(validator.activation_eligibility_epoch),
-        hash_biguint_in_goldilocks_to_hash_no_pad::<F, D>(validator.activation_epoch),
-        hash_biguint_in_goldilocks_to_hash_no_pad::<F, D>(validator.exit_epoch),
-        hash_biguint_in_goldilocks_to_hash_no_pad::<F, D>(validator.withdrawable_epoch),
+        hash_biguint_in_goldilocks_to_hash_no_pad::<F, D>(
+            validator.activation_eligibility_epoch.clone(),
+        ),
+        hash_biguint_in_goldilocks_to_hash_no_pad::<F, D>(validator.activation_epoch.clone()),
+        hash_biguint_in_goldilocks_to_hash_no_pad::<F, D>(validator.exit_epoch.clone()),
+        hash_biguint_in_goldilocks_to_hash_no_pad::<F, D>(validator.withdrawable_epoch.clone()),
     ];
     let hash_tree_root_poseidon = hash_tree_root::<F, D>(leaves.len());
 
-    // TRY GoldilocksField::eq(&self, other)
-    // for i in 0..leaves.len() {
-    // builder.connect_hashes(leaves[i], hash_tree_root_poseidon.leaves[i]);
-    // }
+    for i in 0..leaves.len() {
+        for k in 0..NUM_HASH_OUT_ELTS {
+            assert!(leaves[i].elements[k].eq(&hash_tree_root_poseidon.leaves[i].elements[k]));
+        }
+    }
 
-    // ValidatorPoseidonHashTreeRootTargets {
-    //     validator,
-    //     hash_tree_root: hash_tree_root_poseidon.hash_tree_root,
-    // }
+    ValidatorPoseidonHashTreeRoot {
+        validator,
+        hash_tree_root: hash_tree_root_poseidon.hash_tree_root,
+    }
 }
