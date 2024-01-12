@@ -1793,6 +1793,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@glidejs/glide@npm:^3.6.0":
+  version: 3.6.0
+  resolution: "@glidejs/glide@npm:3.6.0"
+  checksum: e2c8332f03dee891be5a310c9483355492093392efb35b5040d9678cd84d2dc067609a890cbf78f6824307f315e5f7e36940a5dc291c1c2ad653d43d62c7291d
+  languageName: node
+  linkType: hard
+
 "@humanwhocodes/config-array@npm:^0.11.13":
   version: 0.11.14
   resolution: "@humanwhocodes/config-array@npm:0.11.14"
@@ -3753,6 +3760,7 @@ __metadata:
     "@cosmjs/cosmwasm-stargate": ^0.30.0
     "@cosmjs/proto-signing": ^0.30.0
     "@cosmjs/stargate": ^0.30.0
+    "@glidejs/glide": ^3.6.0
     "@iden3/binfileutils": ^0.0.11
     "@lodestar/types": 1.4.1
     "@mevitae/redis-work-queue": ^0.0.4
@@ -15526,6 +15534,7 @@ __metadata:
   resolution: "web-dendr@workspace:website"
   dependencies:
     "@fontsource/fira-mono": ^4.5.10
+    "@glidejs/glide": ^3.6.0
     "@neoconfetti/svelte": ^1.0.0
     "@sveltejs/adapter-auto": ^2.0.0
     "@sveltejs/kit": ^1.20.4
