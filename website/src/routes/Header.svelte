@@ -10,7 +10,7 @@
 </script>
 
 <header>
-	<div class="relative">
+	<div>
 		<!-- <Navbar navClass="px-2 sm:px-4 py-2.5 absolute w-full z-20 top-0 left-0 border-b" let:hidden let:toggle>
 		  <NavBrand href="/">
 			<img src="/images/flowbite-svelte-icon-logo.svg" class="mr-3 h-6 sm:h-9" alt="DendrETH Logo" />
@@ -29,17 +29,17 @@
 		  </NavUl>
 		</Navbar> -->
 
-		<Navbar class="bg-gradient-to-b from-[#14102B] to-[#2E2C5F] p-8">
+		<Navbar class="z-20 bg-gradient-to-b from-[#0B061C] to-[#1A1739] p-4" style="position: fixed;">
 			<div class="text-white text-2xl">DendrETH</div>
-			<div  class="flex space-x-4">
+			<div  class="flex space-x-12" style="align-items: center;">
 			  <a href="/" class="text-white hover:text-gray-300">DendrETH</a>
 			  <a href="#" class="text-white hover:text-gray-300">Documents</a>
 			  <a href="/explorer" class="text-white hover:text-gray-300">Live Bridges</a>
 			  <a href="#" class="text-white hover:text-gray-300">Career</a>
 			  <a href="#" class="text-white hover:text-gray-300">Blog</a>
-			</div>
-			<div >
-			  <Button color="light" href="#">DendrETH Wallet Demo</Button>
+			  <div >
+				<Button class="bg-transparent rounded-bl-none rounded-tr-none border border-white hover:bg-white hover:text-black" href="#">DendrETH Wallet Demo</Button>
+			  </div>
 			</div>
 		  </Navbar>
 

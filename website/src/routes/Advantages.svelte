@@ -2,39 +2,63 @@
     import { GlobeOutline, ShieldCheckOutline, UsersOutline, DollarOutline } from 'flowbite-svelte-icons';
   </script>
   
-  <section class="bg-black text-white px-10 center">
+  <section class="bg-[#121316] text-white px-10 center">
     <div class="">
-      <div class="text-3xl font-bold mb-6">Advantages</div>
-      <div class="grid md:grid-cols-2 gap-4">
+      <div class="container flex justify-between mb-4">
+        <div class="text-4xl font-bold mb-6 max-w-md leading-relaxed"><span style="color: #8FD3FE;">Advantages</span> we deliver right out of the box</div>
+        <div class="text-xl max-w-md">Some copy about the approach taken and whats the value proposition that stands behind DendrETH</div>
+      </div>
+      <div class="grid md:grid-cols-2 gap-6">
         
         <!-- Card 1 -->
-        <div class="bg-gray-800 p-8 rounded-lg shadow-lg flex flex-col items-center text-center">
+        <div class="bg-[#121316] p-8 rounded-xl shadow-lg flex flex-col items-left text-left border border-gray-500">
           <!-- Replace 'YourChosenIcon' with the actual icon component you want to use -->
-          <GlobeOutline class="text-blue-500 mb-4" size="lg" />
-          <div class="text-lg font-semibold mb-2">One-shot Sync Capability</div>
-          <p class="text-sm">
-            * The fastest way to verify correctness of presented data based on state of the blockchain.
-          </p>
-          <p class="text-sm mt-2">
-            • Better user experience for high latency systems like mobile wallets.
+          <GlobeOutline class="text-blue-500 mb-4 w-20 h-20 mb-12 ml-2"/>
+          <div class="text-2xl font-semibold mb-2">Interoperability</div>
+          <p class="text-sm mt-2 leading-relaxed">
+            Connect to Ethereum's 26 billion TLV network.
+            <br>
+            *Add 2 rows of copy here
+            <br>
+            *Add 2 rows of copy here
           </p>
         </div>
     
         <!-- Card 2 -->
-        <div class="bg-gray-800 p-8 rounded-lg shadow-lg flex flex-col items-center text-center">
-          <ShieldCheckOutline class="text-blue-500 mb-4" size="lg" />
-          <div class="text-lg font-semibold mb-2">Permissionless</div>
-          <p class="text-sm">
-            The very core principle of blockchain technology. We bring true Censorship Resistance and the best User Experience possible.
+        <div class="bg-[#121316] p-8 rounded-lg shadow-lg flex flex-col items-left text-left  border border-gray-500">
+          <ShieldCheckOutline class="text-blue-500 mb-4 w-20 h-20 mb-12 ml-2"/>
+          <div class="text-2xl font-semibold mb-2">Security</div>
+          <p class="text-sm mt-2 leading-relaxed">
+            Exchange value in a trustless way between EOS and Ethereum.
+            <br>
+            *Add 2 rows of copy here
+            <br>
+            *Add 2 rows of copy here
           </p>
         </div>
     
         <!-- Card 3 -->
-        <div class="bg-gray-800 p-8 rounded-lg shadow-lg flex flex-col items-center text-center">
-          <UsersOutline class="text-blue-500 mb-4" size="lg" />
-          <div class="text-lg font-semibold mb-2">Decentralized and Secure</div>
-          <p class="text-sm">
-            No trust assumptions on centralized actors, nor permissioned multising. Security is the same as the L1 consensus protocol.
+        <div class="bg-[#121316] p-8 rounded-lg shadow-lg flex flex-col items-left text-left  border border-gray-500">
+          <UsersOutline class="text-blue-500 mb-4 w-20 h-20 mb-12 ml-2"/>
+          <div class="text-2xl font-semibold mb-2">Expanded User Base</div>
+          <p class="text-sm mt-2 leading-relaxed">
+            Grow user numbers and network activity
+            <br>
+            *Add 2 rows of copy here
+            <br>
+            *Add 2 rows of copy here
+          </p>
+        </div>
+
+        <div class="bg-[#121316] p-8 rounded-lg shadow-lg flex flex-col items-left text-left  border border-gray-500">
+          <ShieldCheckOutline class="text-blue-500 mb-4 w-20 h-20 mb-12 ml-2"/>
+          <div class="text-2xl font-semibold mb-2">Liquidity</div>
+          <p class="text-sm mt-2 leading-relaxed">
+            Increase EOS liquidity by connecting to Ethereum
+            <br>
+            *Add 2 rows of copy here
+            <br>
+            *Add 2 rows of copy here
           </p>
         </div>
       </div>
