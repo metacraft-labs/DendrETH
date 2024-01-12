@@ -65,11 +65,10 @@ fn hash_biguint_in_goldilocks_to_hash_no_pad<F: RichField + Extendable<D>, const
     ])
 }
 
-fn hash_tree_root<F: RichField + Extendable<D>, const D: usize>(leaves_len: usize) -> HashTreeRoot {
-    let leaves: Vec<HashOut<GoldilocksField>> = (0..leaves_len)
-        .map(|_| HashOut::from_vec([GoldilocksField::default(); 4].to_vec()))
-        .collect();
-
+fn hash_tree_root<F: RichField + Extendable<D>, const D: usize>(
+    leaves_len: usize,
+    leaves: Vec<HashOut<GoldilocksField>>,
+) -> HashTreeRoot {
     let mut hashers: Vec<HashOut<GoldilocksField>> = Vec::new();
     for i in 0..(leaves_len / 2) {
         let goldilocks_leaves = leaves[i * 2]
@@ -124,7 +123,7 @@ pub fn hash_tree_root_validator<F: RichField + Extendable<D>, const D: usize>(
         hash_biguint_in_goldilocks_to_hash_no_pad::<F, D>(validator.exit_epoch.clone()),
         hash_biguint_in_goldilocks_to_hash_no_pad::<F, D>(validator.withdrawable_epoch.clone()),
     ];
-    let hash_tree_root_poseidon = hash_tree_root::<F, D>(leaves.len());
+    let hash_tree_root_poseidon = hash_tree_root::<F, D>(leaves.len(), leaves.clone());
 
     for i in 0..leaves.len() {
         for k in 0..NUM_HASH_OUT_ELTS {
