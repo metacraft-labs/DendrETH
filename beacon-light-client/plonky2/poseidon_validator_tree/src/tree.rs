@@ -33,7 +33,7 @@ impl Validator {
     }
 }
 
-fn hash_validator_data_in_goldilocks_to_hash_no_pad<
+fn hash_bits_arr_in_goldilocks_to_hash_no_pad<
     F: RichField + Extendable<D>,
     const D: usize,
 >(
@@ -49,34 +49,51 @@ fn hash_validator_data_in_goldilocks_to_hash_no_pad<
     )
 }
 
+fn hash_biguint_in_goldilocks_to_hash_no_pad<
+    F: RichField + Extendable<D>,
+    const D: usize,
+>(
+    validator_data: BigUint
+) -> HashOut<GoldilocksField> {
+    let mut validator_data_in_goldilocks = validator_data.to_u32_digits();
+    println!("validator_data_in_goldilocks is: {:?}", validator_data_in_goldilocks);
+    validator_data_in_goldilocks.resize(2, 0);
+
+    println!("RESIZED is: {:?}", validator_data_in_goldilocks);
+
+    hash_n_to_hash_no_pad::<GoldilocksField, PoseidonPermutation<GoldilocksField>>(&[
+        GoldilocksField::from_canonical_u32(validator_data_in_goldilocks[0]),
+        GoldilocksField::from_canonical_u32(validator_data_in_goldilocks[1]),
+    ])
+}
+
 pub fn do_something<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
 ) {
     let validator = Validator::new::<F, D>();
 
-    // let limbs = validator.activation_eligibility_epoch.to_u32_digits();
-    // limbs.resize(2, 0);
+    let mut limbs = validator.activation_eligibility_epoch.to_u32_digits();
+    limbs.resize(2, 0);
+
+    let test = BigUint::new([111111111 as u32, 22222222 as u32, 3333333 as u32, 444444 as u32, 55555 as u32].to_vec());
 
     let leaves = vec![
-        hash_validator_data_in_goldilocks_to_hash_no_pad::<F, D>(&validator.pubkey),
-        hash_validator_data_in_goldilocks_to_hash_no_pad::<F, D>(&validator.withdrawal_credentials),
-        // hash_validator_data_in_goldilocks_to_hash_no_pad::<F, D>(&validator.effective_balance),
-        // hash_n_to_hash_no_pad::<GoldilocksField, PoseidonPermutation<GoldilocksField>>(&[
-        //     GoldilocksField::from_bool(validator.slashed),
-        // ]),
-        // hash_n_to_hash_no_pad::<GoldilocksField, PoseidonPermutation<GoldilocksField>>(
-        //     GoldilocksField::from_canonical_u32(limbs[0]),
-        //     GoldilocksField::from_canonical_u32(limbs[1]),
-        // ),
-        // hash_validator_data_in_goldilocks_to_hash_no_pad::<F, D>(&validator.activation_epoch),
-        // hash_validator_data_in_goldilocks_to_hash_no_pad::<F, D>(&validator.exit_epoch),
-        // hash_validator_data_in_goldilocks_to_hash_no_pad::<F, D>(&validator.withdrawable_epoch),
+        hash_bits_arr_in_goldilocks_to_hash_no_pad::<F, D>(&validator.pubkey),
+        hash_bits_arr_in_goldilocks_to_hash_no_pad::<F, D>(&validator.withdrawal_credentials),
+        hash_biguint_in_goldilocks_to_hash_no_pad::<F, D>(validator.effective_balance),
+        hash_n_to_hash_no_pad::<GoldilocksField, PoseidonPermutation<GoldilocksField>>(&[
+            GoldilocksField::from_bool(validator.slashed),
+        ]),
+        hash_biguint_in_goldilocks_to_hash_no_pad::<F, D>(validator.activation_eligibility_epoch),
+        hash_biguint_in_goldilocks_to_hash_no_pad::<F, D>(validator.activation_epoch),
+        hash_biguint_in_goldilocks_to_hash_no_pad::<F, D>(validator.exit_epoch),
+        hash_biguint_in_goldilocks_to_hash_no_pad::<F, D>(validator.withdrawable_epoch),
     ];
-
     let hash_tree_root_poseidon = hash_tree_root_poseidon(builder, leaves.len());
 
+    /// TRY GoldilocksField::eq(&self, other)
     // for i in 0..leaves.len() {
-    //     builder.connect_hashes(leaves[i], hash_tree_root_poseidon.leaves[i]);
+        // builder.connect_hashes(leaves[i], hash_tree_root_poseidon.leaves[i]);
     // }
 
     // ValidatorPoseidonHashTreeRootTargets {
@@ -84,5 +101,5 @@ pub fn do_something<F: RichField + Extendable<D>, const D: usize>(
     //     hash_tree_root: hash_tree_root_poseidon.hash_tree_root,
     // }
 
-    println!("leaves = {:?}", leaves);
+    // println!("leaves = {:?}", leaves);
 }
