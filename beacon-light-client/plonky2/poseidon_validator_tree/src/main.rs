@@ -10,5 +10,5 @@ fn main() {
 
     let config = CircuitConfig::standard_recursion_config();
     let mut builder = CircuitBuilder::<F, D>::new(config);
-    hash_tree_root_validator::<F, D>(&mut builder);
+    hash_tree_root_validator::<F, D>();
 }
