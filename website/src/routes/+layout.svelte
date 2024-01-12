@@ -8,7 +8,7 @@
 <div class="app">
 	<Header />
 
-	<main class="pt-16">
+	<main class="pt-18">
 		<slot />
 	</main>
 	

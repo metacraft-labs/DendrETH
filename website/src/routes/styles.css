@@ -22,18 +22,45 @@ body {
 	background-attachment: fixed;
 	background-color: var(--color-bg-1);
 	background-size: 100vw 100vh;
-	background-image: radial-gradient(
-			50% 50% at 50% 50%,
+	background-image: radial-gradient(50% 50% at 50% 50%,
 			rgba(19, 20, 22, 0.75) 0%,
-			rgba(255, 255, 255, 0) 100%
-		),
+			rgba(255, 255, 255, 0) 100%),
 		linear-gradient(180deg, var(--color-bg-0) 0%, var(--color-bg-1) 15%, var(--color-bg-2) 50%);
+}
+
+@font-face {
+	font-family: 'ChakraPetch';
+	src: url('$lib/fonts/ChakraPetch/ChakraPetch-Regular.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'BonaNova-Bold';
+	src: url('$lib/fonts/BonaNova/BonaNova-Bold.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Inter-Bold';
+	src: url('$lib/fonts/Inter/Inter-Bold.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: "Inter";
+	src: url('$lib/fonts/Inter/Inter-Regular.ttf') format('truetype');
 }
 
 h1,
 h2,
 p {
 	font-weight: 400;
+	font-family: "Inter";
+}
+
+div {
+	font-family: "Inter";
+}
+
+li {
+	font-family: "Inter";
 }
 
 p {
@@ -105,4 +132,3 @@ button:focus:not(:focus-visible) {
 	width: 1px;
 	white-space: nowrap;
 }
-

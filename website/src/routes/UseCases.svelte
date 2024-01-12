@@ -5,44 +5,135 @@
 		UsersOutline,
 		DollarOutline
 	} from 'flowbite-svelte-icons';
-	import code1 from '$lib/images/code1.svg';
 </script>
 
 <section class="bg-[#121316] text-white px-10 center">
-	<div class="">
+	<div>
 		<!-- <div class="text-3xl font-bold mb-6">Use Cases</div> -->
-		<div class="grid md:grid-cols-2 gap-4">
+		<div class="grid md:grid-cols-2 gap-4 space-y-20 items-center">
 			<!-- Card 1 -->
 			<div class="flex mt-14">
 				<div class="flex flex-row">
-					<div class="flex flex-col items-center pt-10 h-full pb-10">
-						<button class="bg-[#393939] rounded-full text-white px-4 py-2 mb-1">01</button>
-						<div class="h-24 w-0.5 bg-gray-400 bg-opacity-20" />
-						<!-- Vertical line -->
-						<button
-							class="bg-[#121316] border border-[#393939] rounded-full text-white px-4 py-2 mt-1"
-							>02</button
-						>
-					</div>
-					<div class="bg-[#121316] p-8 rounded-lg flex flex-col items-left text-left">
-						<div class="text-lg font-semibold mb-4">Trusted Bridges</div>
+					<div class="bg-[#121316] p-8 rounded-lg flex flex-col items-left text-left ">
+						<h2 class="text-lg font-semibold mb-4">Permissionless Bridges</h2>
 						<ul class="text-sm ml-4">
 							<li class="list-disc mb-6">
-								Trusted bridges depend upon a central entity or system for their operations.
+								Trust based on Math and Code, not People and Organisations.
 							</li>
 							<li class="list-disc mb-6">
-								They have trust assumptions with respect to the custody of security of the bridge.
-								Users mostly rely on the bridge operator's reputation.
+								Fully Decentralized, Trustless and Censorship Resistant.
 							</li>
-							<li class="list-disc">Users need to give up control of their crypto assets.</li>
+              <li class="list-disc mb-6">
+								No need to give up control of your assets.
+							</li>
+              <li class="list-disc">
+                No need to trust centralized actors, nor multising.
+							</li>
 						</ul>
 					</div>
 				</div>
 			</div>
-			<!-- Card 2 -->
-			<div class="ounded-lg shadow-lg flex flex-col items-center text-center">
-				<img src={code1} alt="Descriptive Text" class="code1" />
+
+			<div
+				class="bg-[#121316] p-8 rounded-lg shadow-lg flex flex-col items-left text-left border border-gray-500"
+			>
+				<ShieldCheckOutline class="text-blue-500 mb-4 w-20 h-20 mb-12 ml-2" />
+				<div class="text-2xl font-semibold mb-2">Security</div>
+				<p class="text-sm mt-2 leading-relaxed">
+					Exchange value in a trustless way between EOS and Ethereum.
+					<br />
+					*Add 2 rows of copy here
+					<br />
+					*Add 2 rows of copy here
+				</p>
 			</div>
+			<!-- Card 2 -->
+      <div class="flex mt-14">
+				<div class="flex flex-row">
+					<div class="bg-[#121316] p-8 rounded-lg flex flex-col items-left text-left">
+						<h2 class="text-lg font-semibold mb-4">Oracles</h2>
+						<ul class="text-sm ml-4">
+							<li class="list-disc mb-6">
+								DendrETH helps you verify data settled on Ethereum from other chains.
+							</li>
+							<li class="list-disc">
+								Build a custom oracle for Governance, Staking, Cross-Chain Messaging and more.
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+
+			<div
+				class="bg-[#121316] p-8 rounded-lg shadow-lg flex flex-col items-left text-left border border-gray-500"
+			>
+				<ShieldCheckOutline class="text-blue-500 mb-4 w-20 h-20 mb-12 ml-2" />
+				<div class="text-2xl font-semibold mb-2">Security</div>
+				<p class="text-sm mt-2 leading-relaxed">
+					Exchange value in a trustless way between EOS and Ethereum.
+					<br />
+					*Add 2 rows of copy here
+					<br />
+					*Add 2 rows of copy here
+				</p>
+			</div>
+      <!-- Card 3 -->
+      <div class="flex mt-14">
+				<div class="flex flex-row">
+					<div class="bg-[#121316] p-8 rounded-lg flex flex-col items-left text-left">
+						<div class="text-lg font-semibold mb-4">One-Shot Sync</div>
+						<ul class="text-sm ml-4">
+							<li class="list-disc mb-6">
+								Blazing fast Sync and verify state from Ethereum's consensus layer.
+							</li>
+							<li class="list-disc mb-6">
+								Accurate data, no Intermediaries
+							</li>
+							<li class="list-disc">Maximum Security, Best UX</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+
+			<div
+				class="bg-[#121316] p-8 rounded-lg shadow-lg flex flex-col items-left text-left border border-gray-500"
+			>
+				<ShieldCheckOutline class="text-blue-500 mb-4 w-20 h-20 mb-12 ml-2" />
+				<div class="text-2xl font-semibold mb-2">Security</div>
+				<p class="text-sm mt-2 leading-relaxed">
+					Exchange value in a trustless way between EOS and Ethereum.
+					<br />
+					*Add 2 rows of copy here
+					<br />
+					*Add 2 rows of copy here
+				</p>
+			</div>
+			<!-- Card 4 -->      
+      <div class="flex mt-14">
+				<div class="flex flex-row">
+					<div class="bg-[#121316] p-8 rounded-lg flex flex-col items-left text-left">
+						<div class="text-lg font-semibold mb-4">Liquid Stacking</div>
+						<ul class="text-sm ml-4">
+							<li class="list-disc">TODO...</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+
+			<div
+				class="bg-[#121316] p-8 rounded-lg shadow-lg flex flex-col items-left text-left border border-gray-500"
+			>
+				<ShieldCheckOutline class="text-blue-500 mb-4 w-20 h-20 mb-12 ml-2" />
+				<div class="text-2xl font-semibold mb-2">Security</div>
+				<p class="text-sm mt-2 leading-relaxed">
+					Exchange value in a trustless way between EOS and Ethereum.
+					<br />
+					*Add 2 rows of copy here
+					<br />
+					*Add 2 rows of copy here
+				</p>
+			</div>
+      
 		</div>
 
 		<!-- Benefits grid -->

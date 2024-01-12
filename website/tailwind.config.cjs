@@ -12,6 +12,9 @@ const config = {
 			],
 	},
 	  extend: {
+		margin: {
+		  '18': '4.5rem',
+		},
 		colors: {
 		padding: {
 			'30px': '30px', // p-[30px]"

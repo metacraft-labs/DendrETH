@@ -7,7 +7,7 @@
   
 <div class="bg-[#121316] text-white p-24 flex flex-col content-center center items-center">
     <div class="mb-10">
-      <button class="text-xs border border-[#8FD3FE] rounded-2xl py-1 px-3">Supported networks and partners</button>
+      <button class="text-xs border border-[#8FD3FE] rounded-2xl py-1 px-3">Partners</button>
     </div>
     <div class="grid lg:grid-cols-4 md:grid-cols-2 sm:grid-cols-1 flex w-full">
         <div class="flex flex-col items-center justify-center mb-8">

@@ -1,7 +1,7 @@
 <script>
 	import Counter from './Counter.svelte';
 	import { AdvancedRating, Button } from 'flowbite-svelte';
-	
+
 	import Explainer from './Explainer.svelte';
 	import Advantages from './Advantages.svelte';
 	import UseCases from './UseCases.svelte';
@@ -20,15 +20,15 @@
 </svelte:head>
 
 <section
-	class="bg-gradient-to-b from-[#1A1739] via-[#363571] to-[#A8C5EB] text-white flex justify-between items-center center"
+	class="bg-gradient-to-b from-[#1A1739] via-[#363571] to-[#A8C5EB] text-white flex justify-between items-center center mt-18"
 >
-	<div class="container flex flex-col items-start h-full px-6 max-w-xl">
+	<div class="container flex flex-col items-start h-full px-6 max-w-3xl">
 		<h1 class="text-start text-5xl font-bold mb-4 leading-tight">
-			Main value proposition <br /> & <span style="color: #8FD3FE;">what DendrETH does</span>
+			Scaling Trust,<br> <span class="spanh1" style="color: #8FD3FE;">the Interchain Interoperability Layer</span>
 		</h1>
 		<p class="mb-12 leading-relaxed">
-			Maximize your coding efficiency with our compiler-driven software solutions empowering you to
-			write better code, achieve faster builds
+			Remove your dependence on centralized infrastructure by leveraging a truly 
+			<span style="font-family: 'Inter-Bold'">trust-minimized, censorship resistant, decentralized,</span> and highly secure smart contract solution.
 		</p>
 		<div class="flex space-x-4">
 			<Button
@@ -66,6 +66,17 @@
 		padding: 30px 10% 100px 10%;
 	}
 	/* Vector */
+
+	h1 {
+		font-family: 'ChakraPetch';
+		font-size: 61px;
+		line-height: 120%;
+		letter-spacing: -0.60px;
+	}
+
+	.spanh1 {
+		font-family: 'BonaNova-Bold';
+	}
 
 	.vector1 {
 		opacity: 0.2;

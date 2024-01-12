@@ -30,11 +30,10 @@
 		</Navbar> -->
 
 		<Navbar class="z-20 bg-gradient-to-b from-[#0B061C] to-[#1A1739] p-4" style="position: fixed;">
-			<div class="text-white text-2xl">DendrETH</div>
+			<div><a href="/" class="text-white text-2xl">DendrETH</a></div>
 			<div  class="flex space-x-12" style="align-items: center;">
-			  <a href="/" class="text-white hover:text-gray-300">DendrETH</a>
-			  <a href="#" class="text-white hover:text-gray-300">Documents</a>
-			  <a href="/explorer" class="text-white hover:text-gray-300">Live Bridges</a>
+			  <a href="#" class="text-white hover:text-gray-300">Docs</a>
+			  <a href="/explorer" class="text-white hover:text-gray-300">Explorer</a>
 			  <a href="#" class="text-white hover:text-gray-300">Career</a>
 			  <a href="#" class="text-white hover:text-gray-300">Blog</a>
 			  <div >
