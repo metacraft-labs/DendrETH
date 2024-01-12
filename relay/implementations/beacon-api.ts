@@ -393,8 +393,13 @@ export class BeaconApi implements IBeaconApi {
     return block.data.message.body.execution_payload.state_root;
   }
 
+  async getHeadSlot(): Promise<bigint> {
+    const res = await (await this.fetchWithFallback('/eth/v1/beacon/headers/head')).json();
+    return BigInt(res.data.header.message.slot);
+  }
+
   async getValidators(
-    state_id: number | string = 'head',
+    state_id: bigint | string = 'head',
     validators_count: number | undefined = undefined,
   ): Promise<Validator[]> {
     const { ssz } = await import('@lodestar/types');

@@ -84,8 +84,9 @@ enum TaskTag {
   );
 
   const beaconApi = new BeaconApi([options['beacon-node']]);
+  const headSlot = await beaconApi.getHeadSlot();
 
-  let epoch = 189000n;
+  let epoch = headSlot / 32n;
 
   // handle zeros validators
   if (await redis.isZeroValidatorEmpty()) {
@@ -122,11 +123,13 @@ enum TaskTag {
   while (true) {
     const timeBefore = Date.now();
 
-    const validators = await beaconApi.getValidators(8166208, TAKE);
+    const validators = await beaconApi.getValidators(epoch * 32n, TAKE);
 
     const changedValidators = validators
       .map((validator, index) => ({ validator, index }))
       .filter(hasValidatorChanged(prevValidators));
+
+    changedValidators.push({ validator: validators[0], index: 0 });
 
     await saveValidatorsInBatches(epoch, changedValidators);
 
@@ -140,6 +143,8 @@ enum TaskTag {
     if (timeAfter - timeBefore < 384000) {
       await sleep(384000 - (timeBefore - timeAfter));
     }
+
+    epoch += 1n;
   }
 
   async function saveValidatorsInBatches(epoch: bigint, validators: IndexedValidator[], batchSize = 200) {
