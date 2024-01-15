@@ -29,13 +29,17 @@
 
 		glide.on('move', () => {
 			const lastIndex = glide.index + glide.settings.perView;
-			console.log(lastIndex, totalSlides);
 
 			if (lastIndex >= totalSlides) {
 				document.querySelector('.right-button').disabled = true;
 			} else {
 				document.querySelector('.right-button').disabled = false;
 			}
+            if (glide.index == 0) {
+                document.querySelector('.left-button').disabled = true;
+            } else {
+                document.querySelector('.left-button').disabled = false;
+            }
 		});
 	});
 
@@ -56,13 +60,13 @@
 		<div>
 			<button
 				on:click={goToPrevSlide}
-				class="left-button text-xl bg-transparent border border-gray-400 py-3 px-5 rounded-full text-gray-400 hover:border-black hover:text-black mr-16"
+				class="left-button text-xl bg-transparent border border-black py-3 px-5 rounded-full text-black hover:bg-gray-200 mr-16"
 			>
 				&lt;
 			</button>
 			<button
 				on:click={goToNextSlide}
-				class="right-button text-xl bg-transparent border border-gray-400 py-3 px-5 rounded-full text-gray-400 hover:border-black hover:text-black"
+				class="right-button text-xl bg-transparent border border-black py-3 px-5 rounded-full text-black hover:bg-gray-200"
 			>
 				&gt;
 			</button>
@@ -251,5 +255,11 @@
 
     span {
         font-family: 'BonaNova-Bold';
+    }
+
+    :disabled {
+        color: rgb(156 163 175);
+        border-color: rgb(156 163 175);
+        background: transparent
     }
 </style>
