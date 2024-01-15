@@ -18,11 +18,12 @@ import yargs from 'yargs';
 
 let TAKE: number | undefined;
 
+const MILLISECONDS_PER_EPOCH = 384000;
+
 enum TaskTag {
-  UPDATE_VALIDATOR_LEAF = 0,
-  UPDATE_PROOF_NODE_TASK = 1,
-  PROVE_ZERO_FOR_LEVEL = 2,
-  UPDATE_VALIDATOR_PROOF = 3,
+  UPDATE_PROOF_NODE = 0,
+  PROVE_ZERO_FOR_LEVEL = 1,
+  UPDATE_VALIDATOR_PROOF = 2,
 }
 
 (async () => {
@@ -61,16 +62,6 @@ enum TaskTag {
       description: 'Sets the number of validators to take',
     }).argv;
 
-  /*
-{
-  const beaconApi = new BeaconApi([options['beacon-node']]);
-  const { beaconState } = await beaconApi.getBeaconState(8172466);
-  const validatorsRoot = ssz.capella.BeaconState.fields.validators.hashTreeRoot(beaconState.validators);
-  const validatorsRootHex = bytesToHex(validatorsRoot);
-  console.log(validatorsRootHex);
-}
-*/
-
   const redis = new RedisLocal(options['redis-host'], options['redis-port']);
 
   const db = new Redis(
@@ -105,15 +96,16 @@ enum TaskTag {
           withdrawableEpoch: ''.padEnd(64, '0'),
         }),
       },
-    ]);
+    ],
+      epoch,
+    );
 
-    scheduleValidatorProof(BigInt(validator_commitment_constants.validatorRegistryLimit), epoch);
+    await scheduleValidatorProof(BigInt(validator_commitment_constants.validatorRegistryLimit), epoch);
 
     for (let level = 39n; level >= 0n; level--) {
       scheduleProveZeroForLevel(level);
       console.log('Added zeros tasks');
     }
-
   }
 
   console.log('Loading validators');
@@ -129,8 +121,6 @@ enum TaskTag {
       .map((validator, index) => ({ validator, index }))
       .filter(hasValidatorChanged(prevValidators));
 
-    changedValidators.push({ validator: validators[0], index: 0 });
-
     await saveValidatorsInBatches(epoch, changedValidators);
 
     console.log('#changedValidators', changedValidators.length);
@@ -140,49 +130,49 @@ enum TaskTag {
     const timeAfter = Date.now();
 
     // wait for the next epoch
-    if (timeAfter - timeBefore < 384000) {
-      await sleep(384000 - (timeBefore - timeAfter));
+    if (timeAfter - timeBefore < MILLISECONDS_PER_EPOCH) {
+      await sleep(MILLISECONDS_PER_EPOCH - (timeBefore - timeAfter));
     }
 
     epoch += 1n;
   }
 
   async function saveValidatorsInBatches(epoch: bigint, validators: IndexedValidator[], batchSize = 200) {
-    splitIntoBatches(validators, batchSize).forEach(async (batch, batchIndex) => {
+    await Promise.all(splitIntoBatches(validators, batchSize).map(async (batch) => {
       await redis.saveValidators(
         batch.map((validator: IndexedValidator) => ({
           index: validator.index,
           validatorJSON: convertValidatorToProof(validator.validator),
         })),
+        epoch
       );
 
-      batch.forEach((validator: IndexedValidator) => scheduleValidatorProof(BigInt(validator.index), epoch));
-
-      if (batchIndex % 25 === 0) {
-        console.log('Saved 25 batches and added first level of proofs');
-      }
-    });
+      await Promise.all(batch.map((validator) => scheduleValidatorProof(BigInt(validator.index), epoch)));
+    }));
 
     await updateBranches(epoch, validators);
   }
 
-  function scheduleValidatorProof(validatorIndex: bigint, epoch: bigint) {
+  async function scheduleValidatorProof(validatorIndex: bigint, epoch: bigint) {
     const buffer = new ArrayBuffer(17);
     const dataView = new DataView(buffer);
     dataView.setUint8(0, TaskTag.UPDATE_VALIDATOR_PROOF);
     dataView.setBigUint64(1, validatorIndex, false);
     dataView.setBigUint64(9, epoch, false);
     work_queue.addItem(db, new Item(buffer));
+
+    await redis.addToEpochLookup(`${validator_commitment_constants.validatorProofKey}:${gindexFromValidatorIndex(validatorIndex)}`, epoch);
   }
 
-  function scheduleUpdateProofNodeTask(gindex: bigint, epoch: bigint) {
+  async function scheduleUpdateProofNodeTask(gindex: bigint, epoch: bigint) {
     const buffer = new ArrayBuffer(17);
     const dataView = new DataView(buffer);
 
-    dataView.setUint8(0, TaskTag.UPDATE_PROOF_NODE_TASK);
+    await redis.addToEpochLookup(`${validator_commitment_constants.validatorProofKey}:${gindex}`, epoch);
+
+    dataView.setUint8(0, TaskTag.UPDATE_PROOF_NODE);
     dataView.setBigUint64(1, gindex, false);
     dataView.setBigUint64(9, epoch, false);
-
     work_queue.addItem(db, new Item(buffer));
   }
 
@@ -190,12 +180,8 @@ enum TaskTag {
     return (2n ** 40n) - 1n + index;
   }
 
-  function getNthParent(gindex: bigint, n: bigint) {
-    return (gindex - (2n ** n) + 1n) / (2n ** n);
-  }
-
   function getParent(gindex: bigint) {
-    return getNthParent(gindex, 1n);
+    return (gindex - 1n) / 2n;
   }
 
   async function updateBranches(epoch: bigint, validators: IndexedValidator[]) {
@@ -212,7 +198,7 @@ enum TaskTag {
         }
 
         await redis.saveValidatorProof(gindex, epoch);
-        scheduleUpdateProofNodeTask(gindex, epoch);
+        await scheduleUpdateProofNodeTask(gindex, epoch);
       }
 
       nodesNeedingUpdate = newNodesNeedingUpdate;

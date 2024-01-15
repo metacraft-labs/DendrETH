@@ -1,14 +1,11 @@
-use std::{fs, marker::PhantomData};
+use std::{fs, marker::PhantomData, thread, time::Duration};
 
 use crate::{
-    validator::{
-        bool_vec_as_int_vec, bool_vec_as_int_vec_nested, ValidatorShaInput,
-        VALIDATOR_REGISTRY_LIMIT,
-    },
+    validator::{bool_vec_as_int_vec, bool_vec_as_int_vec_nested, ValidatorShaInput},
     validator_balances_input::ValidatorBalancesInput,
     validator_commitment_constants::VALIDATOR_COMMITMENT_CONSTANTS,
 };
-use anyhow::{Error, Result};
+use anyhow::{ensure, Error, Result};
 use circuits::{
     build_commitment_mapper_first_level_circuit::CommitmentMapperProofExt,
     build_final_circuit::FinalCircuitProofExt,
@@ -239,17 +236,38 @@ pub async fn save_final_proof(
     Ok(())
 }
 
+pub async fn get_latest_epoch(con: &mut Connection, key: &String, epoch: u64) -> Result<String> {
+    let result: Vec<String> = con
+        .zrevrangebyscore_limit(
+            format!(
+                "{}:{}",
+                key,
+                VALIDATOR_COMMITMENT_CONSTANTS.epoch_lookup_key.to_owned(),
+            ),
+            epoch,
+            0,
+            0,
+            1,
+        )
+        .await?;
+
+    ensure!(!result.is_empty(), "Could not find data for epoch");
+    Ok(result[0].clone())
+}
+
 pub async fn fetch_validator(
     con: &mut Connection,
     validator_index: u64,
+    epoch: u64,
 ) -> Result<ValidatorShaInput> {
-    let json_str: String = con
-        .get(format!(
-            "{}:{}",
-            VALIDATOR_COMMITMENT_CONSTANTS.validator_key.to_owned(),
-            validator_index
-        ))
-        .await?;
+    let key = format!(
+        "{}:{}",
+        VALIDATOR_COMMITMENT_CONSTANTS.validator_key.to_owned(),
+        validator_index
+    );
+
+    let latest_epoch = get_latest_epoch(con, &key, epoch).await?;
+    let json_str: String = con.get(format!("{}:{}", key, latest_epoch)).await?;
     let validator: ValidatorShaInput = serde_json::from_str(&json_str)?;
 
     Ok(validator)
@@ -328,6 +346,7 @@ pub async fn fetch_proof<T: NeedsChange + KeyProvider + DeserializeOwned>(
     gindex: u64,
     epoch: u64,
 ) -> Result<T> {
+    let key = format!("{}:{}", T::get_key(), gindex);
     let mut retries = 0;
 
     loop {
@@ -335,18 +354,25 @@ pub async fn fetch_proof<T: NeedsChange + KeyProvider + DeserializeOwned>(
             return Err(anyhow::anyhow!("Not able to complete, try again"));
         }
 
-        let proof_result: Result<String, RedisError> = con
-            .get(format!("{}:{}:{}", T::get_key(), gindex, epoch))
-            .await;
+        let latest_epoch_result = get_latest_epoch(con, &key, epoch).await;
 
-        let proof = match proof_result {
-            Ok(_) => serde_json::from_str::<T>(&proof_result?)?,
+        let proof = match latest_epoch_result {
+            Ok(latest_epoch) => {
+                let proof_result: Result<String, RedisError> = con
+                    .get(format!("{}:{}:{}", T::get_key(), gindex, latest_epoch))
+                    .await;
+
+                match proof_result {
+                    Ok(_) => serde_json::from_str::<T>(&proof_result?)?,
+                    Err(_) => fetch_zero_proof::<T>(con, get_depth_for_gindex(gindex)).await?,
+                }
+            }
             Err(_) => fetch_zero_proof::<T>(con, get_depth_for_gindex(gindex)).await?,
         };
 
         if proof.needs_change() {
             // Wait a bit and try again
-            // thread::sleep(Duration::from_secs(10));
+            thread::sleep(Duration::from_secs(10));
             retries += 1;
 
             continue;

@@ -22,6 +22,27 @@ export class Redis implements IRedis {
     this.pubSub = this.redisClient.duplicate();
   }
 
+  async addToEpochLookup(key: string, epoch: bigint) {
+    await this.waitForConnection();
+
+    await this.redisClient.zAdd(`${key}:${validator_commitment_constants.epochLookupKey}`, { score: Number(epoch), value: epoch.toString() });
+  }
+
+  async getLatestEpoch(key: string, epoch: bigint): Promise<bigint> {
+    await this.waitForConnection();
+
+    const values = await this.redisClient.zRange(`${key}:${validator_commitment_constants.epochLookupKey}`, epoch.toString(), 0, { BY: 'SCORE', REV: true, LIMIT: { offset: 0, count: 1 } });
+    return BigInt(values[0]);
+  }
+
+  async pruneOldEpochs(key: string, newOldestEpoch: bigint) {
+    await this.waitForConnection();
+
+    const latestEpoch = await this.getLatestEpoch(key, newOldestEpoch);
+    const range = await this.redisClient.zRange(`${key}:${validator_commitment_constants.epochLookupKey}`, 0, (latestEpoch - 1n).toString(), { BY: 'SCORE' });
+    await this.redisClient.zRem(`${key}:${validator_commitment_constants.epochLookupKey}`, range);
+  }
+
   async notifyAboutNewProof(): Promise<void> {
     await this.waitForConnection();
 
@@ -31,9 +52,9 @@ export class Redis implements IRedis {
   async getValidatorsBatched(ssz, batchSize = 1000): Promise<Validator[]> {
     await this.waitForConnection();
 
-    const keys = await this.redisClient.keys(
+    const keys = (await this.redisClient.keys(
       `${validator_commitment_constants.validatorKey}:*`,
-    );
+    )).filter((key) => !key.includes(validator_commitment_constants.epochLookupKey));
 
     if (keys.length === 0) {
       return [];
@@ -116,14 +137,18 @@ export class Redis implements IRedis {
     return result == null;
   }
 
-  async saveValidators(validatorsWithIndices: { index: number; validatorJSON: string }[]) {
+  async saveValidators(validatorsWithIndices: { index: number; validatorJSON: string }[], epoch: bigint) {
     await this.waitForConnection();
-    const result: [string, string][] = validatorsWithIndices.map(vi => [
-      `${validator_commitment_constants.validatorKey}:${vi.index}`,
-      vi.validatorJSON,
-    ]);
 
-    await this.redisClient.mSet(result);
+    const args: [string, string][] = await Promise.all(validatorsWithIndices.map(async (validator) => {
+      await this.addToEpochLookup(`${validator_commitment_constants.validatorKey}:${validator.index}`, epoch);
+      return [
+        `${validator_commitment_constants.validatorKey}:${validator.index}:${epoch}`,
+        validator.validatorJSON,
+      ]
+    }));
+
+    await this.redisClient.mSet(args);
   }
 
   async saveValidatorBalancesInput(
