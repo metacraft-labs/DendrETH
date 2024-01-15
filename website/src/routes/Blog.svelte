@@ -30,7 +30,23 @@
 		glide.mount();
 
 		const updatePerView = () => {
-			perView = window.innerWidth < 769 ? 1 : 3;
+			switch (true) {
+				case window.innerWidth < 769:
+					perView = 1;
+					break;
+                case window.innerWidth < 1440:
+                    perView = 2;
+                    break;
+				case window.innerWidth < 1920:
+					perView = 3;
+					break;
+				case window.innerWidth < 2560:
+					perView = 4;
+					break;
+				default:
+					perView = 5;
+					break;
+			}
 			glide.update({ perView: perView });
 		};
 
@@ -64,9 +80,9 @@
 </script>
 
 <div class="bg-[#F4F9FF] text-white md:p-24 p-8 flex flex-col content-center center md:mt-16">
-	<div class="container flex md:flex-row flex-col justify-between">
+	<div class="container flex md:flex-row flex-col justify-between w-full ma">
 		<h1
-			class="md:text-5xl text-2.2rem text-black mb-6 leading-tight text-center md:text-left md:mr-8 max-w-lg text-center"
+			class="md:text-5xl text-2.2rem text-black mb-6 leading-tight text-center md:text-left md:mr-8 text-center"
 		>
 			<span style="color: #78CBFF;">Our</span> blog and news
 		</h1>
@@ -88,7 +104,7 @@
 	<div class="glide">
 		<div class="glide__track" data-glide-el="track">
 			<ul class="flex flex-row">
-				<li class="w-1/3 max-w-lg box-border">
+				<li class="w-1/3 box-border">
 					<div class="item flex flex-col bg-white rounded-xl justify-center">
 						<img src={blogImg} alt="Descriptive Text" class="max-w-full h-auto rounded-xl" />
 						<h2 class="text-xl p-5 pb-2 text-black text-left">
@@ -107,7 +123,7 @@
 						</p>
 					</div>
 				</li>
-				<li class="w-1/3 max-w-lg box-border">
+				<li class="w-1/3 box-border">
 					<div class="item flex flex-col bg-white rounded-xl justify-center">
 						<img src={blogImg} alt="Descriptive Text" class="max-w-full h-auto rounded-xl" />
 						<h2 class="text-xl p-5 pb-2 text-black text-left">
@@ -126,7 +142,7 @@
 						</p>
 					</div>
 				</li>
-				<li class="w-1/3 max-w-lg box-border">
+				<li class="w-1/3 box-border">
 					<div class="item flex flex-col bg-white rounded-xl justify-center">
 						<img src={blogImg} alt="Descriptive Text" class="max-w-full h-auto rounded-xl" />
 						<h2 class="text-xl p-5 pb-2 text-black text-left">
@@ -145,7 +161,7 @@
 						</p>
 					</div>
 				</li>
-				<li class="w-1/3 max-w-lg box-border">
+				<li class="w-1/3 box-border">
 					<div class="item flex flex-col bg-white rounded-xl justify-center">
 						<img src={blogImg} alt="Descriptive Text" class="max-w-full h-auto rounded-xl" />
 						<h2 class="text-xl p-5 pb-2 text-black text-left">
@@ -164,7 +180,7 @@
 						</p>
 					</div>
 				</li>
-				<li class="w-1/3 max-w-lg box-border">
+				<li class="w-1/3 box-border">
 					<div class="item flex flex-col bg-white rounded-xl justify-center">
 						<img src={blogImg} alt="Descriptive Text" class="max-w-full h-auto rounded-xl" />
 						<h2 class="text-xl p-5 pb-2 text-black text-left">
@@ -183,7 +199,7 @@
 						</p>
 					</div>
 				</li>
-				<li class="w-1/3 max-w-lg box-border">
+				<li class="w-1/3 box-border">
 					<div class="item flex flex-col bg-white rounded-xl justify-center">
 						<img src={blogImg} alt="Descriptive Text" class="max-w-full h-auto rounded-xl" />
 						<h2 class="text-xl p-5 pb-2 text-black text-left">
@@ -202,7 +218,7 @@
 						</p>
 					</div>
 				</li>
-				<li class="w-1/3 max-w-lg box-border">
+				<li class="w-1/3 box-border">
 					<div class="item flex flex-col bg-white rounded-xl justify-center">
 						<img src={blogImg} alt="Descriptive Text" class="max-w-full h-auto rounded-xl" />
 						<h2 class="text-xl p-5 pb-2 text-black text-left">
@@ -221,7 +237,7 @@
 						</p>
 					</div>
 				</li>
-				<li class="w-1/3 max-w-lg box-border">
+				<li class="w-1/3 box-border">
 					<div class="item flex flex-col bg-white rounded-xl justify-center">
 						<img src={blogImg} alt="Descriptive Text" class="max-w-full h-auto rounded-xl" />
 						<h2 class="text-xl p-5 pb-2 text-black text-left">
@@ -240,7 +256,7 @@
 						</p>
 					</div>
 				</li>
-				<li class="w-1/3 max-w-lg box-border">
+				<li class="w-1/3 box-border">
 					<div class="item flex flex-col bg-white rounded-xl justify-center">
 						<img src={blogImg} alt="Descriptive Text" class="max-w-full h-auto rounded-xl" />
 						<h2 class="text-xl p-5 pb-2 text-black text-left">
@@ -275,7 +291,11 @@
 		display: flex;
 		flex-direction: row;
 		width: 100%;
-        overflow: hidden;
+		overflow: hidden;
+	}
+
+	.container {
+		max-width: 100%;
 	}
 
 	h1 {

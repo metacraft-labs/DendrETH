@@ -22,7 +22,7 @@
     <div class="border-t border-gray-500 my-4"></div>
     <div class="grid grid-cols-2 lg:grid-cols-7 md:gap-8 justify-between space-x-4 space-y-4 lg:space-y-0 mb-6">
         <span class="text-sm text-gray-500 hidden lg:block justify-self-start">
-            Copyright © 2019-2024 Metacraft Lab's Ltd
+            Copyright © 2019-2024<br />Metacraft Lab's Ltd
         </span>
         <a href="/" class="text-sm text-white hover:text-gray-400">Cookie manager</a>
         <a href="/" class="text-sm text-white hover:text-gray-400">Terms of use</a>
