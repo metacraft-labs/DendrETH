@@ -8,6 +8,7 @@
 
 	let glide;
 	let totalSlides = 0;
+	let perView = 3;
 
 	const CustomLength = function (Glide, Components, Events) {
 		return {
@@ -21,11 +22,21 @@
 		glide = new Glide('.glide', {
 			startAt: 0,
 			type: 'slider',
-			perView: 3,
-			rewind: false
+			perView: perView,
+			rewind: false,
+			gap: 20
 		}).mount({ CustomLength });
 
 		glide.mount();
+
+		const updatePerView = () => {
+			perView = window.innerWidth < 769 ? 1 : 3;
+			glide.update({ perView: perView });
+		};
+
+		updatePerView();
+
+		window.addEventListener('resize', updatePerView);
 
 		glide.on('move', () => {
 			const lastIndex = glide.index + glide.settings.perView;
@@ -35,11 +46,11 @@
 			} else {
 				document.querySelector('.right-button').disabled = false;
 			}
-            if (glide.index == 0) {
-                document.querySelector('.left-button').disabled = true;
-            } else {
-                document.querySelector('.left-button').disabled = false;
-            }
+			if (glide.index == 0) {
+				document.querySelector('.left-button').disabled = true;
+			} else {
+				document.querySelector('.left-button').disabled = false;
+			}
 		});
 	});
 
@@ -52,12 +63,14 @@
 	}
 </script>
 
-<div class="bg-[#F4F9FF] text-white p-24 flex flex-col content-center center mt-16">
-	<div class="container flex justify-between">
-		<h1 class="text-5xl text-black mb-6 leading-tight mr-8 max-w-lg text-left">
+<div class="bg-[#F4F9FF] text-white md:p-24 p-8 flex flex-col content-center center md:mt-16">
+	<div class="container flex md:flex-row flex-col justify-between">
+		<h1
+			class="md:text-5xl text-2.2rem text-black mb-6 leading-tight text-center md:text-left md:mr-8 max-w-lg text-center"
+		>
 			<span style="color: #78CBFF;">Our</span> blog and news
 		</h1>
-		<div>
+		<div class="flex justify-between md:block mb-6">
 			<button
 				on:click={goToPrevSlide}
 				class="left-button text-xl bg-transparent border border-black py-3 px-5 rounded-full text-black hover:bg-gray-200 mr-16"
@@ -83,7 +96,8 @@
 						</h2>
 						<div class="justify-between pl-5 pr-5 flex flex-row">
 							<button class="text-xs border text-white bg-[#9CB5E2] rounded-lg py-1 px-3"
-								>Crypto</button>
+								>Crypto</button
+							>
 							<p class="text-black text-xs">22 Aug 2023</p>
 						</div>
 						<p class="p-5 pt-3 text-black text-xs leading-relaxed">
@@ -101,7 +115,8 @@
 						</h2>
 						<div class="justify-between pl-5 pr-5 flex flex-row">
 							<button class="text-xs border text-white bg-[#9CB5E2] rounded-lg py-1 px-3"
-								>Crypto</button>
+								>Crypto</button
+							>
 							<p class="text-black text-xs">22 Aug 2023</p>
 						</div>
 						<p class="p-5 pt-3 text-black text-xs leading-relaxed">
@@ -119,7 +134,8 @@
 						</h2>
 						<div class="justify-between pl-5 pr-5 flex flex-row">
 							<button class="text-xs border text-white bg-[#9CB5E2] rounded-lg py-1 px-3"
-								>Crypto</button>
+								>Crypto</button
+							>
 							<p class="text-black text-xs">22 Aug 2023</p>
 						</div>
 						<p class="p-5 pt-3 text-black text-xs leading-relaxed">
@@ -137,7 +153,8 @@
 						</h2>
 						<div class="justify-between pl-5 pr-5 flex flex-row">
 							<button class="text-xs border text-white bg-[#9CB5E2] rounded-lg py-1 px-3"
-								>Crypto</button>
+								>Crypto</button
+							>
 							<p class="text-black text-xs">22 Aug 2023</p>
 						</div>
 						<p class="p-5 pt-3 text-black text-xs leading-relaxed">
@@ -155,7 +172,8 @@
 						</h2>
 						<div class="justify-between pl-5 pr-5 flex flex-row">
 							<button class="text-xs border text-white bg-[#9CB5E2] rounded-lg py-1 px-3"
-								>Crypto</button>
+								>Crypto</button
+							>
 							<p class="text-black text-xs">22 Aug 2023</p>
 						</div>
 						<p class="p-5 pt-3 text-black text-xs leading-relaxed">
@@ -173,7 +191,8 @@
 						</h2>
 						<div class="justify-between pl-5 pr-5 flex flex-row">
 							<button class="text-xs border text-white bg-[#9CB5E2] rounded-lg py-1 px-3"
-								>Crypto</button>
+								>Crypto</button
+							>
 							<p class="text-black text-xs">22 Aug 2023</p>
 						</div>
 						<p class="p-5 pt-3 text-black text-xs leading-relaxed">
@@ -191,7 +210,8 @@
 						</h2>
 						<div class="justify-between pl-5 pr-5 flex flex-row">
 							<button class="text-xs border text-white bg-[#9CB5E2] rounded-lg py-1 px-3"
-								>Crypto</button>
+								>Crypto</button
+							>
 							<p class="text-black text-xs">22 Aug 2023</p>
 						</div>
 						<p class="p-5 pt-3 text-black text-xs leading-relaxed">
@@ -209,7 +229,8 @@
 						</h2>
 						<div class="justify-between pl-5 pr-5 flex flex-row">
 							<button class="text-xs border text-white bg-[#9CB5E2] rounded-lg py-1 px-3"
-								>Crypto</button>
+								>Crypto</button
+							>
 							<p class="text-black text-xs">22 Aug 2023</p>
 						</div>
 						<p class="p-5 pt-3 text-black text-xs leading-relaxed">
@@ -227,7 +248,8 @@
 						</h2>
 						<div class="justify-between pl-5 pr-5 flex flex-row">
 							<button class="text-xs border text-white bg-[#9CB5E2] rounded-lg py-1 px-3"
-								>Crypto</button>
+								>Crypto</button
+							>
 							<p class="text-black text-xs">22 Aug 2023</p>
 						</div>
 						<p class="p-5 pt-3 text-black text-xs leading-relaxed">
@@ -240,6 +262,12 @@
 			</ul>
 		</div>
 	</div>
+	<Button
+		href="#"
+		class="flex bg-transparent text-black text-xl hover:text-grey-300 hover:bg-transparent md:ml-auto mt-6"
+	>
+		Read all our stories →
+	</Button>
 </div>
 
 <style>
@@ -247,19 +275,20 @@
 		display: flex;
 		flex-direction: row;
 		width: 100%;
+        overflow: hidden;
 	}
 
-    h1 {
-        font-family: 'ChakraPetch';
-    }
+	h1 {
+		font-family: 'ChakraPetch';
+	}
 
-    span {
-        font-family: 'BonaNova-Bold';
-    }
+	span {
+		font-family: 'BonaNova-Bold';
+	}
 
-    :disabled {
-        color: rgb(156 163 175);
-        border-color: rgb(156 163 175);
-        background: transparent
-    }
+	:disabled {
+		color: rgb(156 163 175);
+		border-color: rgb(156 163 175);
+		background: transparent;
+	}
 </style>

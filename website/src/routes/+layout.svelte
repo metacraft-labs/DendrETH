@@ -5,10 +5,10 @@
 	import './styles.css';
 </script>
 
-<div class="app">
+<div class="app ">
 	<Header />
 
-	<main class="pt-18">
+	<main class="md:mt-18 mt-16">
 		<slot />
 	</main>
 	
@@ -28,7 +28,6 @@
 		flex-direction: column;
 		width: 100%;
 		/* max-width: 64rem; */
-		margin: 0 auto;
 		box-sizing: border-box;
 	}
 

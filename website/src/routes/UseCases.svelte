@@ -12,7 +12,7 @@
 		<!-- <div class="text-3xl font-bold mb-6">Use Cases</div> -->
 		<div class="grid md:grid-cols-2 gap-4 space-y-20 items-center">
 			<!-- Card 1 -->
-			<div class="flex mt-14">
+			<div class="flex md:mt-14">
 				<div class="flex flex-row">
 					<div class="bg-[#121316] p-8 rounded-lg flex flex-col items-left text-left ">
 						<h2 class="text-lg font-semibold mb-4">Permissionless Bridges</h2>
@@ -139,7 +139,7 @@
 		<!-- Benefits grid -->
 		<div class="grid lg:grid-cols-4 md:grid-cols-2 gap-4 mt-24">
 			<div class="benefit-box">
-				<div class="h-full w-1 bg-gray-400 bg-opacity-0 mx-4" />
+				<div class="h-full w-1 bg-gray-400 bg-opacity-30 md:hidden sm:block mx-4" />
 				<div class="benefit-text">
 					<ShieldCheckOutline class="text-blue-500 mb-4 w-20 h-20 mb-16 mt-8" />
 					<h2 class="benefit-name">Benefit #1 Label</h2>
@@ -157,7 +157,7 @@
 				</div>
 			</div>
 			<div class="benefit-box">
-				<div class="h-full w-1 bg-gray-400 lg:bg-opacity-30 md:bg-opacity-0 mx-4" />
+				<div class="h-full w-1 bg-gray-400 bg-opacity-30 md:hidden lg:block sm:block mx-4" />
 				<div class="benefit-text">
 					<ShieldCheckOutline class="text-blue-500 mb-4 w-20 h-20 mb-16 mt-8" />
 					<h2 class="benefit-name">Benefit #3 Label</h2>

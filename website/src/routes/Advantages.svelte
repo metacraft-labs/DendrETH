@@ -17,7 +17,7 @@
 		<div class="grid md:grid-cols-2 gap-6">
 			<!-- Card 1 -->
 			<div
-				class="bg-[#121316] col-span-2 p-8 rounded-xl shadow-lg flex flex-col items-left text-left border border-gray-500"
+				class="bg-[#121316] md:col-span-2 p-8 rounded-xl shadow-lg flex flex-col items-left text-left border border-gray-500"
 			>
 				<!-- Replace 'YourChosenIcon' with the actual icon component you want to use -->
 				<GlobeOutline class="text-blue-500 mb-4 w-20 h-20 mb-12 ml-2" />
