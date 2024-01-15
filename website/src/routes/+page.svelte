@@ -30,7 +30,7 @@
 			Remove your dependence on centralized infrastructure by leveraging a truly 
 			<span style="font-family: 'Inter-Bold'">trust-minimized, censorship resistant, decentralized,</span> and highly secure smart contract solution.
 		</p>
-		<img src={main} alt="Descriptive Text" class="max-w-xs md:max-w-sm pb-10 md:hidden block" style="opacity: 50; z-inde: 1;" />	
+		<img src={main} alt="Descriptive Text" class="max-w-xs md:max-w-sm pb-10 md:hidden block" style="opacity: 50; z-index: 1;" />	
 		<div class="flex md:flex-row flex-col space-x-4 md:w-auto w-full">
 			<Button
 				href="#"

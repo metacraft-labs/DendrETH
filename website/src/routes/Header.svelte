@@ -75,7 +75,7 @@
 
 				{#if isOpen}
 					<div
-						class="absolute border border-white top-8 right-0 mt-2 p-2 bg-[#1A1739] shadow-md rounded-lg w-auto"
+						class="absolute border border-white top-0 right-10 mt-2 p-2 bg-[#1A1739] shadow-md rounded-lg w-auto"
 					>
 						<a on:click={closeMenu} href="#" class="block px-4 py-2 text-white hover:text-gray-300"
 							>Docs</a
