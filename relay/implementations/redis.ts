@@ -22,25 +22,45 @@ export class Redis implements IRedis {
     this.pubSub = this.redisClient.duplicate();
   }
 
+  async disconnect() {
+    await this.waitForConnection();
+    await this.pubSub.disconnect();
+    await this.redisClient.disconnect();
+  }
+
   async addToEpochLookup(key: string, epoch: bigint) {
     await this.waitForConnection();
 
     await this.redisClient.zAdd(`${key}:${validator_commitment_constants.epochLookupKey}`, { score: Number(epoch), value: epoch.toString() });
   }
 
-  async getLatestEpoch(key: string, epoch: bigint): Promise<bigint> {
+  async getLatestEpoch(key: string, epoch: bigint): Promise<bigint | null> {
     await this.waitForConnection();
 
     const values = await this.redisClient.zRange(`${key}:${validator_commitment_constants.epochLookupKey}`, epoch.toString(), 0, { BY: 'SCORE', REV: true, LIMIT: { offset: 0, count: 1 } });
+    if (values.length === 0) {
+      return null;
+    }
     return BigInt(values[0]);
   }
 
-  async pruneOldEpochs(key: string, newOldestEpoch: bigint) {
+  async pruneOldEpochs(key: string, newOldestEpoch: bigint): Promise<number> {
     await this.waitForConnection();
 
     const latestEpoch = await this.getLatestEpoch(key, newOldestEpoch);
-    const range = await this.redisClient.zRange(`${key}:${validator_commitment_constants.epochLookupKey}`, 0, (latestEpoch - 1n).toString(), { BY: 'SCORE' });
-    await this.redisClient.zRem(`${key}:${validator_commitment_constants.epochLookupKey}`, range);
+    if (latestEpoch !== null) {
+      const range = await this.redisClient.zRange(`${key}:${validator_commitment_constants.epochLookupKey}`, 0, (latestEpoch - 1n).toString(), { BY: 'SCORE' });
+      if (range.length !== 0) {
+        await this.redisClient.zRem(`${key}:${validator_commitment_constants.epochLookupKey}`, range);
+        return await this.redisClient.del(range.map((suffix) => `${key}:${suffix}`));
+      }
+    }
+    return 0;
+  }
+
+  async getAllKeys(pattern: string): Promise<string[]> {
+    await this.waitForConnection();
+    return this.redisClient.keys(pattern);
   }
 
   async notifyAboutNewProof(): Promise<void> {

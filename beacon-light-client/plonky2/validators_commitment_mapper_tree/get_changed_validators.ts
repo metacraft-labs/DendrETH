@@ -18,7 +18,7 @@ import yargs from 'yargs';
 
 let TAKE: number | undefined;
 
-const MILLISECONDS_PER_EPOCH = 384000;
+const MILLISECONDS_PER_EPOCH: number = 384000;
 
 enum TaskTag {
   UPDATE_PROOF_NODE = 0,
@@ -161,7 +161,10 @@ enum TaskTag {
     dataView.setBigUint64(9, epoch, false);
     work_queue.addItem(db, new Item(buffer));
 
-    await redis.addToEpochLookup(`${validator_commitment_constants.validatorProofKey}:${gindexFromValidatorIndex(validatorIndex)}`, epoch);
+    // Don't create an epoch lookup for the zero validator proof
+    if (validatorIndex !== BigInt(validator_commitment_constants.validatorRegistryLimit)) {
+      await redis.addToEpochLookup(`${validator_commitment_constants.validatorProofKey}:${gindexFromValidatorIndex(validatorIndex)}`, epoch);
+    }
   }
 
   async function scheduleUpdateProofNodeTask(gindex: bigint, epoch: bigint) {
