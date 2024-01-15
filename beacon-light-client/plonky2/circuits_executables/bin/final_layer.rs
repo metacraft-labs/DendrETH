@@ -1,7 +1,10 @@
 use std::{fs, marker::PhantomData, println, time::Instant};
 
 use anyhow::Result;
-use circuits::build_final_circuit::build_final_circuit;
+use circuits::{
+    build_final_circuit::build_final_circuit,
+    generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
+};
 use circuits_executables::{
     crud::{
         common::{
