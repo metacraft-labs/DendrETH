@@ -4,13 +4,15 @@
 	import { onMount } from 'svelte';
 	import Glide from '@glidejs/glide';
 
+	import blogImg from '$lib/images/blog.png';
+
 	let glide;
 	let totalSlides = 0;
 
 	const CustomLength = function (Glide, Components, Events) {
 		return {
 			mount() {
-				totalSlides = Components.Sizes.length - 1;
+				totalSlides = Components.Sizes.length;
 			}
 		};
 	};
@@ -20,7 +22,7 @@
 			startAt: 0,
 			type: 'slider',
 			perView: 3,
-			rewind: false,
+			rewind: false
 		}).mount({ CustomLength });
 
 		glide.mount();
@@ -68,59 +70,167 @@
 	</div>
 	<div class="glide">
 		<div class="glide__track" data-glide-el="track">
-			<ul class="glide__slides">
-				<li class="glide__slide">
-					<div class="slide-content">
-						<h2>Slide 1</h2>
-						<p>Content for Slide 1</p>
+			<ul class="flex flex-row">
+				<li class="w-1/3 max-w-lg box-border">
+					<div class="item flex flex-col bg-white rounded-xl justify-center">
+						<img src={blogImg} alt="Descriptive Text" class="max-w-full h-auto rounded-xl" />
+						<h2 class="text-xl p-5 pb-2 text-black text-left">
+							Enhancing Blockchain Privacy: How zkSNARKs are Revolutionizing Decentralized Systems
+						</h2>
+						<div class="justify-between pl-5 pr-5 flex flex-row">
+							<button class="text-xs border text-white bg-[#9CB5E2] rounded-lg py-1 px-3"
+								>Crypto</button>
+							<p class="text-black text-xs">22 Aug 2023</p>
+						</div>
+						<p class="p-5 pt-3 text-black text-xs leading-relaxed">
+							Blockchain technology has ushered in a new era of decentralized applications, but
+							concerns about privacy and scalability remain. In this article, we delve into how
+							zkSNARKs are reshaping the landscap...
+						</p>
 					</div>
 				</li>
-				<li class="glide__slide">
-					<div class="slide-content">
-						<h2>Slide 2</h2>
-						<p>Content for Slide 2</p>
+				<li class="w-1/3 max-w-lg box-border">
+					<div class="item flex flex-col bg-white rounded-xl justify-center">
+						<img src={blogImg} alt="Descriptive Text" class="max-w-full h-auto rounded-xl" />
+						<h2 class="text-xl p-5 pb-2 text-black text-left">
+							Enhancing Blockchain Privacy: How zkSNARKs are Revolutionizing Decentralized Systems
+						</h2>
+						<div class="justify-between pl-5 pr-5 flex flex-row">
+							<button class="text-xs border text-white bg-[#9CB5E2] rounded-lg py-1 px-3"
+								>Crypto</button>
+							<p class="text-black text-xs">22 Aug 2023</p>
+						</div>
+						<p class="p-5 pt-3 text-black text-xs leading-relaxed">
+							Blockchain technology has ushered in a new era of decentralized applications, but
+							concerns about privacy and scalability remain. In this article, we delve into how
+							zkSNARKs are reshaping the landscap...
+						</p>
 					</div>
 				</li>
-				<li class="glide__slide">
-					<div class="slide-content">
-						<h2>Slide 3</h2>
-						<p>Content for Slide 3</p>
+				<li class="w-1/3 max-w-lg box-border">
+					<div class="item flex flex-col bg-white rounded-xl justify-center">
+						<img src={blogImg} alt="Descriptive Text" class="max-w-full h-auto rounded-xl" />
+						<h2 class="text-xl p-5 pb-2 text-black text-left">
+							Enhancing Blockchain Privacy: How zkSNARKs are Revolutionizing Decentralized Systems
+						</h2>
+						<div class="justify-between pl-5 pr-5 flex flex-row">
+							<button class="text-xs border text-white bg-[#9CB5E2] rounded-lg py-1 px-3"
+								>Crypto</button>
+							<p class="text-black text-xs">22 Aug 2023</p>
+						</div>
+						<p class="p-5 pt-3 text-black text-xs leading-relaxed">
+							Blockchain technology has ushered in a new era of decentralized applications, but
+							concerns about privacy and scalability remain. In this article, we delve into how
+							zkSNARKs are reshaping the landscap...
+						</p>
 					</div>
 				</li>
-				<li class="glide__slide">
-					<div class="slide-content">
-						<h2>Slide 1</h2>
-						<p>Content for Slide 1</p>
+				<li class="w-1/3 max-w-lg box-border">
+					<div class="item flex flex-col bg-white rounded-xl justify-center">
+						<img src={blogImg} alt="Descriptive Text" class="max-w-full h-auto rounded-xl" />
+						<h2 class="text-xl p-5 pb-2 text-black text-left">
+							Enhancing Blockchain Privacy: How zkSNARKs are Revolutionizing Decentralized Systems
+						</h2>
+						<div class="justify-between pl-5 pr-5 flex flex-row">
+							<button class="text-xs border text-white bg-[#9CB5E2] rounded-lg py-1 px-3"
+								>Crypto</button>
+							<p class="text-black text-xs">22 Aug 2023</p>
+						</div>
+						<p class="p-5 pt-3 text-black text-xs leading-relaxed">
+							Blockchain technology has ushered in a new era of decentralized applications, but
+							concerns about privacy and scalability remain. In this article, we delve into how
+							zkSNARKs are reshaping the landscap...
+						</p>
 					</div>
 				</li>
-				<li class="glide__slide">
-					<div class="slide-content">
-						<h2>Slide 2</h2>
-						<p>Content for Slide 2</p>
+				<li class="w-1/3 max-w-lg box-border">
+					<div class="item flex flex-col bg-white rounded-xl justify-center">
+						<img src={blogImg} alt="Descriptive Text" class="max-w-full h-auto rounded-xl" />
+						<h2 class="text-xl p-5 pb-2 text-black text-left">
+							Enhancing Blockchain Privacy: How zkSNARKs are Revolutionizing Decentralized Systems
+						</h2>
+						<div class="justify-between pl-5 pr-5 flex flex-row">
+							<button class="text-xs border text-white bg-[#9CB5E2] rounded-lg py-1 px-3"
+								>Crypto</button>
+							<p class="text-black text-xs">22 Aug 2023</p>
+						</div>
+						<p class="p-5 pt-3 text-black text-xs leading-relaxed">
+							Blockchain technology has ushered in a new era of decentralized applications, but
+							concerns about privacy and scalability remain. In this article, we delve into how
+							zkSNARKs are reshaping the landscap...
+						</p>
 					</div>
 				</li>
-				<li class="glide__slide">
-					<div class="slide-content">
-						<h2>Slide 3</h2>
-						<p>Content for Slide 3</p>
+				<li class="w-1/3 max-w-lg box-border">
+					<div class="item flex flex-col bg-white rounded-xl justify-center">
+						<img src={blogImg} alt="Descriptive Text" class="max-w-full h-auto rounded-xl" />
+						<h2 class="text-xl p-5 pb-2 text-black text-left">
+							Enhancing Blockchain Privacy: How zkSNARKs are Revolutionizing Decentralized Systems
+						</h2>
+						<div class="justify-between pl-5 pr-5 flex flex-row">
+							<button class="text-xs border text-white bg-[#9CB5E2] rounded-lg py-1 px-3"
+								>Crypto</button>
+							<p class="text-black text-xs">22 Aug 2023</p>
+						</div>
+						<p class="p-5 pt-3 text-black text-xs leading-relaxed">
+							Blockchain technology has ushered in a new era of decentralized applications, but
+							concerns about privacy and scalability remain. In this article, we delve into how
+							zkSNARKs are reshaping the landscap...
+						</p>
 					</div>
 				</li>
-				<li class="glide__slide">
-					<div class="slide-content">
-						<h2>Slide 1</h2>
-						<p>Content for Slide 1</p>
+				<li class="w-1/3 max-w-lg box-border">
+					<div class="item flex flex-col bg-white rounded-xl justify-center">
+						<img src={blogImg} alt="Descriptive Text" class="max-w-full h-auto rounded-xl" />
+						<h2 class="text-xl p-5 pb-2 text-black text-left">
+							Enhancing Blockchain Privacy: How zkSNARKs are Revolutionizing Decentralized Systems
+						</h2>
+						<div class="justify-between pl-5 pr-5 flex flex-row">
+							<button class="text-xs border text-white bg-[#9CB5E2] rounded-lg py-1 px-3"
+								>Crypto</button>
+							<p class="text-black text-xs">22 Aug 2023</p>
+						</div>
+						<p class="p-5 pt-3 text-black text-xs leading-relaxed">
+							Blockchain technology has ushered in a new era of decentralized applications, but
+							concerns about privacy and scalability remain. In this article, we delve into how
+							zkSNARKs are reshaping the landscap...
+						</p>
 					</div>
 				</li>
-				<li class="glide__slide">
-					<div class="slide-content">
-						<h2>Slide 2</h2>
-						<p>Content for Slide 2</p>
+				<li class="w-1/3 max-w-lg box-border">
+					<div class="item flex flex-col bg-white rounded-xl justify-center">
+						<img src={blogImg} alt="Descriptive Text" class="max-w-full h-auto rounded-xl" />
+						<h2 class="text-xl p-5 pb-2 text-black text-left">
+							Enhancing Blockchain Privacy: How zkSNARKs are Revolutionizing Decentralized Systems
+						</h2>
+						<div class="justify-between pl-5 pr-5 flex flex-row">
+							<button class="text-xs border text-white bg-[#9CB5E2] rounded-lg py-1 px-3"
+								>Crypto</button>
+							<p class="text-black text-xs">22 Aug 2023</p>
+						</div>
+						<p class="p-5 pt-3 text-black text-xs leading-relaxed">
+							Blockchain technology has ushered in a new era of decentralized applications, but
+							concerns about privacy and scalability remain. In this article, we delve into how
+							zkSNARKs are reshaping the landscap...
+						</p>
 					</div>
 				</li>
-				<li class="glide__slide">
-					<div class="slide-content">
-						<h2>Slide 3</h2>
-						<p>Content for Slide 3</p>
+				<li class="w-1/3 max-w-lg box-border">
+					<div class="item flex flex-col bg-white rounded-xl justify-center">
+						<img src={blogImg} alt="Descriptive Text" class="max-w-full h-auto rounded-xl" />
+						<h2 class="text-xl p-5 pb-2 text-black text-left">
+							Enhancing Blockchain Privacy: How zkSNARKs are Revolutionizing Decentralized Systems
+						</h2>
+						<div class="justify-between pl-5 pr-5 flex flex-row">
+							<button class="text-xs border text-white bg-[#9CB5E2] rounded-lg py-1 px-3"
+								>Crypto</button>
+							<p class="text-black text-xs">22 Aug 2023</p>
+						</div>
+						<p class="p-5 pt-3 text-black text-xs leading-relaxed">
+							Blockchain technology has ushered in a new era of decentralized applications, but
+							concerns about privacy and scalability remain. In this article, we delve into how
+							zkSNARKs are reshaping the landscap...
+						</p>
 					</div>
 				</li>
 			</ul>
@@ -129,41 +239,17 @@
 </div>
 
 <style>
-	.slide-content {
-		border: 1px solid #ccc;
-		padding: 20px;
-		background-color: gray;
-		box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
-		border-radius: 8px;
-		text-align: center;
-	}
-
-	.slide-content h2 {
-		font-size: 24px;
-		color: black;
-		margin-bottom: 10px;
-	}
-
-	.slide-content p {
-		font-size: 16px;
-		color: #333;
-	}
 	.glide__track {
 		display: flex;
 		flex-direction: row;
-		overflow: hidden;
 		width: 100%;
 	}
 
-	.glide__slides {
-		display: flex;
-		transition: transform 0.3s ease-in-out;
-	}
+    h1 {
+        font-family: 'ChakraPetch';
+    }
 
-	.glide__slide {
-		flex: 0 0 33.33%;
-		max-width: 300px;
-		padding: 20px;
-		box-sizing: border-box;
-	}
+    span {
+        font-family: 'BonaNova-Bold';
+    }
 </style>
