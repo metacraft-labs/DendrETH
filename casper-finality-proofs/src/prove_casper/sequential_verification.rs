@@ -234,31 +234,7 @@ where
     }
 
     let (proof, _output) = circuit.prove(&input);
+    println!("Attestation Proof: {:?}", _output);
 
     proof
-}
-
-fn print_json_value(value: &Value, indent: usize) {
-    match value {
-        Value::Null => println!("null"),
-        Value::Bool(b) => println!("{}", b),
-        Value::Number(num) => println!("{}", num),
-        Value::String(s) => println!("\"{}\"", s),
-        Value::Array(arr) => {
-            println!("[");
-            for item in arr {
-                print!("{}  ", " ".repeat(indent + 2));
-                print_json_value(item, indent + 2);
-            }
-            println!("{}]", " ".repeat(indent));
-        }
-        Value::Object(obj) => {
-            println!("{}", "{");
-            for (key, value) in obj {
-                print!("{}\"{}\": ", " ".repeat(indent + 2), key);
-                print_json_value(value, indent + 2);
-            }
-            println!("{}}}", " ".repeat(indent));
-        }
-    }
 }

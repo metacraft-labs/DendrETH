@@ -63,7 +63,7 @@ impl Circuit for VerifyAttestationData {
             private_accumulator = accumulate_private(
                 builder,
                 private_accumulator,
-                first_validator.validator_index,
+                cur_validator.validator_index,
                 sigma,
             );
 

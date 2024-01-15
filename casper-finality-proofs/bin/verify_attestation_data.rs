@@ -53,7 +53,7 @@ fn main() {
         .and_then(Value::as_array)
         .unwrap()
         .iter()
-        .take(10)
+        .take(N)
         .map(|validator|serde_json::from_value(validator.clone()).unwrap())
         .collect_vec();
 

@@ -2,7 +2,7 @@ use anyhow::Error;
 use casper_finality_proofs::combine_finality_votes::commitment_accumulator_inner::CommitmentAccumulatorInner;
 use casper_finality_proofs::combine_finality_votes::count_unique_validators::{CountUniqueValidators, self};
 use casper_finality_proofs::combine_finality_votes::unique_validators_accumulator::UniqueValidatorsAccumulatorInner;
-use casper_finality_proofs::constants::{TEST_ATTESTATIONS_READ, VALIDATOR_INDICES_IN_SPLIT};
+use casper_finality_proofs::constants::{TEST_ATTESTATIONS_READ, VALIDATOR_INDICES_IN_SPLIT, TEST_VALIDATORS_IN_COMMITMENT_SIZE};
 use plonky2x::frontend::uint::uint64::U64Variable;
 use plonky2x::frontend::vars::Bytes32Variable;
 use serde_json::Value;
@@ -53,9 +53,6 @@ fn main() -> Result<(), IOError> {
     let mut proofs = attestation_data_proofs;
     let mut child_circuit = vad_circuit;
     let mut level = 0;
-    // let mut leaf_builder: CircuitBuilder<DefaultParameters, 2> = CircuitBuilder::<L, D>::new();
-    // CountUniqueValidators::define(&mut leaf_builder);
-    // leaf_builder.build();
 
     loop {
         let mut inner_builder = CircuitBuilder::<L, D>::new();
@@ -73,6 +70,7 @@ fn main() -> Result<(), IOError> {
             input.proof_write(proofs[i + 1].clone());
 
             let (proof, output) = child_circuit.prove(&input);
+
             final_output = Some(output);
             new_proofs.push(proof);
         }
@@ -86,13 +84,14 @@ fn main() -> Result<(), IOError> {
             let _sigma = final_output.proof_read::<U64Variable>();
             let _source = final_output.proof_read::<Bytes32Variable>();
             let _target = final_output.proof_read::<Bytes32Variable>();
+
             println!("\nFinal Commitment: {}\n", vad_aggregated_commitment);
             break;
         }
     }
 
     //CountUniquePubkeys
-    let file_path_sorted_validators = "./data/sorted_validator_indices.json";
+    let file_path_sorted_validators = "./data/sorted_validator_indices_test.json";
     let sorted_validators_json = read_json_from_file(file_path_sorted_validators).unwrap();
 
     let mut cuv_builder = CircuitBuilder::<L, D>::new();
@@ -103,7 +102,7 @@ fn main() -> Result<(), IOError> {
     let sorted_validators: Vec<u64> = sorted_validators_json.as_array()
         .unwrap()
         .iter()
-        .take(320) //TODO: This is Test Size
+        .take(TEST_VALIDATORS_IN_COMMITMENT_SIZE * TEST_ATTESTATIONS_READ) //TODO: This is Test Size
         .map(|validator| serde_json::from_value(validator.clone()).unwrap())
         .collect();
 
@@ -122,15 +121,10 @@ fn main() -> Result<(), IOError> {
         for validator_index in chunk {
             input.write::<U64Variable>(validator_index.clone());
         }
-        println!("CHONK: {:?}", chunk);
+        println!("CHUNK: {:?}", chunk);
         let (proof, mut _output) = cuv_circuit.prove(&input);
         count_unique_validators_proofs.push(proof);
-        let first = _output.read::<U64Variable>();
-        let second = _output.read::<U64Variable>();
-        let third = _output.read::<U64Variable>();
-        let fourth = _output.read::<U64Variable>();
 
-        println!("elements {:?}", [first, second, third, fourth]);
         println!("Output: {:?}", _output);
     }
     println!("Sorted_validators: {:?}", sorted_validators);
@@ -139,9 +133,6 @@ fn main() -> Result<(), IOError> {
     let mut proofs = count_unique_validators_proofs;
     let mut child_circuit = cuv_circuit;
     let mut level = 0;
-    // let mut leaf_builder = CircuitBuilder::<L, D>::new();
-    // CountUniqueValidators::define(&mut leaf_builder);
-    // leaf_builder.build();
     
     loop {
         let mut inner_builder = CircuitBuilder::<L, D>::new();
@@ -159,13 +150,7 @@ fn main() -> Result<(), IOError> {
             input.proof_write(proofs[i].clone());
             input.proof_write(proofs[i + 1].clone());
 
-            let (proof, mut output) = child_circuit.prove(&input);
-            // let first = output.proof_read::<U64Variable>();
-            // let second = output.proof_read::<U64Variable>();
-            // let third = output.proof_read::<U64Variable>();
-            // let fourth = output.proof_read::<U64Variable>();
-
-            // println!("Proof Elements {:?}", [first, second, third, fourth]);
+            let (proof, output) = child_circuit.prove(&input);
             println!("Current Unique: {:?}", output);
 
             final_output = Some(output);
