@@ -897,8 +897,6 @@ dependencies = [
  "plonky2",
  "plonky2x",
  "primitive-types 0.12.2",
- "rand",
- "quinn-proto",
  "serde",
  "serde_derive",
  "serde_json",
@@ -6343,7 +6341,6 @@ version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "141bf7dfde2fbc246bfd3fe12f2455aa24b0fbd9af535d8c86c7bd1381ff2b1a"
 dependencies = [
- "arbitrary",
  "bytes",
  "rand",
  "ring 0.16.20",
