@@ -174,4 +174,7 @@ redis-server/
 *.plonky2_targets
 *.plonky2_circuit
 
+beacon-light-client/plonky2/circuits_executables/verifier/circuit/
+beacon-light-client/plonky2/circuits_executables/verifier/data/
+
 .DS_Store

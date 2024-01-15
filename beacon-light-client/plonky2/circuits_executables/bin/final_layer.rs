@@ -1,7 +1,10 @@
-use std::{println, time::Instant};
+use std::{fs, marker::PhantomData, println, time::Instant};
 
 use anyhow::Result;
-use circuits::build_final_circuit::build_final_circuit;
+use circuits::{
+    build_final_circuit::build_final_circuit,
+    generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
+};
 use circuits_executables::{
     crud::{
         fetch_final_layer_input, fetch_proof, load_circuit_data, save_final_proof, BalanceProof,
@@ -115,9 +118,34 @@ async fn async_main() -> Result<()> {
 
     let proof = circuit_data.prove(pw)?;
 
-    save_final_proof(&mut con, &proof).await?;
+    save_final_proof(
+        &mut con,
+        &proof,
+        final_input_data
+            .state_root
+            .iter()
+            .map(|x| *x as u64)
+            .collect::<Vec<u64>>(),
+        balance_proof.withdrawal_credentials,
+        balance_proof.range_total_value,
+    )
+    .await?;
 
     println!("Proof size: {}", proof.to_bytes().len());
+
+    fs::write("final_layer_proof", proof.to_bytes()).unwrap();
+
+    let gate_serializer = DendrETHGateSerializer;
+
+    let generator_serializer = DendrETHGeneratorSerializer {
+        _phantom: PhantomData::<PoseidonGoldilocksConfig>,
+    };
+
+    let circuit_data_bytes = circuit_data
+        .to_bytes(&gate_serializer, &generator_serializer)
+        .unwrap();
+
+    fs::write("final_layer.plonky2_circuit", circuit_data_bytes).unwrap();
 
     println!("Final proof saved!");
 

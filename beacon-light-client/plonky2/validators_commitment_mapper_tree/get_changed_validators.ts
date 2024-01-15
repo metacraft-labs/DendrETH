@@ -76,14 +76,14 @@ let TAKE: number | undefined;
       {
         index: Number(validator_commitment_constants.validatorRegistryLimit),
         validator: JSON.stringify({
-          pubkey: Array(384).fill(0),
-          withdrawalCredentials: Array(256).fill(0),
-          effectiveBalance: Array(256).fill(0),
-          slashed: Array(256).fill(0),
-          activationEligibilityEpoch: Array(256).fill(0),
-          activationEpoch: Array(256).fill(0),
-          exitEpoch: Array(256).fill(0),
-          withdrawableEpoch: Array(256).fill(0),
+          pubkey: ''.padEnd(96, '0'),
+          withdrawalCredentials: ''.padEnd(64, '0'),
+          effectiveBalance: ''.padEnd(64, '0'),
+          slashed: ''.padEnd(64, '0'),
+          activationEligibilityEpoch: ''.padEnd(64, '0'),
+          activationEpoch: ''.padEnd(64, '0'),
+          exitEpoch: ''.padEnd(64, '0'),
+          withdrawableEpoch: ''.padEnd(64, '0'),
         }),
       },
     ]);
@@ -261,48 +261,32 @@ let TAKE: number | undefined;
 
   function convertValidatorToProof(validator: Validator): string {
     return JSON.stringify({
-      pubkey: hexToBits(bytesToHex(validator.pubkey), 381),
-      withdrawalCredentials: hexToBits(
-        bytesToHex(validator.withdrawalCredentials),
-      ),
-      effectiveBalance: hexToBits(
-        bytesToHex(
-          ssz.phase0.Validator.fields.effectiveBalance.hashTreeRoot(
-            validator.effectiveBalance,
-          ),
+      pubkey: bytesToHex(validator.pubkey),
+      withdrawalCredentials: bytesToHex(validator.withdrawalCredentials),
+      effectiveBalance: bytesToHex(
+        ssz.phase0.Validator.fields.effectiveBalance.hashTreeRoot(
+          validator.effectiveBalance,
         ),
       ),
-      slashed: hexToBits(
-        bytesToHex(
-          ssz.phase0.Validator.fields.slashed.hashTreeRoot(validator.slashed),
+      slashed: bytesToHex(
+        ssz.phase0.Validator.fields.slashed.hashTreeRoot(validator.slashed),
+      ),
+      activationEligibilityEpoch: bytesToHex(
+        ssz.phase0.Validator.fields.activationEligibilityEpoch.hashTreeRoot(
+          validator.activationEligibilityEpoch,
         ),
       ),
-      activationEligibilityEpoch: hexToBits(
-        bytesToHex(
-          ssz.phase0.Validator.fields.activationEligibilityEpoch.hashTreeRoot(
-            validator.activationEligibilityEpoch,
-          ),
+      activationEpoch: bytesToHex(
+        ssz.phase0.Validator.fields.activationEpoch.hashTreeRoot(
+          validator.activationEpoch,
         ),
       ),
-      activationEpoch: hexToBits(
-        bytesToHex(
-          ssz.phase0.Validator.fields.activationEpoch.hashTreeRoot(
-            validator.activationEpoch,
-          ),
-        ),
+      exitEpoch: bytesToHex(
+        ssz.phase0.Validator.fields.exitEpoch.hashTreeRoot(validator.exitEpoch),
       ),
-      exitEpoch: hexToBits(
-        bytesToHex(
-          ssz.phase0.Validator.fields.exitEpoch.hashTreeRoot(
-            validator.exitEpoch,
-          ),
-        ),
-      ),
-      withdrawableEpoch: hexToBits(
-        bytesToHex(
-          ssz.phase0.Validator.fields.withdrawableEpoch.hashTreeRoot(
-            validator.withdrawableEpoch,
-          ),
+      withdrawableEpoch: bytesToHex(
+        ssz.phase0.Validator.fields.withdrawableEpoch.hashTreeRoot(
+          validator.withdrawableEpoch,
         ),
       ),
     });

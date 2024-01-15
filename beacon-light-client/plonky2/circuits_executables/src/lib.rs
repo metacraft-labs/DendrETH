@@ -3,3 +3,7 @@ pub mod provers;
 pub mod validator;
 pub mod validator_balances_input;
 pub mod validator_commitment_constants;
+pub mod utils;
+pub mod poseidon_constants;
+pub mod poseidon_bn128_config;
+pub mod poseidon_bn128;

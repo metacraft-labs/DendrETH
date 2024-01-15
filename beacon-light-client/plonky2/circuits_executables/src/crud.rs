@@ -11,15 +11,12 @@ use crate::{
 use anyhow::Result;
 use circuits::{
     build_commitment_mapper_first_level_circuit::CommitmentMapperProofExt,
-    build_final_circuit::FinalCircuitProofExt,
-    build_validator_balance_circuit::{
-        ValidatorBalanceProofExt,
-    },
+    build_validator_balance_circuit::ValidatorBalanceProofExt,
     generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
 };
 use num::BigUint;
 use plonky2::{
-    field::{goldilocks_field::GoldilocksField},
+    field::goldilocks_field::GoldilocksField,
     plonk::{
         circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs,
     },
@@ -94,7 +91,9 @@ pub struct FinalCircuitInput {
 pub struct FinalProof {
     pub needs_change: bool,
     pub state_root: Vec<u64>,
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub withdrawal_credentials: BigUint,
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub balance_sum: BigUint,
     pub proof: Vec<u8>,
 }
@@ -208,12 +207,15 @@ pub async fn save_balance_proof(
 pub async fn save_final_proof(
     con: &mut redis::aio::Connection,
     proof: &ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    state_root: Vec<u64>,
+    withdrawal_credentials: BigUint,
+    balance_sum: BigUint,
 ) -> Result<()> {
     let final_proof = serde_json::to_string(&FinalProof {
         needs_change: false,
-        state_root: proof.get_final_circuit_state_root().to_vec(),
-        withdrawal_credentials: proof.get_final_circuit_withdrawal_credentials(),
-        balance_sum: proof.get_final_circuit_balance_sum(),
+        state_root: state_root,
+        withdrawal_credentials: withdrawal_credentials,
+        balance_sum: balance_sum,
         proof: proof.to_bytes(),
     })?;
 
@@ -250,7 +252,9 @@ pub async fn save_validator_proof(
     index: usize,
 ) -> Result<()> {
     let validator_proof = serde_json::to_string(&ValidatorProof {
-        poseidon_hash: proof.get_commitment_mapper_poseidon_hash_tree_root().to_vec(),
+        poseidon_hash: proof
+            .get_commitment_mapper_poseidon_hash_tree_root()
+            .to_vec(),
         sha256_hash: proof.get_commitment_mapper_sha256_hash_tree_root().to_vec(),
         proof: proof.to_bytes(),
         needs_change: false,
