@@ -62,9 +62,6 @@ pub struct StateData {
 }
 
 pub fn wrapper(path: String, should_assert: bool) -> Result<String, anyhow::Error> {
-    type L = DefaultParameters;
-    const D: usize = 2;
-
     let spec = &testing_spec::<MainnetEthSpec>(ForkName::Capella);
     let mut state = read_ssz_fixture::<MainnetEthSpec>(
         String::from(path.clone() + "/pre.ssz_snappy").as_str(),
@@ -211,50 +208,24 @@ pub fn run(
     let new_finalized_checkpoint = output.read::<CheckpointVariable>();
     let new_justification_bits = output.read::<JustificationBitsVariable>();
 
-    let post_state = read_ssz_fixture::<MainnetEthSpec>(
-        String::from(path.clone() + "/post.ssz_snappy").as_str(),
-        spec,
-    );
-
-    if should_assert {
-        assert_equal!(
-            new_previous_justified_checkpoint.epoch,
-            post_state.previous_justified_checkpoint().epoch.as_u64()
-        );
-        assert_equal!(
-            new_current_justified_checkpoint.epoch,
-            post_state.current_justified_checkpoint().epoch.as_u64()
-        );
-        assert_equal!(
-            new_current_justified_checkpoint.root,
-            post_state.current_justified_checkpoint().root
-        );
-        assert_equal!(
-            new_finalized_checkpoint.epoch,
-            post_state.finalized_checkpoint().epoch.as_u64()
-        );
-        assert_equal!(
-            new_finalized_checkpoint.root,
-            post_state.finalized_checkpoint().root
-        );
-        assert_equal!(
-            new_justification_bits.bits,
-            post_state
-                .justification_bits()
-                .iter()
-                .map(|byte| byte as bool)
-                .collect::<Vec<bool>>()
-        );
-    }
-
-    Ok(format!(
-        "previous_justified_checkpoint: {:?};\n",
-        new_previous_justified_checkpoint
-    ) + format!(
-        "current_justified_checkpoint: {:?};\n",
-        new_current_justified_checkpoint
+    (
+        CircuitValues {
+            new_previous_justified_checkpoint,
+            new_current_justified_checkpoint,
+            new_finalized_checkpoint,
+            new_justification_bits,
+        },
+        StateData {
+            slot_proof,
+            beacon_state_root,
+            previous_justified_checkpoint_proof,
+            current_justified_checkpoint_proof,
+            justification_bits_proof,
+            previous_epoch_start_slot_root_in_block_roots_proof,
+            current_epoch_start_slot_root_in_block_roots_proof,
+            previous_epoch_start_slot_root_in_block_roots,
+            current_epoch_start_slot_root_in_block_roots,
+            finalized_checkpoint_proof,
+        },
     )
-    .as_str()
-        + format!("finalized_checkpoint: {:?};\n", new_finalized_checkpoint).as_str()
-        + format!("justification_bits: {:?};\n", new_justification_bits.bits).as_str())
 }
