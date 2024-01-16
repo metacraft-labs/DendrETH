@@ -3,6 +3,7 @@ use casper_finality_proofs::combine_finality_votes::commitment_accumulator_inner
 use casper_finality_proofs::combine_finality_votes::count_unique_validators::{CountUniqueValidators, self};
 use casper_finality_proofs::combine_finality_votes::unique_validators_accumulator::UniqueValidatorsAccumulatorInner;
 use casper_finality_proofs::constants::{TEST_ATTESTATIONS_READ, VALIDATOR_INDICES_IN_SPLIT, TEST_VALIDATORS_IN_COMMITMENT_SIZE};
+use casper_finality_proofs::prove_casper::sequential_verification::CheckpointInput;
 use plonky2x::frontend::uint::uint64::U64Variable;
 use plonky2x::frontend::vars::Bytes32Variable;
 use serde_json::Value;
@@ -28,6 +29,10 @@ fn main() -> Result<(), IOError> {
 
     let file_path_attestations = "./data/merged_234400.json";
     let attestations_json = read_json_from_file(file_path_attestations).unwrap();
+
+    let source: CheckpointInput;
+    let target: CheckpointInput;
+
 
     // VerifyAttestationData
     let mut attestation_data_proofs = vec![];
@@ -71,6 +76,8 @@ fn main() -> Result<(), IOError> {
 
             let (proof, output) = child_circuit.prove(&input);
 
+            println!("Output: {:?}",output);
+
             final_output = Some(output);
             new_proofs.push(proof);
         }
@@ -80,10 +87,10 @@ fn main() -> Result<(), IOError> {
 
         if proofs.len() == 1 {
             let mut final_output = final_output.unwrap();
+            let _target = final_output.proof_read::<Bytes32Variable>();
+            let _source = final_output.proof_read::<Bytes32Variable>();
             let vad_aggregated_commitment = final_output.proof_read::<U64Variable>();
             let _sigma = final_output.proof_read::<U64Variable>();
-            let _source = final_output.proof_read::<Bytes32Variable>();
-            let _target = final_output.proof_read::<Bytes32Variable>();
 
             println!("\nFinal Commitment: {}\n", vad_aggregated_commitment);
             break;
@@ -172,6 +179,9 @@ fn main() -> Result<(), IOError> {
             break;
         }
     }
+
+    // Prove Finality
+
 
     Ok(())
 }

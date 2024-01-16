@@ -1,4 +1,5 @@
 use curta::maybe_rayon::rayon::str::Bytes;
+use lighthouse_types::typenum::U6;
 use plonky2x::{
     frontend::{
         eth::{
@@ -113,6 +114,12 @@ impl ValidatorData {
 }
 
 #[derive(Debug, Clone, CircuitVariable)]
+pub struct CheckpointVariable {
+    pub root: Bytes32Variable,
+    pub epoch: U64Variable,
+}
+
+#[derive(Debug, Clone, CircuitVariable)]
 pub struct AttestationData {
     slot: U64Variable,
     index: U64Variable, 
@@ -121,8 +128,8 @@ pub struct AttestationData {
     beacon_block_root: Bytes32Variable,
 
     // FFG vote
-    pub source: Bytes32Variable,
-    pub target: Bytes32Variable,
+    pub source: CheckpointVariable,
+    pub target: CheckpointVariable,
 }
 
 impl AttestationData {
@@ -130,8 +137,8 @@ impl AttestationData {
         slot: U64Variable,
         index: U64Variable,
         beacon_block_root: Bytes32Variable,
-        source: Bytes32Variable,
-        target: Bytes32Variable,
+        source: CheckpointVariable,
+        target: CheckpointVariable,
     ) -> Self {
         AttestationData {
             slot: slot,
@@ -147,8 +154,8 @@ impl AttestationData {
             builder.read::<U64Variable>(), 
             builder.read::<U64Variable>(), 
             builder.read::<Bytes32Variable>(),
-            builder.read::<Bytes32Variable>(),
-            builder.read::<Bytes32Variable>(),
+            builder.read::<CheckpointVariable>(),
+            builder.read::<CheckpointVariable>(),
         )
     }
 }

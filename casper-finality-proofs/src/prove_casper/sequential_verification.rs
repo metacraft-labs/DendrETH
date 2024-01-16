@@ -122,6 +122,13 @@ pub struct CheckpointInput {
     epoch: u64,
 }
 
+impl CheckpointInput {
+    pub fn write<L: PlonkParameters<D>, const D: usize>(&self, input: &mut PublicInput<L, D>) {
+        input.write::<Bytes32Variable>(bytes32!(self.root));
+        input.write::<U64Variable>(self.epoch);
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ForkInput {
     previous_version: String,
@@ -144,21 +151,21 @@ pub struct AttestationDataInput {
 
     beacon_block_root: String,
 
-    #[serde(deserialize_with="deserialize_checkpoint")]
-    source: String,
+    // #[serde(deserialize_with="deserialize_checkpoint")]
+    source: CheckpointInput,
 
-    #[serde(deserialize_with="deserialize_checkpoint")]
-    target: String,
+    // #[serde(deserialize_with="deserialize_checkpoint")]
+    target: CheckpointInput,
 }
 
 
 impl AttestationDataInput {
-    pub fn write<L: PlonkParameters<D>, const D: usize>(&self, input: &mut PublicInput<L, D>) {
+    pub fn write<L: PlonkParameters<D>, const D: usize>(&self, mut input: &mut PublicInput<L, D>) {
         input.write::<U64Variable>(self.slot); 
         input.write::<U64Variable>(self.index);
         input.write::<Bytes32Variable>(bytes32!(self.beacon_block_root));
-        input.write::<Bytes32Variable>(bytes32!(self.source));
-        input.write::<Bytes32Variable>(bytes32!(self.target));
+        self.source.write(&mut input);
+        self.target.write(&mut input);
     }
 }
 
