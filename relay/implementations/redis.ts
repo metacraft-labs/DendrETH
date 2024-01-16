@@ -1,3 +1,6 @@
+import {
+  splitIntoBatches,
+} from '../../libs/typescript/ts-utils/common-utils';
 import { hexToBytes } from '../../libs/typescript/ts-utils/bls';
 import { bitsToBytes } from '../../libs/typescript/ts-utils/hex-utils';
 import { IRedis } from '../abstraction/redis-interface';
@@ -63,6 +66,25 @@ export class Redis implements IRedis {
     return this.redisClient.keys(pattern);
   }
 
+  async extractHashFromCommitmentMapperProof(gindex: bigint, epoch: bigint, hashAlgorithm: 'sha256' | 'poseidon'): Promise<number[] | null> {
+    const hashAlgorithmOptionMap = {
+      sha256: 'sha256Hash',
+      poseidon: 'poseidonHash',
+    };
+
+    const hashKey = hashAlgorithmOptionMap[hashAlgorithm];
+
+    const latestEpoch = await this.getLatestEpoch(`${validator_commitment_constants.validatorProofKey}:${gindex}`, BigInt(epoch));
+    if (latestEpoch === null) {
+      const depth = Math.floor(Math.log2(Number(gindex) + 1));
+      const result = await this.redisClient.json.get(`${validator_commitment_constants.validatorProofKey}:zeroes:${depth}`, { path: hashKey }) as any;
+      return result;
+    }
+
+    const key = `${validator_commitment_constants.validatorProofKey}:${gindex}:${latestEpoch}`;
+    return this.redisClient.json.get(key, { path: hashKey }) as any;
+  }
+
   async notifyAboutNewProof(): Promise<void> {
     await this.waitForConnection();
 
@@ -82,56 +104,54 @@ export class Redis implements IRedis {
 
     let allValidators: Validator[] = new Array(keys.length);
 
-    for (let i = 0; i < keys.length; i += batchSize) {
-      const batchKeys = keys.slice(i, i + batchSize);
-      const batchValidators = await this.redisClient.mGet(batchKeys);
+    for (const [keyBatchIndex, batchKeys] of splitIntoBatches(keys, batchSize).entries()) {
+      const batchValidators = (await this.redisClient.json.mGet(batchKeys, '$')).map((entry) => entry![0]);
+      console.log(batchValidators);
 
-      for (let j = 0; j < batchValidators.length; j++) {
-        const redisValidatorJSON = JSON.parse(batchValidators[j]!);
+      for (const [index, redisValidator] of batchValidators.entries()) {
         try {
-          let validatorJSON: Validator = {
-            pubkey: hexToBytes(redisValidatorJSON.pubkey),
+          const validator: Validator = {
+            pubkey: hexToBytes(redisValidator.pubkey),
             withdrawalCredentials: hexToBytes(
-              redisValidatorJSON.withdrawalCredentials,
+              redisValidator.withdrawalCredentials,
             ),
             effectiveBalance:
               ssz.phase0.Validator.fields.effectiveBalance.deserialize(
-                hexToBytes(redisValidatorJSON.effectiveBalance).slice(0, 8),
+                hexToBytes(redisValidator.effectiveBalance).slice(0, 8),
               ),
 
             slashed: ssz.phase0.Validator.fields.slashed.deserialize(
-              hexToBytes(redisValidatorJSON.slashed).slice(0, 1),
+              hexToBytes(redisValidator.slashed).slice(0, 1),
             ),
             activationEligibilityEpoch:
               ssz.phase0.Validator.fields.activationEligibilityEpoch.deserialize(
-                hexToBytes(redisValidatorJSON.activationEligibilityEpoch).slice(
+                hexToBytes(redisValidator.activationEligibilityEpoch).slice(
                   0,
                   8,
                 ),
               ),
             activationEpoch:
               ssz.phase0.Validator.fields.activationEpoch.deserialize(
-                hexToBytes(redisValidatorJSON.activationEpoch).slice(0, 8),
+                hexToBytes(redisValidator.activationEpoch).slice(0, 8),
               ),
             exitEpoch: ssz.phase0.Validator.fields.exitEpoch.deserialize(
-              hexToBytes(redisValidatorJSON.exitEpoch).slice(0, 8),
+              hexToBytes(redisValidator.exitEpoch).slice(0, 8),
             ),
             withdrawableEpoch:
               ssz.phase0.Validator.fields.withdrawableEpoch.deserialize(
-                hexToBytes(redisValidatorJSON.withdrawableEpoch).slice(0, 8),
+                hexToBytes(redisValidator.withdrawableEpoch).slice(0, 8),
               ),
           };
 
-          const index = Number(batchKeys[j].split(':')[1]);
-
-          allValidators[index] = validatorJSON;
+          const validatorIndex = Number(batchKeys[index].split(':')[1]);
+          allValidators[validatorIndex] = validator;
         } catch (e) {
           console.log(e);
           continue;
         }
-      }
 
-      console.log(`Loaded batch, ${i / batchSize}/${keys.length / batchSize}`);
+      }
+      console.log(`Loaded batch, ${keyBatchIndex / batchSize}/${keys.length / batchSize}`);
     }
 
     return allValidators;
@@ -140,7 +160,7 @@ export class Redis implements IRedis {
   async isZeroValidatorEmpty() {
     await this.waitForConnection();
 
-    const result = await this.redisClient.get(
+    const result = await this.redisClient.json.get(
       `${validator_commitment_constants.validatorKey}:${validator_commitment_constants.validatorRegistryLimit}`,
     );
 
@@ -150,38 +170,40 @@ export class Redis implements IRedis {
   async isZeroBalanceEmpty() {
     await this.waitForConnection();
 
-    const result = await this.redisClient.get(
+    const result = await this.redisClient.json.get(
       `${validator_commitment_constants.validatorBalanceInputKey}:${validator_commitment_constants.validatorRegistryLimit}`,
     );
 
     return result == null;
   }
 
-  async saveValidators(validatorsWithIndices: { index: number; validatorJSON: string }[], epoch: bigint) {
+  async saveValidators(validatorsWithIndices: { index: number; data: any }[], epoch: bigint) {
     await this.waitForConnection();
 
-    const args: [string, string][] = await Promise.all(validatorsWithIndices.map(async (validator) => {
+    const args = await Promise.all(validatorsWithIndices.map(async (validator) => {
       await this.addToEpochLookup(`${validator_commitment_constants.validatorKey}:${validator.index}`, epoch);
-      return [
-        `${validator_commitment_constants.validatorKey}:${validator.index}:${epoch}`,
-        validator.validatorJSON,
-      ]
+      return {
+        key: `${validator_commitment_constants.validatorKey}:${validator.index}:${epoch}`,
+        path: '$',
+        value: validator.data,
+      };
     }));
 
-    await this.redisClient.mSet(args);
+    await this.redisClient.json.mSet(args);
   }
 
   async saveValidatorBalancesInput(
-    inputsWithIndices: { index: number; input: string }[],
+    inputsWithIndices: { index: number; input: any }[],
   ) {
     await this.waitForConnection();
 
-    const result: [string, string][] = inputsWithIndices.map(ii => [
-      `${validator_commitment_constants.validatorBalanceInputKey}:${ii.index}`,
-      ii.input,
-    ]);
+    const args = inputsWithIndices.map(ii => ({
+      key: `${validator_commitment_constants.validatorBalanceInputKey}:${ii.index}`,
+      path: '$',
+      value: ii.input,
+    }));
 
-    await this.redisClient.mSet(result);
+    await this.redisClient.json.mSet(args);
   }
 
   async saveFinalProofInput(input: {
@@ -195,9 +217,10 @@ export class Redis implements IRedis {
   }) {
     await this.waitForConnection();
 
-    await this.redisClient.set(
+    await this.redisClient.json.set(
       validator_commitment_constants.finalProofInputKey,
-      JSON.stringify(input),
+      "$",
+      input as any
     );
   }
 
@@ -212,12 +235,7 @@ export class Redis implements IRedis {
     },
   ): Promise<void> {
     await this.waitForConnection();
-
-    await this.redisClient.set(
-      `${validator_commitment_constants.validatorProofKey
-      }:${gindex}:${epoch}`,
-      JSON.stringify(proof),
-    );
+    await this.redisClient.json.set(`${validator_commitment_constants.validatorProofKey}:${gindex}:${epoch}`, "$", proof as any);
   }
 
   async saveBalanceProof(
@@ -287,9 +305,10 @@ export class Redis implements IRedis {
   ): Promise<void> {
     await this.waitForConnection();
 
-    await this.redisClient.set(
+    await this.redisClient.json.set(
       `proof:${prevSlot}:${nextSlot}`,
-      JSON.stringify(proof),
+      '$',
+      proof as any,
     );
   }
 

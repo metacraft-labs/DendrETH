@@ -24,7 +24,7 @@ use plonky2::{
     util::serialization::Buffer,
 };
 use redis_work_queue::{KeyPrefix, WorkQueue};
-use std::{format, print, println, thread, time::Duration};
+use std::{format, println, thread, time::Duration};
 
 use validator_commitment_constants::VALIDATOR_COMMITMENT_CONSTANTS;
 
@@ -196,7 +196,7 @@ async fn async_main() -> Result<()> {
                                     queue.complete(&mut con, &job).await?;
                                 }
                                 Err(err) => {
-                                    print!("Error: {}", err);
+                                    println!("Error: {}", err);
                                     thread::sleep(Duration::from_secs(10));
                                     continue;
                                 }
@@ -207,7 +207,7 @@ async fn async_main() -> Result<()> {
                                     queue.complete(&mut con, &job).await?;
                                 }
                                 Err(err) => {
-                                    print!("Error: {}", err);
+                                    println!("Error: {}", err);
                                     thread::sleep(Duration::from_secs(10));
                                     continue;
                                 }
@@ -215,7 +215,7 @@ async fn async_main() -> Result<()> {
                         }
                     }
                     Err(err) => {
-                        print!("Error: {}", err);
+                        println!("Error: {}", err);
                         thread::sleep(Duration::from_secs(10));
                         continue;
                     }
@@ -275,7 +275,7 @@ async fn async_main() -> Result<()> {
                             inner_circuit_data,
                             &inner_circuits[level].0,
                             &inner_circuits[level].1,
-                            true,
+                            false,
                         )?;
 
                         match save_zero_validator_proof(&mut con, proof, depth).await {

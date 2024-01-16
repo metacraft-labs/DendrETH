@@ -411,7 +411,7 @@ export class BeaconApi implements IBeaconApi {
     }
 
     const validators = await (await this.fetchWithFallback(url)).json();
-
+    validators.data.sort((v1, v2) => +v1.index - +v2.index);
     return ssz.phase0.Validators.fromJson(
       validators.data.map(x => x.validator),
     );

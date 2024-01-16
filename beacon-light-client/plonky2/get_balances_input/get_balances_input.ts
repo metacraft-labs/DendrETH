@@ -115,7 +115,7 @@ let TAKE;
   await redis.saveValidatorBalancesInput([
     {
       index: Number(validator_commitment_constants.validatorRegistryLimit),
-      input: JSON.stringify({
+      input: {
         balances: Array(CIRCUIT_SIZE / 4)
           .fill('')
           .map(() => ''.padStart(256, '0').split('').map(Number)),
@@ -127,7 +127,7 @@ let TAKE;
         ).toString(),
         currentEpoch: computeEpochAt(beaconState.slot).toString(),
         validatorIsZero: Array(CIRCUIT_SIZE).fill(1),
-      }),
+      },
     },
   ]);
 
@@ -180,7 +180,7 @@ let TAKE;
 
       batch.push({
         index: j * CIRCUIT_SIZE,
-        input: JSON.stringify({
+        input: {
           balances: balances.slice(
             j * (CIRCUIT_SIZE / 4),
             (j + 1) * (CIRCUIT_SIZE / 4),
@@ -191,7 +191,7 @@ let TAKE;
               .map(v => convertValidator(v)),
             ...Array(
               (j + 1) * CIRCUIT_SIZE -
-                Math.min((j + 1) * CIRCUIT_SIZE, validators.length),
+              Math.min((j + 1) * CIRCUIT_SIZE, validators.length),
             ).fill(getZeroValidator()),
           ],
           withdrawalCredentials: computeNumberFromLittleEndianBits(
@@ -201,7 +201,7 @@ let TAKE;
           ).toString(),
           currentEpoch: computeEpochAt(beaconState.slot).toString(),
           validatorIsZero: array.concat(new Array(CIRCUIT_SIZE - size).fill(1)),
-        }),
+        },
       });
     }
 

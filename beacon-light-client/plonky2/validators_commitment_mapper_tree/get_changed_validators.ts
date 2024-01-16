@@ -85,7 +85,7 @@ enum TaskTag {
     await redis.saveValidators([
       {
         index: Number(validator_commitment_constants.validatorRegistryLimit),
-        validatorJSON: JSON.stringify({
+        data: {
           pubkey: ''.padEnd(96, '0'),
           withdrawalCredentials: ''.padEnd(64, '0'),
           effectiveBalance: ''.padEnd(64, '0'),
@@ -94,7 +94,7 @@ enum TaskTag {
           activationEpoch: ''.padEnd(64, '0'),
           exitEpoch: ''.padEnd(64, '0'),
           withdrawableEpoch: ''.padEnd(64, '0'),
-        }),
+        },
       },
     ],
       epoch,
@@ -142,7 +142,7 @@ enum TaskTag {
       await redis.saveValidators(
         batch.map((validator: IndexedValidator) => ({
           index: validator.index,
-          validatorJSON: convertValidatorToProof(validator.validator),
+          data: convertValidatorToProof(validator.validator),
         })),
         epoch
       );
@@ -218,8 +218,8 @@ enum TaskTag {
     work_queue.addItem(db, new Item(buffer));
   }
 
-  function convertValidatorToProof(validator: Validator): string {
-    return JSON.stringify({
+  function convertValidatorToProof(validator: Validator) {
+    return {
       pubkey: bytesToHex(validator.pubkey),
       withdrawalCredentials: bytesToHex(validator.withdrawalCredentials),
       effectiveBalance: bytesToHex(
@@ -248,7 +248,7 @@ enum TaskTag {
           validator.withdrawableEpoch,
         ),
       ),
-    });
+    };
   }
 
   function hasValidatorChanged(prevValidators: Validator[]) {
