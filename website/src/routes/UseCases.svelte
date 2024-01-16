@@ -136,8 +136,8 @@
       
 		</div>
 
-		<!-- Benefits grid -->
-		<div class="grid lg:grid-cols-4 md:grid-cols-2 gap-4 mt-24">
+		<!-- Benefits grid disabled for now -->
+		<!-- <div class="grid lg:grid-cols-4 md:grid-cols-2 gap-4 mt-24">
 			<div class="benefit-box">
 				<div class="h-full w-1 bg-gray-400 bg-opacity-30 md:hidden sm:block mx-4" />
 				<div class="benefit-text">
@@ -174,7 +174,7 @@
 					</p>
 				</div>
 			</div>
-		</div>
+		</div> -->
 	</div>
 </section>
 

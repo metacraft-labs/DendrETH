@@ -104,23 +104,25 @@
 	<div class="glide">
 		<div class="glide__track" data-glide-el="track">
 			<ul class="flex flex-row">
-				{#each posts as post}
-					<li class="w-1/3 box-border">
-						<div class="item flex flex-col bg-white rounded-xl justify-center">
-							<img src={post.image} alt={post.title} class="max-w-full h-auto rounded-xl" />
-							<h2 class="text-xl p-5 pb-2 text-black text-left">{post.title}</h2>
-							<div class="justify-between pl-5 pr-5 flex flex-row">
-								<button class="text-xs border text-white bg-[#9CB5E2] rounded-lg py-1 px-3">
-									{post.category}
-								</button>
-								<p class="text-black text-xs">{post.date}</p>
+				{#if posts}
+					{#each posts as post}
+						<li class="w-1/3 box-border">
+							<div class="item flex flex-col bg-white rounded-xl justify-center">
+								<img src={post.image} alt={post.title} class="max-w-full h-auto rounded-xl" />
+								<h2 class="text-xl p-5 pb-2 text-black text-left">{post.title}</h2>
+								<div class="justify-between pl-5 pr-5 flex flex-row">
+									<button class="text-xs border text-white bg-[#9CB5E2] rounded-lg py-1 px-3">
+										{post.category}
+									</button>
+									<p class="text-black text-xs">{post.date}</p>
+								</div>
+								<p class="p-5 pt-3 text-black text-xs leading-relaxed">
+									{post.summary}
+								</p>
 							</div>
-							<p class="p-5 pt-3 text-black text-xs leading-relaxed">
-								{post.summary}
-							</p>
-						</div>
-					</li>
-				{/each}
+						</li>
+					{/each}
+				{/if}
 			</ul>
 		</div>
 	</div>
