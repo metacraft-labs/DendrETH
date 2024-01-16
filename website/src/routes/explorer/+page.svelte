@@ -47,6 +47,55 @@
 		console.log(`Navigate to details for message with id: ${id}`);
 		// Implement navigation logic here
 	}
+
+	const maxButtons = 5;
+
+	function getPaginationRange(current, total) {
+		const sideButtons = 2;
+		const from = Math.max(1, current - sideButtons);
+		const to = Math.min(total, current + sideButtons);
+
+		let pages = [];
+		let isStartEllipsesAdded = false;
+		let isEndEllipsesAdded = false;
+
+		for (let page = 1; page <= total; page++) {
+			if (page <= 2 || page > total - 2 || (page >= from && page <= to)) {
+				pages.push(page);
+			} else if (page < from && !isStartEllipsesAdded) {
+				pages.push('...');
+				isStartEllipsesAdded = true;
+			} else if (page > to && !isEndEllipsesAdded) {
+				pages.push('...');
+				isEndEllipsesAdded = true;
+			}
+		}
+
+		if (pages.length < maxButtons) {
+			if (pages[0] > 1) {
+				const extraPages = Array.from({ length: maxButtons - pages.length }, (_, i) => i + 1);
+				pages = extraPages.concat(pages);
+			} else if (pages[pages.length - 1] < total) {
+				const extraPages = Array.from(
+					{ length: maxButtons - pages.length },
+					(_, i) => total - i
+				).reverse();
+				pages = pages.concat(extraPages);
+			}
+		}
+
+		if (pages[0] > 1) {
+			pages.unshift('...');
+		}
+
+		if (pages[pages.length - 1] < total) {
+			pages.push('...');
+		}
+
+		return pages;
+	}
+	$: totalPages = Math.ceil(messageData.length / pageSize);
+	$: paginatedPages = getPaginationRange(currentPage, Math.ceil(messageData.length / pageSize));
 </script>
 
 <div
@@ -116,11 +165,36 @@
 		</TableBody>
 	</TableSearch>
 	<div class="flex flex-row justify-center">
-		{#each Array(Math.ceil(messageData.length / pageSize)) as _, i}
-			<button class="pagination-button rounded-md bg-[#121316] text-white mx-1 p-2 px-4 border border-white"on:click={() => changePage(i + 1)} class:active={currentPage === i + 1}>
-				{i + 1}
-			</button>
+		<button
+			class="rounded-md bg-[#121316] text-white mx-1 p-2 px-4 border border-white pagination-button {currentPage ===
+			1
+				? 'active'
+				: ''}"
+			on:click={() => changePage(1)}
+			disabled={currentPage === 1}>1</button
+		>
+		{#each paginatedPages as page}
+			{#if page != '1' && page != totalPages}
+				<button
+					on:click={() => changePage(page)}
+					disabled={page === '...'}
+					class="rounded-md bg-[#121316] text-white mx-1 p-2 px-4 border border-white pagination-button {currentPage ===
+					page
+						? 'active'
+						: ''}"
+				>
+					{page}
+				</button>
+			{/if}
 		{/each}
+		<button
+			class="rounded-md bg-[#121316] text-white mx-1 p-2 px-4 border border-white pagination-button {currentPage ===
+			totalPages
+				? 'active'
+				: ''}"
+			on:click={() => changePage(totalPages)}
+			disabled={currentPage === totalPages}>{totalPages}</button
+		>
 	</div>
 </div>
 
@@ -134,6 +208,6 @@
 		line-height: 120%;
 	}
 	.pagination-button.active {
-		background-color: #393939
+		background-color: #393939;
 	}
 </style>
