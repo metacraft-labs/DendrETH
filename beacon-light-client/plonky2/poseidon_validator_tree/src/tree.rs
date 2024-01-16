@@ -30,6 +30,12 @@ impl Validator {
     }
 }
 
+struct MerkleTree {
+    root: HashOut<GoldilocksField>,
+    validator_leaves: Vec<Validator>,
+    nodes: Vec<HashOut<GoldilocksField>>,
+}
+
 fn hash_bits_arr_in_goldilocks_to_hash_no_pad<F: RichField + Extendable<D>, const D: usize>(
     validator_data: &[bool],
 ) -> HashOut<GoldilocksField> {
@@ -117,3 +123,29 @@ pub fn compute_validator_poseidon_hash_tree_root<F: RichField + Extendable<D>, c
 
     hash_tree_root_poseidon
 }
+
+// Iterate trough every validator and execute compute_validator_poseidon_hash_tree_root on it
+pub fn create_compute_hash_tree_root_validators<F: RichField + Extendable<D>, const D: usize>(
+    validators: Vec<Validator>,
+) {
+    let mut test = Vec::new();
+    for i in 0..validators.len() {
+        test.push(compute_validator_poseidon_hash_tree_root::<F, D>(
+            validators[i],
+        ))
+    }
+}
+
+// TODO: create compute_hash_tree_root_validators -> accepting Vec<Validator>
+
+// MerkleTree
+// compute_hash_tree_root -> of validators
+// get_merkle_proof(0) -> merke proof
+
+//   R
+//  /  \
+//  h1  h2
+// / \ / \
+// 0 1 2 3
+// |
+// v1

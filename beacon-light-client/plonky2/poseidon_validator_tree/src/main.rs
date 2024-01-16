@@ -9,6 +9,7 @@ fn main() {
     const D: usize = 2;
     type F = GoldilocksField;
 
+    // TODO: parse json
     let validator = Validator {
         pubkey: [
             true, false, true, true, true, false, false, false, false, false, true, false, false,
