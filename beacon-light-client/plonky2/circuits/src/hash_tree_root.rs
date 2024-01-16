@@ -54,7 +54,7 @@ pub fn hash_tree_root<F: RichField + Extendable<D>, const D: usize>(
     }
 
     HashTreeRootTargets {
-        leaves: leaves,
+        leaves,
         hash_tree_root: hashers[leaves_len - 2].digest.clone().try_into().unwrap(),
     }
 }
