@@ -1,13 +1,8 @@
 use num_bigint::BigUint;
 use plonky2::field::{extension::Extendable, goldilocks_field::GoldilocksField, types::Field};
-use plonky2::hash::hash_types::{HashOut, RichField, NUM_HASH_OUT_ELTS};
+use plonky2::hash::hash_types::{HashOut, RichField};
 use plonky2::hash::hashing::hash_n_to_hash_no_pad;
 use plonky2::hash::poseidon::PoseidonPermutation;
-
-struct PoseidonHashTreeRoot {
-    pub leaves: Vec<HashOut<GoldilocksField>>,
-    pub hash_tree_root: HashOut<GoldilocksField>,
-}
 
 pub struct Validator {
     pub pubkey: [bool; 384],
@@ -18,11 +13,6 @@ pub struct Validator {
     pub activation_epoch: BigUint,
     pub exit_epoch: BigUint,
     pub withdrawable_epoch: BigUint,
-}
-
-pub struct ValidatorPoseidonHashTreeRoot {
-    pub validator: Validator,
-    pub hash_tree_root: HashOut<GoldilocksField>,
 }
 
 impl Validator {
@@ -68,7 +58,7 @@ fn hash_biguint_in_goldilocks_to_hash_no_pad<F: RichField + Extendable<D>, const
 fn compute_poseidon_hash_tree_root<F: RichField + Extendable<D>, const D: usize>(
     leaves_len: usize,
     leaves: Vec<HashOut<GoldilocksField>>,
-) -> PoseidonHashTreeRoot {
+) -> HashOut<GoldilocksField> {
     let mut hashers: Vec<HashOut<GoldilocksField>> = Vec::new();
     for i in 0..(leaves_len / 2) {
         let goldilocks_leaves = leaves[i * 2]
@@ -100,15 +90,12 @@ fn compute_poseidon_hash_tree_root<F: RichField + Extendable<D>, const D: usize>
         k += 1;
     }
 
-    PoseidonHashTreeRoot {
-        leaves,
-        hash_tree_root: hashers[leaves_len - 2],
-    }
+    hashers[leaves_len - 2]
 }
 
 pub fn compute_validator_poseidon_hash_tree_root<F: RichField + Extendable<D>, const D: usize>(
-) -> ValidatorPoseidonHashTreeRoot {
-    let validator = Validator::new::<F, D>();
+    validator: Validator,
+) -> HashOut<GoldilocksField> {
     let leaves = vec![
         hash_bits_arr_in_goldilocks_to_hash_no_pad::<F, D>(&validator.pubkey),
         hash_bits_arr_in_goldilocks_to_hash_no_pad::<F, D>(&validator.withdrawal_credentials),
@@ -126,14 +113,7 @@ pub fn compute_validator_poseidon_hash_tree_root<F: RichField + Extendable<D>, c
     let hash_tree_root_poseidon =
         compute_poseidon_hash_tree_root::<F, D>(leaves.len(), leaves.clone());
 
-    for i in 0..leaves.len() {
-        for k in 0..NUM_HASH_OUT_ELTS {
-            assert!(leaves[i].elements[k].eq(&hash_tree_root_poseidon.leaves[i].elements[k]));
-        }
-    }
+    println!("hash_tree_root is: {:?}", hash_tree_root_poseidon);
 
-    ValidatorPoseidonHashTreeRoot {
-        validator,
-        hash_tree_root: hash_tree_root_poseidon.hash_tree_root,
-    }
+    hash_tree_root_poseidon
 }

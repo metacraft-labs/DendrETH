@@ -50,7 +50,7 @@ pub fn hash_tree_root_poseidon<F: RichField + Extendable<D>, const D: usize>(
     }
 
     HashTreeRootPoseidonTargets {
-        leaves: leaves,
+        leaves,
         hash_tree_root: hashers[leaves_len - 2],
     }
 }
