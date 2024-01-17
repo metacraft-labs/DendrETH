@@ -18,8 +18,6 @@ import yargs from 'yargs';
 
 let TAKE: number | undefined;
 
-const MILLISECONDS_PER_EPOCH: number = 384000;
-
 enum TaskTag {
   UPDATE_PROOF_NODE = 0,
   PROVE_ZERO_FOR_LEVEL = 1,
@@ -124,7 +122,7 @@ enum TaskTag {
   await syncEpoch();
 
   const es = await beaconApi.subscribeForEvents(['head']);
-  es.on('head', async function (event) {
+  es.on('head', async function(event) {
     headEpoch = BigInt(JSON.parse(event.data).slot) / 32n;
 
     await syncEpoch();
