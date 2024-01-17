@@ -23,16 +23,6 @@
 	let currentPage = 1;
 	let paginatedData = [];
 
-	let expandedRow = null;
-
-	function toggleDetail(nonce) {
-		if (expandedRow === nonce) {
-			expandedRow = null;
-		} else {
-			expandedRow = nonce;
-		}
-	}
-
 	onMount(async () => {
 		messageData = data.messageData;
 		paginateData();
@@ -54,12 +44,9 @@
 	}
 
 	function goToDetailPage(nonce) {
-		// console.log(`Navigate to details for message with id: ${id}`);
 		const detailUrl = `/explorer/${nonce}`;
-        goto(detailUrl);
-    }
-
-	const maxButtons = 5;
+		goto(detailUrl);
+	}
 
 	$: totalPages = Math.ceil(messageData.length / pageSize);
 </script>
@@ -77,7 +64,7 @@
 				bind:value={searchTerm}
 			/>
 		</div>
-		<div class="flex flex-row gap-2">
+		<div class="flex flex-row gap-2 max-w-xs md:max-w-full overflow-x-auto hide-scrollbar">
 			{#each filters as filter}
 				<Button
 					pill
@@ -100,7 +87,7 @@
 		classInput="hidden"
 		classSvgDiv="hidden"
 	>
-		<TableHead class="bg-[#121316] text-white text-md" style="border-bottom: 1px solid white;">
+		<TableHead class="bg-[#121316] text-white text-md whitespace-pre" style="border-bottom: 1px solid white;">
 			<TableHeadCell>Nonce</TableHeadCell>
 			<TableHeadCell>Time Stamp</TableHeadCell>
 			<TableHeadCell>Creation Time</TableHeadCell>
@@ -112,9 +99,7 @@
 		</TableHead>
 		<TableBody>
 			{#each paginatedData as message, index (message.nonce)}
-				<TableBodyRow
-					class="cursor-pointer bg-[#121316] hover:bg-[#393939] table-row"
-				>
+				<TableBodyRow class="cursor-pointer bg-[#121316] hover:bg-[#393939] table-row">
 					<TableBodyCell class="text-white">{message.nonce}</TableBodyCell>
 					<TableBodyCell class="text-white">{message.timestamp}</TableBodyCell>
 					<TableBodyCell class="text-white">{message.creationTime}</TableBodyCell>
@@ -123,7 +108,11 @@
 					<TableBodyCell class="text-white">{message.hash}</TableBodyCell>
 					<TableBodyCell class="text-white">{message.status}</TableBodyCell>
 					<TableBodyCell>
-						<a href="#" class="text-blue-500 hover:text-gray-300" on:click|preventDefault={() => goToDetailPage(message.nonce)}>View Details</a>
+						<a
+							href="#"
+							class="text-blue-500 hover:text-gray-300"
+							on:click|preventDefault={() => goToDetailPage(message.nonce)}>View Details</a
+						>
 					</TableBodyCell>
 				</TableBodyRow>
 			{/each}
@@ -160,7 +149,12 @@
 		border-color: #393939;
 		background-color: #121316;
 	}
-	.table-row.active {
-		background-color: #393939;
+	.hide-scrollbar::-webkit-scrollbar {
+		display: none;
+	}
+
+	.hide-scrollbar {
+		-ms-overflow-style: none;
+		scrollbar-width: none;
 	}
 </style>
