@@ -11,17 +11,27 @@
 		ButtonGroup
 	} from 'flowbite-svelte';
 	import { onMount } from 'svelte';
-
-	import chevronDown from '$lib/images/chevron-down.svg';
+	import { goto } from '$app/navigation';
 
 	let searchTerm = '';
 	const filters = ['All', 'Avalanche', 'Binance', 'Polygon', 'Ethereum'];
 
 	export let data;
 	let messageData = [];
+
 	const pageSize = 10;
 	let currentPage = 1;
 	let paginatedData = [];
+
+	let expandedRow = null;
+
+	function toggleDetail(nonce) {
+		if (expandedRow === nonce) {
+			expandedRow = null;
+		} else {
+			expandedRow = nonce;
+		}
+	}
 
 	onMount(async () => {
 		messageData = data.messageData;
@@ -43,59 +53,15 @@
 		searchTerm = filter;
 	}
 
-	function goToDetailPage(id) {
-		console.log(`Navigate to details for message with id: ${id}`);
-		// Implement navigation logic here
-	}
+	function goToDetailPage(nonce) {
+		// console.log(`Navigate to details for message with id: ${id}`);
+		const detailUrl = `/explorer/${nonce}`;
+        goto(detailUrl);
+    }
 
 	const maxButtons = 5;
 
-	function getPaginationRange(current, total) {
-		const sideButtons = 2;
-		const from = Math.max(1, current - sideButtons);
-		const to = Math.min(total, current + sideButtons);
-
-		let pages = [];
-		let isStartEllipsesAdded = false;
-		let isEndEllipsesAdded = false;
-
-		for (let page = 1; page <= total; page++) {
-			if (page <= 2 || page > total - 2 || (page >= from && page <= to)) {
-				pages.push(page);
-			} else if (page < from && !isStartEllipsesAdded) {
-				pages.push('...');
-				isStartEllipsesAdded = true;
-			} else if (page > to && !isEndEllipsesAdded) {
-				pages.push('...');
-				isEndEllipsesAdded = true;
-			}
-		}
-
-		if (pages.length < maxButtons) {
-			if (pages[0] > 1) {
-				const extraPages = Array.from({ length: maxButtons - pages.length }, (_, i) => i + 1);
-				pages = extraPages.concat(pages);
-			} else if (pages[pages.length - 1] < total) {
-				const extraPages = Array.from(
-					{ length: maxButtons - pages.length },
-					(_, i) => total - i
-				).reverse();
-				pages = pages.concat(extraPages);
-			}
-		}
-
-		if (pages[0] > 1) {
-			pages.unshift('...');
-		}
-
-		if (pages[pages.length - 1] < total) {
-			pages.push('...');
-		}
-
-		return pages;
-	}
 	$: totalPages = Math.ceil(messageData.length / pageSize);
-	$: paginatedPages = getPaginationRange(currentPage, Math.ceil(messageData.length / pageSize));
 </script>
 
 <div
@@ -147,8 +113,7 @@
 		<TableBody>
 			{#each paginatedData as message, index (message.nonce)}
 				<TableBodyRow
-					class="cursor-pointer bg-[#121316] hover:bg-[#393939]"
-					on:click={() => goToDetailPage(message.nonce)}
+					class="cursor-pointer bg-[#121316] hover:bg-[#393939] table-row"
 				>
 					<TableBodyCell class="text-white">{message.nonce}</TableBodyCell>
 					<TableBodyCell class="text-white">{message.timestamp}</TableBodyCell>
@@ -158,42 +123,25 @@
 					<TableBodyCell class="text-white">{message.hash}</TableBodyCell>
 					<TableBodyCell class="text-white">{message.status}</TableBodyCell>
 					<TableBodyCell>
-						<img src={chevronDown} alt="chevron" />
+						<a href="#" class="text-blue-500 hover:text-gray-300" on:click|preventDefault={() => goToDetailPage(message.nonce)}>View Details</a>
 					</TableBodyCell>
 				</TableBodyRow>
 			{/each}
 		</TableBody>
 	</TableSearch>
-	<div class="flex flex-row justify-center">
+	<div class="flex flex-row justify-end items-center">
+		<div class="text-white mr-2">
+			Page {currentPage}
+		</div>
 		<button
-			class="rounded-md bg-[#121316] text-white mx-1 p-2 px-4 border border-white pagination-button {currentPage ===
-			1
-				? 'active'
-				: ''}"
-			on:click={() => changePage(1)}
-			disabled={currentPage === 1}>1</button
+			class="rounded-md bg-[#121316] text-white mx-1 p-1 px-4 border border-white pagination-button hover:bg-[#393939]"
+			on:click={() => changePage(currentPage - 1)}
+			disabled={currentPage === 1}>Previous</button
 		>
-		{#each paginatedPages as page}
-			{#if page != '1' && page != totalPages}
-				<button
-					on:click={() => changePage(page)}
-					disabled={page === '...'}
-					class="rounded-md bg-[#121316] text-white mx-1 p-2 px-4 border border-white pagination-button {currentPage ===
-					page
-						? 'active'
-						: ''}"
-				>
-					{page}
-				</button>
-			{/if}
-		{/each}
 		<button
-			class="rounded-md bg-[#121316] text-white mx-1 p-2 px-4 border border-white pagination-button {currentPage ===
-			totalPages
-				? 'active'
-				: ''}"
-			on:click={() => changePage(totalPages)}
-			disabled={currentPage === totalPages}>{totalPages}</button
+			class="rounded-md bg-[#121316] text-white mx-1 p-1 px-4 border border-white pagination-button hover:bg-[#393939]"
+			on:click={() => changePage(currentPage + 1)}
+			disabled={currentPage === totalPages}>Next</button
 		>
 	</div>
 </div>
@@ -207,7 +155,12 @@
 		font-size: 3.5rem;
 		line-height: 120%;
 	}
-	.pagination-button.active {
+	.pagination-button:disabled {
+		color: #393939;
+		border-color: #393939;
+		background-color: #121316;
+	}
+	.table-row.active {
 		background-color: #393939;
 	}
 </style>
