@@ -72,6 +72,7 @@
     "crypto-js": "^4.1.1",
     "dotenv": "^16.0.2",
     "ethers": "^5.7.0",
+    "eventsource": "^2.0.2",
     "ffjavascript": "^0.2.59",
     "hardhat": "^2.10.2",
     "hardhat-gas-reporter": "^1.0.8",

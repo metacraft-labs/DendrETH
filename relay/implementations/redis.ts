@@ -17,7 +17,7 @@ export class Redis implements IRedis {
   private redisClient: RedisClientType;
   private pubSub: RedisClientType;
 
-  constructor(redisHost: string, redisPort: number) {
+  constructor (redisHost: string, redisPort: number) {
     this.redisClient = createClient({
       url: `redis://${redisHost}:${redisPort}`,
     });
@@ -106,7 +106,6 @@ export class Redis implements IRedis {
 
     for (const [keyBatchIndex, batchKeys] of splitIntoBatches(keys, batchSize).entries()) {
       const batchValidators = (await this.redisClient.json.mGet(batchKeys, '$')).map((entry) => entry![0]);
-      console.log(batchValidators);
 
       for (const [index, redisValidator] of batchValidators.entries()) {
         try {

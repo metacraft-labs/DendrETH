@@ -11,16 +11,16 @@ import {
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { bytesToHex } from '../../libs/typescript/ts-utils/bls';
 import { computeSyncCommitteePeriodAt } from '../../libs/typescript/ts-utils/ssz-utils';
-import path from 'path';
 import { getGenericLogger } from '../../libs/typescript/ts-utils/logger';
 import { prometheusTiming } from '../../libs/typescript/ts-utils/prometheus-utils';
+import EventSource from 'eventsource';
 
 const logger = getGenericLogger();
 export class BeaconApi implements IBeaconApi {
   private beaconRestApis: string[];
   private currentApiIndex: number;
 
-  constructor(beaconRestApis: string[]) {
+  constructor (beaconRestApis: string[]) {
     this.beaconRestApis = beaconRestApis;
     this.currentApiIndex = 0;
   }
@@ -90,6 +90,12 @@ export class BeaconApi implements IBeaconApi {
       blockNumberProof: [...blockNumberProof, ...bodyRootProof],
       blockHashProof: [...blockHashProof, ...bodyRootProof],
     };
+  }
+
+  async subscribeForEvents(events: string[]): Promise<EventSource> {
+    return new EventSource(
+      this.concatUrl(`/eth/v1/events?topics=${events.join(',')}`),
+    );
   }
 
   async getCurrentHeadSlot(): Promise<number> {
@@ -456,7 +462,6 @@ export class BeaconApi implements IBeaconApi {
     let retries = 0;
     while (true) {
       try {
-        console.log('suburl', subUrl);
         const result = await fetch(this.concatUrl(subUrl), init);
         if (result.status === 429) {
           logger.warn('Rate limit exceeded');

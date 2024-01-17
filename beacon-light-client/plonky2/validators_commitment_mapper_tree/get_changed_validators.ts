@@ -54,6 +54,13 @@ enum TaskTag {
       default: 'http://testing.mainnet.beacon-api.nimbus.team',
       description: 'Sets a custom beacon node url',
     })
+    .option('sync-epoch', {
+      alias: 'sync-epoch',
+      describe: 'The sync epoch',
+      type: 'number',
+      default: undefined,
+      description: 'Starts syncing from this epoch',
+    })
     .option('take', {
       alias: 'take',
       describe: 'The number of validators to take',
@@ -75,9 +82,10 @@ enum TaskTag {
   );
 
   const beaconApi = new BeaconApi([options['beacon-node']]);
-  const headSlot = await beaconApi.getHeadSlot();
 
-  let epoch = headSlot / 32n;
+  let headEpoch = BigInt(await beaconApi.getHeadSlot()) / 32n;
+  let currentEpoch = options['sync-epoch'] !== undefined
+    ? BigInt(options['sync-epoch']) : headEpoch;
 
   // handle zeros validators
   if (await redis.isZeroValidatorEmpty()) {
@@ -97,10 +105,10 @@ enum TaskTag {
         },
       },
     ],
-      epoch,
+      currentEpoch,
     );
 
-    await scheduleValidatorProof(BigInt(validator_commitment_constants.validatorRegistryLimit), epoch);
+    await scheduleValidatorProof(BigInt(validator_commitment_constants.validatorRegistryLimit), currentEpoch);
 
     for (let level = 39n; level >= 0n; level--) {
       scheduleProveZeroForLevel(level);
@@ -112,9 +120,25 @@ enum TaskTag {
   let prevValidators = await redis.getValidatorsBatched(ssz);
   console.log('Loaded all batches');
 
-  while (true) {
-    const timeBefore = Date.now();
+  await updateValidators(currentEpoch);
+  await syncEpoch();
 
+  const es = await beaconApi.subscribeForEvents(['head']);
+  es.on('head', async function (event) {
+    headEpoch = BigInt(JSON.parse(event.data).slot) / 32n;
+
+    await syncEpoch();
+  })
+
+  async function syncEpoch() {
+    while (currentEpoch < headEpoch) {
+      currentEpoch++;
+      console.log(`syncing... ${currentEpoch}/${headEpoch}`);
+      await updateValidators(currentEpoch);
+    }
+  }
+
+  async function updateValidators(epoch: bigint) {
     const validators = await beaconApi.getValidators(epoch * 32n, TAKE);
 
     const changedValidators = validators
@@ -125,16 +149,7 @@ enum TaskTag {
 
     console.log('#changedValidators', changedValidators.length);
 
-    prevValidators = validators;
-
-    const timeAfter = Date.now();
-
-    // wait for the next epoch
-    if (timeAfter - timeBefore < MILLISECONDS_PER_EPOCH) {
-      await sleep(MILLISECONDS_PER_EPOCH - (timeBefore - timeAfter));
-    }
-
-    epoch += 1n;
+    prevValidators = validators
   }
 
   async function saveValidatorsInBatches(epoch: bigint, validators: IndexedValidator[], batchSize = 200) {
