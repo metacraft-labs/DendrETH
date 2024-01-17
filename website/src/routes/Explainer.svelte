@@ -1,7 +1,3 @@
-<script>
-	import { Button } from 'flowbite-svelte';
-</script>
-
 <div class="bg-[#121316] text-white p-24 flex flex-col content-center center mt-16">
 	<div class="mb-4">
 		<button class="text-xs border border-[#8FD3FE] rounded-2xl py-1 px-3">DendrETH Protocol</button>

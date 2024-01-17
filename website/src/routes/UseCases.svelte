@@ -1,10 +1,5 @@
 <script>
-	import {
-		GlobeOutline,
-		ShieldCheckOutline,
-		UsersOutline,
-		DollarOutline
-	} from 'flowbite-svelte-icons';
+	import { ShieldCheckOutline } from 'flowbite-svelte-icons';
 </script>
 
 <section class="bg-[#121316] text-white px-10 center">
@@ -14,7 +9,7 @@
 			<!-- Card 1 -->
 			<div class="flex md:mt-14">
 				<div class="flex flex-row">
-					<div class="bg-[#121316] p-8 rounded-lg flex flex-col items-left text-left ">
+					<div class="bg-[#121316] p-8 rounded-lg flex flex-col items-left text-left">
 						<h2 class="text-lg font-semibold mb-4">Permissionless Bridges</h2>
 						<ul class="text-sm ml-4">
 							<li class="list-disc mb-6">
@@ -23,12 +18,8 @@
 							<li class="list-disc mb-6">
 								Fully Decentralized, Trustless and Censorship Resistant.
 							</li>
-              <li class="list-disc mb-6">
-								No need to give up control of your assets.
-							</li>
-              <li class="list-disc">
-                No need to trust centralized actors, nor multising.
-							</li>
+							<li class="list-disc mb-6">No need to give up control of your assets.</li>
+							<li class="list-disc">No need to trust centralized actors, nor multising.</li>
 						</ul>
 					</div>
 				</div>
@@ -48,7 +39,7 @@
 				</p>
 			</div>
 			<!-- Card 2 -->
-      <div class="flex mt-14">
+			<div class="flex mt-14">
 				<div class="flex flex-row">
 					<div class="bg-[#121316] p-8 rounded-lg flex flex-col items-left text-left">
 						<h2 class="text-lg font-semibold mb-4">Oracles</h2>
@@ -77,8 +68,8 @@
 					*Add 2 rows of copy here
 				</p>
 			</div>
-      <!-- Card 3 -->
-      <div class="flex mt-14">
+			<!-- Card 3 -->
+			<div class="flex mt-14">
 				<div class="flex flex-row">
 					<div class="bg-[#121316] p-8 rounded-lg flex flex-col items-left text-left">
 						<div class="text-lg font-semibold mb-4">One-Shot Sync</div>
@@ -86,9 +77,7 @@
 							<li class="list-disc mb-6">
 								Blazing fast Sync and verify state from Ethereum's consensus layer.
 							</li>
-							<li class="list-disc mb-6">
-								Accurate data, no Intermediaries
-							</li>
+							<li class="list-disc mb-6">Accurate data, no Intermediaries</li>
 							<li class="list-disc">Maximum Security, Best UX</li>
 						</ul>
 					</div>
@@ -108,8 +97,8 @@
 					*Add 2 rows of copy here
 				</p>
 			</div>
-			<!-- Card 4 -->      
-      <div class="flex mt-14">
+			<!-- Card 4 -->
+			<div class="flex mt-14">
 				<div class="flex flex-row">
 					<div class="bg-[#121316] p-8 rounded-lg flex flex-col items-left text-left">
 						<div class="text-lg font-semibold mb-4">Liquid Stacking</div>
@@ -133,7 +122,6 @@
 					*Add 2 rows of copy here
 				</p>
 			</div>
-      
 		</div>
 
 		<!-- Benefits grid disabled for now -->

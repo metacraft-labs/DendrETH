@@ -7,8 +7,7 @@
 		TableHead,
 		TableHeadCell,
 		Input,
-		Button,
-		ButtonGroup
+		Button
 	} from 'flowbite-svelte';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
@@ -87,7 +86,10 @@
 		classInput="hidden"
 		classSvgDiv="hidden"
 	>
-		<TableHead class="bg-[#121316] text-white text-md whitespace-pre" style="border-bottom: 1px solid white;">
+		<TableHead
+			class="bg-[#121316] text-white text-md whitespace-pre"
+			style="border-bottom: 1px solid white;"
+		>
 			<TableHeadCell>Nonce</TableHeadCell>
 			<TableHeadCell>Time Stamp</TableHeadCell>
 			<TableHeadCell>Creation Time</TableHeadCell>
@@ -144,6 +146,11 @@
 		font-size: 3.5rem;
 		line-height: 120%;
 	}
+	@media (max-width: 768px) {
+		h1 {
+			font-size: 2.3rem;
+		}
+	}
 	.pagination-button:disabled {
 		color: #393939;
 		border-color: #393939;
@@ -152,7 +159,6 @@
 	.hide-scrollbar::-webkit-scrollbar {
 		display: none;
 	}
-
 	.hide-scrollbar {
 		-ms-overflow-style: none;
 		scrollbar-width: none;

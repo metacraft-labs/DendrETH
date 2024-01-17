@@ -1,12 +1,11 @@
 <script>
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import messageData from '$lib/database/explorerData.json';
 
 	let nonce = $page.params.nonce;
+    export let data;
 
 	let message = null;
-	console.log(nonce);
 
 	let isMobileView = window.innerWidth < 768;
 
@@ -17,7 +16,7 @@
 	onMount(async () => {
 		try {
 			window.addEventListener('resize', handleResize);
-			for (let obj of messageData) {
+			for (let obj of data.messageData) {
 				if (obj.nonce === nonce) {
 					message = obj;
 				}

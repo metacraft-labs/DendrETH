@@ -2,8 +2,7 @@
 	import {
 		GlobeOutline,
 		ShieldCheckOutline,
-		UsersOutline,
-		DollarOutline
+		UsersOutline
 	} from 'flowbite-svelte-icons';
 </script>
 
