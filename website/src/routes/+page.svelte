@@ -22,19 +22,23 @@
 <section
 	class="bg-gradient-to-b from-[#1A1739] via-[#363571] to-[#A8C5EB] text-white flex justify-between items-center center"
 >
-	<div class="container flex flex-col md:items-start items-center h-full md:px-6 md:max-w-3xl">
-		<h1 class="text-start md:text-5xl font-bold mb-4 leading-tight">
-			Scaling Trust,<br> <span class="spanh1" style="color: #8FD3FE;">the Interchain Interoperability Layer</span>
-		</h1>
-		<p class="mb-12 leading-relaxed">
-			Remove your dependence on centralized infrastructure by leveraging a truly 
-			<span style="font-family: 'Inter-Bold'">trust-minimized, censorship resistant, decentralized,</span> and highly secure smart contract solution.
-		</p>
-		<img src={main} alt="Descriptive Text" class="max-w-xs md:max-w-sm pb-10 md:hidden block" style="opacity: 50; z-index: 1;" />	
-		<div class="flex md:flex-row flex-col space-x-4 md:w-auto w-full">
+	<div class="container flex flex-col md:items-start items-center h-full md:px-6 ">
+		<div class="flex lg:flex-row flex-col items-center justify-between space-x-16">
+			<div class="flex flex-col">
+				<h1 class="text-start font-bold mb-4 leading-tight">
+					Scaling Trust,<br> <span class="spanh1" style="color: #8FD3FE;">the Interchain Interoperability Layer</span>
+				</h1>
+				<p class="mb-12 leading-relaxed">
+					Remove your dependence on centralized infrastructure by leveraging a truly 
+					<span style="font-family: 'Inter-Bold'">trust-minimized, censorship resistant, decentralized,</span> and highly secure smart contract solution.
+				</p>
+			</div>
+			<img src={main} alt="Descriptive Text" class="max-w-xs max-w-sm pb-10 block" style="opacity: 50; z-index: 1;" />	
+		</div>
+		<div class="flex lg:flex-row flex-col space-x-4 lg:w-auto w-full">
 			<Button
 				href="#"
-				class="relative bg-white text-black rounded-bl-none mb-10 md:mb-0 rounded-tr-none text-xl hover:bg-gray-200"
+				class="relative bg-white text-black rounded-bl-none mb-10 lg:mb-0 rounded-tr-none text-xl hover:bg-gray-200"
 			>
 				Documentation →
 				<span
@@ -50,7 +54,6 @@
 			</Button>
 		</div>
 	</div>
-	<img src={main} alt="Descriptive Text" class="max-w-xs md:max-w-sm md:block hidden" style="opacity: 50; z-index: 1;" />
 	<img src={vector1} alt="Descriptive Text" class="vector1" />
 	<img src={vector2} alt="Descriptive Text" class="vector2" />
 </section>
@@ -78,9 +81,9 @@
 		line-height: 120%;
 		letter-spacing: -0.60px;
 	}
-	@media (max-width: 768px) {
+	@media (max-width: 1024px) {
 		h1 {
-			font-size: 2.5rem;
+			font-size: 3rem;
 		}
 	}
 

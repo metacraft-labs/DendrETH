@@ -58,7 +58,7 @@
 						<a on:click={closeMenu} href="#" class="block px-4 py-2 text-white hover:text-gray-300"
 							>Blog</a
 						>
-						<a on:click={closeMenu} href="#" class="block px-4 py-2 text-white hover:text-gray-300"
+						<a on:click={closeMenu} href="/demo" class="block px-4 py-2 text-white hover:text-gray-300"
 							>Demo</a
 						>
 					</div>
@@ -72,7 +72,7 @@
 				<div>
 					<Button
 						class="bg-transparent rounded-bl-none rounded-tr-none border border-white hover:bg-white hover:text-black"
-						href="#">DendrETH Wallet Demo</Button
+						href="/demo">DendrETH Wallet Demo</Button
 					>
 				</div>
 			</div>
