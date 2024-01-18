@@ -53,7 +53,7 @@ proc makePairsAndVerify*(vk: VerificationKey,
   let sha256ofHashes = hashHeaders(currentHeaderHash, newOptimisticHeader,
                                    newFinalizedHeader, newExecutionStateRoot,
                                    zerosSlotBuffer, reverseSlot, domain)
-  let header = headerFromSeq(@sha256ofHashes)
+  let header = headerFromArr(sha256ofHashes)
 
   var preparedInputs:Input
   var ic0Prj: ECP_ShortW_Prj[Fp[BN254_Snarks], G1]

@@ -16,7 +16,7 @@ type
     head*: Fr[BN254_Snarks]
     tail*: Fr[BN254_Snarks]
 
-proc headerFromSeq*(bigNum: seq): Header =
+proc headerFromArr*(bigNum: array[32, byte]): Header =
   var firstNumInBits: array[256, int]
   for i in 0..2:
     firstNumInBits[i] = 0
@@ -62,8 +62,7 @@ proc headerFromSeq*(bigNum: seq): Header =
   var
     head: Fr[BN254_Snarks]
     tail: Fr[BN254_Snarks]
-  head.fromHex(toHex(firstNumInBytes))
-  tail.fromHex(toHex(secondNumInBytes))
-
+  head.fromBig(BigInt[254].unmarshal(firstNumInBytes, bigEndian))
+  tail.fromBig(BigInt[254].unmarshal(secondNumInBytes, bigEndian))
 
   Header(head: head, tail: tail)

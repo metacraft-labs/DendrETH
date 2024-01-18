@@ -106,7 +106,7 @@ proc createHeader*(pathCurrentHeader: string, updatePath: string, domain: string
                                    currentSlot,
                                    domain)
 
-  headerFromSeq(@sha256ofHashes)
+  headerFromArr(sha256ofHashes)
 
 proc makePairsAndVerify*(vk: VerificationKey,
                          prf: Proof,
