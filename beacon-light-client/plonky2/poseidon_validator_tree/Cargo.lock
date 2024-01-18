@@ -1094,6 +1094,8 @@ dependencies = [
  "circuits",
  "num-bigint",
  "plonky2",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

@@ -1,0 +1,14 @@
+{
+    "FirstName": "John",
+    "LastName": "Doe",
+    "Age": 43,
+    "Address": {
+        "Street": "Downing Street 10",
+        "City": "London",
+        "Country": "Great Britain"
+    },
+    "PhoneNumbers": [
+        "+44 1234567",
+        "+44 2345678"
+    ]
+}

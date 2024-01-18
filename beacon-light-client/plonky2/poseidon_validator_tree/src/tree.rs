@@ -111,7 +111,7 @@ impl Lemma {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Proof {
-    /// The hash of the root of the original `MerkleTree`
+    /// The hash of the root of the original MerkleTree
     pub root_hash: HashOut<GoldilocksField>,
 
     /// The first Lemma of the Proof

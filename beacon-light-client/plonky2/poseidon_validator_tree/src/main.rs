@@ -325,6 +325,9 @@ fn main() {
         withdrawable_epoch: BigUint::from(18446744073709551615 as u64),
     };
 
+    let json: serde_json::Value =
+        serde_json::from_str("../test_text.json").expect("JSON was not well-formatted");
+
     let even_validators = vec![
         validator.clone(),
         validator1.clone(),
