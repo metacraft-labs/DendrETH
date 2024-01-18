@@ -1,6 +1,9 @@
 use num_bigint::BigUint;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use tree::compute_validator_poseidon_hash_tree_root;
+use serde::{Deserialize, Serialize};
+use std::fs::File;
+use std::io::Read;
 
 use crate::tree::{MerkleTree, Validator};
 pub mod tree;
@@ -325,8 +328,14 @@ fn main() {
         withdrawable_epoch: BigUint::from(18446744073709551615 as u64),
     };
 
-    let json: serde_json::Value =
-        serde_json::from_str("../test_text.json").expect("JSON was not well-formatted");
+    let test = "./src/data.json".to_string();
+    let json = File::open(test).expect("JSON was not well-formatted");
+
+    // Parse JSON into a struct
+    // let my_data: MyData = serde_json::from_str(&contents).expect("Unable to parse JSON");
+
+    // Now you can use the parsed data as needed
+    // println!("{:?}", my_data);
 
     let even_validators = vec![
         validator.clone(),
@@ -344,8 +353,8 @@ fn main() {
 
     let merkle_tree = MerkleTree::initialize::<F, D>(odd_validators);
     // println!("asd {:?}", merkle_tree);
-    let proof_that_it_exists = merkle_tree.generate_validator_proof::<F, D>(validator4.clone());
-    println!("asd {:?}", Some(proof_that_it_exists));
+    let proof_that_it_exists = merkle_tree.generate_validator_proof::<F, D>(validator2.clone());
+    // println!("asd {:?}", Some(proof_that_it_exists));
 
     // compute_validator_poseidon_hash_tree_root::<F, D>(validator);
 }
