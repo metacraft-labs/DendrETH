@@ -2,10 +2,15 @@ use anyhow::Error;
 use casper_finality_proofs::combine_finality_votes::commitment_accumulator_inner::CommitmentAccumulatorInner;
 use casper_finality_proofs::combine_finality_votes::count_unique_validators::{CountUniqueValidators, self};
 use casper_finality_proofs::combine_finality_votes::unique_validators_accumulator::UniqueValidatorsAccumulatorInner;
-use casper_finality_proofs::constants::{TEST_ATTESTATIONS_READ, VALIDATOR_INDICES_IN_SPLIT, TEST_VALIDATORS_IN_COMMITMENT_SIZE};
+use casper_finality_proofs::constants::{TEST_ATTESTATIONS_READ, VALIDATOR_INDICES_IN_SPLIT, TEST_VALIDATORS_IN_COMMITMENT_SIZE, STATE_ROOT_PROOF_LEN, VALIDATORS_ROOT_PROOF_LEN};
 use casper_finality_proofs::prove_casper::sequential_verification::CheckpointInput;
+use casper_finality_proofs::prove_finality::circuit_final::ProveFinality;
+use casper_finality_proofs::utils::eth_objects::CheckpointVariable;
+use plonky2::field::goldilocks_field::GoldilocksField;
+use plonky2::plonk::config::PoseidonGoldilocksConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
 use plonky2x::frontend::uint::uint64::U64Variable;
-use plonky2x::frontend::vars::Bytes32Variable;
+use plonky2x::frontend::vars::{Bytes32Variable, ArrayVariable};
 use serde_json::Value;
 use std::fs::File;
 use std::io::{Error as IOError, Read};
@@ -30,9 +35,11 @@ fn main() -> Result<(), IOError> {
     let file_path_attestations = "./data/merged_234400.json";
     let attestations_json = read_json_from_file(file_path_attestations).unwrap();
 
-    let source: CheckpointInput;
-    let target: CheckpointInput;
+    // let source: CheckpointInput;
+    // let target: CheckpointInput;
 
+    let mut vad_recurssive_proof_final: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, D>;
+    let mut cuv_recurssive_proof_final: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, D>;
 
     // VerifyAttestationData
     let mut attestation_data_proofs = vec![];
@@ -56,25 +63,25 @@ fn main() -> Result<(), IOError> {
 
     //CombineAttestationData
     let mut proofs = attestation_data_proofs;
-    let mut child_circuit = vad_circuit;
+    let mut vad_child_circuit = vad_circuit;
     let mut level = 0;
 
     loop {
         let mut inner_builder = CircuitBuilder::<L, D>::new();
-        CommitmentAccumulatorInner::define(&mut inner_builder, &child_circuit);
-        child_circuit = inner_builder.build();
+        CommitmentAccumulatorInner::define(&mut inner_builder, &vad_child_circuit);
+        vad_child_circuit = inner_builder.build();
 
         println!("Proving layer {}..", level + 1);
         let mut final_output: Option<PublicOutput<L, D>> = None;
         let mut new_proofs = vec![];
         for i in (0..proofs.len()).step_by(2) {
             println!("Pair [{}]", i / 2 + 1);
-            let mut input = child_circuit.input();
+            let mut input = vad_child_circuit.input();
 
             input.proof_write(proofs[i].clone());
             input.proof_write(proofs[i + 1].clone());
 
-            let (proof, output) = child_circuit.prove(&input);
+            let (proof, output) = vad_child_circuit.prove(&input);
 
             println!("Output: {:?}",output);
 
@@ -86,9 +93,16 @@ fn main() -> Result<(), IOError> {
         level += 1;
 
         if proofs.len() == 1 {
+            vad_recurssive_proof_final = proofs.pop().unwrap();
+
             let mut final_output = final_output.unwrap();
-            let _target = final_output.proof_read::<Bytes32Variable>();
-            let _source = final_output.proof_read::<Bytes32Variable>();
+            let _l_state_root = final_output.proof_read::<Bytes32Variable>();
+            let _l_state_root_proof = final_output.proof_read::<ArrayVariable<Bytes32Variable, STATE_ROOT_PROOF_LEN>>();
+            let _l_validators_root = final_output.proof_read::<Bytes32Variable>();
+            let _l_validators_root_proof = final_output.proof_read::<ArrayVariable<Bytes32Variable, VALIDATORS_ROOT_PROOF_LEN>>();
+
+            let _source = final_output.proof_read::<CheckpointVariable>();
+            let _target = final_output.proof_read::<CheckpointVariable>();
             let vad_aggregated_commitment = final_output.proof_read::<U64Variable>();
             let _sigma = final_output.proof_read::<U64Variable>();
 
@@ -138,13 +152,13 @@ fn main() -> Result<(), IOError> {
 
     // Recurssive CountUniqueValidators
     let mut proofs = count_unique_validators_proofs;
-    let mut child_circuit = cuv_circuit;
+    let mut cuv_child_circuit = cuv_circuit;
     let mut level = 0;
     
     loop {
         let mut inner_builder = CircuitBuilder::<L, D>::new();
-        UniqueValidatorsAccumulatorInner::define(&mut inner_builder, &child_circuit);
-        child_circuit = inner_builder.build();
+        UniqueValidatorsAccumulatorInner::define(&mut inner_builder, &cuv_child_circuit);
+        cuv_child_circuit = inner_builder.build();
 
         println!("Proving layer {}..", level + 1);
 
@@ -152,12 +166,12 @@ fn main() -> Result<(), IOError> {
         let mut new_proofs = vec![];
         for i in (0..proofs.len()).step_by(2) {
             println!("Pair [{}]", i / 2 + 1);
-            let mut input = child_circuit.input();
+            let mut input = cuv_child_circuit.input();
 
             input.proof_write(proofs[i].clone());
             input.proof_write(proofs[i + 1].clone());
 
-            let (proof, output) = child_circuit.prove(&input);
+            let (proof, output) = cuv_child_circuit.prove(&input);
             println!("Current Unique: {:?}", output);
 
             final_output = Some(output);
@@ -169,6 +183,8 @@ fn main() -> Result<(), IOError> {
         level += 1;
 
         if proofs.len() == 1 {
+            cuv_recurssive_proof_final = proofs.pop().unwrap();
+
             let mut final_output = final_output.unwrap();
             let total_unique = final_output.proof_read::<U64Variable>();
             let final_commitment = final_output.proof_read::<U64Variable>();
@@ -181,7 +197,24 @@ fn main() -> Result<(), IOError> {
     }
 
     // Prove Finality
+    println!("vad_recurssive_proof_final: {:?}\n\ncuv_recurssive_proof_final: {:?}\n\n",vad_recurssive_proof_final,cuv_recurssive_proof_final);
+    let mut finality_builder = CircuitBuilder::<L, D>::new();
+    ProveFinality::define(&mut finality_builder, &vad_child_circuit, &cuv_child_circuit);
+    println!("HIIIIIIIIIIIIIIIIIIIIII3");
+    let finality_circuit = finality_builder.build();
+    println!("HIIIIIIIIIIIIIIIIIIIIII4");
+    let mut input = finality_circuit.input();
 
+    println!("HIIIIIIIIIIIIIIIIIIIIII");
+
+    input.proof_write(vad_recurssive_proof_final);
+    input.proof_write(cuv_recurssive_proof_final);
+
+    println!("HIIIIIIIIIIIIIIIIIIIIII");
+
+    let (_proof, output) = finality_circuit.prove(&input);
+
+    println!("\n Finality Proof Output: \n {:?}", output);
 
     Ok(())
 }

@@ -113,7 +113,7 @@ impl ValidatorData {
     }
 }
 
-#[derive(Debug, Clone, CircuitVariable)]
+#[derive(Debug, Copy, Clone, CircuitVariable)]
 pub struct CheckpointVariable {
     pub root: Bytes32Variable,
     pub epoch: U64Variable,

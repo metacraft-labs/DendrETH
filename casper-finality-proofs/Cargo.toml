@@ -47,7 +47,7 @@ path = "bin/sequential_verification.rs"
 
 [dependencies]
 plonky2 = { git = "https://github.com/mir-protocol/plonky2.git", default-features = false }
-plonky2x = { git = "https://github.com/succinctlabs/succinctx.git", branch = "main" }
+plonky2x = { git = "https://github.com/metacraft-labs/succinctx.git", branch = "recursive_proof_element_inputs" }
 curta = { git = "https://github.com/succinctlabs/curta.git", branch = "main" }
 serde = { version = "1.0.187", features = ["derive"] }
 serde_json = "1.0.103"
