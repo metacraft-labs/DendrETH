@@ -1,10 +1,10 @@
 <div class="bg-[#121316] text-white p-24 flex flex-col content-center center mt-16">
 	<div class="mb-4">
-		<button class="text-xs border border-[#8FD3FE] rounded-2xl py-1 px-3">DendrETH Protocol</button>
+		<button class="text-xs cursor-default border border-[#8FD3FE] rounded-2xl py-1 px-3">DendrETH Protocol</button>
 	</div>
 	<div class="container flex md:flex-row flex-col justify-between">
 		<h1 class="text-5xl mb-6 leading-tight mr-8 max-w-lg text-left">
-			<span class="myClass" style="color: #8FD3FE;">Proof Of Consensus</span>
+			<span style="color: #8FD3FE;">Proof Of Consensus</span>
 		</h1>
 		<div class="">
 			<p class="mb-12 max-w-xl">

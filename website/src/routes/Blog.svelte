@@ -6,6 +6,9 @@
 
 	import posts from '$lib/database/blogPosts.json';
 
+	let canSlidePrev = false;
+	let canSlideNext = true;
+
 	let glide;
 	let totalSlides = 0;
 	let perView = 3;
@@ -46,28 +49,22 @@
 				default:
 					perView = 5;
 					break;
+				}
+			if (totalSlides < glide.index + perView) {
+				glide.index -= 1
 			}
 			glide.update({ perView: perView });
 		};
 
-		updatePerView();
-
 		window.addEventListener('resize', updatePerView);
 
 		glide.on('move', () => {
-			const lastIndex = glide.index + glide.settings.perView;
+      		const currentIndex = glide.index;
+      		const lastIndex = currentIndex + glide.settings.perView;
 
-			if (lastIndex >= totalSlides) {
-				document.querySelector('.right-button').disabled = true;
-			} else {
-				document.querySelector('.right-button').disabled = false;
-			}
-			if (glide.index == 0) {
-				document.querySelector('.left-button').disabled = true;
-			} else {
-				document.querySelector('.left-button').disabled = false;
-			}
-		});
+      		canSlideNext = lastIndex < totalSlides;
+      		canSlidePrev = currentIndex > 0;
+    	});
 	});
 
 	function goToPrevSlide() {
@@ -90,12 +87,14 @@
 			<button
 				on:click={goToPrevSlide}
 				class="left-button text-xl bg-transparent border border-black py-3 px-5 rounded-full text-black hover:bg-gray-200 mr-16"
+				disabled={!canSlidePrev}
 			>
 				&lt;
 			</button>
 			<button
 				on:click={goToNextSlide}
 				class="right-button text-xl bg-transparent border border-black py-3 px-5 rounded-full text-black hover:bg-gray-200"
+				disabled={!canSlideNext}
 			>
 				&gt;
 			</button>
