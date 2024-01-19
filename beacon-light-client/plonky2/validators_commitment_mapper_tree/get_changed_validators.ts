@@ -122,7 +122,7 @@ enum TaskTag {
   await syncEpoch();
 
   const es = await beaconApi.subscribeForEvents(['head']);
-  es.on('head', async function(event) {
+  es.on('head', async function (event) {
     headEpoch = BigInt(JSON.parse(event.data).slot) / 32n;
 
     await syncEpoch();
@@ -131,7 +131,7 @@ enum TaskTag {
   async function syncEpoch() {
     while (currentEpoch < headEpoch) {
       currentEpoch++;
-      console.log(`syncing... ${currentEpoch}/${headEpoch}`);
+      console.log(`syncing... ${currentEpoch === headEpoch ? currentEpoch : `${currentEpoch}/${headEpoch}`}`);
       await updateValidators(currentEpoch);
     }
   }
