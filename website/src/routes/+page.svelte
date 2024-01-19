@@ -47,7 +47,7 @@
 				/>
 			</Button>
 			<Button
-				href="#"
+				href="/demo"
 				class="bg-transparent text-white text-xl hover:text-grey-300 hover:bg-transparent"
 			>
 				Wallet Demo →
@@ -69,7 +69,8 @@
 	.center {
 		padding: 30px 10% 100px 10%;
 	}
-	@media (max-width: 786px) {
+
+	@media (max-width: 1024px) {
 		.center {
 			padding: 30px 10% 30px 10%;
 		}
