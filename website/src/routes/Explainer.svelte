@@ -2,12 +2,12 @@
 	<div class="mb-4">
 		<button class="text-xs cursor-default border border-[#8FD3FE] rounded-2xl py-1 px-3">DendrETH Protocol</button>
 	</div>
-	<div class="container flex md:flex-row flex-col justify-between">
-		<h1 class="text-5xl mb-6 leading-tight mr-8 max-w-lg text-left">
+	<div class="flex md:flex-row flex-col justify-between">
+		<h1 class="text-5xl mb-6 leading-tight mr-24 max-w-lg lg:min-w-max text-left">
 			<span style="color: #8FD3FE;">Proof Of Consensus</span>
 		</h1>
 		<div class="">
-			<p class="mb-12 max-w-xl">
+			<p class="mb-12 lg:max-w-3xl  min-w-xl">
 				DendrETH generates validity proofs of Consensus specifications using **ZKP circuits**.
 				Proofs can be effectively verified in the targetted chains' execution environments. Using a
 				chain of merkle proofs (or other commitment schemes), the implemented smart contracts can be

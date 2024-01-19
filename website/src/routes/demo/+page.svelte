@@ -109,6 +109,7 @@
 					class="rounded-tr-xl font-bold py-2 w-full"
 					class:class-active={activeButton === 'tokens'}
 					class:class-inactive={activeButton !== 'tokens'}
+					disabled={activeButton === 'tokens'}
 					on:click={toggleButton}
 				>
 					<p>Tokens</p>
@@ -117,6 +118,7 @@
 					class="rounded-tl-xl font-bold py-2 w-full"
 					class:class-active={activeButton === 'nfts'}
 					class:class-inactive={activeButton !== 'nfts'}
+					disabled={activeButton === 'nfts'}
 					on:click={toggleButton}
 				>
 					<p>NFTs</p>
@@ -128,7 +130,7 @@
 						<div class="flex items-center">
 							<img src={ethImg} alt="ETH" class="w-auto mr-6" />
 							<div class="flex flex-col">
-								<span class="text-md">Ethereum</span>
+								<span class="text-lg">Ethereum</span>
 								<span class="value text-gray-400">1.020,53 $</span>
 							</div>
 						</div>
@@ -138,7 +140,7 @@
 						<div class="flex items-center">
 							<img src={btcImg} alt="BTC" class="w-auto mr-6" />
 							<div class="flex flex-col">
-								<span class="text-md">BTC</span>
+								<span class="text-lg">BTC</span>
 								<span class="value text-gray-400">26.654,53 $</span>
 							</div>
 						</div>
@@ -148,7 +150,7 @@
 						<div class="flex items-center">
 							<img src={bnbImg} alt="BNB" class="w-auto mr-6" />
 							<div class="flex flex-col">
-								<span class="text-md">BNB</span>
+								<span class="text-lg">BNB</span>
 								<span class="value text-gray-400">213,34 $</span>
 							</div>
 						</div>
@@ -158,7 +160,7 @@
 						<div class="flex items-center">
 							<img src={polkadotImg} alt="DOT" class="w-auto mr-6" />
 							<div class="flex flex-col">
-								<span class="text-md">Polkadot</span>
+								<span class="text-lg">Polkadot</span>
 								<span class="value text-gray-400">4,00 $</span>
 							</div>
 						</div>
@@ -176,7 +178,7 @@
 	}
 
 	.value {
-		font-size: 0.7rem;
+		font-size: 0.8rem;
 	}
 
 	.gradient-background {

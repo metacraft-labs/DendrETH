@@ -1,5 +1,5 @@
 <footer class="text-white">
-    <div class="flex md:flex-row flex-col px-4 container justify-between center mb-14 mt-8">
+    <div class="flex md:flex-row flex-col px-4 justify-between center mb-14 mt-8">
         <div class="text-white text-2xl pb-6">DendrETH</div>
         <div  class="flex flex-col md:flex-row md:space-x-12" style="align-items: top;">
             <div class="flex flex-col space-y-6 mb-5 justify-self-end">
@@ -22,7 +22,7 @@
     <div class="border-t border-gray-500 my-4"></div>
     <div class="grid grid-cols-2 lg:grid-cols-7 md:gap-8 justify-between space-x-4 space-y-4 lg:space-y-0 mb-6">
         <span class="text-sm text-gray-500 hidden lg:block justify-self-start">
-            Copyright © 2019-2024<br />Metacraft Lab's Ltd
+            Copyright&nbsp;©&nbsp;2019-2024<br />Metacraft Lab's Ltd
         </span>
         <a href="#" class="text-sm text-white hover:text-gray-400">Cookie manager</a>
         <a href="#" class="text-sm text-white hover:text-gray-400">Terms of use</a>
@@ -35,7 +35,7 @@
     </div>
     <div class="px-4">
         <span class="text-sm text-gray-500 block lg:hidden mb-4">
-            Copyright © 2019-2024 Metacraft Lab's Ltd
+            Copyright&nbsp;©&nbsp;2019-2024 Metacraft Lab's Ltd
         </span>
         <span class="text-sm text-gray-500 block lg:hidden">
             Design by KRS

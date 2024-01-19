@@ -22,7 +22,7 @@
 <section
 	class="bg-gradient-to-b from-[#1A1739] via-[#363571] to-[#A8C5EB] text-white flex justify-between items-center center"
 >
-	<div class="container flex flex-col md:items-start items-center h-full md:px-6 ">
+	<div class="flex flex-col md:items-start items-center h-full mr-auto w-full md:px-6 ">
 		<div class="flex lg:flex-row flex-col items-center justify-between lg:space-x-16 w-full">
 			<div class="flex flex-col max-w-2xl">
 				<h1 class="text-start font-bold mb-4 leading-tight">

@@ -32,7 +32,7 @@
 <header>
 	<div>
 		<Navbar class="z-20 bg-gradient-to-b from-[#0B061C] to-[#1A1739] p-4" style="position: fixed;">
-			<div><a href="/" class="text-white text-2xl">DendrETH</a></div>
+			<div><a href="/" class="logo hover:no-underline">DENDRETH</a></div>
 			<div class="relative dropdown-menu">
 				<button on:click={toggleMenu} class="p-2 focus:outline-none md:hidden">
 					<div class="w-6 h-0.5 bg-white" />
@@ -81,4 +81,15 @@
 </header>
 
 <style>
+	@font-face {
+        font-family: 'NeutraDisplay';
+        src: url('$lib/fonts/NeutraDisplay/Neutra-Display-Bold.otf') format('opentype');
+    }
+
+	.logo {
+		font-family: 'NeutraDisplay';
+		font-weight: 500;
+		color: white;
+		size: 16px;
+	}
 </style>
