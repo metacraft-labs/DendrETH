@@ -42,8 +42,15 @@ let TAKE;
       alias: 'beacon-node',
       describe: 'The beacon node url',
       type: 'string',
-      default: 'http://unstable.mainnet.beacon-api.nimbus.team',
+      default: 'http://testing.mainnet.beacon-api.nimbus.team',
       description: 'Sets a custom beacon node url',
+    })
+    .option('slot', {
+      alias: 'slot',
+      describe: 'The state slot',
+      type: 'number',
+      default: undefined,
+      description: 'Fetches the balances for this slot',
     })
     .option('take', {
       alias: 'take',
@@ -83,7 +90,8 @@ let TAKE;
 
   const beaconApi = new BeaconApi([options['beacon-node']]);
 
-  const { beaconState } = await beaconApi.getBeaconState(6953401);
+  const slot = options['slot'] !== undefined ? options['slot'] : Number(await beaconApi.getHeadSlot());
+  const { beaconState } = await beaconApi.getBeaconState(slot);
 
   const validators = beaconState.validators.slice(0, TAKE);
   TAKE = validators.length;
