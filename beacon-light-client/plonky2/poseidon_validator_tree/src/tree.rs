@@ -1,11 +1,23 @@
+use ethereum_hashing::{hash32_concat, ZERO_HASHES, ZERO_HASHES_MAX_INDEX};
+// use lighthouse_state_merkle_proof::MerkleTree;
+use lazy_static::lazy_static;
 use num_bigint::BigUint;
 use plonky2::field::{extension::Extendable, goldilocks_field::GoldilocksField, types::Field};
 use plonky2::hash::hash_types::{HashOut, RichField};
 use plonky2::hash::hashing::hash_n_to_hash_no_pad;
 use plonky2::hash::poseidon::PoseidonPermutation;
 use plonky2::plonk::config::GenericHashOut;
+use primitive_types::H256;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+lazy_static! {
+    /// Zero nodes to act as "synthetic" left and right subtrees of other zero nodes.
+    static ref SYNTHETIC_ZERO_NODES: Vec<MerkleTree> = {
+        const MAX_TREE_DEPTH: usize = 32;
+        (0..=MAX_TREE_DEPTH).map(MerkleTree::Zero).collect()
+    };
+}
+
+#[derive(Clone, Debug)]
 pub struct Validator {
     pub pubkey: [bool; 384],
     pub withdrawal_credentials: [bool; 256],
@@ -15,6 +27,12 @@ pub struct Validator {
     pub activation_epoch: BigUint,
     pub exit_epoch: BigUint,
     pub withdrawable_epoch: BigUint,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum MerkleTreeError {
+    // Can't proof a finalized node
+    ProofEncounteredFinalizedNode,
 }
 
 impl Validator {
@@ -32,244 +50,182 @@ impl Validator {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)] // -> maybe remove
-pub enum Positioned<T> {
-    /// The value was found in the left branch
-    Left(T),
+// pub fn compute_validators_merkle_proof<F: RichField + Extendable<D>, const D: usize>(
+//     validators: Vec<Validator>,
+//     index: usize,
+// ) -> Vec<HashOut<GoldilocksField>> {
+//     let leafs = return_every_validator_hash::<F, D>(validators);
+//     let mut compatible_leafs: Vec<H256> = Vec::new();
+//     for current in 0..leafs.len() {
+//         compatible_leafs.push(H256::from_slice(&leafs[current].to_bytes()));
+//     }
+//     const DEPTH: usize = 42;
+//     let tree = MerkleTree::create(&compatible_leafs, DEPTH);
+//     let (_, proof) = tree.generate_proof(2usize.pow(42) + index, DEPTH).unwrap();
+//     let mut result: Vec<HashOut<GoldilocksField>> = Vec::new();
+//     for i in 0..proof.len() {
+//         let proof_bytes_in_goldilocks: Vec<GoldilocksField> = proof[i]
+//             .as_bytes()
+//             .iter()
+//             .map(|x| GoldilocksField::from_canonical_u8(*x))
+//             .collect();
+//         result.push(hash_n_to_hash_no_pad::<
+//             GoldilocksField,
+//             PoseidonPermutation<GoldilocksField>,
+//         >(&proof_bytes_in_goldilocks))
+//     }
 
-    /// The value was found in the right branch
-    Right(T),
+//     result
+// }
+
+pub fn combine_two_hash_n_to_hash_no_pad<F: RichField + Extendable<D>, const D: usize>(
+    left: HashOut<GoldilocksField>,
+    right: HashOut<GoldilocksField>,
+) -> HashOut<GoldilocksField> {
+    let left_node_in_goldilocks: Vec<GoldilocksField> = left
+        .to_bytes()
+        .iter()
+        .map(|&x| GoldilocksField::from_canonical_u8(x))
+        .collect();
+
+    let right_node_in_goldilocks: Vec<GoldilocksField> = right
+        .to_bytes()
+        .iter()
+        .map(|&x| GoldilocksField::from_canonical_u8(x))
+        .collect();
+
+    let combined_nodes: Vec<GoldilocksField> = left_node_in_goldilocks
+        .into_iter()
+        .chain(right_node_in_goldilocks.into_iter())
+        .collect();
+
+    hash_n_to_hash_no_pad::<GoldilocksField, PoseidonPermutation<GoldilocksField>>(&combined_nodes)
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)] // -> maybe remove
-pub struct Lemma {
-    pub node_hash: HashOut<GoldilocksField>,
-    pub sibling_hash: Option<Positioned<HashOut<GoldilocksField>>>,
-    pub sub_lemma: Option<Box<Lemma>>,
-}
-
-impl Lemma {
-    pub fn new<F: RichField + Extendable<D>, const D: usize>(
-        tree: &Tree,
-        validator_hash: HashOut<GoldilocksField>,
-    ) -> Option<Lemma> {
-        match *tree {
-            Tree::Empty { .. } => None,
-
-            Tree::Leaf { hash, .. } => Self::new_leaf_proof(hash, validator_hash),
-
-            Tree::Node {
-                hash,
-                ref left,
-                ref right,
-            } => Self::new_tree_proof::<F, D>(hash, validator_hash, left, right),
-        }
-    }
-
-    fn new_tree_proof<F: RichField + Extendable<D>, const D: usize>(
-        hash: HashOut<GoldilocksField>,
-        validator_hash: HashOut<GoldilocksField>,
-        left: &Tree,
-        right: &Tree,
-    ) -> Option<Lemma> {
-        Self::new::<F, D>(left, validator_hash)
-            .map(|lemma| {
-                let right_hash = right.hash().clone();
-                let sub_lemma = Some(Positioned::Right(right_hash));
-                (lemma, sub_lemma)
-            })
-            .or_else(|| {
-                let sub_lemma = Self::new::<F, D>(right, validator_hash);
-                sub_lemma.map(|lemma| {
-                    let left_hash = left.hash().clone();
-                    let sub_lemma = Some(Positioned::Left(left_hash));
-                    (lemma, sub_lemma)
-                })
-            })
-            .map(|(sub_lemma, sibling_hash)| Lemma {
-                node_hash: hash,
-                sibling_hash,
-                sub_lemma: Some(Box::new(sub_lemma)),
-            })
-    }
-
-    fn new_leaf_proof(
-        leaf_hash: HashOut<GoldilocksField>,
-        validator_hash: HashOut<GoldilocksField>,
-    ) -> Option<Lemma> {
-        if leaf_hash.eq(&validator_hash) {
-            Some(Lemma {
-                node_hash: leaf_hash,
-                sibling_hash: None,
-                sub_lemma: None,
-            })
-        } else {
-            None
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Proof {
-    /// The hash of the root of the original MerkleTree
-    pub root_hash: HashOut<GoldilocksField>,
-
-    /// The first Lemma of the Proof
-    pub lemma: Lemma,
-
-    /// The value concerned by this Proof
-    pub value: Validator,
-}
-
-impl Proof {
-    /// Constructs a new `Proof`
-    pub fn new(root_hash: HashOut<GoldilocksField>, lemma: Lemma, value: Validator) -> Self {
-        Proof {
-            root_hash,
-            lemma,
-            value,
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Tree {
-    Empty {
-        hash: HashOut<GoldilocksField>,
-    },
-
-    Leaf {
-        hash: HashOut<GoldilocksField>,
-        value: Validator,
-    },
-
-    Node {
-        hash: HashOut<GoldilocksField>,
-        left: Box<Tree>,
-        right: Box<Tree>,
-    },
-}
-
-impl Tree {
-    pub fn new_tree<F: RichField + Extendable<D>, const D: usize>(validator: Validator) -> Self {
-        Tree::Leaf {
-            hash: compute_validator_poseidon_hash_tree_root::<F, D>(validator.clone()),
-            value: validator,
-        }
-    }
-
-    pub fn hash(&self) -> HashOut<GoldilocksField> {
-        match *self {
-            Tree::Empty { hash } => hash,
-            Tree::Leaf { hash, .. } => hash,
-            Tree::Node { hash, .. } => hash,
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct MerkleTree {
-    root: HashOut<GoldilocksField>,
-    tree: Tree,
+#[derive(Debug, PartialEq)]
+pub enum MerkleTree {
+    Finalized(HashOut<GoldilocksField>),
+    Leaf(HashOut<GoldilocksField>),
+    Node(HashOut<GoldilocksField>, Box<Self>, Box<Self>),
+    Zero(usize),
 }
 
 impl MerkleTree {
-    pub fn initialize<F: RichField + Extendable<D>, const D: usize>(
-        validators: Vec<Validator>,
+    pub fn new<F: RichField + Extendable<D>, const D: usize>(
+        leaves: &[HashOut<GoldilocksField>],
+        depth: usize,
     ) -> Self {
-        if validators.is_empty() {
-            return MerkleTree {
-                root: hash_n_to_hash_no_pad::<GoldilocksField, PoseidonPermutation<GoldilocksField>>(
-                    &[GoldilocksField::from_bool(false)],
-                ),
-                tree: Tree::Empty {
-                    hash: hash_n_to_hash_no_pad::<
-                        GoldilocksField,
-                        PoseidonPermutation<GoldilocksField>,
-                    >(&[GoldilocksField::from_bool(false)]),
-                },
-            };
+        if leaves.is_empty() {
+            return MerkleTree::Zero(depth);
         }
 
-        let mut current_merkle_validators_tree = Vec::with_capacity(validators.len());
-        for validator in validators.clone() {
-            let new_leaf = Tree::new_tree::<F, D>(validator);
-            current_merkle_validators_tree.push(new_leaf);
-        }
-
-        while current_merkle_validators_tree.len() > 1 {
-            let mut next_level = Vec::new();
-            while !current_merkle_validators_tree.is_empty() {
-                if current_merkle_validators_tree.len() == 1 {
-                    next_level.push(current_merkle_validators_tree.remove(0));
-                } else {
-                    let left = current_merkle_validators_tree.remove(0);
-                    let right = current_merkle_validators_tree.remove(0);
-
-                    let left_node_in_goldilocks: Vec<GoldilocksField> = left
-                        .hash()
-                        .to_bytes()
-                        .iter()
-                        .map(|&x| GoldilocksField::from_canonical_u8(x))
-                        .collect();
-
-                    let right_node_in_goldilocks: Vec<GoldilocksField> = right
-                        .hash()
-                        .to_bytes()
-                        .iter()
-                        .map(|&x| GoldilocksField::from_canonical_u8(x))
-                        .collect();
-
-                    let combined_nodes: Vec<GoldilocksField> = left_node_in_goldilocks
-                        .into_iter()
-                        .chain(right_node_in_goldilocks.into_iter())
-                        .collect();
-
-                    let combined_nodes_hash = hash_n_to_hash_no_pad::<
-                        GoldilocksField,
-                        PoseidonPermutation<GoldilocksField>,
-                    >(&combined_nodes);
-
-                    let node = Tree::Node {
-                        hash: combined_nodes_hash,
-                        left: Box::new(left),
-                        right: Box::new(right),
-                    };
-
-                    next_level.push(node);
-                }
+        match depth {
+            0 => {
+                debug_assert_eq!(leaves.len(), 1);
+                MerkleTree::Leaf(leaves[0])
             }
+            _ => {
+                const EMPTY_SLICE: &[HashOut<GoldilocksField>] = &[];
+                let subtree_capacity = 2usize.pow(depth as u32 - 1);
+                let (left_leaves, right_leaves) = if leaves.len() <= subtree_capacity {
+                    (leaves, EMPTY_SLICE)
+                } else {
+                    leaves.split_at(subtree_capacity)
+                };
 
-            current_merkle_validators_tree = next_level;
-        }
+                let left_subtree = MerkleTree::new::<F, D>(left_leaves, depth - 1);
+                let right_subtree = MerkleTree::new::<F, D>(right_leaves, depth - 1);
+                let hash = combine_two_hash_n_to_hash_no_pad::<F, D>(
+                    left_subtree.hash::<F, D>(),
+                    right_subtree.hash::<F, D>(),
+                );
 
-        assert!(current_merkle_validators_tree.len() == 1);
-
-        let root = current_merkle_validators_tree.remove(0);
-
-        MerkleTree {
-            root: compute_validator_poseidon_hash_tree_root::<F, D>(validators[0].clone()),
-            tree: root,
+                MerkleTree::Node(hash, Box::new(left_subtree), Box::new(right_subtree))
+            }
         }
     }
 
-    pub fn root_hash(&self) -> HashOut<GoldilocksField> {
-        self.root
-    }
-
-    pub fn generate_validator_proof<F: RichField + Extendable<D>, const D: usize>(
+    pub fn generate_proof<F: RichField + Extendable<D>, const D: usize>(
         &self,
-        validator: Validator,
-    ) -> Option<Proof> {
-        let root_hash = self.root_hash();
-        let validator_hash: HashOut<GoldilocksField> =
-            compute_validator_poseidon_hash_tree_root::<F, D>(validator.clone());
+        index: usize,
+        depth: usize,
+    ) -> Result<(HashOut<GoldilocksField>, Vec<HashOut<GoldilocksField>>), MerkleTreeError> {
+        let mut proof = vec![];
+        let mut current_node = self;
+        let mut current_depth = depth;
+        while current_depth > 0 {
+            let ith_bit = (index >> (current_depth - 1)) & 0x01;
+            if let &MerkleTree::Finalized(_) = current_node {
+                return Err(MerkleTreeError::ProofEncounteredFinalizedNode);
+            }
+            let (left, right) = current_node.left_and_right_branches().unwrap();
 
-        Lemma::new::<F, D>(&self.tree, validator_hash)
-            .map(|lemma| Proof::new(root_hash, lemma, validator))
+            if ith_bit == 1 {
+                proof.push(left.hash::<F, D>());
+                current_node = right;
+            } else {
+                proof.push(right.hash::<F, D>());
+                current_node = left;
+            }
+            current_depth -= 1;
+        }
+
+        debug_assert_eq!(proof.len(), depth);
+        debug_assert!(current_node.is_leaf());
+
+        proof.reverse();
+
+        Ok((current_node.hash::<F, D>(), proof))
     }
 
-    pub fn generate_validator_proof_by_index() {}
+    /// Get a reference to the left and right subtrees if they exist.
+    pub fn left_and_right_branches(&self) -> Option<(&Self, &Self)> {
+        match *self {
+            MerkleTree::Finalized(_) | MerkleTree::Leaf(_) | MerkleTree::Zero(0) => None,
+            MerkleTree::Node(_, ref l, ref r) => Some((l, r)),
+            MerkleTree::Zero(depth) => Some((
+                &SYNTHETIC_ZERO_NODES[depth - 1],
+                &SYNTHETIC_ZERO_NODES[depth - 1],
+            )),
+        }
+    }
+
+    pub fn synthetic_zero_nodes() -> Vec<MerkleTree> {
+        const MAX_TREE_DEPTH: usize = 32;
+        (0..=MAX_TREE_DEPTH).map(MerkleTree::Zero).collect()
+    }
+
+    /// Is this Merkle tree a leaf?
+    pub fn is_leaf(&self) -> bool {
+        matches!(self, MerkleTree::Leaf(_))
+    }
+
+    pub fn zero_hashes<F: RichField + Extendable<D>, const D: usize>(
+    ) -> Vec<HashOut<GoldilocksField>> {
+        pub const ZERO_HASHES_MAX_INDEX: usize = 48;
+        let mut hashes = vec![
+            hash_n_to_hash_no_pad::<
+                GoldilocksField,
+                PoseidonPermutation<GoldilocksField>,
+            >(&[GoldilocksField::from_canonical_u8(0); 32]);
+            ZERO_HASHES_MAX_INDEX + 1
+        ];
+
+        for i in 0..ZERO_HASHES_MAX_INDEX {
+            hashes[i + 1] = combine_two_hash_n_to_hash_no_pad::<F, D>(hashes[i], hashes[i]);
+        }
+
+        hashes
+    }
+
+    pub fn hash<F: RichField + Extendable<D>, const D: usize>(&self) -> HashOut<GoldilocksField> {
+        match *self {
+            MerkleTree::Finalized(h) => h,
+            MerkleTree::Leaf(h) => h,
+            MerkleTree::Node(h, _, _) => h,
+            MerkleTree::Zero(depth) => Self::zero_hashes::<F, D>()[depth],
+        }
+    }
 }
 
 fn hash_bits_arr_in_goldilocks_to_hash_no_pad<F: RichField + Extendable<D>, const D: usize>(
@@ -335,7 +291,7 @@ fn compute_poseidon_hash_tree_root<F: RichField + Extendable<D>, const D: usize>
     hashers[leaves_len - 2]
 }
 
-pub fn compute_validator_poseidon_hash_tree_root<F: RichField + Extendable<D>, const D: usize>(
+pub fn compute_validator_poseidon_hash<F: RichField + Extendable<D>, const D: usize>(
     validator: Validator,
 ) -> HashOut<GoldilocksField> {
     let leaves = vec![
@@ -352,20 +308,18 @@ pub fn compute_validator_poseidon_hash_tree_root<F: RichField + Extendable<D>, c
         hash_biguint_in_goldilocks_to_hash_no_pad::<F, D>(validator.exit_epoch.clone()),
         hash_biguint_in_goldilocks_to_hash_no_pad::<F, D>(validator.withdrawable_epoch.clone()),
     ];
-    let hash_tree_root_poseidon =
+    let poseidon_hash_tree_root =
         compute_poseidon_hash_tree_root::<F, D>(leaves.len(), leaves.clone());
 
-    //println!("hash_tree_root is: {:?}", hash_tree_root_poseidon);
-
-    hash_tree_root_poseidon
+    poseidon_hash_tree_root
 }
 
-pub fn return_every_validator_hash_tree_root<F: RichField + Extendable<D>, const D: usize>(
+pub fn return_every_validator_hash<F: RichField + Extendable<D>, const D: usize>(
     validators: Vec<Validator>,
 ) -> Vec<HashOut<GoldilocksField>> {
     let mut validators_root_hashes = Vec::new();
     for i in 0..validators.len() {
-        validators_root_hashes.push(compute_validator_poseidon_hash_tree_root::<F, D>(
+        validators_root_hashes.push(compute_validator_poseidon_hash::<F, D>(
             validators[i].clone(),
         ))
     }

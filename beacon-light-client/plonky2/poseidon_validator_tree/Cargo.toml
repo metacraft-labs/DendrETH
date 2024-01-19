@@ -11,3 +11,9 @@ circuits = { path = "../circuits" }
 num-bigint = "0.4.4"
 serde = { version = "1.0.195", features = ["derive"] }
 serde_json = "1.0.111"
+hex = "0.4.3"
+primitive-types = "0.12.2"
+lighthouse_state_merkle_proof = { git = "https://github.com/sigp/lighthouse", tag = "v4.5.0", package = "merkle_proof" }
+lighthouse_cached_tree_hash = { git = "https://github.com/sigp/lighthouse", tag = "v4.5.0", package = "cached_tree_hash" }
+ethereum_hashing = "0.6.0"
+lazy_static = "1.4.0"
