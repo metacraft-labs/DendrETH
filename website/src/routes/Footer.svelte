@@ -5,17 +5,17 @@
             <div class="flex flex-col space-y-6 mb-5">
                 <h2 class="text-lg font-semibold">Products</h2>
                 <a href="/" class="text-sm text-white hover:text-gray-300">DendrETH</a>
-                <a href="/" class="text-sm text-white hover:text-gray-300">Dashboard</a>
-                <a href="/" class="text-sm text-white hover:text-gray-300">DendrETH Wallet Demo</a>
+                <a href="#" class="text-sm text-white hover:text-gray-300">Dashboard</a>
+                <a href="/demo" class="text-sm text-white hover:text-gray-300">DendrETH Wallet Demo</a>
             </div>
             <div class="flex flex-col space-y-6 mb-5">
                 <h2 class="text-lg font-bold">Company</h2>
-                <a href="/" class="text-sm text-white hover:text-gray-300 hover:no-underline">Careers <span class="bg-[#ABC57D] text-white rounded-md px-2 py-1.5 hover:underline">We're hiring</span></a>
+                <a href="#" class="text-sm text-white hover:text-gray-300 hover:no-underline">Careers <span class="bg-[#ABC57D] text-white rounded-md px-2 py-1.5 hover:underline">We're hiring</span></a>
             </div>
             <div class="flex flex-col space-y-6">
                 <h2 class="text-lg font-bold">Developers</h2>
-                <a href="/" class="text-sm text-white hover:text-gray-300">Github</a>
-                <a href="/" class="text-sm text-white hover:text-gray-300">Documents</a>
+                <a href="https://github.com/metacraft-labs/DendrETH" target="_blank" class="text-sm text-white hover:text-gray-300">Github</a>
+                <a href="#" class="text-sm text-white hover:text-gray-300">Documents</a>
             </div>
         </div>
     </div>
@@ -24,11 +24,11 @@
         <span class="text-sm text-gray-500 hidden lg:block justify-self-start">
             Copyright © 2019-2024<br />Metacraft Lab's Ltd
         </span>
-        <a href="/" class="text-sm text-white hover:text-gray-400">Cookie manager</a>
-        <a href="/" class="text-sm text-white hover:text-gray-400">Terms of use</a>
-        <a href="/" class="text-sm text-white hover:text-gray-400">Privacy policy</a>
-        <a href="/" class="text-sm text-white hover:text-gray-400">Security</a>
-        <a href="/" class="text-sm text-white hover:text-gray-400">Trademark policy</a>
+        <a href="#" class="text-sm text-white hover:text-gray-400">Cookie manager</a>
+        <a href="#" class="text-sm text-white hover:text-gray-400">Terms of use</a>
+        <a href="#" class="text-sm text-white hover:text-gray-400">Privacy policy</a>
+        <a href="#" class="text-sm text-white hover:text-gray-400">Security</a>
+        <a href="#" class="text-sm text-white hover:text-gray-400">Trademark policy</a>
         <span class="text-sm text-gray-500 hidden justify-self-end lg:block">
             Design by KRS
         </span>
