@@ -1,7 +1,10 @@
 use std::{fs, marker::PhantomData, thread, time::Duration};
 
 use crate::{
-    validator::{bool_vec_as_int_vec, bool_vec_as_int_vec_nested, ValidatorShaInput},
+    validator::{
+        bool_vec_as_int_vec, bool_vec_as_int_vec_nested, ValidatorShaInput,
+        VALIDATOR_REGISTRY_LIMIT,
+    },
     validator_balances_input::ValidatorBalancesInput,
     validator_commitment_constants::VALIDATOR_COMMITMENT_CONSTANTS,
 };
@@ -148,7 +151,7 @@ impl ProofProvider for BalanceProof {
 
 pub async fn fetch_validator_balance_input(
     con: &mut Connection,
-    index: usize,
+    index: u64,
 ) -> Result<ValidatorBalancesInput> {
     Ok(fetch_redis_json_object::<ValidatorBalancesInput>(
         con,
@@ -180,10 +183,10 @@ pub async fn fetch_final_layer_input(con: &mut Connection) -> Result<FinalCircui
 pub async fn save_balance_proof(
     con: &mut Connection,
     proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    level: usize,
-    index: usize,
+    level: u64,
+    index: u64,
 ) -> Result<()> {
-    let balance_proof = serde_json::to_string(&BalanceProof {
+    let balance_proof = BalanceProof {
         needs_change: false,
         range_total_value: proof.get_range_total_value(),
         balances_hash: proof.get_range_balances_root().to_vec(),
@@ -191,7 +194,7 @@ pub async fn save_balance_proof(
         validators_commitment: proof.get_range_validator_commitment().to_vec(),
         current_epoch: proof.get_current_epoch(),
         proof: proof.to_bytes(),
-    })?;
+    };
 
     let _: () = con
         .json_set(
@@ -423,6 +426,73 @@ pub async fn fetch_proofs<
 
     let proof1 = fetch_proof::<T>(con, left_child_gindex, epoch).await?;
     let proof2 = fetch_proof::<T>(con, right_child_gindex, epoch).await?;
+
+    Ok((proof1.get_proof(), proof2.get_proof()))
+}
+
+// @TODO: Rename this later
+pub async fn fetch_proof_balances<T: NeedsChange + KeyProvider + DeserializeOwned + Clone>(
+    con: &mut Connection,
+    level: u64,
+    index: u64,
+) -> Result<T> {
+    let mut retries = 0;
+
+    loop {
+        if retries > 5 {
+            return Err(anyhow::anyhow!("Not able to complete, try again"));
+        }
+
+        /*
+        let mut proof_result: Result<String, RedisError> = con
+            .json_get(format!("{}:{}:{}", T::get_key(), level, index), "$")
+            .await;
+            */
+
+        let mut proof_result =
+            fetch_redis_json_object::<T>(con, format!("{}:{}:{}", T::get_key(), level, index))
+                .await;
+
+        if proof_result.is_err() {
+            // get the zeroth proof
+            proof_result = fetch_redis_json_object::<T>(
+                con,
+                format!("{}:{}:{}", T::get_key(), level, VALIDATOR_REGISTRY_LIMIT),
+            )
+            .await;
+        }
+
+        let proof = proof_result?;
+        // let proof = serde_json::from_str::<T>(&proof_result?)?;
+
+        if proof.needs_change() {
+            // Wait a bit and try again
+            thread::sleep(Duration::from_secs(10));
+            retries += 1;
+
+            continue;
+        }
+
+        return Ok(proof);
+    }
+}
+
+// @TODO: Rename this later
+pub async fn fetch_proofs_balances<
+    T: NeedsChange + KeyProvider + ProofProvider + DeserializeOwned + Clone,
+>(
+    con: &mut Connection,
+    level: u64,
+    index: u64,
+) -> Result<(Vec<u8>, Vec<u8>)> {
+    // let left_child_index = index * 2 + 1;
+    // let right_child_index = index * 2 + 2;
+
+    let left_child_index = index;
+    let right_child_index = left_child_index + 8 * (level + 1);
+
+    let proof1 = fetch_proof_balances::<T>(con, level - 1, left_child_index).await?;
+    let proof2 = fetch_proof_balances::<T>(con, level - 1, right_child_index).await?;
 
     Ok((proof1.get_proof(), proof2.get_proof()))
 }

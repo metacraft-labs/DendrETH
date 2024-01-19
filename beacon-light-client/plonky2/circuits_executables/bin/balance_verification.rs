@@ -11,8 +11,8 @@ use circuits::{
 };
 use circuits_executables::{
     crud::{
-        fetch_proofs, fetch_validator_balance_input, load_circuit_data, read_from_file,
-        save_balance_proof, BalanceProof,
+        fetch_proofs, fetch_proofs_balances, fetch_validator_balance_input, load_circuit_data,
+        read_from_file, save_balance_proof, BalanceProof,
     },
     provers::{handle_balance_inner_level_proof, SetPWValues},
     validator_commitment_constants::get_validator_commitment_constants,
@@ -90,7 +90,7 @@ async fn async_main() -> Result<()> {
     let level = matches
         .value_of("circuit_level")
         .unwrap()
-        .parse::<usize>()
+        .parse::<u64>()
         .unwrap();
 
     let run_for_input = matches.value_of("run_for_minutes").unwrap();
@@ -173,7 +173,7 @@ async fn process_queue(
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     inner_circuit_data: Option<&CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>>,
     targets: &Targets,
-    level: usize,
+    level: u64,
     start: Instant,
     time_to_run: Option<Duration>,
     stop_after: u64,
@@ -252,7 +252,7 @@ async fn process_first_level_job(
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     targets: &ValidatorBalanceVerificationTargets,
 ) -> Result<()> {
-    let balance_input_index = u64::from_be_bytes(job.data[0..8].try_into().unwrap()) as usize;
+    let balance_input_index = u64::from_be_bytes(job.data[0..8].try_into().unwrap());
 
     let start = Instant::now();
     let validator_balance_input = fetch_validator_balance_input(con, balance_input_index).await?;
@@ -294,17 +294,23 @@ async fn process_inner_level_job(
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     inner_circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     inner_circuit_targets: &Option<BalanceInnerCircuitTargets>,
-    level: usize,
+    level: u64,
 ) -> Result<()> {
-    let proof_indexes = job
+    let proof_indices = job
         .data
         .chunks(8)
-        .map(|chunk| u64::from_be_bytes(chunk.try_into().unwrap()) as usize)
-        .collect::<Vec<usize>>();
+        .map(|chunk| u64::from_be_bytes(chunk.try_into().unwrap()))
+        .collect::<Vec<u64>>();
 
-    println!("Got indexes: {:?}", proof_indexes);
+    println!("Got indices: {:?}", proof_indices);
 
-    match fetch_proofs::<BalanceProof>(con, &proof_indexes).await {
+    let proofs_level = proof_indices[0];
+    let left_index = proof_indices[1];
+    let parent_index = left_index;
+    // let parent_index = (left_index - 1) / 2;
+    // let right_index = proof_indices[2];
+
+    match fetch_proofs_balances::<BalanceProof>(con, level, parent_index).await {
         Err(err) => {
             print!("Error: {}", err);
             return Err(err);
@@ -320,7 +326,7 @@ async fn process_inner_level_job(
                 &circuit_data,
             )?;
 
-            match save_balance_proof(con, proof, level, proof_indexes[1]).await {
+            match save_balance_proof(con, proof, level, parent_index).await {
                 Err(err) => {
                     print!("Error: {}", err);
                     thread::sleep(Duration::from_secs(5));
@@ -348,7 +354,7 @@ fn get_first_level_targets() -> Result<Targets, anyhow::Error> {
     )))
 }
 
-fn get_inner_level_targets(level: usize) -> Result<Targets> {
+fn get_inner_level_targets(level: u64) -> Result<Targets> {
     let target_bytes = read_from_file(&format!("{}.plonky2_targets", level))?;
     let mut target_buffer = Buffer::new(&target_bytes);
 

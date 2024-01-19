@@ -17,7 +17,7 @@ export class Redis implements IRedis {
   private redisClient: RedisClientType;
   private pubSub: RedisClientType;
 
-  constructor (redisHost: string, redisPort: number) {
+  constructor(redisHost: string, redisPort: number) {
     this.redisClient = createClient({
       url: `redis://${redisHost}:${redisPort}`,
     });
@@ -251,10 +251,10 @@ export class Redis implements IRedis {
   ): Promise<void> {
     await this.waitForConnection();
 
-    await this.redisClient.set(
-      `${validator_commitment_constants.balanceVerificationProofKey
-      }:${depth.toString()}:${index.toString()}`,
-      JSON.stringify(proof),
+    await this.redisClient.json.set(
+      `${validator_commitment_constants.balanceVerificationProofKey}:${depth.toString()}:${index.toString()}`,
+      '$',
+      proof as any,
     );
   }
 
