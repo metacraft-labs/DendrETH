@@ -118,6 +118,7 @@ enum TaskTag {
   let prevValidators = await redis.getValidatorsBatched(ssz);
   console.log('Loaded all batches');
 
+  console.log(`syncing... ${currentEpoch}`);
   await updateValidators(currentEpoch);
   await syncEpoch();
 
@@ -137,7 +138,8 @@ enum TaskTag {
   }
 
   async function updateValidators(epoch: bigint) {
-    const validators = await beaconApi.getValidators(epoch * 32n, TAKE);
+    const { beaconState } = await beaconApi.getBeaconState(Number(epoch * 32n));
+    const validators = beaconState.validators.slice(0, TAKE);
 
     const changedValidators = validators
       .map((validator, index) => ({ validator, index }))
@@ -151,7 +153,7 @@ enum TaskTag {
   }
 
   async function saveValidatorsInBatches(epoch: bigint, validators: IndexedValidator[], batchSize = 200) {
-    await Promise.all(splitIntoBatches(validators, batchSize).map(async (batch) => {
+    for (const batch of splitIntoBatches(validators, batchSize)) {
       await redis.saveValidators(
         batch.map((validator: IndexedValidator) => ({
           index: validator.index,
@@ -159,9 +161,8 @@ enum TaskTag {
         })),
         epoch
       );
-
       await Promise.all(batch.map((validator) => scheduleValidatorProof(BigInt(validator.index), epoch)));
-    }));
+    }
 
     await updateBranches(epoch, validators);
   }

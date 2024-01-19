@@ -150,7 +150,7 @@ export class Redis implements IRedis {
         }
 
       }
-      console.log(`Loaded batch, ${keyBatchIndex / batchSize}/${keys.length / batchSize}`);
+      console.log(`Loaded batch, ${keyBatchIndex}/${Math.floor(keys.length / batchSize)}`);
     }
 
     return allValidators;
