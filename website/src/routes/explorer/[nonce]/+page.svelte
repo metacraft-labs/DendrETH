@@ -30,7 +30,7 @@
 
 {#if message && !isMobileView}
 	<div
-		class="center-details pb-0 text-white flex flex-col gap-8"
+		class="center-details text-white flex flex-col gap-8"
 		style="border-bottom: 1px solid #6F6F6F;"
 	>
 		<h2>Message Details for #{nonce}</h2>
@@ -85,7 +85,7 @@
 	</div>
 {:else if message}
 	<div
-		class="center-details pb-0 text-white flex flex-col gap-8"
+		class="center-details text-white flex flex-col gap-8"
 		style="border-bottom: 1px solid #6F6F6F;"
 	>
 		<h2>Message Details for #{nonce}</h2>
@@ -162,7 +162,7 @@
 
 <style>
 	.center-details {
-		padding: 30px 5% 25px 5%;
+		padding: 30px 5% 70px 5%;
 	}
 	h2 {
 		font-family: 'ChakraPetch';
