@@ -6,8 +6,7 @@
 		TableBodyRow,
 		TableHead,
 		TableHeadCell,
-		Input,
-		Button
+		Input
 	} from 'flowbite-svelte';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
@@ -65,13 +64,13 @@
 		</div>
 		<div class="flex flex-row gap-2 max-w-xs md:max-w-full overflow-x-auto hide-scrollbar">
 			{#each filters as filter}
-				<Button
-					pill
-					class="bg-black text-white border border-white text-xs"
+				<button
+					class="filter-button bg-black text-white border border-white text-xs rounded-full p-2 px-4"
 					on:click={() => setFilter(filter)}
+					class:active={searchTerm === filter}
 				>
 					{filter}
-				</Button>
+				</button>
 			{/each}
 		</div>
 	</div>
@@ -141,26 +140,35 @@
 	.center {
 		padding: 30px 5% 100px 5%;
 	}
+
 	h1 {
 		font-family: 'ChakraPetch';
 		font-size: 3.5rem;
 		line-height: 120%;
 	}
+
 	@media (max-width: 768px) {
 		h1 {
 			font-size: 2.3rem;
 		}
 	}
+
 	.pagination-button:disabled {
 		color: #393939;
 		border-color: #393939;
 		background-color: #121316;
 	}
+
 	.hide-scrollbar::-webkit-scrollbar {
 		display: none;
 	}
+
 	.hide-scrollbar {
 		-ms-overflow-style: none;
 		scrollbar-width: none;
+	}
+
+	.filter-button.active {
+		background: #393939;
 	}
 </style>
