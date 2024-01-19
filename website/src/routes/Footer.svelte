@@ -2,7 +2,7 @@
     <div class="flex md:flex-row flex-col px-4 container justify-between center mb-14 mt-8">
         <div class="text-white text-2xl pb-6">DendrETH</div>
         <div  class="flex flex-col md:flex-row md:space-x-12" style="align-items: top;">
-            <div class="flex flex-col space-y-6 mb-5">
+            <div class="flex flex-col space-y-6 mb-5 justify-self-end">
                 <h2 class="text-lg font-semibold">Products</h2>
                 <a href="/" class="text-sm text-white hover:text-gray-300">DendrETH</a>
                 <a href="#" class="text-sm text-white hover:text-gray-300">Dashboard</a>
@@ -10,7 +10,7 @@
             </div>
             <div class="flex flex-col space-y-6 mb-5">
                 <h2 class="text-lg font-bold">Company</h2>
-                <a href="#" class="text-sm text-white hover:text-gray-300 hover:no-underline">Careers <span class="bg-[#ABC57D] text-white rounded-md px-2 py-1.5 hover:underline">We're hiring</span></a>
+                <a href="#" class="text-sm text-white hover:text-gray-300 hover:no-underline">Careers <span class="bg-[#363571] text-white rounded-md px-2 py-1.5 hover:underline">We're hiring</span></a>
             </div>
             <div class="flex flex-col space-y-6">
                 <h2 class="text-lg font-bold">Developers</h2>

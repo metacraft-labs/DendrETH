@@ -127,7 +127,7 @@
 					<li class="flex justify-between items-top py-4">
 						<div class="flex items-center">
 							<img src={ethImg} alt="ETH" class="w-auto mr-6" />
-							<div class="flex flex-col space-y-1">
+							<div class="flex flex-col">
 								<span class="text-md">Ethereum</span>
 								<span class="value text-gray-400">1.020,53 $</span>
 							</div>
@@ -137,7 +137,7 @@
 					<li class="flex justify-between items-top py-4">
 						<div class="flex items-center">
 							<img src={btcImg} alt="BTC" class="w-auto mr-6" />
-							<div class="flex flex-col space-y-1">
+							<div class="flex flex-col">
 								<span class="text-md">BTC</span>
 								<span class="value text-gray-400">26.654,53 $</span>
 							</div>
@@ -147,7 +147,7 @@
 					<li class="flex justify-between items-top py-4">
 						<div class="flex items-center">
 							<img src={bnbImg} alt="BNB" class="w-auto mr-6" />
-							<div class="flex flex-col space-y-1">
+							<div class="flex flex-col">
 								<span class="text-md">BNB</span>
 								<span class="value text-gray-400">213,34 $</span>
 							</div>
@@ -157,7 +157,7 @@
 					<li class="flex justify-between items-top py-4">
 						<div class="flex items-center">
 							<img src={polkadotImg} alt="DOT" class="w-auto mr-6" />
-							<div class="flex flex-col space-y-1">
+							<div class="flex flex-col">
 								<span class="text-md">Polkadot</span>
 								<span class="value text-gray-400">4,00 $</span>
 							</div>
@@ -176,7 +176,7 @@
 	}
 
 	.value {
-		font-size: 0.6rem;
+		font-size: 0.7rem;
 	}
 
 	.gradient-background {

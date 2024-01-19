@@ -121,7 +121,7 @@
 	</TableSearch>
 	<div class="flex flex-row justify-end items-center">
 		<div class="text-white mr-2">
-			Page {currentPage}
+			Page {currentPage} of {totalPages}
 		</div>
 		<button
 			class="rounded-md bg-[#121316] text-white mx-1 p-1 px-4 border border-white pagination-button hover:bg-[#393939]"

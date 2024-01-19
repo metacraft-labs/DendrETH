@@ -23,8 +23,8 @@
 	class="bg-gradient-to-b from-[#1A1739] via-[#363571] to-[#A8C5EB] text-white flex justify-between items-center center"
 >
 	<div class="container flex flex-col md:items-start items-center h-full md:px-6 ">
-		<div class="flex lg:flex-row flex-col items-center justify-between space-x-16">
-			<div class="flex flex-col">
+		<div class="flex lg:flex-row flex-col items-center justify-between lg:space-x-16 w-full">
+			<div class="flex flex-col max-w-2xl">
 				<h1 class="text-start font-bold mb-4 leading-tight">
 					Scaling Trust,<br> <span class="spanh1" style="color: #8FD3FE;">the Interchain Interoperability Layer</span>
 				</h1>
@@ -33,7 +33,7 @@
 					<span style="font-family: 'Inter-Bold'">trust-minimized, censorship resistant, decentralized,</span> and highly secure smart contract solution.
 				</p>
 			</div>
-			<img src={main} alt="Descriptive Text" class="max-w-xs max-w-sm pb-10 block" style="opacity: 50; z-index: 1;" />	
+			<img src={main} alt="main" class="max-w-xs sm:max-w-sm pb-10" style="opacity: 50; z-index: 1;" />	
 		</div>
 		<div class="flex lg:flex-row flex-col space-x-4 lg:w-auto w-full">
 			<Button
@@ -84,7 +84,7 @@
 	}
 	@media (max-width: 1024px) {
 		h1 {
-			font-size: 3rem;
+			font-size: 2.7rem;
 		}
 	}
 

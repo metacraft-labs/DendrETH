@@ -162,7 +162,7 @@
 
 <style>
 	.center-details {
-		padding: 30px 5% 70px 5%;
+		padding: 30px 10% 70px 10%;
 	}
 	h2 {
 		font-family: 'ChakraPetch';
