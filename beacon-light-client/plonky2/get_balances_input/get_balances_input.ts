@@ -4,7 +4,6 @@ import Redis from 'ioredis';
 import { BeaconApi } from '../../../relay/implementations/beacon-api';
 import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
 import { hexToBits } from '../../../libs/typescript/ts-utils/hex-utils';
-import { bigint_to_array } from '../../solidity/test/utils/bls';
 const {
   KeyPrefix,
   WorkQueue,
@@ -151,17 +150,11 @@ let TAKE;
   await queues[0].addItem(db, new Item(buffer));
 
   for (let i = 0; i < 38; i++) {
-    const buffer = new ArrayBuffer(24);
+    const buffer = new ArrayBuffer(8);
     const dataView = new DataView(buffer);
 
-    dataView.setBigUint64(0, BigInt(i), false);
     dataView.setBigUint64(
-      8,
-      BigInt(validator_commitment_constants.validatorRegistryLimit),
-      false,
-    );
-    dataView.setBigUint64(
-      16,
+      0,
       BigInt(validator_commitment_constants.validatorRegistryLimit),
       false,
     );
@@ -187,7 +180,7 @@ let TAKE;
       let array = new Array(size).fill(0);
 
       batch.push({
-        index: j * CIRCUIT_SIZE,
+        index: j,
         input: {
           balances: balances.slice(
             j * (CIRCUIT_SIZE / 4),
@@ -221,46 +214,28 @@ let TAKE;
   for (let i = 0; i < TAKE / CIRCUIT_SIZE; i++) {
     const buffer = new ArrayBuffer(8);
     const view = new DataView(buffer);
-    view.setBigUint64(0, BigInt(i * CIRCUIT_SIZE), false);
+    view.setBigUint64(0, BigInt(i), false);
+
+    await redis.saveBalanceProof(0n, BigInt(i));
 
     await queues[0].addItem(db, new Item(buffer));
-    console.log(`added ${i * CIRCUIT_SIZE}`);
+    console.log(`added ${i}`);
   }
 
   for (let j = 1; j < 38; j++) {
-    console.log('Added inner level of proofs', j);
-
-    let prev_index = 2199023255552n;
-
-    for (let i = 0; i < TAKE / CIRCUIT_SIZE; i++) {
-      const buffer = new ArrayBuffer(24);
+    const range = [...new Array(Math.ceil((TAKE / CIRCUIT_SIZE) / (2 ** j))).keys()];
+    for (const key of range) {
+      const buffer = new ArrayBuffer(8);
       const view = new DataView(buffer);
 
-      let index = BigInt(i * CIRCUIT_SIZE);
+      await redis.saveBalanceProof(BigInt(j), BigInt(key));
+      console.log(`added ${j}:${key}`);
 
-      if (
-        index / 2n ** (BigInt(j) + 3n) ==
-        prev_index / 2n ** (BigInt(j) + 3n)
-      ) {
-        continue;
-      }
-
-      const { first, second } = calculateIndexes(
-        BigInt(i * CIRCUIT_SIZE),
-        BigInt(j),
-      );
-
-      console.log(`added ${j}:${first}:${second}`);
-
-      view.setBigUint64(0, BigInt(j - 1), false);
-      view.setBigUint64(8, first, false);
-      view.setBigUint64(16, second, false);
-
-      await redis.saveBalanceProof(BigInt(j - 1), first);
+      view.setBigUint64(0, BigInt(key), false);
       await queues[j].addItem(db, new Item(buffer));
-
-      prev_index = first;
     }
+
+    console.log('Added inner level of proofs', j);
   }
 
   const beaconStateView = ssz.capella.BeaconState.toViewDU(beaconState);
@@ -337,18 +312,3 @@ function computeNumberFromLittleEndianBits(bits: number[]) {
   return BigInt('0b' + bits.join(''));
 }
 
-function calculateIndexes(index: bigint, depth: bigint) {
-  let first: bigint = index;
-  let second: bigint = index + 8n;
-
-  for (let k = 3n; k < depth + 3n; k++) {
-    if (first % 2n ** (k + 1n) == 0n) {
-      second = first + 2n ** k;
-    } else {
-      second = first;
-      first = first - 2n ** k;
-    }
-  }
-
-  return { first, second };
-}

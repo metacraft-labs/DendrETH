@@ -296,21 +296,10 @@ async fn process_inner_level_job(
     inner_circuit_targets: &Option<BalanceInnerCircuitTargets>,
     level: u64,
 ) -> Result<()> {
-    let proof_indices = job
-        .data
-        .chunks(8)
-        .map(|chunk| u64::from_be_bytes(chunk.try_into().unwrap()))
-        .collect::<Vec<u64>>();
+    let index = u64::from_be_bytes(job.data[0..8].try_into().unwrap());
+    println!("Got index: {:?}", index);
 
-    println!("Got indices: {:?}", proof_indices);
-
-    let proofs_level = proof_indices[0];
-    let left_index = proof_indices[1];
-    let parent_index = left_index;
-    // let parent_index = (left_index - 1) / 2;
-    // let right_index = proof_indices[2];
-
-    match fetch_proofs_balances::<BalanceProof>(con, level, parent_index).await {
+    match fetch_proofs_balances::<BalanceProof>(con, level, index).await {
         Err(err) => {
             print!("Error: {}", err);
             return Err(err);
@@ -326,7 +315,7 @@ async fn process_inner_level_job(
                 &circuit_data,
             )?;
 
-            match save_balance_proof(con, proof, level, parent_index).await {
+            match save_balance_proof(con, proof, level, index).await {
                 Err(err) => {
                     print!("Error: {}", err);
                     thread::sleep(Duration::from_secs(5));

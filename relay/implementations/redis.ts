@@ -238,7 +238,7 @@ export class Redis implements IRedis {
   }
 
   async saveBalanceProof(
-    depth: bigint,
+    level: bigint,
     index: bigint,
     proof: BalanceProof = {
       needsChange: true,
@@ -252,7 +252,7 @@ export class Redis implements IRedis {
     await this.waitForConnection();
 
     await this.redisClient.json.set(
-      `${validator_commitment_constants.balanceVerificationProofKey}:${depth.toString()}:${index.toString()}`,
+      `${validator_commitment_constants.balanceVerificationProofKey}:${level}:${index}`,
       '$',
       proof as any,
     );

@@ -443,12 +443,6 @@ pub async fn fetch_proof_balances<T: NeedsChange + KeyProvider + DeserializeOwne
             return Err(anyhow::anyhow!("Not able to complete, try again"));
         }
 
-        /*
-        let mut proof_result: Result<String, RedisError> = con
-            .json_get(format!("{}:{}:{}", T::get_key(), level, index), "$")
-            .await;
-            */
-
         let mut proof_result =
             fetch_redis_json_object::<T>(con, format!("{}:{}:{}", T::get_key(), level, index))
                 .await;
@@ -463,7 +457,6 @@ pub async fn fetch_proof_balances<T: NeedsChange + KeyProvider + DeserializeOwne
         }
 
         let proof = proof_result?;
-        // let proof = serde_json::from_str::<T>(&proof_result?)?;
 
         if proof.needs_change() {
             // Wait a bit and try again
@@ -485,11 +478,7 @@ pub async fn fetch_proofs_balances<
     level: u64,
     index: u64,
 ) -> Result<(Vec<u8>, Vec<u8>)> {
-    // let left_child_index = index * 2 + 1;
-    // let right_child_index = index * 2 + 2;
-
-    let left_child_index = index;
-    let right_child_index = left_child_index + 8 * (level + 1);
+    let (left_child_index, right_child_index) = (index * 2, index * 2 + 1);
 
     let proof1 = fetch_proof_balances::<T>(con, level - 1, left_child_index).await?;
     let proof2 = fetch_proof_balances::<T>(con, level - 1, right_child_index).await?;
