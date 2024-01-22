@@ -5975,7 +5975,7 @@ source = "git+https://github.com/mir-protocol/plonky2.git?rev=2d36559d#2d36559da
 [[package]]
 name = "plonky2x"
 version = "0.1.0"
-source = "git+https://github.com/metacraft-labs/succinctx.git?branch=recursive_proof_element_inputs#319111513a0791b1ed496474e0d10ac75eb49bba"
+source = "git+https://github.com/metacraft-labs/succinctx.git?branch=recursive_proof_element_inputs#e93e53db8a476f81953e7b7fd4835750fd666796"
 dependencies = [
  "anyhow",
  "array-macro",
@@ -6011,13 +6011,13 @@ dependencies = [
  "sha256",
  "tokio",
  "tracing",
- "uuid 1.6.1",
+ "uuid 1.7.0",
 ]
 
 [[package]]
 name = "plonky2x-derive"
 version = "0.1.0"
-source = "git+https://github.com/metacraft-labs/succinctx.git?branch=recursive_proof_element_inputs#319111513a0791b1ed496474e0d10ac75eb49bba"
+source = "git+https://github.com/metacraft-labs/succinctx.git?branch=recursive_proof_element_inputs#e93e53db8a476f81953e7b7fd4835750fd666796"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -7611,9 +7611,9 @@ dependencies = [
 
 [[package]]
 name = "smallvec"
-version = "1.12.0"
+version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2593d31f82ead8df961d8bd23a64c2ccf2eb5dd34b0a34bfb4dd54011c72009e"
+checksum = "3b187f0231d56fe41bfb12034819dd2bf336422a5866de41bc3fec4b2e3883e8"
 
 [[package]]
 name = "snap"
@@ -8870,9 +8870,9 @@ dependencies = [
 
 [[package]]
 name = "uuid"
-version = "1.6.1"
+version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e395fcf16a7a3d8127ec99782007af141946b4795001f876d54fb0d55978560"
+checksum = "f00cc9702ca12d3c81455259621e676d0f7251cec66a21e98fe2e9a37db93b2a"
 dependencies = [
  "serde",
 ]
