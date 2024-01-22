@@ -37,7 +37,7 @@
 >
 	<div class="flex flex-col content-center mt-16">
 		<div class="mb-4">
-			<button class="text-xs border border-[#8FD3FE] rounded-2xl py-1 px-3">Product Demo</button>
+			<button class="text-xs border border-[#8FD3FE] rounded-2xl py-1 px-3 hover:cursor-default">Product Demo</button>
 		</div>
 		<div class="container flex flex-col justify-between">
 			<h1 class="text-5xl mb-6 leading-tight mr-8 max-w-lg text-left text-[#8FD3FE]">
