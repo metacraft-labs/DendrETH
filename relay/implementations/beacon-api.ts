@@ -14,13 +14,15 @@ import { computeSyncCommitteePeriodAt } from '../../libs/typescript/ts-utils/ssz
 import { getGenericLogger } from '../../libs/typescript/ts-utils/logger';
 import { prometheusTiming } from '../../libs/typescript/ts-utils/prometheus-utils';
 import EventSource from 'eventsource';
+// @ts-ignore
+import { StateId } from '@lodestar/api/beacon/routes/beacon';
 
 const logger = getGenericLogger();
 export class BeaconApi implements IBeaconApi {
   private beaconRestApis: string[];
   private currentApiIndex: number;
 
-  constructor (beaconRestApis: string[]) {
+  constructor(beaconRestApis: string[]) {
     this.beaconRestApis = beaconRestApis;
     this.currentApiIndex = 0;
   }
@@ -405,30 +407,40 @@ export class BeaconApi implements IBeaconApi {
   }
 
   async getValidators(
-    state_id: bigint | string = 'head',
-    validators_count: number | undefined = undefined,
+    stateId: StateId,
+    validatorsCount: number | undefined = undefined,
+    offset: number | undefined = undefined
   ): Promise<Validator[]> {
     const { ssz } = await import('@lodestar/types');
 
-    let url = `/eth/v1/beacon/states/${state_id}/validators`;
-    if (validators_count !== undefined) {
-      const range = [...Array(validators_count).keys()];
-      url = url + `?id=${range.join(',')}`;
-    }
+    if (validatorsCount !== undefined && validatorsCount < 10000) {
+      // use the validators endpoint
+      let url = `/eth/v1/beacon/states/${stateId}/validators`;
+      let range = [...Array(validatorsCount).keys()];
+      if (offset !== undefined) {
+        range = range.map((index) => index + offset);
 
-    const validators = await (await this.fetchWithFallback(url)).json();
-    validators.data.sort((v1, v2) => +v1.index - +v2.index);
-    return ssz.phase0.Validators.fromJson(
-      validators.data.map(x => x.validator),
-    );
+      }
+      url = url + `?id=${range.join(',')}`;
+
+      const validators = await (await this.fetchWithFallback(url)).json();
+      validators.data.sort((v1, v2) => +v1.index - +v2.index);
+      return ssz.phase0.Validators.fromJson(
+        validators.data.map(x => x.validator),
+      );
+    } else {
+      // fetch an ssz beacon state to extract the validators from it
+      const { beaconState } = await this.getBeaconState(stateId);
+      return beaconState.validators.slice(offset || 0, validatorsCount);
+    }
   }
 
-  async getBeaconState(slot: number) {
+  async getBeaconState(state: StateId) {
     logger.info('Getting Beacon State..');
     const { ssz } = await import('@lodestar/types');
 
     const beaconStateSZZ = await this.fetchWithFallback(
-      `/eth/v2/debug/beacon/states/${slot}`,
+      `/eth/v2/debug/beacon/states/${state}`,
       {
         headers: {
           Accept: 'application/octet-stream',

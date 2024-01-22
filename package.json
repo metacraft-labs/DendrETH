@@ -60,6 +60,7 @@
     "@cosmjs/proto-signing": "^0.30.0",
     "@cosmjs/stargate": "^0.30.0",
     "@iden3/binfileutils": "^0.0.11",
+    "@lodestar/api": "^1.14.0",
     "@lodestar/types": "1.4.1",
     "@mevitae/redis-work-queue": "^0.0.4",
     "@nomiclabs/hardhat-ethers": "^2.1.1",

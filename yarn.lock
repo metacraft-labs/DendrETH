@@ -1934,6 +1934,33 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@lodestar/api@npm:^1.14.0":
+  version: 1.14.0
+  resolution: "@lodestar/api@npm:1.14.0"
+  dependencies:
+    "@chainsafe/persistent-merkle-tree": ^0.6.1
+    "@chainsafe/ssz": ^0.14.0
+    "@lodestar/config": ^1.14.0
+    "@lodestar/params": ^1.14.0
+    "@lodestar/types": ^1.14.0
+    "@lodestar/utils": ^1.14.0
+    eventsource: ^2.0.2
+    qs: ^6.11.1
+  checksum: 6e3c37cb7197b801118c78390858d0f1213fc376a9de934850eaeebf4a10c579b3cd64b0f4e2ac9465074bfcd7a2e9dac097ba7a07ba12dd4c661e9fe2f85a26
+  languageName: node
+  linkType: hard
+
+"@lodestar/config@npm:^1.14.0":
+  version: 1.14.0
+  resolution: "@lodestar/config@npm:1.14.0"
+  dependencies:
+    "@chainsafe/ssz": ^0.14.0
+    "@lodestar/params": ^1.14.0
+    "@lodestar/types": ^1.14.0
+  checksum: 435ab4daeefb9e8f2f3e95566217290518338a07c7282b028ace886f50cb4e6eb530c174facb91d3e36d1897a943e8f3d308a812d7487fa6c1b1b206981f354a
+  languageName: node
+  linkType: hard
+
 "@lodestar/params@npm:^1.14.0, @lodestar/params@npm:^1.4.1":
   version: 1.14.0
   resolution: "@lodestar/params@npm:1.14.0"
@@ -1951,13 +1978,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@lodestar/types@npm:^1.4.1":
+"@lodestar/types@npm:^1.14.0, @lodestar/types@npm:^1.4.1":
   version: 1.14.0
   resolution: "@lodestar/types@npm:1.14.0"
   dependencies:
     "@chainsafe/ssz": ^0.14.0
     "@lodestar/params": ^1.14.0
   checksum: 2bf71aa14b16990e502c1c151beae4298b4b7c2e0dc80c2ff83120dbe1879fbbf7e244dac6ae454a497c477a5dd6810b3774b202b451321ddc55201b26e84a43
+  languageName: node
+  linkType: hard
+
+"@lodestar/utils@npm:^1.14.0":
+  version: 1.14.0
+  resolution: "@lodestar/utils@npm:1.14.0"
+  dependencies:
+    "@chainsafe/as-sha256": ^0.3.1
+    any-signal: 3.0.1
+    bigint-buffer: ^1.1.5
+    case: ^1.6.3
+    chalk: ^5.2.0
+    js-yaml: ^4.1.0
+  checksum: e955ef8bf7e6de1c419dd2d1cd9dcb9618d7fdacfc7ecf6f4ddc1e4a8938b16abce621df9ccb78efdcfb1e414b3bda61a0f5c99ccc28fea9199ddfa476f2f34d
   languageName: node
   linkType: hard
 
@@ -3358,6 +3399,7 @@ __metadata:
     "@cosmjs/proto-signing": ^0.30.0
     "@cosmjs/stargate": ^0.30.0
     "@iden3/binfileutils": ^0.0.11
+    "@lodestar/api": ^1.14.0
     "@lodestar/types": 1.4.1
     "@mevitae/redis-work-queue": ^0.0.4
     "@noble/bls12-381": ^1.3.0
@@ -3677,6 +3719,13 @@ __metadata:
   dependencies:
     source-map-support: ^0.5.16
   checksum: 640dae2229124372b0329315e9614ae983bb80b1af237d8c0b3e90a2d85fb534e851c51d65d1897c92b36d27851d041ad8d95aab44af19cf7355b3ad11a3ddbf
+  languageName: node
+  linkType: hard
+
+"any-signal@npm:3.0.1":
+  version: 3.0.1
+  resolution: "any-signal@npm:3.0.1"
+  checksum: 073eb14c365b7552f9f16fbf36cd76171e4a0fe156a8faa865fe1d5ac4ed2f5c5ab6e3faad0ac0d4c69511b5892971c5573baa8a1cbf85fe250d0c54ff0734ff
   languageName: node
   linkType: hard
 
@@ -4089,6 +4138,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"bigint-buffer@npm:^1.1.5":
+  version: 1.1.5
+  resolution: "bigint-buffer@npm:1.1.5"
+  dependencies:
+    bindings: ^1.3.0
+    node-gyp: latest
+  checksum: d010c9f57758bcdaccb435d88b483ffcc95fe8bbc6e7fb3a44fb5221f29c894ffaf4a3c5a4a530e0e7d6608203c2cde9b79ee4f2386cd6d4462d1070bc8c9f4e
+  languageName: node
+  linkType: hard
+
 "bigint-crypto-utils@npm:^3.0.23":
   version: 3.3.0
   resolution: "bigint-crypto-utils@npm:3.3.0"
@@ -4107,6 +4166,15 @@ __metadata:
   version: 2.2.0
   resolution: "binary-extensions@npm:2.2.0"
   checksum: ccd267956c58d2315f5d3ea6757cf09863c5fc703e50fbeb13a7dc849b812ef76e3cf9ca8f35a0c48498776a7478d7b4a0418e1e2b8cb9cb9731f2922aaad7f8
+  languageName: node
+  linkType: hard
+
+"bindings@npm:^1.3.0":
+  version: 1.5.0
+  resolution: "bindings@npm:1.5.0"
+  dependencies:
+    file-uri-to-path: 1.0.0
+  checksum: 65b6b48095717c2e6105a021a7da4ea435aa8d3d3cd085cb9e85bcb6e5773cf318c4745c3f7c504412855940b585bdf9b918236612a1c7a7942491de176f1ae7
   languageName: node
   linkType: hard
 
@@ -4685,6 +4753,13 @@ __metadata:
     ansi-styles: ^4.1.0
     supports-color: ^7.1.0
   checksum: fe75c9d5c76a7a98d45495b91b2172fa3b7a09e0cc9370e5c8feb1c567b85c4288e2b3fded7cfdd7359ac28d6b3844feb8b82b8686842e93d23c827c417e83fc
+  languageName: node
+  linkType: hard
+
+"chalk@npm:^5.2.0":
+  version: 5.3.0
+  resolution: "chalk@npm:5.3.0"
+  checksum: 623922e077b7d1e9dedaea6f8b9e9352921f8ae3afe739132e0e00c275971bdd331268183b2628cf4ab1727c45ea1f28d7e24ac23ce1db1eb653c414ca8a5a80
   languageName: node
   linkType: hard
 
@@ -6558,6 +6633,13 @@ __metadata:
     wasmcurves: 0.2.0
     web-worker: ^1.2.0
   checksum: 8f3e87b3e2739c607dfc2ef8cb36d92202da57b1323987cca09ade378c584a946b9d784607ee5e2193a2de6200afdc254c19f72f79145aa55d9a8688f83f6708
+  languageName: node
+  linkType: hard
+
+"file-uri-to-path@npm:1.0.0":
+  version: 1.0.0
+  resolution: "file-uri-to-path@npm:1.0.0"
+  checksum: b648580bdd893a008c92c7ecc96c3ee57a5e7b6c4c18a9a09b44fb5d36d79146f8e442578bc0e173dc027adf3987e254ba1dfd6e3ec998b7c282873010502144
   languageName: node
   linkType: hard
 
@@ -10824,7 +10906,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"qs@npm:^6.11.2, qs@npm:^6.4.0, qs@npm:^6.7.0":
+"qs@npm:^6.11.1, qs@npm:^6.11.2, qs@npm:^6.4.0, qs@npm:^6.7.0":
   version: 6.11.2
   resolution: "qs@npm:6.11.2"
   dependencies:

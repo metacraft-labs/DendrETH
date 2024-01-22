@@ -119,7 +119,7 @@ enum TaskTag {
   console.log('Loaded all batches');
 
   console.log(`syncing... ${currentEpoch}`);
-  await updateValidators(currentEpoch);
+  await updateValidators(beaconApi, currentEpoch);
   await syncEpoch();
 
   const es = await beaconApi.subscribeForEvents(['head']);
@@ -133,14 +133,12 @@ enum TaskTag {
     while (currentEpoch < headEpoch) {
       currentEpoch++;
       console.log(`syncing... ${currentEpoch === headEpoch ? currentEpoch : `${currentEpoch}/${headEpoch}`}`);
-      await updateValidators(currentEpoch);
+      await updateValidators(beaconApi, currentEpoch);
     }
   }
 
-  async function updateValidators(epoch: bigint) {
-    const { beaconState } = await beaconApi.getBeaconState(Number(epoch * 32n));
-    const validators = beaconState.validators.slice(0, TAKE);
-
+  async function updateValidators(api: BeaconApi, epoch: bigint) {
+    const validators = await api.getValidators(Number(epoch * 32n), TAKE)
     const changedValidators = validators
       .map((validator, index) => ({ validator, index }))
       .filter(hasValidatorChanged(prevValidators));
