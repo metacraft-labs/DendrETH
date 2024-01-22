@@ -215,7 +215,7 @@ pub async fn save_balance_proof(
 }
 
 pub async fn save_final_proof(
-    con: &mut redis::aio::Connection,
+    con: &mut Connection,
     proof: &ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
 ) -> Result<()> {
     let final_proof = serde_json::to_string(&FinalProof {
@@ -234,6 +234,32 @@ pub async fn save_final_proof(
             final_proof,
         )
         .await?;
+
+    Ok(())
+}
+
+pub async fn delete_balance_verification_proof_dependencies(
+    con: &mut Connection,
+    level: u64,
+    index: u64,
+) -> Result<()> {
+    let prefix = format!(
+        "{}:{}",
+        VALIDATOR_COMMITMENT_CONSTANTS
+            .balance_verification_proof_key
+            .to_owned(),
+        level - 1
+    );
+
+    let _: () = con.del(format!("{}:{}", prefix, index * 2,)).await?;
+    let _: () = con.del(format!("{}:{}", prefix, index * 2 + 1,)).await?;
+
+    let result: Vec<String> = con.keys(format!("{}:*", prefix)).await?;
+    if result.len() == 1 {
+        let _: () = con
+            .del(format!("{}:{}", prefix, VALIDATOR_REGISTRY_LIMIT))
+            .await?;
+    }
 
     Ok(())
 }

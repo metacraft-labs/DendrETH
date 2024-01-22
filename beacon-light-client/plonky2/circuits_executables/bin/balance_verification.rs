@@ -11,11 +11,14 @@ use circuits::{
 };
 use circuits_executables::{
     crud::{
-        fetch_proofs, fetch_proofs_balances, fetch_validator_balance_input, load_circuit_data,
-        read_from_file, save_balance_proof, BalanceProof,
+        delete_balance_verification_proof_dependencies, fetch_proofs, fetch_proofs_balances,
+        fetch_validator_balance_input, load_circuit_data, read_from_file, save_balance_proof,
+        BalanceProof,
     },
     provers::{handle_balance_inner_level_proof, SetPWValues},
-    validator_commitment_constants::get_validator_commitment_constants,
+    validator_commitment_constants::{
+        get_validator_commitment_constants, VALIDATOR_COMMITMENT_CONSTANTS,
+    },
 };
 use futures_lite::future;
 use plonky2::{
@@ -27,7 +30,7 @@ use plonky2::{
 
 use clap::{App, Arg};
 
-use redis::aio::Connection;
+use redis::{aio::Connection, AsyncCommands, JsonAsyncCommands};
 use redis_work_queue::{Item, KeyPrefix, WorkQueue};
 
 use jemallocator::Jemalloc;
@@ -68,7 +71,7 @@ async fn async_main() -> Result<()> {
             Arg::with_name("stop_after")
             .long("stop-after")
             .value_name("Stop after")
-            .help("Sets how much seconds to wait until the program stops if no new tasks are found in the queue")
+            .help("Sets how many seconds to wait until the program stops if no new tasks are found in the queue")
             .takes_value(true)
             .default_value("20")
         )
@@ -84,6 +87,11 @@ async fn async_main() -> Result<()> {
                 .value_name("Run for X minutes")
                 .takes_value(true)
                 .default_value("infinity"),
+        )
+        .arg(
+            Arg::with_name("preserve_intermediary_proofs")
+            .long("preserve-intermediary-proofs")
+                .action(clap::ArgAction::SetTrue)
         )
         .get_matches();
 
@@ -114,6 +122,8 @@ async fn async_main() -> Result<()> {
         .unwrap()
         .parse::<u64>()
         .unwrap();
+
+    let preserve_intermediary_proofs = matches.get_flag("preserve_intermediary_proofs");
 
     let redis_connection = matches.value_of("redis_connection").unwrap();
 
@@ -163,6 +173,7 @@ async fn async_main() -> Result<()> {
         time_to_run,
         stop_after,
         lease_for,
+        preserve_intermediary_proofs,
     )
     .await
 }
@@ -178,6 +189,7 @@ async fn process_queue(
     time_to_run: Option<Duration>,
     stop_after: u64,
     lease_for: u64,
+    preserve_intermediary_proofs: bool,
 ) -> Result<()> {
     while time_to_run.is_none() || start.elapsed() < time_to_run.unwrap() {
         let job = match queue
@@ -232,6 +244,7 @@ async fn process_queue(
                     inner_circuit_data.unwrap(),
                     inner_circuit_targets,
                     level,
+                    preserve_intermediary_proofs,
                 )
                 .await
                 {
@@ -295,6 +308,7 @@ async fn process_inner_level_job(
     inner_circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     inner_circuit_targets: &Option<BalanceInnerCircuitTargets>,
     level: u64,
+    preserve_intermediary_proofs: bool,
 ) -> Result<()> {
     let index = u64::from_be_bytes(job.data[0..8].try_into().unwrap());
     println!("Got index: {:?}", index);
@@ -323,6 +337,10 @@ async fn process_inner_level_job(
                 }
                 Ok(_) => {
                     queue.complete(con, &job).await?;
+                    if !preserve_intermediary_proofs {
+                        // delete child nodes
+                        delete_balance_verification_proof_dependencies(con, level, index).await?;
+                    }
                 }
             }
 
