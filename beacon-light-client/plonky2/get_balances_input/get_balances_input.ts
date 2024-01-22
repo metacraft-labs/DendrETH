@@ -223,7 +223,6 @@ let TAKE;
     await redis.saveBalanceProof(0n, BigInt(i));
 
     await queues[0].addItem(db, new Item(buffer));
-    console.log(`added ${i}`);
   }
 
   for (let j = 1; j < 38; j++) {
@@ -233,7 +232,6 @@ let TAKE;
       const view = new DataView(buffer);
 
       await redis.saveBalanceProof(BigInt(j), BigInt(key));
-      console.log(`added ${j}:${key}`);
 
       view.setBigUint64(0, BigInt(key), false);
       await queues[j].addItem(db, new Item(buffer));
