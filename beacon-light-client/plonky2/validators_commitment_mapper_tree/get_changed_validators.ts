@@ -123,7 +123,7 @@ enum TaskTag {
   await syncEpoch();
 
   const es = await beaconApi.subscribeForEvents(['head']);
-  es.on('head', async function (event) {
+  es.on('head', async function(event) {
     headEpoch = BigInt(JSON.parse(event.data).slot) / 32n;
 
     await syncEpoch();
@@ -203,9 +203,9 @@ enum TaskTag {
 
   async function updateBranches(epoch: bigint, validators: IndexedValidator[]) {
     const changedValidatorGindices = validators.map(validator => gindexFromValidatorIndex(BigInt(validator.index)));
+    await Promise.all(changedValidatorGindices.map(async (gindex) => redis.saveValidatorProof(gindex, epoch)));
 
     let nodesNeedingUpdate = new Set(changedValidatorGindices.map(getParent));
-
     while (nodesNeedingUpdate.size !== 0) {
       const newNodesNeedingUpdate = new Set<bigint>();
 
