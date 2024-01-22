@@ -2,11 +2,12 @@ use crate::{
     utils::{plonky2x_extensions::assert_is_true, eth_objects::Attestation},
     weigh_justification_and_finalization::{
         checkpoint::CheckpointVariable, justification_bits::JustificationBitsVariable
-    }, constants::{VALIDATOR_ROOT_GINDEX, STATE_ROOT_GINDEX}, combine_finality_votes::circuit::ProofWithPublicInputsTargetReader,
+    }, constants::{VALIDATOR_ROOT_GINDEX, STATE_ROOT_GINDEX, STATE_ROOT_PROOF_LEN, VALIDATORS_ROOT_PROOF_LEN}, combine_finality_votes::circuit::ProofWithPublicInputsTargetReader,
 };
+use ethers::core::k256::elliptic_curve::bigint::U64;
 use plonky2x::{
     backend::circuit::{Circuit, CircuitBuild},
-    prelude::{BoolVariable, CircuitBuilder, PlonkParameters, U64Variable}, frontend::vars::Bytes32Variable,
+    prelude::{BoolVariable, CircuitBuilder, PlonkParameters, U64Variable}, frontend::vars::{Bytes32Variable, ArrayVariable},
 };
 
 #[derive(Debug, Clone)]
@@ -21,47 +22,53 @@ impl ProveFinality {
         <<L as PlonkParameters<D>>::Config as plonky2::plonk::config::GenericConfig<D>>::Hasher:
             plonky2::plonk::config::AlgebraicHasher<<L as PlonkParameters<D>>::Field>,
     {
-
-        println!("HI FROM INSIDE");
-
         let verifier_vad = builder.constant_verifier_data::<L>(&vad_circuit.data);
         let verifier_cuv = builder.constant_verifier_data::<L>(&cuv_circuit.data);
-
-        println!("HI FROM INSIDE");
 
         let vad_proof = builder.proof_read(&vad_circuit.data.common).into();
         let cuv_proof = builder.proof_read(&cuv_circuit.data.common).into();
 
-        println!("HI FROM INSIDE");
-
         builder.verify_proof::<L>(&vad_proof, &verifier_vad, &vad_circuit.data.common);
         builder.verify_proof::<L>(&cuv_proof, &verifier_cuv, &cuv_circuit.data.common);
-
-        println!("HI FROM INSIDE");
 
         let mut vad_proof_reader = ProofWithPublicInputsTargetReader::from(vad_proof);
         let mut cuv_proof_reader = ProofWithPublicInputsTargetReader::from(cuv_proof);
 
-        // let prev_block_root = builder.read::<Bytes32Variable>();
-        // let attestation = Attestation::circuit_input(builder); //TODO: Only some of these should come from VAD recurssive proof
+        let _vad_sigma = vad_proof_reader.read::<U64Variable>();
+        let vad_commitment = vad_proof_reader.read::<U64Variable>();
+        let vad_target = vad_proof_reader.read::<CheckpointVariable>();
+        let vad_source = vad_proof_reader.read::<CheckpointVariable>();
+        let state_root = vad_proof_reader.read::<Bytes32Variable>();
+        let state_root_proof = vad_proof_reader.read::<ArrayVariable<Bytes32Variable, STATE_ROOT_PROOF_LEN>>();
+        let validators_root = vad_proof_reader.read::<Bytes32Variable>();
+        let validators_root_proof = vad_proof_reader.read::<ArrayVariable<Bytes32Variable, VALIDATORS_ROOT_PROOF_LEN>>();
+        let slot = vad_proof_reader.read::<U64Variable>();
 
-        // let source = builder.read::<CheckpointVariable>(); //TODO: This should come from VAD recurssive proof
-        // let target = builder.read::<CheckpointVariable>(); //TODO: This should come from VAD recurssive proof
-        let slot = builder.read::<U64Variable>();
-        let total_number_of_validators = builder.read::<U64Variable>();
-        let justification_bits = builder.read::<JustificationBitsVariable>(); // Comes from beacon_state
-        let previous_epoch_attested_validators = builder.read::<U64Variable>();
-        let current_epoch_attested_validators = builder.read::<U64Variable>();
-        let previous_justified_checkpoint = builder.read::<CheckpointVariable>(); // Comes from beacon_state
-        let current_justified_checkpoint = builder.read::<CheckpointVariable>(); // Comes from beacon_state
+        let _rightmost = cuv_proof_reader.read::<U64Variable>();
+        let _leftmost = cuv_proof_reader.read::<U64Variable>();
+        let cuv_commitment = cuv_proof_reader.read::<U64Variable>();
+        let total_unique_validators =  cuv_proof_reader.read::<U64Variable>();
+
+        let prev_block_root = builder.read::<Bytes32Variable>();
+
+        builder.assert_is_equal(vad_commitment, cuv_commitment);
+
+        // let justification_bits = builder.read::<JustificationBitsVariable>(); // Comes from beacon_state
+        // let previous_epoch_attested_validators = builder.read::<U64Variable>();
+        // let current_epoch_attested_validators = builder.read::<U64Variable>();
+        // let previous_justified_checkpoint = builder.read::<CheckpointVariable>(); // Comes from beacon_state
+        // let current_justified_checkpoint = builder.read::<CheckpointVariable>(); // Comes from beacon_state
 
         // block_merkle_branch_proof(
         //     builder,
         //     prev_block_root,
-        //     attestation.clone()
+        //     state_root,
+        //     validators_root,
+        //     state_root_proof,
+        //     validators_root_proof
         // );
 
-        // validate_target_source_difference(builder, source.clone(), target.clone());
+        validate_target_source_difference(builder, &vad_source, &vad_target);
 
         // let new_justification_bits = process_justifications(
         //     builder,
@@ -71,15 +78,15 @@ impl ProveFinality {
         //     current_epoch_attested_validators,
         // );
 
-        // let thirty_two = builder.constant::<U64Variable>(32);
+        let thirty_two = builder.constant::<U64Variable>(32);
         // let new_justification_bits = new_justification_bits.bits.as_slice();
-        // let current_epoch = builder.div(slot, thirty_two);
-        // let source_index = builder.sub(current_epoch, source.epoch);
-        // let target_index = builder.sub(current_epoch, target.epoch);
+        let current_epoch = builder.div(slot, thirty_two);
+        let source_index = builder.sub(current_epoch, vad_source.epoch);
+        let target_index = builder.sub(current_epoch, vad_target.epoch);
 
         // validate_source(
         //     builder,
-        //     source,
+        //     vad_source,
         //     target_index,
         //     previous_justified_checkpoint,
         //     current_justified_checkpoint,
@@ -92,7 +99,10 @@ impl ProveFinality {
 fn block_merkle_branch_proof<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
     prev_block_root: Bytes32Variable,
-    attestation: Attestation
+    state_root: Bytes32Variable,
+    validators_root: Bytes32Variable,
+    state_root_proof: ArrayVariable<Bytes32Variable,STATE_ROOT_PROOF_LEN>,
+    validators_root_proof: ArrayVariable<Bytes32Variable, VALIDATORS_ROOT_PROOF_LEN>
 ) {
     // let field_eleven = <L as PlonkParameters<D>>::Field::from_canonical_u64(11);
     let const11 = builder.constant(VALIDATOR_ROOT_GINDEX as u64);
@@ -101,8 +111,8 @@ fn block_merkle_branch_proof<L: PlonkParameters<D>, const D: usize>(
     // Verify that the given `state_root` is in the last trusted `block_root`
     builder.ssz_verify_proof(
         prev_block_root,
-        attestation.state_root,
-        attestation.state_root_proof.as_slice(),
+        state_root,
+        state_root_proof.as_slice(),
         const11
     );
 
@@ -112,9 +122,9 @@ fn block_merkle_branch_proof<L: PlonkParameters<D>, const D: usize>(
     `validators_root`.
     */
     builder.ssz_verify_proof(
-        attestation.state_root,
-        attestation.validators_root,
-        attestation.validators_root_proof.as_slice(),
+        state_root,
+        validators_root,
+        validators_root_proof.as_slice(),
         const43
     )
 
@@ -172,8 +182,8 @@ fn is_supermajority_link_in_votes<L: PlonkParameters<D>, const D: usize>(
 
 pub fn validate_target_source_difference<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
-    source: CheckpointVariable,
-    target: CheckpointVariable,
+    source: &CheckpointVariable,
+    target: &CheckpointVariable,
 ) {
     let one = builder.one();
     let two = builder.constant::<U64Variable>(2);

@@ -121,7 +121,7 @@ pub struct CheckpointVariable {
 
 #[derive(Debug, Clone, CircuitVariable)]
 pub struct AttestationData {
-    slot: U64Variable,
+    pub slot: U64Variable,
     index: U64Variable, 
 
     // LMD GHOST vote

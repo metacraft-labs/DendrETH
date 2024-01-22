@@ -11,6 +11,7 @@ use plonky2::plonk::config::PoseidonGoldilocksConfig;
 use plonky2::plonk::proof::ProofWithPublicInputs;
 use plonky2x::frontend::uint::uint64::U64Variable;
 use plonky2x::frontend::vars::{Bytes32Variable, ArrayVariable};
+use plonky2x::utils::bytes32;
 use serde_json::Value;
 use std::fs::File;
 use std::io::{Error as IOError, Read};
@@ -197,20 +198,17 @@ fn main() -> Result<(), IOError> {
     }
 
     // Prove Finality
-    println!("vad_recurssive_proof_final: {:?}\n\ncuv_recurssive_proof_final: {:?}\n\n",vad_recurssive_proof_final,cuv_recurssive_proof_final);
     let mut finality_builder = CircuitBuilder::<L, D>::new();
     ProveFinality::define(&mut finality_builder, &vad_child_circuit, &cuv_child_circuit);
-    println!("HIIIIIIIIIIIIIIIIIIIIII3");
     let finality_circuit = finality_builder.build();
-    println!("HIIIIIIIIIIIIIIIIIIIIII4");
     let mut input = finality_circuit.input();
-
-    println!("HIIIIIIIIIIIIIIIIIIIIII");
 
     input.proof_write(vad_recurssive_proof_final);
     input.proof_write(cuv_recurssive_proof_final);
-
-    println!("HIIIIIIIIIIIIIIIIIIIIII");
+    
+    let prev_block_root: String =
+        "d5c0418465ffab221522a6991c2d4c0041f1b8e91d01b1ea3f6b882369f689b7".to_string();
+    input.write::<Bytes32Variable>(bytes32!(prev_block_root));
 
     let (_proof, output) = finality_circuit.prove(&input);
 

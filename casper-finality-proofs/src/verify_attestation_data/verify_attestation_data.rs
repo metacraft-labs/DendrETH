@@ -94,7 +94,7 @@ impl Circuit for VerifyAttestationData {
         //         ); 
         //         accumulate_bls(builder,private_accumulator, value_to_add); // TODO: validator hash
         // }
-        
+        builder.write(attestation.data.slot);
         builder.write(attestation.validators_root_proof);
         builder.write(attestation.validators_root);
         builder.write(attestation.state_root_proof);

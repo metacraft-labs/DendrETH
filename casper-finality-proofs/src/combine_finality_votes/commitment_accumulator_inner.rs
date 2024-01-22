@@ -1,3 +1,4 @@
+use ethers::types::U64;
 use plonky2x::{
     backend::circuit::CircuitBuild,
     //frontend::eth::vars::BLSPubkeyVariable,
@@ -37,6 +38,7 @@ impl CommitmentAccumulatorInner {
         let l_state_root_proof = left_proof_reader.read::<ArrayVariable<Bytes32Variable, STATE_ROOT_PROOF_LEN>>();
         let l_validators_root = left_proof_reader.read::<Bytes32Variable>();
         let l_validators_root_proof = left_proof_reader.read::<ArrayVariable<Bytes32Variable, VALIDATORS_ROOT_PROOF_LEN>>();
+        let l_slot = left_proof_reader.read::<U64Variable>();
 
         let r_sigma =  right_proof_reader.read::<U64Variable>();
         let r_commitment = right_proof_reader.read::<U64Variable>();
@@ -47,6 +49,7 @@ impl CommitmentAccumulatorInner {
         let r_state_root_proof = right_proof_reader.read::<ArrayVariable<Bytes32Variable, STATE_ROOT_PROOF_LEN>>();
         let r_validators_root = right_proof_reader.read::<Bytes32Variable>();
         let r_validators_root_proof = right_proof_reader.read::<ArrayVariable<Bytes32Variable, VALIDATORS_ROOT_PROOF_LEN>>();
+        let r_slot = right_proof_reader.read::<U64Variable>();
 
         builder.assert_is_equal(l_sigma, r_sigma);
         builder.assert_is_equal(l_source, r_source);
@@ -56,9 +59,11 @@ impl CommitmentAccumulatorInner {
         // builder.assert_is_equal(&l_state_root_proof, &r_state_root_proof); //TODO: Don't need to verify state_root_proofs & validator_state_root_proofs?
         builder.assert_is_equal(l_validators_root, r_validators_root);
         // builder.assert_is_equal(&l_validators_root_proof, &r_validators_root_proof);
+        builder.assert_is_equal(l_slot, r_slot);
 
         let commitment = builder.add(l_commitment, r_commitment);
 
+        builder.proof_write(l_slot);
         builder.proof_write(l_validators_root_proof);
         builder.proof_write(l_validators_root);
         builder.proof_write(l_state_root_proof);
