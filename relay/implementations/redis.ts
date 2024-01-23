@@ -2,7 +2,6 @@ import {
   splitIntoBatches,
 } from '../../libs/typescript/ts-utils/common-utils';
 import { hexToBytes } from '../../libs/typescript/ts-utils/bls';
-import { bitsToBytes } from '../../libs/typescript/ts-utils/hex-utils';
 import { IRedis } from '../abstraction/redis-interface';
 import {
   BalanceProof,
@@ -150,7 +149,7 @@ export class Redis implements IRedis {
         }
 
       }
-      console.log(`Loaded batch, ${keyBatchIndex}/${Math.floor(keys.length / batchSize)}`);
+      console.log(`Loaded batch ${keyBatchIndex + 1}/${Math.ceil(keys.length / batchSize)}`);
     }
 
     return allValidators;

@@ -1,20 +1,17 @@
-import {
-  sleep,
-  splitIntoBatches,
-} from '../../../libs/typescript/ts-utils/common-utils';
-import { Redis as RedisLocal } from '../../../relay/implementations/redis';
-import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
-import { Validator, IndexedValidator } from '../../../relay/types/types';
+import yargs from 'yargs';
 import Redis from 'ioredis';
 const {
   KeyPrefix,
   WorkQueue,
   Item,
 } = require('@mevitae/redis-work-queue/dist/WorkQueue');
-import { BeaconApi } from '../../../relay/implementations/beacon-api';
 
+import { splitIntoBatches } from '../../../libs/typescript/ts-utils/common-utils';
+import { Redis as RedisLocal } from '../../../relay/implementations/redis';
+import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
+import { Validator, IndexedValidator } from '../../../relay/types/types';
+import { BeaconApi } from '../../../relay/implementations/beacon-api';
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
-import yargs from 'yargs';
 import config from "../common_config.json";
 
 let TAKE: number | undefined;
@@ -86,9 +83,12 @@ enum TaskTag {
   let currentEpoch = options['sync-epoch'] !== undefined
     ? BigInt(options['sync-epoch']) : headEpoch;
 
-  // handle zeros validators
+  console.log('Fetching validators from database...');
+  let prevValidators = await redis.getValidatorsBatched(ssz);
+  console.log(`Loaded ${prevValidators.length} validators from database`);
+
   if (await redis.isZeroValidatorEmpty()) {
-    console.log('Adding tasks about zeros');
+    console.log('Adding zero tasks...');
     await redis.saveValidators([
       {
         index: Number(validator_commitment_constants.validatorRegistryLimit),
@@ -111,29 +111,24 @@ enum TaskTag {
 
     for (let level = 39n; level >= 0n; level--) {
       scheduleProveZeroForLevel(level);
-      console.log('Added zeros tasks');
     }
+    console.log('Zero tasks added');
   }
 
-  console.log('Loading validators');
-  let prevValidators = await redis.getValidatorsBatched(ssz);
-  console.log('Loaded all batches');
-
-  console.log(`syncing... ${currentEpoch}`);
+  console.log(`Initial syncing (${currentEpoch} epoch)...`);
   await updateValidators(beaconApi, currentEpoch);
   await syncEpoch();
 
   const es = await beaconApi.subscribeForEvents(['head']);
   es.on('head', async function(event) {
     headEpoch = BigInt(JSON.parse(event.data).slot) / 32n;
-
     await syncEpoch();
   })
 
   async function syncEpoch() {
     while (currentEpoch < headEpoch) {
       currentEpoch++;
-      console.log(`syncing... ${currentEpoch === headEpoch ? currentEpoch : `${currentEpoch}/${headEpoch}`}`);
+      console.log(`Syncing ${currentEpoch === headEpoch ? currentEpoch : `${currentEpoch}/${headEpoch}`}...`);
       await updateValidators(beaconApi, currentEpoch);
     }
   }
@@ -146,8 +141,7 @@ enum TaskTag {
 
     await saveValidatorsInBatches(epoch, changedValidators);
 
-    console.log('#changedValidators', changedValidators.length);
-
+    console.log(`Changed validators count: ${changedValidators.length}`);
     prevValidators = validators
   }
 
@@ -243,10 +237,9 @@ enum TaskTag {
       slashed: bytesToHex(
         ssz.phase0.Validator.fields.slashed.hashTreeRoot(validator.slashed),
       ),
-      activationEligibilityEpoch: bytesToHex(
-        ssz.phase0.Validator.fields.activationEligibilityEpoch.hashTreeRoot(
-          validator.activationEligibilityEpoch,
-        ),
+      activationEligibilityEpoch: bytesToHex(ssz.phase0.Validator.fields.activationEligibilityEpoch.hashTreeRoot(
+        validator.activationEligibilityEpoch,
+      ),
       ),
       activationEpoch: bytesToHex(
         ssz.phase0.Validator.fields.activationEpoch.hashTreeRoot(

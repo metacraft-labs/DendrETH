@@ -1,21 +1,22 @@
-import { Tree } from '@chainsafe/persistent-merkle-tree';
-import { Redis as RedisLocal } from '../../../relay/implementations/redis';
 import Redis from 'ioredis';
-import { BeaconApi } from '../../../relay/implementations/beacon-api';
-import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
-import { hexToBits } from '../../../libs/typescript/ts-utils/hex-utils';
+import yargs from 'yargs';
+import { Tree } from '@chainsafe/persistent-merkle-tree';
 const {
   KeyPrefix,
   WorkQueue,
   Item,
 } = require('@mevitae/redis-work-queue/dist/WorkQueue');
-import validator_commitment_constants from '../constants/validator_commitment_constants.json';
-import yargs from 'yargs';
+
+import { Redis as RedisLocal } from '../../../relay/implementations/redis';
+import { BeaconApi } from '../../../relay/implementations/beacon-api';
+import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
+import { hexToBits } from '../../../libs/typescript/ts-utils/hex-utils';
 import { computeEpochAt } from '../../../libs/typescript/ts-utils/ssz-utils';
+import validator_commitment_constants from '../constants/validator_commitment_constants.json';
 import config from "../common_config.json";
 
 const CIRCUIT_SIZE = 8;
-let TAKE;
+let TAKE: number | undefined;
 
 (async () => {
   const { ssz } = await import('@lodestar/types');
