@@ -1,3 +1,8 @@
+set(CMAKE_BUILD_TYPE "Debug")
+
+add_compile_options(-fsanitize=address)
+add_link_options(-fsanitize=address)
+
 function(add_example example_target)
     set(prefix ARG)
     set(noValues "")
@@ -46,9 +51,6 @@ add_example(compute_shuffled_index SOURCES compute_shuffled_index.cpp INPUT main
 add_executable(compute_shuffled_index_runable compute_shuffled_index_runable.cpp)
 
 add_dependencies(template compute_shuffled_index_runable)
-
-set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
-set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 
 add_compile_options(-fsanitize=address)
 add_link_options(-fsanitize=address)
