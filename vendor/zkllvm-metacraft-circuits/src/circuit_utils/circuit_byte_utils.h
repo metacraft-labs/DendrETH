@@ -31,19 +31,6 @@ namespace circuit_byte_utils {
         return d_first;
     }
 
-#define countof(array) (sizeof(array) / sizeof(array[0]))
-
-    using sha256_t = typename hashes::sha2<256>::block_type;
-
-    bool sha256_equals(sha256_t hash1, sha256_t hash2) {
-        bool result = true;
-        for (auto i = 0; i < countof(hash1); ++i) {
-            result = result && (hash1[i] == hash2[i]);
-        }
-
-        return result;
-    }
-
     template<typename T>
     Byte get_nth_byte(const T val, unsigned int n) {
         static_assert(std::is_integral_v<typename std::remove_reference_t<T>>, "T must be integral");
@@ -217,6 +204,18 @@ namespace circuit_byte_utils {
         Bytes32 hashed;
         picosha2::hash256(buffer.begin(), buffer.begin() + NBytesToHash, hashed.begin(), hashed.end());
         return hashed;
+    }
+
+    Bytes32 parent_hash(const Bytes32& child1, const Bytes32& child2) {
+        return sha256(child1, child2);
+    }
+
+    sha256_t parent_hash(sha256_t child1, sha256_t child2) {
+#ifdef __ZKLLVM__
+        return hash<hashes::sha2<256>>(child1, child2);
+#else
+        exit(1);
+#endif
     }
 
 }    // namespace circuit_byte_utils

@@ -1,21 +1,22 @@
 #pragma once
 
 #include "circuit_byte_utils.h"
+#include "base_types.h"
 
 using namespace circuit_byte_utils;
 
 namespace ssz_utils {
 
     template<size_t MERKLE_DEPTH>
-    Bytes32 ssz_restore_merkle_root(const Bytes32& leaf,
-                                    const std::array<Bytes32, MERKLE_DEPTH>& branch,
-                                    uint64_t gindex,
-                                    const uint64_t depth = MERKLE_DEPTH) {
+    HashType ssz_restore_merkle_root(const HashType& leaf,
+                                     const std::array<HashType, MERKLE_DEPTH>& branch,
+                                     uint64_t gindex,
+                                     const uint64_t depth = MERKLE_DEPTH) {
         auto hash = leaf;
 
         for (size_t i = 0; i < depth; i++) {
-            Bytes32 left;
-            Bytes32 right;
+            HashType left;
+            HashType right;
 
             if (gindex % 2 == 1) {
                 left = branch[i];
@@ -27,33 +28,44 @@ namespace ssz_utils {
 
             gindex /= 2;
 
-            hash = sha256(left, right);
+            hash = parent_hash(left, right);
         }
 
         return hash;
     }
 
     template<size_t MERKLE_DEPTH>
-    void ssz_verify_proof(const Bytes32& root,
-                          const Bytes32& leaf,
-                          const std::array<Bytes32, MERKLE_DEPTH>& branch,
+    void ssz_verify_proof(const HashType& root,
+                          const HashType& leaf,
+                          const std::array<HashType, MERKLE_DEPTH>& branch,
                           const uint64_t gindex,
                           const uint64_t depth = MERKLE_DEPTH) {
         auto expected_root = ssz_restore_merkle_root(leaf, branch, gindex, depth);
-        assert_true(root == expected_root);
+        assert_true(sha256_equals(root, expected_root));
     }
 
-    Bytes32 hash_tree_root(uint64_t val) {
+    HashType hash_tree_root(uint64_t val) {
+#ifdef __ZKLLVM__
+        // TODO: pack bytes into base_field_element here.
+        HashType empty_hash_ = {0};
+        return empty_hash_;
+#else
         auto bytes = int_to_bytes<uint64_t, 32, true>(val);
         return bytes;
+#endif
     }
 
-    Bytes32 hash_tree_root(const CheckpointVariable& checkpoint) {
+    HashType hash_tree_root(const CheckpointVariable& checkpoint) {
         auto epoch_leaf = hash_tree_root(checkpoint.epoch);
-        return sha256(epoch_leaf, checkpoint.root);
+        return parent_hash(epoch_leaf, checkpoint.root);
     }
 
-    Bytes32 hash_tree_root(const JustificationBitsVariable& checkpoint) {
+    HashType hash_tree_root(const JustificationBitsVariable& checkpoint) {
+#ifdef __ZKLLVM__
+        // TODO: pack bytes into base_field_element here.
+        HashType empty_hash_ = {0};
+        return empty_hash_;
+#else
         Bytes32 ret_val {};
         for (auto i = 0; i < 4; i++) {
             if (checkpoint.bits[i]) {
@@ -62,6 +74,7 @@ namespace ssz_utils {
         }
 
         return ret_val;
+#endif
     }
 
 }    // namespace ssz_utils

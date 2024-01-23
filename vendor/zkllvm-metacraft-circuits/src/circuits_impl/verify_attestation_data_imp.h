@@ -100,23 +100,31 @@ struct VoteToken {
     base_field_type token;
 };
 
-
 using TransitionKey = Bytes32;
 
-static_vector<Bytes32> compute_zero_hashes(int length = 64) {
-    static_vector<Bytes32> xs;
+static_vector<HashType> compute_zero_hashes(int length = 64) {
+    static_vector<HashType> xs;
+#ifdef __ZKLLVM__
+    sha256_t empty_hash = {0};
+    xs.push_back(empty_hash);
+#else
     xs.push_back(get_empty_byte_array<32>());
+#endif
+
     for (int i = 1; i < length; i++) {
-        xs.push_back(sha256(xs[i - 1], xs[i - 1]));
+        xs.push_back(parent_hash(xs[i - 1], xs[i - 1]));
     }
     return xs;
 }
 
 static const auto zero_hashes = compute_zero_hashes();
 
-static const auto empty_hash = get_empty_byte_array<32>();
-
 Proof fill_zero_hashes(const Proof& xs, size_t length = 0) {
+#ifdef __ZKLLVM__
+    sha256_t empty_hash = {0};
+#else
+    auto empty_hash = get_empty_byte_array<32>();
+#endif
     Proof ws = xs;
     int additions_count = length - xs.size();
 
@@ -238,7 +246,6 @@ VoteToken combine_finality_votes(const static_vector<VoteToken, 8192>& tokens) {
     }
     return result;
 }
-
 
 void prove_finality(const VoteToken& token,
                     const PubKey* trustedKeys,
