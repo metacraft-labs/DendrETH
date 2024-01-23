@@ -264,11 +264,12 @@ enum TaskTag {
     };
   }
 
+  // Returns a function that checks whether a validator at validator index has
+  // changed  (doesn't check for pubkey and withdrawalCredentials since those
+  // never change according to the spec)
   function hasValidatorChanged(prevValidators: Validator[]) {
     return ({ validator, index }: IndexedValidator) =>
       prevValidators[index] === undefined
-      || validator.pubkey.some((byte, i) => byte !== prevValidators[index].pubkey[i])
-      || validator.withdrawalCredentials.some((byte, i) => byte !== prevValidators[index].withdrawalCredentials[i])
       || validator.effectiveBalance !== prevValidators[index].effectiveBalance
       || validator.slashed !== prevValidators[index].slashed
       || validator.activationEligibilityEpoch !== prevValidators[index].activationEligibilityEpoch
