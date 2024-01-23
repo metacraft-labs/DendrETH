@@ -44,9 +44,16 @@ function(add_example example_target)
                 ${Boost_LIBRARIES})
 endfunction()
 
+cm_find_package(Boost COMPONENTS REQUIRED filesystem)
+
 add_custom_target(template)
 
 add_example(compute_shuffled_index SOURCES compute_shuffled_index.cpp INPUT main.inp)
+
+find_package(LLVM REQUIRED CONFIG)
+
+message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
+message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
 add_executable(compute_shuffled_index_runable compute_shuffled_index_runable.cpp)
 
@@ -79,5 +86,6 @@ crypto3::random
 crypto3::stream
 crypto3::vdf
 crypto3::zk
+LLVMSupport
 
 ${Boost_LIBRARIES})
