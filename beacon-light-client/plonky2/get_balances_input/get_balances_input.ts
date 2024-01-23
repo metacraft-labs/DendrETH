@@ -12,6 +12,7 @@ const {
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
 import yargs from 'yargs';
 import { computeEpochAt } from '../../../libs/typescript/ts-utils/ssz-utils';
+import config from "../common_config.json";
 
 const CIRCUIT_SIZE = 8;
 let TAKE;
@@ -27,21 +28,21 @@ let TAKE;
       alias: 'redis-host',
       describe: 'The Redis host',
       type: 'string',
-      default: '127.0.0.1',
+      default: config['redis-host'],
       description: 'Sets a custom redis connection',
     })
     .option('redis-port', {
       alias: 'redis-port',
       describe: 'The Redis port',
       type: 'number',
-      default: 6379,
+      default: config['redis-port'],
       description: 'Sets a custom redis connection',
     })
     .option('beacon-node', {
       alias: 'beacon-node',
       describe: 'The beacon node url',
       type: 'string',
-      default: 'http://testing.mainnet.beacon-api.nimbus.team',
+      default: config['beacon-node'],
       description: 'Sets a custom beacon node url',
     })
     .option('slot', {

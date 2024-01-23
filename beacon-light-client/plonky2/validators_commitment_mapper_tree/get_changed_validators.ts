@@ -15,6 +15,7 @@ import { BeaconApi } from '../../../relay/implementations/beacon-api';
 
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
 import yargs from 'yargs';
+import config from "../common_config.json";
 
 let TAKE: number | undefined;
 
@@ -35,21 +36,21 @@ enum TaskTag {
       alias: 'redis-host',
       describe: 'The Redis host',
       type: 'string',
-      default: '127.0.0.1',
+      default: config['redis-host'],
       description: 'Sets a custom redis connection',
     })
     .option('redis-port', {
       alias: 'redis-port',
       describe: 'The Redis port',
       type: 'number',
-      default: 6379,
+      default: config['redis-port'],
       description: 'Sets a custom redis connection',
     })
     .option('beacon-node', {
       alias: 'beacon-node',
       describe: 'The beacon node url',
       type: 'string',
-      default: 'http://testing.mainnet.beacon-api.nimbus.team',
+      default: config['beacon-node'],
       description: 'Sets a custom beacon node url',
     })
     .option('sync-epoch', {
