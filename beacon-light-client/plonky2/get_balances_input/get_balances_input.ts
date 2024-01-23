@@ -124,7 +124,6 @@ let TAKE: number | undefined;
     balances.push(''.padStart(256, '0').split('').map(Number));
   }
 
-  console.log('Adding tasks about zeros');
   await redis.saveValidatorBalancesInput([
     {
       index: Number(validator_commitment_constants.validatorRegistryLimit),
@@ -143,6 +142,8 @@ let TAKE: number | undefined;
       },
     },
   ]);
+
+  console.log('Adding zero tasks...');
 
   const buffer = new ArrayBuffer(8);
   const dataView = new DataView(buffer);
@@ -167,9 +168,10 @@ let TAKE: number | undefined;
 
     await queues[i + 1].addItem(db, new Item(buffer));
 
-    console.log('Added zeros tasks');
   }
+  console.log('Added zero tasks');
 
+  console.log('Saving validator balance input...');
   const batchSize = 100;
   for (let i = 0; i <= TAKE / CIRCUIT_SIZE / batchSize; i++) {
     let batch: any[] = [];
@@ -213,9 +215,8 @@ let TAKE: number | undefined;
     }
 
     await redis.saveValidatorBalancesInput(batch);
-
-    console.log('saved batch', i);
   }
+  console.log('Validator balance input saved');
 
   for (let i = 0; i < TAKE / CIRCUIT_SIZE; i++) {
     const buffer = new ArrayBuffer(8);
@@ -227,6 +228,8 @@ let TAKE: number | undefined;
     await queues[0].addItem(db, new Item(buffer));
   }
 
+
+  console.log('Adding inner proofs...');
   for (let j = 1; j < 38; j++) {
     const range = [...new Array(Math.ceil((TAKE / CIRCUIT_SIZE) / (2 ** j))).keys()];
     for (const key of range) {
@@ -238,13 +241,13 @@ let TAKE: number | undefined;
       view.setBigUint64(0, BigInt(key), false);
       await queues[j].addItem(db, new Item(buffer));
     }
-
-    console.log('Added inner level of proofs', j);
   }
+  console.log('Inner proofs added');
 
   const beaconStateView = ssz.capella.BeaconState.toViewDU(beaconState);
   const beaconStateTree = new Tree(beaconStateView.node);
 
+  console.log("Adding final proof input...");
   await redis.saveFinalProofInput({
     stateRoot: hexToBits(
       bytesToHex(ssz.capella.BeaconState.hashTreeRoot(beaconState)),
@@ -268,12 +271,10 @@ let TAKE: number | undefined;
   });
 
   queues[39].addItem(db, new Item(new ArrayBuffer(0)));
+  console.log("Final proof input added");
 
-  console.log('Added final proof input');
-
-  console.log('ready');
-
-  process.exit(0);
+  await redis.disconnect();
+  db.disconnect();
 })();
 
 function getZeroValidator() {
