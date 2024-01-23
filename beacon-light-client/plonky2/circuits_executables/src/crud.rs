@@ -298,21 +298,6 @@ pub async fn fetch_validator(
     )
 }
 
-fn validator_proof_to_json(
-    proof: &ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-) -> Result<String, Error> {
-    let validator_proof = serde_json::to_string(&ValidatorProof {
-        poseidon_hash: proof
-            .get_commitment_mapper_poseidon_hash_tree_root()
-            .to_vec(),
-        sha256_hash: proof.get_commitment_mapper_sha256_hash_tree_root().to_vec(),
-        proof: proof.to_bytes(),
-        needs_change: false,
-    });
-
-    Ok(validator_proof?)
-}
-
 pub async fn save_zero_validator_proof(
     con: &mut Connection,
     proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
