@@ -40,7 +40,6 @@ enum CommitmentMapperTaskType {
     UpdateProofNode,
     ProveZeroForLevel,
     UpdateValidatorProof,
-    None,
 }
 
 #[derive(Debug)]
@@ -48,35 +47,27 @@ enum CommitmentMapperTask {
     UpdateProofNode(u64, u64),      // gindex, epoch
     ProveZeroForLevel(u64),         // level
     UpdateValidatorProof(u64, u64), // validator index, epoch
-    None,
 }
 
-fn deserialize_task(bytes: &[u8]) -> CommitmentMapperTask {
-    let task_type: Option<CommitmentMapperTaskType> =
-        FromPrimitive::from_u8(u8::from_be_bytes(bytes[0..1].try_into().unwrap()));
-
-    if task_type.is_none() {
-        return CommitmentMapperTask::None;
-    }
-
-    let task_type = task_type.unwrap();
-
-    match task_type {
+fn deserialize_task(bytes: &[u8]) -> Option<CommitmentMapperTask> {
+    match FromPrimitive::from_u8(u8::from_be_bytes(bytes[0..1].try_into().unwrap()))? {
         CommitmentMapperTaskType::UpdateProofNode => {
             let gindex = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
             let epoch = u64::from_be_bytes(bytes[9..17].try_into().unwrap());
-            CommitmentMapperTask::UpdateProofNode(gindex, epoch)
+            Some(CommitmentMapperTask::UpdateProofNode(gindex, epoch))
         }
         CommitmentMapperTaskType::ProveZeroForLevel => {
             let level = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
-            CommitmentMapperTask::ProveZeroForLevel(level)
+            Some(CommitmentMapperTask::ProveZeroForLevel(level))
         }
         CommitmentMapperTaskType::UpdateValidatorProof => {
             let validator_index = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
             let epoch = u64::from_be_bytes(bytes[9..17].try_into().unwrap());
-            CommitmentMapperTask::UpdateValidatorProof(validator_index, epoch)
+            Some(CommitmentMapperTask::UpdateValidatorProof(
+                validator_index,
+                epoch,
+            ))
         }
-        CommitmentMapperTaskType::None => unreachable!(),
     }
 }
 
@@ -172,7 +163,15 @@ async fn async_main() -> Result<()> {
 
         println!("Got job: {:?}", job.data);
 
-        let task = deserialize_task(&job.data);
+        let task = match deserialize_task(&job.data) {
+            Some(task) => task,
+            None => {
+                println!("Invalid job data");
+                println!("This is bug from somewhere");
+                queue.complete(&mut con, &job).await?;
+                continue;
+            }
+        };
 
         match task {
             CommitmentMapperTask::UpdateValidatorProof(validator_index, epoch) => {
@@ -296,12 +295,6 @@ async fn async_main() -> Result<()> {
                         continue;
                     }
                 };
-            }
-            _ => {
-                println!("Invalid job data");
-                println!("This is bug from somewhere");
-
-                queue.complete(&mut con, &job).await?;
             }
         };
     }
