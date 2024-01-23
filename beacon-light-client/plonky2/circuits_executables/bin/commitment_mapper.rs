@@ -10,6 +10,7 @@ use circuits_executables::{
         ValidatorProof,
     },
     provers::{handle_commitment_mapper_inner_level_proof, SetPWValues},
+    utils::parse_config_file,
     validator::VALIDATOR_REGISTRY_LIMIT,
     validator_commitment_constants,
 };
@@ -88,6 +89,8 @@ fn main() -> Result<()> {
 }
 
 async fn async_main() -> Result<()> {
+    let config = parse_config_file("../common_config.json".to_owned())?;
+
     let matches = App::new("")
     .arg(
         Arg::with_name("redis_connection")
@@ -96,7 +99,7 @@ async fn async_main() -> Result<()> {
             .value_name("Redis Connection")
             .help("Sets a custom Redis connection")
             .takes_value(true)
-            .default_value("redis://127.0.0.1:6379/"),
+            .default_value(&format!("redis://{}:{}/", config["redis-host"], config["redis-port"])),
     )
     .arg(
         Arg::with_name("stop_after")

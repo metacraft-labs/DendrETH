@@ -36,7 +36,7 @@ let TAKE: number | undefined;
       alias: 'redis-port',
       describe: 'The Redis port',
       type: 'number',
-      default: config['redis-port'],
+      default: Number(config['redis-port']),
       description: 'Sets a custom redis connection',
     })
     .option('beacon-node', {

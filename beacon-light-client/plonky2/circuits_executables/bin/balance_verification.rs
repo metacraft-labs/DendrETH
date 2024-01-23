@@ -11,14 +11,13 @@ use circuits::{
 };
 use circuits_executables::{
     crud::{
-        delete_balance_verification_proof_dependencies, fetch_proofs, fetch_proofs_balances,
+        delete_balance_verification_proof_dependencies, fetch_proofs_balances,
         fetch_validator_balance_input, load_circuit_data, read_from_file, save_balance_proof,
         BalanceProof,
     },
     provers::{handle_balance_inner_level_proof, SetPWValues},
-    validator_commitment_constants::{
-        get_validator_commitment_constants, VALIDATOR_COMMITMENT_CONSTANTS,
-    },
+    utils::parse_config_file,
+    validator_commitment_constants::get_validator_commitment_constants,
 };
 use futures_lite::future;
 use plonky2::{
@@ -30,7 +29,7 @@ use plonky2::{
 
 use clap::{App, Arg};
 
-use redis::{aio::Connection, AsyncCommands, JsonAsyncCommands};
+use redis::aio::Connection;
 use redis_work_queue::{Item, KeyPrefix, WorkQueue};
 
 use jemallocator::Jemalloc;
@@ -48,6 +47,7 @@ fn main() -> Result<()> {
 }
 
 async fn async_main() -> Result<()> {
+    let config = parse_config_file("../common_config.json".to_owned())?;
     let matches = App::new("")
         .arg(
             Arg::with_name("redis_connection")
@@ -56,7 +56,7 @@ async fn async_main() -> Result<()> {
                 .value_name("Redis Connection")
                 .help("Sets a custom Redis connection")
                 .takes_value(true)
-                .default_value("redis://127.0.0.1:6379/"),
+                .default_value(&format!("redis://{}:{}/", config["redis-host"], config["redis-port"])),
         )
         .arg(
             Arg::with_name("circuit_level")
