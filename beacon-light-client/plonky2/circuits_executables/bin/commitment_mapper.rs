@@ -4,20 +4,19 @@ use circuits::{
     targets_serialization::ReadTargets, validator_commitment_mapper::ValidatorCommitmentTargets,
 };
 use circuits_executables::{
+    commitment_mapper_task::{deserialize_task, CommitmentMapperTask},
     crud::{
         fetch_proofs, fetch_validator, fetch_zero_proof, get_depth_for_gindex, load_circuit_data,
         read_from_file, save_validator_proof, save_zero_validator_proof, ProofProvider,
         ValidatorProof,
     },
     provers::{handle_commitment_mapper_inner_level_proof, SetPWValues},
-    utils::parse_config_file,
+    utils::{gindex_from_validator_index, parse_config_file},
     validator::VALIDATOR_REGISTRY_LIMIT,
     validator_commitment_constants,
 };
 use clap::{App, Arg};
 use futures_lite::future;
-use num::FromPrimitive;
-use num_derive::FromPrimitive;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     iop::witness::PartialWitness,
@@ -33,47 +32,6 @@ use jemallocator::Jemalloc;
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
-
-#[derive(FromPrimitive)]
-#[repr(u8)]
-enum CommitmentMapperTaskType {
-    UpdateProofNode,
-    ProveZeroForLevel,
-    UpdateValidatorProof,
-}
-
-#[derive(Debug)]
-enum CommitmentMapperTask {
-    UpdateProofNode(u64, u64),      // gindex, epoch
-    ProveZeroForLevel(u64),         // level
-    UpdateValidatorProof(u64, u64), // validator index, epoch
-}
-
-fn deserialize_task(bytes: &[u8]) -> Option<CommitmentMapperTask> {
-    match FromPrimitive::from_u8(u8::from_be_bytes(bytes[0..1].try_into().unwrap()))? {
-        CommitmentMapperTaskType::UpdateProofNode => {
-            let gindex = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
-            let epoch = u64::from_be_bytes(bytes[9..17].try_into().unwrap());
-            Some(CommitmentMapperTask::UpdateProofNode(gindex, epoch))
-        }
-        CommitmentMapperTaskType::ProveZeroForLevel => {
-            let level = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
-            Some(CommitmentMapperTask::ProveZeroForLevel(level))
-        }
-        CommitmentMapperTaskType::UpdateValidatorProof => {
-            let validator_index = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
-            let epoch = u64::from_be_bytes(bytes[9..17].try_into().unwrap());
-            Some(CommitmentMapperTask::UpdateValidatorProof(
-                validator_index,
-                epoch,
-            ))
-        }
-    }
-}
-
-fn gindex_from_validator_index(index: u64) -> u64 {
-    return 2u64.pow(40) - 1 + index;
-}
 
 fn main() -> Result<()> {
     future::block_on(async_main())
@@ -147,31 +105,28 @@ async fn async_main() -> Result<()> {
         .unwrap();
 
     loop {
-        println!("Waiting for job...");
+        println!("Waiting for task...");
 
-        let job = match queue
+        let Some(queue_item) = queue
             .lease(
                 &mut con,
                 Some(Duration::from_secs(stop_after)),
                 Duration::from_secs(lease_for),
             )
             .await?
-        {
-            Some(job) => job,
-            None => continue,
+        else {
+            continue;
         };
 
-        println!("Got job: {:?}", job.data);
-
-        let task = match deserialize_task(&job.data) {
-            Some(task) => task,
-            None => {
-                println!("Invalid job data");
-                println!("This is bug from somewhere");
-                queue.complete(&mut con, &job).await?;
-                continue;
-            }
+        let Some(task) = deserialize_task(&queue_item.data) else {
+            println!("Invalid task data");
+            println!("Got bytes: {:?}", queue_item.data);
+            println!("This is bug from somewhere");
+            queue.complete(&mut con, &queue_item).await?;
+            continue;
         };
+
+        println!("Got task: {}", task);
 
         match task {
             CommitmentMapperTask::UpdateValidatorProof(validator_index, epoch) => {
@@ -195,7 +150,7 @@ async fn async_main() -> Result<()> {
                             .await
                             {
                                 Ok(_) => {
-                                    queue.complete(&mut con, &job).await?;
+                                    queue.complete(&mut con, &queue_item).await?;
                                 }
                                 Err(err) => {
                                     println!("Error: {}", err);
@@ -206,7 +161,7 @@ async fn async_main() -> Result<()> {
                         } else {
                             match save_zero_validator_proof(&mut con, proof, 40).await {
                                 Ok(_) => {
-                                    queue.complete(&mut con, &job).await?;
+                                    queue.complete(&mut con, &queue_item).await?;
                                 }
                                 Err(err) => {
                                     println!("Error: {}", err);
@@ -244,7 +199,7 @@ async fn async_main() -> Result<()> {
                         )?;
 
                         match save_validator_proof(&mut con, proof, gindex, epoch).await {
-                            Ok(_) => queue.complete(&mut con, &job).await?,
+                            Ok(_) => queue.complete(&mut con, &queue_item).await?,
                             Err(err) => {
                                 println!("Error: {}", err);
                                 thread::sleep(Duration::from_secs(1));
@@ -259,7 +214,7 @@ async fn async_main() -> Result<()> {
                     }
                 };
             }
-            CommitmentMapperTask::ProveZeroForLevel(depth) => {
+            CommitmentMapperTask::ProveZeroForDepth(depth) => {
                 // the level in the inner proofs tree
                 let level = 39 - depth as usize;
 
@@ -281,7 +236,7 @@ async fn async_main() -> Result<()> {
                         )?;
 
                         match save_zero_validator_proof(&mut con, proof, depth).await {
-                            Ok(_) => queue.complete(&mut con, &job).await?,
+                            Ok(_) => queue.complete(&mut con, &queue_item).await?,
                             Err(err) => {
                                 println!("Error: {}", err);
                                 thread::sleep(Duration::from_secs(1));
