@@ -1,0 +1,6 @@
+FROM golang:alpine as build
+
+RUN go install github.com/protolambda/zcli@latest
+COPY process_ssz.sh /bin
+
+ENTRYPOINT ["/bin/process_ssz.sh"]
