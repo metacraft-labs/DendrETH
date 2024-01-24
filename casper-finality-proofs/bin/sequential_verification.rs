@@ -1,9 +1,7 @@
-use anyhow::Error;
 use casper_finality_proofs::combine_finality_votes::commitment_accumulator_inner::CommitmentAccumulatorInner;
-use casper_finality_proofs::combine_finality_votes::count_unique_validators::{CountUniqueValidators, self};
 use casper_finality_proofs::combine_finality_votes::unique_validators_accumulator::UniqueValidatorsAccumulatorInner;
-use casper_finality_proofs::constants::{TEST_ATTESTATIONS_READ, VALIDATOR_INDICES_IN_SPLIT, TEST_VALIDATORS_IN_COMMITMENT_SIZE, STATE_ROOT_PROOF_LEN, VALIDATORS_ROOT_PROOF_LEN};
-use casper_finality_proofs::prove_casper::sequential_verification::CheckpointInput;
+use casper_finality_proofs::constants::{STATE_ROOT_PROOF_LEN, VALIDATORS_ROOT_PROOF_LEN};
+use casper_finality_proofs::prove_casper::sequential_verification::prove_attestations;
 use casper_finality_proofs::prove_finality::circuit_final::ProveFinality;
 use casper_finality_proofs::utils::eth_objects::CheckpointVariable;
 use plonky2::field::goldilocks_field::GoldilocksField;
@@ -12,20 +10,14 @@ use plonky2::plonk::proof::ProofWithPublicInputs;
 use plonky2x::frontend::uint::uint64::U64Variable;
 use plonky2x::frontend::vars::{Bytes32Variable, ArrayVariable};
 use plonky2x::utils::bytes32;
-use serde_json::Value;
-use std::fs::File;
-use std::io::{Error as IOError, Read};
+use std::io::Error as IOError;
 
 use plonky2x::{
-    backend::circuit::{Circuit, DefaultParameters, PublicOutput},
+    backend::circuit::{DefaultParameters, PublicOutput},
     prelude::CircuitBuilder,
 };
 
-use casper_finality_proofs::{
-    prove_casper::sequential_verification::prove_verify_attestation_data,
-    verify_attestation_data::verify_attestation_data::VerifyAttestationData,
-    utils::json::read_json_from_file,
-};
+use casper_finality_proofs::prove_casper::count_unique_pubkeys::count_unique_validators;
 
 fn main() -> Result<(), IOError> {
     type L = DefaultParameters;
@@ -33,34 +25,12 @@ fn main() -> Result<(), IOError> {
 
     plonky2x::utils::setup_logger();
 
-    let file_path_attestations = "./data/merged_234400.json";
-    let attestations_json = read_json_from_file(file_path_attestations).unwrap();
-
-    // let source: CheckpointInput;
-    // let target: CheckpointInput;
-
-    let mut vad_recurssive_proof_final: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, D>;
-    let mut cuv_recurssive_proof_final: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, D>;
+    let vad_recurssive_proof_final: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, D>;
+    let cuv_recurssive_proof_final: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, D>;
 
     // VerifyAttestationData
-    let mut attestation_data_proofs = vec![];
-
-    let mut vad_builder = CircuitBuilder::<L, D>::new();
-    VerifyAttestationData::define(&mut vad_builder);
-    let vad_circuit = vad_builder.build();
-
-    if let Some(attestations) = attestations_json.get("attestations").and_then(Value::as_array) {
-        let mut counter = 1;
-        for attestation in attestations.iter().take(TEST_ATTESTATIONS_READ) {
-            println!("====Attestation {}====", counter);
-            counter += 1;
-
-            let proof = prove_verify_attestation_data::<L, D>(&vad_circuit, attestation);
-            attestation_data_proofs.push(proof);
-        }
-    } else {
-        panic!("No attestations found!");
-    }
+    let file_path_attestations = "./data/merged_234400.json";
+    let (attestation_data_proofs, vad_circuit) = prove_attestations(file_path_attestations);
 
     //CombineAttestationData
     let mut proofs = attestation_data_proofs;
@@ -114,45 +84,9 @@ fn main() -> Result<(), IOError> {
 
     //CountUniquePubkeys
     let file_path_sorted_validators = "./data/sorted_validator_indices_test.json";
-    let sorted_validators_json = read_json_from_file(file_path_sorted_validators).unwrap();
-
-    let mut cuv_builder = CircuitBuilder::<L, D>::new();
-    CountUniqueValidators::define(&mut cuv_builder);
-    let cuv_circuit = cuv_builder.build();
-    
-
-    let sorted_validators: Vec<u64> = sorted_validators_json.as_array()
-        .unwrap()
-        .iter()
-        .take(TEST_VALIDATORS_IN_COMMITMENT_SIZE * TEST_ATTESTATIONS_READ) //TODO: This is Test Size
-        .map(|validator| serde_json::from_value(validator.clone()).unwrap())
-        .collect();
-
-    let chunk_size = VALIDATOR_INDICES_IN_SPLIT;
-    let chunked_iter = sorted_validators.chunks_exact(chunk_size);
-    //TODO: Use chunked_iter.into_remainder to parse final slice of validators
-
-    let mut count_unique_validators_proofs = vec![];
-    let mut counter = 0;
-    let sigma: u64 = 1;
-    for chunk in chunked_iter { 
-        println!("===Proving Chunk {}====",counter);
-        counter += 1;
-        let mut input = cuv_circuit.input();
-        input.write::<U64Variable>(sigma);
-        for validator_index in chunk {
-            input.write::<U64Variable>(validator_index.clone());
-        }
-        println!("CHUNK: {:?}", chunk);
-        let (proof, mut _output) = cuv_circuit.prove(&input);
-        count_unique_validators_proofs.push(proof);
-
-        println!("Output: {:?}", _output);
-    }
-    println!("Sorted_validators: {:?}", sorted_validators);
+    let (mut proofs, cuv_circuit) = count_unique_validators(file_path_sorted_validators);
 
     // Recurssive CountUniqueValidators
-    let mut proofs = count_unique_validators_proofs;
     let mut cuv_child_circuit = cuv_circuit;
     let mut level = 0;
     

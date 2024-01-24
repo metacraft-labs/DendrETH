@@ -4,9 +4,7 @@ use casper_finality_proofs::{
             CommitTrustedValidatorPubkeys, Commitment, PublicKey,
         },
         commitment_accumulator_inner::CommitmentAccumulatorInner,
-    },
-    verify_attestation_data::verify_attestation_data::VerifyAttestationData,
-    weigh_justification_and_finalization::checkpoint::{CheckpointValue, CheckpointVariable},
+    }, constants::VALIDATORS_PER_COMMITTEE, weigh_justification_and_finalization::checkpoint::{CheckpointValue, CheckpointVariable}
 };
 use itertools::{izip, multiunzip};
 use plonky2x::{
@@ -18,7 +16,6 @@ use plonky2x::{
     utils::bytes32,
 };
 use primitive_types::U256;
-use casper_finality_proofs::constants::{VALIDATORS_PER_COMMITTEE};
 
 struct Subcommittee {
     pub pubkeys: Vec<U256>,

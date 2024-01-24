@@ -1,8 +1,7 @@
 use casper_finality_proofs::combine_finality_votes::count_unique_validators::CountUniqueValidators;
 use plonky2x::{
-    frontend::{uint::uint64::U64Variable, vars::Variable},
+    frontend::uint::uint64::U64Variable,
     prelude::{CircuitBuilder, DefaultParameters},
-    utils::bytes, backend::circuit::PlonkParameters,
 };
 
 use casper_finality_proofs::{

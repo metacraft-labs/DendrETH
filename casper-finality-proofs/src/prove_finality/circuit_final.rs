@@ -1,12 +1,11 @@
 use crate::{
-    utils::{plonky2x_extensions::assert_is_true, eth_objects::Attestation},
+    utils::plonky2x_extensions::assert_is_true,
     weigh_justification_and_finalization::{
         checkpoint::CheckpointVariable, justification_bits::JustificationBitsVariable
     }, constants::{VALIDATOR_ROOT_GINDEX, STATE_ROOT_GINDEX, STATE_ROOT_PROOF_LEN, VALIDATORS_ROOT_PROOF_LEN}, combine_finality_votes::circuit::ProofWithPublicInputsTargetReader,
 };
-use ethers::core::k256::elliptic_curve::bigint::U64;
 use plonky2x::{
-    backend::circuit::{Circuit, CircuitBuild},
+    backend::circuit::CircuitBuild,
     prelude::{BoolVariable, CircuitBuilder, PlonkParameters, U64Variable}, frontend::vars::{Bytes32Variable, ArrayVariable},
 };
 
@@ -59,18 +58,18 @@ impl ProveFinality {
         // let previous_justified_checkpoint = builder.read::<CheckpointVariable>(); // Comes from beacon_state
         // let current_justified_checkpoint = builder.read::<CheckpointVariable>(); // Comes from beacon_state
 
-        // block_merkle_branch_proof(
-        //     builder,
-        //     prev_block_root,
-        //     state_root,
-        //     validators_root,
-        //     state_root_proof,
-        //     validators_root_proof
-        // );
+        block_merkle_branch_proof(
+            builder,
+            prev_block_root,
+            state_root,
+            validators_root,
+            state_root_proof,
+            validators_root_proof
+        );
 
-        validate_target_source_difference(builder, &vad_source, &vad_target);
+        // validate_target_source_difference(builder, &vad_source, &vad_target); //TODO: Bugged Data
 
-        // let new_justification_bits = process_justifications(
+        // let new_justification_bits = process_justifications( //TODO: No Data
         //     builder,
         //     total_number_of_validators,
         //     justification_bits,
@@ -84,7 +83,7 @@ impl ProveFinality {
         let source_index = builder.sub(current_epoch, vad_source.epoch);
         let target_index = builder.sub(current_epoch, vad_target.epoch);
 
-        // validate_source(
+        // validate_source( //TODO: No data
         //     builder,
         //     vad_source,
         //     target_index,
@@ -92,7 +91,7 @@ impl ProveFinality {
         //     current_justified_checkpoint,
         // );
 
-        // validate_justification_bits(builder, source_index, target_index, new_justification_bits);
+        // validate_justification_bits(builder, source_index, target_index, new_justification_bits); //TODO: No Data
     }
 }
 

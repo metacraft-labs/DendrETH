@@ -1,4 +1,3 @@
-use ethers::types::U64;
 use plonky2x::{
     backend::circuit::CircuitBuild,
     //frontend::eth::vars::BLSPubkeyVariable,
@@ -46,9 +45,9 @@ impl CommitmentAccumulatorInner {
         let r_source = right_proof_reader.read::<CheckpointVariable>();
 
         let r_state_root = right_proof_reader.read::<Bytes32Variable>();
-        let r_state_root_proof = right_proof_reader.read::<ArrayVariable<Bytes32Variable, STATE_ROOT_PROOF_LEN>>();
+        let _r_state_root_proof = right_proof_reader.read::<ArrayVariable<Bytes32Variable, STATE_ROOT_PROOF_LEN>>();
         let r_validators_root = right_proof_reader.read::<Bytes32Variable>();
-        let r_validators_root_proof = right_proof_reader.read::<ArrayVariable<Bytes32Variable, VALIDATORS_ROOT_PROOF_LEN>>();
+        let _r_validators_root_proof = right_proof_reader.read::<ArrayVariable<Bytes32Variable, VALIDATORS_ROOT_PROOF_LEN>>();
         let r_slot = right_proof_reader.read::<U64Variable>();
 
         builder.assert_is_equal(l_sigma, r_sigma);

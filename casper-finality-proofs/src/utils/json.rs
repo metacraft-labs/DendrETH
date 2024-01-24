@@ -1,7 +1,7 @@
 use std::fs::File;
 use anyhow::Error;
 use serde_json::Value;
-use std::io::{Error as IOError, Read};
+use std::io::Read;
 
 pub fn read_json_from_file(path_to_file: &str) -> Result<Value, Error> {
     let mut file = File::open(path_to_file)?;

@@ -1,16 +1,13 @@
 use crate::utils::plonky2x_extensions::assert_is_true;
 use crate::weigh_justification_and_finalization::checkpoint::CheckpointVariable;
 
-use plonky2::plonk::config::{AlgebraicHasher, GenericConfig};
-use plonky2x::backend::circuit::Circuit;
 use plonky2x::frontend::eth::vars::BLSPubkeyVariable;
 use plonky2x::frontend::hash::poseidon::poseidon256::PoseidonHashOutVariable;
 use plonky2x::prelude::{
-    ArrayVariable, BoolVariable, ByteVariable, CircuitBuilder, PlonkParameters, U256Variable,
+    ArrayVariable, BoolVariable, CircuitBuilder, PlonkParameters, U256Variable,
     U64Variable, Variable,
 };
-use plonky2x::prelude::{CircuitVariable, Field};
-use plonky2x::utils::eth::BLSPubkey;
+use plonky2x::prelude::CircuitVariable;
 
 
 const VALIDATORS_IN_SPLIT: usize = 20;

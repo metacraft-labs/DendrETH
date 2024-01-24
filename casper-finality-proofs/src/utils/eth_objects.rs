@@ -1,21 +1,177 @@
-use curta::maybe_rayon::rayon::str::Bytes;
-use lighthouse_types::typenum::U6;
 use plonky2x::{
-    frontend::{
-        eth::{
-            vars::BLSPubkeyVariable
-        },
-        hash::poseidon::poseidon256::PoseidonHashOutVariable, vars::BytesVariable
-    },
-    prelude::{
+    backend::circuit::{PlonkParameters, PublicInput}, frontend::{
+        eth::vars::BLSPubkeyVariable, vars::BytesVariable
+    }, prelude::{
         CircuitBuilder, Variable, BoolVariable, U64Variable, Bytes32Variable, ArrayVariable, CircuitVariable, RichField
-    },
-    backend::circuit::{DefaultParameters, PlonkParameters},
+    }, utils::{bytes, bytes32}
 };
+use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::constants::{
-    VALIDATORS_HASH_TREE_DEPTH, VALIDATORS_ROOT_PROOF_LEN, STATE_ROOT_PROOF_LEN, VERSION_OBJ_BYTES
+    STATE_ROOT_PROOF_LEN, VALIDATORS_HASH_TREE_DEPTH, VALIDATORS_ROOT_PROOF_LEN, VERSION_OBJ_BYTES, ZERO_HASHES
 };
+
+fn deserialize_validator_list_proof<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let list_proof: Vec<String> = Deserialize::deserialize(deserializer)?;
+
+    let padded_result: Vec<String> = list_proof.into_iter()
+        .enumerate()
+        .map(|(index, item)|
+            if item.is_empty() {
+                 ZERO_HASHES[index].to_string()
+                } 
+            else { item.to_string() })
+        .collect();
+
+    Ok(padded_result)
+}
+    
+#[derive(Debug, Clone, Deserialize)]
+pub struct BeaconValidatorInput {
+    pub pubkey: String,
+    pub withdrawal_credentials: String,
+    pub effective_balance: u64,
+    pub slashed: bool,
+    pub activation_eligibility_epoch: u64,
+    pub activation_epoch: u64,
+    pub exit_epoch: u64,
+    pub withdrawable_epoch: u64,
+}
+
+impl BeaconValidatorInput {
+    pub fn write<L: PlonkParameters<D>, const D: usize>(&self, input: &mut PublicInput<L, D>){
+        input.write::<BLSPubkeyVariable>(bytes!(self.pubkey.clone())); 
+        input.write::<Bytes32Variable>(bytes32!(self.withdrawal_credentials)); 
+        input.write::<U64Variable>(self.effective_balance);
+        input.write::<BoolVariable>(self.slashed);
+        input.write::<U64Variable>(self.activation_eligibility_epoch); 
+        input.write::<U64Variable>(self.activation_epoch); 
+        input.write::<U64Variable>(self.exit_epoch); 
+        input.write::<U64Variable>(self.withdrawable_epoch); 
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ValidatorDataInput {
+    trusted: bool,
+    validator_index: u64,
+
+    #[serde(flatten)]
+    beacon_validator_variable: BeaconValidatorInput,
+
+    #[serde(deserialize_with="deserialize_validator_list_proof")]
+    validator_list_proof: Vec<String>,
+}
+
+impl ValidatorDataInput {
+    pub fn write<L: PlonkParameters<D>, const D: usize>(&self, mut input: &mut PublicInput<L, D>) {
+        input.write::<BoolVariable>(self.trusted); 
+        input.write::<U64Variable>(self.validator_index); 
+        self.beacon_validator_variable.write(&mut input);
+
+        input.write::<ArrayVariable<Bytes32Variable, VALIDATORS_HASH_TREE_DEPTH>>(
+            self.validator_list_proof
+            .iter()
+            .map(|element| bytes32!(element))
+            .collect()
+        );
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CheckpointInput {
+    root: String,
+    epoch: u64,
+}
+
+impl CheckpointInput {
+    pub fn write<L: PlonkParameters<D>, const D: usize>(&self, input: &mut PublicInput<L, D>) {
+        input.write::<Bytes32Variable>(bytes32!(self.root));
+        input.write::<U64Variable>(self.epoch);
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ForkInput {
+    previous_version: String,
+    current_version: String,
+    epoch: u64,
+}
+
+impl ForkInput {
+    pub fn write<L: PlonkParameters<D>, const D: usize>(&self, input: &mut PublicInput<L, D>) {
+        input.write::<BytesVariable<VERSION_OBJ_BYTES>>(bytes!(&self.previous_version));
+        input.write::<BytesVariable<VERSION_OBJ_BYTES>>(bytes!(&self.current_version));
+        input.write::<U64Variable>(self.epoch); 
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct AttestationDataInput {
+    slot: u64,
+    index: u64,
+
+    beacon_block_root: String,
+
+    // #[serde(deserialize_with="deserialize_checkpoint")]
+    source: CheckpointInput,
+
+    // #[serde(deserialize_with="deserialize_checkpoint")]
+    target: CheckpointInput,
+}
+
+
+impl AttestationDataInput {
+    pub fn write<L: PlonkParameters<D>, const D: usize>(&self, mut input: &mut PublicInput<L, D>) {
+        input.write::<U64Variable>(self.slot); 
+        input.write::<U64Variable>(self.index);
+        input.write::<Bytes32Variable>(bytes32!(self.beacon_block_root));
+        self.source.write(&mut input);
+        self.target.write(&mut input);
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct AttestationInput {
+    data: AttestationDataInput,
+    // signature: String,
+    fork: ForkInput,
+    genesis_validators_root: String,
+    state_root: String,
+    state_root_proof: Vec<String>,
+    validators_root: String,
+    validators_root_proof: Vec<String>,
+}
+
+impl AttestationInput {
+    pub fn write<L: PlonkParameters<D>, const D: usize>(&self, mut input: &mut PublicInput<L, D>) {
+        self.data.write(&mut input);
+
+        // input.write::<BLSPubkeyVariable>(); //TODO:
+        self.fork.write(&mut input);
+        input.write::<Bytes32Variable>(bytes32!(self.genesis_validators_root));
+
+        input.write::<Bytes32Variable>(bytes32!(self.state_root));
+        input.write::<ArrayVariable<Bytes32Variable, STATE_ROOT_PROOF_LEN>>(
+            self.state_root_proof
+                .iter()
+                .map(|element| bytes32!(element))
+                .collect(),
+        );
+
+        input.write::<Bytes32Variable>(bytes32!(self.validators_root));
+        input.write::<ArrayVariable<Bytes32Variable, VALIDATORS_ROOT_PROOF_LEN>>(
+            self.validators_root_proof
+                .iter()
+                .map(|element| bytes32!(element))
+                .collect(),
+        );
+    }
+}
+
 
 #[derive(Debug, Clone, Copy, CircuitVariable)]
 pub struct BeaconValidatorVariable {

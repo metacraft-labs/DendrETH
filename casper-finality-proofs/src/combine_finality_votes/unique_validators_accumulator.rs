@@ -1,12 +1,9 @@
-use curta::chip::register::array::ArrayRegister;
 use plonky2x::{
     backend::circuit::CircuitBuild,
-    //frontend::eth::vars::BLSPubkeyVariable,
-    prelude::{CircuitBuilder, PlonkParameters}, frontend::{uint::uint64::U64Variable, vars::{Bytes32Variable, ArrayVariable}},
+    prelude::{CircuitBuilder, PlonkParameters}, frontend::{uint::uint64::U64Variable},
 };
 
 use crate::utils::plonky2x_extensions::assert_is_true;
-use crate::constants::VALIDATOR_INDICES_IN_SPLIT;
 
 use super::circuit::ProofWithPublicInputsTargetReader;
 

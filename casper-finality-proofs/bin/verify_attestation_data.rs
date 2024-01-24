@@ -1,20 +1,10 @@
-use std::fs::File;
-use std::io::{Read, Error as IOError};
-use std::any;
-use curta::maybe_rayon::rayon::str::Bytes;
+use std::{fs::File, io::Read};
 use itertools::Itertools;
-use lighthouse_types::{Fork, Validator};
 use serde_json::Value;
-use curta::chip::field;
-use ethers::types::U256;
-use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2x::{
-    backend::circuit::{Circuit, DefaultParameters},
-    prelude::{bytes32,CircuitVariable,ArrayVariable, BoolVariable, CircuitBuilder, Field, PlonkParameters, Variable}, frontend::{eth::{beacon::vars::BeaconValidatorVariable, vars::BLSPubkeyVariable}, vars::{Bytes32Variable, U256Variable}, uint::uint64::U64Variable},
+    backend::circuit::{Circuit, DefaultParameters}, frontend::vars::Bytes32Variable, prelude::{bytes32, CircuitBuilder}
 };
-use casper_finality_proofs::verify_attestation_data::verify_attestation_data::VerifyAttestationData;
-use casper_finality_proofs::prove_casper::sequential_verification::{AttestationInput, ForkInput, AttestationDataInput, ValidatorDataInput};
-use casper_finality_proofs::utils::eth_objects::{ValidatorData, AttestationData, Attestation};
+use casper_finality_proofs::{utils::eth_objects::{AttestationInput, ValidatorDataInput}, verify_attestation_data::verify_attestation_data::VerifyAttestationData};
 fn main() {
     plonky2x::utils::setup_logger();
 

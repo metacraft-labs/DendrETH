@@ -1,7 +1,7 @@
 use crate::constants::VALIDATOR_INDICES_IN_SPLIT;
 use crate::utils::plonky2x_extensions::assert_is_true;
 
-use plonky2x::prelude::{ArrayVariable, CircuitBuilder, PlonkParameters, U64Variable};
+use plonky2x::prelude::{CircuitBuilder, PlonkParameters, U64Variable};
 
 #[derive(Debug, Clone)]
 pub struct CountUniqueValidators;

@@ -1,211 +1,10 @@
-use ethers::abi::parse_abi;
-use ethers::types::U256;
 use plonky2::plonk::proof::ProofWithPublicInputs;
-use plonky2x::backend::circuit::{PublicInput, CircuitBuild};
-use plonky2x::frontend::uint::uint64;
-use plonky2x::frontend::vars::BytesVariable;
-use serde::{Deserialize, Deserializer};
-use serde_derive::Serialize;
-use serde_json::{Error, Value};
-use serde_with::serde_as;
-use snap::write;
-use std::any;
-use std::fs::File;
-use std::io::{Error as IOError, Read};
+use plonky2x::{backend::circuit::{Circuit, CircuitBuild}, frontend::{builder::CircuitBuilder, vars::Bytes32Variable}};
+use serde_json::Value;
+use plonky2x::prelude::{bytes32, PlonkParameters};
 
-use plonky2::hash::hash_types::RichField;
-use plonky2x::{
-    backend::circuit::{Circuit, DefaultParameters},
-    frontend::{
-        eth::{
-            // beacon::vars::BeaconValidatorVariable,
-            vars::BLSPubkeyVariable
-        },
-        hash::poseidon::poseidon256::PoseidonHashOutVariable,
-        uint::uint64::U64Variable,
-        vars::Bytes32Variable,
-    },
-    prelude::{
-        bytes, bytes32, ArrayVariable, BoolVariable, CircuitBuilder, CircuitVariable, Field,
-        PlonkParameters, U256Variable, Variable,
-    },
-};
-use plonky2::field::goldilocks_field::GoldilocksField;
-
-use crate::constants::{
-    STATE_ROOT_PROOF_LEN, VALIDATORS_HASH_TREE_DEPTH, VALIDATORS_PER_COMMITTEE,
-    VALIDATORS_ROOT_PROOF_LEN, VERSION_OBJ_BYTES, ZERO_HASHES, TEST_VALIDATORS_IN_COMMITMENT_SIZE
-};
-use crate::weigh_justification_and_finalization::checkpoint::{CheckpointValue, CheckpointVariable};
-
-fn deserialize_checkpoint<'de, D>(deserializer: D) -> Result<String, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let checkpoint: CheckpointInput = Deserialize::deserialize(deserializer)?;
-    Ok(checkpoint.root)
-}
-
-fn deserialize_validator_list_proof<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let list_proof: Vec<String> = Deserialize::deserialize(deserializer)?;
-
-    let padded_result: Vec<String> = list_proof.into_iter()
-        .enumerate()
-        .map(|(index, item)|
-            if item.is_empty() {
-                 ZERO_HASHES[index].to_string()
-                } 
-            else { item.to_string() })
-        .collect();
-
-    Ok(padded_result)
-}
-    
-#[derive(Debug, Clone, Deserialize)]
-pub struct BeaconValidatorInput {
-    pub pubkey: String,
-    pub withdrawal_credentials: String,
-    pub effective_balance: u64,
-    pub slashed: bool,
-    pub activation_eligibility_epoch: u64,
-    pub activation_epoch: u64,
-    pub exit_epoch: u64,
-    pub withdrawable_epoch: u64,
-}
-
-impl BeaconValidatorInput {
-    pub fn write<L: PlonkParameters<D>, const D: usize>(&self, input: &mut PublicInput<L, D>){
-        input.write::<BLSPubkeyVariable>(bytes!(self.pubkey.clone())); 
-        input.write::<Bytes32Variable>(bytes32!(self.withdrawal_credentials)); 
-        input.write::<U64Variable>(self.effective_balance);
-        input.write::<BoolVariable>(self.slashed);
-        input.write::<U64Variable>(self.activation_eligibility_epoch); 
-        input.write::<U64Variable>(self.activation_epoch); 
-        input.write::<U64Variable>(self.exit_epoch); 
-        input.write::<U64Variable>(self.withdrawable_epoch); 
-    }
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct ValidatorDataInput {
-    trusted: bool,
-    validator_index: u64,
-
-    #[serde(flatten)]
-    beacon_validator_variable: BeaconValidatorInput,
-
-    #[serde(deserialize_with="deserialize_validator_list_proof")]
-    validator_list_proof: Vec<String>,
-}
-
-impl ValidatorDataInput {
-    pub fn write<L: PlonkParameters<D>, const D: usize>(&self, mut input: &mut PublicInput<L, D>) {
-        input.write::<BoolVariable>(self.trusted); 
-        input.write::<U64Variable>(self.validator_index); 
-        self.beacon_validator_variable.write(&mut input);
-
-        input.write::<ArrayVariable<Bytes32Variable, VALIDATORS_HASH_TREE_DEPTH>>(
-            self.validator_list_proof
-            .iter()
-            .map(|element| bytes32!(element))
-            .collect()
-        );
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CheckpointInput {
-    root: String,
-    epoch: u64,
-}
-
-impl CheckpointInput {
-    pub fn write<L: PlonkParameters<D>, const D: usize>(&self, input: &mut PublicInput<L, D>) {
-        input.write::<Bytes32Variable>(bytes32!(self.root));
-        input.write::<U64Variable>(self.epoch);
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ForkInput {
-    previous_version: String,
-    current_version: String,
-    epoch: u64,
-}
-
-impl ForkInput {
-    pub fn write<L: PlonkParameters<D>, const D: usize>(&self, input: &mut PublicInput<L, D>) {
-        input.write::<BytesVariable<VERSION_OBJ_BYTES>>(bytes!(&self.previous_version));
-        input.write::<BytesVariable<VERSION_OBJ_BYTES>>(bytes!(&self.current_version));
-        input.write::<U64Variable>(self.epoch); 
-    }
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct AttestationDataInput {
-    slot: u64,
-    index: u64,
-
-    beacon_block_root: String,
-
-    // #[serde(deserialize_with="deserialize_checkpoint")]
-    source: CheckpointInput,
-
-    // #[serde(deserialize_with="deserialize_checkpoint")]
-    target: CheckpointInput,
-}
-
-
-impl AttestationDataInput {
-    pub fn write<L: PlonkParameters<D>, const D: usize>(&self, mut input: &mut PublicInput<L, D>) {
-        input.write::<U64Variable>(self.slot); 
-        input.write::<U64Variable>(self.index);
-        input.write::<Bytes32Variable>(bytes32!(self.beacon_block_root));
-        self.source.write(&mut input);
-        self.target.write(&mut input);
-    }
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct AttestationInput {
-    data: AttestationDataInput,
-    // signature: String,
-    fork: ForkInput,
-    genesis_validators_root: String,
-    state_root: String,
-    state_root_proof: Vec<String>,
-    validators_root: String,
-    validators_root_proof: Vec<String>,
-}
-
-impl AttestationInput {
-    pub fn write<L: PlonkParameters<D>, const D: usize>(&self, mut input: &mut PublicInput<L, D>) {
-        self.data.write(&mut input);
-
-        // input.write::<BLSPubkeyVariable>(); //TODO:
-        self.fork.write(&mut input);
-        input.write::<Bytes32Variable>(bytes32!(self.genesis_validators_root));
-
-        input.write::<Bytes32Variable>(bytes32!(self.state_root));
-        input.write::<ArrayVariable<Bytes32Variable, STATE_ROOT_PROOF_LEN>>(
-            self.state_root_proof
-                .iter()
-                .map(|element| bytes32!(element))
-                .collect(),
-        );
-
-        input.write::<Bytes32Variable>(bytes32!(self.validators_root));
-        input.write::<ArrayVariable<Bytes32Variable, VALIDATORS_ROOT_PROOF_LEN>>(
-            self.validators_root_proof
-                .iter()
-                .map(|element| bytes32!(element))
-                .collect(),
-        );
-    }
-}
+use crate::{constants::{TEST_ATTESTATIONS_READ, TEST_VALIDATORS_IN_COMMITMENT_SIZE}, utils::{eth_objects::ValidatorDataInput, json::read_json_from_file}, verify_attestation_data::verify_attestation_data::VerifyAttestationData};
+use crate::utils::eth_objects::AttestationInput;
 
 pub fn prove_verify_attestation_data<L: PlonkParameters<D>, const D: usize>(
     circuit: &CircuitBuild<L,D>,
@@ -244,4 +43,35 @@ where
     println!("Attestation Proof: {:?}", _output);
 
     proof
+}
+
+pub fn prove_attestations<L: PlonkParameters<D>, const D: usize>(
+    file_path_attestations: &str,
+) -> (
+    Vec<ProofWithPublicInputs<<L as PlonkParameters<D>>::Field, <L as PlonkParameters<D>>::Config, D>>,
+    CircuitBuild<L, D>
+)
+where
+    <<L as PlonkParameters<D>>::Config as plonky2::plonk::config::GenericConfig<D>>::Hasher:
+        plonky2::plonk::config::AlgebraicHasher<<L as PlonkParameters<D>>::Field>,
+{
+    let attestations_json = read_json_from_file(file_path_attestations).unwrap();
+    
+    let mut proofs = vec![];
+
+    let mut vad_builder = CircuitBuilder::<L, D>::new();
+    VerifyAttestationData::define(&mut vad_builder);
+    let vad_circuit = vad_builder.build();
+
+    let attestations = attestations_json.get("attestations").and_then(Value::as_array).unwrap();
+    let mut counter = 1;
+    for attestation in attestations.iter().take(TEST_ATTESTATIONS_READ) {
+        println!("====Attestation {}====", counter);
+        counter += 1;
+
+        let proof = prove_verify_attestation_data::<L, D>(&vad_circuit, attestation);
+        proofs.push(proof);
+    }
+    
+    (proofs, vad_circuit)
 }
