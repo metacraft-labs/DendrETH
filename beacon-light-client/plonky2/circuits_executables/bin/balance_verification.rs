@@ -17,6 +17,7 @@ use circuits_executables::{
     },
     provers::{handle_balance_inner_level_proof, SetPWValues},
     utils::parse_config_file,
+    validator::VALIDATOR_REGISTRY_LIMIT,
     validator_commitment_constants::get_validator_commitment_constants,
 };
 use futures_lite::future;
@@ -127,16 +128,11 @@ async fn async_main() -> Result<()> {
 
     let redis_connection = matches.value_of("redis_connection").unwrap();
 
-    let start = Instant::now();
+    println!("Connecting to Redis...");
     let client = redis::Client::open(redis_connection)?;
     let mut con = client.get_async_connection().await?;
 
-    let elapsed = start.elapsed();
-
-    println!("Redis connection took: {:?}", elapsed);
-
-    let start = Instant::now();
-
+    println!("Loading circuit data...");
     let circuit_data = load_circuit_data(&level.to_string())?;
 
     let (inner_circuit_data, targets) = if level == 0 {
@@ -148,20 +144,14 @@ async fn async_main() -> Result<()> {
         )
     };
 
-    let elapsed = start.elapsed();
-
-    println!("Circuit generation took: {:?}", elapsed);
-
+    println!("Starting worker for level {}...", level);
     let queue = WorkQueue::new(KeyPrefix::new(format!(
         "{}:{}",
         get_validator_commitment_constants().balance_verification_queue,
         level
     )));
 
-    println!("level {}", level);
-
     let start: Instant = Instant::now();
-
     process_queue(
         &mut con,
         &queue,
@@ -192,7 +182,7 @@ async fn process_queue(
     preserve_intermediary_proofs: bool,
 ) -> Result<()> {
     while time_to_run.is_none() || start.elapsed() < time_to_run.unwrap() {
-        let job = match queue
+        let queue_item = match queue
             .lease(
                 con,
                 Some(Duration::from_secs(stop_after)),
@@ -200,46 +190,46 @@ async fn process_queue(
             )
             .await?
         {
-            Some(job) => job,
+            Some(item) => item,
             None => {
-                println!("No jobs left in queue");
+                println!("No tasks left in queue");
 
                 return Ok(());
             }
         };
 
-        if job.data.is_empty() {
-            println!("Skipping empty data job");
-            queue.complete(con, &job).await?;
+        if queue_item.data.is_empty() {
+            println!("Skipping empty data task");
+            queue.complete(con, &queue_item).await?;
 
             continue;
         }
 
-        println!("Processing job data: {:?}", job.data);
+        // println!("Processing task data: {:?}", queue_item.data);
 
         match targets {
             Targets::FirstLevel(targets) => {
-                match process_first_level_job(
+                match process_first_level_task(
                     con,
                     queue,
-                    job,
+                    queue_item,
                     circuit_data,
                     targets.as_ref().unwrap(),
                 )
                 .await
                 {
                     Err(_err) => {
-                        println!("Error processing first level job {:?}", _err);
+                        println!("Error processing first level task {:?}", _err);
                         continue;
                     }
                     Ok(_) => {}
                 };
             }
             Targets::InnerLevel(inner_circuit_targets) => {
-                match process_inner_level_job(
+                match process_inner_level_task(
                     con,
                     queue,
-                    job,
+                    queue_item,
                     circuit_data,
                     inner_circuit_data.unwrap(),
                     inner_circuit_targets,
@@ -258,24 +248,22 @@ async fn process_queue(
     Ok(())
 }
 
-async fn process_first_level_job(
+async fn process_first_level_task(
     con: &mut Connection,
     queue: &WorkQueue,
-    job: Item,
+    queue_item: Item,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     targets: &ValidatorBalanceVerificationTargets,
 ) -> Result<()> {
-    let balance_input_index = u64::from_be_bytes(job.data[0..8].try_into().unwrap());
+    let balance_input_index = u64::from_be_bytes(queue_item.data[0..8].try_into().unwrap());
 
-    let start = Instant::now();
+    if balance_input_index as usize != VALIDATOR_REGISTRY_LIMIT {
+        println!("Processing task for index {}...", balance_input_index);
+    } else {
+        println!("Processing task for zero proof...");
+    }
+
     let validator_balance_input = fetch_validator_balance_input(con, balance_input_index).await?;
-
-    let elapsed = start.elapsed();
-
-    println!("Fetching validator balance input took: {:?}", elapsed);
-
-    let start = Instant::now();
-
     let mut pw = PartialWitness::new();
 
     targets.set_pw_values(&mut pw, &validator_balance_input);
@@ -284,43 +272,42 @@ async fn process_first_level_job(
 
     match save_balance_proof(con, proof, 0, balance_input_index).await {
         Err(err) => {
-            print!("Error: {}", err);
+            println!("Error: {}", err);
             thread::sleep(Duration::from_secs(5));
             return Err(err);
         }
         Ok(_) => {
-            queue.complete(con, &job).await?;
+            queue.complete(con, &queue_item).await?;
         }
     }
-
-    let elapsed = start.elapsed();
-
-    println!("Proof generation took: {:?}", elapsed);
 
     Ok(())
 }
 
-async fn process_inner_level_job(
+async fn process_inner_level_task(
     con: &mut Connection,
     queue: &WorkQueue,
-    job: Item,
+    queue_item: Item,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     inner_circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     inner_circuit_targets: &Option<BalanceInnerCircuitTargets>,
     level: u64,
     preserve_intermediary_proofs: bool,
 ) -> Result<()> {
-    let index = u64::from_be_bytes(job.data[0..8].try_into().unwrap());
-    println!("Got index: {:?}", index);
+    let index = u64::from_be_bytes(queue_item.data[0..8].try_into().unwrap());
+
+    if index as usize != VALIDATOR_REGISTRY_LIMIT {
+        println!("Processing task for index {}...", index);
+    } else {
+        println!("Processing task for zero proof...");
+    }
 
     match fetch_proofs_balances::<BalanceProof>(con, level, index).await {
         Err(err) => {
-            print!("Error: {}", err);
+            println!("Error: {}", err);
             return Err(err);
         }
         Ok(proofs) => {
-            let start = Instant::now();
-
             let proof = handle_balance_inner_level_proof(
                 proofs.0,
                 proofs.1,
@@ -331,22 +318,18 @@ async fn process_inner_level_job(
 
             match save_balance_proof(con, proof, level, index).await {
                 Err(err) => {
-                    print!("Error: {}", err);
+                    println!("Error: {}", err);
                     thread::sleep(Duration::from_secs(5));
                     return Err(err);
                 }
                 Ok(_) => {
-                    queue.complete(con, &job).await?;
+                    queue.complete(con, &queue_item).await?;
                     if !preserve_intermediary_proofs {
                         // delete child nodes
                         delete_balance_verification_proof_dependencies(con, level, index).await?;
                     }
                 }
             }
-
-            let elapsed = start.elapsed();
-            println!("Proof generation took: {:?}", elapsed);
-
             Ok(())
         }
     }

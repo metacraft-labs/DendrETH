@@ -169,7 +169,6 @@ let TAKE: number | undefined;
     await queues[i + 1].addItem(db, new Item(buffer));
 
   }
-  console.log('Added zero tasks');
 
   console.log('Saving validator balance input...');
   const batchSize = 100;
@@ -216,7 +215,6 @@ let TAKE: number | undefined;
 
     await redis.saveValidatorBalancesInput(batch);
   }
-  console.log('Validator balance input saved');
 
   await redis.saveBalanceProof(0n, BigInt(validator_commitment_constants.validatorRegistryLimit))
 
@@ -246,7 +244,6 @@ let TAKE: number | undefined;
       await queues[level].addItem(db, new Item(buffer));
     }
   }
-  console.log('Inner proofs added');
 
   const beaconStateView = ssz.capella.BeaconState.toViewDU(beaconState);
   const beaconStateTree = new Tree(beaconStateView.node);
@@ -275,7 +272,8 @@ let TAKE: number | undefined;
   });
 
   queues[39].addItem(db, new Item(new ArrayBuffer(0)));
-  console.log("Final proof input added");
+
+  console.log('Done');
 
   await redis.disconnect();
   db.disconnect();
