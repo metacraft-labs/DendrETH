@@ -8,7 +8,7 @@ use crate::{
     validator_balances_input::ValidatorBalancesInput,
     validator_commitment_constants::VALIDATOR_COMMITMENT_CONSTANTS,
 };
-use anyhow::{ensure, Error, Result};
+use anyhow::{ensure, Result};
 use circuits::{
     build_commitment_mapper_first_level_circuit::CommitmentMapperProofExt,
     build_final_circuit::FinalCircuitProofExt,
@@ -22,7 +22,7 @@ use plonky2::{
         circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs,
     },
 };
-use redis::{aio::Connection, AsyncCommands, JsonAsyncCommands, RedisError};
+use redis::{aio::Connection, AsyncCommands, JsonAsyncCommands};
 use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
