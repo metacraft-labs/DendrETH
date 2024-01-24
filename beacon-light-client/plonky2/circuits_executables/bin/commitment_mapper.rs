@@ -153,7 +153,7 @@ async fn async_main() -> Result<()> {
                                     queue.complete(&mut con, &queue_item).await?;
                                 }
                                 Err(err) => {
-                                    println!("Error: {}", err);
+                                    println!("Error while proving zero validator: {}", err);
                                     thread::sleep(Duration::from_secs(10));
                                     continue;
                                 }
@@ -164,7 +164,7 @@ async fn async_main() -> Result<()> {
                                     queue.complete(&mut con, &queue_item).await?;
                                 }
                                 Err(err) => {
-                                    println!("Error: {}", err);
+                                    println!("Error while proving validator: {}", err);
                                     thread::sleep(Duration::from_secs(10));
                                     continue;
                                 }
@@ -172,7 +172,7 @@ async fn async_main() -> Result<()> {
                         }
                     }
                     Err(err) => {
-                        println!("Error: {}", err);
+                        println!("Error while fetching validator: {}", err);
                         thread::sleep(Duration::from_secs(10));
                         continue;
                     }
@@ -201,14 +201,14 @@ async fn async_main() -> Result<()> {
                         match save_validator_proof(&mut con, proof, gindex, epoch).await {
                             Ok(_) => queue.complete(&mut con, &queue_item).await?,
                             Err(err) => {
-                                println!("Error: {}", err);
+                                println!("Error while saving validator proof: {}", err);
                                 thread::sleep(Duration::from_secs(1));
                                 continue;
                             }
                         }
                     }
                     Err(err) => {
-                        println!("Error: {}", err);
+                        println!("Error while fetching validator proof: {}", err);
                         thread::sleep(Duration::from_secs(1));
                         continue;
                     }
@@ -238,14 +238,14 @@ async fn async_main() -> Result<()> {
                         match save_zero_validator_proof(&mut con, proof, depth).await {
                             Ok(_) => queue.complete(&mut con, &queue_item).await?,
                             Err(err) => {
-                                println!("Error: {}", err);
+                                println!("Error while saving zero validator proof: {}", err);
                                 thread::sleep(Duration::from_secs(1));
                                 continue;
                             }
                         }
                     }
                     Err(err) => {
-                        println!("Error: {}", err);
+                        println!("Error while proving zero for depth {}: {}", depth, err);
                         thread::sleep(Duration::from_secs(1));
                         continue;
                     }
