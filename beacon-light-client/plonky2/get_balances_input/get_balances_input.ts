@@ -218,6 +218,8 @@ let TAKE: number | undefined;
   }
   console.log('Validator balance input saved');
 
+  await redis.saveBalanceProof(0n, BigInt(validator_commitment_constants.validatorRegistryLimit))
+
   for (let i = 0; i < TAKE / CIRCUIT_SIZE; i++) {
     const buffer = new ArrayBuffer(8);
     const view = new DataView(buffer);
@@ -230,16 +232,18 @@ let TAKE: number | undefined;
 
 
   console.log('Adding inner proofs...');
-  for (let j = 1; j < 38; j++) {
-    const range = [...new Array(Math.ceil((TAKE / CIRCUIT_SIZE) / (2 ** j))).keys()];
+  for (let level = 1; level < 38; level++) {
+    await redis.saveBalanceProof(BigInt(level), BigInt(validator_commitment_constants.validatorRegistryLimit))
+
+    const range = [...new Array(Math.ceil((TAKE / CIRCUIT_SIZE) / (2 ** level))).keys()];
     for (const key of range) {
       const buffer = new ArrayBuffer(8);
       const view = new DataView(buffer);
 
-      await redis.saveBalanceProof(BigInt(j), BigInt(key));
+      await redis.saveBalanceProof(BigInt(level), BigInt(key));
 
       view.setBigUint64(0, BigInt(key), false);
-      await queues[j].addItem(db, new Item(buffer));
+      await queues[level].addItem(db, new Item(buffer));
     }
   }
   console.log('Inner proofs added');

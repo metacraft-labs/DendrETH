@@ -246,6 +246,7 @@ export class Redis implements IRedis {
       proof: [],
       balancesHash: [],
       withdrawalCredentials: '0',
+      currentEpoch: '0',
     },
   ): Promise<void> {
     await this.waitForConnection();

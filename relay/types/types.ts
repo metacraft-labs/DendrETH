@@ -177,6 +177,7 @@ export interface BalanceProof {
   proof: number[];
   balancesHash: number[];
   withdrawalCredentials: string;
+  currentEpoch: string;
 }
 
 export interface IndexedValidator {
