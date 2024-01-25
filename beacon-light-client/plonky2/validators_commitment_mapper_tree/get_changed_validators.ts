@@ -112,7 +112,6 @@ enum TaskTag {
     for (let level = 39n; level >= 0n; level--) {
       scheduleProveZeroForLevel(level);
     }
-    console.log('Zero tasks added');
   }
 
   console.log(`Initial syncing (${currentEpoch} epoch)...`);
