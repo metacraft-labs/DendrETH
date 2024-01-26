@@ -111,6 +111,10 @@ let TAKE;
     );
   }
 
+  if ((balances.length % CIRCUIT_SIZE) / 4 != 0) {
+    balances.push(''.padStart(256, '0').split('').map(Number));
+  }
+
   console.log('Adding tasks about zeros');
   await redis.saveValidatorBalancesInput([
     {

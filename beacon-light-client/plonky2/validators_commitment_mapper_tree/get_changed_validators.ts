@@ -130,7 +130,8 @@ let TAKE: number | undefined;
   while (true) {
     const timeBefore = Date.now();
 
-    const validators = (await beaconApi.getValidators()).slice(0, TAKE);
+    console.log('Getting ', TAKE);
+    const validators = (await beaconApi.getValidators(6953401)).slice(0, TAKE);
 
     if (prevValidators.length === 0) {
       console.log('prev validators are empty. Saving to redis');

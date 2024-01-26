@@ -16,7 +16,7 @@ use clap::{App, Arg};
 use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
-    iop::witness::PartialWitness,
+    iop::witness::{PartialWitness, WitnessWrite},
     plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig},
     util::serialization::Buffer,
 };
@@ -129,6 +129,11 @@ async fn async_main() -> Result<()> {
                     validator_commitment
                         .validator
                         .set_pw_values(&mut pw, &validator);
+
+                    pw.set_bool_target(
+                        validator_commitment.validator_is_zero,
+                        validator_index == VALIDATOR_REGISTRY_LIMIT,
+                    );
 
                     let proof = first_level_circuit_data.prove(pw)?;
 

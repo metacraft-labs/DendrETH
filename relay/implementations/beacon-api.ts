@@ -398,20 +398,11 @@ export class BeaconApi implements IBeaconApi {
   async getValidators(
     state_id: number | string = 'head',
   ): Promise<Validator[]> {
-    const { ssz } = await import('@lodestar/types');
-
-    const validators = await (
-      await this.fetchWithFallback(
-        `/eth/v1/beacon/states/${state_id}/validators`,
-      )
-    ).json();
-
-    return ssz.phase0.Validators.fromJson(
-      validators.data.map(x => x.validator),
-    );
+    const { beaconState } = await this.getBeaconState(state_id);
+    return beaconState.validators;
   }
 
-  async getBeaconState(slot: number) {
+  async getBeaconState(slot: number | string = 'head') {
     logger.info('Getting Beacon State..');
     const { ssz } = await import('@lodestar/types');
 

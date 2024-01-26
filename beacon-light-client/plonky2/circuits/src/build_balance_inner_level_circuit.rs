@@ -10,13 +10,13 @@ use plonky2::{
 };
 
 use crate::{
-    biguint::{CircuitBuilderBiguint},
+    biguint::CircuitBuilderBiguint,
     build_validator_balance_circuit::{
         set_public_variables, ValidatorBalanceProofTargetsExt,
     },
     sha256::make_circuits,
     targets_serialization::{ReadTargets, WriteTargets},
-    utils::{ETH_SHA256_BIT_SIZE},
+    utils::ETH_SHA256_BIT_SIZE,
 };
 
 pub struct BalanceInnerCircuitTargets {
