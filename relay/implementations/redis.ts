@@ -9,37 +9,41 @@ import {
   Validator,
   ValidatorProof,
 } from '../types/types';
-import { createClient, RedisClientType } from 'redis';
+import { RedisClientType, createClient } from 'redis';
 import validator_commitment_constants from '../../beacon-light-client/plonky2/constants/validator_commitment_constants.json';
+import RedisReJSON from 'ioredis-rejson';
 
 export class Redis implements IRedis {
-  private redisClient: RedisClientType;
-  private pubSub: RedisClientType;
+  public readonly client: RedisReJSON;
+  private readonly pubSub: RedisClientType;
 
   constructor(redisHost: string, redisPort: number) {
-    this.redisClient = createClient({
-      url: `redis://${redisHost}:${redisPort}`,
+    this.client = new RedisReJSON({
+      host: redisHost,
+      port: redisPort,
     });
 
-    this.pubSub = this.redisClient.duplicate();
+    this.pubSub = createClient({
+      url: `redis://${redisHost}:${redisPort}`,
+    });
   }
 
   async disconnect() {
     await this.waitForConnection();
     await this.pubSub.disconnect();
-    await this.redisClient.disconnect();
+    this.client.disconnect();
   }
 
   async addToEpochLookup(key: string, epoch: bigint) {
     await this.waitForConnection();
 
-    await this.redisClient.zAdd(`${key}:${validator_commitment_constants.epochLookupKey}`, { score: Number(epoch), value: epoch.toString() });
+    await this.client.zadd(`${key}:${validator_commitment_constants.epochLookupKey}`, Number(epoch), epoch.toString());
   }
 
   async getLatestEpoch(key: string, epoch: bigint): Promise<bigint | null> {
     await this.waitForConnection();
 
-    const values = await this.redisClient.zRange(`${key}:${validator_commitment_constants.epochLookupKey}`, epoch.toString(), 0, { BY: 'SCORE', REV: true, LIMIT: { offset: 0, count: 1 } });
+    const values = await this.client.zrange(`${key}:${validator_commitment_constants.epochLookupKey}`, epoch.toString(), 0, 'BYSCORE', 'REV', 'LIMIT', 0, 1);
     if (values.length === 0) {
       return null;
     }
@@ -51,10 +55,10 @@ export class Redis implements IRedis {
 
     const latestEpoch = await this.getLatestEpoch(key, newOldestEpoch);
     if (latestEpoch !== null) {
-      const range = await this.redisClient.zRange(`${key}:${validator_commitment_constants.epochLookupKey}`, 0, (latestEpoch - 1n).toString(), { BY: 'SCORE' });
+      const range = await this.client.zrange(`${key}:${validator_commitment_constants.epochLookupKey}`, 0, (latestEpoch - 1n).toString(), 'BYSCORE');
       if (range.length !== 0) {
-        await this.redisClient.zRem(`${key}:${validator_commitment_constants.epochLookupKey}`, range);
-        return await this.redisClient.del(range.map((suffix) => `${key}:${suffix}`));
+        await this.client.zrem(`${key}:${validator_commitment_constants.epochLookupKey}`, range);
+        return await this.client.del(range.map((suffix) => `${key}:${suffix}`));
       }
     }
     return 0;
@@ -62,7 +66,7 @@ export class Redis implements IRedis {
 
   async getAllKeys(pattern: string): Promise<string[]> {
     await this.waitForConnection();
-    return this.redisClient.keys(pattern);
+    return this.client.keys(pattern);
   }
 
   async extractHashFromCommitmentMapperProof(gindex: bigint, epoch: bigint, hashAlgorithm: 'sha256' | 'poseidon'): Promise<number[] | null> {
@@ -76,12 +80,12 @@ export class Redis implements IRedis {
     const latestEpoch = await this.getLatestEpoch(`${validator_commitment_constants.validatorProofKey}:${gindex}`, BigInt(epoch));
     if (latestEpoch === null) {
       const depth = Math.floor(Math.log2(Number(gindex) + 1));
-      const result = await this.redisClient.json.get(`${validator_commitment_constants.validatorProofKey}:zeroes:${depth}`, { path: hashKey }) as any;
+      const result = await this.client.json_get(`${validator_commitment_constants.validatorProofKey}:zeroes:${depth}`, hashKey) as any;
       return result;
     }
 
     const key = `${validator_commitment_constants.validatorProofKey}:${gindex}:${latestEpoch}`;
-    return this.redisClient.json.get(key, { path: hashKey }) as any;
+    return this.client.json_get(key, hashKey) as any;
   }
 
   async notifyAboutNewProof(): Promise<void> {
@@ -93,7 +97,7 @@ export class Redis implements IRedis {
   async getValidatorsBatched(ssz, batchSize = 1000): Promise<Validator[]> {
     await this.waitForConnection();
 
-    const keys = (await this.redisClient.keys(
+    const keys = (await this.client.keys(
       `${validator_commitment_constants.validatorKey}:*`,
     )).filter((key) => !key.includes(validator_commitment_constants.epochLookupKey));
 
@@ -104,7 +108,11 @@ export class Redis implements IRedis {
     let allValidators: Validator[] = new Array(keys.length);
 
     for (const [keyBatchIndex, batchKeys] of splitIntoBatches(keys, batchSize).entries()) {
-      const batchValidators = (await this.redisClient.json.mGet(batchKeys, '$')).map((entry) => entry![0]);
+      const res = await this.client.json_mget(batchKeys, '$');
+      if (res === null) {
+        continue;
+      }
+      const batchValidators = (res as any[]).filter((v) => v !== null).flat();
 
       for (const [index, redisValidator] of batchValidators.entries()) {
         try {
@@ -158,7 +166,7 @@ export class Redis implements IRedis {
   async isZeroValidatorEmpty() {
     await this.waitForConnection();
 
-    const result = await this.redisClient.keys(
+    const result = await this.client.keys(
       `${validator_commitment_constants.validatorKey}:${validator_commitment_constants.validatorRegistryLimit}:*`,
     );
 
@@ -168,7 +176,7 @@ export class Redis implements IRedis {
   async isZeroBalanceEmpty() {
     await this.waitForConnection();
 
-    const result = await this.redisClient.json.get(
+    const result = await this.client.json_get(
       `${validator_commitment_constants.validatorBalanceInputKey}:${validator_commitment_constants.validatorRegistryLimit}`,
     );
 
@@ -180,14 +188,14 @@ export class Redis implements IRedis {
 
     const args = await Promise.all(validatorsWithIndices.map(async (validator) => {
       await this.addToEpochLookup(`${validator_commitment_constants.validatorKey}:${validator.index}`, epoch);
-      return {
-        key: `${validator_commitment_constants.validatorKey}:${validator.index}:${epoch}`,
-        path: '$',
-        value: validator.data,
-      };
+      return [
+        `${validator_commitment_constants.validatorKey}:${validator.index}:${epoch}`,
+        '$',
+        JSON.stringify(validator.data),
+      ];
     }));
 
-    await this.redisClient.json.mSet(args);
+    await this.client.sendCommand(new RedisReJSON.Command('JSON.MSET', args));
   }
 
   async saveValidatorBalancesInput(
@@ -195,13 +203,13 @@ export class Redis implements IRedis {
   ) {
     await this.waitForConnection();
 
-    const args = inputsWithIndices.map(ii => ({
-      key: `${validator_commitment_constants.validatorBalanceInputKey}:${ii.index}`,
-      path: '$',
-      value: ii.input,
-    }));
+    const args = inputsWithIndices.map(ii => ([
+      `${validator_commitment_constants.validatorBalanceInputKey}:${ii.index}`,
+      '$',
+      JSON.stringify(ii.input),
+    ]));
 
-    await this.redisClient.json.mSet(args);
+    await this.client.sendCommand(new RedisReJSON.Command('JSON.MSET', args));
   }
 
   async saveFinalProofInput(input: {
@@ -215,7 +223,7 @@ export class Redis implements IRedis {
   }) {
     await this.waitForConnection();
 
-    await this.redisClient.json.set(
+    await this.client.json_set(
       validator_commitment_constants.finalProofInputKey,
       "$",
       input as any
@@ -233,7 +241,7 @@ export class Redis implements IRedis {
     },
   ): Promise<void> {
     await this.waitForConnection();
-    await this.redisClient.json.set(`${validator_commitment_constants.validatorProofKey}:${gindex}:${epoch}`, "$", proof as any);
+    await this.client.json_set(`${validator_commitment_constants.validatorProofKey}:${gindex}:${epoch}`, "$", proof as any);
   }
 
   async saveBalanceProof(
@@ -251,7 +259,7 @@ export class Redis implements IRedis {
   ): Promise<void> {
     await this.waitForConnection();
 
-    await this.redisClient.json.set(
+    await this.client.json_set(
       `${validator_commitment_constants.balanceVerificationProofKey}:${level}:${index}`,
       '$',
       proof as any,
@@ -261,13 +269,13 @@ export class Redis implements IRedis {
   async getNextProof(slot: number): Promise<ProofResultType | null> {
     await this.waitForConnection();
 
-    const keys = await this.redisClient.keys(`proof:${slot}:*`);
+    const keys = await this.client.keys(`proof:${slot}:*`);
 
     if (keys.length == 0) {
       return null;
     }
 
-    return JSON.parse((await this.redisClient.get(keys[0]))!);
+    return JSON.parse((await this.client.get(keys[0]))!);
   }
 
   async getProof(
@@ -276,7 +284,7 @@ export class Redis implements IRedis {
   ): Promise<ProofResultType | null> {
     await this.waitForConnection();
 
-    let proof = await this.redisClient.get(`proof:${prevSlot}:${nextSlot}`);
+    let proof = await this.client.get(`proof:${prevSlot}:${nextSlot}`);
 
     if (proof == null) {
       return null;
@@ -288,13 +296,13 @@ export class Redis implements IRedis {
   async get(key: string): Promise<string | null> {
     await this.waitForConnection();
 
-    return await this.redisClient.get(key);
+    return await this.client.get(key);
   }
 
   async set(key: string, value: string): Promise<void> {
     await this.waitForConnection();
 
-    await this.redisClient.set(key, value);
+    await this.client.set(key, value);
   }
 
   async saveProof(
@@ -304,7 +312,7 @@ export class Redis implements IRedis {
   ): Promise<void> {
     await this.waitForConnection();
 
-    await this.redisClient.json.set(
+    await this.client.json_set(
       `proof:${prevSlot}:${nextSlot}`,
       '$',
       proof as any,
@@ -320,8 +328,8 @@ export class Redis implements IRedis {
   }
 
   private async waitForConnection() {
-    if (!this.redisClient.isOpen) {
-      await this.redisClient.connect();
+    if (this.client.status !== 'ready') {
+      await this.client.connect();
     }
 
     if (!this.pubSub.isOpen) {
