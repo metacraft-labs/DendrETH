@@ -68,7 +68,7 @@ where
         .map_err(serde::de::Error::custom)
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FinalCircuitInput {
     #[serde(with = "bool_vec_as_int_vec")]
@@ -167,17 +167,12 @@ pub async fn fetch_validator_balance_input(
 }
 
 pub async fn fetch_final_layer_input(con: &mut Connection) -> Result<FinalCircuitInput> {
-    let json_str: String = con
-        .get(
-            VALIDATOR_COMMITMENT_CONSTANTS
-                .final_proof_input_key
-                .to_owned(),
-        )
+    let result: String = con
+        .json_get(VALIDATOR_COMMITMENT_CONSTANTS.final_proof_input_key, "$")
         .await?;
-
-    let final_layer_input: FinalCircuitInput = serde_json::from_str(&json_str)?;
-
-    Ok(final_layer_input)
+    let result_vec = &serde_json::from_str::<Vec<FinalCircuitInput>>(&result)?;
+    ensure!(!result_vec.is_empty(), "Could not fetch json object");
+    Ok(result_vec[0].clone())
 }
 
 pub async fn save_balance_proof(
@@ -217,19 +212,20 @@ pub async fn save_final_proof(
     con: &mut Connection,
     proof: &ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
 ) -> Result<()> {
-    let final_proof = serde_json::to_string(&FinalProof {
+    let final_proof = FinalProof {
         needs_change: false,
         state_root: proof.get_final_circuit_state_root().to_vec(),
         withdrawal_credentials: proof.get_final_circuit_withdrawal_credentials(),
         balance_sum: proof.get_final_circuit_balance_sum(),
         proof: proof.to_bytes(),
-    })?;
+    };
 
-    con.set(
+    con.json_set(
         VALIDATOR_COMMITMENT_CONSTANTS
             .final_layer_proof_key
             .to_owned(),
-        final_proof,
+        "$",
+        &final_proof,
     )
     .await?;
 

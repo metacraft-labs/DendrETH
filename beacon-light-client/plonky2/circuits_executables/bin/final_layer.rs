@@ -4,18 +4,21 @@ use anyhow::Result;
 use circuits::build_final_circuit::build_final_circuit;
 use circuits_executables::{
     crud::{
-        fetch_final_layer_input, fetch_proof, load_circuit_data, save_final_proof, BalanceProof,
-        ValidatorProof,
+        fetch_final_layer_input, fetch_proof, fetch_proof_balances, load_circuit_data,
+        save_final_proof, BalanceProof, ValidatorProof,
     },
     provers::SetPWValues,
 };
 use clap::{App, Arg};
 use futures_lite::future;
+use num::BigUint;
+use num_traits::ToPrimitive;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     iop::witness::{PartialWitness, WitnessWrite},
     plonk::{config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs},
 };
+use std::ops::Div;
 
 fn main() -> Result<()> {
     future::block_on(async_main())
@@ -55,7 +58,7 @@ async fn async_main() -> Result<()> {
 
     circuit_targets.set_pw_values(&mut pw, &final_input_data);
 
-    let balance_proof: BalanceProof = fetch_proof(&mut con, 37, 0).await?;
+    let balance_proof: BalanceProof = fetch_proof_balances(&mut con, 37, 0).await?;
 
     let balance_final_proof =
         ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
@@ -84,7 +87,8 @@ async fn async_main() -> Result<()> {
         balance_data.verifier_only.circuit_digest,
     );
 
-    let commitment_proof: ValidatorProof = fetch_proof(&mut con, 40, 0).await?;
+    let epoch = BigUint::div(final_input_data.slot, 32u32).to_u64().unwrap();
+    let commitment_proof: ValidatorProof = fetch_proof(&mut con, 0, epoch).await?;
 
     let commitment_final_proof = ProofWithPublicInputs::<
         GoldilocksField,
