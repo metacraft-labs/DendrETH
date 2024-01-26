@@ -16,6 +16,7 @@ use crate::{
     },
 };
 pub struct ValidatorCommitmentTargets {
+    pub validator_is_zero: BoolTarget,
     pub validator: ValidatorShaTargets,
     pub sha256_hash_tree_root: [BoolTarget; 256],
     pub poseidon_hash_tree_root: HashOutTarget,
@@ -27,6 +28,7 @@ impl ReadTargets for ValidatorCommitmentTargets {
         Self: Sized,
     {
         Ok(ValidatorCommitmentTargets {
+            validator_is_zero: data.read_target_bool()?,
             validator: ValidatorShaTargets::read_targets(data)?,
             sha256_hash_tree_root: data.read_target_bool_vec()?.try_into().unwrap(),
             poseidon_hash_tree_root: data.read_target_hash()?,
@@ -36,8 +38,10 @@ impl ReadTargets for ValidatorCommitmentTargets {
 
 impl WriteTargets for ValidatorCommitmentTargets {
     fn write_targets(&self) -> IoResult<Vec<u8>> {
-        let mut data = self.validator.write_targets()?;
+        let mut data = Vec::new();
 
+        data.write_target_bool(self.validator_is_zero)?;
+        data.extend(self.validator.write_targets()?);
         data.write_target_bool_vec(&self.sha256_hash_tree_root)?;
         data.write_target_hash(&self.poseidon_hash_tree_root)?;
 
@@ -111,10 +115,25 @@ pub fn validator_commitment_mapper<F: RichField + Extendable<D>, const D: usize>
         &validator_poseidon_mapped.withdrawable_epoch,
     );
 
+    let validator_is_zero = builder.add_virtual_bool_target_safe();
+    let zero = builder.zero();
+
+    let poseidon_hash_tree_root = validator_poseidon
+        .hash_tree_root
+        .elements
+        .map(|x| builder._if(validator_is_zero, zero, x));
+
+    let sha256_hash_tree_root = hash_tree_root_sha256
+        .hash_tree_root
+        .map(|x| BoolTarget::new_unsafe(builder._if(validator_is_zero, zero, x.target)));
+
     ValidatorCommitmentTargets {
-        validator: validator,
-        sha256_hash_tree_root: hash_tree_root_sha256.hash_tree_root,
-        poseidon_hash_tree_root: validator_poseidon.hash_tree_root,
+        validator_is_zero,
+        validator,
+        sha256_hash_tree_root,
+        poseidon_hash_tree_root: HashOutTarget {
+            elements: poseidon_hash_tree_root,
+        },
     }
 }
 
@@ -123,9 +142,7 @@ mod test {
     use anyhow::Result;
     use plonky2::{
         field::goldilocks_field::GoldilocksField,
-        iop::{
-            witness::{PartialWitness},
-        },
+        iop::witness::PartialWitness,
         plonk::{
             circuit_builder::CircuitBuilder, circuit_data::CircuitConfig,
             config::PoseidonGoldilocksConfig,
