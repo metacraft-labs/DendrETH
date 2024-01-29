@@ -12,6 +12,7 @@ import {
 import { RedisClientType, createClient } from 'redis';
 import validator_commitment_constants from '../../beacon-light-client/plonky2/constants/validator_commitment_constants.json';
 import RedisReJSON from 'ioredis-rejson';
+import chalk from 'chalk';
 
 export class Redis implements IRedis {
   public readonly client: RedisReJSON;
@@ -152,12 +153,12 @@ export class Redis implements IRedis {
           const validatorIndex = Number(batchKeys[index].split(':')[1]);
           allValidators[validatorIndex] = validator;
         } catch (e) {
-          console.log(e);
+          console.error(e);
           continue;
         }
 
       }
-      console.log(`Loaded batch ${keyBatchIndex + 1}/${Math.ceil(keys.length / batchSize)}`);
+      console.log(`Loaded batch ${chalk.bold.yellowBright(keyBatchIndex + 1)}/${chalk.bold.yellow(Math.ceil(keys.length / batchSize))}`);
     }
 
     return allValidators;
@@ -203,11 +204,13 @@ export class Redis implements IRedis {
   ) {
     await this.waitForConnection();
 
-    const args = inputsWithIndices.map(ii => ([
-      `${validator_commitment_constants.validatorBalanceInputKey}:${ii.index}`,
-      '$',
-      JSON.stringify(ii.input),
-    ]));
+    const args = inputsWithIndices.map(ii => {
+      return [
+        `${validator_commitment_constants.validatorBalanceInputKey}:${ii.index}`,
+        '$',
+        JSON.stringify(ii.input),
+      ];
+    });
 
     await this.client.sendCommand(new RedisReJSON.Command('JSON.MSET', args));
   }

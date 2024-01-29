@@ -1,3 +1,4 @@
+use colored::Colorize;
 use std::fmt::Display;
 
 use num::FromPrimitive;
@@ -29,20 +30,37 @@ impl CommitmentMapperTask {
     pub fn log(&self) {
         match *self {
             CommitmentMapperTask::UpdateProofNode(gindex, epoch) => println!(
-                "Updating proof node at gindex {} for epoch {}...",
-                gindex, epoch
+                "{}",
+                format!(
+                    "Updating proof node at gindex {} for epoch {}...",
+                    gindex.to_string().magenta(),
+                    epoch.to_string().cyan()
+                )
+                .blue()
+                .bold()
             ),
             CommitmentMapperTask::ProveZeroForDepth(depth) => {
-                println!("Proving zero for depth {}...", depth)
+                println!(
+                    "{}",
+                    format!("Proving zero for depth {}...", depth.to_string().magenta())
+                        .blue()
+                        .bold(),
+                )
             }
             CommitmentMapperTask::UpdateValidatorProof(validator_index, epoch) => {
                 if validator_index != VALIDATOR_REGISTRY_LIMIT as u64 {
                     println!(
-                        "Updating validator proof at index {} for epoch {}...",
-                        validator_index, epoch
+                        "{}",
+                        format!(
+                            "Updating validator proof at index {} for epoch {}...",
+                            validator_index.to_string().magenta(),
+                            epoch.to_string().cyan()
+                        )
+                        .blue()
+                        .bold()
                     );
                 } else {
-                    println!("Proving zero validator...");
+                    println!("{}", "Proving zero validator...".blue().bold());
                 }
             }
         };

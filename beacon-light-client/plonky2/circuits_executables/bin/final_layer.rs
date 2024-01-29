@@ -1,3 +1,4 @@
+use colored::Colorize;
 use std::{println, time::Instant};
 
 use anyhow::Result;
@@ -45,7 +46,10 @@ async fn async_main() -> Result<()> {
 
     let elapsed = start.elapsed();
 
-    println!("Redis connection took: {:?}", elapsed);
+    println!(
+        "{}",
+        format!("Redis connection took: {:?}", elapsed).yellow()
+    );
 
     let balance_data = load_circuit_data("37").unwrap();
     let commitment_data = load_circuit_data("commitment_mapper_40").unwrap();
@@ -121,9 +125,17 @@ async fn async_main() -> Result<()> {
 
     save_final_proof(&mut con, &proof).await?;
 
-    println!("Proof size: {}", proof.to_bytes().len());
+    println!(
+        "{}",
+        format!(
+            "Proof size: {}",
+            proof.to_bytes().len().to_string().magenta()
+        )
+        .blue()
+        .bold()
+    );
 
-    println!("Final proof saved!");
+    println!("{}", "Final proof saved!".blue().bold());
 
     Ok(())
 }

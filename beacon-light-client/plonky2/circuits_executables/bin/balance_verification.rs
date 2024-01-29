@@ -1,3 +1,4 @@
+use colored::Colorize;
 use std::{
     println, thread,
     time::{Duration, Instant},
@@ -18,7 +19,7 @@ use circuits_executables::{
     provers::{handle_balance_inner_level_proof, SetPWValues},
     utils::parse_config_file,
     validator::VALIDATOR_REGISTRY_LIMIT,
-    validator_commitment_constants::get_validator_commitment_constants,
+    validator_commitment_constants::VALIDATOR_COMMITMENT_CONSTANTS,
 };
 use futures_lite::future;
 use plonky2::{
@@ -128,11 +129,11 @@ async fn async_main() -> Result<()> {
 
     let redis_connection = matches.value_of("redis_connection").unwrap();
 
-    println!("Connecting to Redis...");
+    println!("{}", "Connecting to Redis...".yellow());
     let client = redis::Client::open(redis_connection)?;
     let mut con = client.get_async_connection().await?;
 
-    println!("Loading circuit data...");
+    println!("{}", "Loading circuit data...".yellow());
     let circuit_data = load_circuit_data(&level.to_string())?;
 
     let (inner_circuit_data, targets) = if level == 0 {
@@ -144,11 +145,13 @@ async fn async_main() -> Result<()> {
         )
     };
 
-    println!("Starting worker for level {}...", level);
+    println!(
+        "{}",
+        format!("Starting worker for level {}...", level).yellow()
+    );
     let queue = WorkQueue::new(KeyPrefix::new(format!(
         "{}:{}",
-        get_validator_commitment_constants().balance_verification_queue,
-        level
+        VALIDATOR_COMMITMENT_CONSTANTS.balance_verification_queue, level
     )));
 
     let start: Instant = Instant::now();
@@ -192,20 +195,18 @@ async fn process_queue(
         {
             Some(item) => item,
             None => {
-                println!("No tasks left in queue");
+                println!("{}", "No tasks left in queue".bright_green().bold());
 
                 return Ok(());
             }
         };
 
         if queue_item.data.is_empty() {
-            println!("Skipping empty data task");
+            println!("{}", "Skipping empty data task".yellow());
             queue.complete(con, &queue_item).await?;
 
             continue;
         }
-
-        // println!("Processing task data: {:?}", queue_item.data);
 
         match targets {
             Targets::FirstLevel(targets) => {
@@ -218,8 +219,13 @@ async fn process_queue(
                 )
                 .await
                 {
-                    Err(_err) => {
-                        println!("Error processing first level task {:?}", _err);
+                    Err(err) => {
+                        println!(
+                            "{}",
+                            format!("Error processing first level task {:?}", err)
+                                .red()
+                                .bold()
+                        );
                         continue;
                     }
                     Ok(_) => {}
@@ -258,9 +264,17 @@ async fn process_first_level_task(
     let balance_input_index = u64::from_be_bytes(queue_item.data[0..8].try_into().unwrap());
 
     if balance_input_index as usize != VALIDATOR_REGISTRY_LIMIT {
-        println!("Processing task for index {}...", balance_input_index);
+        println!(
+            "{}",
+            format!(
+                "Processing task for index {}...",
+                balance_input_index.to_string().magenta()
+            )
+            .blue()
+            .bold()
+        );
     } else {
-        println!("Processing task for zero proof...");
+        println!("{}", "Processing task for zero proof...".blue().bold());
     }
 
     let validator_balance_input = fetch_validator_balance_input(con, balance_input_index).await?;
@@ -272,7 +286,12 @@ async fn process_first_level_task(
 
     match save_balance_proof(con, proof, 0, balance_input_index).await {
         Err(err) => {
-            println!("Error: {}", err);
+            println!(
+                "{}",
+                format!("Error while saving balance proof: {}", err)
+                    .red()
+                    .bold()
+            );
             thread::sleep(Duration::from_secs(5));
             return Err(err);
         }
@@ -297,14 +316,27 @@ async fn process_inner_level_task(
     let index = u64::from_be_bytes(queue_item.data[0..8].try_into().unwrap());
 
     if index as usize != VALIDATOR_REGISTRY_LIMIT {
-        println!("Processing task for index {}...", index);
+        println!(
+            "{}",
+            format!(
+                "Processing task for index {}...",
+                index.to_string().magenta()
+            )
+            .blue()
+            .bold()
+        );
     } else {
-        println!("Processing task for zero proof...");
+        println!("{}", "Processing task for zero proof...".blue().bold());
     }
 
     match fetch_proofs_balances::<BalanceProof>(con, level, index).await {
         Err(err) => {
-            println!("Error: {}", err);
+            println!(
+                "{}",
+                format!("Error while fetching balance proofs: {}", err)
+                    .red()
+                    .bold()
+            );
             return Err(err);
         }
         Ok(proofs) => {
@@ -318,7 +350,12 @@ async fn process_inner_level_task(
 
             match save_balance_proof(con, proof, level, index).await {
                 Err(err) => {
-                    println!("Error: {}", err);
+                    println!(
+                        "{}",
+                        format!("Error while saving balance proof: {}", err)
+                            .red()
+                            .bold()
+                    );
                     thread::sleep(Duration::from_secs(5));
                     return Err(err);
                 }

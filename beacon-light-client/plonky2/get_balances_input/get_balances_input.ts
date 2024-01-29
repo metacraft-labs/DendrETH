@@ -5,6 +5,7 @@ const {
   WorkQueue,
   Item,
 } = require('@mevitae/redis-work-queue/dist/WorkQueue');
+import chalk from 'chalk';
 
 import { Redis as RedisLocal } from '../../../relay/implementations/redis';
 import { BeaconApi } from '../../../relay/implementations/beacon-api';
@@ -147,7 +148,7 @@ let TAKE: number | undefined;
     },
   ]);
 
-  console.log('Adding zero tasks...');
+  console.log(chalk.bold.blue('Adding zero tasks...'));
 
   const buffer = new ArrayBuffer(8);
   const dataView = new DataView(buffer);
@@ -174,7 +175,7 @@ let TAKE: number | undefined;
 
   }
 
-  console.log('Saving validator balance input...');
+  console.log(chalk.bold.blue('Saving validator balance input...'));
   const batchSize = 100;
   for (let i = 0; i <= TAKE / CIRCUIT_SIZE / batchSize; i++) {
     let batch: any[] = [];
@@ -233,7 +234,7 @@ let TAKE: number | undefined;
   }
 
 
-  console.log('Adding inner proofs...');
+  console.log(chalk.bold.blue('Adding inner proofs...'));
   for (let level = 1; level < 38; level++) {
     await redis.saveBalanceProof(BigInt(level), BigInt(validator_commitment_constants.validatorRegistryLimit))
 
@@ -252,7 +253,7 @@ let TAKE: number | undefined;
   const beaconStateView = ssz.capella.BeaconState.toViewDU(beaconState);
   const beaconStateTree = new Tree(beaconStateView.node);
 
-  console.log("Adding final proof input...");
+  console.log(chalk.bold.blue('Adding final proof input...'));
   await redis.saveFinalProofInput({
     stateRoot: hexToBits(
       bytesToHex(ssz.capella.BeaconState.hashTreeRoot(beaconState)),
@@ -277,7 +278,7 @@ let TAKE: number | undefined;
 
   queues[39].addItem(redis.client, new Item(new ArrayBuffer(0)));
 
-  console.log('Done');
+  console.log(chalk.bold.greenBright('Done'));
 
   await redis.disconnect();
 })();

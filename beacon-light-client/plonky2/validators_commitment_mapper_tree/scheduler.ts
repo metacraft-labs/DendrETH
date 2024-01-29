@@ -3,6 +3,7 @@ import { splitIntoBatches } from '../../../libs/typescript/ts-utils/common-utils
 import { BeaconApi } from '../../../relay/implementations/beacon-api';
 import { Redis } from '../../../relay/implementations/redis';
 import { Validator, IndexedValidator } from '../../../relay/types/types';
+import chalk from 'chalk';
 
 const {
   KeyPrefix,
@@ -50,16 +51,16 @@ export class CommitmentMapperScheduler {
   }
 
   async start(runOnce: boolean = false) {
-    console.log('Fetching validators from database...');
+    console.log(chalk.bold.blue('Fetching validators from database...'));
     this.validators = await this.redis.getValidatorsBatched(this.ssz);
-    console.log(`Loaded ${this.validators.length} validators from database`);
+    console.log(`Loaded ${chalk.bold.yellow(this.validators.length)} validators from database`);
 
     if (await this.redis.isZeroValidatorEmpty()) {
-      console.log('Adding zero tasks...');
+      console.log(chalk.bold.blue('Adding zero tasks...'));
       await this.scheduleZeroTasks();
     }
 
-    console.log(`Initial syncing (${this.currentEpoch} epoch)...`);
+    console.log(chalk.bold.blue(`Initial syncing (${chalk.cyan(this.currentEpoch)} epoch)...`));
     await this.updateValidators();
 
     if (runOnce) {
@@ -104,7 +105,7 @@ export class CommitmentMapperScheduler {
   async syncEpoch() {
     while (this.currentEpoch < this.headEpoch) {
       this.currentEpoch++;
-      console.log(`Syncing ${this.currentEpoch === this.headEpoch ? this.currentEpoch : `${this.currentEpoch}/${this.headEpoch}`}...`);
+      console.log(chalk.bold.blue(`Syncing ${this.currentEpoch === this.headEpoch ? chalk.cyan(this.currentEpoch) : `${chalk.cyanBright(this.currentEpoch)}/${chalk.cyan(this.headEpoch)}`}...`));
       await this.updateValidators();
     }
   }
@@ -117,7 +118,7 @@ export class CommitmentMapperScheduler {
 
     await this.saveValidatorsInBatches(changedValidators);
 
-    console.log(`Changed validators count: ${changedValidators.length}`);
+    console.log(`Changed validators count: ${chalk.bold.yellow(changedValidators.length)}`);
     this.validators = newValidators
   }
 

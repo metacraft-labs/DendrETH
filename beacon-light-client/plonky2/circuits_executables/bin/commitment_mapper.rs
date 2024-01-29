@@ -16,6 +16,7 @@ use circuits_executables::{
     validator_commitment_constants,
 };
 use clap::{App, Arg};
+use colored::Colorize;
 use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
@@ -105,7 +106,7 @@ async fn async_main() -> Result<()> {
         .unwrap();
 
     loop {
-        println!("Waiting for task...");
+        println!("{}", "Waiting for task...".yellow());
 
         let Some(queue_item) = queue
             .lease(
@@ -119,9 +120,8 @@ async fn async_main() -> Result<()> {
         };
 
         let Some(task) = deserialize_task(&queue_item.data) else {
-            println!("Invalid task data");
-            println!("Got bytes: {:?}", queue_item.data);
-            println!("This is bug from somewhere");
+            println!("{}", "Invalid task data".red().bold());
+            println!("{}", format!("Got bytes: {:?}", queue_item.data).red());
             queue.complete(&mut con, &queue_item).await?;
             continue;
         };
@@ -158,7 +158,12 @@ async fn async_main() -> Result<()> {
                                     queue.complete(&mut con, &queue_item).await?;
                                 }
                                 Err(err) => {
-                                    println!("Error while proving zero validator: {}", err);
+                                    println!(
+                                        "{}",
+                                        format!("Error while proving zero validator: {}", err)
+                                            .red()
+                                            .bold()
+                                    );
                                     thread::sleep(Duration::from_secs(10));
                                     continue;
                                 }
@@ -169,7 +174,12 @@ async fn async_main() -> Result<()> {
                                     queue.complete(&mut con, &queue_item).await?;
                                 }
                                 Err(err) => {
-                                    println!("Error while proving validator: {}", err);
+                                    println!(
+                                        "{}",
+                                        format!("Error while proving validator: {}", err)
+                                            .red()
+                                            .bold()
+                                    );
                                     thread::sleep(Duration::from_secs(10));
                                     continue;
                                 }
@@ -177,7 +187,12 @@ async fn async_main() -> Result<()> {
                         }
                     }
                     Err(err) => {
-                        println!("Error while fetching validator: {}", err);
+                        println!(
+                            "{}",
+                            format!("Error while fetching validator: {}", err)
+                                .red()
+                                .bold()
+                        );
                         thread::sleep(Duration::from_secs(10));
                         continue;
                     }
@@ -200,20 +215,29 @@ async fn async_main() -> Result<()> {
                             inner_circuit_data,
                             &inner_circuits[level].0,
                             &inner_circuits[level].1,
-                            false,
                         )?;
 
                         match save_validator_proof(&mut con, proof, gindex, epoch).await {
                             Ok(_) => queue.complete(&mut con, &queue_item).await?,
                             Err(err) => {
-                                println!("Error while saving validator proof: {}", err);
+                                println!(
+                                    "{}",
+                                    format!("Error while saving validator proof: {}", err)
+                                        .red()
+                                        .bold()
+                                );
                                 thread::sleep(Duration::from_secs(1));
                                 continue;
                             }
                         }
                     }
                     Err(err) => {
-                        println!("Error while fetching validator proof: {}", err);
+                        println!(
+                            "{}",
+                            format!("Error while fetching validator proof: {}", err)
+                                .red()
+                                .bold()
+                        );
                         thread::sleep(Duration::from_secs(1));
                         continue;
                     }
@@ -237,20 +261,29 @@ async fn async_main() -> Result<()> {
                             inner_circuit_data,
                             &inner_circuits[level].0,
                             &inner_circuits[level].1,
-                            false,
                         )?;
 
                         match save_zero_validator_proof(&mut con, proof, depth).await {
                             Ok(_) => queue.complete(&mut con, &queue_item).await?,
                             Err(err) => {
-                                println!("Error while saving zero validator proof: {}", err);
+                                println!(
+                                    "{}",
+                                    format!("Error while saving zero validator proof: {}", err)
+                                        .red()
+                                        .bold()
+                                );
                                 thread::sleep(Duration::from_secs(1));
                                 continue;
                             }
                         }
                     }
                     Err(err) => {
-                        println!("Error while proving zero for depth {}: {}", depth, err);
+                        println!(
+                            "{}",
+                            format!("Error while proving zero for depth {}: {}", depth, err)
+                                .red()
+                                .bold()
+                        );
                         thread::sleep(Duration::from_secs(1));
                         continue;
                     }

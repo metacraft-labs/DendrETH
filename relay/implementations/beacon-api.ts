@@ -501,11 +501,6 @@ export class BeaconApi implements IBeaconApi {
   }
 
   private concatUrl(urlPath: string): string {
-    //const url = new URL(this.getCurrentApi());
     return this.getCurrentApi() + urlPath;
-    //url.pathname = path.join(url.pathname, urlPath);
-
-    //console.log('url href', url.href);
-    //return url.href;
   }
 }
