@@ -1,7 +1,7 @@
 import yargs from 'yargs';
 import config from "../common_config.json";
 
-import * as utils from "./utils";
+import { CommitmentMapperScheduler } from './scheduler';
 
 (async () => {
   const options = yargs
@@ -51,7 +51,7 @@ import * as utils from "./utils";
     })
     .argv;
 
-  const scheduler = new utils.CommitmentMapperScheduler();
+  const scheduler = new CommitmentMapperScheduler();
   await scheduler.init(options);
   await scheduler.start(options['run-once']);
   await scheduler[Symbol.asyncDispose]();
