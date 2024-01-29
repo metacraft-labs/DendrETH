@@ -1,6 +1,6 @@
 use plonky2::{
-    hash::{poseidon::PoseidonHash},
-    iop::target::{BoolTarget, Target},
+    hash::poseidon::PoseidonHash,
+    iop::target::Target,
     plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::{CircuitConfig, CircuitData, VerifierCircuitTarget},
@@ -11,19 +11,16 @@ use plonky2::{
 };
 
 use crate::{
-    build_commitment_mapper_first_level_circuit::{
-        CommitmentMapperProofTargetExt,
-    },
+    build_commitment_mapper_first_level_circuit::CommitmentMapperProofTargetExt,
     sha256::make_circuits,
     targets_serialization::{ReadTargets, WriteTargets},
-    utils::{ETH_SHA256_BIT_SIZE},
+    utils::ETH_SHA256_BIT_SIZE,
 };
 
 pub struct CommitmentMapperInnerCircuitTargets {
     pub proof1: ProofWithPublicInputsTarget<2>,
     pub proof2: ProofWithPublicInputsTarget<2>,
     pub verifier_circuit_target: VerifierCircuitTarget,
-    pub is_zero: BoolTarget,
 }
 
 impl ReadTargets for CommitmentMapperInnerCircuitTargets {
@@ -32,7 +29,6 @@ impl ReadTargets for CommitmentMapperInnerCircuitTargets {
             proof1: data.read_target_proof_with_public_inputs()?,
             proof2: data.read_target_proof_with_public_inputs()?,
             verifier_circuit_target: data.read_target_verifier_circuit()?,
-            is_zero: data.read_target_bool()?,
         })
     }
 }
@@ -44,7 +40,6 @@ impl WriteTargets for CommitmentMapperInnerCircuitTargets {
         data.write_target_proof_with_public_inputs(&self.proof1)?;
         data.write_target_proof_with_public_inputs(&self.proof2)?;
         data.write_target_verifier_circuit(&self.verifier_circuit_target)?;
-        data.write_target_bool(self.is_zero)?;
 
         Ok(data)
     }
@@ -83,29 +78,19 @@ pub fn build_commitment_mapper_inner_circuit(
         builder.add_virtual_proof_with_pis(&inner_circuit_data.common);
 
     builder.verify_proof::<C>(&pt1, &verifier_circuit_target, &inner_circuit_data.common);
-
     builder.verify_proof::<C>(&pt2, &verifier_circuit_target, &inner_circuit_data.common);
 
-    let is_zero = builder.add_virtual_bool_target_safe();
-    let is_one = builder.not(is_zero);
-
-    let poseidon_hash = pt1
-        .get_commitment_mapper_poseidon_hash_tree_root()
-        .elements
-        .map(|x| builder.mul(x, is_one.target));
+    let poseidon_hash = pt1.get_commitment_mapper_poseidon_hash_tree_root().elements;
 
     let sha256_hash = pt1
         .get_commitment_mapper_sha256_hash_tree_root()
-        .map(|x| builder.mul(x.target, is_one.target));
+        .map(|x| x.target);
 
-    let poseidon_hash2 = pt2
-        .get_commitment_mapper_poseidon_hash_tree_root()
-        .elements
-        .map(|x| builder.mul(x, is_one.target));
+    let poseidon_hash2 = pt2.get_commitment_mapper_poseidon_hash_tree_root().elements;
 
     let sha256_hash2 = pt2
         .get_commitment_mapper_sha256_hash_tree_root()
-        .map(|x| builder.mul(x.target, is_one.target));
+        .map(|x| x.target);
 
     let hasher = make_circuits(&mut builder, (2 * ETH_SHA256_BIT_SIZE) as u64);
 
@@ -140,8 +125,7 @@ pub fn build_commitment_mapper_inner_circuit(
         CommitmentMapperInnerCircuitTargets {
             proof1: pt1,
             proof2: pt2,
-            verifier_circuit_target: verifier_circuit_target,
-            is_zero,
+            verifier_circuit_target,
         },
         data,
     )

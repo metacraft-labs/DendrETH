@@ -35,8 +35,6 @@ pub fn handle_generic_inner_level_proof(
     proof1_target: &ProofWithPublicInputsTarget<2>,
     proof2_target: &ProofWithPublicInputsTarget<2>,
     verifier_circuit_target: &VerifierCircuitTarget,
-    is_zero_target: Option<BoolTarget>,
-    is_zero: Option<bool>,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
 ) -> Result<ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>> {
     let inner_proof1 =
@@ -66,10 +64,6 @@ pub fn handle_generic_inner_level_proof(
         inner_circuit_data.verifier_only.circuit_digest,
     );
 
-    if let (Some(target), Some(value)) = (is_zero_target, is_zero) {
-        pw.set_bool_target(target, value);
-    }
-
     Ok(circuit_data.prove(pw)?)
 }
 
@@ -79,7 +73,6 @@ pub fn handle_commitment_mapper_inner_level_proof(
     inner_circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     inner_circuit_targets: &CommitmentMapperInnerCircuitTargets,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    is_zero: bool,
 ) -> Result<ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>> {
     handle_generic_inner_level_proof(
         proof1_bytes,
@@ -88,8 +81,6 @@ pub fn handle_commitment_mapper_inner_level_proof(
         &inner_circuit_targets.proof1,
         &inner_circuit_targets.proof2,
         &inner_circuit_targets.verifier_circuit_target,
-        Some(inner_circuit_targets.is_zero),
-        Some(is_zero),
         circuit_data,
     )
 }
@@ -108,8 +99,6 @@ pub fn handle_balance_inner_level_proof(
         &inner_circuit_targets.proof1,
         &inner_circuit_targets.proof2,
         &inner_circuit_targets.verifier_circuit_target,
-        None,
-        None,
         circuit_data,
     )
 }
