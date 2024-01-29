@@ -3,6 +3,8 @@ use std::fmt::Display;
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
 
+use crate::validator::VALIDATOR_REGISTRY_LIMIT;
+
 #[derive(FromPrimitive)]
 #[repr(u8)]
 enum CommitmentMapperTaskType {
@@ -21,6 +23,30 @@ pub enum CommitmentMapperTask {
     UpdateProofNode(Gindex, Epoch),
     ProveZeroForDepth(Depth),
     UpdateValidatorProof(ValidatorIndex, Epoch),
+}
+
+impl CommitmentMapperTask {
+    pub fn log(&self) {
+        match *self {
+            CommitmentMapperTask::UpdateProofNode(gindex, epoch) => println!(
+                "Updating proof node at gindex {} for epoch {}...",
+                gindex, epoch
+            ),
+            CommitmentMapperTask::ProveZeroForDepth(depth) => {
+                println!("Proving zero for depth {}...", depth)
+            }
+            CommitmentMapperTask::UpdateValidatorProof(validator_index, epoch) => {
+                if validator_index != VALIDATOR_REGISTRY_LIMIT as u64 {
+                    println!(
+                        "Updating validator proof at index {} for epoch {}...",
+                        validator_index, epoch
+                    );
+                } else {
+                    println!("Proving zero validator...");
+                }
+            }
+        };
+    }
 }
 
 impl Display for CommitmentMapperTask {

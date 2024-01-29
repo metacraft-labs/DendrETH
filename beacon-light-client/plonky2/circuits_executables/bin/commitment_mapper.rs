@@ -126,7 +126,7 @@ async fn async_main() -> Result<()> {
             continue;
         };
 
-        println!("Got task: {}", task);
+        task.log();
 
         match task {
             CommitmentMapperTask::UpdateValidatorProof(validator_index, epoch) => {

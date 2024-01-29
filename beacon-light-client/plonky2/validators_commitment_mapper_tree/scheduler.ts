@@ -14,7 +14,7 @@ import CONSTANTS from '../constants/validator_commitment_constants.json';
 
 enum TaskTag {
   UPDATE_PROOF_NODE = 0,
-  PROVE_ZERO_FOR_LEVEL = 1,
+  PROVE_ZERO_FOR_DEPTH = 1,
   UPDATE_VALIDATOR_PROOF = 2,
 }
 
@@ -94,8 +94,8 @@ export class CommitmentMapperScheduler {
 
     await this.scheduleValidatorProof(BigInt(CONSTANTS.validatorRegistryLimit));
 
-    for (let level = 39n; level >= 0n; level--) {
-      this.scheduleProveZeroForLevel(level);
+    for (let depth = 39n; depth >= 0n; depth--) {
+      this.scheduleProveZeroForDepth(depth);
     }
   }
 
@@ -181,13 +181,14 @@ export class CommitmentMapperScheduler {
     }
   }
 
-  scheduleProveZeroForLevel(level: bigint) {
+  async scheduleProveZeroForDepth(depth: bigint) {
     const buffer = new ArrayBuffer(9);
     const dataView = new DataView(buffer);
 
-    dataView.setUint8(0, TaskTag.PROVE_ZERO_FOR_LEVEL);
-    dataView.setBigUint64(1, level, false);
+    dataView.setUint8(0, TaskTag.PROVE_ZERO_FOR_DEPTH);
+    dataView.setBigUint64(1, depth, false);
 
+    await this.redis.saveZeroValidatorProof(depth);
     this.queue.addItem(this.redis.client, new Item(buffer));
   }
 

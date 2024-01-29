@@ -244,6 +244,19 @@ export class Redis implements IRedis {
     await this.client.json_set(`${validator_commitment_constants.validatorProofKey}:${gindex}:${epoch}`, "$", proof as any);
   }
 
+  async saveZeroValidatorProof(
+    depth: bigint,
+    proof: ValidatorProof = {
+      needsChange: true,
+      proof: [],
+      poseidonHash: [],
+      sha256Hash: [],
+    },
+  ): Promise<void> {
+    await this.waitForConnection();
+    await this.client.json_set(`${validator_commitment_constants.validatorProofKey}:zeroes:${depth}`, "$", proof as any);
+  }
+
   async saveBalanceProof(
     level: bigint,
     index: bigint,
