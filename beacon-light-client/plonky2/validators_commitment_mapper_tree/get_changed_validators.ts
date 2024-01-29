@@ -36,6 +36,12 @@ import { CommitmentMapperScheduler } from './scheduler';
       default: undefined,
       description: 'Starts syncing from this epoch',
     })
+    .options('offset', {
+      alias: 'offset',
+      describe: 'Index offset in the validator set',
+      type: 'number',
+      default: undefined,
+    })
     .option('take', {
       alias: 'take',
       describe: 'The number of validators to take',

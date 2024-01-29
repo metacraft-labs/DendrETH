@@ -59,7 +59,14 @@ let TAKE: number | undefined;
       type: 'number',
       default: undefined,
       description: 'Sets the number of validators to take',
-    }).argv;
+    })
+    .options('offset', {
+      alias: 'offset',
+      describe: 'Index offset in the validator set',
+      type: 'number',
+      default: undefined,
+    })
+    .argv;
 
   const redis = new RedisLocal(options['redis-host'], options['redis-port']);
 
@@ -94,11 +101,13 @@ let TAKE: number | undefined;
   const slot = options['slot'] !== undefined ? options['slot'] : Number(await beaconApi.getHeadSlot());
   const { beaconState } = await beaconApi.getBeaconState(slot);
 
-  const validators = beaconState.validators.slice(0, TAKE);
-  TAKE = validators.length;
-
+  const offset = Number(options['offset']) || 0;
+  const take = TAKE !== undefined ? TAKE + offset : undefined;
+  const validators = beaconState.validators.slice(offset, take);
+  beaconState.balances = beaconState.balances.slice(offset, take);
   beaconState.validators = validators;
-  beaconState.balances = beaconState.balances.slice(0, TAKE);
+
+  TAKE = validators.length;
 
   const balancesView = ssz.capella.BeaconState.fields.balances.toViewDU(
     beaconState.balances,

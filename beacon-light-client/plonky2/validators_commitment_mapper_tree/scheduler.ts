@@ -25,12 +25,14 @@ export class CommitmentMapperScheduler {
   private currentEpoch: bigint;
   private headEpoch: bigint;
   private take: number | undefined = undefined;
+  private offset: number | undefined = undefined;
   private validators: Validator[] = [];
   private ssz: any;
 
   async init(options: any) {
     this.redis = new Redis(options['redis-host'], options['redis-port']);
     this.take = options['take'];
+    this.offset = options['offset'];
     this.queue = new WorkQueue(
       new KeyPrefix(`${CONSTANTS.validatorProofsQueue}`),
     );
@@ -108,7 +110,7 @@ export class CommitmentMapperScheduler {
   }
 
   async updateValidators() {
-    const newValidators = await this.api.getValidators(Number(this.currentEpoch * 32n), this.take)
+    const newValidators = await this.api.getValidators(Number(this.currentEpoch * 32n), this.take, this.offset)
     const changedValidators = newValidators
       .map((validator, index) => ({ validator, index }))
       .filter(hasValidatorChanged(this.validators));
