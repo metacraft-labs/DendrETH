@@ -1,4 +1,3 @@
-import Redis from 'ioredis';
 import yargs from 'yargs';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 const {
@@ -69,10 +68,6 @@ let TAKE: number | undefined;
     .argv;
 
   const redis = new RedisLocal(options['redis-host'], options['redis-port']);
-
-  const db = new Redis(
-    `redis://${options['redis-host']}:${options['redis-port']}`,
-  );
 
   TAKE = options['take'];
 
@@ -163,7 +158,7 @@ let TAKE: number | undefined;
     false,
   );
 
-  await queues[0].addItem(db, new Item(buffer));
+  await queues[0].addItem(redis.client, new Item(buffer));
 
   for (let i = 0; i < 38; i++) {
     const buffer = new ArrayBuffer(8);
@@ -175,7 +170,7 @@ let TAKE: number | undefined;
       false,
     );
 
-    await queues[i + 1].addItem(db, new Item(buffer));
+    await queues[i + 1].addItem(redis.client, new Item(buffer));
 
   }
 
@@ -234,7 +229,7 @@ let TAKE: number | undefined;
 
     await redis.saveBalanceProof(0n, BigInt(i));
 
-    await queues[0].addItem(db, new Item(buffer));
+    await queues[0].addItem(redis.client, new Item(buffer));
   }
 
 
@@ -250,7 +245,7 @@ let TAKE: number | undefined;
       await redis.saveBalanceProof(BigInt(level), BigInt(key));
 
       view.setBigUint64(0, BigInt(key), false);
-      await queues[level].addItem(db, new Item(buffer));
+      await queues[level].addItem(redis.client, new Item(buffer));
     }
   }
 
@@ -280,12 +275,11 @@ let TAKE: number | undefined;
     validatorsSizeBits: hexToBits(bytesToHex(ssz.UintNum64.hashTreeRoot(TAKE))),
   });
 
-  queues[39].addItem(db, new Item(new ArrayBuffer(0)));
+  queues[39].addItem(redis.client, new Item(new ArrayBuffer(0)));
 
   console.log('Done');
 
   await redis.disconnect();
-  db.disconnect();
 })();
 
 function getZeroValidator() {
