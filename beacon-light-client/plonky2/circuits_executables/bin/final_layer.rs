@@ -190,6 +190,9 @@ async fn async_main() -> Result<()> {
             .collect::<Vec<u64>>(),
         balance_proof.withdrawal_credentials,
         balance_proof.range_total_value,
+        balance_proof.number_of_non_activated_validators,
+        balance_proof.number_of_active_validators,
+        balance_proof.number_of_exited_validators,
     )
     .await?;
 

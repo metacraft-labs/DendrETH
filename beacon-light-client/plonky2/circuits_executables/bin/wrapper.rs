@@ -2,7 +2,7 @@ use std::{fs, println, time::Instant};
 
 use anyhow::Result;
 use circuits_executables::{
-    crud::{load_circuit_data, FinalProof},
+    crud::common::{load_circuit_data, FinalProof},
     poseidon_bn128_config::PoseidonBN128GoldilocksConfig,
     validator_commitment_constants::get_validator_commitment_constants,
 };

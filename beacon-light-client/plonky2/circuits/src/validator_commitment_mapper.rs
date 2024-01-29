@@ -124,9 +124,7 @@ mod test {
     use anyhow::Result;
     use plonky2::{
         field::goldilocks_field::GoldilocksField,
-        iop::{
-            witness::{PartialWitness},
-        },
+        iop::witness::PartialWitness,
         plonk::{
             circuit_builder::CircuitBuilder, circuit_data::CircuitConfig,
             config::PoseidonGoldilocksConfig,

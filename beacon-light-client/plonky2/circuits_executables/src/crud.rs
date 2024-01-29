@@ -214,17 +214,20 @@ pub async fn save_final_proof(
     con: &mut redis::aio::Connection,
     proof: &ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     state_root: Vec<u64>,
-    withdrawal_credentials: BigUint,
+    withdrawal_credentials: Vec<u64>,
     balance_sum: BigUint,
+    number_of_non_activated_validators: u64,
+    number_of_active_validators: u64,
+    number_of_exited_validators: u64,
 ) -> Result<()> {
     let final_proof = serde_json::to_string(&FinalProof {
         needs_change: false,
-        state_root: proof.get_final_circuit_state_root().to_vec(),
-        withdrawal_credentials: proof.get_final_circuit_withdrawal_credentials().to_vec(),
-        balance_sum: proof.get_final_circuit_balance_sum(),
-        number_of_non_activated_validators: proof.get_final_number_of_non_activated_validators(),
-        number_of_active_validators: proof.get_final_number_of_active_validators(),
-        number_of_exited_validators: proof.get_final_number_of_exited_validators(),
+        state_root: state_root,
+        withdrawal_credentials: withdrawal_credentials,
+        balance_sum: balance_sum,
+        number_of_non_activated_validators: number_of_non_activated_validators,
+        number_of_active_validators: number_of_active_validators,
+        number_of_exited_validators: number_of_exited_validators,
         proof: proof.to_bytes(),
     })?;
 
