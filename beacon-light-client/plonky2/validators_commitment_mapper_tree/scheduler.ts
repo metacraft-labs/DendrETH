@@ -18,7 +18,7 @@ enum TaskTag {
   UPDATE_VALIDATOR_PROOF = 2,
 }
 
-export class CommitmentMapperScheduler implements AsyncDisposable {
+export class CommitmentMapperScheduler {
   private redis: Redis;
   private api: BeaconApi;
   private queue: any;
@@ -43,7 +43,7 @@ export class CommitmentMapperScheduler implements AsyncDisposable {
     this.ssz = mod.ssz;
   }
 
-  [Symbol.asyncDispose](): PromiseLike<void> {
+  async dispose() {
     return this.redis.disconnect();
   }
 

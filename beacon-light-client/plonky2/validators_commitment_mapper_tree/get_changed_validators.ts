@@ -54,5 +54,5 @@ import { CommitmentMapperScheduler } from './scheduler';
   const scheduler = new CommitmentMapperScheduler();
   await scheduler.init(options);
   await scheduler.start(options['run-once']);
-  await scheduler[Symbol.asyncDispose]();
+  await scheduler.dispose();
 })();
