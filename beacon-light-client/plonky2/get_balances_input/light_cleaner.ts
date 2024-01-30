@@ -1,32 +1,16 @@
 const {
   KeyPrefix,
   WorkQueue,
-  Item,
 } = require('@mevitae/redis-work-queue/dist/WorkQueue');
 import Redis from 'ioredis';
 import { sleep } from '../../../libs/typescript/ts-utils/common-utils';
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
-import yargs from 'yargs';
+import { getOptions, lightClean } from '../light_cleaner_common';
 
 (async () => {
-  const options = yargs
-    .usage('Usage: -redis-host <Redis host> -redis-port <Redis port>')
-    .option('redis-host ', {
-      alias: 'redis-host',
-      describe: 'The Redis host',
-      type: 'string',
-      default: '127.0.0.1',
-      description: 'Sets a custom redis connection',
-    })
-    .option('redis-port', {
-      alias: 'redis-port',
-      describe: 'The Redis port',
-      type: 'number',
-      default: 6379,
-      description: 'Sets a custom redis connection',
-    }).argv;
+  const options = getOptions().argv;
 
-  const db = new Redis(
+  const redis = new Redis(
     `redis://${options['redis-host']}:${options['redis-port']}`,
   );
   const queues: any[] = [];
@@ -44,10 +28,11 @@ import yargs from 'yargs';
     console.log('Performing light clean');
 
     for (let i = 0; i < 39; i++) {
-      await queues[i].lightClean(db);
+      const prefix = new KeyPrefix(`${validator_commitment_constants.balanceVerificationQueue}:${i}`);
+      await lightClean.call(queues[i], redis, prefix);
     }
 
-    console.log('Waiting 5 seconds');
-    await sleep(5000);
+    console.log(`Waiting ${options['clean-duration'] / 1000} seconds`);
+    await sleep(options['clean-duration']);
   }
 })();
