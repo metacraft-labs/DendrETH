@@ -96,9 +96,11 @@ export class CommitmentMapperScheduler {
     );
 
     await this.scheduleValidatorProof(BigInt(CONSTANTS.validatorRegistryLimit));
+    await this.redis.saveZeroValidatorProof(40n);
 
     for (let depth = 39n; depth >= 0n; depth--) {
       this.scheduleProveZeroForDepth(depth);
+      await this.redis.saveZeroValidatorProof(depth);
     }
   }
 
@@ -191,7 +193,6 @@ export class CommitmentMapperScheduler {
     dataView.setUint8(0, TaskTag.PROVE_ZERO_FOR_DEPTH);
     dataView.setBigUint64(1, depth, false);
 
-    await this.redis.saveZeroValidatorProof(depth);
     this.queue.addItem(this.redis.client, new Item(buffer));
   }
 
