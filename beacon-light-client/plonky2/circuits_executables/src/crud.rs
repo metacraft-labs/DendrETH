@@ -360,12 +360,11 @@ pub async fn fetch_zero_proof<T: NeedsChange + KeyProvider + DeserializeOwned + 
     con: &mut Connection,
     depth: u64,
 ) -> Result<T> {
-    let proof =
-        fetch_redis_json_object::<T>(con, format!("{}:zeroes:{}", T::get_key(), depth)).await?;
-    if proof.needs_change() {}
-
     let mut retries = 0;
     loop {
+        let proof =
+            fetch_redis_json_object::<T>(con, format!("{}:zeroes:{}", T::get_key(), depth)).await?;
+
         if retries > 5 {
             return Err(anyhow::anyhow!("Not able to complete, try again"));
         }
