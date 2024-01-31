@@ -121,7 +121,7 @@ export class CommitmentMapperScheduler {
     await this.saveValidatorsInBatches(changedValidators);
 
     console.log(`Changed validators count: ${chalk.bold.yellow(changedValidators.length)}`);
-    this.validators = newValidators
+    this.validators = newValidators;
   }
 
   async saveValidatorsInBatches(validators: IndexedValidator[], batchSize = 200) {
