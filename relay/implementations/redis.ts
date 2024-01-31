@@ -344,7 +344,7 @@ export class Redis implements IRedis {
   }
 
   private async waitForConnection() {
-    if (this.client.status !== 'ready') {
+    if (!["connect", "connecting", "ready"].includes(this.client.status)) {
       await this.client.connect();
     }
 
