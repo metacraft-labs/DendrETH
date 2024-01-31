@@ -1,5 +1,5 @@
 use plonky2::{
-    hash::{poseidon::PoseidonHash},
+    hash::poseidon::PoseidonHash,
     iop::target::{BoolTarget, Target},
     plonk::{
         circuit_builder::CircuitBuilder,
@@ -11,12 +11,10 @@ use plonky2::{
 };
 
 use crate::{
-    build_commitment_mapper_first_level_circuit::{
-        CommitmentMapperProofTargetExt,
-    },
+    build_commitment_mapper_first_level_circuit::CommitmentMapperProofTargetExt,
     sha256::make_circuits,
     targets_serialization::{ReadTargets, WriteTargets},
-    utils::{ETH_SHA256_BIT_SIZE},
+    utils::ETH_SHA256_BIT_SIZE,
 };
 
 pub struct CommitmentMapperInnerCircuitTargets {

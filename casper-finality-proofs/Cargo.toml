@@ -18,6 +18,10 @@ name = "compute_shuffled_index"
 path = "bin/compute_shuffled_index.rs"
 
 [[bin]]
+name = "build_circuits"
+path = "bin/build_circuits.rs"
+
+[[bin]]
 name = "test_engine"
 path = "src/test_engine/bin/main.rs"
 

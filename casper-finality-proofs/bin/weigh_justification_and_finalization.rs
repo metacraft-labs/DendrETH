@@ -19,6 +19,7 @@ fn main() {
     let mut builder = CircuitBuilder::<L, D>::new();
     WeighJustificationAndFinalization::define(&mut builder);
     let circuit = builder.build();
+
     let mut input = circuit.input();
 
     let beacon_state_root =

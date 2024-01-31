@@ -2,21 +2,18 @@ use casper_finality_proofs::compute_shuffled_index::circuit::define;
 use plonky2x::prelude::{
     bytes, ArrayVariable, ByteVariable, CircuitBuilder, DefaultParameters, U64Variable,
 };
-use plonky2x::utils;
 
 fn main() {
-    utils::setup_logger();
+    const D: usize = 2;
+    let mut builder = CircuitBuilder::<DefaultParameters, D>::new();
+    const SHUFFLE_ROUND_COUNT: u8 = 90;
+    define(&mut builder, SHUFFLE_ROUND_COUNT);
 
     let seed_bytes: Vec<u8> =
         bytes!("0x4ac96f664a6cafd300b161720809b9e17905d4d8fed7a97ff89cf0080a953fe7");
-
     let seed_bytes_fixed_size: [u8; 32] = seed_bytes.try_into().unwrap();
 
-    const SHUFFLE_ROUND_COUNT: u8 = 90;
-    let mut builder = CircuitBuilder::<DefaultParameters, 2>::new();
-    define(&mut builder, SHUFFLE_ROUND_COUNT);
-
-    let circuit = builder.mock_build();
+    let circuit = builder.build();
 
     const START_IDX: u64 = 0;
     const COUNT: u64 = 100;
@@ -34,7 +31,7 @@ fn main() {
         input.write::<U64Variable>(COUNT);
         input.write::<ArrayVariable<ByteVariable, 32>>(seed_bytes_fixed_size.to_vec());
 
-        let (_witness, mut _output) = circuit.mock_prove(&input);
+        let (_witness, mut _output) = circuit.prove(&input);
         let shuffled_index_res = _output.read::<U64Variable>();
 
         println!("{} {}", mapping[i as usize], shuffled_index_res);
