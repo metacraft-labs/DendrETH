@@ -95,16 +95,31 @@ export class Redis implements IRedis {
     this.pubSub.publish('proofs_channel', 'proof');
   }
 
-  async getValidatorsBatched(ssz, batchSize = 1000): Promise<Validator[]> {
+  async getValidatorsBatched(ssz: any, epoch: bigint, batchSize = 1000): Promise<Validator[]> {
     await this.waitForConnection();
 
-    const keys = (await this.client.keys(
+    let keys = (await this.client.keys(
       `${CONSTANTS.validatorKey}:*:[0-9]*`,
-    )).filter(key => !key.includes(CONSTANTS.validatorRegistryLimit.toString()));
+    ))
+      .filter(key => !key.includes(CONSTANTS.validatorRegistryLimit.toString()))
+      .reduce((acc, key) => {
+        const split = key.split(':');
+        const index = Number(split[1]);
+        const keyEpoch = Number(split[2]);
 
-    if (keys.length === 0) {
-      return [];
-    }
+        let latestEpoch = 0;
+        if (keyEpoch <= epoch) {
+          latestEpoch = keyEpoch;
+        }
+
+        if (acc[index] && acc[index] > latestEpoch) {
+          latestEpoch = acc[index];
+        }
+
+        acc[index] = latestEpoch;
+        return acc;
+      }, new Array())
+      .map((epoch, index) => `validator:${index}:${epoch}`);
 
     let allValidators: Validator[] = new Array(keys.length);
 
