@@ -55,3 +55,4 @@ enable_testing()
 
 add_subdirectory(tests)
 add_subdirectory(circuits)
+add_subdirectory(circuit_input_generators)
