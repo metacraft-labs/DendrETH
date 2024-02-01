@@ -52,7 +52,7 @@ export class CommitmentMapperScheduler {
 
   async start(runOnce: boolean = false) {
     console.log(chalk.bold.blue('Fetching validators from database...'));
-    this.validators = await this.redis.getValidatorsBatched(this.ssz);
+    this.validators = await this.redis.getValidatorsBatched(this.ssz, this.currentEpoch);
     console.log(`Loaded ${chalk.bold.yellow(this.validators.length)} validators from database`);
 
     if (await this.redis.isZeroValidatorEmpty()) {
