@@ -66,3 +66,22 @@ fn hex_to_binary(hex: &str) -> Vec<bool> {
     result
 }
 
+pub fn binary_to_hex(binary: &[bool]) -> String {
+    let mut hex_string = String::new();
+
+    // Iterate over the binary vector in chunks of 4 bits
+    for chunk in binary.chunks(4) {
+        // Convert the 4-bit chunk to a u8 value
+        let mut byte = 0;
+        for (i, &bit) in chunk.iter().enumerate() {
+            if bit {
+                byte |= 1 << (3 - i);
+            }
+        }
+
+        // Convert the u8 value to a hexadecimal character and append to the string
+        hex_string.push_str(&format!("{:X}", byte));
+    }
+
+    format!("0x{}", hex_string)
+}

@@ -1,5 +1,6 @@
 use num_bigint::BigUint;
-use serde::Deserialize;
+use plonky2::field::goldilocks_field::GoldilocksField;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug)]
 pub struct Validator {
@@ -24,4 +25,17 @@ pub struct ValidatorDataInput {
     pub slashed: bool,
     pub withdrawable_epoch: u64,
     pub withdrawal_credentials: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ValidatorPoseidonDataOutput {
+    pub activation_eligibility_epoch: u64,
+    pub activation_epoch: u64,
+    pub effective_balance: u64,
+    pub exit_epoch: u64,
+    pub pubkey: String,
+    pub slashed: bool,
+    pub withdrawable_epoch: u64,
+    pub withdrawal_credentials: String,
+    pub poseidon_proof: [GoldilocksField; 4]
 }
