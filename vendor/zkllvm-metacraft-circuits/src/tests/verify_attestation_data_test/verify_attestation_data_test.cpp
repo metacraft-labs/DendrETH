@@ -416,7 +416,7 @@ int main(int argc, char* argv[]) {
 
         verify_attestation(attestation, json_attestation);
 
-        auto vote = verify_attestation_data(
+        auto vote = verify_attestation_data_imp(
             hexToBytes<32>("d5c0418465ffab221522a6991c2d4c0041f1b8e91d01b1ea3f6b882369f689b7"), attestation, sigma);
 
         tokens.push_back(std::move(vote));

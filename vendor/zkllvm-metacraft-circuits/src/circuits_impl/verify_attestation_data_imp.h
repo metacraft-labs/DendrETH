@@ -15,7 +15,7 @@ using namespace circuit_byte_utils;
 using namespace ssz_utils;
 using namespace nil::crypto3::algebra::curves;
 
-using Proof = static_vector<Bytes32, 64>;
+using Proof = static_vector<HashType, 41>;
 using PubKey = Bytes48;
 
 struct AttestationData {
@@ -62,13 +62,13 @@ struct Attestation {
     // We should be able to prove that the majority of validators
     // participating in this attestation are part of the validator set
     // associated with the state of the last trusted block.
-    Bytes32 state_root;
+    HashType state_root;
     MerkleProof<3> state_root_proof;
 
-    Bytes32 validators_root;
+    HashType validators_root;
     MerkleProof<5> validators_root_proof;
 
-    static_vector<Validator, 1024> validators;
+    static_vector<Validator, 415> validators;
 };
 
 struct Transition {
@@ -117,9 +117,9 @@ static_vector<HashType> compute_zero_hashes(int length = 64) {
     return xs;
 }
 
-static const auto zero_hashes = compute_zero_hashes();
 
 Proof fill_zero_hashes(const Proof& xs, size_t length = 0) {
+    const auto zero_hashes = compute_zero_hashes();
 #ifdef __ZKLLVM__
     sha256_t empty_hash = {0};
 #else
@@ -129,7 +129,7 @@ Proof fill_zero_hashes(const Proof& xs, size_t length = 0) {
     int additions_count = length - xs.size();
 
     for (int i = 0; i < ws.size(); i++) {
-        if (ws[i] == empty_hash) {
+        if (sha256_equals(ws[i], empty_hash)) {
             ws[i] = zero_hashes[i];
         }
     }
@@ -139,30 +139,44 @@ Proof fill_zero_hashes(const Proof& xs, size_t length = 0) {
     return ws;
 }
 
-Bytes32 hash_validator(Bytes64 pubkey,
-                       Bytes32 withdrawal_credentials,
-                       uint64_t effective_balance_,
-                       uint64_t activation_eligibility_epoch_,
-                       uint64_t activation_epoch_,
-                       uint64_t exit_epoch_,
-                       uint64_t withdrawable_epoch_) {
+HashType hash_validator(Bytes64 pubkey,
+                        Bytes32 withdrawal_credentials_,
+                        uint64_t effective_balance_,
+                        uint64_t activation_eligibility_epoch_,
+                        uint64_t activation_epoch_,
+                        uint64_t exit_epoch_,
+                        uint64_t withdrawable_epoch_) {
     // Convert parameters.
-    auto effective_balance = int_to_bytes<uint64_t, 32, true>(effective_balance_);
-    auto slashed = int_to_bytes<uint64_t, 32, true>(0);
-    auto activation_eligibility_epoch = int_to_bytes<uint64_t, 32, true>(activation_eligibility_epoch_);
-    auto activation_epoch = int_to_bytes<uint64_t, 32, true>(activation_epoch_);
-    auto exit_epoch = int_to_bytes<uint64_t, 32, true>(exit_epoch_);
-    auto withdrawable_epoch = int_to_bytes<uint64_t, 32, true>(withdrawable_epoch_);
+    auto effective_balance = bytes_to_hash_type((int_to_bytes<uint64_t, 32, true>(effective_balance_)));
+    auto slashed = bytes_to_hash_type((int_to_bytes<uint64_t, 32, true>(0)));
+    auto activation_eligibility_epoch = bytes_to_hash_type((int_to_bytes<uint64_t, 32, true>(activation_eligibility_epoch_)));
+    auto activation_epoch = bytes_to_hash_type((int_to_bytes<uint64_t, 32, true>(activation_epoch_)));
+    auto exit_epoch = bytes_to_hash_type((int_to_bytes<uint64_t, 32, true>(exit_epoch_)));
+    auto withdrawable_epoch = bytes_to_hash_type((int_to_bytes<uint64_t, 32, true>(withdrawable_epoch_)));
+    auto withdrawal_credentials = bytes_to_hash_type((withdrawal_credentials_));
+
+    #ifdef __ZKLLVM__
+    auto hash = [](const HashType& lhs, const HashType& rhs) {
+        return parent_hash(lhs, rhs);
+    };
+    auto pubkey_hash = hash(bytes_to_hash_type(take<32>(pubkey)), bytes_to_hash_type(take<32>(pubkey, 32)));
+    #else
+    auto hash = [](const HashType& lhs, const HashType& rhs) {
+        return sha256(lhs, rhs);
+    };
+    auto pubkey_hash = sha256(pubkey);
+    #endif
 
     // Hash branches.
-    auto retval = sha256(
-        sha256(sha256(sha256(pubkey), withdrawal_credentials), sha256(effective_balance, slashed)),
-        sha256(sha256(activation_eligibility_epoch, activation_epoch),
-                  sha256(exit_epoch, withdrawable_epoch)));
+    auto retval = hash(
+        hash(hash(pubkey_hash, withdrawal_credentials), hash(effective_balance, slashed)),
+        hash(hash(activation_eligibility_epoch, activation_epoch),
+                  hash(exit_epoch, withdrawable_epoch)));
+
     return retval;
 }
 
-VoteToken verify_attestation_data(const Bytes32& block_root, const Attestation& attestation, base_field_type sigma) {
+VoteToken verify_attestation_data_imp(const HashType& block_root, const Attestation& attestation, base_field_type sigma) {
     assert_true(sigma != 0);
 
     ssz_verify_proof(
@@ -239,7 +253,7 @@ VoteToken verify_attestation_data(const Bytes32& block_root, const Attestation& 
 VoteToken combine_finality_votes(const static_vector<VoteToken, 8192>& tokens) {
     VoteToken result;
     result.transition = tokens[0].transition;
-    result.token = 0;
+    result.token = {};
     for (auto it = tokens.begin(); it != tokens.end(); ++it) {
         assert_true(result.transition == it->transition);
         result.token += it->token;
