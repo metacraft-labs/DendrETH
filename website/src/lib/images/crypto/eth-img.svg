@@ -1,0 +1,20 @@
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="cryptocurrency-color:eth" clip-path="url(#clip0_229_19795)">
+<g id="Group">
+<path id="Vector" d="M20 40C31.0457 40 40 31.0457 40 20C40 8.9543 31.0457 0 20 0C8.9543 0 0 8.9543 0 20C0 31.0457 8.9543 40 20 40Z" fill="#627EEA"/>
+<g id="Group_2">
+<path id="Vector_2" d="M20.623 5V16.0875L29.9943 20.275L20.623 5Z" fill="white" fill-opacity="0.602"/>
+<path id="Vector_3" d="M20.6225 5L11.25 20.275L20.6225 16.0875V5Z" fill="white"/>
+<path id="Vector_4" d="M20.623 27.46V34.9938L30.0005 22.02L20.623 27.46Z" fill="white" fill-opacity="0.602"/>
+<path id="Vector_5" d="M20.6225 34.9938V27.4588L11.25 22.02L20.6225 34.9938Z" fill="white"/>
+<path id="Vector_6" d="M20.623 25.7163L29.9943 20.2751L20.623 16.0901V25.7163Z" fill="white" fill-opacity="0.2"/>
+<path id="Vector_7" d="M11.25 20.2751L20.6225 25.7163V16.0901L11.25 20.2751Z" fill="white" fill-opacity="0.602"/>
+</g>
+</g>
+</g>
+<defs>
+<clipPath id="clip0_229_19795">
+<rect width="40" height="40" fill="white"/>
+</clipPath>
+</defs>
+</svg>
