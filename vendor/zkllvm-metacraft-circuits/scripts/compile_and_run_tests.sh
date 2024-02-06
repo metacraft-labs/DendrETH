@@ -14,6 +14,11 @@ then
     git clone git@github.com:metacraft-labs/finalizer-data.git $SCRIPT_DIR/../src/tests/verify_attestation_data_test/finalizer-data
 fi
 
+if [ ! -d $SCRIPT_DIR/../../consensus-spec-tests ]
+then 
+    git clone git@github.com:ethereum/consensus-spec-tests.git $SCRIPT_DIR/../../consensus-spec-tests
+fi
+
 cd $CURRENT_DIR
 
 COMMAND='cmake -G "Unix Makefiles" -B ${ZKLLVM_BUILD:-build} -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++ . && make -C ${ZKLLVM_BUILD:-build} template'
