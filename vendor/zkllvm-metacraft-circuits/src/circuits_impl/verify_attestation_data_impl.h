@@ -15,6 +15,9 @@ using namespace circuit_byte_utils;
 using namespace ssz_utils;
 using namespace nil::crypto3::algebra::curves;
 
+static constexpr auto MAX_PUB_KEYS_TO_PROCESS = 1'000'000;
+static constexpr auto FIRST_LEAF_IN_VALIDATORS_TREE_GINDEX = 0x020000000000ul;
+
 using Proof = static_vector<HashType, 41>;
 using PubKey = Bytes48;
 
@@ -102,7 +105,8 @@ struct VoteToken {
 
 using TransitionKey = Bytes32;
 
-static_vector<HashType> compute_zero_hashes(int length = 64) {
+template<size_t LevelCount = 64>
+static_vector<HashType> compute_zero_hashes() {
     static_vector<HashType> xs;
 #ifdef __ZKLLVM__
     sha256_t empty_hash = {0};
@@ -111,7 +115,7 @@ static_vector<HashType> compute_zero_hashes(int length = 64) {
     xs.push_back(get_empty_byte_array<32>());
 #endif
 
-    for (int i = 1; i < length; i++) {
+    for (int i = 1; i < LevelCount; i++) {
         xs.push_back(sha256_pair(xs[i - 1], xs[i - 1]));
     }
     return xs;
@@ -183,65 +187,71 @@ VoteToken
     // attestation.
 
     base_field_type token = 0;
+    for (size_t i = 0; i < attestation.validators.capacity; i++) {
+        if (i < attestation.validators.size()) {
+            auto& v = attestation.validators[i];
+            // Aggregate this validator's public key.
+            auto validator_pubkey = v.pubkey;
+            ///! pubkey_point = pubkey_to_G1(validator_pubkey)
+            ///! aggregated_point = bls.add(aggregated_point, pubkey_point)
 
-    for (size_t i = 0; i < attestation.validators.size(); i++) {
-        auto& v = attestation.validators[i];
-        // Aggregate this validator's public key.
-        auto validator_pubkey = v.pubkey;
-        ///! pubkey_point = pubkey_to_G1(validator_pubkey)
-        ///! aggregated_point = bls.add(aggregated_point, pubkey_point)
+            // Check if this validator was part of the source state.
+            if (v.trusted) {
+                auto leaf = hash_validator(circuit_byte_utils::expand<64>(v.pubkey),
+                                           v.withdrawal_credentials,
+                                           v.effective_balance,
+                                           v.activation_eligibility_epoch,
+                                           v.activation_epoch,
+                                           v.exit_epoch,
+                                           v.withdrawable_epoch);
+                // Hash the validator data and make sure it's part of:
+                // validators_root -> state_root -> block_root.
+                ssz_verify_proof(attestation.validators_root,
+                                 leaf,
+                                 v.validator_list_proof,
+                                 FIRST_LEAF_IN_VALIDATORS_TREE_GINDEX + v.validator_index);
 
-        // Check if this validator was part of the source state.
-        if (v.trusted) {
-            auto leaf = hash_validator(circuit_byte_utils::expand<64>(v.pubkey),
-                                       v.withdrawal_credentials,
-                                       v.effective_balance,
-                                       v.activation_eligibility_epoch,
-                                       v.activation_epoch,
-                                       v.exit_epoch,
-                                       v.withdrawable_epoch);
-            // Hash the validator data and make sure it's part of:
-            // validators_root -> state_root -> block_root.
-            ssz_verify_proof(
-                attestation.validators_root, leaf, v.validator_list_proof, 0x020000000000ul + v.validator_index);
+                // TODO: Needed?
+                // assert spec.is_active_validator(
+                //     v['activation_epoch'],
+                //     v['exit_epoch'],
+                //     EPOCH,
+                // )
 
-            // TODO: Needed?
-            // assert spec.is_active_validator(
-            //     v['activation_epoch'],
-            //     v['exit_epoch'],
-            //     EPOCH,
-            // )
-
-            // Include this validator's pubkey in the result.
-            base_field_type element;
-            memcpy(&element, &(v.pubkey), sizeof(element));
-            token = (token + (element * sigma));
+                // Include this validator's pubkey in the result.
+                base_field_type element;
+                memcpy(&element, &(v.pubkey), sizeof(element));
+                token = (token + (element * sigma));
+            }
         }
+        // Verify the aggregated signature.
+        // aggregated_pubkey: BLSPubkey = G1_to_pubkey(aggregated_point)
+        // signing_root: bytes = spec.compute_attestation_signing_root(
+        //     attestation['fork'],
+        //     attestation['genesis_validators_root'],
+        //     attestation['data'],
+        // )
+        // signature: BLSSignature = BLSSignature(to_bytes(hexstr=attestation['signature']))
+        // assert bls_pop.Verify(
+        //     aggregated_pubkey,
+        //     signing_root,
+        //     signature,
+        // )
     }
-    // Verify the aggregated signature.
-    // aggregated_pubkey: BLSPubkey = G1_to_pubkey(aggregated_point)
-    // signing_root: bytes = spec.compute_attestation_signing_root(
-    //     attestation['fork'],
-    //     attestation['genesis_validators_root'],
-    //     attestation['data'],
-    // )
-    // signature: BLSSignature = BLSSignature(to_bytes(hexstr=attestation['signature']))
-    // assert bls_pop.Verify(
-    //     aggregated_pubkey,
-    //     signing_root,
-    //     signature,
-    // )
-
     return VoteToken {{attestation.data.source, attestation.data.target}, token};
 }
+
+#ifndef __ZKLLVM__
 
 VoteToken combine_finality_votes(const static_vector<VoteToken, 8192>& tokens) {
     VoteToken result;
     result.transition = tokens[0].transition;
     result.token = {0};
-    for (size_t i = 0; i < tokens.size(); i++) {
-        assert_true(result.transition == tokens[i].transition);
-        result.token += tokens[i].token;
+    for (size_t i = 0; i < tokens.capacity; i++) {
+        if (i < tokens.size()) {
+            assert_true(result.transition == tokens[i].transition);
+            result.token += tokens[i].token;
+        }
     }
     return result;
 }
@@ -281,3 +291,5 @@ void prove_finality(const VoteToken& token,
     assert_true(votes_count * 5 > active_validators_count * 4);
     assert_true(reconstructed_token == token.token);
 }
+
+#endif
