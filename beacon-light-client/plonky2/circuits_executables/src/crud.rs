@@ -44,7 +44,7 @@ pub struct BalanceProof {
     pub withdrawal_credentials: Vec<u64>,
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub current_epoch: BigUint,
-    pub proof_index: String,
+    pub proof: Vec<u8>,
     pub number_of_non_activated_validators: u64,
     pub number_of_active_validators: u64,
     pub number_of_exited_validators: u64,
@@ -189,7 +189,7 @@ pub async fn save_balance_proof(
         withdrawal_credentials: proof.get_withdrawal_credentials().to_vec(),
         validators_commitment: proof.get_range_validator_commitment().to_vec(),
         current_epoch: proof.get_current_epoch(),
-        proof_index: proof_index.clone(),
+        proof: proof.to_bytes(),
         number_of_non_activated_validators: proof.get_number_of_non_activated_validators(),
         number_of_active_validators: proof.get_number_of_active_validators(),
         number_of_exited_validators: proof.get_number_of_exited_validators(),

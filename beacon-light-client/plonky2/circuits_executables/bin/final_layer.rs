@@ -7,11 +7,8 @@ use circuits::{
 };
 use circuits_executables::{
     crud::{
-        common::{
-            fetch_final_layer_input, fetch_proof, load_circuit_data, save_final_proof,
-            BalanceProof, ValidatorProof,
-        },
-        proof_storage::proof_storage::create_proof_storage,
+        fetch_final_layer_input, fetch_proof, load_circuit_data, save_final_proof, BalanceProof,
+        ValidatorProof,
     },
     provers::SetPWValues,
 };
@@ -37,15 +34,6 @@ async fn async_main() -> Result<()> {
                 .help("Sets a custom Redis connection")
                 .takes_value(true)
                 .default_value("redis://127.0.0.1:6379/"),
-        )
-        .arg(
-            Arg::with_name("proof_storage_type")
-                .long("proof-storage-type")
-                .value_name("proof_storage_type")
-                .help("Sets the type of proof storage")
-                .takes_value(true)
-                .required(true)
-                .possible_values(&["redis", "file", "azure", "aws"]),
         )
         .arg(
             Arg::with_name("folder_name")
@@ -99,8 +87,6 @@ async fn async_main() -> Result<()> {
 
     let elapsed = start.elapsed();
 
-    let mut proof_storage = create_proof_storage(&matches).await;
-
     println!("Redis connection took: {:?}", elapsed);
 
     let balance_data = load_circuit_data("37").unwrap();
@@ -116,7 +102,7 @@ async fn async_main() -> Result<()> {
 
     let balance_proof: BalanceProof = fetch_proof(&mut con, 37, 0).await?;
 
-    let balance_proof_bytes = proof_storage.get_proof(balance_proof.proof_index).await?;
+    let balance_proof_bytes = balance_proof.proof;
 
     let balance_final_proof =
         ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
@@ -147,9 +133,7 @@ async fn async_main() -> Result<()> {
 
     let commitment_proof: ValidatorProof = fetch_proof(&mut con, 40, 0).await?;
 
-    let commitment_proof_bytes = proof_storage
-        .get_proof(commitment_proof.proof_index)
-        .await?;
+    let commitment_proof_bytes = commitment_proof.proof;
 
     let commitment_final_proof = ProofWithPublicInputs::<
         GoldilocksField,
@@ -195,10 +179,6 @@ async fn async_main() -> Result<()> {
         balance_proof.number_of_exited_validators,
     )
     .await?;
-
-    println!("Proof size: {}", proof.to_bytes().len());
-
-    fs::write("final_layer_proof", proof.to_bytes()).unwrap();
 
     let gate_serializer = DendrETHGateSerializer;
 

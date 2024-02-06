@@ -287,6 +287,15 @@ func Prove(circuitPath string, r1cs constraint.ConstraintSystem, pk plonk.Provin
 	log.Info().Msg("Successfully saved proof")
 
 	publicWitness, err := witness.Public()
+
+	slice := publicWitness.Vector()
+	fmt.Println("My slice without *:", slice)
+
+	vector := publicWitness.Vector()
+	fmt.Println("My vector:", vector)
+
+	fmt.Println("Public witness", publicWitness)
+
 	log.Info().Msg("Saving public witness to public_witness.bin")
 	witnessFile, err := os.Create("public_witness.bin")
 	publicWitness.WriteTo(witnessFile)

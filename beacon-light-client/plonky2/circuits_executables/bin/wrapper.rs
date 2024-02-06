@@ -2,7 +2,7 @@ use std::{fs, println, time::Instant};
 
 use anyhow::Result;
 use circuits_executables::{
-    crud::common::{load_circuit_data, FinalProof},
+    crud::{load_circuit_data, FinalProof},
     poseidon_bn128_config::PoseidonBN128GoldilocksConfig,
     validator_commitment_constants::get_validator_commitment_constants,
 };
@@ -80,6 +80,9 @@ async fn async_main() -> Result<()> {
         .await?;
 
     let final_layer_proof: FinalProof = serde_json::from_str(&proof_str)?;
+
+    println!("Final Layer Proof: {:?}", final_layer_proof.balance_sum);
+
     let final_layer_proof = final_layer_proof.proof;
 
     let final_proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> =

@@ -9,9 +9,26 @@ import { hexToBits } from '../../../libs/typescript/ts-utils/hex-utils';
 (async () => {
   const { ssz } = await import('@lodestar/types');
 
+  const beaconApi = new BeaconApi([
+    'http://unstable.mainnet.beacon-api.nimbus.team',
+  ]);
+  const { beaconState } = await beaconApi.getBeaconState(6953401);
+
   console.log(
     hexToBits(
-      bytesToHex(ssz.capella.BeaconState.fields.slot.hashTreeRoot(6953401)),
+      bytesToHex(ssz.capella.BeaconState.hashTreeRoot(beaconState)),
+    ).join(', '),
+  );
+
+  console.log(
+    hexToBits(
+      '0x87a7acf1710775a4f1c1604477e4d2b5f111e06b184c8e447c2c573346520672',
+    ).join(', '),
+  );
+  console.log('------------------------------------------------------');
+  console.log(
+    hexToBits(
+      '0x5ad7de3a037372d0be8ee4d69967096218dc77a075003448bb6bf8933fbfcdc8',
     ).join(', '),
   );
 
