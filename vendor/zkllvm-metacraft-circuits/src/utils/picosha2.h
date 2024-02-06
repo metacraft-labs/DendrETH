@@ -26,7 +26,7 @@ THE SOFTWARE.
 // picosha2:20140213
 
 #ifndef PICOSHA2_BUFFER_SIZE_FOR_INPUT_ITERATOR
-#define PICOSHA2_BUFFER_SIZE_FOR_INPUT_ITERATOR 1048576    //=1024*1024: default is 1MB memory
+#define PICOSHA2_BUFFER_SIZE_FOR_INPUT_ITERATOR 1024
 #endif
 
 #include <algorithm>
@@ -37,6 +37,34 @@ THE SOFTWARE.
 #include "../circuit_utils/base_types.h"
 
 namespace picosha2 {
+
+    template<class ForwardIt, class T>
+    void fill(ForwardIt first, ForwardIt last, const T& value) {
+        assert_in_executable((last - first) < PICOSHA2_BUFFER_SIZE_FOR_INPUT_ITERATOR);
+        for (size_t i = 0; i < PICOSHA2_BUFFER_SIZE_FOR_INPUT_ITERATOR; i++) {
+            if (first + i != last) {
+                *(first + i) = value;
+            } else {
+                return;
+            }
+        }
+    }
+
+    template<class InputIt, class OutputIt>
+    OutputIt copy(InputIt first, InputIt last, OutputIt dest_begin) {
+        assert_in_executable((last - first) < PICOSHA2_BUFFER_SIZE_FOR_INPUT_ITERATOR);
+        size_t i = 0;
+        for (; i < PICOSHA2_BUFFER_SIZE_FOR_INPUT_ITERATOR; i++) {
+            if (first + i != last) {
+                *(dest_begin + i) = *(first + i);
+            } else {
+                return (dest_begin + i);
+            }
+        }
+
+        return (dest_begin + i);
+    }
+
     typedef unsigned long word_t;
     typedef unsigned char byte_t;
 
@@ -103,7 +131,7 @@ namespace picosha2 {
             assert(first + 64 == last);
             static_cast<void>(last);    // for avoiding unused-variable warning
             word_t w[64];
-            std::fill(w, w + 64, word_t(0));
+            fill(w, w + 64, word_t(0));
             for (std::size_t i = 0; i < 16; ++i) {
                 w[i] = (static_cast<word_t>(mask_8bit(*(first + i * 4))) << 24) |
                        (static_cast<word_t>(mask_8bit(*(first + i * 4 + 1))) << 16) |
@@ -158,39 +186,44 @@ namespace picosha2 {
 
         void init() {
             buffer_size_ = 0;
-            std::fill(data_length_digits_, data_length_digits_ + 4, word_t(0));
-            std::copy(detail::initial_message_digest, detail::initial_message_digest + 8, h_);
+            fill(data_length_digits_, data_length_digits_ + 4, word_t(0));
+            copy(detail::initial_message_digest, detail::initial_message_digest + 8, h_);
         }
 
         template<typename RaIter>
         void process(RaIter first, RaIter last) {
             add_to_data_length(static_cast<word_t>(std::distance(first, last)));
             assert_true(buffer_size_ + (last - first) < PICOSHA2_BUFFER_SIZE_FOR_INPUT_ITERATOR);
-            std::copy(first, last, buffer_.begin() + buffer_size_);
+            copy(first, last, buffer_.begin() + buffer_size_);
             buffer_size_ += last - first;
-            std::size_t i = 0;
-            for (; i + 64 <= buffer_size_; i += 64) {
-                detail::hash256_block(h_, buffer_.begin() + i, buffer_.begin() + i + 64);
+            std::size_t processed = 0;
+            for (size_t i = 0; i + 64 <= PICOSHA2_BUFFER_SIZE_FOR_INPUT_ITERATOR; i += 64) {
+                if (i + 64 <= buffer_size_) {
+                    detail::hash256_block(h_, buffer_.begin() + i, buffer_.begin() + i + 64);
+                    processed += 64;
+                }
             }
-            buffer_size_ -= i;
-            for (int j = 0; j < buffer_size_; j++) {
-                buffer_[j] = buffer_[i + j];
+            buffer_size_ -= processed;
+            for (int j = 0; j < PICOSHA2_BUFFER_SIZE_FOR_INPUT_ITERATOR; j++) {
+                if (j < buffer_size_) {
+                    buffer_[j] = buffer_[processed + j];
+                }
             }
         }
 
         void finish() {
             byte_t temp[64];
-            std::fill(temp, temp + 64, byte_t(0));
+            fill(temp, temp + 64, byte_t(0));
             std::size_t remains = buffer_size_;
-            std::copy(buffer_.begin(), buffer_.begin() + buffer_size_, temp);
+            copy(buffer_.begin(), buffer_.begin() + buffer_size_, temp);
             temp[remains] = 0x80;
 
             if (remains > 55) {
-                std::fill(temp + remains + 1, temp + 64, byte_t(0));
+                fill(temp + remains + 1, temp + 64, byte_t(0));
                 detail::hash256_block(h_, temp, temp + 64);
-                std::fill(temp, temp + 64 - 4, byte_t(0));
+                fill(temp, temp + 64 - 4, byte_t(0));
             } else {
-                std::fill(temp + remains + 1, temp + 64 - 4, byte_t(0));
+                fill(temp + remains + 1, temp + 64 - 4, byte_t(0));
             }
 
             write_data_bit_length(&(temp[56]));
@@ -199,9 +232,12 @@ namespace picosha2 {
 
         template<typename OutIter>
         void get_hash_bytes(OutIter first, OutIter last) const {
-            for (const word_t* iter = h_; iter != h_ + 8; ++iter) {
-                for (std::size_t i = 0; i < 4 && first != last; ++i) {
-                    *(first++) = detail::mask_8bit(static_cast<byte_t>((*iter >> (24 - 8 * i))));
+            for (size_t i = 0; i < 8; i++) {
+                const word_t* iter = h_ + i;
+                for (std::size_t i = 0; i < 4; ++i) {
+                    if (first != last) {
+                        *(first++) = detail::mask_8bit(static_cast<byte_t>((*iter >> (24 - 8 * i))));
+                    }
                 }
             }
         }
@@ -222,7 +258,7 @@ namespace picosha2 {
         }
         void write_data_bit_length(byte_t* begin) {
             word_t data_bit_length_digits[4];
-            std::copy(data_length_digits_, data_length_digits_ + 4, data_bit_length_digits);
+            copy(data_length_digits_, data_length_digits_ + 4, data_bit_length_digits);
 
             // convert byte length to bit length (multiply 8 or shift 3 times left)
             word_t carry = 0;
@@ -263,16 +299,27 @@ namespace picosha2 {
             std::array<byte_t, PICOSHA2_BUFFER_SIZE_FOR_INPUT_ITERATOR> buffer {};
             hash256_one_by_one hasher;
             // hasher.init();
-            while (first != last) {
-                int size = buffer_size;
-                for (int i = 0; i != buffer_size; ++i, ++first) {
-                    if (first == last) {
-                        size = i;
-                        break;
+            static constexpr auto LOOP_COUNT = 1024;
+            for (size_t iteration = 0; iteration < LOOP_COUNT; iteration++) {
+                if (first != last) {
+                    int size = buffer_size;
+                    for (int i = 0; i != buffer_size; ++i, ++first) {
+                        if (first == last) {
+                            size = i;
+                            buffer[i] = *first;
+                            hasher.process(buffer.begin(), buffer.begin() + size);
+                            hasher.finish();
+                            hasher.get_hash_bytes(first2, last2);
+                            return;
+                        }
+                        buffer[i] = *first;
                     }
-                    buffer[i] = *first;
+                    hasher.process(buffer.begin(), buffer.begin() + size);
+                } else {
+                    hasher.finish();
+                    hasher.get_hash_bytes(first2, last2);
+                    return;
                 }
-                hasher.process(buffer.begin(), buffer.begin() + size);
             }
             hasher.finish();
             hasher.get_hash_bytes(first2, last2);

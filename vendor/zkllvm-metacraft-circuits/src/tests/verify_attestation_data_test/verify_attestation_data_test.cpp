@@ -334,7 +334,7 @@ int main(int argc, char* argv[]) {
 
     {    // process all pubkeys at once
         Transition voted_transition;
-        PubKey* trusted_pubkeys = (PubKey*)malloc(sizeof(PubKey) * 1'000'000);
+        PubKey* trusted_pubkeys = (PubKey*)malloc(sizeof(PubKey) * MAX_PUB_KEYS_TO_PROCESS);
         size_t i = 0;
         size_t unique_keys_count = 0;
         for (auto& keys_set : data["trusted_pubkeys"]) {

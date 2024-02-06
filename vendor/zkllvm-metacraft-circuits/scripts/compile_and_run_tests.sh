@@ -9,9 +9,19 @@ echo "CURRENT_DIR = " $CURRENT_DIR
 cd $SCRIPT_DIR/../docker && docker build -t zcli:latest -f Dockerfile_zcli . \
                          && docker run -v $SCRIPT_DIR/../../:/DendrETH --user $(id -u ${USER}):$(id -g ${USER}) zcli:latest
 
-if [ ! -d $SCRIPT_DIR/../src/tests/verify_attestation_data_test/finalizer-data ]
-then 
-    git clone git@github.com:metacraft-labs/finalizer-data.git $SCRIPT_DIR/../src/tests/verify_attestation_data_test/finalizer-data
+
+FINALIZER_DATA_TEST_DIR=$SCRIPT_DIR/../src/tests/verify_attestation_data_test/finalizer-data
+
+if [ ! -d $FINALIZER_DATA_TEST_DIR ]
+then
+    git clone git@github.com:metacraft-labs/finalizer-data.git $FINALIZER_DATA_TEST_DIR
+fi
+
+CONSENSUS_SPEC_TEST_DATA_DIR=$SCRIPT_DIR/../../consensus-spec-tests
+
+if [ ! -d $CONSENSUS_SPEC_TEST_DATA_DIR ]
+then
+    git clone git@github.com:ethereum/consensus-spec-tests.git $CONSENSUS_SPEC_TEST_DATA_DIR
 fi
 
 cd $CURRENT_DIR

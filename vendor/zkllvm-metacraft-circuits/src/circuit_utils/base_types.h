@@ -77,7 +77,9 @@ struct CheckpointVariable {
 
 struct JustificationBitsVariable {
 
-    static_vector<bool, 4, true> bits;
+    static constexpr auto bits_size = 4;
+
+    static_vector<bool, bits_size, true> bits;
 
     constexpr JustificationBitsVariable(const std::array<bool, decltype(bits)::capacity> &init) {
         size_t i = 0;
@@ -87,7 +89,7 @@ struct JustificationBitsVariable {
     }
 
     constexpr JustificationBitsVariable() {
-        for (size_t i = 0; i < bits.size(); ++i) {
+        for (size_t i = 0; i < bits_size; ++i) {
             bits[i] = false;
         }
     }
@@ -109,8 +111,11 @@ struct JustificationBitsVariable {
         assert_in_executable(lower_bound >= 0);
         assert_in_executable(upper_bound_non_inclusive <= bits.size());
         bool result = true;
-        for (size_t i = lower_bound; i < upper_bound_non_inclusive; i++) {
-            result = result && bits[i];
+        for (size_t i = 0; i < bits_size; i++) {
+            auto pos = i + lower_bound;
+            if (pos < upper_bound_non_inclusive) {
+                result = result && bits[pos];
+            }
         }
         return result;
     }
