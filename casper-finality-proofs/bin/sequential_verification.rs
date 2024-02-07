@@ -133,7 +133,9 @@ fn main() -> Result<(), IOError> {
 
     // Prove Finality
     let mut finality_builder = CircuitBuilder::<L, D>::new();
-    ProveFinality::define(&mut finality_builder, &vad_child_circuit, &cuv_child_circuit);
+
+    //TODO: Test with recurssive circuits from preivous epoch
+    // ProveFinality::define(&mut finality_builder, &vad_child_circuit, &cuv_child_circuit);
     let finality_circuit = finality_builder.build();
     let mut input = finality_circuit.input();
 

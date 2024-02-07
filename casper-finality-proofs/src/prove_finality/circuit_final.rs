@@ -1,97 +1,150 @@
+use std::marker::PhantomData;
+
 use crate::{
-    utils::plonky2x_extensions::assert_is_true,
+    utils::{eth_objects::{BeaconState, CheckpointVariable}, plonky2x_extensions::assert_is_true},
     weigh_justification_and_finalization::{
-        checkpoint::CheckpointVariable, justification_bits::JustificationBitsVariable
+        justification_bits::JustificationBitsVariable
     }, constants::{VALIDATOR_ROOT_GINDEX, STATE_ROOT_GINDEX, STATE_ROOT_PROOF_LEN, VALIDATORS_ROOT_PROOF_LEN}, combine_finality_votes::circuit::ProofWithPublicInputsTargetReader,
 };
+use ethers::core::k256::elliptic_curve::bigint::U64;
+use plonky2::plonk::proof::ProofWithPublicInputsTarget;
 use plonky2x::{
     backend::circuit::CircuitBuild,
     prelude::{BoolVariable, CircuitBuilder, PlonkParameters, U64Variable}, frontend::vars::{Bytes32Variable, ArrayVariable},
 };
 
+fn new_proof_reader<L: PlonkParameters<D>, const D: usize>(builder: &mut CircuitBuilder<L, D>, circuit: &CircuitBuild<L, D>) 
+    -> ProofWithPublicInputsTargetReader<D>
+{
+    let verifier = builder.constant_verifier_data::<L>(&circuit.data);
+    let proof: ProofWithPublicInputsTarget<D> = builder.proof_read(&circuit.data.common).into();
+
+    ProofWithPublicInputsTargetReader::from(proof)
+}
+
+pub struct VADCircuit<L: PlonkParameters<D>, const D: usize> {
+    pub sigma: U64Variable,
+    pub commitment: U64Variable,
+    pub target: CheckpointVariable,
+    pub source: CheckpointVariable,
+    pub state_root: Bytes32Variable,
+    pub state_root_proof: ArrayVariable<Bytes32Variable, STATE_ROOT_PROOF_LEN>,
+    pub validators_root: Bytes32Variable,
+    pub validators_root_proof: ArrayVariable<Bytes32Variable, VALIDATORS_ROOT_PROOF_LEN>,
+    pub slot: U64Variable,
+}
+
+impl<L: PlonkParameters<D>, const D: usize> VADCircuit<L,D>{
+    
+    pub fn new(builder: &mut CircuitBuilder<L, D>, circuit: &CircuitBuild<L, D>) -> Self{
+
+        let mut proof_reader = new_proof_reader(builder, circuit);
+
+        VADCircuit {
+            sigma: proof_reader.read::<U64Variable>(),
+            commitment: proof_reader.read::<U64Variable>(),
+            target: proof_reader.read::<CheckpointVariable>(),
+            source: proof_reader.read::<CheckpointVariable>(),
+            state_root: proof_reader.read::<Bytes32Variable>(),
+            state_root_proof: proof_reader.read::<ArrayVariable<Bytes32Variable, STATE_ROOT_PROOF_LEN>>(),
+            validators_root: proof_reader.read::<Bytes32Variable>(),
+            validators_root_proof: proof_reader.read::<ArrayVariable<Bytes32Variable, VALIDATORS_ROOT_PROOF_LEN>>(),
+            slot: proof_reader.read::<U64Variable>(),
+        }
+    }
+}
+
+pub struct CUVCircuit<L: PlonkParameters<D>, const D: usize> {
+    pub rightmost: U64Variable,
+    pub leftmost: U64Variable,
+    pub commitment: U64Variable,
+    pub total_unique_validators: U64Variable,
+    _phantom: PhantomData<L>
+}
+
+impl<L: PlonkParameters<D>, const D: usize> CUVCircuit<L,D>{
+    
+    pub fn new(builder: &mut CircuitBuilder<L, D>, circuit: &CircuitBuild<L, D>) -> Self{
+
+        let mut proof_reader = new_proof_reader(builder, circuit);
+
+        CUVCircuit {
+            rightmost: proof_reader.read::<U64Variable>(),
+            leftmost: proof_reader.read::<U64Variable>(),
+            commitment: proof_reader.read::<U64Variable>(),
+            total_unique_validators: proof_reader.read::<U64Variable>(),
+            _phantom: PhantomData::<L> {}
+        }
+    }
+}
 #[derive(Debug, Clone)]
 pub struct ProveFinality;
 
 impl ProveFinality {
     pub fn define<L: PlonkParameters<D>, const D: usize>(
         builder: &mut CircuitBuilder<L, D>,
-        vad_circuit: &CircuitBuild<L, D>,
-        cuv_circuit: &CircuitBuild<L, D>
+        vad_circuit_cur: &CircuitBuild<L, D>,
+        cuv_circuit_cur: &CircuitBuild<L, D>,
+
+        vad_circuit_prev: &CircuitBuild<L, D>,
+        cuv_circuit_prev: &CircuitBuild<L, D>,
     ) where
         <<L as PlonkParameters<D>>::Config as plonky2::plonk::config::GenericConfig<D>>::Hasher:
             plonky2::plonk::config::AlgebraicHasher<<L as PlonkParameters<D>>::Field>,
     {
-        let verifier_vad = builder.constant_verifier_data::<L>(&vad_circuit.data);
-        let verifier_cuv = builder.constant_verifier_data::<L>(&cuv_circuit.data);
 
-        let vad_proof = builder.proof_read(&vad_circuit.data.common).into();
-        let cuv_proof = builder.proof_read(&cuv_circuit.data.common).into();
+        let vad_cur = VADCircuit::<L,D>::new(builder, vad_circuit_cur);
+        let vad_prev = VADCircuit::<L,D>::new(builder, vad_circuit_prev);
 
-        builder.verify_proof::<L>(&vad_proof, &verifier_vad, &vad_circuit.data.common);
-        builder.verify_proof::<L>(&cuv_proof, &verifier_cuv, &cuv_circuit.data.common);
+        let cuv_cur = CUVCircuit::<L,D>::new(builder, cuv_circuit_cur);
+        let cuv_prev = CUVCircuit::<L,D>::new(builder, cuv_circuit_prev);
 
-        let mut vad_proof_reader = ProofWithPublicInputsTargetReader::from(vad_proof);
-        let mut cuv_proof_reader = ProofWithPublicInputsTargetReader::from(cuv_proof);
-
-        let _vad_sigma = vad_proof_reader.read::<U64Variable>();
-        let vad_commitment = vad_proof_reader.read::<U64Variable>();
-        let vad_target = vad_proof_reader.read::<CheckpointVariable>();
-        let vad_source = vad_proof_reader.read::<CheckpointVariable>();
-        let state_root = vad_proof_reader.read::<Bytes32Variable>();
-        let state_root_proof = vad_proof_reader.read::<ArrayVariable<Bytes32Variable, STATE_ROOT_PROOF_LEN>>();
-        let validators_root = vad_proof_reader.read::<Bytes32Variable>();
-        let validators_root_proof = vad_proof_reader.read::<ArrayVariable<Bytes32Variable, VALIDATORS_ROOT_PROOF_LEN>>();
-        let slot = vad_proof_reader.read::<U64Variable>();
-
-        let _rightmost = cuv_proof_reader.read::<U64Variable>();
-        let _leftmost = cuv_proof_reader.read::<U64Variable>();
-        let cuv_commitment = cuv_proof_reader.read::<U64Variable>();
-        let total_unique_validators =  cuv_proof_reader.read::<U64Variable>();
+        let beacon_state = BeaconState::circuit_input(builder);
 
         let prev_block_root = builder.read::<Bytes32Variable>();
+        let total_number_of_validators = builder.read::<U64Variable>();
 
-        builder.assert_is_equal(vad_commitment, cuv_commitment);
+        builder.assert_is_equal(vad_cur.commitment, cuv_cur.commitment);
+        builder.assert_is_equal(vad_prev.commitment, cuv_prev.commitment);
 
-        // let justification_bits = builder.read::<JustificationBitsVariable>(); // Comes from beacon_state
-        // let previous_epoch_attested_validators = builder.read::<U64Variable>();
+        // // Served from commitment mapper, propogated by VAD Recurssive Circuit
+        // let previous_epoch_attested_validators = builder.read::<U64Variable>(); 
         // let current_epoch_attested_validators = builder.read::<U64Variable>();
-        // let previous_justified_checkpoint = builder.read::<CheckpointVariable>(); // Comes from beacon_state
-        // let current_justified_checkpoint = builder.read::<CheckpointVariable>(); // Comes from beacon_state
 
         block_merkle_branch_proof(
             builder,
             prev_block_root,
-            state_root,
-            validators_root,
-            state_root_proof,
-            validators_root_proof
+            vad_cur.state_root,
+            vad_cur.validators_root,
+            vad_cur.state_root_proof,
+            vad_cur.validators_root_proof
         );
 
         // validate_target_source_difference(builder, &vad_source, &vad_target); //TODO: Bugged Data
 
-        // let new_justification_bits = process_justifications( //TODO: No Data
-        //     builder,
-        //     total_number_of_validators,
-        //     justification_bits,
-        //     previous_epoch_attested_validators,
-        //     current_epoch_attested_validators,
-        // );
+        let new_justification_bits = process_justifications( //TODO: No Data
+            builder,
+            total_number_of_validators,
+            beacon_state.justification_bits,
+            cuv_prev.total_unique_validators, // previous_epoch_attested_validators,
+            cuv_cur.total_unique_validators, // current_epoch_attested_validators,
+        );
 
         let thirty_two = builder.constant::<U64Variable>(32);
         // let new_justification_bits = new_justification_bits.bits.as_slice();
-        let current_epoch = builder.div(slot, thirty_two);
-        let source_index = builder.sub(current_epoch, vad_source.epoch);
-        let target_index = builder.sub(current_epoch, vad_target.epoch);
+        let current_epoch = builder.div(vad_cur.slot, thirty_two);
+        let source_index = builder.sub(current_epoch, vad_cur.source.epoch);
+        let target_index = builder.sub(current_epoch, vad_cur.target.epoch);
 
-        // validate_source( //TODO: No data
-        //     builder,
-        //     vad_source,
-        //     target_index,
-        //     previous_justified_checkpoint,
-        //     current_justified_checkpoint,
-        // );
+        validate_source( //TODO: No data
+            builder,
+            vad_cur.source,
+            target_index,
+            beacon_state.previous_justified_checkpoint,
+            beacon_state.current_justified_checkpoint,
+        );
 
-        // validate_justification_bits(builder, source_index, target_index, new_justification_bits); //TODO: No Data
+        validate_justification_bits(builder, source_index, target_index, new_justification_bits.bits.as_slice()); //TODO: No Data
     }
 }
 

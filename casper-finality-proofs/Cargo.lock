@@ -5975,7 +5975,7 @@ source = "git+https://github.com/mir-protocol/plonky2.git?rev=2d36559d#2d36559da
 [[package]]
 name = "plonky2x"
 version = "0.1.0"
-source = "git+https://github.com/metacraft-labs/succinctx.git?branch=recursive_proof_element_inputs#e93e53db8a476f81953e7b7fd4835750fd666796"
+source = "git+https://github.com/succinctlabs/succinctx.git?branch=main#2047119a27ae819c9126e84fd3916ebc42d639da"
 dependencies = [
  "anyhow",
  "array-macro",
@@ -6017,7 +6017,7 @@ dependencies = [
 [[package]]
 name = "plonky2x-derive"
 version = "0.1.0"
-source = "git+https://github.com/metacraft-labs/succinctx.git?branch=recursive_proof_element_inputs#e93e53db8a476f81953e7b7fd4835750fd666796"
+source = "git+https://github.com/succinctlabs/succinctx.git?branch=main#2047119a27ae819c9126e84fd3916ebc42d639da"
 dependencies = [
  "proc-macro2",
  "quote",

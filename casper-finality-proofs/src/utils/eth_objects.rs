@@ -7,9 +7,9 @@ use plonky2x::{
 };
 use serde::{Deserialize, Deserializer, Serialize};
 
-use crate::constants::{
+use crate::{constants::{
     STATE_ROOT_PROOF_LEN, VALIDATORS_HASH_TREE_DEPTH, VALIDATORS_ROOT_PROOF_LEN, VERSION_OBJ_BYTES, ZERO_HASHES
-};
+}, weigh_justification_and_finalization::justification_bits::JustificationBitsVariable};
 
 fn deserialize_validator_list_proof<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
 where
@@ -29,6 +29,39 @@ where
     Ok(padded_result)
 }
     
+fn u64_to_bool_vec(value: u64) -> Vec<bool> {
+    let mut result = Vec::with_capacity(4);
+
+    // Extracting bits using bitwise operations
+    for i in (0..4).rev() {
+        let bit = (value >> i) & 1 == 1;
+        result.push(bit);
+    }
+
+    result
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct BeaconStateInput {
+    pub justification_bits: u64,
+    pub previous_justified_checkpoint: CheckpointInput,
+    pub current_justified_checkpoint: CheckpointInput,
+}
+
+impl BeaconStateInput {
+    pub fn write<L: PlonkParameters<D>, const D: usize>(&self, mut input: &mut PublicInput<L, D>){
+        // input.write::<JustificationBitsVariable>(
+            // u64_to_bool_vec(self.justification_bits)
+                // .iter()
+                // .collect()
+            // );
+
+        input.write::<ArrayVariable<BoolVariable, 4>>(u64_to_bool_vec(self.justification_bits));
+        self.previous_justified_checkpoint.write(&mut input);
+        self.current_justified_checkpoint.write(&mut input);
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct BeaconValidatorInput {
     pub pubkey: String,
@@ -313,6 +346,35 @@ impl AttestationData {
             builder.read::<CheckpointVariable>(),
             builder.read::<CheckpointVariable>(),
         )
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct BeaconState {
+    pub justification_bits: JustificationBitsVariable,
+    pub previous_justified_checkpoint: CheckpointVariable,
+    pub current_justified_checkpoint: CheckpointVariable,
+}
+
+impl BeaconState {
+    pub fn new(
+        justification_bits: JustificationBitsVariable,
+        previous_justified_checkpoint: CheckpointVariable,
+        current_justified_checkpoint: CheckpointVariable,
+    ) -> BeaconState {
+        BeaconState {
+            justification_bits: justification_bits,
+            previous_justified_checkpoint: previous_justified_checkpoint,
+            current_justified_checkpoint: current_justified_checkpoint
+        }
+    }
+
+    pub fn circuit_input<L: PlonkParameters<D>, const D: usize>(builder: &mut CircuitBuilder<L,D>) -> Self {
+        BeaconState {
+            justification_bits: builder.read::<JustificationBitsVariable>(),
+            previous_justified_checkpoint: builder.read::<CheckpointVariable>(),
+            current_justified_checkpoint: builder.read::<CheckpointVariable>(),
+        }
     }
 }
 
