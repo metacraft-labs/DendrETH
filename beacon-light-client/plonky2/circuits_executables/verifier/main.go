@@ -39,14 +39,21 @@ func main() {
 	flag.Parse()
 
 	log := logger.Logger()
+	log.Debug().Msg("Circuit path: " + *circuitPath)
+	log.Debug().Msg("Data path: " + *dataPath)
+	log.Debug().Msg("Save proving key: " + fmt.Sprintf("%t", *saveProvingKey))
+	log.Debug().Msg("Load proving key: " + fmt.Sprintf("%t", *loadProvingKey))
+	log.Debug().Msg("Create proof: " + fmt.Sprintf("%t", *proofFlag))
+	log.Debug().Msg("Compile circuit: " + fmt.Sprintf("%t", *compileFlag))
+	log.Debug().Msg("Generate solidity contract: " + fmt.Sprintf("%t", *contractFlag))
+	log.Debug().Msg("Start an http proving server: " + fmt.Sprintf("%t", *startServerFlag))
 
 	defer func() {
 		if !*startServerFlag {
 			return
 		}
 
-		handler := newGenerateProofHandler()
-		http.Handle("/genProof", &handler)
+		http.Handle("/genProof", newGenerateProofHandler())
 		log.Info().Msg(fmt.Sprintf("Listening on port: %v", PORT))
 		if err := http.ListenAndServe(fmt.Sprintf(":%v", PORT), nil); err != nil {
 			if errors.Is(err, http.ErrServerClosed) {
@@ -130,43 +137,35 @@ type GenerateProofDTO struct {
 }
 
 type GenerateProofHandler struct {
-	waitingForJobCV       *sync.Cond
-	requestBeingProcessed int
-	totalRequestsMade     int
+	waitingForJobCV *sync.Cond
+	waitingForJob   *bool
 }
 
 func newGenerateProofHandler() GenerateProofHandler {
 	return GenerateProofHandler{
-		waitingForJobCV:       sync.NewCond(&sync.Mutex{}),
-		requestBeingProcessed: 0,
-		totalRequestsMade:     0,
+		waitingForJobCV: sync.NewCond(&sync.Mutex{}),
+		waitingForJob: func() *bool {
+			flag := true
+			return &flag
+		}(),
 	}
 }
 
-func (handler *GenerateProofHandler) enqueueJob() {
-	currentRequest := handler.totalRequestsMade
-	handler.totalRequestsMade += 1
+func (handler GenerateProofHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+	log := logger.Logger()
 
 	handler.waitingForJobCV.L.Lock()
-	for handler.requestBeingProcessed != currentRequest {
+	for !*handler.waitingForJob {
 		handler.waitingForJobCV.Wait()
 	}
-}
 
-func (handler *GenerateProofHandler) dequeueJob() {
-	handler.requestBeingProcessed += 1
-	handler.waitingForJobCV.L.Unlock()
-	handler.waitingForJobCV.Broadcast()
-}
+	*handler.waitingForJob = false
 
-func (handler *GenerateProofHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-	if req.Method != "POST" {
-		http.Error(res, "Method must be POST", http.StatusBadRequest)
-		return
-	}
-
-	handler.enqueueJob()
-	defer handler.dequeueJob()
+	defer func() {
+		*handler.waitingForJob = true
+		handler.waitingForJobCV.L.Unlock()
+		handler.waitingForJobCV.Signal()
+	}()
 
 	var dto GenerateProofDTO
 	if err := json.NewDecoder(req.Body).Decode(&dto); err != nil {
