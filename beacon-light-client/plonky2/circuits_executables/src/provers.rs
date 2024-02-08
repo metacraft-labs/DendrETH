@@ -1,7 +1,7 @@
 use circuits::{
     biguint::WitnessBigUint, build_balance_inner_level_circuit::BalanceInnerCircuitTargets,
     build_commitment_mapper_inner_level_circuit::CommitmentMapperInnerCircuitTargets,
-    build_final_circuit::FinalCircuitTargets,
+    build_final_circuit::FinalCircuitTargets, utils::SetBytesArray,
     validator_balance_circuit::ValidatorBalanceVerificationTargets,
     validator_hash_tree_root::ValidatorShaTargets,
     validator_hash_tree_root_poseidon::ValidatorPoseidonTargets,
@@ -179,29 +179,36 @@ impl SetPWValues<ValidatorBalancesInput> for ValidatorBalanceVerificationTargets
 
 impl SetPWValues<ValidatorShaInput> for ValidatorShaTargets {
     fn set_pw_values(&self, pw: &mut PartialWitness<GoldilocksField>, source: &ValidatorShaInput) {
-        set_boolean_pw_values(pw, &self.pubkey, &source.pubkey);
+        pw.set_bytes_array(&self.pubkey, &hex::decode(&source.pubkey).unwrap());
 
-        set_boolean_pw_values(
-            pw,
+        pw.set_bytes_array(
             &self.withdrawal_credentials,
-            &source.withdrawal_credentials,
+            &hex::decode(&source.withdrawal_credentials).unwrap(),
         );
 
-        set_boolean_pw_values(pw, &self.effective_balance, &source.effective_balance);
+        pw.set_bytes_array(
+            &self.effective_balance,
+            &hex::decode(&source.effective_balance).unwrap(),
+        );
 
-        set_boolean_pw_values(pw, &self.slashed, &source.slashed);
+        pw.set_bytes_array(&self.slashed, &hex::decode(&source.slashed).unwrap());
 
-        set_boolean_pw_values(
-            pw,
+        pw.set_bytes_array(
             &self.activation_eligibility_epoch,
-            &source.activation_eligibility_epoch,
+            &hex::decode(&source.activation_eligibility_epoch).unwrap(),
         );
 
-        set_boolean_pw_values(pw, &self.activation_epoch, &source.activation_epoch);
+        pw.set_bytes_array(
+            &self.activation_epoch,
+            &hex::decode(&source.activation_epoch).unwrap(),
+        );
 
-        set_boolean_pw_values(pw, &self.exit_epoch, &source.exit_epoch);
+        pw.set_bytes_array(&self.exit_epoch, &hex::decode(&source.exit_epoch).unwrap());
 
-        set_boolean_pw_values(pw, &self.withdrawable_epoch, &source.withdrawable_epoch);
+        pw.set_bytes_array(
+            &self.withdrawable_epoch,
+            &hex::decode(&source.withdrawable_epoch).unwrap(),
+        );
     }
 }
 

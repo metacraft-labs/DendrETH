@@ -1,6 +1,6 @@
-# Beacon Light Client Task Execution and Data Flow
+# The Balance Verification Task Execution and Data Flow
 
-The Beacon Light Client relies heavily on a Redis instance to handle task management. This document provides an overview of the technical structure of the system, including how tasks are produced, consumed, and executed.
+The Balance Verification relies heavily on a Redis instance to handle task management. This document provides an overview of the technical structure of the system, including how tasks are produced, consumed, and executed.
 
 ## Commitment Mapper
 

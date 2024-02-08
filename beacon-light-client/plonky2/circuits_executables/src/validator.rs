@@ -128,22 +128,14 @@ pub const VALIDATOR_REGISTRY_LIMIT: usize = 1099511627776;
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidatorShaInput {
-    #[serde(with = "bool_vec_as_int_vec")]
-    pub pubkey: Vec<bool>,
-    #[serde(with = "bool_vec_as_int_vec")]
-    pub withdrawal_credentials: Vec<bool>,
-    #[serde(with = "bool_vec_as_int_vec")]
-    pub effective_balance: Vec<bool>,
-    #[serde(with = "bool_vec_as_int_vec")]
-    pub slashed: Vec<bool>,
-    #[serde(with = "bool_vec_as_int_vec")]
-    pub activation_eligibility_epoch: Vec<bool>,
-    #[serde(with = "bool_vec_as_int_vec")]
-    pub activation_epoch: Vec<bool>,
-    #[serde(with = "bool_vec_as_int_vec")]
-    pub exit_epoch: Vec<bool>,
-    #[serde(with = "bool_vec_as_int_vec")]
-    pub withdrawable_epoch: Vec<bool>,
+    pub pubkey: String,
+    pub withdrawal_credentials: String,
+    pub effective_balance: String,
+    pub slashed: String,
+    pub activation_eligibility_epoch: String,
+    pub activation_epoch: String,
+    pub exit_epoch: String,
+    pub withdrawable_epoch: String,
 }
 
 #[cfg(test)]
@@ -154,38 +146,38 @@ mod tests {
     #[test]
     fn test_serialize() {
         let validator = ValidatorShaInput {
-            pubkey: vec![true, false, true],
-            withdrawal_credentials: vec![false, false, true],
-            effective_balance: vec![true, true, false],
-            slashed: vec![false, true, false],
-            activation_eligibility_epoch: vec![true, false, true],
-            activation_epoch: vec![true, false, false],
-            exit_epoch: vec![false, true, true],
-            withdrawable_epoch: vec![true, true, true],
+            pubkey: "933ad9491b62059dd065b560d256d8957a8c402cc6e8d8ee7290ae11e8f7329267a8811c397529dac52ae1342ba58c95".to_string(),
+            withdrawal_credentials: "0100000000000000000000000d369bb49efa5100fd3b86a9f828c55da04d2d50".to_string(),
+            effective_balance: "0040597307000000000000000000000000000000000000000000000000000000".to_string(),
+            slashed: "0000000000000000000000000000000000000000000000000000000000000000".to_string(),
+            activation_eligibility_epoch: "0000000000000000000000000000000000000000000000000000000000000000".to_string(),
+            activation_epoch: "0000000000000000000000000000000000000000000000000000000000000000".to_string(),
+            exit_epoch: "ffffffffffffffff000000000000000000000000000000000000000000000000".to_string(),
+            withdrawable_epoch: "ffffffffffffffff000000000000000000000000000000000000000000000000".to_string(),
         };
 
         let serialized = serde_json::to_string(&validator).unwrap();
-        assert_eq!(serialized, "{\"pubkey\":[1,0,1],\"withdrawalCredentials\":[0,0,1],\"effectiveBalance\":[1,1,0],\"slashed\":[0,1,0],\"activationEligibilityEpoch\":[1,0,1],\"activationEpoch\":[1,0,0],\"exitEpoch\":[0,1,1],\"withdrawableEpoch\":[1,1,1]}");
+        assert_eq!(serialized, "{\"pubkey\":\"933ad9491b62059dd065b560d256d8957a8c402cc6e8d8ee7290ae11e8f7329267a8811c397529dac52ae1342ba58c95\",\"withdrawalCredentials\":\"0100000000000000000000000d369bb49efa5100fd3b86a9f828c55da04d2d50\",\"effectiveBalance\":\"0040597307000000000000000000000000000000000000000000000000000000\",\"slashed\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"activationEligibilityEpoch\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"activationEpoch\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"exitEpoch\":\"ffffffffffffffff000000000000000000000000000000000000000000000000\",\"withdrawableEpoch\":\"ffffffffffffffff000000000000000000000000000000000000000000000000\"}");
     }
 
     #[test]
     fn test_deserialize() {
-        let data = "{\"pubkey\":[1,0,1],\"withdrawalCredentials\":[0,0,1],\"effectiveBalance\":[1,1,0],\"slashed\":[0,1,0],\"activationEligibilityEpoch\":[1,0,1],\"activationEpoch\":[1,0,0],\"exitEpoch\":[0,1,1],\"withdrawableEpoch\":[1,1,1]}";
+        let data = "{\"pubkey\":\"933ad9491b62059dd065b560d256d8957a8c402cc6e8d8ee7290ae11e8f7329267a8811c397529dac52ae1342ba58c95\",\"withdrawalCredentials\":\"0100000000000000000000000d369bb49efa5100fd3b86a9f828c55da04d2d50\",\"effectiveBalance\":\"0040597307000000000000000000000000000000000000000000000000000000\",\"slashed\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"activationEligibilityEpoch\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"activationEpoch\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"exitEpoch\":\"ffffffffffffffff000000000000000000000000000000000000000000000000\",\"withdrawableEpoch\":\"ffffffffffffffff000000000000000000000000000000000000000000000000\"}";
         let deserialized: ValidatorShaInput = serde_json::from_str(data).unwrap();
 
-        assert_eq!(deserialized.pubkey, vec![true, false, true]);
+        assert_eq!(deserialized.pubkey, "933ad9491b62059dd065b560d256d8957a8c402cc6e8d8ee7290ae11e8f7329267a8811c397529dac52ae1342ba58c95");
         assert_eq!(
             deserialized.withdrawal_credentials,
-            vec![false, false, true]
+            "0100000000000000000000000d369bb49efa5100fd3b86a9f828c55da04d2d50"
         );
-        assert_eq!(deserialized.effective_balance, vec![true, true, false]);
-        assert_eq!(deserialized.slashed, vec![false, true, false]);
+        assert_eq!(deserialized.effective_balance, "0040597307000000000000000000000000000000000000000000000000000000");
+        assert_eq!(deserialized.slashed, "0000000000000000000000000000000000000000000000000000000000000000");
         assert_eq!(
             deserialized.activation_eligibility_epoch,
-            vec![true, false, true]
+            "0000000000000000000000000000000000000000000000000000000000000000"
         );
-        assert_eq!(deserialized.activation_epoch, vec![true, false, false]);
-        assert_eq!(deserialized.exit_epoch, vec![false, true, true]);
-        assert_eq!(deserialized.withdrawable_epoch, vec![true, true, true]);
+        assert_eq!(deserialized.activation_epoch, "0000000000000000000000000000000000000000000000000000000000000000");
+        assert_eq!(deserialized.exit_epoch, "ffffffffffffffff000000000000000000000000000000000000000000000000");
+        assert_eq!(deserialized.withdrawable_epoch, "ffffffffffffffff000000000000000000000000000000000000000000000000");
     }
 }

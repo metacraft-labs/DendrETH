@@ -7,7 +7,7 @@ use plonky2::{
     },
     fri::{reduction_strategies::FriReductionStrategy, FriConfig},
     hash::hash_types::HashOutTarget,
-    iop::target::{BoolTarget, Target},
+    iop::target::BoolTarget,
     plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::{CircuitConfig, CircuitData, VerifierCircuitTarget},
@@ -22,7 +22,9 @@ use crate::{
     build_validator_balance_circuit::ValidatorBalanceProofTargetsExt,
     is_valid_merkle_branch::{is_valid_merkle_branch, IsValidMerkleBranchTargets},
     sha256::make_circuits,
-    utils::{create_bool_target_array, ssz_num_to_bits, ETH_SHA256_BIT_SIZE},
+    utils::{
+        biguint_to_bits_target, create_bool_target_array, ssz_num_to_bits, ETH_SHA256_BIT_SIZE,
+    },
 };
 
 pub struct BalanceFinalLayerTargets {
@@ -181,17 +183,38 @@ pub fn build_final_circuit(
     let slot_merkle_branch =
         create_and_connect_merkle_branch(&mut builder, 34, &slot_bits, &state_root);
 
-    builder.register_public_inputs(&state_root.iter().map(|x| x.target).collect::<Vec<Target>>());
+    let public_inputs_hasher = make_circuits(&mut builder, 3 * ETH_SHA256_BIT_SIZE as u64);
 
-    builder.register_public_inputs(
-        &withdrawal_credentials
-            .limbs
-            .iter()
-            .map(|x| x.0)
-            .collect_vec(),
-    );
+    let withdrawal_credentials_bits =
+        biguint_to_bits_target::<GoldilocksField, 2, 2>(&mut builder, &withdrawal_credentials);
 
-    builder.register_public_inputs(&balance_sum.limbs.iter().map(|x| x.0).collect_vec());
+    let final_sum_bits = ssz_num_to_bits(&mut builder, &balance_sum, 64);
+
+    for i in 0..ETH_SHA256_BIT_SIZE {
+        builder.connect(public_inputs_hasher.message[i].target, state_root[i].target);
+        builder.connect(
+            public_inputs_hasher.message[ETH_SHA256_BIT_SIZE + i].target,
+            withdrawal_credentials_bits[i].target,
+        );
+        builder.connect(
+            public_inputs_hasher.message[2 * ETH_SHA256_BIT_SIZE + i].target,
+            final_sum_bits[i].target,
+        );
+    }
+
+    let mut sha256_hash = public_inputs_hasher.digest;
+
+    // Mask the last 3 bits in big endian as zero
+    sha256_hash[0] = builder._false();
+    sha256_hash[1] = builder._false();
+    sha256_hash[2] = builder._false();
+
+    let tokens = sha256_hash[0..256]
+        .chunks(8)
+        .map(|x| builder.le_sum(x.iter().rev()))
+        .collect_vec();
+
+    builder.register_public_inputs(&tokens);
 
     let data = builder.build::<C>();
 
@@ -331,6 +354,7 @@ fn create_and_connect_merkle_branch(
     merkle_branch
 }
 
+#[allow(dead_code)]
 fn create_final_config() -> CircuitConfig {
     let standard_recursion_config = CircuitConfig::standard_recursion_config();
 

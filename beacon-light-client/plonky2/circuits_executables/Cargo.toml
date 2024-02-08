@@ -13,10 +13,13 @@ redis = "0.22"
 serde = "1.0.164"
 serde_json = "1.0.96"
 anyhow = "1.0.71"
+hex = "0.4.3"
 redis-work-queue = "0.1.3"
 futures-lite = "1"
 jemallocator = "0.5.0"
 clap = "3.0"
+lazy_static = "1.4.0"
+ff = { package = "ff", version = "0.13", features = ["derive"] }
 
 [[bin]]
 name = "balance_verification"
@@ -33,6 +36,10 @@ path = "bin/balance_verification_circuit_data_generation.rs"
 [[bin]]
 name = "final_layer"
 path = "bin/final_layer.rs"
+
+[[bin]]
+name = "wrapper"
+path = "bin/wrapper.rs"
 
 [[bin]]
 name = "commitment_mapper_circuit_data_generation"
