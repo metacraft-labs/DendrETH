@@ -8,16 +8,19 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sync"
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend/plonk"
 	plonk_bn254 "github.com/consensys/gnark/backend/plonk/bn254"
 	"github.com/consensys/gnark/constraint"
 	"github.com/consensys/gnark/frontend"
-	"github.com/rs/zerolog/log"
+	"github.com/consensys/gnark/logger"
 	"github.com/succinctlabs/gnark-plonky2-verifier/types"
 	"github.com/succinctlabs/gnark-plonky2-verifier/variables"
 )
+
+const PORT = 3333
 
 var (
 	r1cs constraint.ConstraintSystem
@@ -35,26 +38,19 @@ func main() {
 	startServerFlag := flag.Bool("server", false, "Start an http proving server")
 	flag.Parse()
 
-	log.Debug().Msg("Circuit path: " + *circuitPath)
-	log.Debug().Msg("Data path: " + *dataPath)
-	log.Debug().Msg("Save proving key: " + fmt.Sprintf("%t", *saveProvingKey))
-	log.Debug().Msg("Load proving key: " + fmt.Sprintf("%t", *loadProvingKey))
-	log.Debug().Msg("Create proof: " + fmt.Sprintf("%t", *proofFlag))
-	log.Debug().Msg("Compile circuit: " + fmt.Sprintf("%t", *compileFlag))
-	log.Debug().Msg("Generate solidity contract: " + fmt.Sprintf("%t", *contractFlag))
-	log.Debug().Msg("Start an http proving server: " + fmt.Sprintf("%t", *startServerFlag))
+	log := logger.Logger()
 
 	defer func() {
 		if !*startServerFlag {
 			return
 		}
 
-		http.HandleFunc("/genProof", generateProof)
-		const PORT = 3333
-		log.Log().Msg(fmt.Sprintf("Listening on port: %v", PORT))
+		handler := newGenerateProofHandler()
+		http.Handle("/genProof", &handler)
+		log.Info().Msg(fmt.Sprintf("Listening on port: %v", PORT))
 		if err := http.ListenAndServe(fmt.Sprintf(":%v", PORT), nil); err != nil {
 			if errors.Is(err, http.ErrServerClosed) {
-				log.Log().Msg("Server closed")
+				log.Info().Msg("Server closed")
 			} else if err != nil {
 				log.Error().Msg(fmt.Sprintf("Error starting server: %s", err.Error()))
 				os.Exit(1)
@@ -80,25 +76,25 @@ func main() {
 		}
 	}
 
-	if *proofFlag {
+	if *loadProvingKey {
 		log.Info().Msg("loading the plonk proving key, circuit data and verifying key")
 
-		if *loadProvingKey {
-			r1cs, pk, vk, err = LoadCircuitData(*dataPath)
+		r1cs, pk, vk, err = LoadCircuitData(*dataPath)
 
-			if err != nil {
-				log.Error().Msg("Failed to load circuit data: " + err.Error())
-				os.Exit(1)
-			}
-		} else {
-			r1cs, pk, vk, err = CompileVerifierCircuit(*circuitPath)
-
-			if err != nil {
-				log.Error().Msg("Failed to compile circuit: " + err.Error())
-				os.Exit(1)
-			}
+		if err != nil {
+			log.Error().Msg("Failed to load circuit data: " + err.Error())
+			os.Exit(1)
 		}
+	} else {
+		r1cs, pk, vk, err = CompileVerifierCircuit(*circuitPath)
 
+		if err != nil {
+			log.Error().Msg("Failed to compile circuit: " + err.Error())
+			os.Exit(1)
+		}
+	}
+
+	if *proofFlag {
 		log.Info().Msg("Generating proof")
 		proof, publicWitness, err := Prove(*circuitPath, r1cs, pk)
 
@@ -133,10 +129,48 @@ type GenerateProofDTO struct {
 	ProofWithPublicInputs   types.ProofWithPublicInputsRaw   `json:"proof_with_public_inputs"`
 }
 
-func generateProof(res http.ResponseWriter, req *http.Request) {
+type GenerateProofHandler struct {
+	waitingForJobCV       *sync.Cond
+	requestBeingProcessed int
+	totalRequestsMade     int
+}
+
+func newGenerateProofHandler() GenerateProofHandler {
+	return GenerateProofHandler{
+		waitingForJobCV:       sync.NewCond(&sync.Mutex{}),
+		requestBeingProcessed: 0,
+		totalRequestsMade:     0,
+	}
+}
+
+func (handler *GenerateProofHandler) enqueueJob() {
+	currentRequest := handler.totalRequestsMade
+	handler.totalRequestsMade += 1
+
+	handler.waitingForJobCV.L.Lock()
+	for handler.requestBeingProcessed != currentRequest {
+		handler.waitingForJobCV.Wait()
+	}
+}
+
+func (handler *GenerateProofHandler) dequeueJob() {
+	handler.requestBeingProcessed += 1
+	handler.waitingForJobCV.L.Unlock()
+	handler.waitingForJobCV.Broadcast()
+}
+
+func (handler *GenerateProofHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+	if req.Method != "POST" {
+		http.Error(res, "Method must be POST", http.StatusBadRequest)
+		return
+	}
+
+	handler.enqueueJob()
+	defer handler.dequeueJob()
+
 	var dto GenerateProofDTO
 	if err := json.NewDecoder(req.Body).Decode(&dto); err != nil {
-		http.Error(res, fmt.Sprintf("Error while parsing request body: %s", err.Error()), 400)
+		http.Error(res, fmt.Sprintf("Error while parsing request body: %s", err.Error()), http.StatusBadRequest)
 		return
 	}
 
@@ -150,10 +184,13 @@ func generateProof(res http.ResponseWriter, req *http.Request) {
 		VerifierDigest:  verifierOnlyCircuitData.CircuitDigest,
 		PublicInputHash: publicInputHash,
 	}
+
+	log := logger.Logger()
+
 	log.Debug().Msg("Generating witness")
 	witness, err := frontend.NewWitness(&assignment, ecc.BN254.ScalarField())
 	if err != nil {
-		http.Error(res, fmt.Sprintf("failed to generate witness: %s", err.Error()), 400)
+		http.Error(res, fmt.Sprintf("failed to generate witness: %s", err.Error()), http.StatusBadRequest)
 		return
 	}
 
@@ -162,11 +199,11 @@ func generateProof(res http.ResponseWriter, req *http.Request) {
 
 	proof, err := plonk.Prove(r1cs, pk, witness)
 	if err != nil {
-		http.Error(res, fmt.Sprintf("failed to create proof: %s", err.Error()), 400)
+		http.Error(res, fmt.Sprintf("failed to create proof: %s", err.Error()), http.StatusBadRequest)
 		return
 	}
 
-	log.Info().Msg("Successfully created proof")
+	log.Debug().Msg("Successfully created proof")
 
 	res.Header().Add("Content-Type", "octet-stream")
 	res.Write(proof.(*plonk_bn254.Proof).MarshalSolidity())

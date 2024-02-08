@@ -15,7 +15,6 @@ import (
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/scs"
 	"github.com/consensys/gnark/logger"
-	"github.com/rs/zerolog/log"
 	"github.com/succinctlabs/gnark-plonky2-verifier/trusted_setup"
 	"github.com/succinctlabs/gnark-plonky2-verifier/types"
 	"github.com/succinctlabs/gnark-plonky2-verifier/variables"
@@ -67,8 +66,6 @@ func (c *Plonky2VerifierCircuit) Define(api frontend.API) error {
 }
 
 func CompileVerifierCircuit(circuitPath string) (constraint.ConstraintSystem, plonk.ProvingKey, plonk.VerifyingKey, error) {
-	log := logger.Logger()
-
 	verifierOnlyCircuitData := variables.DeserializeVerifierOnlyCircuitData(types.ReadVerifierOnlyCircuitData(circuitPath + "/verifier_only_circuit_data.json"))
 
 	proofWithPis := variables.DeserializeProofWithPublicInputs(types.ReadProofWithPublicInputs(circuitPath + "/proof_with_public_inputs.json"))
@@ -89,6 +86,7 @@ func CompileVerifierCircuit(circuitPath string) (constraint.ConstraintSystem, pl
 		return nil, nil, nil, err
 	}
 
+	log := logger.Logger()
 	log.Info().Msg("Loading SRS setup")
 	start := time.Now()
 
@@ -177,6 +175,8 @@ func SaveVerifierCircuit(path string, r1cs constraint.ConstraintSystem, pk plonk
 }
 
 func LoadCircuitData(path string) (constraint.ConstraintSystem, plonk.ProvingKey, plonk.VerifyingKey, error) {
+	log := logger.Logger()
+
 	r1csFile, err := os.Open(path + "/r1cs.bin")
 	if err != nil {
 		return nil, nil, nil, err
@@ -234,6 +234,8 @@ func GetPublicInputHash(publicInputs []uint64) frontend.Variable {
 		publicInputsBytes[i] = byte(v & 0xFF)
 	}
 	publicInputHash := new(big.Int).SetBytes(publicInputsBytes[0:32])
+
+	log := logger.Logger()
 	log.Debug().Msg("Public input hash len: " + fmt.Sprintf("%d", publicInputHash.BitLen()))
 	if publicInputHash.BitLen() > 253 {
 		panic("inputHash must be at most 253 bits")
@@ -256,6 +258,7 @@ func Prove(circuitPath string, r1cs constraint.ConstraintSystem, pk plonk.Provin
 		PublicInputHash: publicInputHash,
 	}
 
+	log := logger.Logger()
 	log.Debug().Msg("Generating witness")
 
 	start := time.Now()
