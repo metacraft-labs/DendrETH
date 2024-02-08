@@ -7,16 +7,19 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sync"
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend/plonk"
 	plonk_bn254 "github.com/consensys/gnark/backend/plonk/bn254"
 	"github.com/consensys/gnark/constraint"
 	"github.com/consensys/gnark/frontend"
-	"github.com/rs/zerolog/log"
+	"github.com/consensys/gnark/logger"
 	"github.com/succinctlabs/gnark-plonky2-verifier/types"
 	"github.com/succinctlabs/gnark-plonky2-verifier/variables"
 )
+
+const PORT = 3333
 
 var (
 	r1cs constraint.ConstraintSystem
@@ -34,6 +37,7 @@ func main() {
 	startServerFlag := flag.Bool("server", false, "Start an http proving server")
 	flag.Parse()
 
+	log := logger.Logger()
 	log.Debug().Msg("Circuit path: " + *circuitPath)
 	log.Debug().Msg("Data path: " + *dataPath)
 	log.Debug().Msg("Save proving key: " + fmt.Sprintf("%t", *saveProvingKey))
@@ -48,12 +52,11 @@ func main() {
 			return
 		}
 
-		http.HandleFunc("/genProof", generateProof)
-		const PORT = 3333
-		log.Log().Msg(fmt.Sprintf("Listening on port: %v", PORT))
+		http.Handle("/genProof", newGenerateProofHandler())
+		log.Info().Msg(fmt.Sprintf("Listening on port: %v", PORT))
 		if err := http.ListenAndServe(fmt.Sprintf(":%v", PORT), nil); err != nil {
 			if errors.Is(err, http.ErrServerClosed) {
-				log.Log().Msg("Server closed")
+				log.Info().Msg("Server closed")
 			} else if err != nil {
 				log.Error().Msg(fmt.Sprintf("Error starting server: %s", err.Error()))
 				os.Exit(1)
@@ -81,27 +84,28 @@ func main() {
 		}
 	}
 
+	var vk plonk.VerifyingKey
+
+	if *loadProvingKey {
+		var err error
+		r1cs, pk, vk, err = LoadCircuitData(*dataPath)
+
+		if err != nil {
+			log.Error().Msg("Failed to load circuit data: " + err.Error())
+			os.Exit(1)
+		}
+	} else {
+		var err error
+		r1cs, pk, vk, err = CompileVerifierCircuit(*circuitPath)
+
+		if err != nil {
+			log.Error().Msg("Failed to compile circuit: " + err.Error())
+			os.Exit(1)
+		}
+	}
+
 	if *proofFlag {
 		log.Info().Msg("loading the plonk proving key, circuit data and verifying key")
-
-		var vk plonk.VerifyingKey
-		var err error
-
-		if *loadProvingKey {
-			r1cs, pk, vk, err = LoadCircuitData(*dataPath)
-
-			if err != nil {
-				log.Error().Msg("Failed to load circuit data: " + err.Error())
-				os.Exit(1)
-			}
-		} else {
-			r1cs, pk, vk, err = CompileVerifierCircuit(*circuitPath)
-
-			if err != nil {
-				log.Error().Msg("Failed to compile circuit: " + err.Error())
-				os.Exit(1)
-			}
-		}
 
 		log.Info().Msg("Generating proof")
 		proof, publicWitness, err := Prove(*circuitPath, r1cs, pk)
@@ -126,7 +130,37 @@ type GenerateProofDTO struct {
 	ProofWithPublicInputs   types.ProofWithPublicInputsRaw   `json:"proof_with_public_inputs"`
 }
 
-func generateProof(res http.ResponseWriter, req *http.Request) {
+type GenerateProofHandler struct {
+	waitingForJobCV *sync.Cond
+	waitingForJob   *bool
+}
+
+func newGenerateProofHandler() GenerateProofHandler {
+	return GenerateProofHandler{
+		waitingForJobCV: sync.NewCond(&sync.Mutex{}),
+		waitingForJob: func() *bool {
+			flag := true
+			return &flag
+		}(),
+	}
+}
+
+func (handler GenerateProofHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+	log := logger.Logger()
+
+	handler.waitingForJobCV.L.Lock()
+	for !*handler.waitingForJob {
+		handler.waitingForJobCV.Wait()
+	}
+
+	*handler.waitingForJob = false
+
+	defer func() {
+		*handler.waitingForJob = true
+		handler.waitingForJobCV.L.Unlock()
+		handler.waitingForJobCV.Signal()
+	}()
+
 	var dto GenerateProofDTO
 	if err := json.NewDecoder(req.Body).Decode(&dto); err != nil {
 		http.Error(res, fmt.Sprintf("Error while parsing request body: %s", err.Error()), 400)
