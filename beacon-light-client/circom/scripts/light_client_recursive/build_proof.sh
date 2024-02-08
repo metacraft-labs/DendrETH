@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-PHASE1=../../../../../../pot28_final.ptau
+PHASE1=/storage/pot28_final.ptau
 CIRCUIT_NAME=light_client_recursive
 BUILD_DIR=../../build/"$CIRCUIT_NAME"
 
@@ -21,7 +21,7 @@ echo $PWD
 echo "****COMPILING CIRCUIT****"
 start=`date +%s`
 #circom "$CIRCUIT_NAME".circom --O0 --c --output "$BUILD_DIR"
-circom "$CIRCUIT_NAME".circom --O1 --r1cs --sym --c --output "$BUILD_DIR"
+circom "$CIRCUIT_NAME".circom --O2 --r1cs --sym --c --output "$BUILD_DIR"
 end=`date +%s`
 echo "DONE ($((end-start))s)"
 

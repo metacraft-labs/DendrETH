@@ -1,6 +1,8 @@
 pragma circom 2.1.5;
 
-include "hash_tree_root.circom";
+include "hash_verifier_poseidon.circom";
+include "sync_committee_historic_participation.circom"
+include "sync_commitee_hash_tree_root.circom";
 include "compress.circom";
 include "aggregate_bitmask.circom";
 include "is_supermajority.circom";
@@ -14,7 +16,8 @@ include "../../../vendor/circom-pairing/circuits/bls_signature.circom";
 include "../../../vendor/circom-pairing/circuits/bn254/groth16.circom";
 
 template LightClientRecursive(N, K) {
-  var pubInpCount = 4;
+  var pubInpCount = 1;
+  var PERIODS = 1024;
 
   // BN254 facts
   var k = 6;
@@ -22,9 +25,11 @@ template LightClientRecursive(N, K) {
   // public inputs
   signal input originator[2];
   signal input nextHeaderHashNum[2];
+  signal input syncCommitteeHistoricParticipation[PERIODS];
 
   // private inputs
   signal input prevHeaderHashNum[2];
+  signal input syncCommitteeHistoricParticipationIndex;
 
   // verification key
   signal input negalfa1xbeta2[6][2][k]; // e(-alfa1, beta2)
@@ -43,7 +48,10 @@ template LightClientRecursive(N, K) {
   signal input state_root[256];
   signal input body_root[256];
 
+  // Exposed as public via domain
   signal input fork_version[32];
+  signal input GENESIS_VALIDATORS_ROOT[256];
+  signal input DOMAIN_SYNC_COMMITTEE[32];
 
   signal input points[N][2][K];
   signal input aggregatedKey[384];
@@ -51,6 +59,8 @@ template LightClientRecursive(N, K) {
 
   signal input bitmask[N];
   signal input signature[2][2][K];
+
+  signal output out; // Poseidon Hash of inputs & verification key
 
   var prevHeaderHash[256];
   var nextHeaderHash[256];
@@ -89,8 +99,6 @@ template LightClientRecursive(N, K) {
     isSuperMajority.bitmask[i] <== bitmask[i];
   }
 
-  isSuperMajority.out === 1;
-
   component hash_tree_root_beacon = HashTreeRootBeaconHeader();
 
   for(var i = 0; i < 256; i++) {
@@ -114,32 +122,30 @@ template LightClientRecursive(N, K) {
   }
 
   for(var i = 0; i < 256; i++) {
-    hash_tree_root_beacon.blockHash[i] === prevHeaderHash[i];
+    hash_tree_root_beacon.out[i] === prevHeaderHash[i];
   }
 
   component computeDomain = ComputeDomain();
 
-  for(var i = 0; i < 32; i++) {
-    computeDomain.fork_version[i] <== fork_version[i];
-  }
+  computeDomain.fork_version <== fork_version;
+  computeDomain.GENESIS_VALIDATORS_ROOT <== GENESIS_VALIDATORS_ROOT;
+  computeDomain.DOMAIN_SYNC_COMMITTEE <== DOMAIN_SYNC_COMMITTEE;
 
   component computeSigningRoot = ComputeSigningRoot();
+
+  computeSigningRoot.domain <== computeDomain.domain;
 
   for(var i = 0; i < 256; i++) {
     computeSigningRoot.headerHash[i] <== nextHeaderHash[i];
   }
 
-  for(var i = 0; i < 256; i++) {
-    computeSigningRoot.domain[i] <== computeDomain.domain[i];
-  }
-
-  component hashToField = HashToField();
+  component hashToField = HashToField(K);
 
   for(var i = 0; i < 256; i++) {
     hashToField.in[i] <== computeSigningRoot.signing_root[i];
   }
 
-  component hasher = HashTreeRoot(N);
+  component hasher = SyncCommiteeHashTreeRoot(N);
   component compress[N];
 
   for(var i = 0; i < N; i++) {
@@ -178,9 +184,7 @@ template LightClientRecursive(N, K) {
 
   isValidMerkleBranch.index <== 55;
 
-  isValidMerkleBranch.out === 1;
-
-  component aggregateKeys = AggregateKeysBitmask(N);
+  component aggregateKeys = AggregateKeysBitmask(N,K);
 
   for(var i = 0; i < N; i++) {
     for(var j = 0; j < 2; j++) {
@@ -212,7 +216,7 @@ template LightClientRecursive(N, K) {
   }
 
   // check recursive snark
-  component groth16Verifier = verifyProof(pubInpCount);
+  component groth16Verifier = verifyProof(1);
   for (var i = 0;i < 6;i++) {
       for (var j = 0;j < 2;j++) {
           for (var idx = 0;idx < k;idx++) {
@@ -243,11 +247,30 @@ template LightClientRecursive(N, K) {
       }
   }
 
-  groth16Verifier.pubInput[0] <== originator[0];
-  groth16Verifier.pubInput[1] <== originator[1];
-  groth16Verifier.pubInput[2] <== prevHeaderHashNum[0];
-  groth16Verifier.pubInput[3] <== prevHeaderHashNum[1];
+  component prevHistoricParticipationRateHashTreeRoot = HashTreeRootPoseidon(PERIODS) (
+    syncCommitteeHistoricParticipation
+  );
 
+  signal prevSyncCommitteeHistoricParticipationIndex <== syncCommitteeHistoricParticipationIndex - 1;
+
+  signal prevVerifierCommitment <== VerifierPoseidon(pubInpCount, k)(
+    originator, prevHeaderHashNum, negalfa1xbeta2,
+    gamma2, delta2, IC,
+    historicParticipationRateHashTreeRoot, prevSyncCommitteeHistoricParticipationIndex, computeDomain.domain
+  );
+
+  component updateSyncCommitteeHistoricParticipation = UpdateSyncCommitteeHistoricParticipation(512,PERIODS) (
+    syncCommitteeHistoricParticipation, syncCommitteeHistoricParticipationIndex, bitmask
+  );
+
+  signal curSyncCommitteeHistoricParticipation <== updateSyncCommitteeHistoricParticipation.out;
+
+  component curHistoricParticipationRateHashTreeRoot = HashTreeRootPoseidon(PERIODS) (
+    curSyncCommitteeHistoricParticipation
+  );
+
+  groth16Verifier.pubInput[0] <== prevVerifierCommitment;
+ 
   component isFirst = IsFirst();
 
   isFirst.firstHash[0] <== originator[0];
@@ -260,4 +283,13 @@ template LightClientRecursive(N, K) {
   firstORcorrect.b <== groth16Verifier.out;
 
   firstORcorrect.out === 1;
+
+  component verifierPoseidon = VerifierPoseidon(pubInpCount, k) (
+    originator, nextHeaderHashNum, negalfa1xbeta2,
+    gamma2, delta2, IC,
+    curHistoricParticipationRateHashTreeRoot, syncCommitteeHistoricParticipationIndex, compute_domain.domain
+  );
+
+  prevVerifierCommitment === verifierPoseidon.out;
+  out <== verifierPoseidon.out;
 }

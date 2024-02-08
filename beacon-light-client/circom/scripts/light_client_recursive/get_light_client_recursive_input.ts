@@ -6,13 +6,15 @@ import {
   hexToBytes,
   utils,
 } from '../../../../libs/typescript/ts-utils/bls';
-import { ssz } from '@chainsafe/lodestar-types';
 import { writeFileSync } from 'fs';
 import { BitVectorType } from '@chainsafe/ssz';
 import * as path from 'path';
 import { getFilesInDir } from '../../../../libs/typescript/ts-utils/data';
+import * as constants from '../../../../relay/constants/network_config.json';
 
 export async function getProof(vkey, proof, originator, prevUpdate, update) {
+  const { ssz } = await import('@lodestar/types');
+
   let points: PointG1[] = prevUpdate.next_sync_committee.pubkeys.map(x =>
     PointG1.fromHex(x.slice(2)),
   );
@@ -114,7 +116,15 @@ export async function getProof(vkey, proof, originator, prevUpdate, update) {
       .toString(2)
       .padStart(256, '0')
       .split(''),
-    fork_version: BigInt('0x' + bytesToHex(constants.ALTAIR_FORK_VERSION))
+    fork_version: BigInt(constants.pratter.FORK_VERSION)
+      .toString(2)
+      .padStart(32, '0')
+      .split(''),
+    GENESIS_VALIDATORS_ROOT: BigInt(constants.pratter.GENESIS_VALIDATORS_ROOT)
+      .toString(2)
+      .padStart(256, '0')
+      .split(''),
+    DOMAIN_SYNC_COMMITTEE: BigInt(constants.pratter.DOMAIN_SYNC_COMMITTEE)
       .toString(2)
       .padStart(32, '0')
       .split(''),
@@ -144,7 +154,6 @@ export async function getProof(vkey, proof, originator, prevUpdate, update) {
       ],
     ],
   };
-
   return input;
 }
 

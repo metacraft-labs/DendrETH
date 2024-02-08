@@ -4,10 +4,10 @@ include "hash_two.circom";
 
 template ComputeDomain() {
   signal input fork_version[32];
-  signal output domain[256];
-
   signal input GENESIS_VALIDATORS_ROOT[256];
   signal input DOMAIN_SYNC_COMMITTEE[32];
+
+  signal output domain[256];
 
   signal concated_fork_version[256];
 
