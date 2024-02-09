@@ -13,6 +13,7 @@
 #include "utils/picosha2.h"
 #include "utils/byte_utils.h"
 #include "utils/file_utils.h"
+#include "serialization/serialize_attestation.h"
 
 #include "json/json.hpp"
 using namespace nlohmann;
@@ -129,6 +130,10 @@ int main(int argc, char* argv[]) {
         std::cout << final_result << "\n";
 
     }
+
+    AttestationData ad;
+
+    serializeAttestationData(ad);
 
     free(trusted_pubkeys);
 
