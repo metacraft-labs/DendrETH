@@ -92,13 +92,6 @@ func main() {
 			log.Error().Msg("Failed to load circuit data: " + err.Error())
 			os.Exit(1)
 		}
-	} else {
-		r1cs, pk, vk, err = CompileVerifierCircuit(*circuitPath)
-
-		if err != nil {
-			log.Error().Msg("Failed to compile circuit: " + err.Error())
-			os.Exit(1)
-		}
 	}
 
 	if *proofFlag {

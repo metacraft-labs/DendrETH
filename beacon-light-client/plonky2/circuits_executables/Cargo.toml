@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-redis = { version = "0.23", features = ["aio", "async-std-comp", "connection-manager"] }
+redis = { version = "0.23", features = ["aio", "async-std-comp", "connection-manager", "json"] }
 circuits = { path = "../circuits" }
 num = { version = "0.4.0", features = ["serde"] }
 plonky2 = { git = "https://github.com/metacraft-labs/plonky2" }

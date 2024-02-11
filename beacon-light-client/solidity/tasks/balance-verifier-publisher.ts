@@ -13,6 +13,10 @@ import {
   bitsToBytes,
   hexToBits,
 } from '../../../libs/typescript/ts-utils/hex-utils';
+import { bytesToHex } from '../test/utils/bls';
+import JSONbig from 'json-bigint';
+import { publishTransaction } from '../../../relay/implementations/publish_evm_transaction';
+import Web3 from 'web3';
 
 const logger = getGenericLogger();
 
@@ -22,6 +26,13 @@ task('balance-verifier-publisher', 'Run relayer')
     'privatekey',
     'The private key that will be used to publish',
     undefined,
+    undefined,
+    true,
+  )
+  .addParam(
+    'gnarkServerUrl',
+    'The url of the gnark server',
+    'http://localhost:3333',
     undefined,
     true,
   )
@@ -83,6 +94,10 @@ task('balance-verifier-publisher', 'Run relayer')
       publisher,
     );
 
+    const web3 = new Web3((network.config as any).url);
+
+    console.log('url', (network.config as any).url);
+
     if (
       args.transactionspeed &&
       !['slow', 'avg', 'fast'].includes(args.transactionspeed)
@@ -92,38 +107,77 @@ task('balance-verifier-publisher', 'Run relayer')
 
     const redis = new Redis(config.REDIS_HOST!, config.REDIS_PORT);
 
-    const contract = new SolidityContract(
-      balanceVerifierContract,
-      (network.config as any).url,
-      args.transactionspeed,
-    );
-
-    // TODO: publish proofs
     console.log('Publishing proofs');
 
-    let final_layer_proof = JSON.parse((await redis.get('final_layer_proof'))!);
+    redis.subscribeForGnarkProofs(async () => {
+      console.log('Received new proof');
+      let final_layer_proof = JSON.parse(
+        (await redis.get('final_layer_proof'))!,
+      );
 
-    console.log(final_layer_proof);
+      let balance_wrapper_proof_with_public_inputs =
+        await redis.getBalanceWrapperProofWithPublicInputs();
+      let balance_wrapper_verifier_only =
+        await redis.getBalanceWrapperVerifierOnly();
 
-    let stateRoot = bitsToBytes(final_layer_proof.stateRoot);
+      const postData = {
+        verifier_only_circuit_data: JSONbig.parse(
+          balance_wrapper_verifier_only,
+        ),
+        proof_with_public_inputs: JSONbig.parse(
+          balance_wrapper_proof_with_public_inputs,
+        ),
+      };
 
-    let balance_sum =
-      BigInt(final_layer_proof.balanceSum[0]) |
-      (BigInt(final_layer_proof.balanceSum[1]) << 32n);
+      let proof = await fetch(args.gnarkServerUrl + '/genProof', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSONbig.stringify(postData),
+      })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.arrayBuffer();
+        })
+        .then(arrayBuffer => {
+          const uint8Array = new Uint8Array(arrayBuffer);
+          return uint8Array;
+        })
+        .catch(error => {
+          console.error(
+            'There was a problem with your fetch operation:',
+            error,
+          );
+        });
 
-    let numberOfNonActivatedValidators =
-      final_layer_proof.numberOfNonActivatedValidators;
-    let numberOfActiveValidators = final_layer_proof.numberOfActiveValidators;
-    let numberOfExitedValidators = final_layer_proof.numberOfExitedValidators;
+      let stateRoot = bitsToBytes(final_layer_proof.stateRoot);
+      let balanceSum =
+        BigInt(final_layer_proof.balanceSum[0]) |
+        (BigInt(final_layer_proof.balanceSum[1]) << 32n);
+      let numberOfNonActivatedValidators =
+        final_layer_proof.numberOfNonActivatedValidators;
+      let numberOfActiveValidators = final_layer_proof.numberOfActiveValidators;
+      let numberOfExitedValidators = final_layer_proof.numberOfExitedValidators;
 
-    console.log('State root', stateRoot);
-    console.log('Balance sum', balance_sum);
-    console.log(
-      'Number of non activated validators',
-      numberOfNonActivatedValidators,
-    );
-    console.log('Number of active validators', numberOfActiveValidators);
-    console.log('Number of exited validators', numberOfExitedValidators);
+      await publishTransaction(
+        balanceVerifierContract,
+        'verify',
+        [
+          proof,
+          stateRoot,
+          balanceSum,
+          numberOfNonActivatedValidators,
+          numberOfActiveValidators,
+          numberOfExitedValidators,
+        ],
+        web3,
+        args.transactionspeed,
+        true
+      );
+    });
 
     // never resolving promise to block the task
     return new Promise(() => {});

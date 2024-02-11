@@ -8,6 +8,7 @@ import {
   ValidatorProof,
 } from '../types/types';
 import { createClient, RedisClientType } from 'redis';
+import RedisReJSON from 'ioredis-rejson';
 import validator_commitment_constants from '../../beacon-light-client/plonky2/constants/validator_commitment_constants.json';
 
 export class Redis implements IRedis {
@@ -233,6 +234,20 @@ export class Redis implements IRedis {
     return await this.redisClient.get(key);
   }
 
+  async getBalanceWrapperProofWithPublicInputs(): Promise<any> {
+    await this.waitForConnection();
+
+    return this.redisClient.get(
+      'balance_wrapper_proof_with_public_inputs',
+    );
+  }
+
+  async getBalanceWrapperVerifierOnly(): Promise<any> {
+    await this.waitForConnection();
+
+    return this.redisClient.get('balance_wrapper_verifier_only');
+  }
+
   async set(key: string, value: string): Promise<void> {
     await this.waitForConnection();
 
@@ -258,6 +273,14 @@ export class Redis implements IRedis {
     await this.waitForConnection();
 
     await this.pubSub.subscribe('proofs_channel', listener);
+  }
+
+  async subscribeForGnarkProofs(
+    listener: (message: string, channel: string) => unknown,
+  ): Promise<void> {
+    await this.waitForConnection();
+
+    await this.pubSub.subscribe('gnark_proofs_channel', listener);
   }
 
   private async waitForConnection() {

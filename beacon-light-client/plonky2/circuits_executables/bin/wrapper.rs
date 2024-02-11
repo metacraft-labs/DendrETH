@@ -17,7 +17,7 @@ use plonky2::{
         config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs,
     },
 };
-use redis::AsyncCommands;
+use redis::{AsyncCommands, JsonAsyncCommands};
 
 fn main() -> Result<()> {
     future::block_on(async_main())
@@ -81,8 +81,6 @@ async fn async_main() -> Result<()> {
 
     let final_layer_proof: FinalProof = serde_json::from_str(&proof_str)?;
 
-    println!("Final Layer Proof: {:?}", final_layer_proof.balance_sum);
-
     let final_layer_proof = final_layer_proof.proof;
 
     let final_proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> =
@@ -95,23 +93,19 @@ async fn async_main() -> Result<()> {
     let circuit_data = builder.build::<PoseidonBN128GoldilocksConfig>();
 
     let proof = circuit_data.prove(pw)?;
+    let proof = serde_json::to_string(&proof)?;
 
-    let proof_json = serde_json::to_string(&proof).unwrap();
+    con.set("balance_wrapper_proof_with_public_inputs", proof)
+        .await?;
 
-    fs::write("proof_with_public_inputs.json", proof_json).unwrap();
-
-    let common_circuit_data = circuit_data.common;
-    let common_circuit_data = serde_json::to_string(&common_circuit_data).unwrap();
-
-    fs::write("common_circuit_data.json", common_circuit_data).unwrap();
+    // let common_circuit_data = circuit_data.common;
 
     let verifier_only_circuit_data = serde_json::to_string(&circuit_data.verifier_only).unwrap();
 
-    fs::write(
-        "verifier_only_circuit_data.json",
-        verifier_only_circuit_data,
-    )
-    .unwrap();
+    con.set("balance_wrapper_verifier_only", verifier_only_circuit_data)
+        .await?;
+
+    con.publish("gnark_proofs_channel", "start").await?;
 
     Ok(())
 }

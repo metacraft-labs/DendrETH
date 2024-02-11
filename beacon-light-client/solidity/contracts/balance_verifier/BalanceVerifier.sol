@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.19;
 
-import 'hardhat/console.sol';
 import './verifier.sol';
 
 contract BalanceVerifier is PlonkVerifier {
@@ -17,7 +16,7 @@ contract BalanceVerifier is PlonkVerifier {
     uint64 number_of_non_activated_validators,
     uint64 number_of_active_validators,
     uint64 number_of_exited_validators
-  ) public returns (bool) {
+  ) public {
     bytes memory concataneted = abi.encodePacked(
       state_root,
       WITHDRAWAL_CREDENTIALS,
@@ -48,6 +47,6 @@ contract BalanceVerifier is PlonkVerifier {
 
     bool verificationResult = abi.decode(returnData, (bool));
 
-    return verificationResult;
+    require(verificationResult, 'Verification failed');
   }
 }

@@ -2507,6 +2507,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@redis/json@npm:^1.0.6":
+  version: 1.0.6
+  resolution: "@redis/json@npm:1.0.6"
+  peerDependencies:
+    "@redis/client": ^1.0.0
+  checksum: 9fda29abc339c72593f34a23f8023b715c1f8f3d73f7c59889af02f25589bac2ad57073ad08d0b8da42cd8c258665a7b38d39e761e92945cc27aca651c8a93a5
+  languageName: node
+  linkType: hard
+
 "@redis/search@npm:1.1.2":
   version: 1.1.2
   resolution: "@redis/search@npm:1.1.2"
@@ -3236,6 +3245,7 @@ __metadata:
     ethers: ^5.6.9
     hardhat: 2.10.2
     hardhat-gas-reporter: ^1.0.8
+    json-bigint: ^1.0.0
     r1csfile: ^0.0.40
     snarkjs: ^0.4.24
     ts-node: ^10.9.1
@@ -3259,6 +3269,7 @@ __metadata:
     "@nomiclabs/hardhat-ethers": ^2.1.1
     "@nomiclabs/hardhat-etherscan": ^3.1.0
     "@nomiclabs/hardhat-waffle": ^2.0.3
+    "@redis/json": ^1.0.6
     "@types/glob": ^7.2.0
     "@types/jest": ^28.1.2
     "@types/node": ^18.0.0
@@ -3272,6 +3283,7 @@ __metadata:
     glob: ^8.0.3
     hardhat: ^2.10.2
     hardhat-gas-reporter: ^1.0.8
+    ioredis-rejson: ^1.0.10
     jest: ^28.1.1
     prettier: ^2.6.2
     prom-client: ^14.2.0
@@ -7731,7 +7743,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ioredis@npm:4.28.5, ioredis@npm:^4.27.0":
+"ioredis-rejson@npm:^1.0.10":
+  version: 1.0.10
+  resolution: "ioredis-rejson@npm:1.0.10"
+  dependencies:
+    ioredis: ^4.27.10
+  checksum: 252d727170cb6fa6e15072b05bbeba18d8cd4c9e8b81e88188134a46c94268ea635071baef88455c575778a8ef88d6dbfcf82097bb79664bc09333fb40283d1c
+  languageName: node
+  linkType: hard
+
+"ioredis@npm:4.28.5, ioredis@npm:^4.27.0, ioredis@npm:^4.27.10":
   version: 4.28.5
   resolution: "ioredis@npm:4.28.5"
   dependencies:
