@@ -1,5 +1,5 @@
 use num_bigint::BigUint;
-use plonky2::field::goldilocks_field::GoldilocksField;
+use plonky2::{field::goldilocks_field::GoldilocksField, hash::hash_types::HashOut};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug)]
@@ -37,5 +37,6 @@ pub struct ValidatorPoseidonDataOutput {
     pub slashed: bool,
     pub withdrawable_epoch: u64,
     pub withdrawal_credentials: String,
-    pub poseidon_proof: [GoldilocksField; 4]
+    pub validator_poseidon_hash: HashOut<GoldilocksField>,
+    pub validator_poseidon_proof: Vec<HashOut<GoldilocksField>>
 }
