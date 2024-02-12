@@ -1,5 +1,6 @@
 add_example(compute_shuffled_index SOURCES compute_shuffled_index.cpp)
 add_example(weigh_justification_and_finalization SOURCES weigh_justification_and_finalization.cpp)
+add_example(verify_attestation_data SOURCES verify_attestation_data.cpp)
 
 add_dependencies(template compute_shuffled_index)
 add_dependencies(template weigh_justification_and_finalization)

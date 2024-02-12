@@ -7,7 +7,7 @@
 
     // assert_true(trustedKeys.size() >= pubkeysCount);
     base_field_type reconstructed_token;
-    int64_t result = 0;
+    uint64_t result = 0;
 
     PubKey& pk = trustedKeys[0];
 

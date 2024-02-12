@@ -37,6 +37,21 @@ THE SOFTWARE.
 #include "../circuit_utils/base_types.h"
 
 namespace picosha2 {
+    template<class InputIt, class OutputIt>
+    OutputIt copy(InputIt first, InputIt last, OutputIt d_first) {
+        for (; first != last; (void)++first, (void)++d_first)
+            *d_first = *first;
+
+        return d_first;
+    }
+
+    template<class ForwardIt, class T>
+    void fill(ForwardIt first, ForwardIt last, const T& value)
+    {
+        for (; first != last; ++first)
+            *first = value;
+    }
+
     typedef unsigned long word_t;
     typedef unsigned char byte_t;
 
@@ -103,7 +118,7 @@ namespace picosha2 {
             assert(first + 64 == last);
             static_cast<void>(last);    // for avoiding unused-variable warning
             word_t w[64];
-            std::fill(w, w + 64, word_t(0));
+            fill(w, w + 64, word_t(0));
             for (std::size_t i = 0; i < 16; ++i) {
                 w[i] = (static_cast<word_t>(mask_8bit(*(first + i * 4))) << 24) |
                        (static_cast<word_t>(mask_8bit(*(first + i * 4 + 1))) << 16) |
@@ -158,15 +173,15 @@ namespace picosha2 {
 
         void init() {
             buffer_size_ = 0;
-            std::fill(data_length_digits_, data_length_digits_ + 4, word_t(0));
-            std::copy(detail::initial_message_digest, detail::initial_message_digest + 8, h_);
+            fill(data_length_digits_, data_length_digits_ + 4, word_t(0));
+            copy(detail::initial_message_digest, detail::initial_message_digest + 8, h_);
         }
 
         template<typename RaIter>
         void process(RaIter first, RaIter last) {
             add_to_data_length(static_cast<word_t>(std::distance(first, last)));
             assert_true(buffer_size_ + (last - first) < PICOSHA2_BUFFER_SIZE_FOR_INPUT_ITERATOR);
-            std::copy(first, last, buffer_.begin() + buffer_size_);
+            copy(first, last, buffer_.begin() + buffer_size_);
             buffer_size_ += last - first;
             std::size_t i = 0;
             for (; i + 64 <= buffer_size_; i += 64) {
@@ -180,17 +195,17 @@ namespace picosha2 {
 
         void finish() {
             byte_t temp[64];
-            std::fill(temp, temp + 64, byte_t(0));
+            fill(temp, temp + 64, byte_t(0));
             std::size_t remains = buffer_size_;
-            std::copy(buffer_.begin(), buffer_.begin() + buffer_size_, temp);
+            copy(buffer_.begin(), buffer_.begin() + buffer_size_, temp);
             temp[remains] = 0x80;
 
             if (remains > 55) {
-                std::fill(temp + remains + 1, temp + 64, byte_t(0));
+                fill(temp + remains + 1, temp + 64, byte_t(0));
                 detail::hash256_block(h_, temp, temp + 64);
-                std::fill(temp, temp + 64 - 4, byte_t(0));
+                fill(temp, temp + 64 - 4, byte_t(0));
             } else {
-                std::fill(temp + remains + 1, temp + 64 - 4, byte_t(0));
+                fill(temp + remains + 1, temp + 64 - 4, byte_t(0));
             }
 
             write_data_bit_length(&(temp[56]));
@@ -222,7 +237,7 @@ namespace picosha2 {
         }
         void write_data_bit_length(byte_t* begin) {
             word_t data_bit_length_digits[4];
-            std::copy(data_length_digits_, data_length_digits_ + 4, data_bit_length_digits);
+            copy(data_length_digits_, data_length_digits_ + 4, data_bit_length_digits);
 
             // convert byte length to bit length (multiply 8 or shift 3 times left)
             word_t carry = 0;
