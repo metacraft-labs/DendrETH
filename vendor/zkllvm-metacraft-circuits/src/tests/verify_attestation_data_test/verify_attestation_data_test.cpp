@@ -137,7 +137,7 @@ void basic_tests() {
         std::cout << "ssz_verify_proof ... ";
         ssz_verify_proof(byte_utils::hexToBytes<32>("b45a79b3d4ed0bce770893498237fafc26885ca1a23a1e77933de33c02802db5"),
                          byte_utils::hexToBytes<32>("64df3a60d06291506b1e0de11ce4bac1e1cd0e2e3f639d786128c9b79475a78c"),
-                         fill_zero_hashes(proof).content(),
+                         fill_zero_hashes(proof),
                          0x020000000000ul + 818904,
                          41);
         std::cout << "Done\n";
@@ -240,11 +240,11 @@ Attestation parse_attestation(const json& json_attestation) {
     attestation.genesis_validators_root = hexToBytes<32>(json_attestation["genesis_validators_root"]);
     attestation.state_root = hexToBytes<32>(json_attestation["state_root"]);
     for (size_t i = 0; i < json_attestation["state_root_proof"].size(); i++) {
-        attestation.state_root_proof.at(i) = hexToBytes<32>(json_attestation["state_root_proof"][i]);
+        attestation.state_root_proof[i] = hexToBytes<32>(json_attestation["state_root_proof"][i]);
     }
     attestation.validators_root = hexToBytes<32>(json_attestation["validators_root"]);
     for (size_t i = 0; i < json_attestation["validators_root_proof"].size(); i++) {
-        attestation.validators_root_proof.at(i) = hexToBytes<32>(json_attestation["validators_root_proof"][i]);
+        attestation.validators_root_proof[i] = hexToBytes<32>(json_attestation["validators_root_proof"][i]);
     }
     for (size_t i = 0; i < json_attestation["validators"].size(); i++) {
         attestation.validators.push_back(parse_validator(json_attestation["validators"][i]));

@@ -16,6 +16,8 @@
     { assert(c); }
 #endif
 
+#include "static_vector.h"
+
 // This assertion is meant to be applied only when the code is compiled as executable.
 // When compiling as circuit, it will have no effect for performance reasons.
 #ifdef __ZKLLVM__
@@ -24,12 +26,6 @@
 #define assert_in_executable(c) \
     { assert(c); }
 #endif
-
-using Byte = unsigned char;
-using Bytes32 = std::array<Byte, 32>;
-using Bytes48 = std::array<Byte, 48>;
-using Bytes64 = std::array<Byte, 64>;
-using Bytes96 = std::array<Byte, 96>;
 
 using sha256_t = typename nil::crypto3::hashes::sha2<256>::block_type;
 
@@ -44,7 +40,7 @@ using Slot = uint64_t;
 using Root = HashType;
 using Gwei = uint64_t;
 template<size_t DEPTH>
-using MerkleProof = std::array<HashType, DEPTH>;
+using MerkleProof = static_vector<HashType, DEPTH, true>;
 using BeaconStateLeafProof = MerkleProof<5>;
 
 #define countof(array) (sizeof(array) / sizeof(array[0]))
@@ -68,11 +64,25 @@ struct CheckpointVariable {
     bool operator==(const CheckpointVariable &c) const {
         return (epoch == c.epoch && sha256_equals(root, c.root));
     }
-};
+} __attribute__((packed));
 
 struct JustificationBitsVariable {
 
-    std::array<bool, 4> bits;
+    static_vector<bool, 4, true> bits;
+
+    constexpr JustificationBitsVariable(std::initializer_list<bool> init) { 
+        size_t i = 0;
+        for(const auto& v : init) {
+            assert_true(i < bits.size());
+            bits[i++] = v;
+        }
+    }
+
+    constexpr JustificationBitsVariable() { 
+        for(size_t i = 0; i < bits.size(); ++i) {
+            bits[i] = false;
+        }
+    }
 
     void shift_left(size_t n) {
         assert_in_executable(n > 0);
@@ -99,7 +109,7 @@ struct JustificationBitsVariable {
     bool operator==(const JustificationBitsVariable &j) const {
         return (bits == j.bits);
     }
-};
+} __attribute__((packed));
 
 Epoch get_current_epoch(Slot slot) {
     return slot / SLOTS_PER_EPOCH;
