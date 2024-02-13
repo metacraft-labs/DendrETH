@@ -35,5 +35,5 @@ cd $REPO_ROOT/zkllvm-template
 COPY_SOURCE_FILES=0
 scripts/run.sh $@
 cd $SCRIPT_DIR/..
-rm -r $REPO_ROOT/zkllvm-template/src
+rm -rf $REPO_ROOT/zkllvm-template/src
 mv $REPO_ROOT/src~ $REPO_ROOT/zkllvm-template/src

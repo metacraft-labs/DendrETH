@@ -7,9 +7,9 @@ using namespace circuit_byte_utils;
 
 namespace ssz_utils {
 
-    template<size_t MERKLE_DEPTH>
+    template<size_t MERKLE_DEPTH, bool F>
     HashType ssz_restore_merkle_root(const HashType& leaf,
-                                     const std::array<HashType, MERKLE_DEPTH>& branch,
+                                     const static_vector<HashType, MERKLE_DEPTH, F>& branch,
                                      uint64_t gindex,
                                      const uint64_t depth = MERKLE_DEPTH) {
         auto hash = leaf;
@@ -34,10 +34,10 @@ namespace ssz_utils {
         return hash;
     }
 
-    template<size_t MERKLE_DEPTH>
+    template<size_t MERKLE_DEPTH, bool F>
     void ssz_verify_proof(const HashType& root,
                           const HashType& leaf,
-                          const std::array<HashType, MERKLE_DEPTH>& branch,
+                          const static_vector<HashType, MERKLE_DEPTH, F>& branch,
                           const uint64_t gindex,
                           const uint64_t depth = MERKLE_DEPTH) {
         auto expected_root = ssz_restore_merkle_root(leaf, branch, gindex, depth);
