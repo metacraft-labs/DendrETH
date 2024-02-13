@@ -101,8 +101,8 @@ impl ProveFinality {
 
         let beacon_state = BeaconState::circuit_input(builder);
 
-        let prev_block_root = builder.read::<Bytes32Variable>();
-        let total_number_of_validators = builder.read::<U64Variable>();
+        // let prev_block_root = builder.read::<Bytes32Variable>();
+        // let active_validators_count = builder.read::<U64Variable>();
 
         builder.assert_is_equal(vad_cur.commitment, cuv_cur.commitment);
         builder.assert_is_equal(vad_prev.commitment, cuv_prev.commitment);
@@ -111,24 +111,24 @@ impl ProveFinality {
         // let previous_epoch_attested_validators = builder.read::<U64Variable>(); 
         // let current_epoch_attested_validators = builder.read::<U64Variable>();
 
-        block_merkle_branch_proof(
-            builder,
-            prev_block_root,
-            vad_cur.state_root,
-            vad_cur.validators_root,
-            vad_cur.state_root_proof,
-            vad_cur.validators_root_proof
-        );
+        // block_merkle_branch_proof(
+        //     builder,
+        //     prev_block_root,
+        //     vad_cur.state_root,
+        //     vad_cur.validators_root,
+        //     vad_cur.state_root_proof,
+        //     vad_cur.validators_root_proof
+        // );
 
-        // validate_target_source_difference(builder, &vad_source, &vad_target); //TODO: Bugged Data
+        validate_target_source_difference(builder, &vad_cur.source, &vad_cur.target); //TODO: Bugged Data
 
-        let new_justification_bits = process_justifications( //TODO: No Data
-            builder,
-            total_number_of_validators,
-            beacon_state.justification_bits,
-            cuv_prev.total_unique_validators, // previous_epoch_attested_validators,
-            cuv_cur.total_unique_validators, // current_epoch_attested_validators,
-        );
+        // let new_justification_bits = process_justifications(
+        //     builder,
+        //     active_validators_count,
+        //     beacon_state.justification_bits,
+        //     cuv_prev.total_unique_validators, // previous_epoch_attested_validators,
+        //     cuv_cur.total_unique_validators, // current_epoch_attested_validators,
+        // );
 
         let thirty_two = builder.constant::<U64Variable>(32);
         // let new_justification_bits = new_justification_bits.bits.as_slice();
@@ -136,7 +136,7 @@ impl ProveFinality {
         let source_index = builder.sub(current_epoch, vad_cur.source.epoch);
         let target_index = builder.sub(current_epoch, vad_cur.target.epoch);
 
-        validate_source( //TODO: No data
+        validate_source( 
             builder,
             vad_cur.source,
             target_index,
@@ -144,7 +144,7 @@ impl ProveFinality {
             beacon_state.current_justified_checkpoint,
         );
 
-        validate_justification_bits(builder, source_index, target_index, new_justification_bits.bits.as_slice()); //TODO: No Data
+        // validate_justification_bits(builder, source_index, target_index, new_justification_bits.bits.as_slice());
     }
 }
 
@@ -184,20 +184,20 @@ fn block_merkle_branch_proof<L: PlonkParameters<D>, const D: usize>(
 
 fn process_justifications<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
-    total_number_of_validators: U64Variable,
+    active_validators_count: U64Variable,
     justification_bits: JustificationBitsVariable,
     previous_epoch_attested_validators: U64Variable,
     current_epoch_attested_validators: U64Variable,
 ) -> JustificationBitsVariable {
     let previous_epoch_supermajority_link_pred = is_supermajority_link_in_votes(
         builder,
-        total_number_of_validators,
+        active_validators_count,
         previous_epoch_attested_validators,
     );
 
     let current_epoch_supermajority_link_pred = is_supermajority_link_in_votes(
         builder,
-        total_number_of_validators,
+        active_validators_count,
         current_epoch_attested_validators,
     );
 

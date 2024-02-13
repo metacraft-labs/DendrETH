@@ -29,9 +29,9 @@ where
     let mut input = circuit.input();
 
     //TODO: prev_block_root should be part of attestation_input and not hardcoded
-    let prev_block_root: String =
-        "d5c0418465ffab221522a6991c2d4c0041f1b8e91d01b1ea3f6b882369f689b7".to_string();
-    input.write::<Bytes32Variable>(bytes32!(prev_block_root));
+    // let prev_block_root: String =
+    //     "d5c0418465ffab221522a6991c2d4c0041f1b8e91d01b1ea3f6b882369f689b7".to_string();
+    // input.write::<Bytes32Variable>(bytes32!(prev_block_root));
 
     attestation_input.write(&mut input);
 

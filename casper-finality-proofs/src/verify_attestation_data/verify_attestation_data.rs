@@ -30,13 +30,13 @@ impl Circuit for VerifyAttestationData {
         // let is_zero_sigma_pred = builder.is_zero(sigma);
         // builder.assert_is_equal(is_zero_sigma_pred, _false);
 
-        let prev_block_root = builder.read::<Bytes32Variable>();
+        // let prev_block_root = builder.read::<Bytes32Variable>();
 
         let attestation = Attestation::circuit_input(builder);
 
         //TODO: This should be part of the final proof as it is only needed once
         // 2. 3.
-        block_merkle_branch_proof(builder, prev_block_root, attestation.clone());
+        // block_merkle_branch_proof(builder, prev_block_root, attestation.clone());
 
         let first_validator = builder.read::<ValidatorData>();
         // Private Accumulator

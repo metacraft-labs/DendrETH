@@ -48,8 +48,6 @@ where
 
             let (proof, output) = vad_child_circuit.prove(&input);
 
-            println!("Output: {:?}",output);
-
             final_output = Some(output);
             new_proofs.push(proof);
         }
