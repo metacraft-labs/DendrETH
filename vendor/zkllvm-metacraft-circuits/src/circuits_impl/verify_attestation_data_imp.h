@@ -24,13 +24,13 @@ struct AttestationData {
     Root beacon_block_root;
     CheckpointVariable source;
     CheckpointVariable target;
-};
+} __attribute__((packed));
 
 struct Fork {
     Bytes32 previous_version;
     Bytes32 current_version;
     uint64_t epoch;
-};
+} __attribute__((packed));
 
 struct Validator {
     // True if it can be proven that this validator is a member of the
@@ -48,7 +48,7 @@ struct Validator {
     uint64_t exit_epoch;
     uint64_t withdrawable_epoch;
     Proof validator_list_proof;
-};
+} __attribute__((packed));
 
 struct Attestation {
     // Standard attestation data.
@@ -69,7 +69,7 @@ struct Attestation {
     MerkleProof<5> validators_root_proof;
 
     static_vector<Validator, 415> validators;
-};
+} __attribute__((packed));
 
 struct Transition {
     CheckpointVariable source;
@@ -77,17 +77,17 @@ struct Transition {
     bool operator==(const Transition& c) const {
         return (source == c.source && target == c.target);
     }
-};
+} __attribute__((packed));
 
 struct TransitionKeys {
     Transition transition;
     static_vector<Bytes32> keys;
-};
+} __attribute__((packed));
 
 struct Merged {
     static_vector<Attestation> attestations;
     static_vector<TransitionKeys> trusted_pubkeys;
-};
+} __attribute__((packed));
 
 #ifdef __ZKLLVM__
 using base_field_type = typename pallas::base_field_type::value_type;
@@ -197,27 +197,28 @@ VoteToken verify_attestation_data_imp(const HashType& block_root, const Attestat
 
     base_field_type token = 0;
 
-    for (auto v = attestation.validators.begin(); v != attestation.validators.end(); v++) {
+    for (size_t i = 0; i < attestation.validators.size(); i++) {
+        auto& v = attestation.validators[i];
         // Aggregate this validator's public key.
-        auto validator_pubkey = v->pubkey;
+        auto validator_pubkey = v.pubkey;
         ///! pubkey_point = pubkey_to_G1(validator_pubkey)
         ///! aggregated_point = bls.add(aggregated_point, pubkey_point)
 
         // Check if this validator was part of the source state.
-        if (v->trusted) {
-            auto leaf = hash_validator(circuit_byte_utils::expand<64>(v->pubkey),
-                                       v->withdrawal_credentials,
-                                       v->effective_balance,
-                                       v->activation_eligibility_epoch,
-                                       v->activation_epoch,
-                                       v->exit_epoch,
-                                       v->withdrawable_epoch);
+        if (v.trusted) {
+            auto leaf = hash_validator(circuit_byte_utils::expand<64>(v.pubkey),
+                                       v.withdrawal_credentials,
+                                       v.effective_balance,
+                                       v.activation_eligibility_epoch,
+                                       v.activation_epoch,
+                                       v.exit_epoch,
+                                       v.withdrawable_epoch);
             // Hash the validator data and make sure it's part of:
             // validators_root -> state_root -> block_root.
             ssz_verify_proof(attestation.validators_root,
                              leaf,
-                             fill_zero_hashes(Proof(v->validator_list_proof)).content(),
-                             0x020000000000ul + v->validator_index,
+                             fill_zero_hashes(Proof(v.validator_list_proof)).content(),
+                             0x020000000000ul + v.validator_index,
                              41);
 
             // TODO: Needed?
@@ -229,7 +230,7 @@ VoteToken verify_attestation_data_imp(const HashType& block_root, const Attestat
 
             // Include this validator's pubkey in the result.
             base_field_type element;
-            memcpy(&element, &(v->pubkey), sizeof(element));
+            memcpy(&element, &(v.pubkey), sizeof(element));
             token = (token + (element * sigma));
         }
     }
@@ -253,24 +254,20 @@ VoteToken verify_attestation_data_imp(const HashType& block_root, const Attestat
 VoteToken combine_finality_votes(const static_vector<VoteToken, 8192>& tokens) {
     VoteToken result;
     result.transition = tokens[0].transition;
-    result.token = {};
-    for (auto it = tokens.begin(); it != tokens.end(); ++it) {
-        assert_true(result.transition == it->transition);
-        result.token += it->token;
+    result.token = {0};
+    for (size_t i = 0; i < tokens.size(); i++) {
+        assert_true(result.transition == tokens[i].transition);
+        result.token += tokens[i].token;
     }
     return result;
 }
 
-void prove_finality(const VoteToken& token,
-                    const PubKey* trustedKeys,
-                    const size_t pubkeysCount,
-                    const Transition& votedTransition,
-                    const int sigma,
-                    const int64_t active_validators_count) {
-    assert_true(votedTransition == token.transition);
-    int64_t votes_count = 0;
+uint64_t process_votes(const PubKey* trustedKeys,
+                      const size_t pubkeysCount,
+                      const int64_t sigma,
+                      base_field_type& reconstructed_token) {
     const PubKey* prev = nullptr;
-    base_field_type reconstructed_token = 0;
+    uint64_t votes_count = 0;
     for (size_t i = 0; i < pubkeysCount; i++) {
         const auto& pubkey = trustedKeys[i];
         base_field_type element;
@@ -281,5 +278,18 @@ void prove_finality(const VoteToken& token,
         }
         prev = &pubkey;
     }
+    return votes_count;
+}
+
+void prove_finality(const VoteToken& token,
+                    const PubKey* trustedKeys,
+                    const size_t pubkeysCount,
+                    const Transition& votedTransition,
+                    const int64_t sigma,
+                    const int64_t active_validators_count) {
+    assert_true(votedTransition == token.transition);
+    base_field_type reconstructed_token = 0;
+    uint64_t votes_count = process_votes(trustedKeys, pubkeysCount, sigma, reconstructed_token);
+
     assert_true(reconstructed_token == token.token);
 }

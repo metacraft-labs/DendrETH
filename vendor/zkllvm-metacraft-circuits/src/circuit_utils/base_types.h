@@ -68,7 +68,7 @@ struct CheckpointVariable {
     bool operator==(const CheckpointVariable &c) const {
         return (epoch == c.epoch && sha256_equals(root, c.root));
     }
-};
+} __attribute__((packed));
 
 struct JustificationBitsVariable {
 
@@ -99,7 +99,7 @@ struct JustificationBitsVariable {
     bool operator==(const JustificationBitsVariable &j) const {
         return (bits == j.bits);
     }
-};
+} __attribute__((packed));
 
 Epoch get_current_epoch(Slot slot) {
     return slot / SLOTS_PER_EPOCH;
