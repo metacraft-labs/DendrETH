@@ -1,8 +1,10 @@
+use ethers::abi::Hash;
+use plonky2::{field::goldilocks_field::GoldilocksField, hash::hash_types::HashOut};
 use plonky2x::{
     backend::circuit::{PlonkParameters, PublicInput}, frontend::{
-        eth::vars::BLSPubkeyVariable, vars::BytesVariable
+        eth::vars::BLSPubkeyVariable, hash::poseidon::poseidon256::PoseidonHashOutVariable, vars::BytesVariable
     }, prelude::{
-        CircuitBuilder, Variable, BoolVariable, U64Variable, Bytes32Variable, ArrayVariable, CircuitVariable, RichField
+        ArrayVariable, BoolVariable, Bytes32Variable, CircuitBuilder, CircuitVariable, RichField, U64Variable, Variable
     }, utils::{bytes, bytes32}
 };
 use serde::{Deserialize, Deserializer, Serialize};
@@ -256,6 +258,43 @@ impl BeaconValidatorVariable {
 }
 
 #[derive(Debug, Clone, CircuitVariable)]
+pub struct ValidatorDataPoseidon { 
+    pub trusted: BoolVariable,
+    
+    pub validator_index: U64Variable, // validator_gindex
+    pub beacon_validator_variable: BeaconValidatorVariable,
+
+    pub validator_root_proof: ArrayVariable<PoseidonHashOutVariable ,VALIDATORS_HASH_TREE_DEPTH>,
+}
+
+impl ValidatorDataPoseidon {
+    pub fn new(
+        trusted: BoolVariable,
+        validator_index: U64Variable,
+        beacon_validator_variable: BeaconValidatorVariable,
+        validator_root_proof: ArrayVariable<PoseidonHashOutVariable,VALIDATORS_HASH_TREE_DEPTH>,  
+
+    ) -> Self {
+        ValidatorDataPoseidon {
+            trusted: trusted,
+            validator_index: validator_index,
+            beacon_validator_variable: beacon_validator_variable,
+            validator_root_proof: validator_root_proof,
+        }
+    }
+
+    pub fn circuit_input<L: PlonkParameters<D>, const D: usize>(builder: &mut CircuitBuilder<L,D>) -> Self{ 
+        ValidatorDataPoseidon::new(
+            builder.read::<BoolVariable>(),
+            builder.read::<U64Variable>(),
+            builder.read::<BeaconValidatorVariable>(),
+            builder.read::<ArrayVariable<PoseidonHashOutVariable, VALIDATORS_HASH_TREE_DEPTH>>(),
+        )
+    }
+}
+
+
+#[derive(Debug, Clone, CircuitVariable)]
 pub struct ValidatorData { 
     pub trusted: BoolVariable,
     
@@ -406,6 +445,79 @@ impl Fork {
         )
     }
 }
+
+/*
+[NOTE]
+    `validators` and `validators_list_proof` are outside of the Attestation class, since
+    for each attestation the validator set remains constant
+ */ 
+#[derive(Debug, Clone)]
+pub struct AttestationPoseidon {
+    // Standard attestation data
+    pub data: AttestationData,
+    // pub signature: BLSPubkeyVariable, //TODO: BLSVariable 
+
+    // Needed to compute the `signing_root` and verify the `signature`
+    fork: Fork,
+    genesis_validators_root: Bytes32Variable,
+    /*
+    We should be able to prove that the majority of validators
+    participating in this attestation are part of the validator set
+    associated with the state of the last trusted block.
+    */
+    pub state_root: Bytes32Variable,
+    pub state_root_proof: ArrayVariable<Bytes32Variable, STATE_ROOT_PROOF_LEN>,
+
+    pub validators_root: PoseidonHashOutVariable,
+    pub validators_root_proof: ArrayVariable<Bytes32Variable, VALIDATORS_ROOT_PROOF_LEN>,
+
+    // validators: ArrayVariable<BeaconValidatorVariable, VALIDATORS_PER_COMMITTEE>,
+}
+
+impl AttestationPoseidon {
+    pub fn new(
+        data: AttestationData,
+        // signature: BLSPubkeyVariable,
+        fork: Fork,
+        genesis_validators_root: Bytes32Variable,
+        state_root: Bytes32Variable,
+        state_root_proof: ArrayVariable<Bytes32Variable, STATE_ROOT_PROOF_LEN>,
+        validators_root: PoseidonHashOutVariable,
+        validators_root_proof: ArrayVariable<Bytes32Variable, VALIDATORS_ROOT_PROOF_LEN>,
+        // validators: ArrayVariable<BeaconValidatorVariable, VALIDATORS_PER_COMMITTEE>,
+        // validator_list_proof: ArrayVariable<Bytes32Variable, VALIDATORS_HASH_TREE_DEPTH>,
+    ) -> Self {
+        AttestationPoseidon {
+            data,
+            // signature,
+            fork,
+            genesis_validators_root,
+            state_root,
+            state_root_proof,
+            validators_root,
+            validators_root_proof,
+            // validators,
+            // validator_list_proof,
+        }
+    }
+
+    pub fn circuit_input<L: PlonkParameters<D>, const D: usize>(builder: &mut CircuitBuilder<L,D>) -> Self {
+        AttestationPoseidon::new(
+            AttestationData::circuit_input(builder),
+            // builder.read::<BLSPubkeyVariable>(), //TODO: 
+            Fork::circuit_input(builder),
+            builder.read::<Bytes32Variable>(),
+            builder.read::<Bytes32Variable>(),
+            builder.read::<ArrayVariable<Bytes32Variable, STATE_ROOT_PROOF_LEN>>(),
+
+            builder.read::<PoseidonHashOutVariable>(),
+            builder.read::<ArrayVariable<Bytes32Variable, VALIDATORS_ROOT_PROOF_LEN>>(),
+
+            // builder.read::<ArrayVariable<BeaconValidatorVariable,VALIDATORS_PER_COMMITTEE>>(),
+        )
+    }
+}
+
 
 /*
 [NOTE]
