@@ -3,6 +3,7 @@ import { hexToBytes } from '../../libs/typescript/ts-utils/bls';
 import { IRedis } from '../abstraction/redis-interface';
 import {
   BalanceProof,
+  BalancesAccumulatorInput,
   IndexedValidatorPubkeyDeposit,
   ProofResultType,
   Validator,
@@ -31,8 +32,8 @@ export class Redis implements IRedis {
 
   async disconnect() {
     await this.waitForConnection();
-    await this.pubSub.disconnect();
-    this.client.disconnect();
+    await this.pubSub.quit();
+    this.client.quit();
   }
 
   async addToEpochLookup(key: string, epoch: bigint) {
@@ -222,7 +223,9 @@ export class Redis implements IRedis {
     await this.waitForConnection();
 
     let keys = (
-      await this.client.keys(`${CONSTANTS.validatorAccumulatorKey}:${protocol}:*`)
+      await this.client.keys(
+        `${CONSTANTS.validatorAccumulatorKey}:${protocol}:*`,
+      )
     ).filter(key => !key.includes(CONSTANTS.validatorRegistryLimit.toString()));
 
     let allValidators: ValidatorPubkeyDeposit[] = new Array(keys.length);
@@ -329,6 +332,23 @@ export class Redis implements IRedis {
         ];
       }),
     );
+
+    await this.client.sendCommand(new RedisReJSON.Command('JSON.MSET', args));
+  }
+
+  async saveBalancesAccumulatorInput(
+    balancesInputs: BalancesAccumulatorInput[],
+    protocol: string,
+  ) {
+    await this.waitForConnection();
+
+    const args = balancesInputs.map((input, index) => {
+      return [
+        `${CONSTANTS.balanceVerificationAccumulatorKey}:${protocol}:${index}`,
+        '$',
+        JSON.stringify(input),
+      ];
+    });
 
     await this.client.sendCommand(new RedisReJSON.Command('JSON.MSET', args));
   }
@@ -480,6 +500,19 @@ export class Redis implements IRedis {
     }
 
     return JSON.parse(proof);
+  }
+
+  async getValidatorCommitmentRoot(epoch: number): Promise<number[]> {
+    await this.waitForConnection();
+
+    const latestEpoch = await this.getLatestEpoch(
+      `${CONSTANTS.validatorProofKey}:65535`,
+      BigInt(epoch),
+    );
+    return (await this.client.json_get(
+      `${CONSTANTS.validatorProofKey}:65535:${latestEpoch}`,
+      'poseidonHash',
+    )) as number[];
   }
 
   async get(key: string): Promise<string | null> {

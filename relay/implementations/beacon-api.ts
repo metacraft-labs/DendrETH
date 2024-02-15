@@ -454,11 +454,7 @@ export class BeaconApi implements IBeaconApi {
       .then(response => response.arrayBuffer())
       .then(buffer => new Uint8Array(buffer));
 
-    console.log('here');
-
     const beaconState = ssz.capella.BeaconState.deserialize(beaconStateSZZ);
-
-    console.log('here1');
 
     const beaconStateView = ssz.capella.BeaconState.toViewDU(beaconState);
     const stateTree = new Tree(beaconStateView.node);

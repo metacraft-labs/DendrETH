@@ -9,6 +9,7 @@
   "validatorBalanceInputKey": "validator_balance_input",
   "balanceVerificationQueue": "balance_verification_queue",
   "balanceVerificationProofKey": "balance_verification_proof",
+  "balanceVerificationAccumulatorKey": "balance_verification_accumulator",
   "balanceVerificationAccumulatorProofKey": "balance_verification_accumulator_proof",
   "finalProofInputKey": "final_proof_input",
   "finalLayerProofKey": "final_layer_proof",

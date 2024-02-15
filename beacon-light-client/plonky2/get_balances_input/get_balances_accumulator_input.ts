@@ -1,15 +1,32 @@
 import yargs from 'yargs';
 import { Redis as RedisLocal } from '../../../relay/implementations/redis';
 import config from '../common_config.json';
-import { KeyPrefix, WorkQueue } from '@mevitae/redis-work-queue';
+const {
+  KeyPrefix,
+  WorkQueue,
+  Item,
+} = require('@mevitae/redis-work-queue/dist/WorkQueue');
 import CONSTANTS from '../constants/validator_commitment_constants.json';
 import { BeaconApi } from '../../../relay/implementations/beacon-api';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
-import { hexToBits } from '../../../libs/typescript/ts-utils/hex-utils';
-import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
 import { computeEpochAt } from '../../../libs/typescript/ts-utils/ssz-utils';
+import { readFileSync } from 'fs';
+import {
+  getCommitmentMapperProof,
+  getNthParent,
+  gindexFromIndex,
+} from '../validators_commitment_mapper_tree/utils';
+import { splitIntoBatches } from '../../../libs/typescript/ts-utils/common-utils';
+import { BalancesAccumulatorInput } from '../../../relay/types/types';
+import Redis from 'ioredis';
+import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
+
 const CIRCUIT_SIZE = 2;
 let TAKE: number | undefined;
+
+enum TaskTag {
+  FIRST_LEVEL = 0,
+}
 
 (async () => {
   const { ssz } = await import('@lodestar/types');
@@ -58,9 +75,19 @@ let TAKE: number | undefined;
       describe: 'Index offset in the validator set',
       type: 'number',
       default: undefined,
+    })
+    .options('protocol', {
+      alias: 'protocol',
+      describe: 'The protocol',
+      type: 'string',
+      default: 'demo',
+      description: 'Sets the protocol',
     }).argv;
 
   const redis = new RedisLocal(options['redis-host'], options['redis-port']);
+  const db = new Redis(
+    `redis://${options['redis-host']}:${options['redis-port']}`,
+  );
 
   TAKE = options['take'];
 
@@ -78,69 +105,121 @@ let TAKE: number | undefined;
 
   const offset = Number(options['offset']) || 0;
   const take = TAKE !== undefined ? TAKE + offset : undefined;
-  // const validators = beaconState.validators.slice(offset, take);
-  // beaconState.balances = beaconState.balances.slice(offset, take);
-  // beaconState.validators = validators;
 
-  // const balancesView = ssz.capella.BeaconState.fields.balances.toViewDU(
-  //   beaconState.balances,
-  // );
+  beaconState.balances = beaconState.balances.slice(offset, take);
 
-  // const balancesTree = new Tree(balancesView.node);
+  let validatorsAccumulator: any[] = JSON.parse(
+    readFileSync('validators.json', 'utf-8'),
+  );
 
-  // const balanceZeroIndex = ssz.capella.BeaconState.fields.balances.getPathInfo([
-  //   0,
-  // ]).gindex;
+  validatorsAccumulator.map((x, i) => {
+    x.validator_index = i;
+    return x;
+  });
 
-  // const balances: number[][] = [];
-
-  // for (let i = 0; i < TAKE / 4; i++) {
-  //   balances.push(
-  //     hexToBits(
-  //       bytesToHex(balancesTree.getNode(balanceZeroIndex + BigInt(i)).root),
-  //     ),
-  //   );
-  // }
-
-  // if (balances.length % (CIRCUIT_SIZE / 4) !== 0) {
-  //   balances.push(''.padStart(256, '0').split('').map(Number));
-  // }
-
-  // should include everything
-  let validators = [];
-  let validatorIndexes = [];
-  let validatorDepositIndexes = [];
   // Should be the balances of the validators
-  let balances = [];
   const balancesView = ssz.capella.BeaconState.fields.balances.toViewDU(
     beaconState.balances,
   );
-  let balancesIndexes = [];
 
   const balancesTree = new Tree(balancesView.node);
 
-  // get validator commitment root from redis
-  let validatorCommitmentRoot = [];
+  let balancesProofs = validatorsAccumulator.map(v => {
+    return balancesTree
+      .getSingleProof(gindexFromIndex(BigInt(v.validator_index), 39n) + 1n)
+      .map(bytesToHex)
+      .slice(0, 22);
+  });
 
+  // get validator commitment root from redis
+  let validatorCommitmentRoot = await redis.getValidatorCommitmentRoot(
+    computeEpochAt(beaconState.slot),
+  );
+  console.log('Validator commitment root:', validatorCommitmentRoot);
 
   // load proofs for the validators from redis
-  let validatorCommitmentProofs = [];
+  let validatorCommitmentProofs = await Promise.all(
+    validatorsAccumulator.map(async v => {
+      return (
+        await getCommitmentMapperProof(
+          BigInt(computeEpochAt(beaconState.slot)),
+          gindexFromIndex(BigInt(v.validator_index), 40n),
+          'poseidon',
+          redis,
+        )
+      ).slice(0, 24);
+    }),
+  );
 
-  let balancesInput = {
-    balancesRoot: ssz.capella.BeaconState.fields.balances.hashTreeRoot(
-      beaconState.balances,
-    ),
-    balances: balances,
-    balancesProofs: balancesIndexes.map(index =>
-      balancesTree.getSingleProof(index),
-    ),
-    validatorCommitmentRoot: validatorCommitmentRoot,
-    validatorDepositIndexes: validatorDepositIndexes,
-    validatorIndexes: validatorIndexes,
-    validatorCommitmentProofs: validatorCommitmentProofs,
-    // Should mark the zero validators
-    validatorIsNotZero: [],
-    currentEpoch: computeEpochAt(beaconState.slot),
-    currentEth1DepositIndex: beaconState.eth1DepositIndex,
-  };
+  let balancesInputs: BalancesAccumulatorInput[] = [];
+  for (
+    let chunkIdx = 0;
+    chunkIdx < (validatorsAccumulator.length + CIRCUIT_SIZE - 1) / CIRCUIT_SIZE;
+    chunkIdx++
+  ) {
+    let balancesInput: BalancesAccumulatorInput = {
+      balancesRoot: bytesToHex(balancesTree.getRoot(65536n)),
+      balances: [],
+      balancesProofs: [],
+      validatorDepositIndexes: [],
+      validatorIndexes: [],
+      validatorCommitmentProofs: [],
+      validatorIsNotZero: [],
+      validatorCommitmentRoot: validatorCommitmentRoot,
+      currentEpoch: computeEpochAt(beaconState.slot),
+      currentEth1DepositIndex: beaconState.eth1DepositIndex,
+    };
+    for (let j = 0; j < CIRCUIT_SIZE; j++) {
+      const idx = chunkIdx * CIRCUIT_SIZE + j;
+      if (idx < validatorsAccumulator.length) {
+        balancesInput.balances.push(
+          bytesToHex(
+            balancesTree.getNode(gindexFromIndex(BigInt(idx), 38n) + 1n).root,
+          ),
+        );
+        balancesInput.balancesProofs.push(balancesProofs[idx]);
+        balancesInput.validatorDepositIndexes.push(
+          validatorsAccumulator[idx].validator_eth1_deposit_index,
+        );
+        balancesInput.validatorIndexes.push(
+          validatorsAccumulator[idx].validator_index,
+        );
+        balancesInput.validatorCommitmentProofs.push(
+          validatorCommitmentProofs[idx] as number[][],
+        );
+        balancesInput.validatorIsNotZero.push(1);
+      } else {
+        balancesInput.balances.push(''.padStart(64, '0'));
+        balancesInput.balancesProofs.push(
+          new Array(22).map(x => ''.padStart(64, '0')),
+        );
+        balancesInput.validatorDepositIndexes.push(0);
+        balancesInput.validatorIndexes.push(0);
+        balancesInput.validatorCommitmentProofs.push(
+          new Array(22).map(x => new Array(4).fill(0)),
+        );
+        balancesInput.validatorIsNotZero.push(0);
+      }
+    }
+
+    balancesInputs.push(balancesInput);
+  }
+
+  await redis.saveBalancesAccumulatorInput(balancesInputs, options['protocol']);
+  scheduleFirstLevelTasks(balancesInputs);
+
+  db.quit();
+  await redis.disconnect();
+
+  async function scheduleFirstLevelTasks(
+    balancesInputs: BalancesAccumulatorInput[],
+  ) {
+    for (let i = 0; i < balancesInputs.length; i++) {
+      const buffer = new ArrayBuffer(9);
+      const dataView = new DataView(buffer);
+      dataView.setUint8(0, TaskTag.FIRST_LEVEL);
+      dataView.setBigUint64(1, BigInt(i), false);
+      first_level_queue.addItem(db, new Item(buffer));
+    }
+  }
 })();

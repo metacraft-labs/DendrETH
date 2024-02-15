@@ -12,7 +12,7 @@ const {
 } = require('@mevitae/redis-work-queue/dist/WorkQueue');
 
 import CONSTANTS from '../constants/validator_commitment_constants.json';
-import { gindexFromValidatorIndex, makeBranchIterator } from './utils';
+import { gindexFromIndex, makeBranchIterator } from './utils';
 
 enum TaskTag {
   UPDATE_PROOF_NODE = 0,
@@ -190,7 +190,7 @@ export class CommitmentMapperScheduler {
     // Don't create an epoch lookup for the zero validator proof
     if (validatorIndex !== BigInt(CONSTANTS.validatorRegistryLimit)) {
       await this.redis.addToEpochLookup(
-        `${CONSTANTS.validatorProofKey}:${gindexFromValidatorIndex(
+        `${CONSTANTS.validatorProofKey}:${gindexFromIndex(
           validatorIndex,
           40n,
         )}`,
@@ -228,10 +228,7 @@ export class CommitmentMapperScheduler {
       ),
     );
 
-    for (const gindices of makeBranchIterator(
-      validators.map(validator => BigInt(validator.index)),
-      40n,
-    )) {
+    for (const gindices of levelIterator) {
       await Promise.all(
         gindices.map(gindex =>
           this.redis.saveValidatorProof(gindex, this.currentEpoch),

@@ -173,6 +173,19 @@ export interface IndexedValidatorPubkeyDeposit {
   validator: ValidatorPubkeyDeposit;
 }
 
+export interface BalancesAccumulatorInput {
+  balancesRoot: string;
+  balances: string[];
+  balancesProofs: string[][];
+  validatorDepositIndexes: number[];
+  validatorIndexes: number[];
+  validatorCommitmentProofs: number[][][];
+  validatorIsNotZero: number[];
+  validatorCommitmentRoot: number[];
+  currentEpoch: number;
+  currentEth1DepositIndex: number;
+}
+
 export interface ValidatorProof {
   needsChange: boolean;
   proof: number[];
