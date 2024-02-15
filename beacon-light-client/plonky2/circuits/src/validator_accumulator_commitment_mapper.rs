@@ -18,6 +18,7 @@ use crate::{
 };
 
 pub struct ValidatorAccumulatorCommitmentTargets {
+    pub validator_is_zero: BoolTarget,
     pub validator_pubkey: [BoolTarget; 384],
     pub validator_eth1_deposit_index: BigUintTarget,
     pub sha256_hash_tree_root: [BoolTarget; 256],
@@ -29,12 +30,14 @@ impl ReadTargets for ValidatorAccumulatorCommitmentTargets {
     where
         Self: Sized,
     {
+        let validator_is_zero = data.read_target_bool().unwrap();
         let validator_pubkey = data.read_target_bool_vec().unwrap();
         let validator_eth1_deposit_index = BigUintTarget::read_targets(data)?;
         let sha256_hash_tree_root = data.read_target_bool_vec()?;
         let poseidon_hash_tree_root = data.read_target_hash()?;
 
         Ok(ValidatorAccumulatorCommitmentTargets {
+            validator_is_zero,
             validator_pubkey: validator_pubkey.try_into().unwrap(),
             validator_eth1_deposit_index,
             sha256_hash_tree_root: sha256_hash_tree_root.try_into().unwrap(),
@@ -47,6 +50,7 @@ impl WriteTargets for ValidatorAccumulatorCommitmentTargets {
     fn write_targets(&self) -> IoResult<Vec<u8>> {
         let mut data = Vec::new();
 
+        data.write_target_bool(self.validator_is_zero)?;
         data.write_target_bool_vec(&self.validator_pubkey)?;
         data.extend(BigUintTarget::write_targets(
             &self.validator_eth1_deposit_index,
@@ -85,14 +89,27 @@ pub fn validator_accumulator_commitment_mapper<F: RichField + Extendable<D>, con
         );
     }
 
+    let validator_is_zero = builder.add_virtual_bool_target_safe();
+    let zero = builder.zero();
+
     let poseidon_hash =
-        get_validator_accumulator_poseidon_hash(builder, &validator_pubkey, &eth1_deposit_index);
+        get_validator_accumulator_poseidon_hash(builder, &validator_pubkey, &eth1_deposit_index)
+            .elements
+            .map(|x| builder._if(validator_is_zero, zero, x));
+
+    let sha256_hash_tree_root = hasher
+        .digest
+        .iter()
+        .map(|x| BoolTarget::new_unsafe(builder._if(validator_is_zero, zero, x.target)));
 
     ValidatorAccumulatorCommitmentTargets {
+        validator_is_zero,
         validator_pubkey: validator_pubkey,
         validator_eth1_deposit_index: eth1_deposit_index,
-        sha256_hash_tree_root: hasher.digest.try_into().unwrap(),
-        poseidon_hash_tree_root: poseidon_hash,
+        sha256_hash_tree_root: sha256_hash_tree_root.collect_vec().try_into().unwrap(),
+        poseidon_hash_tree_root: HashOutTarget {
+            elements: poseidon_hash,
+        },
     }
 }
 
@@ -156,16 +173,16 @@ mod test {
 
         pw.set_bytes_array(
             &targets.validator_pubkey,
-            &hex::decode("89bcf22c91a560d95d09c1192664eea1baab0780b6d4441ca39d1cb5094b177b17f47a67b16fb972bfd3b78b602ffeee").unwrap(),
+            &hex::decode("957882961f53250f9b2b0ca1ad5b5f4fc1a89c3a55cd2dbba3df9e851f06c93e9fe2e691971884a269d4e40f3d054604").unwrap(),
         );
 
         pw.set_biguint_target(
             &targets.validator_eth1_deposit_index,
-            &BigUint::from(1076099u64),
+            &BigUint::from(830988u64),
         );
 
         let validators_hash_tree_root = bytes_to_bools(
-            &hex::decode("37a6de102958b6e12f4a42d0a95ba67208f2fbaee44127ceb13bc393d47304c6")
+            &hex::decode("382cea16a63feabe70c82bb59568e650c5766d5f4787d61a05f8568b80609005")
                 .unwrap(),
         );
 

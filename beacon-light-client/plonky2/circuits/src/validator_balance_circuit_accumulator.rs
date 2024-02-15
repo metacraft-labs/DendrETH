@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use plonky2::{
-    field::extension::Extendable,
+    field::{extension::Extendable, goldilocks_field::GoldilocksField, types::Field},
     hash::hash_types::{HashOutTarget, RichField},
     iop::target::{BoolTarget, Target},
     plonk::circuit_builder::CircuitBuilder,
@@ -9,6 +9,7 @@ use plonky2::{
 
 use crate::{
     biguint::{BigUintTarget, CircuitBuilderBiguint},
+    hash_tree_root_poseidon::{self, hash_tree_root_poseidon},
     is_active_validator::get_validator_status,
     is_valid_merkle_branch::is_valid_merkle_branch_sha256_result,
     is_valid_merkle_branch_poseidon::is_valid_merkle_branch_poseidon_result,
@@ -30,13 +31,11 @@ pub struct ValidatorBalanceVerificationTargetsAccumulator {
     pub balances: Vec<[BoolTarget; ETH_SHA256_BIT_SIZE]>,
     pub balances_proofs: Vec<Vec<[BoolTarget; ETH_SHA256_BIT_SIZE]>>,
     pub validator_commitment_root: HashOutTarget,
-    pub accumulator_commitment_root: HashOutTarget,
+    pub accumulator_commitment_range_root: HashOutTarget,
     pub validators: Vec<ValidatorPoseidonTargets>,
-    pub validator_accumulator_indexes: Vec<Target>,
     pub validator_deposit_indexes: Vec<BigUintTarget>,
     pub validator_indexes: Vec<Target>,
     pub validator_commitment_proofs: Vec<Vec<HashOutTarget>>,
-    pub validator_accumulator_proofs: Vec<Vec<HashOutTarget>>,
     pub validator_is_not_zero: Vec<BoolTarget>,
     pub current_epoch: BigUintTarget,
     pub current_eth1_deposit_index: BigUintTarget,
@@ -66,23 +65,15 @@ impl ReadTargets for ValidatorBalanceVerificationTargetsAccumulator {
                 })
                 .collect_vec(),
             validator_commitment_root: data.read_target_hash()?,
-            accumulator_commitment_root: data.read_target_hash()?,
+            accumulator_commitment_range_root: data.read_target_hash()?,
             validators: (0..validators_len)
                 .map(|_| ValidatorPoseidonTargets::read_targets(data).unwrap())
                 .collect(),
-            validator_accumulator_indexes: data.read_target_vec()?,
             validator_deposit_indexes: (0..validators_len)
                 .map(|_| BigUintTarget::read_targets(data).unwrap())
                 .collect_vec(),
             validator_indexes: data.read_target_vec()?,
             validator_commitment_proofs: (0..validators_len)
-                .map(|_| {
-                    (0..24)
-                        .map(|_| data.read_target_hash().unwrap())
-                        .collect_vec()
-                })
-                .collect_vec(),
-            validator_accumulator_proofs: (0..validators_len)
                 .map(|_| {
                     (0..24)
                         .map(|_| data.read_target_hash().unwrap())
@@ -122,13 +113,11 @@ impl WriteTargets for ValidatorBalanceVerificationTargetsAccumulator {
         }
 
         data.write_target_hash(&self.validator_commitment_root)?;
-        data.write_target_hash(&self.accumulator_commitment_root)?;
+        data.write_target_hash(&self.accumulator_commitment_range_root)?;
 
         for validator in &self.validators {
             data.extend(ValidatorPoseidonTargets::write_targets(validator)?);
         }
-
-        data.write_target_vec(&self.validator_accumulator_indexes)?;
 
         for validator_deposit_index in &self.validator_deposit_indexes {
             data.extend(BigUintTarget::write_targets(validator_deposit_index)?);
@@ -137,12 +126,6 @@ impl WriteTargets for ValidatorBalanceVerificationTargetsAccumulator {
         data.write_target_vec(&self.validator_indexes)?;
 
         for validator_proof in &self.validator_commitment_proofs {
-            for element in validator_proof {
-                data.write_target_hash(element)?;
-            }
-        }
-
-        for validator_proof in &self.validator_accumulator_proofs {
             for element in validator_proof {
                 data.write_target_hash(element)?;
             }
@@ -180,10 +163,11 @@ pub fn validator_balance_accumulator_verification<F: RichField + Extendable<D>, 
 
     let mut balances_proofs = Vec::new();
 
-    let validator_indexes = (0..validators_len)
+    let validator_gindex = (0..validators_len)
         .map(|_| builder.add_virtual_target())
         .collect_vec();
 
+    // Maybe constraint that it begins with 1s and ends with 0s
     let validator_is_not_zero = (0..validators_len)
         .map(|_| builder.add_virtual_bool_target_safe())
         .collect_vec();
@@ -199,8 +183,12 @@ pub fn validator_balance_accumulator_verification<F: RichField + Extendable<D>, 
 
         balances_proofs.push(is_valid_merkle_branch_balance.branch);
 
-        // TODO: adjust
-        builder.connect(is_valid_merkle_branch_balance.index, validator_indexes[i]);
+        let three = builder.constant(F::from_canonical_u64(3u64));
+        let dividend = builder.sub(validator_gindex[i], three);
+        let four = builder.constant(F::from_canonical_u64(4u64));
+        let balance_gindex = builder.div(dividend, four);
+
+        builder.connect(is_valid_merkle_branch_balance.index, balance_gindex);
 
         for j in 0..256 {
             builder.connect(
@@ -229,6 +217,8 @@ pub fn validator_balance_accumulator_verification<F: RichField + Extendable<D>, 
         .map(|_| hash_tree_root_validator_poseidon(builder))
         .collect();
 
+    let zero = builder.zero();
+
     let validator_accumulator_leaves: Vec<HashOutTarget> = get_validators_accumulator_leaves(
         builder,
         &validators_leaves
@@ -236,52 +226,33 @@ pub fn validator_balance_accumulator_verification<F: RichField + Extendable<D>, 
             .map(|x| x.validator.pubkey)
             .collect(),
         &validator_deposit_indexes,
-    );
+    )
+    .iter()
+    .enumerate()
+    .map(|(index, x)| HashOutTarget {
+        elements: x
+            .elements
+            .map(|e| builder._if(validator_is_not_zero[index], e, zero)),
+    })
+    .collect_vec();
 
-    let accumulator_commitment_root = builder.add_virtual_hash();
+    let accumulator_commitment_range_root = hash_tree_root_poseidon(builder, validators_len);
+
+    for i in 0..validators_len {
+        builder.connect_hashes(
+            accumulator_commitment_range_root.leaves[i],
+            validator_accumulator_leaves[i],
+        );
+    }
+
     let validator_commitment_root = builder.add_virtual_hash();
-
-    let validator_accumulator_indexes = (0..validators_len)
-        .map(|_| builder.add_virtual_target())
-        .collect_vec();
-
-    let validator_accumulator_proofs = (0..validators_len)
-        .map(|_| (0..24).map(|_| builder.add_virtual_hash()).collect_vec())
-        .collect_vec();
 
     let validator_commitment_proofs = (0..validators_len)
         .map(|_| (0..24).map(|_| builder.add_virtual_hash()).collect_vec())
         .collect_vec();
 
     for i in 0..validators_leaves.len() {
-        let is_valid_merkle_branch_accumulator =
-            is_valid_merkle_branch_poseidon_result(builder, 24);
         let is_valid_merkle_branch_commitment = is_valid_merkle_branch_poseidon_result(builder, 24);
-
-        builder.connect_hashes(
-            is_valid_merkle_branch_accumulator.root,
-            accumulator_commitment_root,
-        );
-        builder.connect_hashes(
-            is_valid_merkle_branch_accumulator.leaf,
-            validator_accumulator_leaves[i],
-        );
-        builder.connect(
-            is_valid_merkle_branch_accumulator.index,
-            validator_accumulator_indexes[i],
-        );
-
-        for j in 0..24 {
-            builder.connect_hashes(
-                is_valid_merkle_branch_accumulator.branch[j],
-                validator_accumulator_proofs[i][j],
-            )
-        }
-
-        builder.connect(
-            is_valid_merkle_branch_accumulator.is_valid.target,
-            validator_is_not_zero[i].target,
-        );
 
         builder.connect_hashes(
             is_valid_merkle_branch_commitment.root,
@@ -291,15 +262,12 @@ pub fn validator_balance_accumulator_verification<F: RichField + Extendable<D>, 
             is_valid_merkle_branch_commitment.leaf,
             validators_leaves[i].hash_tree_root,
         );
-        builder.connect(
-            is_valid_merkle_branch_commitment.index,
-            validator_indexes[i],
-        );
+        builder.connect(is_valid_merkle_branch_commitment.index, validator_gindex[i]);
 
         for j in 0..24 {
             builder.connect_hashes(
                 is_valid_merkle_branch_commitment.branch[j],
-                validator_accumulator_proofs[i][j],
+                validator_commitment_proofs[i][j],
             );
         }
 
@@ -346,28 +314,41 @@ pub fn validator_balance_accumulator_verification<F: RichField + Extendable<D>, 
         let is_part_of_the_beacon_chain =
             builder.cmp_biguint(&validator_deposit_indexes[i], &current_eth1_deposit_index);
 
-        let will_be_counted = builder.and(is_valid_validator, is_part_of_the_beacon_chain);
+        let will_be_counted_as_part_of_the_beacon_chain =
+            builder.and(is_valid_validator, is_part_of_the_beacon_chain);
 
-        let current = if_biguint(builder, will_be_counted, &balance, &zero);
+        let current = if_biguint(
+            builder,
+            will_be_counted_as_part_of_the_beacon_chain,
+            &balance,
+            &zero,
+        );
 
         range_total_value = builder.add_biguint(&range_total_value, &current);
+        range_total_value.limbs.pop();
 
-        number_of_active_validators =
-            builder.add(number_of_active_validators, will_be_counted.target);
+        number_of_active_validators = builder.add(
+            number_of_active_validators,
+            will_be_counted_as_part_of_the_beacon_chain.target,
+        );
 
-        let will_be_counted = builder.and(is_part_of_the_beacon_chain, is_non_activated_validator);
+        let will_be_counted_as_pending =
+            builder.and(is_part_of_the_beacon_chain, is_non_activated_validator);
 
-        number_of_non_activated_validators =
-            builder.add(number_of_non_activated_validators, will_be_counted.target);
+        number_of_non_activated_validators = builder.add(
+            number_of_non_activated_validators,
+            will_be_counted_as_pending.target,
+        );
 
-        let will_be_counted = builder.and(is_part_of_the_beacon_chain, is_exited_validator);
+        let will_be_counted_as_exited =
+            builder.and(is_part_of_the_beacon_chain, is_exited_validator);
 
-        number_of_exited_validators =
-            builder.add(number_of_exited_validators, will_be_counted.target);
+        number_of_exited_validators = builder.add(
+            number_of_exited_validators,
+            will_be_counted_as_exited.target,
+        );
 
         range_deposit_count = builder.add(range_deposit_count, validator_is_not_zero[i].target);
-
-        range_total_value.limbs.pop();
     }
 
     ValidatorBalanceVerificationTargetsAccumulator {
@@ -378,16 +359,14 @@ pub fn validator_balance_accumulator_verification<F: RichField + Extendable<D>, 
         balances_root,
         balances_proofs,
         validator_commitment_root,
-        accumulator_commitment_root,
+        accumulator_commitment_range_root: accumulator_commitment_range_root.hash_tree_root,
         validators: validators_leaves
             .iter()
             .map(|x| x.validator.clone())
             .collect_vec(),
         validator_deposit_indexes,
-        validator_indexes,
-        validator_accumulator_indexes,
+        validator_indexes: validator_gindex,
         validator_commitment_proofs,
-        validator_accumulator_proofs,
         validator_is_not_zero,
         balances: balances_leaves,
         current_epoch,

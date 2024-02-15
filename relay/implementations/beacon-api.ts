@@ -414,7 +414,7 @@ export class BeaconApi implements IBeaconApi {
   async getValidators(
     stateId: StateId,
     validatorsCount: number | undefined = undefined,
-    offset: number | undefined = undefined
+    offset: number | undefined = undefined,
   ): Promise<Validator[]> {
     const { ssz } = await import('@lodestar/types');
 
@@ -423,8 +423,7 @@ export class BeaconApi implements IBeaconApi {
       let url = `/eth/v1/beacon/states/${stateId}/validators`;
       let range = [...Array(validatorsCount).keys()];
       if (offset !== undefined) {
-        range = range.map((index) => index + offset);
-
+        range = range.map(index => index + offset);
       }
       url = url + `?id=${range.join(',')}`;
 
@@ -511,10 +510,12 @@ export class BeaconApi implements IBeaconApi {
   }
 
   private concatUrl(urlPath: string): string {
-    const url = new URL(this.getCurrentApi());
-    url.pathname = path.join(url.pathname, urlPath);
+    const baseUrl = this.getCurrentApi();
+    const finalUrl = `${
+      baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl
+    }/${urlPath.startsWith('/') ? urlPath.slice(1) : urlPath}`;
 
-    console.log('url href', url.href);
-    return url.href;
+    console.log('url href', finalUrl);
+    return finalUrl;
   }
 }

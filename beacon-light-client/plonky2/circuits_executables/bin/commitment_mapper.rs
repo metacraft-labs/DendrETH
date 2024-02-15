@@ -4,7 +4,7 @@ use circuits::{
     targets_serialization::ReadTargets, validator_commitment_mapper::ValidatorCommitmentTargets,
 };
 use circuits_executables::{
-    commitment_mapper_task::{deserialize_task, CommitmentMapperTask},
+    commitment_mapper_task::CommitmentMapperTask,
     crud::{
         fetch_proofs, fetch_validator, fetch_zero_proof, get_depth_for_gindex, load_circuit_data,
         read_from_file, save_validator_proof, save_zero_validator_proof, ProofProvider,
@@ -121,7 +121,7 @@ async fn async_main() -> Result<()> {
             continue;
         };
 
-        let Some(task) = deserialize_task(&queue_item.data) else {
+        let Some(task) = CommitmentMapperTask::deserialize(&queue_item.data) else {
             println!("{}", "Invalid task data".red().bold());
             println!("{}", format!("Got bytes: {:?}", queue_item.data).red());
             queue.complete(&mut con, &queue_item).await?;
@@ -151,7 +151,7 @@ async fn async_main() -> Result<()> {
                             match save_validator_proof(
                                 &mut con,
                                 proof,
-                                gindex_from_validator_index(validator_index),
+                                gindex_from_validator_index(validator_index, 40),
                                 epoch,
                             )
                             .await

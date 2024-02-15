@@ -78,7 +78,7 @@ pub async fn async_main() -> Result<()> {
 
     let mut prev_circuit_data = first_level_data;
 
-    for i in 1..41 {
+    for i in 1..=32 {
         let (targets, data) = build_commitment_mapper_inner_circuit(&prev_circuit_data);
 
         if level == Some(i) || level == None {

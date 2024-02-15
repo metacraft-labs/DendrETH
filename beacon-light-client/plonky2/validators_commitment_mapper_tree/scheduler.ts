@@ -12,6 +12,7 @@ const {
 } = require('@mevitae/redis-work-queue/dist/WorkQueue');
 
 import CONSTANTS from '../constants/validator_commitment_constants.json';
+import { gindexFromValidatorIndex, makeBranchIterator } from './utils';
 
 enum TaskTag {
   UPDATE_PROOF_NODE = 0,
@@ -39,8 +40,10 @@ export class CommitmentMapperScheduler {
     );
     this.api = new BeaconApi([options['beacon-node']]);
     this.headEpoch = BigInt(await this.api.getHeadSlot()) / 32n;
-    this.currentEpoch = options['sync-epoch'] !== undefined
-      ? BigInt(options['sync-epoch']) : this.headEpoch;
+    this.currentEpoch =
+      options['sync-epoch'] !== undefined
+        ? BigInt(options['sync-epoch'])
+        : this.headEpoch;
 
     const mod = await import('@lodestar/types');
     this.ssz = mod.ssz;
@@ -52,15 +55,26 @@ export class CommitmentMapperScheduler {
 
   async start(runOnce: boolean = false) {
     console.log(chalk.bold.blue('Fetching validators from database...'));
-    this.validators = await this.redis.getValidatorsBatched(this.ssz, this.currentEpoch);
-    console.log(`Loaded ${chalk.bold.yellow(this.validators.length)} validators from database`);
+    this.validators = await this.redis.getValidatorsBatched(
+      this.ssz,
+      this.currentEpoch,
+    );
+    console.log(
+      `Loaded ${chalk.bold.yellow(
+        this.validators.length,
+      )} validators from database`,
+    );
 
     if (await this.redis.isZeroValidatorEmpty()) {
       console.log(chalk.bold.blue('Adding zero tasks...'));
       await this.scheduleZeroTasks();
     }
 
-    console.log(chalk.bold.blue(`Initial syncing (${chalk.cyan(this.currentEpoch)} epoch)...`));
+    console.log(
+      chalk.bold.blue(
+        `Initial syncing (${chalk.cyan(this.currentEpoch)} epoch)...`,
+      ),
+    );
     await this.updateValidators();
 
     if (runOnce) {
@@ -70,28 +84,29 @@ export class CommitmentMapperScheduler {
     await this.syncEpoch();
 
     const es = await this.api.subscribeForEvents(['head']);
-    es.on('head', async (event) => {
+    es.on('head', async event => {
       this.headEpoch = BigInt(JSON.parse(event.data).slot) / 32n;
       await this.syncEpoch();
     });
   }
 
   async scheduleZeroTasks() {
-    await this.redis.saveValidators([
-      {
-        index: Number(CONSTANTS.validatorRegistryLimit),
-        data: {
-          pubkey: ''.padEnd(96, '0'),
-          withdrawalCredentials: ''.padEnd(64, '0'),
-          effectiveBalance: ''.padEnd(64, '0'),
-          slashed: ''.padEnd(64, '0'),
-          activationEligibilityEpoch: ''.padEnd(64, '0'),
-          activationEpoch: ''.padEnd(64, '0'),
-          exitEpoch: ''.padEnd(64, '0'),
-          withdrawableEpoch: ''.padEnd(64, '0'),
+    await this.redis.saveValidators(
+      [
+        {
+          index: Number(CONSTANTS.validatorRegistryLimit),
+          data: {
+            pubkey: ''.padEnd(96, '0'),
+            withdrawalCredentials: ''.padEnd(64, '0'),
+            effectiveBalance: ''.padEnd(64, '0'),
+            slashed: ''.padEnd(64, '0'),
+            activationEligibilityEpoch: ''.padEnd(64, '0'),
+            activationEpoch: ''.padEnd(64, '0'),
+            exitEpoch: ''.padEnd(64, '0'),
+            withdrawableEpoch: ''.padEnd(64, '0'),
+          },
         },
-      },
-    ],
+      ],
       this.currentEpoch,
     );
 
@@ -107,33 +122,58 @@ export class CommitmentMapperScheduler {
   async syncEpoch() {
     while (this.currentEpoch < this.headEpoch) {
       this.currentEpoch++;
-      console.log(chalk.bold.blue(`Syncing ${this.currentEpoch === this.headEpoch ? chalk.cyan(this.currentEpoch) : `${chalk.cyanBright(this.currentEpoch)}/${chalk.cyan(this.headEpoch)}`}...`));
+      console.log(
+        chalk.bold.blue(
+          `Syncing ${
+            this.currentEpoch === this.headEpoch
+              ? chalk.cyan(this.currentEpoch)
+              : `${chalk.cyanBright(this.currentEpoch)}/${chalk.cyan(
+                  this.headEpoch,
+                )}`
+          }...`,
+        ),
+      );
       await this.updateValidators();
     }
   }
 
   async updateValidators() {
-    const newValidators = await this.api.getValidators(Number(this.currentEpoch * 32n), this.take, this.offset)
+    const newValidators = await this.api.getValidators(
+      Number(this.currentEpoch * 32n),
+      this.take,
+      this.offset,
+    );
     const changedValidators = newValidators
       .map((validator, index) => ({ validator, index }))
       .filter(hasValidatorChanged(this.validators));
 
     await this.saveValidatorsInBatches(changedValidators);
 
-    console.log(`Changed validators count: ${chalk.bold.yellow(changedValidators.length)}`);
+    console.log(
+      `Changed validators count: ${chalk.bold.yellow(
+        changedValidators.length,
+      )}`,
+    );
     this.validators = newValidators;
   }
 
-  async saveValidatorsInBatches(validators: IndexedValidator[], batchSize = 200) {
+  async saveValidatorsInBatches(
+    validators: IndexedValidator[],
+    batchSize = 200,
+  ) {
     for (const batch of splitIntoBatches(validators, batchSize)) {
       await this.redis.saveValidators(
         batch.map((validator: IndexedValidator) => ({
           index: validator.index,
           data: this.convertValidatorToProof(validator.validator),
         })),
-        this.currentEpoch
+        this.currentEpoch,
       );
-      await Promise.all(batch.map((validator) => this.scheduleValidatorProof(BigInt(validator.index))));
+      await Promise.all(
+        batch.map(validator =>
+          this.scheduleValidatorProof(BigInt(validator.index)),
+        ),
+      );
     }
 
     await this.updateBranches(validators);
@@ -149,7 +189,13 @@ export class CommitmentMapperScheduler {
 
     // Don't create an epoch lookup for the zero validator proof
     if (validatorIndex !== BigInt(CONSTANTS.validatorRegistryLimit)) {
-      await this.redis.addToEpochLookup(`${CONSTANTS.validatorProofKey}:${gindexFromValidatorIndex(validatorIndex)}`, this.currentEpoch);
+      await this.redis.addToEpochLookup(
+        `${CONSTANTS.validatorProofKey}:${gindexFromValidatorIndex(
+          validatorIndex,
+          40n,
+        )}`,
+        this.currentEpoch,
+      );
     }
   }
 
@@ -157,7 +203,10 @@ export class CommitmentMapperScheduler {
     const buffer = new ArrayBuffer(17);
     const dataView = new DataView(buffer);
 
-    await this.redis.addToEpochLookup(`${CONSTANTS.validatorProofKey}:${gindex}`, this.currentEpoch);
+    await this.redis.addToEpochLookup(
+      `${CONSTANTS.validatorProofKey}:${gindex}`,
+      this.currentEpoch,
+    );
 
     dataView.setUint8(0, TaskTag.UPDATE_PROOF_NODE);
     dataView.setBigUint64(1, gindex, false);
@@ -166,23 +215,32 @@ export class CommitmentMapperScheduler {
   }
 
   async updateBranches(validators: IndexedValidator[]) {
-    const changedValidatorGindices = validators.map(validator => gindexFromValidatorIndex(BigInt(validator.index)));
-    await Promise.all(changedValidatorGindices.map(async (gindex) => this.redis.saveValidatorProof(gindex, this.currentEpoch)));
+    let levelIterator = makeBranchIterator(
+      validators.map(validator => BigInt(validator.index)),
+      40n,
+    );
 
-    let nodesNeedingUpdate = new Set(changedValidatorGindices.map(getParent));
-    while (nodesNeedingUpdate.size !== 0) {
-      const newNodesNeedingUpdate = new Set<bigint>();
+    let leafs = levelIterator.next().value!;
 
-      for (const gindex of nodesNeedingUpdate) {
-        if (gindex !== 0n) {
-          newNodesNeedingUpdate.add(getParent(gindex));
-        }
+    await Promise.all(
+      leafs.map(gindex =>
+        this.redis.saveValidatorProof(gindex, this.currentEpoch),
+      ),
+    );
 
-        await this.redis.saveValidatorProof(gindex, this.currentEpoch);
-        await this.scheduleUpdateProofNodeTask(gindex);
-      }
+    for (const gindices of makeBranchIterator(
+      validators.map(validator => BigInt(validator.index)),
+      40n,
+    )) {
+      await Promise.all(
+        gindices.map(gindex =>
+          this.redis.saveValidatorProof(gindex, this.currentEpoch),
+        ),
+      );
 
-      nodesNeedingUpdate = newNodesNeedingUpdate;
+      await Promise.all(
+        gindices.map(gindex => this.scheduleUpdateProofNodeTask(gindex)),
+      );
     }
   }
 
@@ -206,11 +264,14 @@ export class CommitmentMapperScheduler {
         ),
       ),
       slashed: bytesToHex(
-        this.ssz.phase0.Validator.fields.slashed.hashTreeRoot(validator.slashed),
+        this.ssz.phase0.Validator.fields.slashed.hashTreeRoot(
+          validator.slashed,
+        ),
       ),
-      activationEligibilityEpoch: bytesToHex(this.ssz.phase0.Validator.fields.activationEligibilityEpoch.hashTreeRoot(
-        validator.activationEligibilityEpoch,
-      ),
+      activationEligibilityEpoch: bytesToHex(
+        this.ssz.phase0.Validator.fields.activationEligibilityEpoch.hashTreeRoot(
+          validator.activationEligibilityEpoch,
+        ),
       ),
       activationEpoch: bytesToHex(
         this.ssz.phase0.Validator.fields.activationEpoch.hashTreeRoot(
@@ -218,7 +279,9 @@ export class CommitmentMapperScheduler {
         ),
       ),
       exitEpoch: bytesToHex(
-        this.ssz.phase0.Validator.fields.exitEpoch.hashTreeRoot(validator.exitEpoch),
+        this.ssz.phase0.Validator.fields.exitEpoch.hashTreeRoot(
+          validator.exitEpoch,
+        ),
       ),
       withdrawableEpoch: bytesToHex(
         this.ssz.phase0.Validator.fields.withdrawableEpoch.hashTreeRoot(
@@ -229,24 +292,17 @@ export class CommitmentMapperScheduler {
   }
 }
 
-function gindexFromValidatorIndex(index: bigint) {
-  return (2n ** 40n) - 1n + index;
-}
-
-function getParent(gindex: bigint) {
-  return (gindex - 1n) / 2n;
-}
-
 // Returns a function that checks whether a validator at validator index has
 // changed  (doesn't check for pubkey and withdrawalCredentials since those
 // never change according to the spec)
 function hasValidatorChanged(prevValidators: Validator[]) {
   return ({ validator, index }: IndexedValidator) =>
-    prevValidators[index] === undefined
-    || validator.effectiveBalance !== prevValidators[index].effectiveBalance
-    || validator.slashed !== prevValidators[index].slashed
-    || validator.activationEligibilityEpoch !== prevValidators[index].activationEligibilityEpoch
-    || validator.activationEpoch !== prevValidators[index].activationEpoch
-    || validator.exitEpoch !== prevValidators[index].exitEpoch
-    || validator.withdrawableEpoch !== prevValidators[index].withdrawableEpoch;
+    prevValidators[index] === undefined ||
+    validator.effectiveBalance !== prevValidators[index].effectiveBalance ||
+    validator.slashed !== prevValidators[index].slashed ||
+    validator.activationEligibilityEpoch !==
+      prevValidators[index].activationEligibilityEpoch ||
+    validator.activationEpoch !== prevValidators[index].activationEpoch ||
+    validator.exitEpoch !== prevValidators[index].exitEpoch ||
+    validator.withdrawableEpoch !== prevValidators[index].withdrawableEpoch;
 }

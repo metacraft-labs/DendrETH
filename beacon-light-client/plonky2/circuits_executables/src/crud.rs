@@ -1,4 +1,9 @@
-use std::{fs, marker::PhantomData, thread, time::Duration};
+use std::{
+    fs,
+    marker::PhantomData,
+    thread,
+    time::Duration,
+};
 
 use crate::{
     validator::{
@@ -305,20 +310,18 @@ pub async fn get_latest_epoch(con: &mut Connection, key: &String, epoch: u64) ->
 pub async fn fetch_validator_accumulator(
     con: &mut Connection,
     validator_accumulator_index: u64,
+    protocol: String,
 ) -> Result<ValidatorAccumulatorInput> {
     let key = format!(
-        "{}:{}",
+        "{}:{}:{}",
         VALIDATOR_COMMITMENT_CONSTANTS
             .validator_accumulator_key
             .to_owned(),
+        protocol,
         validator_accumulator_index
     );
 
-    Ok(fetch_redis_json_object::<ValidatorAccumulatorInput>(
-        con,
-        format!("{}:{}", key, validator_accumulator_index),
-    )
-    .await?)
+    Ok(fetch_redis_json_object::<ValidatorAccumulatorInput>(con, key).await?)
 }
 
 pub async fn fetch_validator(
@@ -329,7 +332,7 @@ pub async fn fetch_validator(
     let key = format!(
         "{}:{}",
         VALIDATOR_COMMITMENT_CONSTANTS.validator_key.to_owned(),
-        validator_index
+        validator_index,
     );
 
     let latest_epoch = get_latest_epoch(con, &key, epoch).await?;
@@ -415,19 +418,18 @@ pub async fn save_zero_validator_accumulator_proof(
         needs_change: false,
     };
 
-    let _: () = con
-        .json_set(
-            format!(
-                "{}:zeroes:{}",
-                VALIDATOR_COMMITMENT_CONSTANTS
-                    .validator_accumulator_proof_key
-                    .to_owned(),
-                depth,
-            ),
-            "$",
-            &validator_proof,
-        )
-        .await?;
+    con.json_set(
+        format!(
+            "{}:zeroes:{}",
+            VALIDATOR_COMMITMENT_CONSTANTS
+                .validator_accumulator_proof_key
+                .to_owned(),
+            depth,
+        ),
+        "$",
+        &validator_proof,
+    )
+    .await?;
 
     Ok(())
 }
@@ -435,6 +437,7 @@ pub async fn save_zero_validator_accumulator_proof(
 pub async fn save_validator_accumulator_proof(
     con: &mut Connection,
     proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    protocol: String,
     gindex: u64,
 ) -> Result<()> {
     let validator_proof = ValidatorProof {
@@ -449,10 +452,11 @@ pub async fn save_validator_accumulator_proof(
     let _: () = con
         .json_set(
             format!(
-                "{}:{}",
+                "{}:{}:{}",
                 VALIDATOR_COMMITMENT_CONSTANTS
                     .validator_accumulator_proof_key
                     .to_owned(),
+                protocol,
                 gindex
             ),
             "$",
@@ -486,13 +490,11 @@ pub async fn fetch_zero_proof<T: NeedsChange + KeyProvider + DeserializeOwned + 
     }
 }
 
-pub async fn fetch_zero_accumulator_proof<
-    T: NeedsChange + KeyProvider + DeserializeOwned + Clone,
->(
+pub async fn fetch_zero_accumulator_proof(
     con: &mut Connection,
     depth: u64,
-) -> Result<T> {
-    Ok(fetch_redis_json_object::<T>(
+) -> Result<ValidatorProof> {
+    Ok(fetch_redis_json_object::<ValidatorProof>(
         con,
         format!(
             "{}:zeroes:{}",
@@ -573,37 +575,46 @@ pub async fn fetch_proofs<
 
 pub async fn fetch_accumulator_proofs(
     con: &mut Connection,
+    protocol: String,
     gindex: u64,
 ) -> Result<(Vec<u8>, Vec<u8>)> {
     let left_child_gindex = gindex * 2 + 1;
     let right_child_gindex = gindex * 2 + 2;
 
-    let proof1 = fetch_proof_accumulator(con, left_child_gindex).await?;
-    let proof2 = fetch_proof_accumulator(con, right_child_gindex).await?;
+    let proof1 = fetch_proof_accumulator(con, protocol.clone(), left_child_gindex).await?;
+    let proof2 = fetch_proof_accumulator(con, protocol.clone(), right_child_gindex).await?;
 
     Ok((proof1.get_proof(), proof2.get_proof()))
 }
 
-pub async fn fetch_proof_accumulator(con: &mut Connection, gindex: u64) -> Result<ValidatorProof> {
-    let key = format!(
-        "{}:{}",
-        VALIDATOR_COMMITMENT_CONSTANTS.validator_accumulator_proof_key, gindex
-    );
+pub async fn fetch_proof_accumulator(
+    con: &mut Connection,
+    protocol: String,
+    gindex: u64,
+) -> Result<ValidatorProof> {
     let mut retries = 0;
+    let key = format!(
+        "{}:{}:{}",
+        VALIDATOR_COMMITMENT_CONSTANTS.validator_accumulator_proof_key, protocol, gindex
+    );
 
     loop {
         if retries > 5 {
             return Err(anyhow::anyhow!("Not able to complete, try again"));
         }
 
-        let proof = {
-            let proof_result = fetch_redis_json_object::<ValidatorProof>(con, key.to_owned()).await;
+        let mut proof_result = fetch_redis_json_object::<ValidatorProof>(con, key.clone()).await;
 
-            match proof_result {
-                Ok(res) => res,
-                Err(_) => fetch_zero_accumulator_proof(con, get_depth_for_gindex(gindex)).await?,
-            }
-        };
+        if proof_result.is_err() {
+            // get the zeroth proof
+            let key = format!(
+                "{}:{}:{}",
+                VALIDATOR_COMMITMENT_CONSTANTS.validator_accumulator_proof_key, "zeroes", get_depth_for_gindex(gindex)
+            );
+            proof_result = fetch_redis_json_object::<ValidatorProof>(con, key.clone()).await;
+        }
+
+        let proof = proof_result?;
 
         if proof.needs_change() {
             // Wait a bit and try again

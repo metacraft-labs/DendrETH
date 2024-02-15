@@ -163,6 +163,16 @@ export interface Validator {
   withdrawableEpoch: number;
 }
 
+export interface ValidatorPubkeyDeposit {
+  validator_pubkey: string;
+  validator_eth1_deposit_index: number;
+}
+
+export interface IndexedValidatorPubkeyDeposit {
+  index: number;
+  validator: ValidatorPubkeyDeposit;
+}
+
 export interface ValidatorProof {
   needsChange: boolean;
   proof: number[];

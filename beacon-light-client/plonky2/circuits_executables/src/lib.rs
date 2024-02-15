@@ -1,3 +1,4 @@
+#![feature(async_closure)]
 pub mod commitment_mapper_task;
 pub mod crud;
 pub mod provers;

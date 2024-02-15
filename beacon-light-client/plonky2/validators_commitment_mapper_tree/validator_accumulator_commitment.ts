@@ -1,37 +1,31 @@
-// Should accept initial validators as inputs from a file maybe
-// Should be able somehow to get info about new validators from the smart contract maybe
-// Should be able to return merkle proofs and so on
-
-import {
-  sleep,
-  splitIntoBatches,
-} from '../../../libs/typescript/ts-utils/common-utils';
+import { splitIntoBatches } from '../../../libs/typescript/ts-utils/common-utils';
 import { Redis as RedisLocal } from '../../../relay/implementations/redis';
-import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
-import { Validator } from '../../../relay/types/types';
+import {
+  IndexedValidatorPubkeyDeposit,
+  ValidatorPubkeyDeposit,
+} from '../../../relay/types/types';
 import Redis from 'ioredis';
 const {
   KeyPrefix,
   WorkQueue,
   Item,
 } = require('@mevitae/redis-work-queue/dist/WorkQueue');
-import { BeaconApi } from '../../../relay/implementations/beacon-api';
 
-import validator_commitment_constants from '../constants/validator_commitment_constants.json';
+import CONSTANTS from '../constants/validator_commitment_constants.json';
 import yargs from 'yargs';
 import { readFileSync } from 'fs';
+import chalk from 'chalk';
+import { makeBranchIterator } from './utils';
 
 let TAKE: number | undefined;
 
 enum TaskTag {
-  UPDATE_PROOF_NODE = 0,
-  PROVE_ZERO_FOR_LEVEL = 1,
-  UPDATE_VALIDATOR_PROOF = 2,
+  APPEND_VALIDATOR_ACCUMULATOR_PROOF = 0,
+  UPDATE_PROOF_NODE = 1,
+  PROVE_ZERO_FOR_DEPTH = 2,
 }
 
 (async () => {
-  const { ssz } = await import('@lodestar/types');
-
   const options = yargs
     .usage(
       'Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>',
@@ -56,6 +50,13 @@ enum TaskTag {
       type: 'number',
       default: undefined,
       description: 'Sets the number of validators to take',
+    })
+    .option('protocol', {
+      alias: 'protocol',
+      describe: 'The protocol',
+      type: 'string',
+      default: 'demo',
+      description: 'Sets the protocol',
     }).argv;
 
   const redis = new RedisLocal(options['redis-host'], options['redis-port']);
@@ -66,76 +67,70 @@ enum TaskTag {
 
   TAKE = options['take'];
 
-  console.log("WTF");
-
-  const work_queue = new WorkQueue(
-    new KeyPrefix(
-      `${validator_commitment_constants.validatorAccumulatorProofQueue}`,
-    ),
+  const queue = new WorkQueue(
+    new KeyPrefix(`${CONSTANTS.validatorAccumulatorProofQueue}`),
   );
 
-  // handle zeros validators
-  if (await redis.isZeroValidatorEmpty()) {
-    console.log('Adding tasks about zeros');
-    await redis.saveAccumulatorValidators([
-      {
-        index: Number(validator_commitment_constants.validatorRegistryLimit),
-        data: {
-          validator_pubkey: ''.padEnd(96, '0'),
-          eth1_deposit_index: 0,
-        },
-      },
-    ]);
-
-    await scheduleValidatorProof(
-      BigInt(validator_commitment_constants.validatorRegistryLimit),
-    );
-
-    for (let level = 39n; level >= 0n; level--) {
-      scheduleProveZeroForLevel(level);
-      console.log('Added zeros tasks');
-    }
+  if (await redis.isZeroValidatorAccumulatorEmpty()) {
+    console.log(chalk.bold.blue('Adding zero tasks...'));
+    await scheduleZeroTasks();
   }
 
-  // load from file
-  let validators: [
-    { validator_pubkey: string; validator_eth1_deposit_index: number },
-  ] = JSON.parse(readFileSync('./validators.json', 'utf8'));
+  let validators = await redis.getValidatorsAccumulatorBatched(
+    options['protocol'],
+  );
 
-  saveValidatorsInBatches(validators);
+  validators = await updateValidators(validators);
+
+  console.log('Done');
+
+  // TODO: LISTEN for ValidatorsAccumulator events
 
   async function saveValidatorsInBatches(
-    validators: [
-      { validator_pubkey: string; validator_eth1_deposit_index: number },
-    ],
+    validators: IndexedValidatorPubkeyDeposit[],
     batchSize = 200,
   ) {
     await Promise.all(
       splitIntoBatches(validators, batchSize).map(async batch => {
-        await redis.saveAccumulatorValidators(
-          batch.map((validator, index) => ({
-            index: index,
-            data: validator,
-          })),
-        );
+        await redis.saveAccumulatorValidators(batch, options['protocol']);
 
         await Promise.all(
-          batch.map((_, index) =>
-            scheduleValidatorProof(BigInt(index)),
-          ),
+          batch.map((_, index) => scheduleValidatorProof(BigInt(index))),
         );
       }),
     );
 
-    await updateBranches(validators);
+    let levelIterator = makeBranchIterator(
+      validators.map((_, index) => BigInt(index)),
+      32n,
+    );
+
+    let leafs = levelIterator.next().value!;
+
+    await Promise.all(
+      leafs.map(gindex =>
+        redis.saveValidatorAccumulatorProof(gindex, options['protocol']),
+      ),
+    );
+
+    for (const gindices of levelIterator) {
+      await Promise.all(
+        gindices.map(gindex =>
+          redis.saveValidatorAccumulatorProof(gindex, options['protocol']),
+        ),
+      );
+      await Promise.all(
+        gindices.map(gindex => scheduleUpdateProofNodeTask(gindex)),
+      );
+    }
   }
 
   async function scheduleValidatorProof(validatorIndex: bigint) {
     const buffer = new ArrayBuffer(9);
     const dataView = new DataView(buffer);
-    dataView.setUint8(0, TaskTag.UPDATE_VALIDATOR_PROOF);
+    dataView.setUint8(0, TaskTag.APPEND_VALIDATOR_ACCUMULATOR_PROOF);
     dataView.setBigUint64(1, validatorIndex, false);
-    work_queue.addItem(db, new Item(buffer));
+    queue.addItem(db, new Item(buffer));
   }
 
   async function scheduleUpdateProofNodeTask(gindex: bigint) {
@@ -144,47 +139,61 @@ enum TaskTag {
 
     dataView.setUint8(0, TaskTag.UPDATE_PROOF_NODE);
     dataView.setBigUint64(1, gindex, false);
-    work_queue.addItem(db, new Item(buffer));
+    queue.addItem(db, new Item(buffer));
   }
 
-  function gindexFromValidatorIndex(index: bigint) {
-    return 2n ** 40n - 1n + index;
-  }
+  async function updateValidators(oldValidators: ValidatorPubkeyDeposit[]) {
+    // TODO: think of better way
+    // load from file
+    let validators: [
+      { validator_pubkey: string; validator_eth1_deposit_index: number },
+    ] = JSON.parse(readFileSync('./validators.json', 'utf8'));
 
-  function getParent(gindex: bigint) {
-    return (gindex - 1n) / 2n;
-  }
+    const changedValidators = validators
+      .map((validator, index) => ({ validator, index }))
+      .filter((_, index) => index >= oldValidators.length);
 
-  async function updateBranches(validators: [{ validator_pubkey: string; validator_eth1_deposit_index: number }]) {
-    const changedValidatorGindices = validators.map((_, index) =>
-      gindexFromValidatorIndex(BigInt(index)),
+    await saveValidatorsInBatches(changedValidators);
+
+    console.log(
+      `Changed validators count: ${chalk.bold.yellow(
+        changedValidators.length,
+      )}`,
     );
 
-    let nodesNeedingUpdate = new Set(changedValidatorGindices.map(getParent));
+    return validators;
+  }
 
-    while (nodesNeedingUpdate.size !== 0) {
-      const newNodesNeedingUpdate = new Set<bigint>();
+  async function scheduleZeroTasks() {
+    await redis.saveAccumulatorValidators(
+      [
+        {
+          index: Number(CONSTANTS.validatorRegistryLimit),
+          validator: {
+            validator_pubkey: ''.padEnd(96, '0'),
+            validator_eth1_deposit_index: 0,
+          },
+        },
+      ],
+      options['protocol'],
+    );
 
-      for (const gindex of nodesNeedingUpdate) {
-        if (gindex !== 0n) {
-          newNodesNeedingUpdate.add(getParent(gindex));
-        }
+    await scheduleValidatorProof(BigInt(CONSTANTS.validatorRegistryLimit));
+    await redis.saveZeroValidatorAccumulatorProof(32n);
 
-        await redis.saveValidatorAccumulatorProof(gindex);
-        await scheduleUpdateProofNodeTask(gindex);
-      }
-
-      nodesNeedingUpdate = newNodesNeedingUpdate;
+    for (let depth = 31n; depth >= 0n; depth--) {
+      scheduleProveZeroForDepth(depth);
+      await redis.saveZeroValidatorAccumulatorProof(depth);
     }
   }
 
-  function scheduleProveZeroForLevel(level: bigint) {
+  async function scheduleProveZeroForDepth(depth: bigint) {
     const buffer = new ArrayBuffer(9);
     const dataView = new DataView(buffer);
 
-    dataView.setUint8(0, TaskTag.PROVE_ZERO_FOR_LEVEL);
-    dataView.setBigUint64(1, level, false);
+    dataView.setUint8(0, TaskTag.PROVE_ZERO_FOR_DEPTH);
+    dataView.setBigUint64(1, depth, false);
 
-    work_queue.addItem(db, new Item(buffer));
+    queue.addItem(redis.client, new Item(buffer));
   }
 })();

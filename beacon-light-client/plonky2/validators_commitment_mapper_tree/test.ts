@@ -6,32 +6,166 @@ import { merkleize } from '@chainsafe/ssz/lib/util/merkleize';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { hexToBits } from '../../../libs/typescript/ts-utils/hex-utils';
 import { hashTreeRoot } from '../../../libs/typescript/ts-utils/ssz-utils';
+import { readFileSync } from 'fs';
 
-(async () => {
-  const { ssz } = await import('@lodestar/types');
+function bitArrayToByteArray(hash: number[]): Uint8Array {
+  const result = new Uint8Array(32);
 
-  function calculateValidatorsAccumulator(
-    validatorsPubkeys: string,
-    eth1DepositIndex: number,
-  ): string {
-    const validatorPubkey = validatorsPubkeys.padStart(96, '0');
-    let bytes = ssz.capella.BeaconState.fields.eth1DepositIndex.hashTreeRoot(eth1DepositIndex);
+  for (let byte = 0; byte < 32; ++byte) {
+    let value = 0;
+    for (let bit = 0; bit < 8; ++bit) {
+      value += 2 ** (7 - bit) * hash[byte * 8 + bit];
+    }
+    result[byte] = value;
+  }
+  return result;
+}
 
-    console.log(formatHex(bytesToHex(bytes)).padStart(16, '0'));
+export function calculateValidatorsAccumulator(
+  validatorsPubkeys: Uint8Array[],
+  eth1DepositIndexes: Uint8Array[],
+): string {
+  const leaves = validatorsPubkeys.map((pubkey, i) => {
+    const validatorPubkey = bytesToHex(pubkey).padStart(96, '0');
+    const eth1DepositIndex = bytesToHex(eth1DepositIndexes[i]).padStart(
+      16,
+      '0',
+    );
 
     return sha256(
-      '0x' +
-        formatHex(validatorPubkey) +
-        formatHex(bytesToHex(bytes)).padStart(16, '0'),
+      '0x' + formatHex(validatorPubkey) + formatHex(eth1DepositIndex),
+    );
+  });
+
+  return hashTreeRoot(leaves, 32);
+}
+
+(async () => {
+  let elements = JSON.parse(readFileSync('output1.json', 'utf-8')).slice(0, 4);
+  let pubkeys: any[] = [];
+  let eth1DepositIndexes: any[] = [];
+  for (const element of elements) {
+    pubkeys.push(
+      new Uint8Array(element.validator_pubkey.split(',').map(Number)),
+    );
+    eth1DepositIndexes.push(
+      new Uint8Array(
+        element.validator_eth1_deposit_index.split(',').map(Number),
+      ),
     );
   }
 
+  // console.log(calculateValidatorsAccumulator(pubkeys, eth1DepositIndexes));
+
   console.log(
-    calculateValidatorsAccumulator(
-      '89bcf22c91a560d95d09c1192664eea1baab0780b6d4441ca39d1cb5094b177b17f47a67b16fb972bfd3b78b602ffeee',
-      1076099,
-    ),
+    '0x' +
+      bytesToHex(
+        bitArrayToByteArray([
+          0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1,
+          1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0,
+          1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0,
+          0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1,
+          0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1,
+          1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1,
+          0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0,
+          0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1,
+          0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0,
+          0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0,
+          0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0,
+          0, 0, 0,
+        ]),
+      ),
   );
+
+  // console.log(
+  //   calculateValidatorsAccumulator(
+  //     [
+  //       new Uint8Array([
+  //         137, 188, 242, 44, 145, 165, 96, 217, 93, 9, 193, 25, 38, 100, 238,
+  //         161, 186, 171, 7, 128, 182, 212, 68, 28, 163, 157, 28, 181, 9, 75, 23,
+  //         123, 23, 244, 122, 103, 177, 111, 185, 114, 191, 211, 183, 139, 96,
+  //         47, 254, 238,
+  //       ]),
+  //     ],
+  //     [new Uint8Array([11, 174, 12, 0, 0, 0, 0, 0])],
+  //   ),
+  // );
+
+  // console.log(
+  //   bytesToHex(
+  //     bitArrayToByteArray([
+  //       0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0,
+  //       0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1,
+  //       1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0,
+  //       1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1,
+  //       1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0,
+  //       0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0,
+  //       0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1,
+  //       1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0,
+  //       0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0,
+  //       1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0,
+  //       1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1,
+  //     ]),
+  //   ),
+  // );
+
+  // console.log(
+  //   calculateValidatorsAccumulator(
+  //     [
+  //       new Uint8Array([
+  //         149, 120, 130, 150, 31, 83, 37, 15, 155, 43, 12, 161, 173, 91, 95, 79,
+  //         193, 168, 156, 58, 85, 205, 45, 187, 163, 223, 158, 133, 31, 6, 201,
+  //         62, 159, 226, 230, 145, 151, 24, 132, 162, 105, 212, 228, 15, 61, 5,
+  //         70, 4,
+  //       ]),
+  //     ],
+  //     [new Uint8Array([12, 174, 12, 0, 0, 0, 0, 0])],
+  //   ),
+  // );
+
+  // console.log('------ level2 -------');
+
+  // console.log(
+  //   bytesToHex(
+  //     bitArrayToByteArray([
+  //       1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0,
+  //       0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0,
+  //       0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0,
+  //       0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1,
+  //       0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1,
+  //       1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0,
+  //       0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1,
+  //       1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0,
+  //       1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1,
+  //       1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0,
+  //       1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1,
+  //     ]),
+  //   ),
+  // );
+
+  // console.log(
+  //   calculateValidatorsAccumulator(
+  //     [
+  //       new Uint8Array([
+  //         137, 188, 242, 44, 145, 165, 96, 217, 93, 9, 193, 25, 38, 100, 238,
+  //         161, 186, 171, 7, 128, 182, 212, 68, 28, 163, 157, 28, 181, 9, 75, 23,
+  //         123, 23, 244, 122, 103, 177, 111, 185, 114, 191, 211, 183, 139, 96,
+  //         47, 254, 238,
+  //       ]),
+  //       new Uint8Array([
+  //         149, 120, 130, 150, 31, 83, 37, 15, 155, 43, 12, 161, 173, 91, 95, 79,
+  //         193, 168, 156, 58, 85, 205, 45, 187, 163, 223, 158, 133, 31, 6, 201,
+  //         62, 159, 226, 230, 145, 151, 24, 132, 162, 105, 212, 228, 15, 61, 5,
+  //         70, 4,
+  //       ]),
+  //     ],
+  //     [
+  //       new Uint8Array([11, 174, 12, 0, 0, 0, 0, 0]),
+  //       new Uint8Array([12, 174, 12, 0, 0, 0, 0, 0]),
+  //     ],
+  //   ),
+  // );
+
   // const beaconApi = new BeaconApi([
   //   'http://unstable.mainnet.beacon-api.nimbus.team',
   // ]);

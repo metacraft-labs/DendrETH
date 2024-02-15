@@ -288,7 +288,7 @@ pub fn build_validator_balance_accumulator_circuit<const N: usize>(
         validator_balance_verification_targets.range_end,
         validator_balance_verification_targets.range_deposit_count,
         validator_balance_verification_targets.balances_root,
-        validator_balance_verification_targets.accumulator_commitment_root,
+        validator_balance_verification_targets.accumulator_commitment_range_root,
         validator_balance_verification_targets.validator_commitment_root,
         &validator_balance_verification_targets.current_eth1_deposit_index,
         &validator_balance_verification_targets.current_epoch,

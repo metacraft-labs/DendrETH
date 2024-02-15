@@ -12,6 +12,7 @@ import {
   hexToBytes,
 } from '../../../libs/typescript/ts-utils/bls';
 import { expect } from 'chai';
+import { writeFileSync } from 'fs';
 
 const depositContractAbi = [
   { inputs: [], stateMutability: 'nonpayable', type: 'constructor' },
@@ -995,7 +996,7 @@ export function calculateValidatorsAccumulator(
 }
 
 describe.only('ValidatorsAccumulator tests', async function () {
-  let blc: Contract;
+  let validatorAccumulator: Contract;
   let depositContract: Contract;
   let pubkeys: Uint8Array[] = [];
   let eth1DepositIndexes: Uint8Array[] = [];
@@ -1012,7 +1013,7 @@ describe.only('ValidatorsAccumulator tests', async function () {
     const contractFactory = await ethers.getContractFactory(
       'ValidatorsAccumulator',
     );
-    blc = await contractFactory.deploy(
+    validatorAccumulator = await contractFactory.deploy(
       '0x00000000219ab540356cBB839Cbe05303d7705Fa',
     );
   });
@@ -1020,7 +1021,7 @@ describe.only('ValidatorsAccumulator tests', async function () {
   async function deposit(depositItem) {
     console.log('Deposit', depositItem);
     await (
-      await blc.deposit(
+      await validatorAccumulator.deposit(
         depositItem.pubkey,
         depositItem.withdrawalCredentials,
         depositItem.signature,
@@ -1039,9 +1040,35 @@ describe.only('ValidatorsAccumulator tests', async function () {
   it('Deposit', async function () {
     for (const depositItem of depositItems) {
       await deposit(depositItem);
-      expect(await blc.get_validators_accumulator()).to.equal(
+      expect(await validatorAccumulator.get_validators_accumulator()).to.equal(
         calculateValidatorsAccumulator(pubkeys, eth1DepositIndexes),
       );
     }
+    let output: any[] = [];
+    let output1: any[] = [];
+
+    for (let i = 0; i < pubkeys.length; i++) {
+      let eth1DepositIndex = eth1DepositIndexes[i];
+      const deposit = eth1DepositIndex.reduce(
+        (acc, byte, index) => acc + (byte << (8 * index)),
+        0,
+      );
+      output.push({
+        validator_pubkey: bytesToHex(pubkeys[i]),
+        validator_eth1_deposit_index: deposit,
+      });
+      output1.push({
+        validator_pubkey: pubkeys[i].toString(),
+        validator_eth1_deposit_index: eth1DepositIndexes[i].toString(),
+      });
+    }
+
+    writeFileSync('output1.json', JSON.stringify(output1));
+    writeFileSync('output.json', JSON.stringify(output));
+
+    console.log(
+      'hash:',
+      await validatorAccumulator.get_validators_accumulator(),
+    );
   });
 });
