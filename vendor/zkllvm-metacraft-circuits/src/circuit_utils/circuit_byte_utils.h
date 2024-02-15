@@ -10,15 +10,15 @@ using namespace nil::crypto3;
 namespace circuit_byte_utils {
 
     template<typename T, size_t COUNT>
-    void zero_elements(std::array<T, COUNT>& arr) {
+    void zero_elements(static_vector<T, COUNT>& arr) {
         for (size_t i = 0; i < COUNT; i++) {
             arr[i] = 0;
         }
     }
 
     template<size_t COUNT>
-    std::array<Byte, COUNT> get_empty_byte_array() {
-        std::array<Byte, COUNT> arr;
+    static_vector<Byte, COUNT> get_empty_byte_array() {
+        static_vector<Byte, COUNT> arr;
         zero_elements(arr);
         return arr;
     }
@@ -65,29 +65,29 @@ namespace circuit_byte_utils {
         return out;
     }
 
-    template<std::size_t N, typename T, std::size_t InputSize>
-    std::array<T, N> take(const std::array<T, InputSize>& val, size_t offset = 0) {
+    template<std::size_t N, std::size_t InputSize>
+    static_vector<Byte, N> take(const static_vector<Byte, InputSize>& val, size_t offset = 0) {
         static_assert(N <= InputSize);
         assert_true(N + offset <= InputSize);
-        std::array<T, N> ret {};
-        std::copy(val.begin() + offset, val.begin() + offset + N, ret.begin());
+        static_vector<Byte, N> ret;
+        copy(val.begin() + offset, val.begin() + offset + N, ret.begin());
 
         return ret;
     }
 
-    template<std::size_t N, typename T, std::size_t InputSize>
-    std::array<T, N> expand(const std::array<T, InputSize>& val) {
+    template<std::size_t N, std::size_t InputSize>
+    static_vector<Byte, N> expand(const static_vector<Byte, InputSize>& val) {
         static_assert(N >= InputSize);
-        std::array<T, N> ret {};
-        std::copy(val.begin(), val.end(), ret.begin());
+        static_vector<Byte, N> ret;
+        copy(val.begin(), val.end(), ret.begin());
 
         return ret;
     }
 
     template<typename T, size_t SIZE = sizeof(T), bool LittleEndian = true>
-    std::array<Byte, SIZE> int_to_bytes(const T& paramInt) {
+    static_vector<Byte, SIZE> int_to_bytes(const T& paramInt) {
         static_assert(std::is_integral_v<typename std::remove_reference_t<T>>, "T must be integral");
-        std::array<Byte, SIZE> bytes {};
+        static_vector<Byte, SIZE> bytes;
         if constexpr (LittleEndian) {
             for (int i = 0; i < sizeof(T); ++i) {
                 bytes[i] = (paramInt >> (i * 8));
@@ -100,20 +100,27 @@ namespace circuit_byte_utils {
         return bytes;
     }
 
-    template<typename T, size_t SIZE = sizeof(T), bool LittleEndian = true>
-    T bytes_to_int(const std::array<Byte, SIZE>& bytes) {
+    template<typename T, typename iterator_type, size_t SIZE = sizeof(T), bool LittleEndian = true>
+    T bytes_to_int(iterator_type first_element, iterator_type last_element) {
         static_assert(std::is_integral_v<typename std::remove_reference_t<T>>, "T must be integral");
+        assert_in_executable(first_element + sizeof(T) <= last_element);
+
         T result = 0;
         if constexpr (LittleEndian) {
-            for (int i = sizeof(T) - 1; i >= 0; i--) {
-                result = (result << 8) + bytes[i];
+            for (unsigned int i = sizeof(T); i > 0; i--) {
+                result = (result << 8) + *(first_element + i - 1);
             }
         } else {
             for (unsigned i = 0; i < sizeof(T); ++i) {
-                result = (result << 8) + bytes[i];
+                result = (result << 8) + *(first_element + i);
             }
         }
         return result;
+    }
+
+    template<typename T, size_t SIZE = sizeof(T), bool LittleEndian = true>
+    T bytes_to_int(const static_vector<Byte, SIZE>& bytes) {
+        return bytes_to_int<T>(bytes.begin(), bytes.end());
     }
 
     template<typename... Args>
@@ -136,6 +143,9 @@ namespace circuit_byte_utils {
                                                std::is_same_v<T, double>,
                                            std::false_type, std::true_type> { };
 
+    template<size_t N>
+    struct HasPadding<static_vector<Byte, N>> : std::false_type { };
+
     template<typename T>
     struct CanConvertToBytes : std::false_type { };
     template<>
@@ -146,6 +156,8 @@ namespace circuit_byte_utils {
     struct CanConvertToBytes<size_t> : std::true_type { };
     template<size_t N>
     struct CanConvertToBytes<std::array<Byte, N>> : std::true_type { };
+    template<size_t N>
+    struct CanConvertToBytes<static_vector<Byte, N>> : std::true_type { };
 
 #define ASSERT_IS_HASHABLE(T)                                                                \
     using PureType = std::remove_cv_t<std::remove_reference_t<T>>;                           \
@@ -224,7 +236,7 @@ namespace circuit_byte_utils {
 
 using namespace nil::crypto3;
 using namespace nil::crypto3::algebra::curves;
-    sha256_t bytes_to_hash_type(const std::array<unsigned char, 32>& bytes) {
+    sha256_t bytes_to_hash_type(const static_vector<unsigned char, 32>& bytes) {
     
         sha256_t converted;
         // MSB first

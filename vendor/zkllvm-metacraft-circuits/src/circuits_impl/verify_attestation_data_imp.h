@@ -98,7 +98,7 @@ using base_field_type = uint64_t;
 struct VoteToken {
     Transition transition;
     base_field_type token;
-};
+} __attribute__((packed));
 
 using TransitionKey = Bytes32;
 
@@ -180,11 +180,11 @@ VoteToken verify_attestation_data_imp(const HashType& block_root, const Attestat
     assert_true(sigma != 0);
 
     ssz_verify_proof(
-        block_root, attestation.state_root, fill_zero_hashes(Proof(attestation.state_root_proof)).content(), 11, 3);
+        block_root, attestation.state_root, fill_zero_hashes(Proof(attestation.state_root_proof)), 11, 3);
 
     ssz_verify_proof(attestation.state_root,
                      attestation.validators_root,
-                     fill_zero_hashes(Proof(attestation.validators_root_proof)).content(),
+                     fill_zero_hashes(Proof(attestation.validators_root_proof)),
                      43,
                      5);
 
@@ -217,7 +217,7 @@ VoteToken verify_attestation_data_imp(const HashType& block_root, const Attestat
             // validators_root -> state_root -> block_root.
             ssz_verify_proof(attestation.validators_root,
                              leaf,
-                             fill_zero_hashes(Proof(v.validator_list_proof)).content(),
+                             fill_zero_hashes(Proof(v.validator_list_proof)),
                              0x020000000000ul + v.validator_index,
                              41);
 

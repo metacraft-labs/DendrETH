@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <array>
 #include "circuit_utils/base_types.h"
+#include "circuit_utils/static_vector.h"
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -47,7 +48,7 @@ namespace byte_utils {
     }
 
     template<size_t SIZE>
-    std::string bytesToHex(std::array<Byte, SIZE> uint8a) {
+    std::string bytesToHex(static_vector<Byte, SIZE> uint8a) {
         std::string s = "";
         std::ostringstream oss;
         oss << std::setfill('0');
@@ -67,12 +68,12 @@ namespace byte_utils {
     }
 
     template<long unsigned int SIZE>
-    std::array<Byte, SIZE> hexToBytes(const std::string& hex_str) {
+    static_vector<Byte, SIZE> hexToBytes(const std::string& hex_str) {
         std::string_view hex(hex_str);
         formatHex(hex);
         assert_true(hex.length() == (2 * SIZE));
 
-        std::array<Byte, SIZE> bytes;
+        static_vector<Byte, SIZE> bytes;
         for (size_t i = 0; i < bytes.size(); ++i) {
             auto hexByte = hex.substr(i * 2, 2);
             bytes[i] = hexToByte(hexByte.data());
