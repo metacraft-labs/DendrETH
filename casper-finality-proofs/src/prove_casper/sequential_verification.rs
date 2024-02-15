@@ -1,7 +1,7 @@
 use plonky2::plonk::proof::ProofWithPublicInputs;
-use plonky2x::{backend::circuit::{Circuit, CircuitBuild}, frontend::{builder::CircuitBuilder, vars::Bytes32Variable}};
+use plonky2x::{backend::circuit::{Circuit, CircuitBuild, DefaultParameters}, frontend::{builder::CircuitBuilder, vars::Bytes32Variable}};
 use serde_json::Value;
-use plonky2x::prelude::{bytes32, PlonkParameters};
+use plonky2x::prelude::{Field, bytes32, PlonkParameters};
 
 use crate::{constants::{TEST_ATTESTATIONS_READ, TEST_VALIDATORS_IN_COMMITMENT_SIZE}, utils::{eth_objects::ValidatorDataInput, json::read_json_from_file}, verify_attestation_data::verify_attestation_data::VerifyAttestationData};
 use crate::utils::eth_objects::AttestationInput;
@@ -40,7 +40,6 @@ where
     }
 
     let (proof, _output) = circuit.prove(&input);
-    println!("Attestation Proof: {:?}", _output);
 
     proof
 }

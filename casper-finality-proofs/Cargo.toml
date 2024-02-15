@@ -10,6 +10,10 @@ name = "verify_attestation_data"
 path = "bin/verify_attestation_data.rs"
 
 [[bin]]
+name = "verify_attestation_data_poseidon"
+path = "bin/verify_attestation_data_poseidon.rs"
+
+[[bin]]
 name = "weigh_justification_and_finalization"
 path = "bin/weigh_justification_and_finalization.rs"
 

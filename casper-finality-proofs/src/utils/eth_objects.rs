@@ -1,5 +1,7 @@
+use std::intrinsics::mir::Field;
+
 use ethers::abi::Hash;
-use plonky2::{field::goldilocks_field::GoldilocksField, hash::hash_types::HashOut};
+use plonky2::{field::{goldilocks_field::GoldilocksField, types::Field}, hash::hash_types::HashOut};
 use plonky2x::{
     backend::circuit::{PlonkParameters, PublicInput}, frontend::{
         eth::vars::BLSPubkeyVariable, hash::poseidon::poseidon256::PoseidonHashOutVariable, vars::BytesVariable
@@ -86,6 +88,45 @@ impl BeaconValidatorInput {
         input.write::<U64Variable>(self.activation_epoch); 
         input.write::<U64Variable>(self.exit_epoch); 
         input.write::<U64Variable>(self.withdrawable_epoch); 
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct HashOutPoseidonInput {
+    pub elements: Vec<u64>,
+}
+
+impl HashOutPoseidonInput {
+    pub fn write<L: PlonkParameters<D>, const D: usize>(&self, mut input: &mut PublicInput<L, D>) {
+        input.write::<ArrayVariable<Variable, 4>>(
+            self.elements
+            .iter()
+            .map(|element| <L as PlonkParameters<D>>::Field::from_canonical_u64(*element))
+            .collect()
+        );
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ValidatorDataPoseidonInput {
+    trusted: bool,
+    validator_index: u64,
+
+    #[serde(flatten)]
+    beacon_validator_variable: BeaconValidatorInput,
+
+    validator_list_proof: Vec<HashOutPoseidonInput>,
+}
+
+impl ValidatorDataPoseidonInput {
+    pub fn write<L: PlonkParameters<D>, const D: usize>(&self, mut input: &mut PublicInput<L, D>) {
+        input.write::<BoolVariable>(self.trusted); 
+        input.write::<U64Variable>(self.validator_index); 
+        self.beacon_validator_variable.write(&mut input);
+
+        for _ in 0..VALIDATORS_HASH_TREE_DEPTH {
+            self.validator_list_proof[0].write(input); //TODO: Smarter way to do this?
+        }
     }
 }
 
@@ -263,6 +304,7 @@ pub struct ValidatorDataPoseidon {
     
     pub validator_index: U64Variable, // validator_gindex
     pub beacon_validator_variable: BeaconValidatorVariable,
+    pub beacon_validator_variable_hash: PoseidonHashOutVariable,
 
     pub validator_root_proof: ArrayVariable<PoseidonHashOutVariable ,VALIDATORS_HASH_TREE_DEPTH>,
 }
@@ -272,6 +314,7 @@ impl ValidatorDataPoseidon {
         trusted: BoolVariable,
         validator_index: U64Variable,
         beacon_validator_variable: BeaconValidatorVariable,
+        beacon_validator_variable_hash: PoseidonHashOutVariable,
         validator_root_proof: ArrayVariable<PoseidonHashOutVariable,VALIDATORS_HASH_TREE_DEPTH>,  
 
     ) -> Self {
@@ -279,6 +322,7 @@ impl ValidatorDataPoseidon {
             trusted: trusted,
             validator_index: validator_index,
             beacon_validator_variable: beacon_validator_variable,
+            beacon_validator_variable_hash: beacon_validator_variable_hash,
             validator_root_proof: validator_root_proof,
         }
     }
@@ -288,6 +332,7 @@ impl ValidatorDataPoseidon {
             builder.read::<BoolVariable>(),
             builder.read::<U64Variable>(),
             builder.read::<BeaconValidatorVariable>(),
+            builder.read::<PoseidonHashOutVariable>(),
             builder.read::<ArrayVariable<PoseidonHashOutVariable, VALIDATORS_HASH_TREE_DEPTH>>(),
         )
     }

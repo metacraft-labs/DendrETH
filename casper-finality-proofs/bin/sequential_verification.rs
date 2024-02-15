@@ -28,7 +28,6 @@ fn main() {
     let file_path_attestations = "/home/stefan/code/repos/metacraft-labs/DendrETH/casper-finality-proofs/data/merged_234400.json";
     let (vad_proof_prev, vad_circuit_prev) 
         = vad_recursive::<L,D>(file_path_attestations);
-    println!("vad_proof_prev:");
 
     println!("cuv_proof_prev:");
     let file_path_sorted_validators = "/home/stefan/code/repos/metacraft-labs/DendrETH/casper-finality-proofs/data/sorted_validator_indices_234400.json";
