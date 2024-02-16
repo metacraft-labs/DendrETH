@@ -90,7 +90,7 @@ namespace byte_utils {
     JustificationBitsVariable hexToBitsVariable(std::string hex) {
         JustificationBitsVariable retval {};
         auto bits = hexToBytes<1>(hex);
-        for (int64_t i = 0; i < (int64_t)retval.bits.size(); ++i) {
+        for (uint64_t i = 0; i < (uint64_t)retval.bits.size(); ++i) {
             retval.bits[i] = (bits[0] % 2);
             bits[0] /= 2;
         }

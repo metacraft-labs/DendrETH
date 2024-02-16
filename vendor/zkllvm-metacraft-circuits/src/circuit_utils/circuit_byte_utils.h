@@ -100,7 +100,7 @@ namespace circuit_byte_utils {
         return bytes;
     }
 
-    template<typename T, typename iterator_type, size_t SIZE = sizeof(T), bool LittleEndian = true>
+    template<typename T, typename iterator_type, size_t SIZE, bool LittleEndian>
     T bytes_to_int(iterator_type first_element, iterator_type last_element) {
         static_assert(std::is_integral_v<typename std::remove_reference_t<T>>, "T must be integral");
         assert_in_executable(first_element + sizeof(T) <= last_element);
@@ -120,7 +120,7 @@ namespace circuit_byte_utils {
 
     template<typename T, size_t SIZE = sizeof(T), bool LittleEndian = true>
     T bytes_to_int(const static_vector<Byte, SIZE>& bytes) {
-        return bytes_to_int<T>(bytes.begin(), bytes.end());
+        return bytes_to_int<T, decltype(bytes.begin()), SIZE, LittleEndian>(bytes.begin(), bytes.end());
     }
 
     template<typename... Args>
@@ -236,7 +236,7 @@ namespace circuit_byte_utils {
 
 using namespace nil::crypto3;
 using namespace nil::crypto3::algebra::curves;
-    sha256_t bytes_to_hash_type(const static_vector<unsigned char, 32>& bytes) {
+    sha256_t bytes_to_hash_type(const Bytes32& bytes) {
     
         sha256_t converted;
         // MSB first
