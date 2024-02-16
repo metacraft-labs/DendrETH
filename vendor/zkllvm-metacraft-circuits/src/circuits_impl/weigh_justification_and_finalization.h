@@ -142,8 +142,8 @@ namespace weigh_justification_and_finalization_ {
 
         verify_finalized_checkpoint(beacon_state_root, finalized_checkpoint, finalized_checkpoint_proof);
 
-        CheckpointVariable new_current_justified_checkpoint {};
-        JustificationBitsVariable new_justification_bits {};
+        CheckpointVariable new_current_justified_checkpoint;
+        JustificationBitsVariable new_justification_bits;
 
         process_justifications(total_active_balance,
                                previous_epoch_target_balance,

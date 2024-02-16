@@ -15,8 +15,6 @@
 #include "utils/byte_utils.h"
 #include "utils/file_utils.h"
 
-#include "llvm/Support/JSON.h"
-
 using llvm::yaml::Input;
 using llvm::yaml::IO;
 using llvm::yaml::MappingTraits;

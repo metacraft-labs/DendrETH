@@ -11,7 +11,7 @@
 
 using namespace circuit_byte_utils;
 
-uint64_t compute_shuffled_index_impl(uint64_t index, uint64_t index_count, Bytes32 seed, int shuffle_round_count = 90) {
+uint64_t compute_shuffled_index_impl(uint64_t index, uint64_t index_count, Bytes32 seed, int shuffle_round_count) {
     assert_true(index < index_count);
 
     // Swap or not (https://link.springer.com/content/pdf/10.1007%2F978-3-642-32009-5_1.pdf)
