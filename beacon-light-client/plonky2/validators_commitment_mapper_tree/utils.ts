@@ -1,5 +1,6 @@
 import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
 import { Redis as RedisLocal } from '../../../relay/implementations/redis';
+import { Validator, ValidatorShaInput } from '../../../relay/types/types';
 
 export function gindexFromIndex(index: bigint, depth: bigint) {
   return 2n ** depth - 1n + index;
@@ -52,7 +53,7 @@ function bitArrayToByteArray(hash: number[]): Uint8Array {
 
 type PoseidonOrSha256<T extends 'sha256' | 'poseidon'> = T extends 'sha256'
   ? string[]
-  : number[][];
+  : string[][];
 
 export async function getCommitmentMapperProof<T extends 'sha256' | 'poseidon'>(
   epoch: bigint,
@@ -82,4 +83,53 @@ export async function getCommitmentMapperProof<T extends 'sha256' | 'poseidon'>(
   }
 
   return path;
+}
+
+export function convertValidatorToProof(
+  validator: Validator,
+  ssz: any,
+): ValidatorShaInput {
+  return {
+    pubkey: bytesToHex(validator.pubkey),
+    withdrawalCredentials: bytesToHex(validator.withdrawalCredentials),
+    effectiveBalance: bytesToHex(
+      ssz.phase0.Validator.fields.effectiveBalance.hashTreeRoot(
+        validator.effectiveBalance,
+      ),
+    ),
+    slashed: bytesToHex(
+      ssz.phase0.Validator.fields.slashed.hashTreeRoot(validator.slashed),
+    ),
+    activationEligibilityEpoch: bytesToHex(
+      ssz.phase0.Validator.fields.activationEligibilityEpoch.hashTreeRoot(
+        validator.activationEligibilityEpoch,
+      ),
+    ),
+    activationEpoch: bytesToHex(
+      ssz.phase0.Validator.fields.activationEpoch.hashTreeRoot(
+        validator.activationEpoch,
+      ),
+    ),
+    exitEpoch: bytesToHex(
+      ssz.phase0.Validator.fields.exitEpoch.hashTreeRoot(validator.exitEpoch),
+    ),
+    withdrawableEpoch: bytesToHex(
+      ssz.phase0.Validator.fields.withdrawableEpoch.hashTreeRoot(
+        validator.withdrawableEpoch,
+      ),
+    ),
+  };
+}
+
+export function getZeroValidatorInput() {
+  return {
+    pubkey: ''.padEnd(96, '0'),
+    withdrawalCredentials: ''.padEnd(64, '0'),
+    effectiveBalance: ''.padEnd(64, '0'),
+    slashed: ''.padEnd(64, '0'),
+    activationEligibilityEpoch: ''.padEnd(64, '0'),
+    activationEpoch: ''.padEnd(64, '0'),
+    exitEpoch: ''.padEnd(64, '0'),
+    withdrawableEpoch: ''.padEnd(64, '0'),
+  };
 }

@@ -12,14 +12,24 @@ import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { computeEpochAt } from '../../../libs/typescript/ts-utils/ssz-utils';
 import { readFileSync } from 'fs';
 import {
+  convertValidatorToProof,
   getCommitmentMapperProof,
   getNthParent,
+  getZeroValidatorInput,
   gindexFromIndex,
 } from '../validators_commitment_mapper_tree/utils';
 import { splitIntoBatches } from '../../../libs/typescript/ts-utils/common-utils';
-import { BalancesAccumulatorInput } from '../../../relay/types/types';
+import {
+  BalancesAccumulatorInput,
+  Validator,
+  ValidatorPoseidonInput,
+} from '../../../relay/types/types';
 import Redis from 'ioredis';
 import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
+import {
+  convertValidatorToValidatorPoseidonInput,
+  getZeroValidatorPoseidonInput,
+} from './utils';
 
 const CIRCUIT_SIZE = 2;
 let TAKE: number | undefined;
@@ -92,7 +102,7 @@ enum TaskTag {
   TAKE = options['take'];
 
   const first_level_queue = new WorkQueue(
-    new KeyPrefix(`${CONSTANTS.balanceVerificationAccumulatorProofKey}:0`),
+    new KeyPrefix(`${CONSTANTS.balanceVerificationAccumulatorProofQueue}:0`),
   );
 
   const beaconApi = new BeaconApi([options['beacon-node']]);
@@ -107,6 +117,7 @@ enum TaskTag {
   const take = TAKE !== undefined ? TAKE + offset : undefined;
 
   beaconState.balances = beaconState.balances.slice(offset, take);
+  beaconState.validators = beaconState.validators.slice(offset, take);
 
   let validatorsAccumulator: any[] = JSON.parse(
     readFileSync('validators.json', 'utf-8'),
@@ -135,7 +146,6 @@ enum TaskTag {
   let validatorCommitmentRoot = await redis.getValidatorCommitmentRoot(
     computeEpochAt(beaconState.slot),
   );
-  console.log('Validator commitment root:', validatorCommitmentRoot);
 
   // load proofs for the validators from redis
   let validatorCommitmentProofs = await Promise.all(
@@ -154,7 +164,10 @@ enum TaskTag {
   let balancesInputs: BalancesAccumulatorInput[] = [];
   for (
     let chunkIdx = 0;
-    chunkIdx < (validatorsAccumulator.length + CIRCUIT_SIZE - 1) / CIRCUIT_SIZE;
+    chunkIdx <
+    Math.floor(
+      (validatorsAccumulator.length + CIRCUIT_SIZE - 1) / CIRCUIT_SIZE,
+    );
     chunkIdx++
   ) {
     let balancesInput: BalancesAccumulatorInput = {
@@ -165,6 +178,7 @@ enum TaskTag {
       validatorIndexes: [],
       validatorCommitmentProofs: [],
       validatorIsNotZero: [],
+      validators: [],
       validatorCommitmentRoot: validatorCommitmentRoot,
       currentEpoch: computeEpochAt(beaconState.slot),
       currentEth1DepositIndex: beaconState.eth1DepositIndex,
@@ -179,13 +193,16 @@ enum TaskTag {
         );
         balancesInput.balancesProofs.push(balancesProofs[idx]);
         balancesInput.validatorDepositIndexes.push(
-          validatorsAccumulator[idx].validator_eth1_deposit_index,
-        );
-        balancesInput.validatorIndexes.push(
           validatorsAccumulator[idx].validator_index,
         );
+        balancesInput.validatorIndexes.push(
+          Number(gindexFromIndex(BigInt(idx), 22n) + 1n),
+        );
+        balancesInput.validators.push(
+          convertValidatorToValidatorPoseidonInput(beaconState.validators[idx]),
+        );
         balancesInput.validatorCommitmentProofs.push(
-          validatorCommitmentProofs[idx] as number[][],
+          validatorCommitmentProofs[idx],
         );
         balancesInput.validatorIsNotZero.push(1);
       } else {
@@ -193,6 +210,7 @@ enum TaskTag {
         balancesInput.balancesProofs.push(
           new Array(22).map(x => ''.padStart(64, '0')),
         );
+        balancesInput.validators.push(getZeroValidatorPoseidonInput());
         balancesInput.validatorDepositIndexes.push(0);
         balancesInput.validatorIndexes.push(0);
         balancesInput.validatorCommitmentProofs.push(
@@ -215,10 +233,9 @@ enum TaskTag {
     balancesInputs: BalancesAccumulatorInput[],
   ) {
     for (let i = 0; i < balancesInputs.length; i++) {
-      const buffer = new ArrayBuffer(9);
+      const buffer = new ArrayBuffer(8);
       const dataView = new DataView(buffer);
-      dataView.setUint8(0, TaskTag.FIRST_LEVEL);
-      dataView.setBigUint64(1, BigInt(i), false);
+      dataView.setBigUint64(0, BigInt(i), false);
       first_level_queue.addItem(db, new Item(buffer));
     }
   }

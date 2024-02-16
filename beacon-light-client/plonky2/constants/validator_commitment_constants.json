@@ -11,6 +11,7 @@
   "balanceVerificationProofKey": "balance_verification_proof",
   "balanceVerificationAccumulatorKey": "balance_verification_accumulator",
   "balanceVerificationAccumulatorProofKey": "balance_verification_accumulator_proof",
+  "balanceVerificationAccumulatorProofQueue": "balance_verification_accumulator_proof_queue",
   "finalProofInputKey": "final_proof_input",
   "finalLayerProofKey": "final_layer_proof",
   "zeroHashesForLevelKey": "zero_hashes_for_level",

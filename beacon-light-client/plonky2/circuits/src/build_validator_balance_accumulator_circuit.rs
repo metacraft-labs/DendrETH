@@ -48,9 +48,9 @@ pub trait ValidatorBalanceAccumulatorProofExt {
 
     fn get_range_balances_root(&self) -> [u64; ETH_SHA256_BIT_SIZE];
 
-    fn get_range_validator_accumulator_index(&self) -> [u64; POSEIDON_HASH_SIZE];
+    fn get_range_validator_accumulator_index(&self) -> [String; POSEIDON_HASH_SIZE];
 
-    fn get_validator_commitment(&self) -> [u64; POSEIDON_HASH_SIZE];
+    fn get_validator_commitment(&self) -> [String; POSEIDON_HASH_SIZE];
 
     fn get_current_eth1_deposit_index(&self) -> BigUint;
 
@@ -95,8 +95,7 @@ impl ValidatorBalanceAccumulatorProofExt for ValidatorBalanceAccumulatorProof {
     }
 
     fn get_range_balances_root(&self) -> [u64; ETH_SHA256_BIT_SIZE] {
-        self.public_inputs
-            [BALANCES_ROOT_PUB_INDEX..BALANCES_ROOT_PUB_INDEX + ETH_SHA256_BIT_SIZE]
+        self.public_inputs[BALANCES_ROOT_PUB_INDEX..BALANCES_ROOT_PUB_INDEX + ETH_SHA256_BIT_SIZE]
             .iter()
             .map(|x| (x.0 % GoldilocksField::ORDER))
             .collect_vec()
@@ -104,21 +103,21 @@ impl ValidatorBalanceAccumulatorProofExt for ValidatorBalanceAccumulatorProof {
             .unwrap()
     }
 
-    fn get_range_validator_accumulator_index(&self) -> [u64; POSEIDON_HASH_SIZE] {
+    fn get_range_validator_accumulator_index(&self) -> [String; POSEIDON_HASH_SIZE] {
         self.public_inputs[RANGE_VALIDATOR_ACCUMULATOR_PUB_INDEX
             ..RANGE_VALIDATOR_ACCUMULATOR_PUB_INDEX + POSEIDON_HASH_SIZE]
             .iter()
-            .map(|x| (x.0 % GoldilocksField::ORDER))
+            .map(|x| (x.0 % GoldilocksField::ORDER).to_string())
             .collect_vec()
             .try_into()
             .unwrap()
     }
 
-    fn get_validator_commitment(&self) -> [u64; POSEIDON_HASH_SIZE] {
-        self.public_inputs[VALIDATORS_COMMITMENT_PUB_INDEX
-            ..VALIDATORS_COMMITMENT_PUB_INDEX + POSEIDON_HASH_SIZE]
+    fn get_validator_commitment(&self) -> [String; POSEIDON_HASH_SIZE] {
+        self.public_inputs
+            [VALIDATORS_COMMITMENT_PUB_INDEX..VALIDATORS_COMMITMENT_PUB_INDEX + POSEIDON_HASH_SIZE]
             .iter()
-            .map(|x| x.0 % GoldilocksField::ORDER)
+            .map(|x| (x.0 % GoldilocksField::ORDER).to_string())
             .collect_vec()
             .try_into()
             .unwrap()
@@ -186,8 +185,7 @@ impl ValidatorBalanceProofAccumulatorTargetsExt for ValidatorBalanceProofAccumul
     }
 
     fn get_balances_root(&self) -> [BoolTarget; ETH_SHA256_BIT_SIZE] {
-        self.public_inputs
-            [BALANCES_ROOT_PUB_INDEX..BALANCES_ROOT_PUB_INDEX + ETH_SHA256_BIT_SIZE]
+        self.public_inputs[BALANCES_ROOT_PUB_INDEX..BALANCES_ROOT_PUB_INDEX + ETH_SHA256_BIT_SIZE]
             .iter()
             .cloned()
             .map(|x| BoolTarget::new_unsafe(x))
@@ -260,7 +258,7 @@ impl ValidatorBalanceProofAccumulatorTargetsExt for ValidatorBalanceProofAccumul
     }
 }
 
-pub fn build_validator_balance_accumulator_circuit<const N: usize>(
+pub fn build_validator_balance_accumulator_circuit(
     validators_len: usize,
 ) -> (
     ValidatorBalanceVerificationTargetsAccumulator,

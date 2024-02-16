@@ -1,16 +1,11 @@
-use std::{
-    fs,
-    marker::PhantomData,
-    thread,
-    time::Duration,
-};
+use std::{fs, marker::PhantomData, thread, time::Duration};
 
 use crate::{
     validator::{
         bool_vec_as_int_vec, bool_vec_as_int_vec_nested, ValidatorAccumulatorInput,
         ValidatorShaInput, VALIDATOR_REGISTRY_LIMIT,
     },
-    validator_balances_input::ValidatorBalancesInput,
+    validator_balances_input::{ValidatorBalanceAccumulatorInput, ValidatorBalancesInput},
     validator_commitment_constants::VALIDATOR_COMMITMENT_CONSTANTS,
 };
 use anyhow::{ensure, Result};
@@ -33,7 +28,7 @@ use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize, Serializ
 #[serde(rename_all = "camelCase")]
 pub struct ValidatorProof {
     pub needs_change: bool,
-    pub poseidon_hash: Vec<u64>,
+    pub poseidon_hash: Vec<String>,
     pub sha256_hash: Vec<u64>,
     pub proof: Vec<u8>,
 }
@@ -44,7 +39,7 @@ pub struct BalanceProof {
     pub needs_change: bool,
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub range_total_value: BigUint,
-    pub validators_commitment: Vec<u64>,
+    pub validators_commitment: Vec<String>,
     pub balances_hash: Vec<u64>,
     pub withdrawal_credentials: Vec<Vec<u64>>,
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
@@ -52,6 +47,13 @@ pub struct BalanceProof {
     pub number_of_non_activated_validators: u64,
     pub number_of_active_validators: u64,
     pub number_of_exited_validators: u64,
+    pub proof: Vec<u8>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BalanceAccumulatorProof {
+    pub needs_change: bool,
     pub proof: Vec<u8>,
 }
 
@@ -175,6 +177,25 @@ pub async fn fetch_validator_balance_input<const N: usize>(
     .await?)
 }
 
+pub async fn fetch_validator_balance_accumulator_input(
+    con: &mut Connection,
+    protocol: String,
+    index: u64,
+) -> Result<ValidatorBalanceAccumulatorInput> {
+    Ok(fetch_redis_json_object::<ValidatorBalanceAccumulatorInput>(
+        con,
+        format!(
+            "{}:{}:{}",
+            VALIDATOR_COMMITMENT_CONSTANTS
+                .balance_verification_accumulator_key
+                .to_owned(),
+            protocol,
+            index
+        ),
+    )
+    .await?)
+}
+
 pub async fn fetch_final_layer_input(con: &mut Connection) -> Result<FinalCircuitInput> {
     let result: String = con
         .json_get(VALIDATOR_COMMITMENT_CONSTANTS.final_proof_input_key, "$")
@@ -218,6 +239,34 @@ pub async fn save_balance_proof<const N: usize>(
             "{}:{}:{}",
             VALIDATOR_COMMITMENT_CONSTANTS
                 .balance_verification_proof_key
+                .to_owned(),
+            level,
+            index
+        ),
+        "$",
+        &balance_proof,
+    )
+    .await?;
+
+    Ok(())
+}
+
+pub async fn save_balance_accumulator_proof(
+    con: &mut Connection,
+    proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    level: u64,
+    index: u64,
+) -> Result<()> {
+    let balance_proof = BalanceAccumulatorProof {
+        needs_change: false,
+        proof: proof.to_bytes(),
+    };
+
+    con.json_set(
+        format!(
+            "{}:{}:{}",
+            VALIDATOR_COMMITMENT_CONSTANTS
+                .balance_verification_accumulator_proof_key
                 .to_owned(),
             level,
             index
@@ -609,7 +658,9 @@ pub async fn fetch_proof_accumulator(
             // get the zeroth proof
             let key = format!(
                 "{}:{}:{}",
-                VALIDATOR_COMMITMENT_CONSTANTS.validator_accumulator_proof_key, "zeroes", get_depth_for_gindex(gindex)
+                VALIDATOR_COMMITMENT_CONSTANTS.validator_accumulator_proof_key,
+                "zeroes",
+                get_depth_for_gindex(gindex)
             );
             proof_result = fetch_redis_json_object::<ValidatorProof>(con, key.clone()).await;
         }

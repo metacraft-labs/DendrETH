@@ -173,15 +173,38 @@ export interface IndexedValidatorPubkeyDeposit {
   validator: ValidatorPubkeyDeposit;
 }
 
+export interface ValidatorShaInput {
+  pubkey: string;
+  withdrawalCredentials: string;
+  effectiveBalance: string;
+  slashed: string;
+  activationEligibilityEpoch: string;
+  activationEpoch: string;
+  exitEpoch: string;
+  withdrawableEpoch: string;
+}
+
+export interface ValidatorPoseidonInput {
+  pubkey: string;
+  withdrawalCredentials: string;
+  effectiveBalance: string;
+  slashed: number;
+  activationEligibilityEpoch: string;
+  activationEpoch: string;
+  exitEpoch: string;
+  withdrawableEpoch: string;
+}
+
 export interface BalancesAccumulatorInput {
   balancesRoot: string;
   balances: string[];
   balancesProofs: string[][];
   validatorDepositIndexes: number[];
   validatorIndexes: number[];
-  validatorCommitmentProofs: number[][][];
+  validators: ValidatorPoseidonInput[];
+  validatorCommitmentProofs: string[][][];
   validatorIsNotZero: number[];
-  validatorCommitmentRoot: number[];
+  validatorCommitmentRoot: string[];
   currentEpoch: number;
   currentEth1DepositIndex: number;
 }

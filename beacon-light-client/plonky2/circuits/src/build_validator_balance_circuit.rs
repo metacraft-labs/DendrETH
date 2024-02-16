@@ -40,7 +40,7 @@ pub trait ValidatorBalanceProofExt<const N: usize> {
 
     fn get_withdrawal_credentials(&self) -> [[u64; ETH_SHA256_BIT_SIZE]; N];
 
-    fn get_range_validator_commitment(&self) -> [u64; POSEIDON_HASH_SIZE];
+    fn get_range_validator_commitment(&self) -> [String; POSEIDON_HASH_SIZE];
 
     fn get_current_epoch(&self) -> BigUint;
 
@@ -86,11 +86,11 @@ impl<const N: usize> ValidatorBalanceProofExt<N> for ValidatorBalanceProof<N> {
             .unwrap()
     }
 
-    fn get_range_validator_commitment(&self) -> [u64; POSEIDON_HASH_SIZE] {
+    fn get_range_validator_commitment(&self) -> [String; POSEIDON_HASH_SIZE] {
         self.public_inputs[RANGE_VALIDATOR_COMMITMENT_PUB_INDEX
             ..RANGE_VALIDATOR_COMMITMENT_PUB_INDEX + POSEIDON_HASH_SIZE]
             .iter()
-            .map(|x| (x.0 % GoldilocksField::ORDER) as u64)
+            .map(|x| ((x.0 % GoldilocksField::ORDER) as u64).to_string())
             .collect_vec()
             .try_into()
             .unwrap()

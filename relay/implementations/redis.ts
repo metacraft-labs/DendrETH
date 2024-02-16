@@ -7,6 +7,7 @@ import {
   IndexedValidatorPubkeyDeposit,
   ProofResultType,
   Validator,
+  ValidatorShaInput,
   ValidatorProof,
   ValidatorPubkeyDeposit,
 } from '../types/types';
@@ -314,7 +315,7 @@ export class Redis implements IRedis {
   }
 
   async saveValidators(
-    validatorsWithIndices: { index: number; data: any }[],
+    validatorsWithIndices: { index: number; data: ValidatorShaInput }[],
     epoch: bigint,
   ) {
     await this.waitForConnection();
@@ -502,7 +503,7 @@ export class Redis implements IRedis {
     return JSON.parse(proof);
   }
 
-  async getValidatorCommitmentRoot(epoch: number): Promise<number[]> {
+  async getValidatorCommitmentRoot(epoch: number): Promise<string[]> {
     await this.waitForConnection();
 
     const latestEpoch = await this.getLatestEpoch(
@@ -512,7 +513,7 @@ export class Redis implements IRedis {
     return (await this.client.json_get(
       `${CONSTANTS.validatorProofKey}:65535:${latestEpoch}`,
       'poseidonHash',
-    )) as number[];
+    )) as string[];
   }
 
   async get(key: string): Promise<string | null> {

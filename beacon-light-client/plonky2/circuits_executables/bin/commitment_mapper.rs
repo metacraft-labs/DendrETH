@@ -25,7 +25,7 @@ use plonky2::{
     util::serialization::Buffer,
 };
 use redis_work_queue::{KeyPrefix, WorkQueue};
-use std::{format, println, thread, time::Duration};
+use std::{format, println, thread, time::{Duration, Instant}};
 
 use validator_commitment_constants::VALIDATOR_COMMITMENT_CONSTANTS;
 
@@ -145,7 +145,10 @@ async fn async_main() -> Result<()> {
                             validator_index == VALIDATOR_REGISTRY_LIMIT as u64,
                         );
 
+                        let start = Instant::now();
                         let proof = first_level_circuit_data.prove(pw)?;
+                        let elapsed = start.elapsed();
+                        println!("Proving took: {:?}", elapsed);
 
                         if validator_index as usize != VALIDATOR_REGISTRY_LIMIT {
                             match save_validator_proof(
@@ -211,6 +214,7 @@ async fn async_main() -> Result<()> {
                             &first_level_circuit_data
                         };
 
+                        let start = Instant::now();
                         let proof = handle_commitment_mapper_inner_level_proof(
                             proofs.0,
                             proofs.1,
@@ -218,6 +222,8 @@ async fn async_main() -> Result<()> {
                             &inner_circuits[level].0,
                             &inner_circuits[level].1,
                         )?;
+                        let elapsed = start.elapsed();
+                        println!("Proving took: {:?}", elapsed);
 
                         match save_validator_proof(&mut con, proof, gindex, epoch).await {
                             Ok(_) => queue.complete(&mut con, &queue_item).await?,
@@ -257,6 +263,7 @@ async fn async_main() -> Result<()> {
                             &first_level_circuit_data
                         };
 
+                        let start = Instant::now();
                         let proof = handle_commitment_mapper_inner_level_proof(
                             proof.get_proof(),
                             proof.get_proof(),
@@ -264,6 +271,8 @@ async fn async_main() -> Result<()> {
                             &inner_circuits[level].0,
                             &inner_circuits[level].1,
                         )?;
+                        let elapsed = start.elapsed();
+                        println!("Proving took: {:?}", elapsed);
 
                         match save_zero_validator_proof(&mut con, proof, depth).await {
                             Ok(_) => queue.complete(&mut con, &queue_item).await?,

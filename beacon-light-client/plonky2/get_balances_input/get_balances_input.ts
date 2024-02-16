@@ -5,6 +5,7 @@ const {
   WorkQueue,
   Item,
 } = require('@mevitae/redis-work-queue/dist/WorkQueue');
+import Redis from 'ioredis';
 import chalk from 'chalk';
 
 import { Redis as RedisLocal } from '../../../relay/implementations/redis';
@@ -13,7 +14,9 @@ import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
 import { hexToBits } from '../../../libs/typescript/ts-utils/hex-utils';
 import { computeEpochAt } from '../../../libs/typescript/ts-utils/ssz-utils';
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
-import config from "../common_config.json";
+import config from '../common_config.json';
+import { Validator, ValidatorPoseidonInput } from '../../../relay/types/types';
+import { convertValidatorToValidatorPoseidonInput, getZeroValidatorPoseidonInput } from './utils';
 
 const CIRCUIT_SIZE = 8;
 let TAKE: number | undefined;
@@ -65,8 +68,7 @@ let TAKE: number | undefined;
       describe: 'Index offset in the validator set',
       type: 'number',
       default: undefined,
-    })
-    .argv;
+    }).argv;
 
   const redis = new RedisLocal(options['redis-host'], options['redis-port']);
 
@@ -94,7 +96,10 @@ let TAKE: number | undefined;
 
   const beaconApi = new BeaconApi([options['beacon-node']]);
 
-  const slot = options['slot'] !== undefined ? options['slot'] : Number(await beaconApi.getHeadSlot());
+  const slot =
+    options['slot'] !== undefined
+      ? options['slot']
+      : Number(await beaconApi.getHeadSlot());
   const { beaconState } = await beaconApi.getBeaconState(slot);
 
   const offset = Number(options['offset']) || 0;
@@ -107,6 +112,10 @@ let TAKE: number | undefined;
 
   const balancesView = ssz.capella.BeaconState.fields.balances.toViewDU(
     beaconState.balances,
+  );
+
+  const db = new Redis(
+    `redis://${options['redis-host']}:${options['redis-port']}`,
   );
 
   const balancesTree = new Tree(balancesView.node);
@@ -136,7 +145,7 @@ let TAKE: number | undefined;
         balances: Array(CIRCUIT_SIZE / 4)
           .fill('')
           .map(() => ''.padStart(256, '0').split('').map(Number)),
-        validators: Array(CIRCUIT_SIZE).fill(getZeroValidator()),
+        validators: Array(CIRCUIT_SIZE).fill(getZeroValidatorPoseidonInput()),
         withdrawalCredentials: [
           hexToBits(
             '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
@@ -172,7 +181,6 @@ let TAKE: number | undefined;
     );
 
     await queues[i + 1].addItem(redis.client, new Item(buffer));
-
   }
 
   console.log(chalk.bold.blue('Saving validator balance input...'));
@@ -201,11 +209,11 @@ let TAKE: number | undefined;
           validators: [
             ...validators
               .slice(j * CIRCUIT_SIZE, (j + 1) * CIRCUIT_SIZE)
-              .map(v => convertValidator(v)),
+              .map(v => convertValidatorToValidatorPoseidonInput(v)),
             ...Array(
               (j + 1) * CIRCUIT_SIZE -
-              Math.min((j + 1) * CIRCUIT_SIZE, validators.length),
-            ).fill(getZeroValidator()),
+                Math.min((j + 1) * CIRCUIT_SIZE, validators.length),
+            ).fill(getZeroValidatorPoseidonInput()),
           ],
           withdrawalCredentials: [
             hexToBits(
@@ -221,7 +229,10 @@ let TAKE: number | undefined;
     await redis.saveValidatorBalancesInput(batch);
   }
 
-  await redis.saveBalanceProof(0n, BigInt(validator_commitment_constants.validatorRegistryLimit))
+  await redis.saveBalanceProof(
+    0n,
+    BigInt(validator_commitment_constants.validatorRegistryLimit),
+  );
 
   for (let i = 0; i < TAKE / CIRCUIT_SIZE; i++) {
     const buffer = new ArrayBuffer(8);
@@ -233,12 +244,16 @@ let TAKE: number | undefined;
     await queues[0].addItem(redis.client, new Item(buffer));
   }
 
-
   console.log(chalk.bold.blue('Adding inner proofs...'));
   for (let level = 1; level < 38; level++) {
-    await redis.saveBalanceProof(BigInt(level), BigInt(validator_commitment_constants.validatorRegistryLimit))
+    await redis.saveBalanceProof(
+      BigInt(level),
+      BigInt(validator_commitment_constants.validatorRegistryLimit),
+    );
 
-    const range = [...new Array(Math.ceil((TAKE / CIRCUIT_SIZE) / (2 ** level))).keys()];
+    const range = [
+      ...new Array(Math.ceil(TAKE / CIRCUIT_SIZE / 2 ** level)).keys(),
+    ];
     for (const key of range) {
       const buffer = new ArrayBuffer(8);
       const view = new DataView(buffer);
@@ -282,42 +297,3 @@ let TAKE: number | undefined;
 
   await redis.disconnect();
 })();
-
-function getZeroValidator() {
-  return {
-    pubkey: Array(384).fill(0),
-    withdrawalCredentials: Array(256).fill(0),
-    effectiveBalance: '0',
-    slashed: 0,
-    activationEligibilityEpoch: '0',
-    activationEpoch: '0',
-    exitEpoch: '0',
-    withdrawableEpoch: '0',
-  };
-}
-
-function convertValidator(validator): any {
-  return {
-    pubkey: hexToBits(bytesToHex(validator.pubkey), 384),
-    withdrawalCredentials: hexToBits(
-      bytesToHex(validator.withdrawalCredentials),
-    ),
-    effectiveBalance: validator.effectiveBalance.toString(),
-    slashed: Number(validator.slashed),
-    activationEligibilityEpoch: validator.activationEligibilityEpoch.toString(),
-    activationEpoch: validator.activationEpoch.toString(),
-    exitEpoch:
-      validator.exitEpoch === Infinity
-        ? (2n ** 64n - 1n).toString()
-        : validator.exitEpoch.toString(),
-    withdrawableEpoch:
-      validator.withdrawableEpoch === Infinity
-        ? (2n ** 64n - 1n).toString()
-        : validator.withdrawableEpoch.toString(),
-  };
-}
-
-function computeNumberFromLittleEndianBits(bits: number[]) {
-  return BigInt('0b' + bits.join(''));
-}
-

@@ -2,7 +2,11 @@ import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
 import { splitIntoBatches } from '../../../libs/typescript/ts-utils/common-utils';
 import { BeaconApi } from '../../../relay/implementations/beacon-api';
 import { Redis } from '../../../relay/implementations/redis';
-import { Validator, IndexedValidator } from '../../../relay/types/types';
+import {
+  Validator,
+  IndexedValidator,
+  ValidatorShaInput,
+} from '../../../relay/types/types';
 import chalk from 'chalk';
 
 const {
@@ -12,7 +16,12 @@ const {
 } = require('@mevitae/redis-work-queue/dist/WorkQueue');
 
 import CONSTANTS from '../constants/validator_commitment_constants.json';
-import { gindexFromIndex, makeBranchIterator } from './utils';
+import {
+  convertValidatorToProof,
+  getZeroValidatorInput,
+  gindexFromIndex,
+  makeBranchIterator,
+} from './utils';
 
 enum TaskTag {
   UPDATE_PROOF_NODE = 0,
@@ -95,16 +104,7 @@ export class CommitmentMapperScheduler {
       [
         {
           index: Number(CONSTANTS.validatorRegistryLimit),
-          data: {
-            pubkey: ''.padEnd(96, '0'),
-            withdrawalCredentials: ''.padEnd(64, '0'),
-            effectiveBalance: ''.padEnd(64, '0'),
-            slashed: ''.padEnd(64, '0'),
-            activationEligibilityEpoch: ''.padEnd(64, '0'),
-            activationEpoch: ''.padEnd(64, '0'),
-            exitEpoch: ''.padEnd(64, '0'),
-            withdrawableEpoch: ''.padEnd(64, '0'),
-          },
+          data: getZeroValidatorInput(),
         },
       ],
       this.currentEpoch,
@@ -251,41 +251,8 @@ export class CommitmentMapperScheduler {
     this.queue.addItem(this.redis.client, new Item(buffer));
   }
 
-  convertValidatorToProof(validator: Validator) {
-    return {
-      pubkey: bytesToHex(validator.pubkey),
-      withdrawalCredentials: bytesToHex(validator.withdrawalCredentials),
-      effectiveBalance: bytesToHex(
-        this.ssz.phase0.Validator.fields.effectiveBalance.hashTreeRoot(
-          validator.effectiveBalance,
-        ),
-      ),
-      slashed: bytesToHex(
-        this.ssz.phase0.Validator.fields.slashed.hashTreeRoot(
-          validator.slashed,
-        ),
-      ),
-      activationEligibilityEpoch: bytesToHex(
-        this.ssz.phase0.Validator.fields.activationEligibilityEpoch.hashTreeRoot(
-          validator.activationEligibilityEpoch,
-        ),
-      ),
-      activationEpoch: bytesToHex(
-        this.ssz.phase0.Validator.fields.activationEpoch.hashTreeRoot(
-          validator.activationEpoch,
-        ),
-      ),
-      exitEpoch: bytesToHex(
-        this.ssz.phase0.Validator.fields.exitEpoch.hashTreeRoot(
-          validator.exitEpoch,
-        ),
-      ),
-      withdrawableEpoch: bytesToHex(
-        this.ssz.phase0.Validator.fields.withdrawableEpoch.hashTreeRoot(
-          validator.withdrawableEpoch,
-        ),
-      ),
-    };
+  convertValidatorToProof(validator: Validator): ValidatorShaInput {
+    return convertValidatorToProof(validator, this.ssz);
   }
 }
 

@@ -49,7 +49,7 @@ impl WriteTargets for BalanceInnerCircuitTargets {
     }
 }
 
-pub fn build_inner_level_circuit<const N: usize>(
+pub fn build_inner_level_circuit(
     inner_circuit_data: &CircuitData<
         plonky2::field::goldilocks_field::GoldilocksField,
         PoseidonGoldilocksConfig,

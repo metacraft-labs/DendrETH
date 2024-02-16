@@ -26,10 +26,8 @@ where
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidatorPoseidonInput {
-    #[serde(with = "bool_vec_as_int_vec")]
-    pub pubkey: Vec<bool>,
-    #[serde(with = "bool_vec_as_int_vec")]
-    pub withdrawal_credentials: Vec<bool>,
+    pub pubkey: String,
+    pub withdrawal_credentials: String,
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub effective_balance: BigUint,
     pub slashed: u64,
@@ -55,6 +53,23 @@ pub struct ValidatorBalancesInput {
     pub current_epoch: BigUint,
     #[serde(with = "bool_vec_as_int_vec")]
     pub validator_is_zero: Vec<bool>,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ValidatorBalanceAccumulatorInput {
+    pub balances_root: String,
+    pub balances: Vec<String>,
+    pub balances_proofs: Vec<Vec<String>>,
+    pub validator_deposit_indexes: Vec<u64>,
+    pub validator_indexes: Vec<u64>,
+    pub validator_commitment_proofs: Vec<Vec<Vec<String>>>,
+    pub validators: Vec<ValidatorPoseidonInput>,
+    #[serde(with = "bool_vec_as_int_vec")]
+    pub validator_is_not_zero: Vec<bool>,
+    pub validator_commitment_root: Vec<String>,
+    pub current_epoch: u64,
+    pub current_eth1_deposit_index: u64,
 }
 
 #[cfg(test)]

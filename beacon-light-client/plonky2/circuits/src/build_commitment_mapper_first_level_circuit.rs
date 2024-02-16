@@ -26,17 +26,17 @@ pub type CommitmentMapperProof =
     ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>;
 
 pub trait CommitmentMapperProofExt {
-    fn get_commitment_mapper_poseidon_hash_tree_root(&self) -> Vec<u64>;
+    fn get_commitment_mapper_poseidon_hash_tree_root(&self) -> Vec<String>;
 
     fn get_commitment_mapper_sha256_hash_tree_root(&self) -> Vec<u64>;
 }
 
 impl CommitmentMapperProofExt for CommitmentMapperProof {
-    fn get_commitment_mapper_poseidon_hash_tree_root(&self) -> Vec<u64> {
+    fn get_commitment_mapper_poseidon_hash_tree_root(&self) -> Vec<String> {
         return self.public_inputs
             [POSEIDON_HASH_PUB_INDEX..POSEIDON_HASH_PUB_INDEX + POSEIDON_HASH_SIZE]
             .iter()
-            .map(|x| x.0 % GoldilocksField::ORDER)
+            .map(|x| (x.0 % GoldilocksField::ORDER).to_string())
             .collect_vec();
     }
 

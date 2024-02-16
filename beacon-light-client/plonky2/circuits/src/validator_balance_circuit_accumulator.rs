@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use plonky2::{
-    field::{extension::Extendable, goldilocks_field::GoldilocksField, types::Field},
+    field::extension::Extendable,
     hash::hash_types::{HashOutTarget, RichField},
     iop::target::{BoolTarget, Target},
     plonk::circuit_builder::CircuitBuilder,
@@ -9,7 +9,7 @@ use plonky2::{
 
 use crate::{
     biguint::{BigUintTarget, CircuitBuilderBiguint},
-    hash_tree_root_poseidon::{self, hash_tree_root_poseidon},
+    hash_tree_root_poseidon::hash_tree_root_poseidon,
     is_active_validator::get_validator_status,
     is_valid_merkle_branch::is_valid_merkle_branch_sha256_result,
     is_valid_merkle_branch_poseidon::is_valid_merkle_branch_poseidon_result,
@@ -54,12 +54,12 @@ impl ReadTargets for ValidatorBalanceVerificationTargetsAccumulator {
             range_end: data.read_target()?,
             range_deposit_count: data.read_target()?,
             balances_root: data.read_target_bool_vec()?.try_into().unwrap(),
-            balances: (0..validators_len / 4)
+            balances: (0..validators_len)
                 .map(|_| data.read_target_bool_vec().unwrap().try_into().unwrap())
                 .collect(),
-            balances_proofs: (0..validators_len / 4)
+            balances_proofs: (0..validators_len)
                 .map(|_| {
-                    (0..24)
+                    (0..22)
                         .map(|_| data.read_target_bool_vec().unwrap().try_into().unwrap())
                         .collect_vec()
                 })
@@ -183,12 +183,12 @@ pub fn validator_balance_accumulator_verification<F: RichField + Extendable<D>, 
 
         balances_proofs.push(is_valid_merkle_branch_balance.branch);
 
-        let three = builder.constant(F::from_canonical_u64(3u64));
-        let dividend = builder.sub(validator_gindex[i], three);
-        let four = builder.constant(F::from_canonical_u64(4u64));
-        let balance_gindex = builder.div(dividend, four);
+        // let three = builder.constant(F::from_canonical_u64(3u64));
+        // let dividend = builder.sub(validator_gindex[i], three);
+        // let four = builder.constant(F::from_canonical_u64(4u64));
+        // let balance_gindex = builder.div(dividend, four);
 
-        builder.connect(is_valid_merkle_branch_balance.index, balance_gindex);
+        builder.connect(is_valid_merkle_branch_balance.index, validator_gindex[i]);
 
         for j in 0..256 {
             builder.connect(
@@ -207,9 +207,11 @@ pub fn validator_balance_accumulator_verification<F: RichField + Extendable<D>, 
 
         let should_be_checked = builder.and(validator_is_not_zero[i], is_part_of_the_beacon_chain);
 
+        let _false = builder._false();
+
         builder.connect(
             is_valid_merkle_branch_balance.is_valid.target,
-            should_be_checked.target,
+            _false.target,
         );
     }
 
@@ -251,105 +253,106 @@ pub fn validator_balance_accumulator_verification<F: RichField + Extendable<D>, 
         .map(|_| (0..24).map(|_| builder.add_virtual_hash()).collect_vec())
         .collect_vec();
 
-    for i in 0..validators_leaves.len() {
-        let is_valid_merkle_branch_commitment = is_valid_merkle_branch_poseidon_result(builder, 24);
+    // for i in 0..validators_leaves.len() {
+    //     let is_valid_merkle_branch_commitment = is_valid_merkle_branch_poseidon_result(builder, 24);
 
-        builder.connect_hashes(
-            is_valid_merkle_branch_commitment.root,
-            validator_commitment_root,
-        );
-        builder.connect_hashes(
-            is_valid_merkle_branch_commitment.leaf,
-            validators_leaves[i].hash_tree_root,
-        );
-        builder.connect(is_valid_merkle_branch_commitment.index, validator_gindex[i]);
+    //     builder.connect_hashes(
+    //         is_valid_merkle_branch_commitment.root,
+    //         validator_commitment_root,
+    //     );
+    //     builder.connect_hashes(
+    //         is_valid_merkle_branch_commitment.leaf,
+    //         validators_leaves[i].hash_tree_root,
+    //     );
+    //     builder.connect(is_valid_merkle_branch_commitment.index, validator_gindex[i]);
 
-        for j in 0..24 {
-            builder.connect_hashes(
-                is_valid_merkle_branch_commitment.branch[j],
-                validator_commitment_proofs[i][j],
-            );
-        }
+    //     for j in 0..24 {
+    //         builder.connect_hashes(
+    //             is_valid_merkle_branch_commitment.branch[j],
+    //             validator_commitment_proofs[i][j],
+    //         );
+    //     }
 
-        let is_part_of_the_beacon_chain =
-            builder.cmp_biguint(&validator_deposit_indexes[i], &current_eth1_deposit_index);
-        let should_be_checked = builder.and(validator_is_not_zero[i], is_part_of_the_beacon_chain);
+    //     let is_part_of_the_beacon_chain =
+    //         builder.cmp_biguint(&validator_deposit_indexes[i], &current_eth1_deposit_index);
+    //     let should_be_checked = builder.and(validator_is_not_zero[i], is_part_of_the_beacon_chain);
 
-        builder.connect(
-            is_valid_merkle_branch_commitment.is_valid.target,
-            should_be_checked.target,
-        );
-    }
+    //     builder.connect(
+    //         is_valid_merkle_branch_commitment.is_valid.target,
+    //         should_be_checked.target,
+    //     );
+    // }
 
     let current_epoch = builder.add_virtual_biguint_target(2);
 
-    let mut number_of_non_activated_validators = builder.add_virtual_target();
-    let mut number_of_active_validators = builder.add_virtual_target();
-    let mut number_of_exited_validators = builder.add_virtual_target();
+    let mut number_of_non_activated_validators = builder.zero();
+    let mut number_of_active_validators = builder.zero();
+    let mut number_of_exited_validators = builder.zero();
 
     let mut range_total_value = builder.zero_biguint();
 
-    let range_start = builder.add_virtual_target();
-    let range_end = builder.add_virtual_target();
+    // TODO: calculate range_start and range_end
+    let range_start = builder.zero();
+    let range_end = builder.zero();
 
     let mut range_deposit_count = builder.zero();
 
-    for i in 0..validators_len {
-        // TODO: abstraction is missing same code as validator balance circuit
-        let (is_non_activated_validator, is_valid_validator, is_exited_validator) =
-            get_validator_status(
-                builder,
-                &validators_leaves[i].validator.activation_epoch,
-                &current_epoch,
-                &validators_leaves[i].validator.exit_epoch,
-            );
+    // for i in 0..validators_len {
+    //     // TODO: abstraction is missing same code as validator balance circuit
+    //     let (is_non_activated_validator, is_valid_validator, is_exited_validator) =
+    //         get_validator_status(
+    //             builder,
+    //             &validators_leaves[i].validator.activation_epoch,
+    //             &current_epoch,
+    //             &validators_leaves[i].validator.exit_epoch,
+    //         );
 
-        let balance = ssz_num_from_bits(
-            builder,
-            &balances_leaves[i / 4][((i % 4) * 64)..(((i % 4) * 64) + 64)],
-        );
+    //     let balance = ssz_num_from_bits(
+    //         builder,
+    //         &balances_leaves[i / 4][((i % 4) * 64)..(((i % 4) * 64) + 64)],
+    //     );
 
-        let zero = builder.zero_biguint();
+    //     let zero = builder.zero_biguint();
 
-        let is_part_of_the_beacon_chain =
-            builder.cmp_biguint(&validator_deposit_indexes[i], &current_eth1_deposit_index);
+    //     let is_part_of_the_beacon_chain =
+    //         builder.cmp_biguint(&validator_deposit_indexes[i], &current_eth1_deposit_index);
 
-        let will_be_counted_as_part_of_the_beacon_chain =
-            builder.and(is_valid_validator, is_part_of_the_beacon_chain);
+    //     let will_be_counted_as_part_of_the_beacon_chain =
+    //         builder.and(is_valid_validator, is_part_of_the_beacon_chain);
 
-        let current = if_biguint(
-            builder,
-            will_be_counted_as_part_of_the_beacon_chain,
-            &balance,
-            &zero,
-        );
+    //     let current = if_biguint(
+    //         builder,
+    //         will_be_counted_as_part_of_the_beacon_chain,
+    //         &balance,
+    //         &zero,
+    //     );
 
-        range_total_value = builder.add_biguint(&range_total_value, &current);
-        range_total_value.limbs.pop();
+    //     range_total_value = builder.add_biguint(&range_total_value, &current);
+    //     range_total_value.limbs.pop();
 
-        number_of_active_validators = builder.add(
-            number_of_active_validators,
-            will_be_counted_as_part_of_the_beacon_chain.target,
-        );
+    //     number_of_active_validators = builder.add(
+    //         number_of_active_validators,
+    //         will_be_counted_as_part_of_the_beacon_chain.target,
+    //     );
 
-        let will_be_counted_as_pending =
-            builder.and(is_part_of_the_beacon_chain, is_non_activated_validator);
+    //     let will_be_counted_as_pending =
+    //         builder.and(is_part_of_the_beacon_chain, is_non_activated_validator);
 
-        number_of_non_activated_validators = builder.add(
-            number_of_non_activated_validators,
-            will_be_counted_as_pending.target,
-        );
+    //     number_of_non_activated_validators = builder.add(
+    //         number_of_non_activated_validators,
+    //         will_be_counted_as_pending.target,
+    //     );
 
-        let will_be_counted_as_exited =
-            builder.and(is_part_of_the_beacon_chain, is_exited_validator);
+    //     let will_be_counted_as_exited =
+    //         builder.and(is_part_of_the_beacon_chain, is_exited_validator);
 
-        number_of_exited_validators = builder.add(
-            number_of_exited_validators,
-            will_be_counted_as_exited.target,
-        );
+    //     number_of_exited_validators = builder.add(
+    //         number_of_exited_validators,
+    //         will_be_counted_as_exited.target,
+    //     );
 
-        range_deposit_count = builder.add(range_deposit_count, validator_is_not_zero[i].target);
-    }
+    //     range_deposit_count = builder.add(range_deposit_count, validator_is_not_zero[i].target);
+    // }
 
     ValidatorBalanceVerificationTargetsAccumulator {
         range_total_value,
