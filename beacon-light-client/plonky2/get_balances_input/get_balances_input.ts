@@ -57,7 +57,7 @@ let TAKE;
       describe: 'Runs the tool without doing actual calculations',
       type: 'boolean',
       default: false,
-      description: 'Runs the tool without doing actual calculations.'
+      description: 'Runs the tool without doing actual calculations.',
     }).argv;
 
   const redis = new RedisLocal(options['redis-host'], options['redis-port']);
@@ -92,8 +92,16 @@ let TAKE;
 
   const beaconApi = new BeaconApi([options['beacon-node']]);
 
-  const beaconState_bin = fs.existsSync('../mock_data/beaconState.bin') ? '../mock_data/beaconState.bin' : 'mock_data/beaconState.bin';
-  const { beaconState } = MOCK ? {beaconState: ssz.capella.BeaconState.deserialize(fs.readFileSync(beaconState_bin))} : await beaconApi.getBeaconState(6953401);
+  const beaconState_bin = fs.existsSync('../mock_data/beaconState.bin')
+    ? '../mock_data/beaconState.bin'
+    : 'mock_data/beaconState.bin';
+  const { beaconState } = MOCK
+    ? {
+        beaconState: ssz.capella.BeaconState.deserialize(
+          fs.readFileSync(beaconState_bin),
+        ),
+      }
+    : await beaconApi.getBeaconState(6953401);
 
   const validators = beaconState.validators.slice(0, TAKE);
   TAKE = validators.length;
@@ -170,8 +178,7 @@ let TAKE;
 
     await queues[i + 1].addItem(db, new Item(buffer));
 
-    if (i % (GRANULITY/10) === 0 && i !== 0)
-    console.log('Added zeros tasks');
+    if (i % (GRANULITY / 10) === 0 && i !== 0) console.log('Added zeros tasks');
   }
 
   const batchSize = 100;
@@ -218,8 +225,7 @@ let TAKE;
 
     await redis.saveValidatorBalancesInput(batch);
 
-    if (i % GRANULITY === 0 && i !== 0)
-      console.log('saved batch', i);
+    if (i % GRANULITY === 0 && i !== 0) console.log('saved batch', i);
   }
 
   for (let i = 0; i < TAKE / CIRCUIT_SIZE; i++) {
@@ -228,7 +234,7 @@ let TAKE;
     view.setBigUint64(0, BigInt(i * CIRCUIT_SIZE), false);
 
     await queues[0].addItem(db, new Item(buffer));
-    if (i % (GRANULITY*100) === 0 && i !== 0)
+    if (i % (GRANULITY * 100) === 0 && i !== 0)
       console.log(`added ${i * CIRCUIT_SIZE}`);
   }
 
@@ -254,7 +260,7 @@ let TAKE;
         BigInt(i * CIRCUIT_SIZE),
         BigInt(j),
       );
-      if (i % (GRANULITY*100) === 0 && i !== 0)
+      if (i % (GRANULITY * 100) === 0 && i !== 0)
         console.log(`added ${j}:${first}:${second}`);
 
       view.setBigUint64(0, BigInt(j - 1), false);
