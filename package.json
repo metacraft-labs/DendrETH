@@ -47,8 +47,8 @@
     "clean:normal": "yarn clean:jest && EXCL_NM='-e node_modules' yarn clean:untracked_artifacts",
     "clean:jest": "jest --clear-cache",
     "clean:untracked_artifacts": "git clean -fdx -e .env -e .direnv -e .yarn -e .vscode $EXCL_NM -- $(git rev-parse --show-toplevel)",
-    "format:check": "prettier --check . && alejandra -q --exclude ./node_modules --check .",
-    "format:write": "prettier --write . && alejandra -q --exclude ./node_modules .",
+    "format:check": "prettier --check . && alejandra --exclude ./node_modules --exclude ./yarn-project.nix --check .",
+    "format:write": "prettier --write . && alejandra --exclude ./node_modules --exclude ./yarn-project.nix .",
     "test": "jest --verbose --silent -i",
     "test-emcc": "USE_EMCC=1 jest --verbose --silent",
     "build-plonky-2": "tsc -p beacon-light-client/plonky2/tsconfig.json"
