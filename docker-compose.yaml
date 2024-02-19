@@ -3,11 +3,11 @@ services:
     image: redis
     environment:
       - COMPOSE_PROJECT_NAME
-    command: redis-server --appendonly yes --port 6379 
+    command: redis-server --appendonly yes --port 6379
     ports:
-      - "6379"
+      - '6379'
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      test: ['CMD-SHELL', 'redis-cli ping | grep PONG']
       interval: 1s
       timeout: 3s
       retries: 5
@@ -17,7 +17,7 @@ services:
       - COMPOSE_PROJECT_NAME
     command: get-changed-validators --redis-host redis --redis-port 6379 --mock
     ports:
-      - "6379"
+      - '6379'
     depends_on:
       redis:
         condition: service_healthy
@@ -31,7 +31,7 @@ services:
       redis:
         condition: service_healthy
     ports:
-      - "6379"
+      - '6379'
   get_balances_input:
     image: get_balances_input
     environment:
@@ -41,7 +41,7 @@ services:
       redis:
         condition: service_healthy
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_0:
     image: balance-verifier-for-level-0
     environment:
@@ -58,7 +58,7 @@ services:
       commitment_mapper:
         condition: service_started
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_1:
     image: balance-verifier-for-level-1
     environment:
@@ -77,7 +77,7 @@ services:
       balance_verifier_level_0:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_2:
     image: balance-verifier-for-level-2
     environment:
@@ -96,7 +96,7 @@ services:
       balance_verifier_level_1:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_3:
     image: balance-verifier-for-level-3
     environment:
@@ -115,7 +115,7 @@ services:
       balance_verifier_level_2:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_4:
     image: balance-verifier-for-level-4
     environment:
@@ -134,7 +134,7 @@ services:
       balance_verifier_level_3:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_5:
     image: balance-verifier-for-level-5
     environment:
@@ -153,7 +153,7 @@ services:
       balance_verifier_level_4:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_6:
     image: balance-verifier-for-level-6
     environment:
@@ -172,7 +172,7 @@ services:
       balance_verifier_level_5:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_7:
     image: balance-verifier-for-level-7
     environment:
@@ -191,7 +191,7 @@ services:
       balance_verifier_level_6:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_8:
     image: balance-verifier-for-level-8
     environment:
@@ -210,7 +210,7 @@ services:
       balance_verifier_level_7:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_9:
     image: balance-verifier-for-level-9
     environment:
@@ -229,7 +229,7 @@ services:
       balance_verifier_level_8:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_10:
     image: balance-verifier-for-level-10
     environment:
@@ -248,7 +248,7 @@ services:
       balance_verifier_level_9:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_11:
     image: balance-verifier-for-level-11
     environment:
@@ -267,7 +267,7 @@ services:
       balance_verifier_level_10:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_12:
     image: balance-verifier-for-level-12
     environment:
@@ -286,7 +286,7 @@ services:
       balance_verifier_level_11:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_13:
     image: balance-verifier-for-level-13
     environment:
@@ -305,7 +305,7 @@ services:
       balance_verifier_level_12:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_14:
     image: balance-verifier-for-level-14
     environment:
@@ -324,7 +324,7 @@ services:
       balance_verifier_level_13:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_15:
     image: balance-verifier-for-level-15
     environment:
@@ -343,7 +343,7 @@ services:
       balance_verifier_level_14:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_16:
     image: balance-verifier-for-level-16
     environment:
@@ -362,7 +362,7 @@ services:
       balance_verifier_level_15:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_17:
     image: balance-verifier-for-level-17
     environment:
@@ -381,7 +381,7 @@ services:
       balance_verifier_level_16:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_18:
     image: balance-verifier-for-level-18
     environment:
@@ -400,7 +400,7 @@ services:
       balance_verifier_level_17:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_19:
     image: balance-verifier-for-level-19
     environment:
@@ -419,7 +419,7 @@ services:
       balance_verifier_level_18:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_20:
     image: balance-verifier-for-level-20
     environment:
@@ -438,7 +438,7 @@ services:
       balance_verifier_level_19:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_21:
     image: balance-verifier-for-level-21
     environment:
@@ -457,7 +457,7 @@ services:
       balance_verifier_level_20:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_22:
     image: balance-verifier-for-level-22
     environment:
@@ -476,7 +476,7 @@ services:
       balance_verifier_level_21:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_23:
     image: balance-verifier-for-level-23
     environment:
@@ -495,7 +495,7 @@ services:
       balance_verifier_level_22:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_24:
     image: balance-verifier-for-level-24
     environment:
@@ -514,7 +514,7 @@ services:
       balance_verifier_level_23:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_25:
     image: balance-verifier-for-level-25
     environment:
@@ -533,7 +533,7 @@ services:
       balance_verifier_level_24:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_26:
     image: balance-verifier-for-level-26
     environment:
@@ -552,7 +552,7 @@ services:
       balance_verifier_level_25:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_27:
     image: balance-verifier-for-level-27
     environment:
@@ -571,7 +571,7 @@ services:
       balance_verifier_level_26:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_28:
     image: balance-verifier-for-level-21
     environment:
@@ -590,7 +590,7 @@ services:
       balance_verifier_level_27:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_29:
     image: balance-verifier-for-level-29
     environment:
@@ -609,7 +609,7 @@ services:
       balance_verifier_level_28:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_30:
     image: balance-verifier-for-level-30
     environment:
@@ -628,7 +628,7 @@ services:
       balance_verifier_level_29:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_31:
     image: balance-verifier-for-level-31
     environment:
@@ -647,7 +647,7 @@ services:
       balance_verifier_level_30:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_32:
     image: balance-verifier-for-level-32
     environment:
@@ -666,7 +666,7 @@ services:
       balance_verifier_level_31:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_33:
     image: balance-verifier-for-level-31
     environment:
@@ -685,7 +685,7 @@ services:
       balance_verifier_level_32:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_34:
     image: balance-verifier-for-level-34
     environment:
@@ -704,7 +704,7 @@ services:
       balance_verifier_level_33:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_35:
     image: balance-verifier-for-level-35
     environment:
@@ -723,7 +723,7 @@ services:
       balance_verifier_level_34:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_36:
     image: balance-verifier-for-level-36
     environment:
@@ -742,7 +742,7 @@ services:
       balance_verifier_level_35:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
   balance_verifier_level_37:
     image: balance-verifier-for-level-37
     environment:
@@ -761,4 +761,4 @@ services:
       balance_verifier_level_36:
         condition: service_completed_successfully
     ports:
-      - "6379"
+      - '6379'
