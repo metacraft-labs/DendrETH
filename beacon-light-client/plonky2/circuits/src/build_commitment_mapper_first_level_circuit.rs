@@ -108,7 +108,7 @@ pub fn build_commitment_mapper_first_level_circuit() -> (
 #[cfg(test)]
 mod test {
     use anyhow::Result;
-    use plonky2::iop::witness::{PartialWitness};
+    use plonky2::iop::witness::PartialWitness;
 
     use crate::{
         build_commitment_mapper_first_level_circuit::build_commitment_mapper_first_level_circuit,
