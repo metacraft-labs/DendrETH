@@ -4,21 +4,25 @@ use circuits::{
     targets_serialization::ReadTargets, validator_commitment_mapper::ValidatorCommitmentTargets,
 };
 use circuits_executables::{
+    commitment_mapper_task::{deserialize_task, CommitmentMapperTask},
     crud::{
         common::{
-            fetch_proofs, fetch_validator, load_circuit_data, read_from_file, save_validator_proof,
-            ValidatorProof,
+            fetch_proofs, fetch_validator, fetch_zero_proof, get_depth_for_gindex,
+            load_circuit_data, read_from_file, save_validator_proof, save_zero_validator_proof,
+            ProofProvider, ValidatorProof,
         },
         proof_storage::proof_storage::create_proof_storage,
     },
     provers::{handle_commitment_mapper_inner_level_proof, SetPWValues},
+    utils::{gindex_from_validator_index, parse_config_file},
     validator::VALIDATOR_REGISTRY_LIMIT,
-    validator_commitment_constants::get_validator_commitment_constants,
+    validator_commitment_constants::VALIDATOR_COMMITMENT_CONSTANTS,
 };
 use clap::{App, Arg};
+use colored::Colorize;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
-    iop::witness::PartialWitness,
+    iop::witness::{PartialWitness, WitnessWrite},
     plonk::{
         circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs,
     },
@@ -26,7 +30,7 @@ use plonky2::{
 };
 
 use redis_work_queue::{KeyPrefix, WorkQueue};
-use std::{format, print, println, thread, time::Duration};
+use std::{format, println, thread, time::Duration};
 
 use jemallocator::Jemalloc;
 
@@ -37,6 +41,7 @@ static GLOBAL: Jemalloc = Jemalloc;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let config = parse_config_file("../common_config.json".to_owned())?;
     let matches = App::new("")
     .arg(
         Arg::with_name("redis_connection")
@@ -45,7 +50,7 @@ async fn main() -> Result<()> {
             .value_name("Redis Connection")
             .help("Sets a custom Redis connection")
             .takes_value(true)
-            .default_value("redis://127.0.0.1:6379/"),
+            .default_value(&format!("redis://{}:{}/", config["redis-host"], config["redis-port"])),
     )
     .arg(
         Arg::with_name("stop_after")
@@ -131,7 +136,9 @@ async fn main() -> Result<()> {
     println!("Connected to redis");
 
     let queue = WorkQueue::new(KeyPrefix::new(
-        get_validator_commitment_constants().validator_proofs_queue,
+        VALIDATOR_COMMITMENT_CONSTANTS
+            .validator_proofs_queue
+            .to_owned(),
     ));
 
     let first_level_circuit_data = load_circuit_data("commitment_mapper_0")?;
@@ -168,145 +175,238 @@ async fn main() -> Result<()> {
 
     loop {
         if !mock {
-            println!("Waiting for job...");
+            println!("{}", "Waiting for task...".yellow());
         }
 
-        let job = match queue
+        let Some(queue_item) = queue
             .lease(
                 &mut con,
                 Some(Duration::from_secs(stop_after)),
                 Duration::from_secs(lease_for),
             )
             .await?
-        {
-            Some(job) => job,
-            None => continue,
+        else {
+            continue;
         };
 
-        if job.data.len() == 8 {
-            let validator_index = u64::from_be_bytes(job.data[0..8].try_into().unwrap()) as usize;
+        let Some(task) = deserialize_task(&queue_item.data) else {
+            println!("{}", "Invalid task data".red().bold());
+            println!("{}", format!("Got bytes: {:?}", queue_item.data).red());
+            queue.complete(&mut con, &queue_item).await?;
+            continue;
+        };
 
-            if !mock {
-                println!("Validator index {}", validator_index);
-            } else if validator_index % 10000 == 0 {
-                println!("Validator index {}", validator_index);
-            }
+        task.log();
 
-            match fetch_validator(&mut con, validator_index).await {
-                Err(err) => {
-                    print!("Error: {}", err);
-                    thread::sleep(Duration::from_secs(10));
-                    continue;
-                }
-                Ok(validator) => {
-                    let mut pw = PartialWitness::new();
+        match task {
+            CommitmentMapperTask::UpdateValidatorProof(validator_index, epoch) => {
+                match fetch_validator(&mut con, validator_index, epoch).await {
+                    Ok(validator) => {
+                        let mut pw = PartialWitness::new();
 
-                    validator_commitment
-                        .validator
-                        .set_pw_values(&mut pw, &validator);
+                        validator_commitment
+                            .validator
+                            .set_pw_values(&mut pw, &validator);
 
-                    let proof = if mock {
-                        serde_binary::from_slice(proof_mock_binary, binary_stream::Endian::Big)
-                            .unwrap()
-                    } else {
-                        first_level_circuit_data.prove(pw)?
-                    };
+                        pw.set_bool_target(
+                            validator_commitment.validator_is_zero,
+                            validator_index == VALIDATOR_REGISTRY_LIMIT as u64,
+                        );
 
-                    match save_validator_proof(
-                        &mut con,
-                        proof_storage.as_mut(),
-                        proof,
-                        0,
-                        validator_index,
-                    )
-                    .await
-                    {
-                        Err(err) => {
-                            print!("Error: {}", err);
-                            thread::sleep(Duration::from_secs(10));
-                            continue;
-                        }
-                        Ok(_) => {
-                            queue.complete(&mut con, &job).await?;
+                        let proof = if mock {
+                            serde_binary::from_slice(proof_mock_binary, binary_stream::Endian::Big)
+                                .unwrap()
+                        } else {
+                            first_level_circuit_data.prove(pw)?
+                        };
+
+                        if validator_index as usize != VALIDATOR_REGISTRY_LIMIT {
+                            match save_validator_proof(
+                                &mut con,
+                                proof_storage.as_mut(),
+                                proof,
+                                gindex_from_validator_index(validator_index),
+                                epoch,
+                            )
+                            .await
+                            {
+                                Ok(_) => {
+                                    queue.complete(&mut con, &queue_item).await?;
+                                }
+                                Err(err) => {
+                                    println!(
+                                        "{}",
+                                        format!("Error while proving zero validator: {}", err)
+                                            .red()
+                                            .bold()
+                                    );
+                                    thread::sleep(Duration::from_secs(10));
+                                    continue;
+                                }
+                            }
+                        } else {
+                            match save_zero_validator_proof(
+                                &mut con,
+                                proof_storage.as_mut(),
+                                proof,
+                                40,
+                            )
+                            .await
+                            {
+                                Ok(_) => {
+                                    queue.complete(&mut con, &queue_item).await?;
+                                }
+                                Err(err) => {
+                                    println!(
+                                        "{}",
+                                        format!("Error while proving validator: {}", err)
+                                            .red()
+                                            .bold()
+                                    );
+                                    thread::sleep(Duration::from_secs(10));
+                                    continue;
+                                }
+                            }
                         }
                     }
-                }
+                    Err(err) => {
+                        println!(
+                            "{}",
+                            format!("Error while fetching validator: {}", err)
+                                .red()
+                                .bold()
+                        );
+                        thread::sleep(Duration::from_secs(10));
+                        continue;
+                    }
+                };
             }
-        } else if job.data.len() == 24 {
-            let proof_indexes = job
-                .data
-                .chunks(8)
-                .map(|chunk| u64::from_be_bytes(chunk.try_into().unwrap()) as usize)
-                .collect::<Vec<usize>>();
+            CommitmentMapperTask::UpdateProofNode(gindex, epoch) => {
+                let level = 39 - get_depth_for_gindex(gindex) as usize;
 
-            if !mock {
-                println!("Got indexes: {:?}", proof_indexes);
-            } else if proof_indexes[1] % 2048 == 0 {
-                println!("Got indexes: {:?}", proof_indexes);
-            }
-
-            match fetch_proofs::<ValidatorProof>(&mut con, proof_storage.as_mut(), &proof_indexes)
+                match fetch_proofs::<ValidatorProof>(
+                    &mut con,
+                    proof_storage.as_mut(),
+                    gindex,
+                    epoch,
+                )
                 .await
-            {
-                Err(err) => {
-                    print!("Error: {}", err);
-                    continue;
-                }
-                Ok(proofs) => {
-                    let inner_circuit_data = if proof_indexes[0] > 0 {
-                        &inner_circuits[proof_indexes[0] - 1].1
-                    } else {
-                        &first_level_circuit_data
-                    };
+                {
+                    Ok(proofs) => {
+                        let inner_circuit_data = if level > 0 {
+                            &inner_circuits[level - 1].1
+                        } else {
+                            &first_level_circuit_data
+                        };
 
-                    let proof = if mock {
-                        let inner_proof_mock: ProofWithPublicInputs<
-                            GoldilocksField,
-                            PoseidonGoldilocksConfig,
-                            2,
-                        > = serde_binary::from_slice(
-                            inner_proof_mock_binary,
-                            binary_stream::Endian::Big,
+                        let proof = if mock {
+                            let inner_proof_mock: ProofWithPublicInputs<
+                                GoldilocksField,
+                                PoseidonGoldilocksConfig,
+                                2,
+                            > = serde_binary::from_slice(
+                                inner_proof_mock_binary,
+                                binary_stream::Endian::Big,
+                            )
+                            .unwrap();
+                            inner_proof_mock
+                        } else {
+                            handle_commitment_mapper_inner_level_proof(
+                                proofs.0,
+                                proofs.1,
+                                inner_circuit_data,
+                                &inner_circuits[level].0,
+                                &inner_circuits[level].1,
+                            )?
+                        };
+
+                        if let Err(err) = save_validator_proof(
+                            &mut con,
+                            proof_storage.as_mut(),
+                            proof,
+                            gindex,
+                            epoch,
                         )
-                        .unwrap();
-                        inner_proof_mock
-                    } else {
-                        handle_commitment_mapper_inner_level_proof(
-                            proofs.0,
-                            proofs.1,
-                            inner_circuit_data,
-                            &inner_circuits[proof_indexes[0]].0,
-                            &inner_circuits[proof_indexes[0]].1,
-                            proof_indexes[2] == VALIDATOR_REGISTRY_LIMIT && proof_indexes[0] == 0,
-                        )?
-                    };
-
-                    match save_validator_proof(
-                        &mut con,
-                        proof_storage.as_mut(),
-                        proof,
-                        proof_indexes[0] + 1,
-                        proof_indexes[1],
-                    )
-                    .await
-                    {
-                        Err(err) => {
-                            print!("Error: {}", err);
-                            thread::sleep(Duration::from_secs(10));
+                        .await
+                        {
+                            println!(
+                                "{}",
+                                format!("Error while saving validator proof: {}", err)
+                                    .red()
+                                    .bold()
+                            );
+                            thread::sleep(Duration::from_secs(1));
                             continue;
-                        }
-                        Ok(_) => {
-                            queue.complete(&mut con, &job).await?;
+                        } else {
+                            queue.complete(&mut con, &queue_item).await?
                         }
                     }
-                }
-            };
-        } else {
-            println!("Invalid job data");
-            println!("This is bug from somewhere");
+                    Err(err) => {
+                        println!(
+                            "{}",
+                            format!("Error while fetching validator proof: {}", err)
+                                .red()
+                                .bold()
+                        );
+                        thread::sleep(Duration::from_secs(1));
+                        continue;
+                    }
+                };
+            }
+            CommitmentMapperTask::ProveZeroForDepth(depth) => {
+                // the level in the inner proofs tree
+                let level = 39 - depth as usize;
 
-            queue.complete(&mut con, &job).await?;
-        }
+                match fetch_zero_proof::<ValidatorProof>(&mut con, depth + 1).await {
+                    Ok(proof) => {
+                        let inner_circuit_data = if level > 0 {
+                            &inner_circuits[level - 1].1
+                        } else {
+                            &first_level_circuit_data
+                        };
+
+                        let proof = handle_commitment_mapper_inner_level_proof(
+                            proof.get_proof(proof_storage.as_mut()).await,
+                            proof.get_proof(proof_storage.as_mut()).await,
+                            inner_circuit_data,
+                            &inner_circuits[level].0,
+                            &inner_circuits[level].1,
+                        )?;
+
+                        match save_zero_validator_proof(
+                            &mut con,
+                            proof_storage.as_mut(),
+                            proof,
+                            depth,
+                        )
+                        .await
+                        {
+                            Ok(_) => queue.complete(&mut con, &queue_item).await?,
+                            Err(err) => {
+                                println!(
+                                    "{}",
+                                    format!("Error while saving zero validator proof: {}", err)
+                                        .red()
+                                        .bold()
+                                );
+                                thread::sleep(Duration::from_secs(1));
+                                continue;
+                            }
+                        }
+                    }
+                    Err(err) => {
+                        println!(
+                            "{}",
+                            format!("Error while proving zero for depth {}: {}", depth, err)
+                                .red()
+                                .bold()
+                        );
+                        thread::sleep(Duration::from_secs(1));
+                        continue;
+                    }
+                };
+            }
+        };
     }
 }
 

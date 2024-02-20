@@ -14,9 +14,7 @@ use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     iop::witness::PartialWitness,
-    plonk::{
-        circuit_data::CircuitData, config::PoseidonGoldilocksConfig,
-    },
+    plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig},
     util::serialization::Buffer,
 };
 

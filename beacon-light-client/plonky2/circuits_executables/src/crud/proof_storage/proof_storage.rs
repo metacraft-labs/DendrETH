@@ -15,6 +15,10 @@ pub trait ProofStorage {
     async fn get_proof(&mut self, identifier: String) -> Result<Vec<u8>>;
 
     async fn set_proof(&mut self, identifier: String, proof: &[u8]) -> Result<()>;
+
+    async fn del_proof(&mut self, identifier: String) -> Result<()>;
+
+    async fn get_keys_count(&mut self, pattern: String) -> usize;
 }
 
 pub enum ProofStorageType {

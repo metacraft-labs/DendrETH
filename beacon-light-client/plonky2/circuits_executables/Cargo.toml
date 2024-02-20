@@ -9,7 +9,7 @@ edition = "2021"
 circuits = { path = "../circuits" }
 num = { version = "0.4.0", features = ["serde"] }
 plonky2 = { git = "https://github.com/metacraft-labs/plonky2" }
-redis = "0.22"
+redis = { version = "0.23", features = ["json", "aio", "tokio-comp"] }
 serde = "1.0.164"
 serde_json = "1.0.96"
 anyhow = "1.0.71"
@@ -31,6 +31,14 @@ azure_core = "0.18.0"
 azure_storage = "0.18.0"
 futures = "0.3.30"
 dotenv = "0.15.0"
+serde_bytes = "0.11.12"
+bincode = "1.3.3"
+once_cell = "1.19.0"
+num_enum = "0.7.2"
+num-derive = "0.4.1"
+num-traits = "0.2.17"
+colored = "2.1.0"
+glob = "0.3.1"
 
 [[bin]]
 name = "balance_verification"
@@ -44,9 +52,9 @@ path = "bin/commitment_mapper.rs"
 name = "balance_verification_circuit_data_generation"
 path = "bin/balance_verification_circuit_data_generation.rs"
 
-# [[bin]]
-# name = "final_layer"
-# path = "bin/final_layer.rs"
+[[bin]]
+name = "final_layer"
+path = "bin/final_layer.rs"
 
 [[bin]]
 name = "commitment_mapper_circuit_data_generation"
