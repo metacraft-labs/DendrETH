@@ -1,16 +1,11 @@
 #pragma once
 
-#ifdef __ZKLLVM__
 #include <nil/crypto3/hash/algorithm/hash.hpp>
 #include <nil/crypto3/hash/sha2.hpp>
-#endif
-
 #include "base_types.h"
 #include "../utils/picosha2.h"
 
-#ifdef __ZKLLVM__
 using namespace nil::crypto3;
-#endif
 namespace circuit_byte_utils {
 
     template<typename T, size_t COUNT>
@@ -43,12 +38,10 @@ namespace circuit_byte_utils {
         return Byte(val >> (n * 8));
     }
 
-#ifdef __ZKLLVM__
     Byte get_nth_byte(sha256_t val, size_t int_count, size_t byte_count) {
         // TODO: implement when we start using crypto3's sha256
         return Byte {};
     }
-#endif
 
     bool get_nth_bit(uint64_t value, short i) {
         return bool(1 & (value >> i));
@@ -59,7 +52,6 @@ namespace circuit_byte_utils {
         return value | (Byte(1) << i);
     }
 
-#ifdef __ZKLLVM__
     Bytes32 sha256_to_bytes_array(sha256_t sha) {
         Bytes32 out;
         assert_true(out.size() >= sizeof(sha));
@@ -71,7 +63,6 @@ namespace circuit_byte_utils {
         }
         return out;
     }
-#endif
 
     template<std::size_t N, std::size_t InputSize>
     static_vector<Byte, N> take(const static_vector<Byte, InputSize>& val, size_t offset = 0) {
@@ -231,11 +222,13 @@ namespace circuit_byte_utils {
         return sha256(child1, child2);
     }
 
-#ifdef __ZKLLVM__
     sha256_t parent_hash(sha256_t child1, sha256_t child2) {
+#ifdef __ZKLLVM__
         return hash<hashes::sha2<256>>(child1, child2);
-    }
+#else
+        assert_true(false && "Using sha256_t in executable. Use Bytes32 instead.");
 #endif
+    }
 
 #ifdef __ZKLLVM__
 #include <nil/crypto3/algebra/curves/pallas.hpp>
