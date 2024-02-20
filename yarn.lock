@@ -3324,15 +3324,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/colors@npm:^1.2.1":
-  version: 1.2.1
-  resolution: "@types/colors@npm:1.2.1"
-  dependencies:
-    colors: "npm:*"
-  checksum: 10/6602c4805242bd9197de50559883980ec7c58f440ceb6b74d5fc8e85a0992b5fc765e208ce94b3455789f00e33f75d8f8000ac8e597295e2f1bf86de2c161b94
-  languageName: node
-  linkType: hard
-
 "@types/concat-stream@npm:^1.6.0":
   version: 1.6.1
   resolution: "@types/concat-stream@npm:1.6.1"
@@ -3383,6 +3374,15 @@ __metadata:
   version: 4.0.1
   resolution: "@types/http-cache-semantics@npm:4.0.1"
   checksum: 10/d059bf8a15d5163cc60da51ba00d17620507f968d0b792cd55f62043016344a5f0e1aa94fa411089d41114035fcd0ea656f968bda7eabb6663a97787e3445a1c
+  languageName: node
+  linkType: hard
+
+"@types/ioredis@npm:^4.27.6":
+  version: 4.28.10
+  resolution: "@types/ioredis@npm:4.28.10"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10/c160dccab11b9bdc49e753a8fb4c18ccd0dd97c9b5aa966514cdc3f3fb6cd007e421f1de6044565446acd59059b18c8d8f6ae878c013d623a24ed196adead6f3
   languageName: node
   linkType: hard
 
@@ -3725,18 +3725,18 @@ __metadata:
     "@nomiclabs/hardhat-ethers": "npm:^2.1.1"
     "@nomiclabs/hardhat-etherscan": "npm:^3.1.0"
     "@nomiclabs/hardhat-waffle": "npm:^2.0.3"
-    "@types/colors": "npm:^1.2.1"
     "@types/glob": "npm:^7.2.0"
     "@types/jest": "npm:^29.5.12"
     "@types/mocha": "npm:^10.0.6"
     "@types/node": "npm:^18.0.0"
     bullmq: "npm:^3.7.1"
+    chalk: "npm:^4.1.2"
     circom_tester: "npm:^0.0.14"
     circomlibjs: "npm:^0.1.7"
-    colors: "npm:^1.4.0"
     crypto-js: "npm:^4.1.1"
     dotenv: "npm:^16.0.2"
     ethers: "npm:^5.7.0"
+    eventsource: "npm:^2.0.2"
     express: "npm:^4.18.2"
     ffjavascript: "npm:^0.2.59"
     glob: "npm:^8.0.3"
@@ -3747,7 +3747,7 @@ __metadata:
     prettier: "npm:^2.6.2"
     prom-client: "npm:^14.2.0"
     r1csfile: "npm:^0.0.40"
-    redis: "npm:^4.6.5"
+    redis: "npm:^4.6.10"
     redis-commander: "npm:^0.8.0"
     snarkit2: "npm:^0.2.0"
     snarkjs: "github:metacraft-labs/snarkjs"
@@ -3775,11 +3775,15 @@ __metadata:
     "@effect/schema": "npm:^0.33.0"
     "@lodestar/types": "npm:^1.16.0"
     "@noble/bls12-381": "npm:^1.4.0"
+    "@types/ioredis": "npm:^4.27.6"
     "@types/node": "npm:^20.11.19"
     "@types/snarkjs": "npm:^0.7.8"
     bullmq: "npm:^5.3.1"
+    chalk: "npm:^5.3.0"
     discord.js: "npm:^14.12.1"
     ethers: "npm:^5.7.0"
+    eventsource: "npm:^2.0.2"
+    ioredis: "npm:^5.3.2"
     redis: "npm:^4.6.10"
     snarkjs: "npm:^0.7.3"
     ts-node: "npm:^10.9.1"
@@ -5069,13 +5073,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chalk@npm:^4.0.0, chalk@npm:^4.0.2, chalk@npm:^4.1.0":
+"chalk@npm:^4.0.0, chalk@npm:^4.0.2, chalk@npm:^4.1.0, chalk@npm:^4.1.2":
   version: 4.1.2
   resolution: "chalk@npm:4.1.2"
   dependencies:
     ansi-styles: "npm:^4.1.0"
     supports-color: "npm:^7.1.0"
   checksum: 10/cb3f3e594913d63b1814d7ca7c9bafbf895f75fbf93b92991980610dfd7b48500af4e3a5d4e3a8f337990a96b168d7eb84ee55efdce965e2ee8efc20f8c8f139
+  languageName: node
+  linkType: hard
+
+"chalk@npm:^5.3.0":
+  version: 5.3.0
+  resolution: "chalk@npm:5.3.0"
+  checksum: 10/6373caaab21bd64c405bfc4bd9672b145647fc9482657b5ea1d549b3b2765054e9d3d928870cdf764fb4aad67555f5061538ff247b8310f110c5c888d92397ea
   languageName: node
   linkType: hard
 
@@ -5523,7 +5534,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"colors@npm:*, colors@npm:1.4.0, colors@npm:^1.1.2, colors@npm:^1.4.0":
+"colors@npm:1.4.0, colors@npm:^1.1.2":
   version: 1.4.0
   resolution: "colors@npm:1.4.0"
   checksum: 10/90b2d5465159813a3983ea72ca8cff75f784824ad70f2cc2b32c233e95bcfbcda101ebc6d6766bc50f57263792629bfb4f1f8a4dfbd1d240f229fc7f69b785fc
@@ -6806,6 +6817,13 @@ __metadata:
   version: 4.0.4
   resolution: "eventemitter3@npm:4.0.4"
   checksum: 10/6a85beb36d7ff2363de71aa19a17c24ecde7a92f706347891befc5901793e41ac847ce9c04c96dc0f5095384890cc737e64f21ed334e75c523d2352056fc6a9e
+  languageName: node
+  linkType: hard
+
+"eventsource@npm:^2.0.2":
+  version: 2.0.2
+  resolution: "eventsource@npm:2.0.2"
+  checksum: 10/e1c4c3664cebf9efdd55c90818ef847099f298bf521768d479cf22d8a681e666b3042de85327711ba6a8414ac6a04c70d2aeb4f405bba8239a8c36e06a019374
   languageName: node
   linkType: hard
 

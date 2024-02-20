@@ -125,7 +125,7 @@ pub mod bool_vec_as_int_vec_nested {
 
 pub const VALIDATOR_REGISTRY_LIMIT: usize = 1099511627776;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidatorShaInput {
     pub pubkey: String,
@@ -170,14 +170,29 @@ mod tests {
             deserialized.withdrawal_credentials,
             "0100000000000000000000000d369bb49efa5100fd3b86a9f828c55da04d2d50"
         );
-        assert_eq!(deserialized.effective_balance, "0040597307000000000000000000000000000000000000000000000000000000");
-        assert_eq!(deserialized.slashed, "0000000000000000000000000000000000000000000000000000000000000000");
+        assert_eq!(
+            deserialized.effective_balance,
+            "0040597307000000000000000000000000000000000000000000000000000000"
+        );
+        assert_eq!(
+            deserialized.slashed,
+            "0000000000000000000000000000000000000000000000000000000000000000"
+        );
         assert_eq!(
             deserialized.activation_eligibility_epoch,
             "0000000000000000000000000000000000000000000000000000000000000000"
         );
-        assert_eq!(deserialized.activation_epoch, "0000000000000000000000000000000000000000000000000000000000000000");
-        assert_eq!(deserialized.exit_epoch, "ffffffffffffffff000000000000000000000000000000000000000000000000");
-        assert_eq!(deserialized.withdrawable_epoch, "ffffffffffffffff000000000000000000000000000000000000000000000000");
+        assert_eq!(
+            deserialized.activation_epoch,
+            "0000000000000000000000000000000000000000000000000000000000000000"
+        );
+        assert_eq!(
+            deserialized.exit_epoch,
+            "ffffffffffffffff000000000000000000000000000000000000000000000000"
+        );
+        assert_eq!(
+            deserialized.withdrawable_epoch,
+            "ffffffffffffffff000000000000000000000000000000000000000000000000"
+        );
     }
 }
