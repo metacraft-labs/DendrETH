@@ -1,7 +1,6 @@
 #include <nil/crypto3/hash/algorithm/hash.hpp>
 #include <nil/crypto3/hash/sha2.hpp>
 
-#include <llvm/ObjectYAML/YAML.h>
 #include "json/json.hpp"
 #include <iostream>
 #include <fstream>
@@ -10,11 +9,6 @@
 #include "circuits_impl/weigh_justification_and_finalization.h"
 #include "utils/byte_utils.h"
 #include "utils/file_utils.h"
-
-using llvm::yaml::Input;
-using llvm::yaml::IO;
-using llvm::yaml::MappingTraits;
-using llvm::yaml::Output;
 
 using namespace byte_utils;
 using namespace file_utils;
