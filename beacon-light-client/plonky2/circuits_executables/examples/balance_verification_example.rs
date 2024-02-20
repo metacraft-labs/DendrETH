@@ -11,9 +11,7 @@ use circuits_executables::{
     provers::SetPWValues,
 };
 use futures_lite::future;
-use plonky2::{
-    iop::witness::PartialWitness, plonk::config::PoseidonGoldilocksConfig,
-};
+use plonky2::{iop::witness::PartialWitness, plonk::config::PoseidonGoldilocksConfig};
 
 use jemallocator::Jemalloc;
 

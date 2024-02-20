@@ -58,9 +58,23 @@ impl ProofStorage for AwsStorage {
             .key(identifier)
             .body(byte_stream)
             .send()
-            .await
-            .unwrap();
+            .await?;
 
         Ok(())
+    }
+
+    async fn del_proof(&mut self, identifier: String) -> Result<()> {
+        self.client
+            .delete_object()
+            .bucket(self.bucket_name.clone())
+            .key(identifier)
+            .send()
+            .await?;
+
+        Ok(())
+    }
+
+    async fn get_keys_count(&mut self, _pattern: String) -> usize {
+        unimplemented!()
     }
 }

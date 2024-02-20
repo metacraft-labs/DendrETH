@@ -1,6 +1,7 @@
 use super::proof_storage::ProofStorage;
 use anyhow::Result;
 use async_trait::async_trait;
+use glob::glob;
 use std::fs;
 
 pub struct FileStorage {
@@ -33,5 +34,19 @@ impl ProofStorage for FileStorage {
         .unwrap();
 
         Ok(())
+    }
+
+    async fn del_proof(&mut self, identifier: String) -> Result<()> {
+        Ok(fs::remove_file(format!(
+            "{}/{}.{}",
+            self.folder_name, identifier, "bin"
+        ))?)
+    }
+
+    async fn get_keys_count(&mut self, pattern: String) -> usize {
+        glob(&format!("{}/{}", self.folder_name, pattern))
+            .unwrap()
+            .filter(|path| matches!(path, Ok(_)))
+            .count()
     }
 }

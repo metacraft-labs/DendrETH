@@ -11,9 +11,11 @@ import {
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { bytesToHex } from '../../libs/typescript/ts-utils/bls';
 import { computeSyncCommitteePeriodAt } from '../../libs/typescript/ts-utils/ssz-utils';
-import path from 'path';
 import { getGenericLogger } from '../../libs/typescript/ts-utils/logger';
 import { prometheusTiming } from '../../libs/typescript/ts-utils/prometheus-utils';
+import EventSource from 'eventsource';
+// @ts-ignore
+import { StateId } from '@lodestar/api/beacon/routes/beacon';
 
 const logger = getGenericLogger();
 export class BeaconApi implements IBeaconApi {
@@ -90,6 +92,12 @@ export class BeaconApi implements IBeaconApi {
       blockNumberProof: [...blockNumberProof, ...bodyRootProof],
       blockHashProof: [...blockHashProof, ...bodyRootProof],
     };
+  }
+
+  async subscribeForEvents(events: string[]): Promise<EventSource> {
+    return new EventSource(
+      this.concatUrl(`/eth/v1/events?topics=${events.join(',')}`),
+    );
   }
 
   async getCurrentHeadSlot(): Promise<number> {
@@ -220,8 +228,7 @@ export class BeaconApi implements IBeaconApi {
 
     const prevFinalizedHeaderResult = await (
       await this.fetchWithFallback(
-        `/eth/v1/beacon/headers/${
-          '0x' + bytesToHex(prevBeaconSate.finalizedCheckpoint.root)
+        `/eth/v1/beacon/headers/${'0x' + bytesToHex(prevBeaconSate.finalizedCheckpoint.root)
         }`,
       )
     ).json();
@@ -270,7 +277,7 @@ export class BeaconApi implements IBeaconApi {
         bytesToHex(
           prevFinalizedBeaconState[
             prevUpdateFinalizedSyncCommmitteePeriod ===
-            currentSyncCommitteePeriod
+              currentSyncCommitteePeriod
               ? 'currentSyncCommittee'
               : 'nextSyncCommittee'
           ].aggregatePubkey,
@@ -304,8 +311,7 @@ export class BeaconApi implements IBeaconApi {
 
     const finalizedHeaderResult = await (
       await this.fetchWithFallback(
-        `/eth/v1/beacon/headers/${
-          '0x' + bytesToHex(beaconState.finalizedCheckpoint.root)
+        `/eth/v1/beacon/headers/${'0x' + bytesToHex(beaconState.finalizedCheckpoint.root)
         }`,
       )
     ).json();
@@ -395,28 +401,46 @@ export class BeaconApi implements IBeaconApi {
     return block.data.message.body.execution_payload.state_root;
   }
 
+  async getHeadSlot(): Promise<bigint> {
+    const res = await (await this.fetchWithFallback('/eth/v1/beacon/headers/head')).json();
+    return BigInt(res.data.header.message.slot);
+  }
+
   async getValidators(
-    state_id: number | string = 'head',
+    stateId: StateId,
+    validatorsCount: number | undefined = undefined,
+    offset: number | undefined = undefined
   ): Promise<Validator[]> {
     const { ssz } = await import('@lodestar/types');
 
-    const validators = await (
-      await this.fetchWithFallback(
-        `/eth/v1/beacon/states/${state_id}/validators`,
-      )
-    ).json();
+    if (validatorsCount !== undefined && validatorsCount < 10000) {
+      // use the validators endpoint
+      let url = `/eth/v1/beacon/states/${stateId}/validators`;
+      let range = [...Array(validatorsCount).keys()];
+      if (offset !== undefined) {
+        range = range.map((index) => index + offset);
 
-    return ssz.phase0.Validators.fromJson(
-      validators.data.map(x => x.validator),
-    );
+      }
+      url = url + `?id=${range.join(',')}`;
+
+      const validators = await (await this.fetchWithFallback(url)).json();
+      validators.data.sort((v1, v2) => +v1.index - +v2.index);
+      return ssz.phase0.Validators.fromJson(
+        validators.data.map(x => x.validator),
+      );
+    } else {
+      // fetch an ssz beacon state to extract the validators from it
+      const { beaconState } = await this.getBeaconState(stateId);
+      return beaconState.validators.slice(offset || 0, validatorsCount);
+    }
   }
 
-  async getBeaconState(slot: number) {
+  async getBeaconState(state: StateId) {
     logger.info('Getting Beacon State..');
     const { ssz } = await import('@lodestar/types');
 
     const beaconStateSZZ = await this.fetchWithFallback(
-      `/eth/v2/debug/beacon/states/${slot}`,
+      `/eth/v2/debug/beacon/states/${state}`,
       {
         headers: {
           Accept: 'application/octet-stream',
@@ -477,9 +501,6 @@ export class BeaconApi implements IBeaconApi {
   }
 
   private concatUrl(urlPath: string): string {
-    const url = new URL(this.getCurrentApi());
-    url.pathname = path.join(url.pathname, urlPath);
-
-    return url.href;
+    return this.getCurrentApi() + urlPath;
   }
 }

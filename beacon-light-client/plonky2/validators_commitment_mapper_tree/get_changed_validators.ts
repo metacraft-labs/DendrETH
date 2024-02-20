@@ -1,32 +1,8 @@
-import {
-  sleep,
-  splitIntoBatches,
-} from '../../../libs/typescript/ts-utils/common-utils';
-import { Redis as RedisLocal } from '../../../relay/implementations/redis';
-import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
-import { Validator } from '../../../relay/types/types';
-import { hexToBits } from '../../../libs/typescript/ts-utils/hex-utils';
-import * as fs from 'fs';
-import Redis from 'ioredis';
-const {
-  KeyPrefix,
-  WorkQueue,
-  Item,
-} = require('@mevitae/redis-work-queue/dist/WorkQueue');
-
-import colors from 'colors/safe';
-
-import { BeaconApi } from '../../../relay/implementations/beacon-api';
-
-import validator_commitment_constants from '../constants/validator_commitment_constants.json';
 import yargs from 'yargs';
-
-let TAKE: number | undefined;
-let MOCK: boolean;
+import config from "../common_config.json";
+import { CommitmentMapperScheduler } from './scheduler';
 
 (async () => {
-  const { ssz } = await import('@lodestar/types');
-
   const options = yargs
     .usage(
       'Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>',
@@ -35,22 +11,35 @@ let MOCK: boolean;
       alias: 'redis-host',
       describe: 'The Redis host',
       type: 'string',
-      default: '127.0.0.1',
+      default: config['redis-host'],
       description: 'Sets a custom redis connection',
     })
     .option('redis-port', {
       alias: 'redis-port',
       describe: 'The Redis port',
       type: 'number',
-      default: 6379,
+      default: Number(config['redis-port']),
       description: 'Sets a custom redis connection',
     })
     .option('beacon-node', {
       alias: 'beacon-node',
       describe: 'The beacon node url',
       type: 'string',
-      default: 'http://unstable.mainnet.beacon-api.nimbus.team',
+      default: config['beacon-node'],
       description: 'Sets a custom beacon node url',
+    })
+    .option('sync-epoch', {
+      alias: 'sync-epoch',
+      describe: 'The sync epoch',
+      type: 'number',
+      default: undefined,
+      description: 'Starts syncing from this epoch',
+    })
+    .options('offset', {
+      alias: 'offset',
+      describe: 'Index offset in the validator set',
+      type: 'number',
+      default: undefined,
     })
     .option('take', {
       alias: 'take',
@@ -65,297 +54,17 @@ let MOCK: boolean;
       type: 'boolean',
       default: false,
       description: 'Runs the tool without doing actual calculations.',
-    }).argv;
+    })
+    .option('run-once', {
+      alias: 'run-once',
+      describe: 'Should run script for one epoch',
+      type: 'boolean',
+      default: false,
+    })
+    .argv;
 
-  const redis = new RedisLocal(options['redis-host'], options['redis-port']);
-
-  const db = new Redis(
-    `redis://${options['redis-host']}:${options['redis-port']}`,
-  );
-
-  TAKE = options['take'];
-  MOCK = options['mock'];
-  let GRANULITY = MOCK ? 1000 : 1;
-
-  const work_queue = new WorkQueue(
-    new KeyPrefix(`${validator_commitment_constants.validatorProofsQueue}`),
-  );
-
-  const beaconApi = new BeaconApi([options['beacon-node']]);
-
-  // handle zeros validators
-  if (await redis.isZeroValidatorEmpty()) {
-    console.log('Adding tasks about zeros');
-    await redis.saveValidators([
-      {
-        index: Number(validator_commitment_constants.validatorRegistryLimit),
-        validator: JSON.stringify({
-          pubkey: ''.padEnd(96, '0'),
-          withdrawalCredentials: ''.padEnd(64, '0'),
-          effectiveBalance: ''.padEnd(64, '0'),
-          slashed: ''.padEnd(64, '0'),
-          activationEligibilityEpoch: ''.padEnd(64, '0'),
-          activationEpoch: ''.padEnd(64, '0'),
-          exitEpoch: ''.padEnd(64, '0'),
-          withdrawableEpoch: ''.padEnd(64, '0'),
-        }),
-      },
-    ]);
-
-    const buffer = new ArrayBuffer(8);
-    const dataView = new DataView(buffer);
-
-    dataView.setBigUint64(
-      0,
-      BigInt(validator_commitment_constants.validatorRegistryLimit),
-      false,
-    );
-
-    await work_queue.addItem(db, new Item(buffer));
-
-    for (let i = 0; i < 40; i++) {
-      const buffer = new ArrayBuffer(24);
-      const dataView = new DataView(buffer);
-
-      dataView.setBigUint64(0, BigInt(i), false);
-      dataView.setBigUint64(
-        8,
-        BigInt(validator_commitment_constants.validatorRegistryLimit),
-        false,
-      );
-      dataView.setBigUint64(
-        16,
-        BigInt(validator_commitment_constants.validatorRegistryLimit),
-        false,
-      );
-
-      await work_queue.addItem(db, new Item(buffer));
-
-      if (i % 10 === 0 && i !== 0) {
-        console.log('Added zeros tasks');
-      }
-    }
-  }
-
-  console.log('Loading validators');
-
-  let prevValidators = await redis.getValidatorsBatched(ssz);
-
-  console.log('Loaded all batches');
-
-  while (true) {
-    const timeBefore = Date.now();
-
-    let validators: Validator[];
-
-    if (MOCK) {
-      const beaconState_bin = fs.existsSync('../mock_data/beaconState.bin')
-        ? '../mock_data/beaconState.bin'
-        : 'mock_data/beaconState.bin';
-
-      const serializedState = fs.readFileSync(beaconState_bin);
-
-      if (serializedState.byteLength < 1000) {
-        console.error(
-          colors.red(
-            'Error: Unexpectedly small beacon state file.\n' +
-              'Please ensure Git LFS is enabled and run the following:\n' +
-              colors.bold('git lfs fetch; git lfs checkout'),
-          ),
-        );
-        process.exit(1);
-      }
-
-      validators =
-        ssz.capella.BeaconState.deserialize(serializedState).validators;
-    } else {
-      validators = (await beaconApi.getValidators()).slice(0, TAKE);
-    }
-
-    if (prevValidators.length === 0) {
-      console.log('prev validators are empty. Saving to redis');
-
-      const before = Date.now();
-
-      await saveValidatorsInBatches(
-        validators.map((validator, index) => ({
-          index,
-          validator,
-        })),
-      );
-
-      const after = Date.now();
-
-      console.log('Saved validators to redis');
-      console.log('Time taken', after - before, 'ms');
-
-      prevValidators = validators;
-
-      if (!MOCK) {
-        await sleep(384000);
-      }
-      continue;
-    }
-
-    const changedValidators = validators
-      .map((validator, index) => ({ validator, index }))
-      .filter(hasValidatorChanged(prevValidators));
-
-    await saveValidatorsInBatches(changedValidators);
-
-    console.log('#changedValidators', changedValidators.length);
-
-    if (MOCK) {
-      process.exit(0);
-    }
-
-    prevValidators = validators;
-
-    const timeAfter = Date.now();
-
-    // wait for the next epoch
-    if (timeAfter - timeBefore < 384000 && !MOCK) {
-      await sleep(384000 - (timeBefore - timeAfter));
-    }
-  }
-
-  async function saveValidatorsInBatches(
-    validators: { index: number; validator: Validator }[],
-    batchSize = 200,
-  ) {
-    const validatorBatches = splitIntoBatches(validators, batchSize);
-
-    // Save each batch
-    for (let i = 0; i < validatorBatches.length; i++) {
-      await redis.saveValidators(
-        validatorBatches[i].map(vi => ({
-          index: vi.index,
-          validator: convertValidatorToProof(vi.validator),
-        })),
-      );
-
-      for (const vi of validatorBatches[i]) {
-        const buffer = new ArrayBuffer(8);
-        const dataView = new DataView(buffer);
-        dataView.setBigUint64(0, BigInt(vi.index), false);
-        await work_queue.addItem(db, new Item(buffer));
-      }
-
-      if (i % GRANULITY == 0) {
-        console.log(
-          `Saved ${GRANULITY} batches and added first level of proofs`,
-        );
-      }
-    }
-
-    if (validators.length > 0) {
-      await addInnerLevelProofs(validators);
-    }
-  }
-
-  async function addInnerLevelProofs(
-    validators: { index: number; validator: Validator }[],
-  ) {
-    for (let j = 0n; j < 40n; j++) {
-      if (j % 10n === 0n && j !== 0n)
-        console.log('Added inner level of proofs', j);
-
-      let prev_index = 2199023255552n;
-      for (let i = 0; i < validators.length; i++) {
-        let validator_index = BigInt(validators[i].index);
-
-        if (validator_index / 2n ** (j + 1n) == prev_index / 2n ** (j + 1n)) {
-          continue;
-        }
-
-        const { first, second } = calculateIndexes(validator_index, j);
-
-        const buffer = new ArrayBuffer(24);
-        const dataView = new DataView(buffer);
-
-        dataView.setBigUint64(0, BigInt(j), false);
-        dataView.setBigUint64(8, first, false);
-        dataView.setBigUint64(16, second, false);
-
-        await redis.saveValidatorProof(j + 1n, first);
-
-        await work_queue.addItem(db, new Item(buffer));
-
-        prev_index = first;
-      }
-    }
-  }
-
-  function calculateIndexes(validator_index: bigint, depth: bigint) {
-    let first: bigint, second: bigint;
-
-    if (validator_index % 2n == 0n) {
-      first = validator_index;
-      second = validator_index + 1n;
-    } else {
-      first = validator_index - 1n;
-      second = validator_index;
-    }
-
-    for (let k = 1n; k <= depth; k++) {
-      if (first % 2n ** (k + 1n) == 0n) {
-        second = first + 2n ** k;
-      } else {
-        second = first;
-        first = first - 2n ** k;
-      }
-    }
-    return { first, second };
-  }
-
-  function convertValidatorToProof(validator: Validator): string {
-    return JSON.stringify({
-      pubkey: bytesToHex(validator.pubkey),
-      withdrawalCredentials: bytesToHex(validator.withdrawalCredentials),
-      effectiveBalance: bytesToHex(
-        ssz.phase0.Validator.fields.effectiveBalance.hashTreeRoot(
-          validator.effectiveBalance,
-        ),
-      ),
-      slashed: bytesToHex(
-        ssz.phase0.Validator.fields.slashed.hashTreeRoot(validator.slashed),
-      ),
-      activationEligibilityEpoch: bytesToHex(
-        ssz.phase0.Validator.fields.activationEligibilityEpoch.hashTreeRoot(
-          validator.activationEligibilityEpoch,
-        ),
-      ),
-      activationEpoch: bytesToHex(
-        ssz.phase0.Validator.fields.activationEpoch.hashTreeRoot(
-          validator.activationEpoch,
-        ),
-      ),
-      exitEpoch: bytesToHex(
-        ssz.phase0.Validator.fields.exitEpoch.hashTreeRoot(validator.exitEpoch),
-      ),
-      withdrawableEpoch: bytesToHex(
-        ssz.phase0.Validator.fields.withdrawableEpoch.hashTreeRoot(
-          validator.withdrawableEpoch,
-        ),
-      ),
-    });
-  }
-
-  function hasValidatorChanged(prevValidators) {
-    return ({ validator, index }) =>
-      prevValidators[index] === undefined ||
-      validator.pubkey.some(
-        (byte, i) => byte !== prevValidators[index].pubkey[i],
-      ) ||
-      validator.withdrawalCredentials.some(
-        (byte, i) => byte !== prevValidators[index].withdrawalCredentials[i],
-      ) ||
-      validator.effectiveBalance !== prevValidators[index].effectiveBalance ||
-      validator.slashed !== prevValidators[index].slashed ||
-      validator.activationEligibilityEpoch !==
-        prevValidators[index].activationEligibilityEpoch ||
-      validator.activationEpoch !== prevValidators[index].activationEpoch ||
-      validator.exitEpoch !== prevValidators[index].exitEpoch ||
-      validator.withdrawableEpoch !== prevValidators[index].withdrawableEpoch;
-  }
+  const scheduler = new CommitmentMapperScheduler();
+  await scheduler.init(options);
+  await scheduler.start(options['run-once']);
+  await scheduler.dispose();
 })();

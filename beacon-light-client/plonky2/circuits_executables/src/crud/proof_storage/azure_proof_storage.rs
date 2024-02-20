@@ -49,4 +49,14 @@ impl ProofStorage for AzureStorage {
 
         Ok(())
     }
+
+    async fn del_proof(&mut self, identifier: String) -> Result<()> {
+        let blob_client = self.container_client.blob_client(identifier);
+        blob_client.delete().await?;
+        Ok(())
+    }
+
+    async fn get_keys_count(&mut self, _pattern: String) -> usize {
+        unimplemented!()
+    }
 }

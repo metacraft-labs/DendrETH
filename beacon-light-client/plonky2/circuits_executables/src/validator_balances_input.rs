@@ -23,7 +23,7 @@ where
     string_vec.serialize(s)
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidatorPoseidonInput {
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
@@ -43,7 +43,7 @@ pub struct ValidatorPoseidonInput {
     pub withdrawable_epoch: BigUint,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidatorBalancesInput {
     pub validators: Vec<ValidatorPoseidonInput>,
