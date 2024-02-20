@@ -22,6 +22,7 @@
     "@dendreth/utils": "workspace:^",
     "@lodestar/types": "^1.17.0",
     "@mevitae/redis-work-queue": "^0.1.5",
+    "chalk": "^4.1.2",
     "circomlibjs": "^0.1.7",
     "colors": "^1.4.0",
     "ethers": "^5.7.0",

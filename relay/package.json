@@ -23,8 +23,11 @@
     "@lodestar/types": "^1.17.0",
     "@noble/bls12-381": "^1.4.0",
     "bullmq": "^5.3.1",
+    "chalk": "^4.1.2",
     "discord.js": "^14.12.1",
     "ethers": "^5.7.0",
+    "eventsource": "^2.0.2",
+    "ioredis": "^5.3.2",
     "redis": "^4.6.10",
     "snarkjs": "https://github.com/metacraft-labs/snarkjs.git#commit=091ee9c3744c660b0ecd961f9197a8249a8f7d3b",
     "ts-node": "^10.9.1",
@@ -34,6 +37,7 @@
     "yargs": "^17.7.1"
   },
   "devDependencies": {
+    "@types/ioredis": "^4.27.6",
     "@types/node": "^20.11.19",
     "@types/snarkjs": "^0.7.8",
     "typescript": "5.2.2"
