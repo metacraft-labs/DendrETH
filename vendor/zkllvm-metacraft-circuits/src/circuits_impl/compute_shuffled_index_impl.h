@@ -1,8 +1,5 @@
 #pragma once
 
-#include <nil/crypto3/hash/algorithm/hash.hpp>
-#include <nil/crypto3/hash/sha2.hpp>
-
 #include <algorithm>
 #include <array>
 

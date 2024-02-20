@@ -2,9 +2,12 @@
 
 #include <stdint.h>
 #include <cstring>
+#include <cassert>
 
+#ifdef __ZKLLVM__
 #include <nil/crypto3/hash/algorithm/hash.hpp>
 #include <nil/crypto3/hash/sha2.hpp>
+#endif
 
 #include "constants.h"
 
@@ -27,7 +30,9 @@
     { assert(c); }
 #endif
 
+#ifdef __ZKLLVM__
 using sha256_t = typename nil::crypto3::hashes::sha2<256>::block_type;
+#endif
 
 #ifdef __ZKLLVM__
 using HashType = sha256_t;
@@ -45,6 +50,7 @@ using BeaconStateLeafProof = MerkleProof<5>;
 
 #define countof(array) (sizeof(array) / sizeof(array[0]))
 
+#ifdef __ZKLLVM__
 bool sha256_equals(sha256_t hash1, sha256_t hash2) {
     bool result = true;
     for (auto i = 0; i < countof(hash1); ++i) {
@@ -53,6 +59,7 @@ bool sha256_equals(sha256_t hash1, sha256_t hash2) {
 
     return result;
 }
+#endif
 
 bool sha256_equals(Bytes32 hash1, Bytes32 hash2) {
     return hash1 == hash2;
@@ -70,16 +77,16 @@ struct JustificationBitsVariable {
 
     static_vector<bool, 4, true> bits;
 
-    constexpr JustificationBitsVariable(std::initializer_list<bool> init) { 
+    constexpr JustificationBitsVariable(std::initializer_list<bool> init) {
         size_t i = 0;
-        for(const auto& v : init) {
+        for (const auto &v : init) {
             assert_true(i < bits.size());
             bits[i++] = v;
         }
     }
 
-    constexpr JustificationBitsVariable() { 
-        for(size_t i = 0; i < bits.size(); ++i) {
+    constexpr JustificationBitsVariable() {
+        for (size_t i = 0; i < bits.size(); ++i) {
             bits[i] = false;
         }
     }

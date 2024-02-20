@@ -12,9 +12,9 @@ struct static_vector {
     T content_[CAPACITY];
     size_t size_;
 
-    constexpr static_vector(std::initializer_list<T> init) { 
+    constexpr static_vector(std::initializer_list<T> init) {
         size_ = 0;
-        for(const auto& v : init) {
+        for (const auto& v : init) {
             assert_true(size_ < CAPACITY);
             content_[size_++] = v;
         }
@@ -23,7 +23,7 @@ struct static_vector {
     template<std::size_t SIZE>
     constexpr explicit static_vector(const std::array<T, SIZE>& rhs) {
         static_assert(SIZE <= CAPACITY);
-        for(size_t i = 0; i < SIZE; i++) {
+        for (size_t i = 0; i < SIZE; i++) {
             content_[i] = rhs[i];
         }
         size_ = SIZE;
@@ -31,7 +31,7 @@ struct static_vector {
     template<std::size_t SIZE, bool FULL>
     constexpr explicit static_vector(const static_vector<T, SIZE, FULL>& rhs) {
         static_assert(SIZE <= CAPACITY);
-        for(size_t i = 0; i < SIZE; i++) {
+        for (size_t i = 0; i < SIZE; i++) {
             content_[i] = rhs[i];
         }
         size_ = SIZE;
@@ -44,7 +44,7 @@ struct static_vector {
         }
     }
     constexpr static_vector(const static_vector& rhs) {
-        for(size_t i = 0; i < rhs.size_; i++) {
+        for (size_t i = 0; i < rhs.size_; i++) {
             content_[i] = rhs[i];
         }
         size_ = rhs.size_;
@@ -54,7 +54,7 @@ struct static_vector {
     //     size_ = 0;
     // }
     constexpr auto operator=(const static_vector& rhs) -> static_vector& {
-        for(size_t i = 0; i < rhs.size_; i++) {
+        for (size_t i = 0; i < rhs.size_; i++) {
             content_[i] = rhs[i];
         }
         size_ = rhs.size_;
@@ -94,11 +94,11 @@ struct static_vector {
         --size_;
     }
     bool operator==(const static_vector& rhs) const {
-        if(size_ != rhs.size_) {
+        if (size_ != rhs.size_) {
             return false;
         }
-        for(size_t i = 0; i < size_; i++) {
-            if(content_[i] != rhs[i]) {
+        for (size_t i = 0; i < size_; i++) {
+            if (content_[i] != rhs[i]) {
                 return false;
             }
         }
@@ -109,14 +109,13 @@ struct static_vector {
     }
 } __attribute__((packed));
 
-
 template<std::size_t CAPACITY>
 struct static_vector<Byte, CAPACITY> {
     Byte content_[CAPACITY];
 
-    constexpr static_vector(std::initializer_list<Byte> init) { 
+    constexpr static_vector(std::initializer_list<Byte> init) {
         size_t i = 0;
-        for(const auto& v : init) {
+        for (const auto& v : init) {
             assert_true(i < CAPACITY);
             content_[i++] = v;
         }
@@ -125,24 +124,24 @@ struct static_vector<Byte, CAPACITY> {
     template<std::size_t SIZE>
     constexpr explicit static_vector(std::array<Byte, SIZE> const& rhs) {
         static_assert(SIZE <= CAPACITY);
-        for(size_t i = 0; i < SIZE; i++) {
+        for (size_t i = 0; i < SIZE; i++) {
             content_[i] = rhs[i];
         }
     }
     template<std::size_t SIZE>
     constexpr explicit static_vector(static_vector<Byte, SIZE> const& rhs) {
         static_assert(SIZE <= CAPACITY);
-        for(size_t i = 0; i < SIZE; i++) {
+        for (size_t i = 0; i < SIZE; i++) {
             content_[i] = rhs[i];
         }
     }
     constexpr static_vector() {
-        for(size_t i = 0; i < CAPACITY; i++) {
+        for (size_t i = 0; i < CAPACITY; i++) {
             content_[i] = 0;
         }
     }
     constexpr static_vector(static_vector const& rhs) {
-        for(size_t i = 0; i < CAPACITY; i++) {
+        for (size_t i = 0; i < CAPACITY; i++) {
             content_[i] = rhs[i];
         }
     }
@@ -151,7 +150,7 @@ struct static_vector<Byte, CAPACITY> {
     //     size_ = 0;
     // }
     constexpr auto operator=(static_vector const& rhs) -> static_vector& {
-        for(size_t i = 0; i < CAPACITY; i++) {
+        for (size_t i = 0; i < CAPACITY; i++) {
             content_[i] = rhs[i];
         }
         return *this;
@@ -176,8 +175,8 @@ struct static_vector<Byte, CAPACITY> {
         return CAPACITY;
     }
     bool operator==(const static_vector& rhs) const {
-        for(size_t i = 0; i < CAPACITY; i++) {
-            if(content_[i] != rhs[i]) {
+        for (size_t i = 0; i < CAPACITY; i++) {
+            if (content_[i] != rhs[i]) {
                 return false;
             }
         }
@@ -204,4 +203,3 @@ using Bytes32 = static_vector<Byte, 32>;
 using Bytes48 = static_vector<Byte, 48>;
 using Bytes64 = static_vector<Byte, 64>;
 using Bytes96 = static_vector<Byte, 96>;
-

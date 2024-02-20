@@ -1,12 +1,16 @@
 #pragma once
 
+#ifdef __ZKLLVM__
 #include <nil/crypto3/hash/algorithm/hash.hpp>
 #include <nil/crypto3/hash/sha2.hpp>
+#endif
+
 #include "base_types.h"
 #include "../utils/picosha2.h"
 
+#ifdef __ZKLLVM__
 using namespace nil::crypto3;
-
+#endif
 namespace circuit_byte_utils {
 
     template<typename T, size_t COUNT>
@@ -39,10 +43,12 @@ namespace circuit_byte_utils {
         return Byte(val >> (n * 8));
     }
 
+#ifdef __ZKLLVM__
     Byte get_nth_byte(sha256_t val, size_t int_count, size_t byte_count) {
         // TODO: implement when we start using crypto3's sha256
         return Byte {};
     }
+#endif
 
     bool get_nth_bit(uint64_t value, short i) {
         return bool(1 & (value >> i));
@@ -53,6 +59,7 @@ namespace circuit_byte_utils {
         return value | (Byte(1) << i);
     }
 
+#ifdef __ZKLLVM__
     Bytes32 sha256_to_bytes_array(sha256_t sha) {
         Bytes32 out;
         assert_true(out.size() >= sizeof(sha));
@@ -64,6 +71,7 @@ namespace circuit_byte_utils {
         }
         return out;
     }
+#endif
 
     template<std::size_t N, std::size_t InputSize>
     static_vector<Byte, N> take(const static_vector<Byte, InputSize>& val, size_t offset = 0) {
@@ -223,35 +231,33 @@ namespace circuit_byte_utils {
         return sha256(child1, child2);
     }
 
-    sha256_t parent_hash(sha256_t child1, sha256_t child2) {
 #ifdef __ZKLLVM__
+    sha256_t parent_hash(sha256_t child1, sha256_t child2) {
         return hash<hashes::sha2<256>>(child1, child2);
-#else
-        assert_true(false && "Using sha256_t in executable. Use Bytes32 instead.");
-#endif
     }
+#endif
 
 #ifdef __ZKLLVM__
 #include <nil/crypto3/algebra/curves/pallas.hpp>
 
-using namespace nil::crypto3;
-using namespace nil::crypto3::algebra::curves;
+    using namespace nil::crypto3;
+    using namespace nil::crypto3::algebra::curves;
     sha256_t bytes_to_hash_type(const Bytes32& bytes) {
-    
+
         sha256_t converted;
         // MSB first
         std::array<typename algebra::curves::pallas::base_field_type::value_type, 128> decomposed_block_1;
         std::array<typename algebra::curves::pallas::base_field_type::value_type, 128> decomposed_block_2;
 
-        for(size_t i = 0; i < 16; i++) {
+        for (size_t i = 0; i < 16; i++) {
             __builtin_assigner_bit_decomposition(decomposed_block_1.data() + (i * 8), 8, bytes[i], true);
             __builtin_assigner_bit_decomposition(decomposed_block_2.data() + (i * 8), 8, bytes[i + 16], true);
         }
 
-        typename algebra::curves::pallas::base_field_type::value_type first_block = __builtin_assigner_bit_composition(
-            decomposed_block_1.data(), 128, true);
-        typename algebra::curves::pallas::base_field_type::value_type second_block = __builtin_assigner_bit_composition(
-            decomposed_block_2.data(), 128, true);
+        typename algebra::curves::pallas::base_field_type::value_type first_block =
+            __builtin_assigner_bit_composition(decomposed_block_1.data(), 128, true);
+        typename algebra::curves::pallas::base_field_type::value_type second_block =
+            __builtin_assigner_bit_composition(decomposed_block_2.data(), 128, true);
 
         converted = {first_block, second_block};
 
@@ -259,7 +265,7 @@ using namespace nil::crypto3::algebra::curves;
     }
 
 #else
-    #define bytes_to_hash_type(X) (X)
+#define bytes_to_hash_type(X) (X)
 
 #endif
 
