@@ -1,12 +1,9 @@
-#include <nil/crypto3/hash/algorithm/hash.hpp>
-#include <nil/crypto3/hash/sha2.hpp>
 #include "circuit_utils/circuit_byte_utils.h"
 #include "circuits_impl/compute_shuffled_index_impl.h"
 
 #include <algorithm>
 #include <array>
 
-#include <llvm/ObjectYAML/YAML.h>
 #include <iostream>
 #include <fstream>
 #include <streambuf>
@@ -15,32 +12,10 @@
 #include "utils/byte_utils.h"
 #include "utils/file_utils.h"
 
-using llvm::yaml::Input;
-using llvm::yaml::IO;
-using llvm::yaml::MappingTraits;
-using llvm::yaml::Output;
+#include "yaml-cpp/yaml.h"
 
 using namespace circuit_byte_utils;
 using namespace file_utils;
-
-struct TestInput {
-    std::string seed;
-    int count;
-    std::vector<uint64_t> mapping;
-};
-
-namespace llvm {
-    namespace yaml {
-        template<>
-        struct MappingTraits<TestInput> {
-            static void mapping(IO& io, TestInput& info) {
-                io.mapRequired("seed", info.seed);
-                io.mapOptional("count", info.count);
-                io.mapOptional("mapping", info.mapping);
-            }
-        };
-    }    // namespace yaml
-}    // namespace llvm
 
 int main(int argc, char* argv[]) {
 
@@ -48,28 +23,17 @@ int main(int argc, char* argv[]) {
         for (const auto& v : cases) {
             std::cout << v.string() << ":\n";
 
-            std::ifstream t(v.string());
-            std::string yaml_content((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
+            YAML::Node config = YAML::LoadFile(v.string());
 
-            TestInput doc;
-
-            Input yin(yaml_content);
-            yin >> doc;
-
-            if (yin.error()) {
-                std::cerr << "Failed to process " << v.string() << "\n";
-                return false;
-            }
-
-            auto seed_bytes = byte_utils::hexToBytes<32>(doc.seed);
+            auto seed_bytes = byte_utils::hexToBytes<32>(config["seed"].as<std::string>());
 
             std::vector<uint64_t> mapping_result;
-            for (size_t i = 0; i < doc.mapping.size(); i++) {
-                auto result = compute_shuffled_index_impl(i, doc.mapping.size(), seed_bytes, SHUFFLE_ROUND_COUNT);
+            for (size_t i = 0; i < config["mapping"].size(); i++) {
+                auto result = compute_shuffled_index_impl(i, config["mapping"].size(), seed_bytes, SHUFFLE_ROUND_COUNT);
                 mapping_result.push_back(result);
             }
             for (size_t i = 0; i < mapping_result.size(); i++) {
-                assert_true(mapping_result[i] == doc.mapping[i]);
+                assert_true(mapping_result[i] == config["mapping"][i].as<int>());
             }
         }
         return true;

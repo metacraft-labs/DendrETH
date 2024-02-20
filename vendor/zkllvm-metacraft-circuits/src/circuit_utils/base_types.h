@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <cstring>
+#include <cassert>
 
 #include <nil/crypto3/hash/algorithm/hash.hpp>
 #include <nil/crypto3/hash/sha2.hpp>
@@ -70,16 +71,16 @@ struct JustificationBitsVariable {
 
     static_vector<bool, 4, true> bits;
 
-    constexpr JustificationBitsVariable(std::initializer_list<bool> init) { 
+    constexpr JustificationBitsVariable(std::initializer_list<bool> init) {
         size_t i = 0;
-        for(const auto& v : init) {
+        for (const auto &v : init) {
             assert_true(i < bits.size());
             bits[i++] = v;
         }
     }
 
-    constexpr JustificationBitsVariable() { 
-        for(size_t i = 0; i < bits.size(); ++i) {
+    constexpr JustificationBitsVariable() {
+        for (size_t i = 0; i < bits.size(); ++i) {
             bits[i] = false;
         }
     }

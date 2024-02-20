@@ -6,7 +6,6 @@
 #include "../utils/picosha2.h"
 
 using namespace nil::crypto3;
-
 namespace circuit_byte_utils {
 
     template<typename T, size_t COUNT>
@@ -234,24 +233,24 @@ namespace circuit_byte_utils {
 #ifdef __ZKLLVM__
 #include <nil/crypto3/algebra/curves/pallas.hpp>
 
-using namespace nil::crypto3;
-using namespace nil::crypto3::algebra::curves;
+    using namespace nil::crypto3;
+    using namespace nil::crypto3::algebra::curves;
     sha256_t bytes_to_hash_type(const Bytes32& bytes) {
-    
+
         sha256_t converted;
         // MSB first
         std::array<typename algebra::curves::pallas::base_field_type::value_type, 128> decomposed_block_1;
         std::array<typename algebra::curves::pallas::base_field_type::value_type, 128> decomposed_block_2;
 
-        for(size_t i = 0; i < 16; i++) {
+        for (size_t i = 0; i < 16; i++) {
             __builtin_assigner_bit_decomposition(decomposed_block_1.data() + (i * 8), 8, bytes[i], true);
             __builtin_assigner_bit_decomposition(decomposed_block_2.data() + (i * 8), 8, bytes[i + 16], true);
         }
 
-        typename algebra::curves::pallas::base_field_type::value_type first_block = __builtin_assigner_bit_composition(
-            decomposed_block_1.data(), 128, true);
-        typename algebra::curves::pallas::base_field_type::value_type second_block = __builtin_assigner_bit_composition(
-            decomposed_block_2.data(), 128, true);
+        typename algebra::curves::pallas::base_field_type::value_type first_block =
+            __builtin_assigner_bit_composition(decomposed_block_1.data(), 128, true);
+        typename algebra::curves::pallas::base_field_type::value_type second_block =
+            __builtin_assigner_bit_composition(decomposed_block_2.data(), 128, true);
 
         converted = {first_block, second_block};
 
@@ -259,7 +258,7 @@ using namespace nil::crypto3::algebra::curves;
     }
 
 #else
-    #define bytes_to_hash_type(X) (X)
+#define bytes_to_hash_type(X) (X)
 
 #endif
 

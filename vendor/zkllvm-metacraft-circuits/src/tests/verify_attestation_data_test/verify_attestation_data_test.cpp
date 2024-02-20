@@ -8,7 +8,6 @@
 #include <array>
 #include <cstring>
 
-#include <llvm/ObjectYAML/YAML.h>
 #include <iostream>
 #include <fstream>
 #include <streambuf>
@@ -24,10 +23,6 @@ using namespace nlohmann;
 #include "circuits_impl/verify_attestation_data_imp.h"
 
 using namespace nil::crypto3::algebra::curves;
-using llvm::yaml::Input;
-using llvm::yaml::IO;
-using llvm::yaml::MappingTraits;
-using llvm::yaml::Output;
 
 using namespace circuit_byte_utils;
 using namespace byte_utils;
