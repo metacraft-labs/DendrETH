@@ -81,6 +81,8 @@ in
     #  to manage non-containerized applications.
     process-compose
 
+    # Monitoring system & time series database
+    prometheus
   ]
   ++ lib.optionals (stdenv.isx86_64) [
     metacraft-labs.rapidsnark
