@@ -2,6 +2,8 @@
 
 ZKEY_B3SUM_SUM='b36a78df185bc2da310ac6cd9451f143fd13461d059369184d93191972850746'
 DAT_B3SUM_SUM='dc18f6de3f7905964f467e3626773e6960199273706c2df63bf5991091a74032'
+source .env
+process-compose -t=false &
 
 calculate_checksum() {
   local FILE_PATH=$1
@@ -86,14 +88,11 @@ else
   echo "Using prover server settings from environment variables"
 fi
 
-# needed in order for the supervisord configuration to be correct
-mkdir data/redis-server
 
-supervisord -c supervisord.conf
 
 if [[ "$PROVER_SERVER_HOST" == "http://127.0.0.1" ]]; then
   echo "Starting local prover server..."
-  supervisorctl start proverserver
+  process-compose process start proverserver
   echo "Prover server started with command"
 
   max_attempts=300 # 300 attempts * 2s delay = 10 minutes
@@ -124,24 +123,24 @@ fi
 
 if [[ "$REDIS_HOST" == "localhost" ]] && [[ "$REDIS_PORT" == "6379" ]]; then
   echo "Starting local Redis server..."
-  supervisorctl start redis
+  process-compose process start redis
   echo "Local Redis server started"
 else
   echo "Using remote Redis server at $REDIS_HOST:$REDIS_PORT"
 fi
 
 echo "Starting Prometheus server on 9090"
-supervisorctl start prometheus
+process-compose process start prometheus
 echo "Prometheus server started"
 
 # Run the polling update task
 echo "Starting the polling update task"
-supervisorctl start pollUpdatesWorker
+process-compose process start pollUpdatesWorker
 echo "Polling update task started"
 
 # Run the proof generation task
 echo "Starting the proof generation task"
-supervisorctl start proofGenerationWorker
+process-compose process start proofGenerationWorker
 echo "Proof generation task started"
 
 if [ -z "$SLOTS_JUMP" ]; then
@@ -159,105 +158,105 @@ run_network_tasks() {
   # Run hardhat tasks for different networks
   if [ -n "$LC_GOERLI" ]; then
     echo "Starting light client for Goerli network"
-    supervisorctl start goerli
+    process-compose process start goerli
   else
     echo "Skipping Goerli network"
   fi
 
   if [ -n "$LC_OPTIMISTIC_GOERLI" ]; then
     echo "Starting light client for Optimistic Goerli network"
-    supervisorctl start optimisticGoerli
+    process-compose process start goeoptimisticGoerlirli
   else
     echo "Skipping Optimistic Goerli network"
   fi
 
   if [ -n "$LC_BASE_GOERLI" ]; then
     echo "Starting light client for Base Goerli network"
-    supervisorctl start baseGoerli
+    process-compose process start baseGoerli
   else
     echo "Skipping Base Goerli network"
   fi
 
   if [ -n "$LC_ARBITRUM_GOERLI" ]; then
     echo "Starting light client for Arbitrum Goerli network"
-    supervisorctl start arbitrumGoerli
+    process-compose process start arbitrumGoerli
   else
     echo "Skipping Arbitrum Goerli network"
   fi
 
   if [ -n "$LC_SEPOLIA" ]; then
     echo "Starting light client for Sepolia network"
-    supervisorctl start sepolia
+    process-compose process start sepolia
   else
     echo "Skipping Sepolia network"
   fi
 
   if [ -n "$LC_MUMBAI" ]; then
     echo "Starting light client for Mumbai network"
-    supervisorctl start mumbai
+    process-compose process start mumbai
   else
     echo "Skipping Mumbai network"
   fi
 
   if [ -n "$LC_FUJI" ]; then
     echo "Starting light client for Fuji network"
-    supervisorctl start fuji
+    process-compose process start fuji
   else
     echo "Skipping Fuji network"
   fi
 
   if [ -n "$LC_FANTOM" ]; then
     echo "Starting light client for Fantom network"
-    supervisorctl start fantom
+    process-compose process start fantom
   else
     echo "Skipping Fantom network"
   fi
 
   if [ -n "$LC_ALFAJORES" ]; then
     echo "Starting light client for Alfajores network"
-    supervisorctl start alfajores
+    process-compose process start alfajores
   else
     echo "Skipping Alfajores network"
   fi
 
   if [ -n "$LC_BSC" ]; then
     echo "Starting light client for BSC network"
-    supervisorctl start bsc
+    process-compose process start bsc
   else
     echo "Skipping BSC network"
   fi
 
   if [ -n "$LC_AURORA" ]; then
     echo "Starting light client for Aurora network"
-    supervisorctl start aurora
+    process-compose process start aurora
   else
     echo "Skipping Aurora network"
   fi
 
   if [ -n "$LC_GNOSIS" ]; then
     echo "Starting light client for Gnosis network"
-    supervisorctl start gnosis
+    process-compose process start gnosis
   else
     echo "Skipping Gnosis network"
   fi
 
   if [ -n "$LC_CHIADO" ]; then
     echo "Starting light client for Chiado network"
-    supervisorctl start chiado
+    process-compose process start chiado
   else
     echo "Skipping Chiado network"
   fi
 
   if [ -n "$LC_EVMOS" ]; then
     echo "Starting light client for EVMOS network"
-    supervisorctl start evmos
+    process-compose process start evmos
   else
     echo "Skipping EVMOS network"
   fi
 
   if [ -n "$LC_MALAGA" ]; then
     echo "Starting light client for Malaga network"
-    supervisorctl start malaga
+    process-compose process start malaga
   else
     echo "Skipping Malaga network"
   fi
@@ -276,8 +275,10 @@ if [[ "$MAINNET" == "TRUE" ]]; then
   run_network_tasks
 fi
 
-supervisorctl start cleaner
+process-compose process start cleaner
 
-supervisorctl start general_logs
+process-compose process start general_logs
 
-tail -f ./prover_server.log relay/general_logs.log relay/pollUpdatesWorker.log relay/proofGenerationWorker.log beacon-light-client/solidity/goerli.log beacon-light-client/solidity/optimisticGoerli.log beacon-light-client/solidity/baseGoerli.log beacon-light-client/solidity/arbitrumGoerli.log beacon-light-client/solidity/sepolia.log beacon-light-client/solidity/mumbai.log beacon-light-client/solidity/gnosis.log
+echo "____________Starting Logs____________"
+
+tail -f .logs/prover_server.log logs/general_logs.log logs/pollUpdatesWorker.log logs/proofGenerationWorker.log logs/goerli.log logs/optimisticGoerli.log logs/baseGoerli.log logs/arbitrumGoerli.log logs/sepolia.log logs/mumbai.log logs/gnosis.log
