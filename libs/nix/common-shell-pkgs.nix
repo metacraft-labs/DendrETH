@@ -82,6 +82,9 @@ in
     docker-client
     curl
     python3
+    # Process Compose is a simple and flexible scheduler and orchestrator
+    #  to manage non-containerized applications.
+    process-compose
   ]
   ++ lib.optionals (stdenv.isx86_64) [
     metacraft-labs.rapidsnark
