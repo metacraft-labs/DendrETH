@@ -1,0 +1,156 @@
+processes:
+  placeholder:
+    description: placeholder
+    command: sleep 100
+
+  redis:
+    description: redis
+    log_location: ./logs/redis.log
+    command: redis-server --appendonly yes
+    working_dir: ./data/redis-server
+    disabled: true
+
+  proverserver:
+    description: proverserver
+    log_location: ./logs/prover_server.log
+    command: proverServer ${PROVER_SERVER_PORT} ./data/light_client.zkey
+    disabled: true
+
+  prometheus:
+    description: prometheus
+    log_location: ./logs/prometheus.log
+    command: prometheus --config.file=prometheus.yml
+    working_dir: ./relay
+    disabled: true
+
+  pollUpdatesWorker:
+    description: pollUpdatesWorker
+    log_location: ./logs/pollUpdatesWorker.log
+    command: yarn run pollUpdatesWorker
+    working_dir: ./relay
+    disabled: true
+
+  proofGenerationWorker:
+    description: proofGenerationWorker
+    log_location: ./logs/proofGenerationWorker.log
+    command: yarn run proofGenerationWorker --prover ${PROVER_SERVER_HOST}:${PROVER_SERVER_PORT}
+    working_dir: ./relay
+    disabled: true
+
+  cleaner:
+    description: cleaner
+    log_location: ./logs/cleaner.log
+    command: yarn ts ./workers/cleaner.ts
+    working_dir: ./relay/workers
+    disabled: true
+
+  goerli:
+    description: goerli
+    log_location: ./logs/goerli.log
+    command: yarn hardhat start-publishing --lightclient ${LC_GOERLI} --network goerli --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3000
+    working_dir: ./beacon-light-client/solidity
+    disabled: true
+
+  optimisticGoerli:
+    description: optimisticGoerli
+    log_location: ./logs/optimisticGoerli.log
+    command: yarn hardhat start-publishing --lightclient ${LC_OPTIMISTIC_GOERLI} --network optimisticGoerli --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3001
+    working_dir: ./beacon-light-client/solidity
+    disabled: true
+
+  baseGoerli:
+    description: baseGoerli
+    log_location: ./logs/baseGoerli.log
+    command: yarn hardhat start-publishing --lightclient ${LC_BASE_GOERLI} --network baseGoerli --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3002
+    working_dir: ./beacon-light-client/solidity
+    disabled: true
+
+  arbitrumGoerli:
+    description: arbitrumGoerli
+    log_location: ./logs/arbitrumGoerli.log
+    command: yarn hardhat start-publishing --lightclient ${LC_ARBITRUM_GOERLI} --network arbitrumGoerli --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3003
+    working_dir: ./beacon-light-client/solidity
+    disabled: true
+
+  sepolia:
+    description: sepolia
+    log_location: ./logs/sepolia.log
+    command: yarn hardhat start-publishing --lightclient ${LC_SEPOLIA} --network sepolia --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3004
+    working_dir: ./beacon-light-client/solidity
+    disabled: true
+
+  mumbai:
+    description: mumbai
+    log_location: ./logs/mumbai.log
+    command: yarn hardhat start-publishing --lightclient ${LC_MUMBAI} --network mumbai --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3005
+    working_dir: ./beacon-light-client/solidity
+    disabled: true
+
+  fuji:
+    description: fuji
+    log_location: ./logs/fuji.log
+    command: yarn hardhat start-publishing --lightclient ${LC_FUJI} --network avalanche --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3006
+    working_dir: ./beacon-light-client/solidity
+    disabled: true
+
+  fantom:
+    description: fantom
+    log_location: ./logs/fantom.log
+    command: yarn hardhat start-publishing --lightclient ${LC_FANTOM} --network fantom --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3007
+    working_dir: ./beacon-light-client/solidity
+    disabled: true
+
+  alfajores:
+    description: alfajores
+    log_location: ./logs/alfajores.log
+    command: yarn hardhat start-publishing --lightclient ${LC_ALFAJORES} --network celo --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3008
+    working_dir: ./beacon-light-client/solidity
+    disabled: true
+
+  bsc:
+    description: bsc
+    log_location: ./logs/bsc.log
+    command: yarn hardhat start-publishing --lightclient ${LC_BSC} --network bsc --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3009
+    working_dir: ./beacon-light-client/solidity
+    disabled: true
+
+  chiado:
+    description: chiado
+    log_location: ./logs/chiado.log
+    command: yarn hardhat start-publishing --lightclient ${LC_CHIADO} --network chiado --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3010
+    working_dir: ./beacon-light-client/solidity
+    disabled: true
+
+  evmos:
+    description: evmos
+    log_location: ./logs/evmos.log
+    command: yarn hardhat start-publishing --lightclient ${LC_EVMOS} --network evmos --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3011
+    working_dir: ./beacon-light-client/solidity
+    disabled: true
+
+  malaga:
+    description: malaga
+    log_location: ./logs/cosmos-publisher-script-malaga.log
+    command: yarn ts ./contracts/cosmos/scripts/cosmos-publisher-script.ts malaga ${LC_MALAGA} ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3012
+    disabled: true
+
+  aurora:
+    description: aurora
+    log_location: ./logs/aurora.log
+    command: yarn hardhat start-publishing --lightclient ${LC_AURORA} --network aurora --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3013
+    working_dir: ./beacon-light-client/solidity
+    disabled: true
+
+  gnosis:
+    description: gnosis
+    log_location: ./logs/gnosis.log
+    command: yarn hardhat start-publishing --lightclient ${LC_GNOSIS} --network gnosis --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3014
+    working_dir: ./beacon-light-client/solidity
+    disabled: true
+
+  general_logs:
+    description: general_logs
+    log_location: ./logs/general_logs.log
+    command: yarn ts relayer_logger.ts
+    working_dir: ./relay
+    disabled: true
