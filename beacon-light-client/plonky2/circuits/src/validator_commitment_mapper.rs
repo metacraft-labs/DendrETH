@@ -68,7 +68,7 @@ pub fn validator_commitment_mapper<F: RichField + Extendable<D>, const D: usize>
             builder,
             &validator.activation_eligibility_epoch[0..64],
         ),
-        slashed: validator.slashed[0],
+        slashed: validator.slashed[7],
         effective_balance: ssz_num_from_bits(builder, &validator.effective_balance[0..64]),
         activation_epoch: ssz_num_from_bits(builder, &validator.activation_epoch[0..64]),
         exit_epoch: ssz_num_from_bits(builder, &validator.exit_epoch[0..64]),
