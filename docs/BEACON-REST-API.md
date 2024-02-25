@@ -1,4 +1,4 @@
-The Beacon API inteded for light clients is pending specification here:
+The Beacon API intended for light clients is pending specification here:
 https://github.com/ethereum/beacon-APIs/pull/181
 
 It's already fully implemented in the Nimbus client. We recommend building the
@@ -21,7 +21,7 @@ curl http://localhost:5052/eth/v0/beacon/light_client/bootstrap/0x8c59e1ea7215fa
 
 This requests [block 3,200,000](https://prater.beaconcha.in/block/3200000), the first block in epoch 100,000.
 
-You can also launch additional nodes by specifying an unique `NODE_ID` environment variable when launching the script above. For example, to launch a separate Mainnet node while your Prater node is still running, use the following command:
+You can also launch additional nodes by specifying a unique `NODE_ID` environment variable when launching the script above. For example, to launch a separate Mainnet node while your Prater node is still running, use the following command:
 
 ```
 NODE_ID=1 ./run-mainnet-node.sh --light-client-data-serve --light-client-data-import-mode=on-demand --light-client-data-max-periods=999999

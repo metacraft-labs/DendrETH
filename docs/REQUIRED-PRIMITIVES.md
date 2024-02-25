@@ -1,6 +1,6 @@
 ## EVM-based Blockchains
 
-- Ethreum Classic
+- Ethereum Classic
 - Binance Smart Chain
 - Polygon
 - Avalanche
