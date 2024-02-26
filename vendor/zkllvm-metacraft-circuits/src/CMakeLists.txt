@@ -6,7 +6,7 @@ add_link_options(-fsanitize=address)
 function(add_example example_target)
     set(prefix ARG)
     set(noValues "")
-    set(singleValues INPUT)
+    set(singleValues)
     set(multiValues SOURCES)
     cmake_parse_arguments(${prefix}
                         "${noValues}"
@@ -46,12 +46,9 @@ endfunction()
 
 cm_find_package(Boost COMPONENTS REQUIRED filesystem)
 
+find_package(yaml-cpp REQUIRED)
+
 add_custom_target(template)
-
-find_package(LLVM REQUIRED CONFIG)
-
-message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
-message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
 # enable testing functionality
 enable_testing()

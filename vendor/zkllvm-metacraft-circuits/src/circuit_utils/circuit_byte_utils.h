@@ -6,20 +6,28 @@
 #include "../utils/picosha2.h"
 
 using namespace nil::crypto3;
-
 namespace circuit_byte_utils {
 
-#define countof(array) (sizeof(array) / sizeof(array[0]))
-
-    using sha256_t = typename hashes::sha2<256>::block_type;
-
-    bool sha256_equals(sha256_t hash1, sha256_t hash2) {
-        bool result = true;
-        for (auto i = 0; i < countof(hash1); ++i) {
-            result = result && (hash1[i] == hash2[i]);
+    template<typename T, size_t COUNT>
+    void zero_elements(static_vector<T, COUNT>& arr) {
+        for (size_t i = 0; i < COUNT; i++) {
+            arr[i] = 0;
         }
+    }
 
-        return result;
+    template<size_t COUNT>
+    static_vector<Byte, COUNT> get_empty_byte_array() {
+        static_vector<Byte, COUNT> arr;
+        zero_elements(arr);
+        return arr;
+    }
+
+    template<class InputIt, class OutputIt>
+    OutputIt copy(InputIt first, InputIt last, OutputIt d_first) {
+        for (; first != last; (void)++first, (void)++d_first)
+            *d_first = *first;
+
+        return d_first;
     }
 
     template<typename T>
@@ -56,19 +64,29 @@ namespace circuit_byte_utils {
         return out;
     }
 
-    template<std::size_t N, typename T, std::size_t InputSize>
-    std::array<T, N> take(const std::array<T, InputSize>& val) {
+    template<std::size_t N, std::size_t InputSize>
+    static_vector<Byte, N> take(const static_vector<Byte, InputSize>& val, size_t offset = 0) {
         static_assert(N <= InputSize);
-        std::array<T, N> ret {};
-        std::copy(val.begin(), val.begin() + N, ret.begin());
+        assert_true(N + offset <= InputSize);
+        static_vector<Byte, N> ret;
+        copy(val.begin() + offset, val.begin() + offset + N, ret.begin());
 
         return ret;
     }
 
-    template<typename T, bool LittleEndian = true>
-    std::array<Byte, sizeof(T)> int_to_bytes(const T& paramInt) {
+    template<std::size_t N, std::size_t InputSize>
+    static_vector<Byte, N> expand(const static_vector<Byte, InputSize>& val) {
+        static_assert(N >= InputSize);
+        static_vector<Byte, N> ret;
+        copy(val.begin(), val.end(), ret.begin());
+
+        return ret;
+    }
+
+    template<typename T, size_t SIZE = sizeof(T), bool LittleEndian = true>
+    static_vector<Byte, SIZE> int_to_bytes(const T& paramInt) {
         static_assert(std::is_integral_v<typename std::remove_reference_t<T>>, "T must be integral");
-        std::array<Byte, sizeof(T)> bytes {};
+        static_vector<Byte, SIZE> bytes;
         if constexpr (LittleEndian) {
             for (int i = 0; i < sizeof(T); ++i) {
                 bytes[i] = (paramInt >> (i * 8));
@@ -81,20 +99,27 @@ namespace circuit_byte_utils {
         return bytes;
     }
 
-    template<typename T, bool LittleEndian = true>
-    T bytes_to_int(const std::array<Byte, sizeof(T)>& bytes) {
+    template<typename T, typename iterator_type, size_t SIZE, bool LittleEndian>
+    T bytes_to_int(iterator_type first_element, iterator_type last_element) {
         static_assert(std::is_integral_v<typename std::remove_reference_t<T>>, "T must be integral");
+        assert_in_executable(first_element + sizeof(T) <= last_element);
+
         T result = 0;
         if constexpr (LittleEndian) {
-            for (int i = sizeof(T) - 1; i >= 0; i--) {
-                result = (result << 8) + bytes[i];
+            for (unsigned int i = sizeof(T); i > 0; i--) {
+                result = (result << 8) + *(first_element + i - 1);
             }
         } else {
             for (unsigned i = 0; i < sizeof(T); ++i) {
-                result = (result << 8) + bytes[i];
+                result = (result << 8) + *(first_element + i);
             }
         }
         return result;
+    }
+
+    template<typename T, size_t SIZE = sizeof(T), bool LittleEndian = true>
+    T bytes_to_int(const static_vector<Byte, SIZE>& bytes) {
+        return bytes_to_int<T, decltype(bytes.begin()), SIZE, LittleEndian>(bytes.begin(), bytes.end());
     }
 
     template<typename... Args>
@@ -117,6 +142,9 @@ namespace circuit_byte_utils {
                                                std::is_same_v<T, double>,
                                            std::false_type, std::true_type> { };
 
+    template<size_t N>
+    struct HasPadding<static_vector<Byte, N>> : std::false_type { };
+
     template<typename T>
     struct CanConvertToBytes : std::false_type { };
     template<>
@@ -127,6 +155,8 @@ namespace circuit_byte_utils {
     struct CanConvertToBytes<size_t> : std::true_type { };
     template<size_t N>
     struct CanConvertToBytes<std::array<Byte, N>> : std::true_type { };
+    template<size_t N>
+    struct CanConvertToBytes<static_vector<Byte, N>> : std::true_type { };
 
 #define ASSERT_IS_HASHABLE(T)                                                                \
     using PureType = std::remove_cv_t<std::remove_reference_t<T>>;                           \
@@ -187,5 +217,49 @@ namespace circuit_byte_utils {
         picosha2::hash256(buffer.begin(), buffer.begin() + NBytesToHash, hashed.begin(), hashed.end());
         return hashed;
     }
+
+    Bytes32 parent_hash(const Bytes32& child1, const Bytes32& child2) {
+        return sha256(child1, child2);
+    }
+
+    sha256_t parent_hash(sha256_t child1, sha256_t child2) {
+#ifdef __ZKLLVM__
+        return hash<hashes::sha2<256>>(child1, child2);
+#else
+        assert_true(false && "Using sha256_t in executable. Use Bytes32 instead.");
+#endif
+    }
+
+#ifdef __ZKLLVM__
+#include <nil/crypto3/algebra/curves/pallas.hpp>
+
+    using namespace nil::crypto3;
+    using namespace nil::crypto3::algebra::curves;
+    sha256_t bytes_to_hash_type(const Bytes32& bytes) {
+
+        sha256_t converted;
+        // MSB first
+        std::array<typename algebra::curves::pallas::base_field_type::value_type, 128> decomposed_block_1;
+        std::array<typename algebra::curves::pallas::base_field_type::value_type, 128> decomposed_block_2;
+
+        for (size_t i = 0; i < 16; i++) {
+            __builtin_assigner_bit_decomposition(decomposed_block_1.data() + (i * 8), 8, bytes[i], true);
+            __builtin_assigner_bit_decomposition(decomposed_block_2.data() + (i * 8), 8, bytes[i + 16], true);
+        }
+
+        typename algebra::curves::pallas::base_field_type::value_type first_block =
+            __builtin_assigner_bit_composition(decomposed_block_1.data(), 128, true);
+        typename algebra::curves::pallas::base_field_type::value_type second_block =
+            __builtin_assigner_bit_composition(decomposed_block_2.data(), 128, true);
+
+        converted = {first_block, second_block};
+
+        return converted;
+    }
+
+#else
+#define bytes_to_hash_type(X) (X)
+
+#endif
 
 }    // namespace circuit_byte_utils

@@ -26,7 +26,6 @@ crypto3::random
 crypto3::stream
 crypto3::vdf
 crypto3::zk
-LLVMSupport
 
 ${Boost_LIBRARIES})
 

@@ -3,11 +3,13 @@
 #include <stdlib.h>
 #include <array>
 #include "circuit_utils/base_types.h"
+#include "circuit_utils/static_vector.h"
 #include <sstream>
 #include <string>
 #include <string_view>
 #include <sstream>
 #include <iomanip>
+#include <cctype>
 
 namespace byte_utils {
 
@@ -26,8 +28,8 @@ namespace byte_utils {
             }
         };
 
-        convert(hex[0], first_nibble);
-        convert(hex[1], second_nibble);
+        convert(std::tolower(hex[0]), first_nibble);
+        convert(std::tolower(hex[1]), second_nibble);
 
         return (first_nibble << 4) + second_nibble;
     }
@@ -46,7 +48,7 @@ namespace byte_utils {
     }
 
     template<size_t SIZE>
-    std::string bytesToHex(std::array<Byte, SIZE> uint8a) {
+    std::string bytesToHex(static_vector<Byte, SIZE> uint8a) {
         std::string s = "";
         std::ostringstream oss;
         oss << std::setfill('0');
@@ -66,12 +68,12 @@ namespace byte_utils {
     }
 
     template<long unsigned int SIZE>
-    std::array<Byte, SIZE> hexToBytes(const std::string& hex_str) {
+    static_vector<Byte, SIZE> hexToBytes(const std::string& hex_str) {
         std::string_view hex(hex_str);
         formatHex(hex);
         assert_true(hex.length() == (2 * SIZE));
 
-        std::array<Byte, SIZE> bytes;
+        static_vector<Byte, SIZE> bytes;
         for (size_t i = 0; i < bytes.size(); ++i) {
             auto hexByte = hex.substr(i * 2, 2);
             bytes[i] = hexToByte(hexByte.data());
@@ -88,7 +90,7 @@ namespace byte_utils {
     JustificationBitsVariable hexToBitsVariable(std::string hex) {
         JustificationBitsVariable retval {};
         auto bits = hexToBytes<1>(hex);
-        for (int64_t i = 0; i < (int64_t)retval.bits.size(); ++i) {
+        for (uint64_t i = 0; i < (uint64_t)retval.bits.size(); ++i) {
             retval.bits[i] = (bits[0] % 2);
             bits[0] /= 2;
         }
