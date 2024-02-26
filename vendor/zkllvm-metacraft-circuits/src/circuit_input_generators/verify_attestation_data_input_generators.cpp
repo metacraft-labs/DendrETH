@@ -27,14 +27,18 @@ using std::cout;
 
 constexpr size_t MAX_KEYS = 1'000'000;
 
+nlohmann::json pack_int_json(uint64_t val) {
+    nlohmann::json j;
+    j["int"] = (int)val;
+    return j;
+}
+
 template <size_t N>
 nlohmann::json byte_array_to_json(const std::array<Byte, N>& bytes)
 {
     nlohmann::json result;
     for(size_t i = 0; i < bytes.size(); i++) {
-        nlohmann::json j;
-        j["int"] = (int)bytes[i];
-        result["array"].push_back(j);
+        result["array"].push_back(pack_int_json(bytes[i]));
     }
     return result;
 }
@@ -108,16 +112,21 @@ int main(int argc, char* argv[]) {
     {
         nlohmann::json final_result;
         nlohmann::json keys_result;
-        for (size_t i = 0; i < unique_keys_count; ++i) {
-             keys_result.push_back(byte_array_to_json(trusted_pubkeys[i]));
+        for (int i = 0; i < std::min(unique_keys_count, MAX_KEYS); ++i) {
+            keys_result.push_back(byte_array_to_json(trusted_pubkeys[i]));
         }
-        for(size_t i = 0; i < MAX_KEYS - unique_keys_count; ++i) {
+        for(int i = 0; i < (int)MAX_KEYS - (int)unique_keys_count; ++i) {
             keys_result.push_back(byte_array_to_json(byte_utils::hexToBytes<48>("0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")));
         }
+        nlohmann::json array_keys_result;
+        array_keys_result["array"] = keys_result;
+        final_result.push_back(array_keys_result);
+        // final_result.push_back(pack_int_json(unique_keys_count));
+        // final_result.push_back(pack_int_json(0x69));
 
+        // final_result.push_back(byte_array_to_json(trusted_pubkeys[0]));
 
-
-        std::cout << "keys_result: \n" << keys_result.dump(2) << "\n";
+        std::cout << final_result << "\n";
 
     }
 

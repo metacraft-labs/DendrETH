@@ -284,6 +284,7 @@ void prove_finality(const VoteToken& token,
                     const int64_t active_validators_count) {
     assert_true(votedTransition == token.transition);
     base_field_type reconstructed_token = 0;
+
     uint64_t votes_count = process_votes(trustedKeys, pubkeysCount, sigma, reconstructed_token);
 
     assert_true(reconstructed_token == token.token);
