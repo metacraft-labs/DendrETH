@@ -46,5 +46,6 @@ import yargs from 'yargs';
   );
   const deletedCount = deleted.reduce((sum, value) => sum + value);
   console.log(`Deleted ${deletedCount} database entries`);
-  await redis.disconnect();
+
+  await redis.quit();
 })();
