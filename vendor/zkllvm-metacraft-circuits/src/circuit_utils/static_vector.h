@@ -111,7 +111,7 @@ struct static_vector {
 
 template<std::size_t CAPACITY>
 struct static_vector<Byte, CAPACITY> {
-    Byte content_[CAPACITY];
+    std::array<Byte, CAPACITY> content_;
 
     constexpr static_vector(std::initializer_list<Byte> init) {
         size_t i = 0;
@@ -140,11 +140,7 @@ struct static_vector<Byte, CAPACITY> {
             content_[i] = 0;
         }
     }
-    constexpr static_vector(static_vector const& rhs) {
-        for (size_t i = 0; i < CAPACITY; i++) {
-            content_[i] = rhs[i];
-        }
-    }
+
     // For some reason, this triggers a circuit compilation error
     // ~static_vector() {
     //     size_ = 0;
@@ -159,7 +155,7 @@ struct static_vector<Byte, CAPACITY> {
         return &content_;
     }
     constexpr auto content() -> std::array<Byte, CAPACITY>& {
-        return reinterpret_cast<std::array<Byte, CAPACITY>&>(content_);
+        return content_;
     }
     constexpr auto operator[](std::size_t index) -> Byte& {
         return content_[index];
