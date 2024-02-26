@@ -29,10 +29,10 @@ export class Redis implements IRedis {
     });
   }
 
-  async disconnect() {
+  async quit() {
     await this.waitForConnection();
-    await this.pubSub.disconnect();
-    this.client.disconnect();
+    await this.pubSub.quit();
+    this.client.quit();
   }
 
   async addToEpochLookup(key: string, epoch: bigint) {
