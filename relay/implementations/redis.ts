@@ -62,21 +62,23 @@ export class Redis implements IRedis {
     return BigInt(values[0]);
   }
 
-  async pruneOldEpochs(key: string, newOldestEpoch: bigint): Promise<number> {
+  async collectOutdatedEpochs(key: string, newOldestEpoch: bigint): Promise<number[]> {
     await this.waitForConnection();
 
     const latestEpoch = await this.getLatestEpoch(key, newOldestEpoch);
     if (latestEpoch !== null) {
-      const range = await this.client.zrange(
-        `${key}:${CONSTANTS.epochLookupKey}`,
-        0,
-        (latestEpoch - 1n).toString(),
-        'BYSCORE',
-      );
-      if (range.length !== 0) {
-        await this.client.zrem(`${key}:${CONSTANTS.epochLookupKey}`, range);
-        return await this.client.del(range.map(suffix => `${key}:${suffix}`));
-      }
+      return (await this.client.zrange(`${key}:${CONSTANTS.epochLookupKey}`, 0, (latestEpoch - 1n).toString(), 'BYSCORE')).map(Number);
+    }
+    return [];
+  }
+
+  async pruneOldEpochs(key: string, newOldestEpoch: bigint): Promise<number> {
+    await this.waitForConnection();
+
+    const epochs = await this.collectOutdatedEpochs(key, newOldestEpoch);
+    if (epochs.length !== 0) {
+      await this.client.zrem(`${key}:${CONSTANTS.epochLookupKey}`, epochs);
+      return this.client.del(epochs.map((suffix) => `${key}:${suffix}`));
     }
     return 0;
   }
@@ -372,14 +374,27 @@ export class Redis implements IRedis {
 
   async get(key: string): Promise<string | null> {
     await this.waitForConnection();
+    return this.client.get(key);
+  }
 
-    return await this.client.get(key);
+  async getBuffer(key: string): Promise<Buffer | null> {
+    await this.waitForConnection();
+    return this.client.getBuffer(key);
+  }
+
+  async setBuffer(key: string, buffer: Buffer): Promise<void> {
+    await this.waitForConnection();
+    await this.client.set(key, buffer);
   }
 
   async set(key: string, value: string): Promise<void> {
     await this.waitForConnection();
-
     await this.client.set(key, value);
+  }
+
+  async del(key: string): Promise<number> {
+    await this.waitForConnection();
+    return this.client.del(key);
   }
 
   async saveProof(
