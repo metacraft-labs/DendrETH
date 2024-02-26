@@ -6,7 +6,7 @@ const experimentalDir = 'tests/experiments/data';
 type Tasks = Record<number, Promise<void>>;
 
 const enablePrintOnRemove = false;
-const enablePrintOnWrite = false;
+const enablePrintOnWrite = true;
 
 export function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -36,13 +36,22 @@ export function childLeafsExists(gIndex: bigint) {
 }
 
 export async function writeFile(gIndex: bigint, content: string) {
+  if (enablePrintOnWrite) log('writing ', gIndex);
   await fs.writeFile(fileName(gIndex), content);
-  if (enablePrintOnWrite) log('wrote ', gIndex);
 }
 
 export async function removeFile(gIndex: bigint) {
-  await fs.rm(fileName(gIndex));
-  if (enablePrintOnRemove) log('removed ', gIndex);
+  if (fs.existsSync(fileName(gIndex))) {
+    await fs.rm(fileName(gIndex));
+    if (enablePrintOnRemove) log('removed ', gIndex);
+  }
+}
+
+export async function readFile(gIndex: bigint) {
+  if (fs.existsSync(fileName(gIndex))) {
+    return JSON.parse(await fs.readFile(fileName(gIndex), 'utf-8'));
+  }
+  return { status: 'not started', gIndex, data: 'no data' };
 }
 
 export async function execTask(
@@ -54,24 +63,54 @@ export async function execTask(
   if (delay) await sleep(delay);
   const { leftChild, rightChild } = fromGI(gIndex);
 
-  let content: object;
+  let content: {
+    status: string;
+    gIndex: bigint;
+    data: string;
+    left?: any;
+    right?: any;
+    isLeaf?: boolean;
+  };
 
   if (placeholder) {
-    content = { status: 'not started', gIndex };
+    content = { status: 'not started', gIndex, data: 'I am placeholder' };
   } else {
     if (isLeaf) {
-      content = { status: 'done', gIndex, isLeaf };
+      content = { status: 'done', gIndex, data: `I am leaf`, isLeaf };
     } else {
-      const left = JSON.parse(await fs.readFile(fileName(leftChild), 'utf-8'));
-      const right = JSON.parse(
-        await fs.readFile(fileName(rightChild), 'utf-8'),
-      );
+      const left = await readFile(leftChild);
+      const right = await readFile(rightChild);
 
-      content = { status: 'done', gIndex, left, right };
+      if (left.data === 'no data' && right.data === 'no data') {
+        content = {
+          status: 'empty',
+          gIndex,
+          data: 'no data',
+          left,
+          right,
+        };
+      } else
+        content = {
+          status: 'done',
+          gIndex,
+          data: 'I am inner node',
+          left,
+          right,
+        };
     }
   }
 
-  await writeFile(gIndex, stringify(content));
+  if (isLeaf) {
+    if (gIndex % 1000n === 0n) {
+      await writeFile(gIndex, stringify(content));
+    } else {
+      log('skipping write', gIndex);
+    }
+  } else if (content.status == 'empty') {
+    log('skipping Inner write ', gIndex);
+  } else {
+    await writeFile(gIndex, stringify(content));
+  }
 }
 
 function log2(x: bigint) {
@@ -146,11 +185,10 @@ export function executeTree(depth: bigint, tasks: Tasks, jobDelay = 0) {
       tasks[`${gIndex}`] = Promise.all([
         tasks[`${leftChild}`],
         tasks[`${rightChild}`],
-      ])
-        .then(() => execTask(gIndex, false, false, jobDelay))
-        .then(() =>
-          Promise.all([removeFile(leftChild), removeFile(rightChild)]),
-        );
+      ]).then(() => execTask(gIndex, false, false, jobDelay));
+      // .then(() =>
+      //   Promise.all([removeFile(leftChild), removeFile(rightChild)]),
+      // );
     }
   }
 }
@@ -160,9 +198,9 @@ export async function runIt() {
 
   fs.mkdir(experimentalDir, { recursive: true });
 
-  log('Writing placeholder files');
-  await writePlaceholderFiles(depth);
-  log('Finished writing placeholder files');
+  // log('Writing placeholder files');
+  // await writePlaceholderFiles(depth);
+  // log('Finished writing placeholder files');
 
   const tasks: Tasks = {};
   executeTree(depth, tasks);
