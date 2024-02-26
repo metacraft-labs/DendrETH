@@ -38,5 +38,6 @@ import yargs from 'yargs';
   const deleted = await Promise.all(keys.map(async (key) => redis.pruneOldEpochs(key, options['oldest-epoch'])));
   const deletedCount = deleted.reduce((sum, value) => sum + value);
   console.log(`Deleted ${deletedCount} database entries`);
-  await redis.disconnect();
+
+  await redis.quit();
 })();

@@ -95,5 +95,5 @@ function bitArrayToByteArray(hash: number[]): Uint8Array {
 
   console.log(path)
 
-  await redis.disconnect();
+  await redis.quit();
 })();

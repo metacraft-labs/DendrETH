@@ -296,7 +296,7 @@ let TAKE: number;
 
   console.log(chalk.bold.greenBright('Done'));
 
-  await redis.disconnect();
+  await redis.quit();
 })();
 
 function getZeroValidator() {
