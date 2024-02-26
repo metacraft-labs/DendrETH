@@ -66,8 +66,8 @@ export class CommitmentMapperScheduler {
         console.error(
           chalk.red(
             'Error: Unexpectedly small beacon state file.\n' +
-              'Please ensure Git LFS is enabled and run the following:\n' +
-              chalk.bold('git lfs fetch; git lfs checkout'),
+            'Please ensure Git LFS is enabled and run the following:\n' +
+            chalk.bold('git lfs fetch; git lfs checkout'),
           ),
         );
         return;
@@ -76,7 +76,7 @@ export class CommitmentMapperScheduler {
       this.validators =
         this.ssz.capella.BeaconState.deserialize(serializedState).validators;
     }
-    
+
     console.log(`Loaded ${chalk.bold.yellow(this.validators.length)} validators from database`);
 
     if (await this.redis.isZeroValidatorEmpty()) {
@@ -99,7 +99,7 @@ export class CommitmentMapperScheduler {
         this.headEpoch = BigInt(JSON.parse(event.data).slot) / 32n;
         await this.syncEpoch();
       });
-    }    
+    }
   }
 
   async scheduleZeroTasks() {
