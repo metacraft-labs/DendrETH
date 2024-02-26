@@ -48,7 +48,7 @@ export class CommitmentMapperScheduler {
   }
 
   async dispose() {
-    return this.redis.disconnect();
+    return this.redis.quit();
   }
 
   async start(runOnce: boolean = false) {
