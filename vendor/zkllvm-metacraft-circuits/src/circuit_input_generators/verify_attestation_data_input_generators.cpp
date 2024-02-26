@@ -35,7 +35,7 @@ nlohmann::json pack_int_json(uint64_t val) {
 }
 
 template <size_t N>
-nlohmann::json byte_array_to_json(const std::array<Byte, N>& bytes)
+nlohmann::json byte_array_to_json(const static_vector<Byte, N>& bytes)
 {
     nlohmann::json result;
     for(size_t i = 0; i < bytes.size(); i++) {
@@ -45,9 +45,9 @@ nlohmann::json byte_array_to_json(const std::array<Byte, N>& bytes)
 }
 
 template <size_t N>
-std::array<Byte, N> json_to_byte_array(const nlohmann::json& j)
+static_vector<Byte, N> json_to_byte_array(const nlohmann::json& j)
 {
-    std::array<Byte, N> result;
+    static_vector<Byte, N> result;
     size_t i = 0;
     for(const auto& v : j["array"]) {
         result[i++] = v["int"];
