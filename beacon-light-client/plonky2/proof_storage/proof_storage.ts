@@ -1,6 +1,8 @@
-import path from 'path';
-import { Redis } from '../../../relay/implementations/redis';
-import fs from 'fs/promises'
+import { S3Storage } from './aws_proof_storage';
+import { AzureStorage } from './azure_proof_storage';
+import { FileStorage } from './file_proof_storage';
+import { RedisStorage } from './redis_proof_storage';
+
 
 export interface IProofStorage {
   getProof(key: string): Promise<Buffer | null>;
@@ -11,62 +13,51 @@ export interface IProofStorage {
 
 export function createProofStorage(options: any): IProofStorage {
   const type = options['proof-storage-type'];
-  if (type === 'redis') {
-    return new RedisStorage(options['redis-host'], options['redis-port']);
-  } else if (type === 'file') {
-    const folder = options['folder-name'];
-    if (folder === undefined) {
-      throw new Error('folder-name was not provided');
+
+
+  switch (type) {
+    case 'redis': return new RedisStorage(options['redis-host'], options['redis-port']);
+    case 'file': {
+      const folder = options['folder-name'];
+      if (folder === undefined) {
+        throw new Error('folder-name was not provided');
+      }
+      return new FileStorage(folder);
+    }
+    case 'azure': {
+      const account = options['azure-account'];
+      const container = options['azure-container'];
+      if (account === undefined) {
+        throw new Error('azure-account was not provided');
+      }
+      if (container === undefined) {
+        throw new Error('azure-container was not provided');
+      }
+
+      return new AzureStorage('placeholder', 'placeholder');
 
     }
-    return new FileStorage(folder);
-  } else {
-    throw new Error(`Proof storage type not supported: ${type}`);
+    case 'aws': {
+      const endpoint = options['aws-endpoint-url'];
+      const region = options['aws-region'];
+      const bucket = options['aws-bucket-name'];
+
+      if (endpoint === undefined) {
+        throw new Error('aws-endpoint-url was not provided');
+      }
+
+      if (region === undefined) {
+        throw new Error('aws-region was not provided');
+      }
+
+      if (bucket === undefined) {
+        throw new Error('aws-bucket-name was not provided');
+      }
+
+      return new S3Storage(options['aws-endopoint-url'], options['aws-region'], options['aws-bucket-name']);
+    }
+    default: throw new Error(`Proof storage type not supported: ${type}`);
   }
 }
 
-export class FileStorage implements IProofStorage {
-  constructor(private folderName: string) { }
 
-  getPathFromKey(key: string): string {
-    return path.join(this.folderName, key) + '.bin';
-  }
-
-  getProof(key: string): Promise<Buffer | null> {
-    return fs.readFile(this.getPathFromKey(key));
-  }
-
-  setProof(key: string, proof: Buffer): Promise<void> {
-    return fs.writeFile(this.getPathFromKey(key), proof);
-  }
-
-  delProof(key: string): Promise<void> {
-    return fs.unlink(this.getPathFromKey(key));
-  }
-
-  async quit(): Promise<void> { }
-}
-
-export class RedisStorage implements IProofStorage {
-  private connection: Redis;
-
-  constructor(host: string, port: number) {
-    this.connection = new Redis(host, port);
-  }
-
-  async getProof(key: string): Promise<Buffer | null> {
-    return this.connection.getBuffer(key);
-  }
-
-  setProof(key: string, proof: Buffer): Promise<void> {
-    return this.connection.setBuffer(key, proof);
-  }
-
-  async delProof(key: string): Promise<void> {
-    await this.connection.del(key);
-  }
-
-  async quit(): Promise<void> {
-    this.connection.client.quit();
-  }
-}
