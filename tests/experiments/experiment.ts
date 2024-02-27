@@ -13,7 +13,14 @@ import {
   TreeParams,
 } from './utils/tree-utils';
 import { exampleLeafData } from './utils/constants';
-import { Tasks, sleep, stringToBytes, stringify } from './utils/common-utils';
+import {
+  Tasks,
+  logWrite,
+  setLogging,
+  sleep,
+  stringToBytes,
+  stringify,
+} from './utils/common-utils';
 
 import { sha256 } from 'ethers/lib/utils';
 
@@ -76,10 +83,10 @@ export async function execTask(
     if (shouldExist(gIndex)) {
       await writeFile(gIndex, stringify(nodeData.content));
     } else {
-      log('skipping write', gIndex);
+      logWrite(gIndex, 'skipping write');
     }
   } else if (nodeData.isMissing) {
-    log('skipping Inner write ', gIndex);
+    logWrite(gIndex, 'skipping Inner write');
   } else {
     await writeFile(gIndex, stringify(nodeData.content));
   }
@@ -119,11 +126,14 @@ export function executeTree(
 }
 
 export async function runIt() {
+  const logWrites = (process.env['LOG_WRITES'] ?? 'true') === 'true';
   const depth = BigInt(process.env['DEPTH'] ?? '10'),
     validatorCount = BigInt(process.env['VALIDATOR_COUNT'] ?? '100'),
     sparseAmount = BigInt(process.env['SKIP'] ?? '3') + 1n;
 
-  console.log({ depth, validatorCount, sparseAmount });
+  setLogging(logWrites);
+
+  log('config', { logWrites, depth, validatorCount, sparseAmount });
 
   const treeParams: TreeParams = {
     depth,
