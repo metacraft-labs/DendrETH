@@ -2,24 +2,27 @@ import { LevelIndexAndGIndex } from './common-utils';
 
 export interface TreeParams {
   depth: bigint;
-  lastValidatorIndex: bigint;
+  validatorCount: bigint;
   shouldExist: (gIndex: bigint) => boolean;
 }
 
 export type LeafData = {
-  pubkey: string;
-  withdrawal_credentials: string;
-  effective_balance: string;
-  activation_eligibility_epoch: string;
-  activation_epoch: string;
-  exit_epoch: string;
-  withdrawable_epoch: string;
+  pubkey: Hash;
+  withdrawal_credentials: Hash;
+  effective_balance: Hash;
+  activation_eligibility_epoch: Hash;
+  activation_epoch: Hash;
+  exit_epoch: Hash;
+  withdrawable_epoch: Hash;
 };
+
+/// Hex string like 0x12abcd34
+export type Hash = string;
 
 export type NodeContent = {
   gIndex: bigint;
-  hash: string;
-  data?: LeafData | string;
+  hash: Hash;
+  data?: LeafData;
 };
 
 export type NodeData = {
@@ -30,11 +33,13 @@ export type NodeData = {
   isPlaceholder?: boolean;
 };
 
-export function iterateLevel(
+export function* iterateLevel(
   level: bigint,
 ): Generator<{ indexOnThisLevel: bigint; gIndex: bigint }, void, unknown> {
   const { levelBeg, levelEnd } = fromDepth(level);
-  return range(levelBeg, levelEnd);
+  for (let gIndex = levelBeg, idx = 0n; gIndex <= levelEnd; gIndex++) {
+    yield { indexOnThisLevel: ++idx, gIndex };
+  }
 }
 
 export function* range(
@@ -47,7 +52,7 @@ export function* range(
   }
 }
 
-export function fromGI(gIndex: bigint): {
+export function fromGIndex(gIndex: bigint): {
   leftChild: bigint;
   rightChild: bigint;
 } {
