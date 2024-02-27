@@ -4,6 +4,9 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug)]
 pub struct Validator {
+    pub trusted: bool,
+    pub validator_index: u64,
+
     pub pubkey: [bool; 384],
     pub withdrawal_credentials: [bool; 256],
     pub effective_balance: BigUint,
@@ -17,6 +20,9 @@ pub struct Validator {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ValidatorDataInput {
+    pub trusted: bool,
+    pub validator_index: u64,
+
     pub activation_eligibility_epoch: u64,
     pub activation_epoch: u64,
     pub effective_balance: u64,
@@ -29,6 +35,9 @@ pub struct ValidatorDataInput {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ValidatorPoseidonDataOutput {
+    pub trusted: bool,
+    pub validator_index: u64,
+
     pub activation_eligibility_epoch: u64,
     pub activation_epoch: u64,
     pub effective_balance: u64,

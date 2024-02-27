@@ -88,6 +88,9 @@ pub fn main() {
 
         poseidon_validator_obj_vec.push(
         ValidatorPoseidonDataOutput {
+                trusted: validators_raw[i].trusted,
+                validator_index: validators_raw[i].validator_index,
+
                 activation_eligibility_epoch: biguint_to_u64_unsafe(validators_raw[i].activation_eligibility_epoch.clone()),
                 activation_epoch: biguint_to_u64_unsafe(validators_raw[i].activation_epoch.clone()),
                 effective_balance: biguint_to_u64_unsafe(validators_raw[i].effective_balance.clone()),

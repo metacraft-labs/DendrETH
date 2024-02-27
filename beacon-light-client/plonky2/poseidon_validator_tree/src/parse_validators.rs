@@ -40,6 +40,9 @@ pub fn read_json_from_file(path_to_file: &str) -> Result<Value, Error> {
 pub fn parse_validator(validator: ValidatorDataInput) -> Validator {
     
     Validator {
+        trusted: validator.trusted,
+        validator_index: validator.validator_index,
+
         pubkey: hex_to_binary(validator.pubkey.as_str()).try_into().unwrap(),
         withdrawal_credentials: hex_to_binary(validator.withdrawal_credentials.as_str()).try_into().unwrap(),
         effective_balance: BigUint::from(validator.effective_balance),

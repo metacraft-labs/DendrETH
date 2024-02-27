@@ -298,6 +298,9 @@ mod tests {
             type F = GoldilocksField;
         
             let validator = Validator {
+                trusted: true,
+                validator_index: 1,
+
                 pubkey: [
                     true, false, true, true, true, false, false, false, false, false, true, false, false,
                     true, false, false, true, false, true, true, false, true, false, true, true, true,
@@ -361,6 +364,9 @@ mod tests {
             };
         
             let validator1 = Validator {
+                trusted: true,
+                validator_index: 1,
+
                 pubkey: [
                     true, false, true, true, true, false, false, false, false, false, true, false, false,
                     true, false, false, true, false, true, true, false, true, false, true, true, true,
@@ -424,6 +430,9 @@ mod tests {
             };
         
             let validator2 = Validator {
+                trusted: true,
+                validator_index: 1,
+
                 pubkey: [
                     true, false, true, true, true, false, false, false, false, false, true, false, false,
                     true, false, false, true, false, true, true, false, true, false, true, true, true,
@@ -487,6 +496,9 @@ mod tests {
             };
         
             let validator3 = Validator {
+                trusted: true,
+                validator_index: 1,
+                
                 pubkey: [
                     true, false, true, true, true, false, false, false, false, false, true, false, false,
                     true, false, false, true, false, true, true, false, true, false, true, true, true,
@@ -550,6 +562,9 @@ mod tests {
             };
         
             let validator4 = Validator {
+                trusted: true,
+                validator_index: 1,
+
                 pubkey: [
                     true, false, true, true, true, false, false, false, false, false, true, false, false,
                     true, false, false, true, false, true, true, false, true, false, true, true, true,
@@ -613,6 +628,9 @@ mod tests {
             };
         
             let validator5 = Validator {
+                trusted: true,
+                validator_index: 1,
+
                 pubkey: [
                     true, false, true, true, true, false, false, false, false, false, true, false, false,
                     true, false, false, true, false, true, true, false, true, false, true, true, true,
@@ -676,6 +694,9 @@ mod tests {
             };
         
             let validator6 = Validator {
+                trusted: true,
+                validator_index: 1,
+
                 pubkey: [
                     true, false, true, true, true, false, false, false, false, false, true, false, false,
                     true, false, false, true, false, true, true, false, true, false, true, true, true,
@@ -739,6 +760,9 @@ mod tests {
             };
         
             let validator7 = Validator {
+                trusted: true,
+                validator_index: 1,
+
                 pubkey: [
                     true, false, true, true, true, false, false, false, false, false, true, false, false,
                     true, false, false, true, false, true, true, false, true, false, true, true, true,
@@ -802,6 +826,9 @@ mod tests {
             };
         
             let validator8 = Validator {
+                trusted: true,
+                validator_index: 1,
+
                 pubkey: [
                     true, false, true, true, true, false, false, false, false, false, true, false, false,
                     true, false, false, true, false, true, true, false, true, false, true, true, true,
@@ -865,6 +892,9 @@ mod tests {
             };
         
             let validator9 = Validator {
+                trusted: true,
+                validator_index: 1,
+
                 pubkey: [
                     true, false, true, true, true, false, false, false, false, false, true, false, false,
                     true, false, false, true, false, true, true, false, true, false, true, true, true,
