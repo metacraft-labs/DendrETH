@@ -1,3 +1,5 @@
+import { log } from '../logging';
+
 export interface LevelIndexAndGIndex {
   [key: string]: bigint;
 }
@@ -23,4 +25,14 @@ export function stringToBytes(str: string) {
     bytes[i] = str.charCodeAt(i);
   }
   return bytes;
+}
+
+let logWrites = true;
+
+export function setLogging(enabled: boolean) {
+  logWrites = enabled;
+}
+
+export function logWrite(gIndex: bigint, msg: string) {
+  if (logWrites) log(msg, gIndex);
 }

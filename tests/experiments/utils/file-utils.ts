@@ -1,5 +1,4 @@
 import fs from 'fs-extra';
-import { log } from '../logging';
 import { execTask } from '../experiment';
 import {
   fromGIndex,
@@ -9,6 +8,7 @@ import {
   log2,
   NodeData,
 } from './tree-utils';
+import { logWrite } from './common-utils';
 
 export const experimentalDir = 'tests/experiments/data';
 
@@ -21,14 +21,14 @@ export function fileName(gIndex: bigint) {
 }
 
 export async function writeFile(gIndex: bigint, content: string) {
-  if (enablePrintOnWrite) log('writing ', gIndex);
+  logWrite(gIndex, 'writing');
   await fs.writeFile(fileName(gIndex), content);
 }
 
 export async function removeFile(gIndex: bigint) {
   if (fs.existsSync(fileName(gIndex))) {
     await fs.rm(fileName(gIndex));
-    if (enablePrintOnRemove) log('removed ', gIndex);
+    logWrite(gIndex, 'removed');
   }
 }
 
