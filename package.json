@@ -60,6 +60,8 @@
     "build-plonky-2": "tsc -p beacon-light-client/plonky2/tsconfig.json"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.521.0",
+    "@azure/storage-blob": "^12.17.0",
     "@chainsafe/bls": "^6.0.3",
     "@chainsafe/blst": "^0.2.4",
     "@chainsafe/persistent-merkle-tree": "^0.6.1",
@@ -74,6 +76,7 @@
     "@nomiclabs/hardhat-ethers": "^2.1.1",
     "@nomiclabs/hardhat-etherscan": "^3.1.0",
     "@nomiclabs/hardhat-waffle": "^2.0.3",
+    "aws-sdk": "^2.1566.0",
     "bullmq": "^3.7.1",
     "chalk": "^4.1.2",
     "circom_tester": "^0.0.14",
@@ -95,7 +98,7 @@
     "snarkjs": "github:metacraft-labs/snarkjs",
     "uuid": "^9.0.0",
     "winston": "^3.10.0",
-    "yargs": "^17.7.1"
+    "yargs": "^17.7.2"
   },
   "bin": {
     "get-balances-input": "dist/beacon-light-client/plonky2/get_balances_input/get_balances_input.js",
