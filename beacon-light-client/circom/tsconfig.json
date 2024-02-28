@@ -1,9 +1,10 @@
 {
   "extends": "../../tsconfig.json",
+  "include": [
+    "./scripts/**/*.ts",
+    "./test/**/*.ts"
+  ],
   "files": [
     "./hardhat.config.ts"
   ],
-  "compilerOptions": {
-    "moduleResolution": "nodenext"
-  }
 }
