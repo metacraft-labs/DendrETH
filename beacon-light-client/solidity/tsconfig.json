@@ -1,8 +1,10 @@
 {
-  "extends": "../../tsconfig.json",
-  "files": ["./hardhat.config.ts"],
-  "include": ["./test"],
-  "compilerOptions": {
-    "moduleResolution": "nodenext"
-  }
+  "extends": "../../tsconfig.hardhat.json",
+  "files": [
+    "./hardhat.config.ts"
+  ],
+  "include": [
+    "./tasks",
+    "./test"
+  ],
 }
