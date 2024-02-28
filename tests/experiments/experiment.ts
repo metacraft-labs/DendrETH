@@ -13,7 +13,7 @@ import {
   TreeParams,
   iterateTree,
 } from './utils/tree-utils';
-import { exampleLeafData } from './utils/constants';
+import { exampleLeafData, resultsFile } from './utils/constants';
 import {
   Tasks,
   logWrite,
@@ -113,13 +113,18 @@ export function executeTree(
   }
 }
 
-export async function runIt() {
+export async function runIt(config?) {
   const logWrites = (process.env['LOG_WRITES'] ?? 'true') === 'true';
-  const depth = BigInt(process.env['DEPTH'] ?? '10'),
-    validatorCount = BigInt(process.env['VALIDATOR_COUNT'] ?? '100'),
-    sparseAmount = BigInt(process.env['SKIP'] ?? '3') + 1n;
+  const { depth, validatorCount, sparseAmount } = config
+    ? config
+    : {
+        depth: BigInt(process.env['DEPTH'] ?? '10'),
+        validatorCount: BigInt(process.env['VALIDATOR_COUNT'] ?? '100'),
+        sparseAmount: BigInt(process.env['SKIP'] ?? '3') + 1n,
+      };
 
   setLogging(logWrites);
+  const startTime = new Date().getTime();
 
   log('config', { logWrites, depth, validatorCount, sparseAmount });
 
@@ -129,22 +134,53 @@ export async function runIt() {
     shouldExist: x => x % sparseAmount === 0n,
   };
 
-  fs.mkdir(experimentalDir, { recursive: true });
-
-  // log('Writing placeholder files');
-  // await writePlaceholderFiles(depth);
-  // log('Finished writing placeholder files');
+  await fs.rm(experimentalDir, { recursive: true, force: true });
+  await fs.mkdir(experimentalDir, { recursive: true });
 
   const tasks: Tasks = {};
   executeTree(treeParams, tasks);
 
   await tasks[1];
-  log('working here finished');
+  const now = new Date();
+  const diff = `${(now.getTime() - startTime).toString(10)}`.padStart(2);
+  log('Task finished in ', `Δt₀: ${diff} ms`);
+
+  const results = {
+    config: `{ depth: ${depth}, validatorCount: ${validatorCount}, sparseAmount: ${sparseAmount} }`,
+    time: `Δt₀: ${diff} ms`,
+  };
+
+  return results;
 }
 
-runIt()
+const configs = [
+  { depth: 4n, validatorCount: 2n ** 2n, sparseAmount: 1n },
+  { depth: 4n, validatorCount: 2n ** 3n, sparseAmount: 3n },
+  { depth: 20n, validatorCount: 2n ** 3n, sparseAmount: 3n },
+  { depth: 20n, validatorCount: 2n ** 10n, sparseAmount: 3n },
+  { depth: 24n, validatorCount: 2n ** 10n, sparseAmount: 3n },
+  { depth: 37n, validatorCount: 2n ** 3n, sparseAmount: 3n },
+  { depth: 37n, validatorCount: 2n ** 10n, sparseAmount: 3n },
+  { depth: 37n, validatorCount: 2n ** 16n, sparseAmount: 3n },
+  { depth: 37n, validatorCount: 2n ** 20n, sparseAmount: 3n },
+  { depth: 37n, validatorCount: 2n ** 21n, sparseAmount: 3n },
+];
+
+const executeTasks = async () => {
+  await fs.rm(resultsFile, { force: true });
+  let results: [{ config: string; time: string }] = [
+    { config: 'config', time: 'time' },
+  ];
+
+  for (const config of configs) {
+    results.push(await runIt(config));
+  }
+  await fs.writeFile(resultsFile, JSON.stringify(results));
+};
+
+executeTasks()
   .then(() => {
-    log('done');
+    log('Done');
     process.exit(0);
   })
   .catch(e => {
