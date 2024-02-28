@@ -9,8 +9,8 @@ using Byte = unsigned char;
 template<typename T, std::size_t CAPACITY = 128, bool INITIALLY_FULL = false>
 struct static_vector {
 
-    T content_[CAPACITY];
     size_t size_;
+    T content_[CAPACITY];
 
     constexpr static_vector(std::initializer_list<T> init) {
         size_ = 0;
