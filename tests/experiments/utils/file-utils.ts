@@ -65,3 +65,8 @@ export function childLeafsExists(gIndex: bigint) {
     ([a, b]) => a && b,
   );
 }
+
+export async function writeResults(fileName: string, data: string) {
+  await fs.writeFile(fileName, data);
+  
+}
