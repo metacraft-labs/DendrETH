@@ -567,7 +567,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@chainsafe/ssz@npm:^0.14.0":
+"@chainsafe/ssz@npm:^0.14.0, @chainsafe/ssz@npm:^0.14.3":
   version: 0.14.3
   resolution: "@chainsafe/ssz@npm:0.14.3"
   dependencies:
@@ -1939,54 +1939,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@lodestar/params@npm:^1.15.1":
-  version: 1.15.1
-  resolution: "@lodestar/params@npm:1.15.1"
-  checksum: 10/ed0b70878de069830fc42f5968ac6660cf9cd433ecb311d963d99ed676db1c1fbf3e2391d0fa4f96a6d78d8bfbeeea6130fd1b5c52eadd097924560a9473789f
+"@lodestar/params@npm:^1.16.0":
+  version: 1.16.0
+  resolution: "@lodestar/params@npm:1.16.0"
+  checksum: 10/e564cca2325474078e3f0a6036cfc28d81b93f8063edf85ceb6935de6bbba1f78831389a0155f33ed30659fd08e70b8cde250ca11ed8daefd3953ad937afeb71
   languageName: node
   linkType: hard
 
-"@lodestar/params@npm:^1.4.1":
-  version: 1.11.3
-  resolution: "@lodestar/params@npm:1.11.3"
-  checksum: 10/ba5cb729a235c678b15e7e82d284b309e4e1c2ac5539cac0c9c1076cd027a8df5d602e6a6835957321e14912eb9eaa858e958960da6be84c80ea10d4f605e818
-  languageName: node
-  linkType: hard
-
-"@lodestar/params@npm:^1.4.3":
-  version: 1.4.3
-  resolution: "@lodestar/params@npm:1.4.3"
-  checksum: 10/579bc3778a59194984bab99c479ba63a259bbca41ce5a2d2ab56f3a01f9784eb3aa6e1e8fe44aa495f9c68b6347e5f6d6cc959000da3c5240db316e743775ed0
-  languageName: node
-  linkType: hard
-
-"@lodestar/types@npm:1.4.1":
-  version: 1.4.1
-  resolution: "@lodestar/types@npm:1.4.1"
-  dependencies:
-    "@chainsafe/ssz": "npm:^0.9.2"
-    "@lodestar/params": "npm:^1.4.1"
-  checksum: 10/eff689779cf9a93215fb6dc7075b65f860b4147461d57c64aabd2582f1334ee632f1cd3a911d6560b0f0eea8c74c4c52444e2dddb99f8ecfe364cb87c192b726
-  languageName: node
-  linkType: hard
-
-"@lodestar/types@npm:^1.11.3, @lodestar/types@npm:^1.15.1":
-  version: 1.15.1
-  resolution: "@lodestar/types@npm:1.15.1"
+"@lodestar/types@npm:^1.16.0":
+  version: 1.16.0
+  resolution: "@lodestar/types@npm:1.16.0"
   dependencies:
     "@chainsafe/ssz": "npm:^0.14.0"
-    "@lodestar/params": "npm:^1.15.1"
-  checksum: 10/c58e74e7f65bae7f47102ebca70d93c5130301f22e9ec7a58bb2184c4e7ec58c35603ec755cc9156ae38759ddfa198481e3219a2389fe9bfe2c4b8bbd52ea9c5
-  languageName: node
-  linkType: hard
-
-"@lodestar/types@npm:^1.4.1":
-  version: 1.4.3
-  resolution: "@lodestar/types@npm:1.4.3"
-  dependencies:
-    "@chainsafe/ssz": "npm:^0.9.2"
-    "@lodestar/params": "npm:^1.4.3"
-  checksum: 10/c90fca37d54a8bd6fda67a5deff2c9cba2242d2beade4a7f25d2c94bc7a67d2399d1a03372561ebe8bb40c867d2fe0adece415275ec99d7e0da6289a53e86731
+    "@lodestar/params": "npm:^1.16.0"
+    ethereum-cryptography: "npm:^2.0.0"
+  checksum: 10/663dbbeca901d8e284eb93994389e08bc1f31ace18c505b17cff11bcb809929392d76346279923307318510c215c3a96c343a6465d5fec73927c60ffdb6906e9
   languageName: node
   linkType: hard
 
@@ -2100,6 +2067,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@noble/curves@npm:1.3.0, @noble/curves@npm:~1.3.0":
+  version: 1.3.0
+  resolution: "@noble/curves@npm:1.3.0"
+  dependencies:
+    "@noble/hashes": "npm:1.3.3"
+  checksum: 10/f3cbdd1af00179e30146eac5539e6df290228fb857a7a8ba36d1a772cbe59288a2ca83d06f175d3446ef00db3a80d7fd8b8347f7de9c2d4d5bf3865d8bb78252
+  languageName: node
+  linkType: hard
+
 "@noble/hashes@npm:1.2.0, @noble/hashes@npm:^1, @noble/hashes@npm:^1.0.0, @noble/hashes@npm:~1.2.0":
   version: 1.2.0
   resolution: "@noble/hashes@npm:1.2.0"
@@ -2107,7 +2083,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@noble/hashes@npm:^1.3.0":
+"@noble/hashes@npm:1.3.3, @noble/hashes@npm:^1.3.0, @noble/hashes@npm:~1.3.2":
   version: 1.3.3
   resolution: "@noble/hashes@npm:1.3.3"
   checksum: 10/1025ddde4d24630e95c0818e63d2d54ee131b980fe113312d17ed7468bc18f54486ac86c907685759f8a7e13c2f9b9e83ec7b67d1cc20836f36b5e4a65bb102d
@@ -2740,6 +2716,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@scure/base@npm:~1.1.4":
+  version: 1.1.5
+  resolution: "@scure/base@npm:1.1.5"
+  checksum: 10/543fa9991c6378b6a0d5ab7f1e27b30bb9c1e860d3ac81119b4213cfdf0ad7b61be004e06506e89de7ce0cec9391c17f5c082bb34c3b617a2ee6a04129f52481
+  languageName: node
+  linkType: hard
+
 "@scure/bip32@npm:1.1.5":
   version: 1.1.5
   resolution: "@scure/bip32@npm:1.1.5"
@@ -2751,6 +2734,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@scure/bip32@npm:1.3.3":
+  version: 1.3.3
+  resolution: "@scure/bip32@npm:1.3.3"
+  dependencies:
+    "@noble/curves": "npm:~1.3.0"
+    "@noble/hashes": "npm:~1.3.2"
+    "@scure/base": "npm:~1.1.4"
+  checksum: 10/4b8b75567866ff7d6b3ba154538add02d2951e9433e8dd7f0014331ac500cda5a88fe3d39b408fcc36e86b633682013f172b967af022c2e4e4ab07336801d688
+  languageName: node
+  linkType: hard
+
 "@scure/bip39@npm:1.1.1":
   version: 1.1.1
   resolution: "@scure/bip39@npm:1.1.1"
@@ -2758,6 +2752,16 @@ __metadata:
     "@noble/hashes": "npm:~1.2.0"
     "@scure/base": "npm:~1.1.0"
   checksum: 10/08908145e0890e481e3398191424961d9ebfb8913fed6e6cdfc63eb1281bd1895244d46c0e8762b0e30d8dc6f498ed296311382fecbf034253838e3a50f60ca1
+  languageName: node
+  linkType: hard
+
+"@scure/bip39@npm:1.2.2":
+  version: 1.2.2
+  resolution: "@scure/bip39@npm:1.2.2"
+  dependencies:
+    "@noble/hashes": "npm:~1.3.2"
+    "@scure/base": "npm:~1.1.4"
+  checksum: 10/f71aceda10a7937bf3779fd2b4c4156c95ec9813269470ddca464cb8ab610d2451b173037f4b1e6dac45414e406e7adc7b5814c51279f4474d5d38140bbee542
   languageName: node
   linkType: hard
 
@@ -3371,9 +3375,9 @@ __metadata:
     "@chainsafe/bls": "npm:^6.0.3"
     "@chainsafe/blst": "npm:0.2.4"
     "@chainsafe/lodestar-types": "npm:^0.34.4"
-    "@chainsafe/ssz": "npm:^0.9.2"
+    "@chainsafe/ssz": "npm:^0.14.3"
     "@iden3/binfileutils": "npm:^0.0.11"
-    "@lodestar/types": "npm:^1.15.1"
+    "@lodestar/types": "npm:^1.16.0"
     "@noble/bls12-381": "npm:^1.3.0"
     "@nomiclabs/hardhat-ethers": "npm:^2.2.2"
     "@nomiclabs/hardhat-etherscan": "npm:^3.1.7"
@@ -3399,12 +3403,12 @@ __metadata:
     "@chainsafe/bls": "npm:^6.0.3"
     "@chainsafe/blst": "npm:^0.2.4"
     "@chainsafe/persistent-merkle-tree": "npm:^0.6.1"
-    "@chainsafe/ssz": "npm:^0.9.2"
+    "@chainsafe/ssz": "npm:^0.14.3"
     "@cosmjs/cosmwasm-stargate": "npm:^0.30.0"
     "@cosmjs/proto-signing": "npm:^0.30.0"
     "@cosmjs/stargate": "npm:^0.30.0"
     "@iden3/binfileutils": "npm:^0.0.11"
-    "@lodestar/types": "npm:1.4.1"
+    "@lodestar/types": "npm:^1.16.0"
     "@mevitae/redis-work-queue": "npm:^0.0.4"
     "@noble/bls12-381": "npm:^1.3.0"
     "@nomiclabs/hardhat-ethers": "npm:^2.1.1"
@@ -3452,9 +3456,9 @@ __metadata:
   resolution: "Relay@workspace:relay"
   dependencies:
     "@chainsafe/persistent-merkle-tree": "npm:^0.6.1"
-    "@chainsafe/ssz": "npm:^0.14.0"
+    "@chainsafe/ssz": "npm:^0.14.3"
     "@effect/schema": "npm:^0.33.0"
-    "@lodestar/types": "npm:^1.11.3"
+    "@lodestar/types": "npm:^1.16.0"
     discord.js: "npm:^14.12.1"
     redis: "npm:^4.6.10"
     ts-node: "npm:^10.9.1"
@@ -4872,8 +4876,8 @@ __metadata:
   resolution: "circom@workspace:beacon-light-client/circom"
   dependencies:
     "@chainsafe/lodestar-types": "npm:^0.39.0"
-    "@chainsafe/ssz": "npm:^0.9.2"
-    "@lodestar/types": "npm:^1.4.1"
+    "@chainsafe/ssz": "npm:^0.14.3"
+    "@lodestar/types": "npm:^1.16.0"
     "@nomiclabs/hardhat-ethers": "npm:^2.0.5"
     "@nomiclabs/hardhat-waffle": "npm:^2.0.3"
     "@types/js-yaml": "npm:^4.0.5"
@@ -6281,6 +6285,18 @@ __metadata:
     "@scure/bip32": "npm:1.1.5"
     "@scure/bip39": "npm:1.1.1"
   checksum: 10/e8b2ab91e0237ed83a6e6ab1aa2a61ee081dea137ac994c7daa935b0b620e866f70e2ac7eb2fb8db2dec044fe22283d2bf940598417e4dccd15a2b704a817a1b
+  languageName: node
+  linkType: hard
+
+"ethereum-cryptography@npm:^2.0.0":
+  version: 2.1.3
+  resolution: "ethereum-cryptography@npm:2.1.3"
+  dependencies:
+    "@noble/curves": "npm:1.3.0"
+    "@noble/hashes": "npm:1.3.3"
+    "@scure/bip32": "npm:1.3.3"
+    "@scure/bip39": "npm:1.2.2"
+  checksum: 10/cc5aa9a4368dc1dd7680ba921957c098ced7b3d7dbb1666334013ab2f8d4cd25a785ad84e66fd9f5c5a9b6de337930ea24ff8c722938f36a9c00cec597ca16b5
   languageName: node
   linkType: hard
 
