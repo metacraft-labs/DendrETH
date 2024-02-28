@@ -1,6 +1,9 @@
 {
   "name": "circom",
   "type": "commonjs",
+  "scripts": {
+    "build:tsc": "tsc -p ./tsconfig.json"
+  },
   "dependencies": {
     "@chainsafe/lodestar-types": "^0.39.0",
     "@chainsafe/ssz": "^0.14.3",
