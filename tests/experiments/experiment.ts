@@ -8,9 +8,10 @@ import {
 } from './utils/file-utils';
 import {
   NodeData,
-  fromGIndex,
+  childrenFromGIndex,
   iterateLevel,
   TreeParams,
+  iterateTree,
 } from './utils/tree-utils';
 import { exampleLeafData } from './utils/constants';
 import {
@@ -24,11 +25,6 @@ import {
 
 import { sha256 } from 'ethers/lib/utils';
 
-// import debug from 'debug';
-// debug.enable('experimets:*');
-
-// const log = debug('experimets:*');
-
 export async function execTask(
   gIndex: bigint,
   isLeaf: boolean,
@@ -37,7 +33,7 @@ export async function execTask(
   shouldExist: (gIndex: bigint) => boolean,
 ) {
   if (delay) await sleep(delay);
-  const { leftChild, rightChild } = fromGIndex(gIndex);
+  const { leftChild, rightChild } = childrenFromGIndex(gIndex);
 
   let nodeData: NodeData;
   if (placeholder) {
@@ -98,30 +94,22 @@ export function executeTree(
   jobDelay = 0,
 ) {
   const { depth, validatorCount: lastValidatorIndex, shouldExist } = treeParams;
-  for (let level = depth; level >= 1; level--) {
-    for (let { indexOnThisLevel, gIndex } of iterateLevel(level)) {
-      if (level === depth) {
-        if (indexOnThisLevel > lastValidatorIndex) break;
-        tasks[`${gIndex}`] = execTask(
-          gIndex,
-          true,
-          false,
-          jobDelay,
-          shouldExist,
-        );
-        continue;
-      }
-
-      const { leftChild, rightChild } = fromGIndex(gIndex);
-      tasks[`${gIndex}`] = Promise.all([
-        tasks[`${leftChild}`],
-        tasks[`${rightChild}`],
-      ])
-        .then(() => execTask(gIndex, false, false, jobDelay, shouldExist))
-        .then(() =>
-          Promise.all([removeFile(leftChild), removeFile(rightChild)]),
-        );
+  for (let { indexOnThisLevel, gIndex, level } of iterateTree(
+    depth,
+    lastValidatorIndex,
+  )) {
+    if (level === depth) {
+      tasks[`${gIndex}`] = execTask(gIndex, true, false, jobDelay, shouldExist);
+      continue;
     }
+
+    const { leftChild, rightChild } = childrenFromGIndex(gIndex);
+    tasks[`${gIndex}`] = Promise.all([
+      tasks[`${leftChild}`],
+      tasks[`${rightChild}`],
+    ])
+      .then(() => execTask(gIndex, false, false, jobDelay, shouldExist))
+      .then(() => Promise.all([removeFile(leftChild), removeFile(rightChild)]));
   }
 }
 

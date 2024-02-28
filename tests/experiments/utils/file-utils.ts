@@ -1,7 +1,7 @@
 import fs from 'fs-extra';
 import { execTask } from '../experiment';
 import {
-  fromGIndex,
+  childrenFromGIndex,
   fromDepth,
   range,
   isLeaf,
@@ -60,7 +60,7 @@ export async function checkContent(gIndex: bigint) {
 }
 
 export function childLeafsExists(gIndex: bigint) {
-  const { leftChild, rightChild } = fromGIndex(gIndex);
+  const { leftChild, rightChild } = childrenFromGIndex(gIndex);
   return Promise.all([checkContent(leftChild), checkContent(rightChild)]).then(
     ([a, b]) => a && b,
   );
