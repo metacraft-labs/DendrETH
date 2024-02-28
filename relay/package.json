@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build:tsc": "tsc -p ./tsconfig.json",
     "pollUpdatesWorker": "yarn ts-node workers/poll-updates/poll-updates-worker.ts",
     "proofGenerationWorker": "yarn ts-node workers/prover/prover-worker.ts"
   },
