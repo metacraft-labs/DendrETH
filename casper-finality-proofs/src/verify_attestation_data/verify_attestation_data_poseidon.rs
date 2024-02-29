@@ -30,8 +30,10 @@ impl VerifyAttestationDataPoseidon {
         // builder.assert_is_equal(is_zero_sigma_pred, _false);
 
         // let prev_block_root = builder.read::<Bytes32Variable>();
+        //TODO: Add Poseidon Validator Root Hash
+        let validator_hash_root_poseidon = builder.read::<PoseidonHashOutVariable>();
 
-        let attestation = AttestationPoseidon::circuit_input(builder);
+        let attestation = Attestation::circuit_input(builder);
 
         //TODO: This should be part of the final proof as it is only needed once
         // 2. 3.
@@ -58,13 +60,13 @@ impl VerifyAttestationDataPoseidon {
         verify_validator(
             builder,
             first_validator.clone(),
-            attestation.validators_root.clone(),
+            validator_hash_root_poseidon.clone(),
         );
 
         for _ in 1..TEST_VALIDATORS_IN_COMMITMENT_SIZE {
             let cur_validator = builder.read::<ValidatorDataPoseidon>();
 
-            verify_validator(builder, cur_validator.clone(), attestation.validators_root.clone());
+            verify_validator(builder, cur_validator.clone(), validator_hash_root_poseidon.clone());
 
             private_accumulator = accumulate_private(
                 builder,
@@ -201,13 +203,13 @@ fn verify_validator<L: PlonkParameters<D>, const D: usize>(
         builder.constant(2u64.pow(VALIDATORS_HASH_TREE_DEPTH as u32));
     let gindex = builder.add(first_validators_gindex, validator.validator_index);
 
-    ssz_verify_proof_poseidon( //TODO: PoseidonHash
-        builder,
-        validators_root,
-        validator.beacon_validator_variable_hash,
-        validator.validator_root_proof.as_slice(),
-        validator.validator_index
-    );
+    // ssz_verify_proof_poseidon( //TODO: PoseidonHash
+    //     builder,
+    //     validators_root,
+    //     validator.beacon_validator_variable_hash,
+    //     validator.validator_root_proof.as_slice(),
+    //     validator.validator_index
+    // );
 
     
     //TODO: I need access to validator.slot to prove slot is part of beacon state [NOT RELEVANT?]

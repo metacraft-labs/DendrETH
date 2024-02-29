@@ -59,7 +59,7 @@ fn main() {
     }
 
     let (_proof, output) = circuit.prove(&input);
-    println!("OUTPUT: {:?}", output);
+    println!("{:?}", output);
 
     // Json with
 

@@ -1,6 +1,3 @@
-use std::intrinsics::mir::Field;
-
-use ethers::abi::Hash;
 use plonky2::{field::{goldilocks_field::GoldilocksField, types::Field}, hash::hash_types::HashOut};
 use plonky2x::{
     backend::circuit::{PlonkParameters, PublicInput}, frontend::{
@@ -92,18 +89,18 @@ impl BeaconValidatorInput {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-struct HashOutPoseidonInput {
+pub struct HashOutPoseidonInput {
     pub elements: Vec<u64>,
 }
 
 impl HashOutPoseidonInput {
-    pub fn write<L: PlonkParameters<D>, const D: usize>(&self, mut input: &mut PublicInput<L, D>) {
-        input.write::<ArrayVariable<Variable, 4>>(
+    pub fn write<L: PlonkParameters<D>, const D: usize>(&self, input: &mut PublicInput<L, D>) {
+        input.write::<PoseidonHashOutVariable>(HashOut::from_vec(
             self.elements
             .iter()
             .map(|element| <L as PlonkParameters<D>>::Field::from_canonical_u64(*element))
             .collect()
-        );
+        ));
     }
 }
 
@@ -115,7 +112,8 @@ pub struct ValidatorDataPoseidonInput {
     #[serde(flatten)]
     beacon_validator_variable: BeaconValidatorInput,
 
-    validator_list_proof: Vec<HashOutPoseidonInput>,
+    validator_poseidon_hash: HashOutPoseidonInput,
+    validator_poseidon_proof: Vec<HashOutPoseidonInput>,
 }
 
 impl ValidatorDataPoseidonInput {
@@ -124,8 +122,9 @@ impl ValidatorDataPoseidonInput {
         input.write::<U64Variable>(self.validator_index); 
         self.beacon_validator_variable.write(&mut input);
 
+        self.validator_poseidon_hash.write(input);
         for _ in 0..VALIDATORS_HASH_TREE_DEPTH {
-            self.validator_list_proof[0].write(input); //TODO: Smarter way to do this?
+            self.validator_poseidon_proof[0].write(input); //TODO: Smarter way to do this?
         }
     }
 }
