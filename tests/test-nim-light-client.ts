@@ -1,3 +1,5 @@
+import { beforeAll, describe, expect, test } from '@jest/globals';
+
 import { dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import glob_ from 'glob';

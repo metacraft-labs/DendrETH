@@ -6,12 +6,11 @@ import {
   hexToBytes,
   utils,
 } from '../../../../libs/typescript/ts-utils/bls';
-import { ssz } from '@chainsafe/lodestar-types';
 import { writeFileSync } from 'fs';
 import { BitVectorType } from '@chainsafe/ssz';
 import * as path from 'path';
 import { getFilesInDir } from '../../../../libs/typescript/ts-utils/data';
-import { SyncCommittee } from '@chainsafe/lodestar-types/lib/altair/sszTypes';
+import { ssz } from '@lodestar/types';
 
 const hashToField = utils.hashToField;
 

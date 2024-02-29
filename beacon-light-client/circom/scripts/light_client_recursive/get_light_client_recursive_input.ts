@@ -4,9 +4,9 @@ import {
   bytesToHex,
   formatHex,
   hexToBytes,
-  utils,
 } from '../../../../libs/typescript/ts-utils/bls';
 import { ssz } from '@chainsafe/lodestar-types';
+import { mainnetChainConfig } from '@lodestar/config/configs';
 import { writeFileSync } from 'fs';
 import { BitVectorType } from '@chainsafe/ssz';
 import * as path from 'path';
@@ -114,7 +114,9 @@ export async function getProof(vkey, proof, originator, prevUpdate, update) {
       .toString(2)
       .padStart(256, '0')
       .split(''),
-    fork_version: BigInt('0x' + bytesToHex(constants.ALTAIR_FORK_VERSION))
+    fork_version: BigInt(
+      '0x' + bytesToHex(mainnetChainConfig.ALTAIR_FORK_VERSION),
+    )
       .toString(2)
       .padStart(32, '0')
       .split(''),

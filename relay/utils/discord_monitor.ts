@@ -19,46 +19,13 @@ type SolidityDictionary = {
 };
 
 class DiscordMonitor {
-  client: Discord.Client;
-  beaconApi: BeaconApi;
-  contracts: SolidityDictionary = {};
-  channel: Discord.Channel;
+  private readonly contracts: SolidityDictionary = {};
 
-  alert_threshold: number;
-
-  public static async initializeDiscordMonitor(
-    alert_threshold: number,
-  ): Promise<DiscordMonitor> {
-    let discordMonitor = new DiscordMonitor(alert_threshold);
-
-    discordMonitor.alert_threshold = alert_threshold;
-
-    discordMonitor.beaconApi = new BeaconApi([
-      'http://unstable.prater.beacon-api.nimbus.team/',
-    ]);
-
-    discordMonitor.client = new Discord.Client({
-      intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.DirectMessages,
-      ],
-      partials: [Partials.Channel, Partials.Message, Partials.Reaction],
-    });
-
-    const result = await discordMonitor.client.login(env.token);
-
-    await discordMonitor.client.on(Events.ClientReady, async interaction => {
-      console.log('Client Ready!');
-      console.log(`Logged in as ${discordMonitor.client.user?.tag}!`);
-    });
-
-    return discordMonitor;
-  }
-
-  private constructor(alert_threshold: number) {
-    // Track contracts if initialized in .env
+  constructor(
+    private readonly client: Discord.Client,
+    private readonly beaconApi: BeaconApi,
+    private readonly alert_threshold: number,
+  ) {
     if (env.GOERLI_RPC && env.LC_GOERLI) {
       this.contracts['Goerli'] = {
         RPC: env.GOERLI_RPC,
@@ -138,6 +105,33 @@ class DiscordMonitor {
       );
       this.contracts[endpoint].SolidityContract = curSolidityContract;
     }
+  }
+
+  public static async initializeDiscordMonitor(
+    alert_threshold: number,
+  ): Promise<DiscordMonitor> {
+    const beaconApi = new BeaconApi([
+      'http://unstable.prater.beacon-api.nimbus.team/',
+    ]);
+
+    const client = new Discord.Client({
+      intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.DirectMessages,
+      ],
+      partials: [Partials.Channel, Partials.Message, Partials.Reaction],
+    });
+
+    const result = await client.login(env.token);
+
+    await client.on(Events.ClientReady, async interaction => {
+      console.log('Client Ready!');
+      console.log(`Logged in as ${client.user?.tag}!`);
+    });
+
+    return new DiscordMonitor(client, beaconApi, alert_threshold);
   }
 
   private async getSlotDelay(contract: SolidityContract) {
