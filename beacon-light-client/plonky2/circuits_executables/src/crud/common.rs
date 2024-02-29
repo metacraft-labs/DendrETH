@@ -24,7 +24,7 @@ use plonky2::{
         circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs,
     },
 };
-use redis::{aio::Connection, AsyncCommands, JsonAsyncCommands};
+use redis::{aio::Connection, AsyncCommands};
 use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize, Serializer};
 
 use super::proof_storage::proof_storage::ProofStorage;
@@ -180,12 +180,11 @@ pub async fn fetch_validator_balance_input(
 }
 
 pub async fn fetch_final_layer_input(con: &mut Connection) -> Result<FinalCircuitInput> {
-    let result: String = con
-        .json_get(VALIDATOR_COMMITMENT_CONSTANTS.final_proof_input_key, "$")
+    let json: String = con
+        .get(VALIDATOR_COMMITMENT_CONSTANTS.final_proof_input_key)
         .await?;
-    let result_vec = &serde_json::from_str::<Vec<FinalCircuitInput>>(&result)?;
-    ensure!(!result_vec.is_empty(), "Could not fetch json object");
-    Ok(result_vec[0].clone())
+    let result = serde_json::from_str::<FinalCircuitInput>(&json)?;
+    Ok(result)
 }
 
 pub async fn save_balance_proof(
@@ -214,8 +213,9 @@ pub async fn save_balance_proof(
         .set_proof(proof_index, &proof.to_bytes())
         .await?;
 
-    con.json_set(
-        format!(
+    save_json_object(
+        con,
+        &format!(
             "{}:{}:{}",
             VALIDATOR_COMMITMENT_CONSTANTS
                 .balance_verification_proof_key
@@ -223,7 +223,6 @@ pub async fn save_balance_proof(
             level,
             index
         ),
-        "$",
         &balance_proof,
     )
     .await?;
@@ -243,11 +242,9 @@ pub async fn save_final_proof(
         proof: proof.to_bytes(),
     };
 
-    con.json_set(
-        VALIDATOR_COMMITMENT_CONSTANTS
-            .final_layer_proof_key
-            .to_owned(),
-        "$",
+    save_json_object(
+        con,
+        &VALIDATOR_COMMITMENT_CONSTANTS.final_layer_proof_key,
         &final_proof,
     )
     .await?;
@@ -370,15 +367,15 @@ pub async fn save_zero_validator_proof(
         .set_proof(proof_index, &proof.to_bytes())
         .await?;
 
-    con.json_set(
-        format!(
+    save_json_object(
+        con,
+        &format!(
             "{}:zeroes:{}",
             VALIDATOR_COMMITMENT_CONSTANTS
                 .validator_proof_key
                 .to_owned(),
             depth,
         ),
-        "$",
         &validator_proof,
     )
     .await?;
@@ -410,8 +407,9 @@ pub async fn save_validator_proof(
         .set_proof(proof_index, &proof.to_bytes())
         .await?;
 
-    con.json_set(
-        format!(
+    save_json_object(
+        con,
+        &format!(
             "{}:{}:{}",
             VALIDATOR_COMMITMENT_CONSTANTS
                 .validator_proof_key
@@ -419,7 +417,6 @@ pub async fn save_validator_proof(
             gindex,
             epoch
         ),
-        "$",
         &validator_proof,
     )
     .await?;
@@ -454,10 +451,19 @@ pub async fn fetch_redis_json_object<T: DeserializeOwned + Clone>(
     con: &mut Connection,
     key: String,
 ) -> Result<T> {
-    let result: String = con.json_get(key, "$").await?;
-    let result_vec = &serde_json::from_str::<Vec<T>>(&result)?;
-    ensure!(!result_vec.is_empty(), "Could not fetch json object");
-    Ok(result_vec[0].clone())
+    let json: String = con.get(key).await?;
+    let result = serde_json::from_str::<T>(&json)?;
+    Ok(result)
+}
+
+pub async fn save_json_object<T: Serialize>(
+    con: &mut Connection,
+    key: &str,
+    object: &T,
+) -> Result<()> {
+    let json = serde_json::to_string(object)?;
+    con.set(key, json).await?;
+    Ok(())
 }
 
 pub async fn fetch_proof<T: NeedsChange + KeyProvider + DeserializeOwned + Clone>(
