@@ -65,23 +65,22 @@ pub async fn create_proof_storage(args: &ArgMatches) -> Box<dyn ProofStorage> {
             Box::new(FileStorage::new(folder_name.to_string()))
         }
         ProofStorageType::Azure => {
-            dotenv::dotenv().ok();
-
-            let access_key = env::var("STORAGE_ACCESS_KEY").expect("missing STORAGE_ACCOUNT_KEY");
-
+            dotenv::from_path("../.env").ok();
             Box::new(AzureStorage::new(
                 args.value_of("azure_account").unwrap().to_string(),
-                access_key,
                 args.value_of("azure_container").unwrap().to_string(),
             ))
         }
-        ProofStorageType::Aws => Box::new(
-            AwsStorage::new(
-                args.value_of("aws_endpoint_url").unwrap().to_string(),
-                args.value_of("aws_region").unwrap().to_string(),
-                args.value_of("aws_bucket_name").unwrap().to_string(),
+        ProofStorageType::Aws => {
+            dotenv::from_path("../.env").ok();
+            Box::new(
+                AwsStorage::new(
+                    args.value_of("aws_endpoint_url").unwrap().to_string(),
+                    args.value_of("aws_region").unwrap().to_string(),
+                    args.value_of("aws_bucket_name").unwrap().to_string(),
+                )
+                .await,
             )
-            .await,
-        ),
+        }
     }
 }
