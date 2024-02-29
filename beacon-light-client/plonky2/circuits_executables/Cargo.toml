@@ -25,7 +25,7 @@ base64 = "0.21.5"
 async-trait = "0.1.74"
 tokio = { version = "1.35.1", features = ["full"] }
 aws-config = "1.1.1"
-aws-sdk-s3 = "1.10.0"
+aws-sdk-s3 = "1.17.0"
 azure_storage_blobs = "0.18.0"
 azure_core = "0.18.0"
 azure_storage = "0.18.0"
