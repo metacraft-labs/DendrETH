@@ -9,6 +9,7 @@ import {
   parentAndNeighbourFromGIndex,
   indexToGIndex,
   gIndexToIndex,
+  gIndexToLevel,
 } from './tree-utils';
 
 describe('Tree Utils Tests', () => {
@@ -158,6 +159,36 @@ describe('Tree Utils Tests', () => {
       const expected = 5n;
 
       expect(gIndexToIndex(gIndex, depth)).toEqual(expected);
+    });
+  });
+
+  describe('gIndexToLevel', () => {
+    test('returns correct level for the given gIndex', () => {
+      {
+        const gIndex = 1n;
+        const expected = 0n;
+        expect(gIndexToLevel(gIndex)).toEqual(expected);
+      }
+      {
+        const gIndex = 8n;
+        const expected = 3n;
+        expect(gIndexToLevel(gIndex)).toEqual(expected);
+      }
+      {
+        const gIndex = 12n;
+        const expected = 3n;
+        expect(gIndexToLevel(gIndex)).toEqual(expected);
+      }
+      {
+        const gIndex = 15n;
+        const expected = 3n;
+        expect(gIndexToLevel(gIndex)).toEqual(expected);
+      }
+      {
+        const gIndex = 16n;
+        const expected = 4n;
+        expect(gIndexToLevel(gIndex)).toEqual(expected);
+      }
     });
   });
 

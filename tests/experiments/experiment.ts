@@ -12,8 +12,9 @@ import {
   iterateLevel,
   TreeParams,
   iterateTree,
+  gIndexToLevel,
 } from './utils/tree-utils';
-import { exampleLeafData, resultsFile } from './utils/constants';
+import { exampleLeafData, resultsFile, zeroHashes } from './utils/constants';
 import {
   Tasks,
   logWrite,
@@ -60,7 +61,7 @@ export async function execTask(
       if (left.isMissing && right.isMissing && true) {
         nodeData = {
           gIndex,
-          content: { gIndex, hash: '' }, // TODO: Use pre-calculated hash for this depth
+          content: { gIndex, hash: zeroHashes[`${gIndexToLevel(gIndex)}`] }, // TODO: Use pre-calculated hash for this depth
           isMissing: true,
         };
       } else
@@ -107,9 +108,8 @@ export function executeTree(
     tasks[`${gIndex}`] = Promise.all([
       tasks[`${leftChild}`],
       tasks[`${rightChild}`],
-    ])
-      .then(() => execTask(gIndex, false, false, jobDelay, shouldExist))
-      .then(() => Promise.all([removeFile(leftChild), removeFile(rightChild)]));
+    ]).then(() => execTask(gIndex, false, false, jobDelay, shouldExist));
+    // .then(() => Promise.all([removeFile(leftChild), removeFile(rightChild)]));
   }
 }
 
@@ -157,13 +157,13 @@ const configs = [
   { depth: 4n, validatorCount: 2n ** 2n, sparseAmount: 1n },
   { depth: 4n, validatorCount: 2n ** 3n, sparseAmount: 3n },
   { depth: 20n, validatorCount: 2n ** 3n, sparseAmount: 3n },
-  { depth: 20n, validatorCount: 2n ** 10n, sparseAmount: 3n },
-  { depth: 24n, validatorCount: 2n ** 10n, sparseAmount: 3n },
-  { depth: 37n, validatorCount: 2n ** 3n, sparseAmount: 3n },
-  { depth: 37n, validatorCount: 2n ** 10n, sparseAmount: 3n },
-  { depth: 37n, validatorCount: 2n ** 16n, sparseAmount: 3n },
-  { depth: 37n, validatorCount: 2n ** 20n, sparseAmount: 3n },
-  { depth: 37n, validatorCount: 2n ** 21n, sparseAmount: 3n },
+  // { depth: 20n, validatorCount: 2n ** 10n, sparseAmount: 3n },
+  // { depth: 24n, validatorCount: 2n ** 10n, sparseAmount: 3n },
+  // { depth: 37n, validatorCount: 2n ** 3n, sparseAmount: 3n },
+  // { depth: 37n, validatorCount: 2n ** 10n, sparseAmount: 3n },
+  // { depth: 37n, validatorCount: 2n ** 16n, sparseAmount: 3n },
+  // { depth: 37n, validatorCount: 2n ** 20n, sparseAmount: 3n },
+  // { depth: 37n, validatorCount: 2n ** 21n, sparseAmount: 3n },
 ];
 
 const executeTasks = async () => {
