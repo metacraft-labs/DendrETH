@@ -1,3 +1,5 @@
+use std::env;
+
 use super::proof_storage::ProofStorage;
 use anyhow::Result;
 use async_trait::async_trait;
@@ -10,7 +12,9 @@ pub struct AzureStorage {
 }
 
 impl AzureStorage {
-    pub fn new(account: String, access_key: String, container: String) -> AzureStorage {
+    pub fn new(account: String, container: String) -> AzureStorage {
+        let access_key = env::var("STORAGE_ACCESS_KEY").expect("missing STORAGE_ACCOUNT_KEY");
+
         let storage_credentials =
             StorageCredentials::access_key(account.clone(), access_key.clone());
 
