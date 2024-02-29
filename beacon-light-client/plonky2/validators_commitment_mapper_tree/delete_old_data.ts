@@ -1,34 +1,22 @@
 import { Redis as RedisLocal } from '../../../relay/implementations/redis';
 
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
-import yargs from 'yargs';
 import { createProofStorage } from '../proof_storage/proof_storage';
+import { CommandLineOptionsBuilder } from '../cmdline';
+
+require('dotenv').config({ path: '../.env' });
 
 (async () => {
-  const options = yargs
-    .usage(
-      'Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>',
-    )
-    .option('redis-host ', {
-      alias: 'redis-host',
-      describe: 'The Redis host',
-      type: 'string',
-      default: '127.0.0.1',
-      description: 'Sets a custom redis connection',
-    })
-    .option('redis-port', {
-      alias: 'redis-port',
-      describe: 'The Redis port',
-      type: 'number',
-      default: 6379,
-      description: 'Sets a custom redis connection',
-    })
+  const options = new CommandLineOptionsBuilder()
+    .usage('Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>')
+    .withProofStorageOpts()
     .option('oldest-epoch', {
       alias: 'oldest-epoch',
       describe: 'The oldest epoch for which we keep data',
       type: 'number',
       demandOption: true,
-    }).argv;
+    })
+    .build();
 
   const redis = new RedisLocal(options['redis-host'], options['redis-port']);
   const proofStorage = createProofStorage(options)
