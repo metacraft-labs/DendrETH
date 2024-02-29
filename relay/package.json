@@ -14,13 +14,26 @@
   "dependencies": {
     "@chainsafe/persistent-merkle-tree": "^0.6.1",
     "@chainsafe/ssz": "^0.14.3",
+    "@cosmjs/cosmwasm-stargate": "^0.32.2",
+    "@cosmjs/proto-signing": "^0.32.2",
+    "@cosmjs/stargate": "^0.32.2",
     "@effect/schema": "^0.33.0",
     "@lodestar/types": "^1.16.0",
+    "@noble/bls12-381": "^1.4.0",
+    "bullmq": "^5.3.1",
     "discord.js": "^14.12.1",
+    "ethers": "^5.7.0",
     "redis": "^4.6.10",
+    "snarkjs": "^0.7.3",
     "ts-node": "^10.9.1",
     "web3": "^1.10.0",
+    "web3-eth": "^1.10.0",
     "winston": "^3.10.0",
     "yargs": "^17.7.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.19",
+    "@types/snarkjs": "^0.7.8",
+    "typescript": "5.2.2"
   }
 }
