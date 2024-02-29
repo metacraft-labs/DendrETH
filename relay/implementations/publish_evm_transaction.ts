@@ -119,6 +119,8 @@ export async function getSolidityProof(update: {
 }> {
   const calldata = await groth16.exportSolidityCallData(
     {
+      protocol: '',
+      curve: '',
       pi_a: update.a,
       pi_b: update.b,
       pi_c: update.c,
