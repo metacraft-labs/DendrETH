@@ -1,14 +1,17 @@
 import yargs from "yargs";
+import { hideBin } from 'yargs/helpers';
 import config from "./common_config.json";
+
+const args = yargs(hideBin(process.argv));
 
 export class CommandLineOptionsBuilder {
   usage(description: string) {
-    yargs.usage(description);
+    args.usage(description);
     return this;
   }
 
   withRedisOpts() {
-    yargs
+    args
       .option('redis-host', {
         describe: 'The Redis host',
         type: 'string',
@@ -25,7 +28,7 @@ export class CommandLineOptionsBuilder {
   }
 
   withFileSStorageOps() {
-    yargs
+    args
       .option('folder_name', {
         describe: 'Sets the name of the folder proofs will be stored in',
         type: 'string',
@@ -35,7 +38,7 @@ export class CommandLineOptionsBuilder {
   }
 
   withS3StorageOpts() {
-    yargs
+    args
       .option('aws-endpoint-url', {
         describe: 'The aws enpoint url',
         type: 'string',
@@ -53,7 +56,7 @@ export class CommandLineOptionsBuilder {
   }
 
   withAzureBlobStorageOpts() {
-    yargs
+    args
       .option('azure-account-name', {
         describe: 'Sets the name of the azure account',
         type: 'string',
@@ -80,11 +83,11 @@ export class CommandLineOptionsBuilder {
   }
 
   option(opt: string, settings: any) {
-    yargs.option(opt, settings);
+    args.option(opt, settings);
     return this;
   }
 
   build() {
-    return yargs.argv;
+    return args.argv;
   }
 }
