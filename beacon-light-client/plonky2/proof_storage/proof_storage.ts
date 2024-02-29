@@ -14,19 +14,33 @@ export interface IProofStorage {
 export function createProofStorage(options: any): IProofStorage {
   const type = options['proof-storage-type'];
 
-
   switch (type) {
-    case 'redis': return new RedisStorage(options['redis-host'], options['redis-port']);
+    case 'redis': {
+      const redisHost = options['redis-host'];
+      const redisPort = options['redis-port'];
+
+      if (redisHost === undefined) {
+        throw new Error('redis-host was not provided');
+      }
+      if (redisPort === undefined) {
+        throw new Error('redis-port was not provided');
+      }
+
+      return new RedisStorage(redisHost, redisPort);
+    }
     case 'file': {
       const folder = options['folder-name'];
+
       if (folder === undefined) {
         throw new Error('folder-name was not provided');
       }
+
       return new FileStorage(folder);
     }
     case 'azure': {
       const account = options['azure-account'];
       const container = options['azure-container'];
+
       if (account === undefined) {
         throw new Error('azure-account was not provided');
       }
@@ -54,7 +68,7 @@ export function createProofStorage(options: any): IProofStorage {
         throw new Error('aws-bucket-name was not provided');
       }
 
-      return new S3Storage(options['aws-endopoint-url'], options['aws-region'], options['aws-bucket-name']);
+      return new S3Storage(endpoint, region, bucket);
     }
     default: throw new Error(`Proof storage type not supported: ${type}`);
   }
