@@ -4740,6 +4740,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/fs-extra@npm:^11":
+  version: 11.0.4
+  resolution: "@types/fs-extra@npm:11.0.4"
+  dependencies:
+    "@types/jsonfile": "npm:*"
+    "@types/node": "npm:*"
+  checksum: 10/acc4c1eb0cde7b1f23f3fe6eb080a14832d8fa9dc1761aa444c5e2f0f6b6fa657ed46ebae32fb580a6700fc921b6165ce8ac3e3ba030c3dd15f10ad4dd4cae98
+  languageName: node
+  linkType: hard
+
 "@types/glob@npm:^7.2.0":
   version: 7.2.0
   resolution: "@types/glob@npm:7.2.0"
@@ -4814,6 +4824,15 @@ __metadata:
   version: 4.0.5
   resolution: "@types/js-yaml@npm:4.0.5"
   checksum: 10/6fff5f47d97070f1a01022517ce4bd81a0cfac7cd30f9dbc7222dc5f8db4bfe5f5c8cba3f4b02bdbd6f31f691050db97395b33c8df66d1e7c4f66096b41a3df6
+  languageName: node
+  linkType: hard
+
+"@types/jsonfile@npm:*":
+  version: 6.1.4
+  resolution: "@types/jsonfile@npm:6.1.4"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10/309fda20eb5f1cf68f2df28931afdf189c5e7e6bec64ac783ce737bb98908d57f6f58757ad5da9be37b815645a6f914e2d4f3ac66c574b8fe1ba6616284d0e97
   languageName: node
   linkType: hard
 
@@ -5135,6 +5154,7 @@ __metadata:
     "@nomiclabs/hardhat-ethers": "npm:^2.1.1"
     "@nomiclabs/hardhat-etherscan": "npm:^3.1.0"
     "@nomiclabs/hardhat-waffle": "npm:^2.0.3"
+    "@types/fs-extra": "npm:^11"
     "@types/glob": "npm:^7.2.0"
     "@types/jest": "npm:^29.5.12"
     "@types/mocha": "npm:^10.0.6"
@@ -5150,6 +5170,7 @@ __metadata:
     eventsource: "npm:^2.0.2"
     express: "npm:^4.18.2"
     ffjavascript: "npm:^0.2.59"
+    fs-extra: "npm:^11.2.0"
     glob: "npm:^8.0.3"
     hardhat: "npm:^2.20.1"
     hardhat-gas-reporter: "npm:^1.0.8"
@@ -8810,6 +8831,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"fs-extra@npm:^11.2.0":
+  version: 11.2.0
+  resolution: "fs-extra@npm:11.2.0"
+  dependencies:
+    graceful-fs: "npm:^4.2.0"
+    jsonfile: "npm:^6.0.1"
+    universalify: "npm:^2.0.0"
+  checksum: 10/0579bf6726a4cd054d4aa308f10b483f52478bb16284f32cf60b4ce0542063d551fca1a08a2af365e35db21a3fa5a06cf2a6ed614004b4368982bc754cb816b3
+  languageName: node
+  linkType: hard
+
 "fs-extra@npm:^4.0.2":
   version: 4.0.3
   resolution: "fs-extra@npm:4.0.3"
@@ -9248,6 +9280,13 @@ __metadata:
   version: 4.2.10
   resolution: "graceful-fs@npm:4.2.10"
   checksum: 10/0c83c52b62c68a944dcfb9d66b0f9f10f7d6e3d081e8067b9bfdc9e5f3a8896584d576036f82915773189eec1eba599397fc620e75c03c0610fb3d67c6713c1a
+  languageName: node
+  linkType: hard
+
+"graceful-fs@npm:^4.2.0":
+  version: 4.2.11
+  resolution: "graceful-fs@npm:4.2.11"
+  checksum: 10/bf152d0ed1dc159239db1ba1f74fdbc40cb02f626770dcd5815c427ce0688c2635a06ed69af364396da4636d0408fcf7d4afdf7881724c3307e46aff30ca49e2
   languageName: node
   linkType: hard
 
@@ -10855,6 +10894,19 @@ __metadata:
     graceful-fs:
       optional: true
   checksum: 10/17796f0ab1be8479827d3683433f97ebe0a1c6932c3360fa40348eac36904d69269aab26f8b16da311882d94b42e9208e8b28e490bf926364f3ac9bff134c226
+  languageName: node
+  linkType: hard
+
+"jsonfile@npm:^6.0.1":
+  version: 6.1.0
+  resolution: "jsonfile@npm:6.1.0"
+  dependencies:
+    graceful-fs: "npm:^4.1.6"
+    universalify: "npm:^2.0.0"
+  dependenciesMeta:
+    graceful-fs:
+      optional: true
+  checksum: 10/03014769e7dc77d4cf05fa0b534907270b60890085dd5e4d60a382ff09328580651da0b8b4cdf44d91e4c8ae64d91791d965f05707beff000ed494a38b6fec85
   languageName: node
   linkType: hard
 
@@ -15270,6 +15322,13 @@ __metadata:
   version: 0.1.2
   resolution: "universalify@npm:0.1.2"
   checksum: 10/40cdc60f6e61070fe658ca36016a8f4ec216b29bf04a55dce14e3710cc84c7448538ef4dad3728d0bfe29975ccd7bfb5f414c45e7b78883567fb31b246f02dff
+  languageName: node
+  linkType: hard
+
+"universalify@npm:^2.0.0":
+  version: 2.0.1
+  resolution: "universalify@npm:2.0.1"
+  checksum: 10/ecd8469fe0db28e7de9e5289d32bd1b6ba8f7183db34f3bfc4ca53c49891c2d6aa05f3fb3936a81285a905cc509fb641a0c3fc131ec786167eff41236ae32e60
   languageName: node
   linkType: hard
 

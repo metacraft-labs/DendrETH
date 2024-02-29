@@ -33,10 +33,12 @@
     "@jest/globals": "^29.7.0",
     "@jest/types": "^29.6.3",
     "@noble/bls12-381": "^1.3.0",
+    "@types/fs-extra": "^11",
     "@types/glob": "^7.2.0",
     "@types/jest": "^29.5.12",
     "@types/mocha": "^10.0.6",
     "@types/node": "^18.0.0",
+    "fs-extra": "^11.2.0",
     "glob": "^8.0.3",
     "jest": "^29.7.0",
     "prettier": "^2.6.2",
@@ -54,7 +56,9 @@
     "format:write": "prettier --write . && alejandra --exclude ./node_modules --exclude ./yarn-project.nix .",
     "test": "jest --verbose --silent -i",
     "test-emcc": "USE_EMCC=1 jest --verbose --silent",
-    "build-plonky-2": "tsc -p beacon-light-client/plonky2/tsconfig.json"
+    "build-plonky-2": "tsc -p beacon-light-client/plonky2/tsconfig.json",
+    "runIt": "rm -rf tests/experiments/data && ts-node tests/experiments/experiment.ts",
+    "runIt:test": "jest --verbose --silent=false -i tests/experiments/experiment.spec.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.521.0",
