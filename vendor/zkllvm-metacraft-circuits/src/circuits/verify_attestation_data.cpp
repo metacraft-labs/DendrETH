@@ -65,7 +65,8 @@
 
     auto result = attestation.signature[0] + 
                   attestation.signature[1] + 
-                  attestation.signature[3];
+                  attestation.signature[3] +
+                  attestation.validators[5].validator_index;
 
     return result;
     // return process_votes(trustedKeys.data(), pubkeysCount, sigma, reconstructed_token);

@@ -113,7 +113,7 @@ int main(int argc, char* argv[]) {
         // std::cout << "serialize<Attestation>(f):\n" << serialize<Attestation>(attestation).dump(2) << "\n";
 
         std::ofstream fout("/tmp/attestation.json");
-        fout << serialize<Attestation>(attestation);//.dump(2)
+        fout << "[" << serialize<Attestation>(attestation) << "]"; //.dump(2)
         fout.flush();
 
         std::cout << "DONE\n";
