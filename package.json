@@ -60,7 +60,7 @@
     "test-emcc": "USE_EMCC=1 jest --verbose --silent",
     "ts": "yarn node --loader @esbuild-kit/esm-loader",
     "build-plonky-2": "tsc -p beacon-light-client/plonky2/tsconfig.json",
-    "runIt": "rm -rf tests/experiments/data && ts-node tests/experiments/experiment.ts",
+    "bvFileMock": "rm -rf tests/experiments/data && ts-node tests/experiments/balanceVerifierFileMock.ts",
     "runIt:test": "jest --verbose --silent=false -i tests/experiments/experiment.spec.ts"
   },
   "dependencies": {
