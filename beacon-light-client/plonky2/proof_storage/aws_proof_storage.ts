@@ -14,6 +14,7 @@ export class S3Storage implements IProofStorage {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID || "unset",
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "unset",
       },
+      forcePathStyle: true,
     });
     this.bucketName = bucketName;
   }
@@ -61,7 +62,5 @@ export class S3Storage implements IProofStorage {
     await this.s3.send(new DeleteObjectCommand(params));
   }
 
-  async quit(): Promise<void> {
-    // Additional cleanup logic can be added if needed.
-  }
+  async quit(): Promise<void> { }
 }
