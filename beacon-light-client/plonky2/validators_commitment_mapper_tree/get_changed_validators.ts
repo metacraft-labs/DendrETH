@@ -1,67 +1,46 @@
-import yargs from 'yargs';
-import { hideBin } from 'yargs/helpers';
-import config from '../common_config.json';
+import { CommandLineOptionsBuilder } from '../cmdline';
 import { CommitmentMapperScheduler } from './scheduler';
+import config from "../common_config.json";
 
 (async () => {
-  const options = yargs(hideBin(process.argv))
-    .usage(
-      'Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>',
-    )
-    .option('redis-host ', {
-      alias: 'redis-host',
-      describe: 'The Redis host',
-      type: 'string',
-      default: config['redis-host'],
-      description: 'Sets a custom redis connection',
-    })
-    .option('redis-port', {
-      alias: 'redis-port',
-      describe: 'The Redis port',
-      type: 'number',
-      default: Number(config['redis-port']),
-      description: 'Sets a custom redis connection',
-    })
+  const options = new CommandLineOptionsBuilder()
+    .usage('Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>')
+    .withRedisOpts()
     .option('beacon-node', {
-      alias: 'beacon-node',
       describe: 'The beacon node url',
       type: 'string',
       default: config['beacon-node'],
       description: 'Sets a custom beacon node url',
     })
     .option('sync-epoch', {
-      alias: 'sync-epoch',
       describe: 'The sync epoch',
       type: 'number',
       default: undefined,
       description: 'Starts syncing from this epoch',
     })
-    .options('offset', {
-      alias: 'offset',
+    .option('offset', {
       describe: 'Index offset in the validator set',
       type: 'number',
       default: undefined,
     })
     .option('take', {
-      alias: 'take',
       describe: 'The number of validators to take',
       type: 'number',
       default: Infinity,
       description: 'Sets the number of validators to take',
     })
     .option('mock', {
-      alias: 'mock',
       describe: 'Runs the tool without doing actual calculations',
       type: 'boolean',
       default: false,
       description: 'Runs the tool without doing actual calculations.',
     })
     .option('run-once', {
-      alias: 'run-once',
       describe: 'Should run script for one epoch',
       type: 'boolean',
       default: false,
-    }).argv;
+    })
+    .build();
 
   const scheduler = new CommitmentMapperScheduler();
   await scheduler.init(options);

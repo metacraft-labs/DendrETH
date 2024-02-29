@@ -1,4 +1,3 @@
-import yargs from 'yargs';
 import * as fs from 'fs';
 import chalk from 'chalk';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
@@ -8,11 +7,11 @@ import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import { hexToBits } from '@dendreth/utils/ts-utils/hex-utils';
 import { KeyPrefix, WorkQueue, Item } from '@mevitae/redis-work-queue';
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
-import { hideBin } from 'yargs/helpers';
 import { computeEpochAt } from '@dendreth/utils/ts-utils/ssz-utils';
 import { panic } from '@dendreth/utils/ts-utils/common-utils';
 import config from '../common_config.json';
 import { Validator } from '@dendreth/relay/types/types';
+import { CommandLineOptionsBuilder } from '../cmdline';
 
 const CIRCUIT_SIZE = 8;
 let TAKE: number;
@@ -20,24 +19,9 @@ let TAKE: number;
 (async () => {
   const { ssz } = await import('@lodestar/types');
 
-  const options = yargs(hideBin(process.argv))
-    .usage(
-      'Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>',
-    )
-    .option('redis-host ', {
-      alias: 'redis-host',
-      describe: 'The Redis host',
-      type: 'string',
-      default: config['redis-host'],
-      description: 'Sets a custom redis connection',
-    })
-    .option('redis-port', {
-      alias: 'redis-port',
-      describe: 'The Redis port',
-      type: 'number',
-      default: Number(config['redis-port']),
-      description: 'Sets a custom redis connection',
-    })
+  const options = new CommandLineOptionsBuilder()
+    .usage('Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>')
+    .withRedisOpts()
     .option('beacon-node', {
       alias: 'beacon-node',
       describe: 'The beacon node url',
@@ -66,12 +50,13 @@ let TAKE: number;
       default: false,
       description: 'Runs the tool without doing actual calculations.',
     })
-    .options('offset', {
+    .option('offset', {
       alias: 'offset',
       describe: 'Index offset in the validator set',
       type: 'number',
       default: undefined,
-    }).argv;
+    })
+    .build();
 
   const redis = new RedisLocal(options['redis-host'], options['redis-port']);
 
