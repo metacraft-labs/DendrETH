@@ -6,8 +6,12 @@
   },
   "dependencies": {
     "@chainsafe/lodestar-types": "^0.39.0",
+    "@chainsafe/persistent-merkle-tree": "^0.6.1",
     "@chainsafe/ssz": "^0.14.3",
+    "@lodestar/config": "^1.16.0",
+    "@lodestar/params": "^1.16.0",
     "@lodestar/types": "^1.16.0",
+    "@noble/bls12-381": "^1.4.0",
     "@nomiclabs/hardhat-ethers": "^2.0.5",
     "@nomiclabs/hardhat-waffle": "^2.0.3",
     "@types/js-yaml": "^4.0.5",
@@ -17,11 +21,15 @@
     "circomlib": "2.0.2",
     "ethereum-waffle": "^4.0.7",
     "ethers": "^5.6.4",
-    "hardhat": "^2.9.3",
+    "hardhat": "^2.20.1",
     "js-yaml": "^4.1.0",
     "redis": "^4.6.5",
     "snarkit2": "https://github.com/fluidex/snarkit2#70142d8bbc5ec79cfa6869205263ff77e8423975",
     "snarkjs": "github:metacraft-labs/snarkjs",
     "ts-node": "^10.9.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.21",
+    "typescript": "5.2.2"
   }
 }
