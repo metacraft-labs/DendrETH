@@ -1,3 +1,5 @@
+import { beforeAll, describe, expect, test } from '@jest/globals';
+
 import glob_ from 'glob';
 const glob = glob_.sync;
 import { promisify } from 'node:util';
@@ -8,7 +10,6 @@ import {
 } from '../helpers/helpers';
 import { getRootDir, sleep } from '../../libs/typescript/ts-utils/common-utils';
 import { EOSContract } from '../../relay/implementations/eos-contract';
-import { getDataFromPrintHeaderResult } from '../../libs/typescript/cosmos-utils/cosmos-utils';
 import { bytesToHex } from '../../libs/typescript/ts-utils/bls';
 
 const exec = promisify(exec_);
