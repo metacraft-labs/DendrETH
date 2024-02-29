@@ -14,19 +14,19 @@ nlohmann::json pack_int_json(uint64_t val) {
 std::ostream&
 operator<<( std::ostream& dest, __uint128_t value )
 {
-    std::ostream::sentry s( dest );
-    if ( s ) {
-        char buffer[ 128 ];
-        char* d = std::end( buffer );
+    std::ostream::sentry s(dest);
+    if (s) {
+        char buffer[128];
+        char* d = std::end(buffer);
         do
         {
             -- d;
-            *d = "0123456789"[ value % 10 ];
+            *d = "0123456789"[value % 10];
             value /= 10;
-        } while ( value != 0 );
-        int len = std::end( buffer ) - d;
-        if ( dest.rdbuf()->sputn( d, len ) != len ) {
-            dest.setstate( std::ios_base::badbit );
+        } while (value != 0);
+        int len = std::end(buffer) - d;
+        if (dest.rdbuf()->sputn(d, len) != len) {
+            dest.setstate(std::ios_base::badbit);
         }
     }
     return dest;
@@ -69,11 +69,11 @@ static_vector<Byte, N> json_to_byte_array(const nlohmann::json& j)
 template<typename T>
 nlohmann::json serialize(const T& val);
 
-template <size_t N>
-nlohmann::json serialize_vector(const static_vector<Byte, N>& bytes)
+template <size_t N, bool F>
+nlohmann::json serialize_vector(const static_vector<Byte, N, F>& bytes)
 {
     nlohmann::json res_array;
-    for(size_t i = 0; i < bytes.size(); i++) {
+    for(size_t i = 0; i < N; i++) {
         res_array["array"].push_back(pack_int_json(bytes[i]));
     }
     nlohmann::json result;
@@ -86,8 +86,8 @@ nlohmann::json serialize_vector(HashType h)
     return bytes32_to_hash_type(h);
 }
 
-template<typename C, size_t S, typename = std::enable_if_t<!std::is_same_v<C, static_vector>>>
-nlohmann::json serialize_vector(const static_vector<C, S>& v) {
+template<typename C, size_t S, bool B>
+nlohmann::json serialize_vector(const static_vector<C, S, B>& v) {
     nlohmann::json result;
     result["struct"].push_back(pack_int_json((size_t)v.size()));
     nlohmann::json elements;
@@ -98,8 +98,8 @@ nlohmann::json serialize_vector(const static_vector<C, S>& v) {
     return result;
 }
 
-template<typename C1, size_t S1, size_t S>
-nlohmann::json serialize_vector(const static_vector<static_vector<C1, S1>, S >& v) {
+template<typename C1, size_t S1, bool B1, size_t S, bool B>
+nlohmann::json serialize_vector(const static_vector<static_vector<C1, S1, B1>, S, B>& v) {
     nlohmann::json result;
     result["struct"].push_back(pack_int_json((size_t)v.size()));
     nlohmann::json elements;
@@ -113,5 +113,11 @@ nlohmann::json serialize_vector(const static_vector<static_vector<C1, S1>, S >& 
 template <size_t N>
 nlohmann::json byte_array_to_json(const static_vector<Byte, N>& bytes)
 {
-    return serialize_vector(bytes);
+    nlohmann::json res_array;
+    for(size_t i = 0; i < N; i++) {
+        res_array["array"].push_back(pack_int_json(bytes[i]));
+    }
+    nlohmann::json result;
+    result["struct"].push_back(res_array);
+    return result;
 }

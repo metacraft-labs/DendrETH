@@ -43,23 +43,10 @@ struct static_vector {
             size_ = 0;
         }
     }
-    constexpr static_vector(const static_vector& rhs) {
-        for (size_t i = 0; i < rhs.size_; i++) {
-            content_[i] = rhs[i];
-        }
-        size_ = rhs.size_;
-    }
     // For some reason, this triggers a circuit compilation error
     // ~static_vector() {
     //     size_ = 0;
     // }
-    constexpr auto operator=(const static_vector& rhs) -> static_vector& {
-        for (size_t i = 0; i < rhs.size_; i++) {
-            content_[i] = rhs[i];
-        }
-        size_ = rhs.size_;
-        return *this;
-    }
     constexpr auto data() -> T* {
         return &content_;
     }

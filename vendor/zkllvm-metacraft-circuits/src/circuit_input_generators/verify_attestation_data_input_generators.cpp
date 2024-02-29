@@ -16,10 +16,12 @@
 #include "serialization/serialize_attestation.h"
 
 #include "circuits_impl/verify_attestation_data_imp.h"
+#include "utils/attestation_utils.h"
 
 using namespace circuit_byte_utils;
 using namespace byte_utils;
 using namespace file_utils;
+using namespace attestation_utils;
 
 using std::cout;
 
@@ -52,9 +54,9 @@ int main(int argc, char* argv[]) {
     }
 
     std::cout << "src/circuit_input_generators/verify_attestation_data_input_generators.cpp \n";
-    // path my_path("/finalizer-data/merged_234400.json");
-    // std::ifstream f(my_path);
-    // auto data = json::parse(f);
+    path my_path("/finalizer-data/merged_234400.json");
+    std::ifstream f(my_path);
+    auto data = json::parse(f);
 
     // Transition voted_transition;
     // PubKey* trusted_pubkeys = (PubKey*)malloc(sizeof(PubKey) * 1'000'000);
@@ -101,24 +103,49 @@ int main(int argc, char* argv[]) {
     //     std::cout << final_result.dump(2) << "\n";
 
     // }
-
-    AttestationData ad;
-    ad.slot = 17;
-    ad.index = 22;
-    ad.beacon_block_root = hexToBytes<32>("b85c1507c01db2a58ffcb044a4a785232f5a216b76377c2618a186577d6ec88a");
-
-    std::cout << "serialize<AttestationData>(ad):\n" << serialize<AttestationData>(ad).dump(2) << "\n";
-
-    Validator v;
-    v.trusted = true;
-    v.validator_index = 910250;
-    v.pubkey = hexToBytes<48>("b85c1507c01db2a58ffcb044a4a785232f5a216b76377c2618a186577d6ec88a1122334455667788991234567890abcd");
-    v.withdrawal_credentials = hexToBytes<32>("232f5a216b76377c2618a186577d6ec88ab85c1507c01db2a58ffcb044a4a785");
-
-    std::cout << "serialize<Validator>(v):\n" << serialize<Validator>(v).dump(2) << "\n";
-
-
     // free(trusted_pubkeys);
+
+    // Run the first circuit for each attestation.
+    for (const auto& json_attestation : data["attestations"]) {
+
+        Attestation attestation = parse_attestation(json_attestation);
+
+        // std::cout << "serialize<Attestation>(f):\n" << serialize<Attestation>(attestation).dump(2) << "\n";
+
+        std::ofstream fout("/tmp/attestation.json");
+        fout << serialize<Attestation>(attestation);//.dump(2)
+        fout.flush();
+
+        std::cout << "DONE\n";
+
+        break;
+    }
+
+    if (0) {
+        AttestationData ad;
+        ad.slot = 17;
+        ad.index = 22;
+        ad.beacon_block_root = hexToBytes<32>("b85c1507c01db2a58ffcb044a4a785232f5a216b76377c2618a186577d6ec88a");
+
+        std::cout << "serialize<AttestationData>(ad):\n" << serialize<AttestationData>(ad).dump(2) << "\n";
+
+        Validator v;
+        v.trusted = true;
+        v.validator_index = 910250;
+        v.pubkey = hexToBytes<48>("b85c1507c01db2a58ffcb044a4a785232f5a216b76377c2618a186577d6ec88a1122334455667788991234567890abcd");
+        v.withdrawal_credentials = hexToBytes<32>("232f5a216b76377c2618a186577d6ec88ab85c1507c01db2a58ffcb044a4a785");
+        v.effective_balance = 1'000'000;
+        v.slashed = false;
+
+        std::cout << "serialize<Validator>(v):\n" << serialize<Validator>(v).dump(2) << "\n";
+
+        Fork f;
+        f.previous_version = hexToBytes<32>("232f5a216b76377c2618a186577d6ec88ab85c1507c01db2a58ffcb044a4a785");
+        f.current_version = hexToBytes<32>("c01db2a58ffcb044a4a785232f5a216b76377c2618a186577d6ec88ab85c1507");
+        f.epoch = 100;
+
+        std::cout << "serialize<Fork>(f):\n" << serialize<Fork>(f).dump(2) << "\n";
+    }
 
     return 0;
 }
