@@ -110,6 +110,10 @@ export function gIndexToIndex(gIndex: bigint, depth: bigint): bigint {
   return gIndex - fromDepth(depth).levelBeg + 1n;
 }
 
+export function gIndexToLevel(gIndex: bigint): bigint {
+  return log2(gIndex);
+}
+
 export function isLeaf(gIndex: bigint, depth: bigint): boolean {
   return (
     gIndex >= fromDepth(depth).levelBeg && gIndex <= fromDepth(depth).levelEnd

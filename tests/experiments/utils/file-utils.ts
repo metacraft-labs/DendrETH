@@ -1,5 +1,5 @@
 import fs from 'fs-extra';
-import { execTask } from '../experiment';
+// import { execTask } from '../experiment';
 import {
   childrenFromGIndex,
   fromDepth,
@@ -44,14 +44,14 @@ export async function readFile(gIndex: bigint): Promise<NodeData> {
   return { gIndex, content: { gIndex, hash: '' }, isMissing: true };
 }
 
-export async function writePlaceholderFiles(depth: bigint) {
-  const { beg, end } = fromDepth(depth);
-  return Promise.all(
-    [...range(beg, end)].map(i =>
-      execTask(i.gIndex, isLeaf(i.gIndex, depth), true, 0, () => true),
-    ),
-  );
-}
+// export async function writePlaceholderFiles(depth: bigint) {
+//   const { beg, end } = fromDepth(depth);
+//   return Promise.all(
+//     [...range(beg, end)].map(i =>
+//       execTask(i.gIndex, isLeaf(i.gIndex, depth), true, 0, () => true),
+//     ),
+//   );
+// }
 
 export async function checkContent(gIndex: bigint) {
   const path = fileName(gIndex);
@@ -68,5 +68,4 @@ export function childLeafsExists(gIndex: bigint) {
 
 export async function writeResults(fileName: string, data: string) {
   await fs.writeFile(fileName, data);
-  
 }
