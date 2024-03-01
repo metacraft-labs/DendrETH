@@ -146,7 +146,7 @@ mod test {
     use anyhow::Result;
     use plonky2::{
         field::goldilocks_field::GoldilocksField,
-        iop::witness::{PartialWitness},
+        iop::witness::PartialWitness,
         plonk::{
             circuit_builder::CircuitBuilder, circuit_data::CircuitConfig,
             config::PoseidonGoldilocksConfig,
@@ -154,7 +154,8 @@ mod test {
     };
 
     use crate::{
-        utils::{ETH_SHA256_BIT_SIZE, SetBytesArray}, validator_hash_tree_root::hash_tree_root_validator_sha256,
+        utils::{SetBytesArray, ETH_SHA256_BIT_SIZE},
+        validator_hash_tree_root::hash_tree_root_validator_sha256,
     };
 
     #[test]
@@ -238,7 +239,6 @@ mod test {
         pw.set_bytes_array(&targets.validator.exit_epoch, &exit_epoch);
 
         pw.set_bytes_array(&targets.validator.withdrawable_epoch, &withdrawable_epoch);
-
 
         for i in 0..ETH_SHA256_BIT_SIZE {
             if validator_hash_tree_root[i] == "1" {
