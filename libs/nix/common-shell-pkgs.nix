@@ -3,7 +3,6 @@
   rust-stable,
 }:
 with pkgs; let
-  nodejs = nodejs-18_x;
   llvm = llvmPackages_14;
   emscripten = metacraft-labs.emscripten;
   nim-wasm = callPackage ./nim-wasm {inherit llvm emscripten;};
@@ -26,8 +25,8 @@ in
     tmux
     tmuxinator
     # Node.js dev environment for unit tests
-    nodejs
-    metacraft-labs.corepack-shims
+    nodejs_21
+    corepack_21
 
     # For WebAssembly unit-testing
     wasm3 # wasmer is currently broken on macOS ARM
