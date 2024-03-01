@@ -9,12 +9,20 @@
 
 #include "constants.h"
 
+#define ASSERT(cond)                                                                 \
+    do {                                                                             \
+        if (!(cond)) {                                                               \
+            printf("Condition \"%s\" failed in %s:%d\n", #cond, __FILE__, __LINE__); \
+            exit(1);                                                                 \
+        }                                                                            \
+    } while (0)
+
 #ifdef __ZKLLVM__
 #define assert_true(c) \
     { __builtin_assigner_exit_check(c); }
 #else
 #define assert_true(c) \
-    { assert(c); }
+    { ASSERT(c); }
 #endif
 
 #include "static_vector.h"
@@ -25,7 +33,7 @@
 #define assert_in_executable(c)
 #else
 #define assert_in_executable(c) \
-    { assert(c); }
+    { ASSERT(c); }
 #endif
 
 using sha256_t = typename nil::crypto3::hashes::sha2<256>::block_type;
@@ -71,10 +79,9 @@ struct JustificationBitsVariable {
 
     static_vector<bool, 4, true> bits;
 
-    constexpr JustificationBitsVariable(std::initializer_list<bool> init) {
+    constexpr JustificationBitsVariable(const std::array<bool, decltype(bits)::capacity> &init) {
         size_t i = 0;
         for (const auto &v : init) {
-            assert_true(i < bits.size());
             bits[i++] = v;
         }
     }

@@ -1,4 +1,4 @@
-#include "../circuits_impl/weigh_justification_and_finalization.h"
+#include "../circuits_impl/weigh_justification_and_finalization_impl.h"
 
 using namespace weigh_justification_and_finalization_;
 

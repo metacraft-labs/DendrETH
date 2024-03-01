@@ -47,13 +47,13 @@ namespace byte_utils {
         std::cout << "\n";
     }
 
-    template<size_t SIZE>
-    std::string bytesToHex(static_vector<Byte, SIZE> uint8a) {
+    template<size_t Size>
+    std::string bytesToHex(static_vector<Byte, Size> uint8a) {
         std::string s = "";
         std::ostringstream oss;
         oss << std::setfill('0');
 
-        for (int i = 0; i < SIZE; ++i) {
+        for (int i = 0; i < Size; ++i) {
             oss << std::setw(2) << std::hex << static_cast<int>(uint8a[i]);
         }
 
@@ -67,13 +67,13 @@ namespace byte_utils {
         }
     }
 
-    template<long unsigned int SIZE>
-    static_vector<Byte, SIZE> hexToBytes(const std::string& hex_str) {
+    template<long unsigned int Size>
+    static_vector<Byte, Size> hexToBytes(const std::string& hex_str) {
         std::string_view hex(hex_str);
         formatHex(hex);
-        assert_true(hex.length() == (2 * SIZE));
+        assert_true(hex.length() == (2 * Size));
 
-        static_vector<Byte, SIZE> bytes;
+        static_vector<Byte, Size> bytes;
         for (size_t i = 0; i < bytes.size(); ++i) {
             auto hexByte = hex.substr(i * 2, 2);
             bytes[i] = hexToByte(hexByte.data());
@@ -90,7 +90,7 @@ namespace byte_utils {
     JustificationBitsVariable hexToBitsVariable(std::string hex) {
         JustificationBitsVariable retval {};
         auto bits = hexToBytes<1>(hex);
-        for (uint64_t i = 0; i < (uint64_t)retval.bits.size(); ++i) {
+        for (size_t i = 0; i < retval.bits.size(); ++i) {
             retval.bits[i] = (bits[0] % 2);
             bits[0] /= 2;
         }

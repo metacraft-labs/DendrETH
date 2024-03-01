@@ -13,6 +13,9 @@ docker run --rm -it --name zk_executable_tests \
        --volume ${SCRIPT_DIR}/../../consensus-spec-tests/:/consensus-spec-tests \
        --volume ${SCRIPT_DIR}/../src/tests/verify_attestation_data_test/finalizer-data:/finalizer-data \
        --volume ${SCRIPT_DIR}/../src/:/zkllvm-template/src \
+       --volume ${SCRIPT_DIR}/../.config:/.config/ \
+       --volume ${SCRIPT_DIR}/../.config:/root/.config/ \
+       --volume ${SCRIPT_DIR}/../.config:/opt/nil-toolchain/.config/ \
        --user $(id -u ${USER}):$(id -g ${USER}) \
        -w /zkllvm-template \
        zkllvm:latest \
