@@ -1,12 +1,12 @@
 import { BlobServiceClient, ContainerClient } from "@azure/storage-blob";
 import { IProofStorage } from "./proof_storage";
 
-export class AzureStorage implements IProofStorage {
+export class AzureBlobStorage implements IProofStorage {
   private containerClient: ContainerClient;
 
-  constructor(connectionString: string, containerName: string) {
-    const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
-    this.containerClient = blobServiceClient.getContainerClient(containerName);
+  constructor(container: string) {
+    const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_CONNECTION_STRING!);
+    this.containerClient = blobServiceClient.getContainerClient(container);
   }
 
   async getProof(key: string): Promise<Buffer | null> {
