@@ -3,7 +3,8 @@
   "version": "0.0.1",
   "license": "CC0-1.0",
   "description": "A smart contract implementation of the Ethereum light client sync protocol",
-  "packageManager": "yarn@4.1.1",
+  "packageManager": "yarn@4.1.0",
+  "type": "module",
   "workspaces": [
     "beacon-light-client/circom",
     "beacon-light-client/plonky2",
@@ -32,6 +33,8 @@
     "light-client-sync"
   ],
   "devDependencies": {
+    "@chainsafe/ssz": "^0.14.3",
+    "@esbuild-kit/esm-loader": "^2.6.5",
     "@jest/globals": "^29.7.0",
     "@jest/types": "^29.6.3",
     "@noble/bls12-381": "^1.3.0",
@@ -44,8 +47,6 @@
     "jest": "^29.7.0",
     "prettier": "^2.6.2",
     "ts-jest": "^29.1.2",
-    "ts-node": "^10.9.1",
-    "tsx": "^4.7.1",
     "typescript": "5.2.2"
   },
   "scripts": {
@@ -59,8 +60,10 @@
     "format:write": "prettier --write . && alejandra --exclude ./.yarn --exclude ./node_modules --exclude ./yarn-project.nix .",
     "test": "jest --verbose --silent -i",
     "test-emcc": "USE_EMCC=1 jest --verbose --silent",
+    "ts": "yarn node --loader @esbuild-kit/esm-loader",
+    "ts-node": "yarn node --loader @esbuild-kit/esm-loader",
     "build-plonky-2": "tsc -p beacon-light-client/plonky2/tsconfig.json",
-    "bvFileMock": "rm -rf tests/experiments/data && ts-node tests/experiments/balanceVerifierFileMock.ts",
+    "bvFileMock": "yarn ts-node tests/experiments/benchmark.ts",
     "runIt:test": "jest --verbose --silent=false -i tests/experiments/experiment.spec.ts"
   },
   "dependencies": {
