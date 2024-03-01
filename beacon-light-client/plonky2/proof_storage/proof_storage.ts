@@ -1,5 +1,5 @@
 import { S3Storage } from './aws_proof_storage';
-import { AzureStorage } from './azure_proof_storage';
+import { AzureBlobStorage } from './azure_proof_storage';
 import { FileStorage } from './file_proof_storage';
 import { RedisStorage } from './redis_proof_storage';
 
@@ -37,17 +37,13 @@ export function createProofStorage(options: any): IProofStorage {
       return new FileStorage(folder);
     }
     case 'azure': {
-      const account = options['azure-account'];
-      const container = options['azure-container'];
+      const container = process.env.STORAGE_CONTAINER;
 
-      if (account === undefined) {
-        throw new Error('azure-account was not provided');
-      }
       if (container === undefined) {
-        throw new Error('azure-container was not provided');
+        throw new Error('STORAGE_CONTAINER env var was not provided');
       }
 
-      return new AzureStorage('placeholder', 'placeholder');
+      return new AzureBlobStorage(container);
     }
     case 'aws': {
       const endpoint = options['aws-endpoint-url'];
