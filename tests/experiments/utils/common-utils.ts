@@ -1,8 +1,10 @@
 import { log } from '../logging';
 
 export interface LevelIndexAndGIndex {
-  [key: string]: bigint;
+  indexOnThisLevel: bigint;
+  gIndex: bigint;
 }
+
 export type Tasks = Record<`${bigint}`, Promise<unknown>>;
 
 export function sleep(ms: number) {
@@ -35,4 +37,9 @@ export function setLogging(enabled: boolean) {
 
 export function logWrite(gIndex: bigint, msg: string) {
   if (logWrites) log(msg, gIndex);
+}
+
+export function parseBoolEnvVar(envVar: string) {
+  const x = (process.env[envVar] ?? '').toLowerCase();
+  return ['true', '1', 'yes', 'y'].includes(x);
 }

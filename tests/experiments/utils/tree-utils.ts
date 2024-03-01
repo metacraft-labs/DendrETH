@@ -1,4 +1,5 @@
 import { LevelIndexAndGIndex } from './common-utils';
+import { fromDepth, log2 } from './gindex';
 
 export interface TreeParams {
   depth: bigint;
@@ -33,58 +34,48 @@ export type NodeData = {
   isPlaceholder?: boolean;
 };
 
-export function* iterateTree(depth: bigint, lastLeafIndex?: bigint) {
-  let indexOfLastNode = lastLeafIndex
-    ? lastLeafIndex
-    : fromDepth(depth).elementCount;
-  let gIndexOfLastNode = lastLeafIndex
-    ? indexToGIndex(lastLeafIndex, depth)
-    : fromDepth(depth).levelEnd;
+export function* iterateTree({
+  depth,
+  lastLeafIndex,
+}: {
+  depth: bigint;
+  lastLeafIndex?: bigint;
+}) {
+  console.log({ depth, lastLeafIndex });
+  let lastIndex = lastLeafIndex ?? fromDepth(depth).levelEnd;
 
-  for (let level = depth; level >= 1; level--) {
-    for (let { indexOnThisLevel, gIndex } of iterateLevel(
-      level,
-      indexOfLastNode,
-    )) {
-      yield { indexOnThisLevel: indexOnThisLevel, gIndex, level };
+  // let lastGIndex = fromDepth(depth).levelStart + lastIndex;
+
+  for (let level = depth; level >= 0; level--, lastIndex /= 2n) {
+    console.log({ level, lastIndex });
+    for (let { indexOnThisLevel, gIndex } of iterateLevel(level, lastIndex)) {
+      // if (gIndex <= lastGIndex) {
+      yield { indexOnThisLevel, gIndex, level };
+      // }
     }
-    gIndexOfLastNode = parentAndNeighbourFromGIndex(gIndexOfLastNode).parent;
-    indexOfLastNode =
-      level == 1n ? 1n : gIndexToIndex(gIndexOfLastNode, level - 1n);
   }
+}
+
+export function min(a: bigint, b: bigint) {
+  return a < b ? a : b;
 }
 
 export function* iterateLevel(
   level: bigint,
-  finalIndex?: bigint,
-): Generator<{ indexOnThisLevel: bigint; gIndex: bigint }, void, unknown> {
-  const { levelBeg, levelEnd } = fromDepth(level);
-  const iterationBorder = finalIndex
-    ? indexToGIndex(finalIndex, level)
-    : levelEnd;
-  for (let gIndex = levelBeg, idx = 0n; gIndex <= iterationBorder; gIndex++) {
-    yield { indexOnThisLevel: ++idx, gIndex };
-  }
+  leafNodes?: bigint,
+): Generator<LevelIndexAndGIndex> {
+  const { levelStart, levelEnd } = fromDepth(level);
+  const end = leafNodes ? levelStart + leafNodes : levelEnd + 1n;
+  return yield* range(levelStart, min(levelEnd + 1n, end));
 }
 
 export function* range(
   begin: bigint,
   end: bigint,
-): Generator<{ indexOnThisLevel: bigint; gIndex: bigint }, void, unknown> {
-  let indexOnThisLevel = 0n;
-  for (let gIndex = begin; gIndex <= end; gIndex++) {
-    yield { indexOnThisLevel: ++indexOnThisLevel, gIndex };
+): Generator<LevelIndexAndGIndex> {
+  for (let i = begin; i < end; i++) {
+    yield { gIndex: i, indexOnThisLevel: i - begin };
   }
-}
-
-export function childrenFromGIndex(gIndex: bigint): {
-  leftChild: bigint;
-  rightChild: bigint;
-} {
-  return {
-    leftChild: gIndex * 2n,
-    rightChild: gIndex * 2n + 1n,
-  };
 }
 
 export function parentAndNeighbourFromGIndex(gIndex: bigint): {
@@ -103,11 +94,11 @@ export function parentAndNeighbourFromGIndex(gIndex: bigint): {
 }
 
 export function indexToGIndex(lastIndex: bigint, depth: bigint): bigint {
-  return fromDepth(depth).levelBeg + lastIndex - 1n;
+  return fromDepth(depth).levelStart + lastIndex - 1n;
 }
 
 export function gIndexToIndex(gIndex: bigint, depth: bigint): bigint {
-  return gIndex - fromDepth(depth).levelBeg + 1n;
+  return gIndex - fromDepth(depth).levelStart + 1n;
 }
 
 export function gIndexToLevel(gIndex: bigint): bigint {
@@ -116,31 +107,22 @@ export function gIndexToLevel(gIndex: bigint): bigint {
 
 export function isLeaf(gIndex: bigint, depth: bigint): boolean {
   return (
-    gIndex >= fromDepth(depth).levelBeg && gIndex <= fromDepth(depth).levelEnd
+    gIndex >= fromDepth(depth).levelStart && gIndex <= fromDepth(depth).levelEnd
   );
 }
 
-export function fromDepth(depth: bigint): {
-  beg: bigint;
-  end: bigint;
-  levelBeg: bigint;
-  levelEnd: bigint;
-  elementCount: bigint;
-} {
-  return {
-    beg: 1n,
-    end: 2n ** depth - 1n,
-    levelBeg: 2n ** (depth - 1n),
-    levelEnd: 2n ** depth - 1n,
-    elementCount: 2n ** (depth - 1n),
-  };
-}
-
-export function log2(x: bigint) {
-  let result = 0n;
-  while (x > 1n) {
-    x = x / 2n;
-    result++;
-  }
-  return result;
-}
+// export function fromDepth(depth: bigint): {
+//   beg: bigint;
+//   end: bigint;
+//   levelBeg: bigint;
+//   levelEnd: bigint;
+//   elementCount: bigint;
+// } {
+//   return {
+//     beg: 1n,
+//     end: 2n ** depth - 1n,
+//     levelBeg: 2n ** (depth - 1n),
+//     levelEnd: 2n ** depth - 1n,
+//     elementCount: 2n ** (depth - 1n),
+//   };
+// }

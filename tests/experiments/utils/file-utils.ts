@@ -5,9 +5,9 @@ import {
   fromDepth,
   range,
   isLeaf,
-  log2,
   NodeData,
 } from './tree-utils';
+import { fromGIndex, log2 } from './gindex';
 import { logWrite } from './common-utils';
 
 export const experimentalDir = 'tests/experiments/data';
@@ -60,7 +60,7 @@ export async function checkContent(gIndex: bigint) {
 }
 
 export function childLeafsExists(gIndex: bigint) {
-  const { leftChild, rightChild } = childrenFromGIndex(gIndex);
+  const { leftChild, rightChild } = fromGIndex(gIndex);
   return Promise.all([checkContent(leftChild), checkContent(rightChild)]).then(
     ([a, b]) => a && b,
   );

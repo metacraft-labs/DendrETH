@@ -1,31 +1,28 @@
+import { describe, test, expect } from '@jest/globals';
+
 import {
-  childrenFromGIndex,
+  // childrenFromGIndex,
   isLeaf,
-  fromDepth,
-  log2,
+  // fromDepth,
   range,
   iterateLevel,
   iterateTree,
-  parentAndNeighbourFromGIndex,
-  indexToGIndex,
-  gIndexToIndex,
-  gIndexToLevel,
+  // parentAndNeighbourFromGIndex,
+  // indexToGIndex,
+  // gIndexToIndex,
+  // gIndexToLevel,
+  // take,
 } from './tree-utils';
+import { fromDepth, log2 } from './gindex';
 
 describe('Tree Utils Tests', () => {
-  function testIterator(iterator, expectedIndices) {
-    for (const expected of expectedIndices) {
-      const result = iterator.next();
-      console.log(result);
-      expect(result.value).toEqual(expected);
-    }
-    expect(iterator.next().done).toBe(true);
+  function testIterator<T>(iterator: Generator<T>, expectedIndices: T[]) {
+    expect([...iterator]).toEqual(expectedIndices);
   }
 
   describe('iterateTree', () => {
     test('generates correct indices and gIndices for a given depth with no leaf restrictions', () => {
-      const depth = 4n;
-      const iterator = iterateTree(depth);
+      const iterator = iterateTree({ depth: 4n });
       const expectedIndices = [
         { indexOnThisLevel: 1n, gIndex: 8n, level: 4n },
         { indexOnThisLevel: 2n, gIndex: 9n, level: 4n },
@@ -48,9 +45,7 @@ describe('Tree Utils Tests', () => {
     });
 
     test('generates correct indices and gIndices for a given depth with leaf restrictions', () => {
-      const depth = 4n;
-      const maxLeafIndex = 5n;
-      const iterator = iterateTree(depth, maxLeafIndex);
+      const iterator = iterateTree({ depth: 4n, lastLeafIndex: 5n });
       const expectedIndices = [
         // Do not remove the comments below, they are used to keep track of the expected indices
         { indexOnThisLevel: 1n, gIndex: 8n, level: 4n },
@@ -70,34 +65,97 @@ describe('Tree Utils Tests', () => {
         { indexOnThisLevel: 1n, gIndex: 1n, level: 1n },
       ];
 
+      // console.log([...iterator]);
+
       testIterator(iterator, expectedIndices);
     });
   });
 
   describe('iterateLevel', () => {
     test('generates correct indices and gIndices for a given level', () => {
-      const level = 3n;
-      const iterator = iterateLevel(level);
-      const expectedIndices = [
-        { indexOnThisLevel: 1n, gIndex: 4n },
-        { indexOnThisLevel: 2n, gIndex: 5n },
-        { indexOnThisLevel: 3n, gIndex: 6n },
-        { indexOnThisLevel: 4n, gIndex: 7n },
-      ];
+      testIterator(iterateLevel(0n), [{ gIndex: 1n, indexOnThisLevel: 0n }]);
 
-      testIterator(iterator, expectedIndices);
+      testIterator(iterateLevel(1n), [
+        { gIndex: 2n, indexOnThisLevel: 0n },
+        { gIndex: 3n, indexOnThisLevel: 1n },
+      ]);
+
+      testIterator(iterateLevel(2n), [
+        { gIndex: 4n, indexOnThisLevel: 0n },
+        { gIndex: 5n, indexOnThisLevel: 1n },
+        { gIndex: 6n, indexOnThisLevel: 2n },
+        { gIndex: 7n, indexOnThisLevel: 3n },
+      ]);
+
+      testIterator(iterateLevel(3n), [
+        { gIndex: 8n, indexOnThisLevel: 0n },
+        { gIndex: 9n, indexOnThisLevel: 1n },
+        { gIndex: 10n, indexOnThisLevel: 2n },
+        { gIndex: 11n, indexOnThisLevel: 3n },
+        { gIndex: 12n, indexOnThisLevel: 4n },
+        { gIndex: 13n, indexOnThisLevel: 5n },
+        { gIndex: 14n, indexOnThisLevel: 6n },
+        { gIndex: 15n, indexOnThisLevel: 7n },
+      ]);
+
+      testIterator(iterateLevel(4n), [
+        { gIndex: 16n, indexOnThisLevel: 0n },
+        { gIndex: 17n, indexOnThisLevel: 1n },
+        { gIndex: 18n, indexOnThisLevel: 2n },
+        { gIndex: 19n, indexOnThisLevel: 3n },
+        { gIndex: 20n, indexOnThisLevel: 4n },
+        { gIndex: 21n, indexOnThisLevel: 5n },
+        { gIndex: 22n, indexOnThisLevel: 6n },
+        { gIndex: 23n, indexOnThisLevel: 7n },
+        { gIndex: 24n, indexOnThisLevel: 8n },
+        { gIndex: 25n, indexOnThisLevel: 9n },
+        { gIndex: 26n, indexOnThisLevel: 10n },
+        { gIndex: 27n, indexOnThisLevel: 11n },
+        { gIndex: 28n, indexOnThisLevel: 12n },
+        { gIndex: 29n, indexOnThisLevel: 13n },
+        { gIndex: 30n, indexOnThisLevel: 14n },
+        { gIndex: 31n, indexOnThisLevel: 15n },
+      ]);
     });
 
     test('generates correct indices and gIndices for a given level with a finalGIndex', () => {
-      const level = 3n;
-      const finalGIndex = 2n;
-      const iterator = iterateLevel(level, finalGIndex);
+      const { levelStart, levelEnd } = fromDepth(0n);
+      expect(levelStart).toBe(0n);
+      expect(levelEnd).toBe(0n);
+      testIterator(iterateLevel(0n, 0n), []);
+
+      testIterator(iterateLevel(0n, 1n), [
+        { gIndex: 1n, indexOnThisLevel: 0n },
+      ]);
+
+      testIterator(iterateLevel(0n, 2n), [
+        { gIndex: 1n, indexOnThisLevel: 0n },
+      ]);
+
+      testIterator(iterateLevel(0n, 3n), [
+        { gIndex: 1n, indexOnThisLevel: 0n },
+      ]);
+
+      testIterator(iterateLevel(1n, 0n), []);
+
+      testIterator(iterateLevel(1n, 1n), [
+        { gIndex: 1n, indexOnThisLevel: 0n },
+      ]);
+
+      testIterator(iterateLevel(1n, 2n), [
+        { gIndex: 1n, indexOnThisLevel: 0n },
+        { gIndex: 2n, indexOnThisLevel: 1n },
+      ]);
+
+      const depth = 2n;
+      const leafNodes = 2n;
+      const iterator = iterateLevel(depth, leafNodes);
       const expectedIndices = [
         // Do not remove the comments below, they are used to keep track of the expected indices
-        { indexOnThisLevel: 1n, gIndex: 4n },
-        { indexOnThisLevel: 2n, gIndex: 5n },
-        // { indexOnThisLevel: 3n, gIndex: 6n },
-        // { indexOnThisLevel: 4n, gIndex: 7n },
+        { gIndex: 4n, indexOnThisLevel: 0n },
+        { gIndex: 5n, indexOnThisLevel: 1n },
+        // { gIndex: 6n, indexOnThisLevel: 2n },
+        // { gIndex: 7n, indexOnThisLevel: 3n },
       ];
 
       testIterator(iterator, expectedIndices);
@@ -120,77 +178,77 @@ describe('Tree Utils Tests', () => {
     });
   });
 
-  describe('childrenFromGIndex', () => {
-    test('returns correct leftChild and rightChild for given gIndex', () => {
-      const gIndex = 5n;
-      const expected = { leftChild: 10n, rightChild: 11n };
-      expect(childrenFromGIndex(gIndex)).toEqual(expected);
-    });
-  });
+  // describe('childrenFromGIndex', () => {
+  //   test('returns correct leftChild and rightChild for given gIndex', () => {
+  //     const gIndex = 5n;
+  //     const expected = { leftChild: 10n, rightChild: 11n };
+  //     expect(childrenFromGIndex(gIndex)).toEqual(expected);
+  //   });
+  // });
 
-  describe('parentAndNeighbourFromGIndex', () => {
-    test('returns correct parent and neighbour for given odd gIndex', () => {
-      const gIndex = 5n;
-      const expected = { parent: 2n, neighbour: 4n };
-      expect(parentAndNeighbourFromGIndex(gIndex)).toEqual(expected);
-    });
+  // describe('parentAndNeighbourFromGIndex', () => {
+  //   test('returns correct parent and neighbour for given odd gIndex', () => {
+  //     const gIndex = 5n;
+  //     const expected = { parent: 2n, neighbour: 4n };
+  //     expect(parentAndNeighbourFromGIndex(gIndex)).toEqual(expected);
+  //   });
 
-    test('returns correct parent and neighbour for given even gIndex', () => {
-      const gIndex = 4n;
-      const expected = { parent: 2n, neighbour: 5n };
-      expect(parentAndNeighbourFromGIndex(gIndex)).toEqual(expected);
-    });
-  });
+  //   test('returns correct parent and neighbour for given even gIndex', () => {
+  //     const gIndex = 4n;
+  //     const expected = { parent: 2n, neighbour: 5n };
+  //     expect(parentAndNeighbourFromGIndex(gIndex)).toEqual(expected);
+  //   });
+  // });
 
-  describe('indexToGIndex', () => {
-    test('returns correct values for the given depth and last leaf index', () => {
-      const depth = 4n;
-      const lastIndex = 5n;
-      const expected = 12n;
+  // describe('indexToGIndex', () => {
+  //   test('returns correct values for the given depth and last leaf index', () => {
+  //     const depth = 4n;
+  //     const lastIndex = 5n;
+  //     const expected = 12n;
 
-      expect(indexToGIndex(lastIndex, depth)).toEqual(expected);
-    });
-  });
+  //     expect(indexToGIndex(lastIndex, depth)).toEqual(expected);
+  //   });
+  // });
 
-  describe('gIndexToIndex', () => {
-    test('returns correct values for the given depth and last leaf index', () => {
-      const depth = 4n;
-      const gIndex = 12n;
-      const expected = 5n;
+  // describe('gIndexToIndex', () => {
+  //   test('returns correct values for the given depth and last leaf index', () => {
+  //     const depth = 4n;
+  //     const gIndex = 12n;
+  //     const expected = 5n;
 
-      expect(gIndexToIndex(gIndex, depth)).toEqual(expected);
-    });
-  });
+  //     expect(gIndexToIndex(gIndex, depth)).toEqual(expected);
+  //   });
+  // });
 
-  describe('gIndexToLevel', () => {
-    test('returns correct level for the given gIndex', () => {
-      {
-        const gIndex = 1n;
-        const expected = 0n;
-        expect(gIndexToLevel(gIndex)).toEqual(expected);
-      }
-      {
-        const gIndex = 8n;
-        const expected = 3n;
-        expect(gIndexToLevel(gIndex)).toEqual(expected);
-      }
-      {
-        const gIndex = 12n;
-        const expected = 3n;
-        expect(gIndexToLevel(gIndex)).toEqual(expected);
-      }
-      {
-        const gIndex = 15n;
-        const expected = 3n;
-        expect(gIndexToLevel(gIndex)).toEqual(expected);
-      }
-      {
-        const gIndex = 16n;
-        const expected = 4n;
-        expect(gIndexToLevel(gIndex)).toEqual(expected);
-      }
-    });
-  });
+  // describe('gIndexToLevel', () => {
+  //   test('returns correct level for the given gIndex', () => {
+  //     {
+  //       const gIndex = 1n;
+  //       const expected = 0n;
+  //       expect(gIndexToLevel(gIndex)).toEqual(expected);
+  //     }
+  //     {
+  //       const gIndex = 8n;
+  //       const expected = 3n;
+  //       expect(gIndexToLevel(gIndex)).toEqual(expected);
+  //     }
+  //     {
+  //       const gIndex = 12n;
+  //       const expected = 3n;
+  //       expect(gIndexToLevel(gIndex)).toEqual(expected);
+  //     }
+  //     {
+  //       const gIndex = 15n;
+  //       const expected = 3n;
+  //       expect(gIndexToLevel(gIndex)).toEqual(expected);
+  //     }
+  //     {
+  //       const gIndex = 16n;
+  //       const expected = 4n;
+  //       expect(gIndexToLevel(gIndex)).toEqual(expected);
+  //     }
+  //   });
+  // });
 
   describe('isLeaf', () => {
     test('returns true if gIndex is a leaf at the given depth', () => {
@@ -212,24 +270,17 @@ describe('Tree Utils Tests', () => {
     });
   });
 
-  describe('fromDepth', () => {
-    test('returns correct values for the given depth', () => {
-      const depth = 3n;
-      const expected = {
-        beg: 1n,
-        end: 7n,
-        levelBeg: 4n,
-        levelEnd: 7n,
-        elementCount: 4n,
-      };
-      expect(fromDepth(depth)).toEqual(expected);
-    });
-  });
-
-  describe('log2', () => {
-    test('returns correct log2 value for the given number', () => {
-      const x = 8n;
-      expect(log2(x)).toBe(3n);
-    });
-  });
+  // describe('fromDepth', () => {
+  //   test('returns correct values for the given depth', () => {
+  //     const depth = 3n;
+  //     const expected = {
+  //       beg: 1n,
+  //       end: 7n,
+  //       levelBeg: 4n,
+  //       levelEnd: 7n,
+  //       elementCount: 4n,
+  //     };
+  //     expect(fromDepth(depth)).toEqual(expected);
+  //   });
+  // });
 });

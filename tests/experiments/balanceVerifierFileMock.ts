@@ -1,51 +1,46 @@
 import fs from 'fs-extra';
-import { log, logError } from './logging';
-import {
-  readFile,
-  writeFile,
-  experimentalDir,
-  removeFile,
-} from './utils/file-utils';
+import assert from 'assert';
+import { sha256 } from 'ethers/lib/utils';
+
+import { readFile, writeFile, removeFile } from './utils/file-utils';
 import {
   NodeData,
-  childrenFromGIndex,
-  iterateLevel,
-  TreeParams,
   iterateTree,
   gIndexToLevel,
   isLeaf,
 } from './utils/tree-utils';
-import { exampleLeafData, resultsFile, zeroHashes } from './utils/constants';
+import { exampleLeafData, zeroHashes } from './utils/constants';
 import {
   Tasks,
   logWrite,
-  setLogging,
   sleep,
   stringToBytes,
   stringify,
 } from './utils/common-utils';
 
-import { sha256 } from 'ethers/lib/utils';
 import { BalanceVerifier } from './interfaces';
+import { fromGIndex } from './utils/gindex';
 
-type BVFileConfig = {
-  logger: boolean;
-  directory: string;
+export type RunConfig = {
+  logWrites: boolean;
+  removeCompleteTasks: boolean;
   depth: bigint;
   validatorCount: bigint;
   sparseAmount: bigint;
+};
+
+export type BVFileConfig = RunConfig & {
+  directory: string;
   shouldExist: (gIndex: bigint) => boolean;
 };
 
-class BVFileMock implements BalanceVerifier {
-  configuration: BVFileConfig;
-  tasks: Tasks = {};
+export class BVFileMock implements BalanceVerifier {
+  readonly configuration: BVFileConfig;
+  private readonly tasks: Tasks = {};
 
   constructor(configuration: BVFileConfig) {
     this.configuration = configuration;
     this.tasks = {};
-
-    setLogging(configuration.logger);
   }
 
   async setupWorkingDir() {
@@ -56,7 +51,7 @@ class BVFileMock implements BalanceVerifier {
   async execTask(gIndex: bigint, delay = 0) {
     const isLeaff = isLeaf(gIndex, this.configuration.depth);
     if (delay) await sleep(delay);
-    const { leftChild, rightChild } = childrenFromGIndex(gIndex);
+    const { leftChild, rightChild } = fromGIndex(gIndex);
 
     let nodeData: NodeData;
     if (isLeaff) {
@@ -101,105 +96,31 @@ class BVFileMock implements BalanceVerifier {
     } else {
       await writeFile(gIndex, stringify(nodeData.content));
     }
+
+    if (this.configuration.removeCompleteTasks) {
+      await Promise.all([removeFile(leftChild), removeFile(rightChild)]);
+    }
   }
 
   prepareTasks(jobDelay = 0) {
-    // const { depth, validatorCount: lastValidatorIndex, shouldExist } = treeParams;
-    for (let { indexOnThisLevel, gIndex, level } of iterateTree(
-      this.configuration.depth,
-      this.configuration.validatorCount,
-    )) {
+    const { depth, validatorCount: lastLeafIndex } = this.configuration;
+    for (let { gIndex, level } of iterateTree({ depth, lastLeafIndex })) {
       if (level === this.configuration.depth) {
         this.tasks[`${gIndex}`] = this.execTask(gIndex, jobDelay);
         continue;
       }
 
-      const { leftChild, rightChild } = childrenFromGIndex(gIndex);
+      const { leftChild, rightChild } = fromGIndex(gIndex);
+
       this.tasks[`${gIndex}`] = Promise.all([
         this.tasks[`${leftChild}`],
         this.tasks[`${rightChild}`],
       ]).then(() => this.execTask(gIndex, jobDelay));
-      // .then(() => Promise.all([removeFile(leftChild), removeFile(rightChild)]));
     }
   }
 
-  async executeTasks() {
-    await this.tasks[1];
+  rootTask() {
+    assert(this.tasks[1], 'root task not found');
+    return this.tasks[1];
   }
 }
-
-export async function runIt(config?) {
-  const logWrites = (process.env['LOG_WRITES'] ?? 'true') === 'true';
-  const { depth, validatorCount, sparseAmount } = config
-    ? config
-    : {
-        depth: BigInt(process.env['DEPTH'] ?? '10'),
-        validatorCount: BigInt(process.env['VALIDATOR_COUNT'] ?? '100'),
-        sparseAmount: BigInt(process.env['SKIP'] ?? '3') + 1n,
-      };
-
-  const startTime = new Date().getTime();
-
-  log('config', { logWrites, depth, validatorCount, sparseAmount });
-
-  const bVFileMock = new BVFileMock({
-    logger: logWrites,
-    directory: experimentalDir,
-    depth,
-    validatorCount,
-    sparseAmount,
-    shouldExist: x => x % sparseAmount === 0n,
-  });
-
-  await bVFileMock.setupWorkingDir();
-
-  bVFileMock.prepareTasks();
-
-  await bVFileMock.tasks[1];
-
-  const now = new Date();
-  const diff = `${(now.getTime() - startTime).toString(10)}`.padStart(2);
-  log('Task finished in ', `Δt₀: ${diff} ms`);
-
-  const results = {
-    config: `{ depth: ${depth}, validatorCount: ${validatorCount}, sparseAmount: ${sparseAmount} }`,
-    time: `Δt₀: ${diff} ms`,
-  };
-
-  return results;
-}
-
-const configs = [
-  { depth: 4n, validatorCount: 2n ** 2n, sparseAmount: 1n },
-  // { depth: 4n, validatorCount: 2n ** 3n, sparseAmount: 3n },
-  // { depth: 20n, validatorCount: 2n ** 3n, sparseAmount: 3n },
-  // { depth: 20n, validatorCount: 2n ** 10n, sparseAmount: 3n },
-  // { depth: 24n, validatorCount: 2n ** 10n, sparseAmount: 3n },
-  // { depth: 37n, validatorCount: 2n ** 3n, sparseAmount: 3n },
-  // { depth: 37n, validatorCount: 2n ** 10n, sparseAmount: 3n },
-  // { depth: 37n, validatorCount: 2n ** 16n, sparseAmount: 3n },
-  // { depth: 37n, validatorCount: 2n ** 20n, sparseAmount: 3n },
-  // { depth: 37n, validatorCount: 2n ** 21n, sparseAmount: 3n },
-];
-
-const executeTasks = async () => {
-  await fs.rm(resultsFile, { force: true });
-  let results: [{ config: string; time: string }] = [
-    { config: 'config', time: 'time' },
-  ];
-
-  for (const config of configs) {
-    results.push(await runIt(config));
-  }
-  await fs.writeFile(resultsFile, JSON.stringify(results));
-};
-
-executeTasks()
-  .then(() => {
-    log('Done');
-    process.exit(0);
-  })
-  .catch(e => {
-    logError(e);
-    process.exit(1);
-  });

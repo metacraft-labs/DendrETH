@@ -95,10 +95,10 @@ export function executeTree(
   jobDelay = 0,
 ) {
   const { depth, validatorCount: lastValidatorIndex, shouldExist } = treeParams;
-  for (let { indexOnThisLevel, gIndex, level } of iterateTree(
+  for (let { indexOnThisLevel, gIndex, level } of iterateTree({
     depth,
-    lastValidatorIndex,
-  )) {
+    lastLeafIndex: lastValidatorIndex,
+  })) {
     if (level === depth) {
       tasks[`${gIndex}`] = execTask(gIndex, true, false, jobDelay, shouldExist);
       continue;
