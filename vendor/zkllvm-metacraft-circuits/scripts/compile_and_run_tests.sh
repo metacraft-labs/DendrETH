@@ -20,4 +20,9 @@ COMMAND='cmake -G "Unix Makefiles" -B ${ZKLLVM_BUILD:-build} -DCMAKE_BUILD_TYPE=
 
 ${SCRIPT_DIR}/docker_run.sh "$COMMAND"
 
-bash ${SCRIPT_DIR}/docker_run.sh "make -C ${ZKLLVM_BUILD:-build} test "
+if [ $# == 0 ]
+then
+    bash ${SCRIPT_DIR}/docker_run.sh "make -C ${ZKLLVM_BUILD:-build} test "
+else
+    bash ${SCRIPT_DIR}/docker_run.sh "ctest --test-dir ${ZKLLVM_BUILD:-build} -R ${@}"
+fi

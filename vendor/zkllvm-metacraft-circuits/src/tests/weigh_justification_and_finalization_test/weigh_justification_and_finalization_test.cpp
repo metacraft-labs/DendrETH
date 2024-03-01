@@ -6,7 +6,7 @@
 #include <fstream>
 #include <streambuf>
 
-#include "circuits_impl/weigh_justification_and_finalization.h"
+#include "circuits_impl/weigh_justification_and_finalization_impl.h"
 #include "utils/byte_utils.h"
 #include "utils/file_utils.h"
 
@@ -67,7 +67,7 @@ void test_circuit_sample_data() {
         hexToBytes<32>("0x938c96912b5c4683b27fa6edc5d8b76ceb31d3c4ffce919382f59ba3ed3a079f"),
     };
 
-    JustificationBitsVariable justification_bits {true, true, true, true};
+    JustificationBitsVariable justification_bits({true, true, true, true});
 
     BeaconStateLeafProof justification_bits_proof {
         hexToBytes<32>("0x1fca1f5d922549df42d4b5ca272bd4d022a77d520a201d5f24739b93f580a4e0"),
@@ -182,7 +182,7 @@ void test_circuit_sample_data() {
         217293, hexToBytes<32>("0x386f84f9d82ec2e8ae6ff584ef7f62f07da47f0163a3b9ce6f263107ac6e1c9c")};
     const CheckpointVariable expected_new_finalized_checkpoint {
         217292, hexToBytes<32>("0xc014dab4e45229aa677898bac663fe791c2d4ec62af0e328f02c5a0ba3f1eeb1")};
-    const JustificationBitsVariable expected_new_justification_bits {true, true, true, true};
+    const JustificationBitsVariable expected_new_justification_bits({true, true, true, true});
 
     std::cout << "expected outputs:\n";
     std::cout << "new_previous_justified_checkpoint: " << expected_new_previous_justified_checkpoint << "\n";

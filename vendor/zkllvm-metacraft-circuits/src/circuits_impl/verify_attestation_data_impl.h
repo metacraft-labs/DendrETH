@@ -112,30 +112,27 @@ static_vector<HashType> compute_zero_hashes(int length = 64) {
 #endif
 
     for (int i = 1; i < length; i++) {
-        xs.push_back(parent_hash(xs[i - 1], xs[i - 1]));
+        xs.push_back(sha256_pair(xs[i - 1], xs[i - 1]));
     }
     return xs;
 }
 
-Proof fill_zero_hashes(const Proof& xs, size_t length = 0) {
+template<size_t N, bool FULL>
+void fill_zero_hashes(static_vector<HashType, N, FULL>& witnesses, size_t length = 0) {
+    assert_true(length <= witnesses.capacity);
     const auto zero_hashes = compute_zero_hashes();
-#ifdef __ZKLLVM__
-    sha256_t empty_hash = {0};
-#else
-    auto empty_hash = get_empty_byte_array<32>();
-#endif
-    Proof ws = xs;
-    int additions_count = length - xs.size();
+    auto empty_hash = bytes_to_hash_type(get_empty_byte_array<32>());
+    const auto initial_size = witnesses.size();
+    int additions_count = length - initial_size;
 
-    for (int i = 0; i < ws.size(); i++) {
-        if (sha256_equals(ws[i], empty_hash)) {
-            ws[i] = zero_hashes[i];
+    for (int i = 0; i < initial_size; i++) {
+        if (sha256_equals(witnesses[i], empty_hash)) {
+            witnesses[i] = zero_hashes[i];
         }
     }
     for (int i = additions_count; i > 0; i--) {
-        ws.push_back(zero_hashes[xs.size() + additions_count - i]);
+        witnesses.push_back(zero_hashes[initial_size + additions_count - i]);
     }
-    return ws;
 }
 
 HashType hash_validator(Bytes64 pubkey,
@@ -146,17 +143,16 @@ HashType hash_validator(Bytes64 pubkey,
                         uint64_t exit_epoch_,
                         uint64_t withdrawable_epoch_) {
     // Convert parameters.
-    auto effective_balance = bytes_to_hash_type((int_to_bytes<uint64_t, 32, true>(effective_balance_)));
-    auto slashed = bytes_to_hash_type((int_to_bytes<uint64_t, 32, true>(0)));
-    auto activation_eligibility_epoch =
-        bytes_to_hash_type((int_to_bytes<uint64_t, 32, true>(activation_eligibility_epoch_)));
-    auto activation_epoch = bytes_to_hash_type((int_to_bytes<uint64_t, 32, true>(activation_epoch_)));
-    auto exit_epoch = bytes_to_hash_type((int_to_bytes<uint64_t, 32, true>(exit_epoch_)));
-    auto withdrawable_epoch = bytes_to_hash_type((int_to_bytes<uint64_t, 32, true>(withdrawable_epoch_)));
+    auto effective_balance = bytes_to_hash_type((int_to_bytes<uint64_t, 32>(effective_balance_)));
+    auto slashed = bytes_to_hash_type((int_to_bytes<uint64_t, 32>(0)));
+    auto activation_eligibility_epoch = bytes_to_hash_type((int_to_bytes<uint64_t, 32>(activation_eligibility_epoch_)));
+    auto activation_epoch = bytes_to_hash_type((int_to_bytes<uint64_t, 32>(activation_epoch_)));
+    auto exit_epoch = bytes_to_hash_type((int_to_bytes<uint64_t, 32>(exit_epoch_)));
+    auto withdrawable_epoch = bytes_to_hash_type((int_to_bytes<uint64_t, 32>(withdrawable_epoch_)));
     auto withdrawal_credentials = bytes_to_hash_type((withdrawal_credentials_));
 
 #ifdef __ZKLLVM__
-    auto hash = [](const HashType& lhs, const HashType& rhs) { return parent_hash(lhs, rhs); };
+    auto hash = [](const HashType& lhs, const HashType& rhs) { return sha256_pair(lhs, rhs); };
     auto pubkey_hash = hash(bytes_to_hash_type(take<32>(pubkey)), bytes_to_hash_type(take<32>(pubkey, 32)));
 #else
     auto hash = [](const HashType& lhs, const HashType& rhs) { return sha256(lhs, rhs); };
@@ -172,16 +168,12 @@ HashType hash_validator(Bytes64 pubkey,
 }
 
 VoteToken
-    verify_attestation_data_imp(const HashType& block_root, const Attestation& attestation, base_field_type sigma) {
+    verify_attestation_data_impl(const HashType& block_root, const Attestation& attestation, base_field_type sigma) {
     assert_true(sigma != 0);
 
-    ssz_verify_proof(block_root, attestation.state_root, fill_zero_hashes(Proof(attestation.state_root_proof)), 11, 3);
+    ssz_verify_proof(block_root, attestation.state_root, attestation.state_root_proof, 11);
 
-    ssz_verify_proof(attestation.state_root,
-                     attestation.validators_root,
-                     fill_zero_hashes(Proof(attestation.validators_root_proof)),
-                     43,
-                     5);
+    ssz_verify_proof(attestation.state_root, attestation.validators_root, attestation.validators_root_proof, 43);
 
     // We aggregate all validator pubkeys to verify the `signature`
     // field at the end.
@@ -210,11 +202,8 @@ VoteToken
                                        v.withdrawable_epoch);
             // Hash the validator data and make sure it's part of:
             // validators_root -> state_root -> block_root.
-            ssz_verify_proof(attestation.validators_root,
-                             leaf,
-                             fill_zero_hashes(Proof(v.validator_list_proof)),
-                             0x020000000000ul + v.validator_index,
-                             41);
+            ssz_verify_proof(
+                attestation.validators_root, leaf, v.validator_list_proof, 0x020000000000ul + v.validator_index);
 
             // TODO: Needed?
             // assert spec.is_active_validator(
@@ -261,17 +250,19 @@ uint64_t process_votes(const PubKey* trustedKeys,
                        const size_t pubkeysCount,
                        const int64_t sigma,
                        base_field_type& reconstructed_token) {
-    const PubKey* prev = nullptr;
-    uint64_t votes_count = 0;
-    for (size_t i = 0; i < pubkeysCount; i++) {
-        const auto& pubkey = trustedKeys[i];
+    auto process_pub_key = [&reconstructed_token, sigma](const PubKey* trustedKey) {
         base_field_type element;
-        memcpy(&element, &pubkey, sizeof(element));
+        memcpy(&element, trustedKey, sizeof(element));
         reconstructed_token = (reconstructed_token + element * sigma);
-        if (prev && pubkey != *prev) {
+    };
+
+    process_pub_key(&trustedKeys[0]);
+    uint64_t votes_count = (pubkeysCount != 0) ? 1 : 0;
+    for (size_t i = 1; i < pubkeysCount; i++) {
+        process_pub_key(&trustedKeys[i]);
+        if (trustedKeys[i] != trustedKeys[i - 1]) {
             ++votes_count;
         }
-        prev = &pubkey;
     }
     return votes_count;
 }
@@ -284,7 +275,9 @@ void prove_finality(const VoteToken& token,
                     const int64_t active_validators_count) {
     assert_true(votedTransition == token.transition);
     base_field_type reconstructed_token = 0;
+
     uint64_t votes_count = process_votes(trustedKeys, pubkeysCount, sigma, reconstructed_token);
 
+    assert_true(votes_count * 5 > active_validators_count * 4);
     assert_true(reconstructed_token == token.token);
 }

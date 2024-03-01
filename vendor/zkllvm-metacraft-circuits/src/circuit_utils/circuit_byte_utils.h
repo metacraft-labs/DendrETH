@@ -8,16 +8,16 @@
 using namespace nil::crypto3;
 namespace circuit_byte_utils {
 
-    template<typename T, size_t COUNT>
-    void zero_elements(static_vector<T, COUNT>& arr) {
-        for (size_t i = 0; i < COUNT; i++) {
+    template<typename T, size_t Count>
+    void zero_elements(static_vector<T, Count>& arr) {
+        for (size_t i = 0; i < Count; i++) {
             arr[i] = 0;
         }
     }
 
-    template<size_t COUNT>
-    static_vector<Byte, COUNT> get_empty_byte_array() {
-        static_vector<Byte, COUNT> arr;
+    template<size_t Count>
+    static_vector<Byte, Count> get_empty_byte_array() {
+        static_vector<Byte, Count> arr;
         zero_elements(arr);
         return arr;
     }
@@ -83,11 +83,13 @@ namespace circuit_byte_utils {
         return ret;
     }
 
-    template<typename T, size_t SIZE = sizeof(T), bool LittleEndian = true>
-    static_vector<Byte, SIZE> int_to_bytes(const T& paramInt) {
+    enum class Endian { Little, Big };
+
+    template<typename T, size_t Size = sizeof(T), Endian E = circuit_byte_utils::Endian::Little>
+    static_vector<Byte, Size> int_to_bytes(const T& paramInt) {
         static_assert(std::is_integral_v<typename std::remove_reference_t<T>>, "T must be integral");
-        static_vector<Byte, SIZE> bytes;
-        if constexpr (LittleEndian) {
+        static_vector<Byte, Size> bytes;
+        if constexpr (E == circuit_byte_utils::Endian::Little) {
             for (int i = 0; i < sizeof(T); ++i) {
                 bytes[i] = (paramInt >> (i * 8));
             }
@@ -99,8 +101,8 @@ namespace circuit_byte_utils {
         return bytes;
     }
 
-    template<typename T, typename iterator_type, size_t SIZE, bool LittleEndian>
-    T bytes_to_int(iterator_type first_element, iterator_type last_element) {
+    template<typename T, typename IteratorType, bool LittleEndian>
+    T bytes_to_int(IteratorType first_element, IteratorType last_element) {
         static_assert(std::is_integral_v<typename std::remove_reference_t<T>>, "T must be integral");
         assert_in_executable(first_element + sizeof(T) <= last_element);
 
@@ -117,9 +119,9 @@ namespace circuit_byte_utils {
         return result;
     }
 
-    template<typename T, size_t SIZE = sizeof(T), bool LittleEndian = true>
-    T bytes_to_int(const static_vector<Byte, SIZE>& bytes) {
-        return bytes_to_int<T, decltype(bytes.begin()), SIZE, LittleEndian>(bytes.begin(), bytes.end());
+    template<typename T, size_t Size = sizeof(T), bool LittleEndian = true>
+    T bytes_to_int(const static_vector<Byte, Size>& bytes) {
+        return bytes_to_int<T, decltype(bytes.begin()), LittleEndian>(bytes.begin(), bytes.end());
     }
 
     template<typename... Args>
@@ -218,15 +220,16 @@ namespace circuit_byte_utils {
         return hashed;
     }
 
-    Bytes32 parent_hash(const Bytes32& child1, const Bytes32& child2) {
+    Bytes32 sha256_pair(const Bytes32& child1, const Bytes32& child2) {
         return sha256(child1, child2);
     }
 
-    sha256_t parent_hash(sha256_t child1, sha256_t child2) {
+    sha256_t sha256_pair(sha256_t child1, sha256_t child2) {
 #ifdef __ZKLLVM__
         return hash<hashes::sha2<256>>(child1, child2);
 #else
         assert_true(false && "Using sha256_t in executable. Use Bytes32 instead.");
+        return {};
 #endif
     }
 
@@ -258,7 +261,7 @@ namespace circuit_byte_utils {
     }
 
 #else
-#define bytes_to_hash_type(X) (X)
+#define bytes_to_hash_type(X) static_cast<HashType>(X)
 
 #endif
 
