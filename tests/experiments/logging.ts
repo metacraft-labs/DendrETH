@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import { relative } from 'path';
 
+import { Console } from 'console';
+
 let currentConsole: (typeof globalThis)['console'];
 
 const disableStackCapture = true;
@@ -15,10 +17,16 @@ let color: {
 declare const window: typeof globalThis;
 if (typeof window === 'undefined') {
   // Initialize console colors library:
-  color = require('colors/safe');
+  // color = import('colors/safe');
+  color = {
+    gray: s => '\x1b[90m' + s + '\x1b[0m',
+    yellow: s => '\x1b[33m' + s + '\x1b[0m',
+    bold: s => '\x1b[1m' + s + '\x1b[0m',
+    bgGray: s => '\x1b[100m' + s + '\x1b[0m',
+  };
 
   // Create a new Console instance, so we can force output to stdout/stderr
-  const { Console } = require('console');
+  // const { Console } = require('console');
   currentConsole = new Console({
     colorMode: true,
     stdout: process.stdout,
@@ -26,10 +34,10 @@ if (typeof window === 'undefined') {
   });
 } else {
   color = {
-    gray: s => s,
-    yellow: s => s,
-    bold: s => s,
-    bgGray: s => s,
+    gray: s => '\x1b[90m' + s + '\x1b[0m',
+    yellow: s => '\x1b[33m' + s + '\x1b[0m',
+    bold: s => '\x1b[1m' + s + '\x1b[0m',
+    bgGray: s => '\x1b[100m' + s + '\x1b[0m',
   };
   currentConsole = globalThis.console;
 }

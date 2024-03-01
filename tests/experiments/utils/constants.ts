@@ -1,4 +1,4 @@
-export const resultsFile = 'tests/experiments/output.json';
+export const resultsFile = 'tests/experiments/output.jsonl';
 
 export const exampleLeafData = {
   pubkey:

@@ -1,1 +1,0 @@
-[{"config":"config","time":"time"},{"config":"{ depth: 4, validatorCount: 4, sparseAmount: 1 }","time":"Δt₀: 12 ms"},{"config":"{ depth: 4, validatorCount: 8, sparseAmount: 3 }","time":"Δt₀:  3 ms"},{"config":"{ depth: 20, validatorCount: 8, sparseAmount: 3 }","time":"Δt₀:  4 ms"}]
