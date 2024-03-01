@@ -74,7 +74,26 @@ impl ProofStorage for AwsStorage {
         Ok(())
     }
 
-    async fn get_keys_count(&mut self, _pattern: String) -> usize {
-        unimplemented!()
+    async fn get_keys_count(&mut self, pattern: String) -> usize {
+        let mut count = 0;
+        let pattern = glob::Pattern::new(&pattern).unwrap();
+
+        let mut response = self
+            .client
+            .list_objects_v2()
+            .bucket(self.bucket_name.clone())
+            .max_keys(10) // In this example, go 10 at a time.
+            .into_paginator()
+            .send();
+
+        while let Some(Ok(result)) = response.next().await {
+            count += result
+                .contents()
+                .iter()
+                .filter(|&item| pattern.matches(item.key().unwrap()))
+                .count();
+        }
+
+        count
     }
 }
