@@ -29,7 +29,7 @@ constexpr size_t MAX_KEYS = 1'000'000;
 
 int main(int argc, char* argv[]) {
 
-    if(argc < 2) {
+    if (argc < 2) {
         std::cerr << "Needed argument for JSON output.\n";
         return -1;
     }
@@ -44,18 +44,17 @@ int main(int argc, char* argv[]) {
         Attestation attestation = parse_attestation(json_attestation);
 
         std::ofstream fout(std::string(argv[1]) + ".json");
-        fout << "[" 
+        fout << "["
              << bytes32_to_hash_type(hexToBytes<32>("d5c0418465ffab221522a6991c2d4c0041f1b8e91d01b1ea3f6b882369f689b7"))
-             << ", "
-             << serialize(attestation) //.dump(2)
+             << ", " << serialize(attestation)    //.dump(2)
              << ", "
              << "{\"field\": 105}"
-             << "]"; 
+             << "]";
         fout.flush();
 
         std::cout << "DONE\n";
 
-        break; // Temporarily only process 1 attestation.
+        break;    // Temporarily only process 1 attestation.
     }
 
     return 0;
