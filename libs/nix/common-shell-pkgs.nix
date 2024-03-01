@@ -3,6 +3,7 @@
   rust-stable,
 }:
 with pkgs; let
+  nodejs = nodejs_21;
   llvm = llvmPackages_14;
   emscripten = metacraft-labs.emscripten;
   nim = pkgs.nim1;
