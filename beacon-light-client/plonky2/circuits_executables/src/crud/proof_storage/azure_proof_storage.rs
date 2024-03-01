@@ -3,8 +3,10 @@ use std::env;
 use super::proof_storage::ProofStorage;
 use anyhow::Result;
 use async_trait::async_trait;
-use azure_storage::StorageCredentials;
-use azure_storage_blobs::prelude::{ClientBuilder, ContainerClient};
+use azure_storage::ConnectionString;
+
+use azure_storage_blobs::container::operations::BlobItem;
+use azure_storage_blobs::prelude::*;
 use futures::StreamExt;
 
 pub struct AzureStorage {
@@ -12,14 +14,18 @@ pub struct AzureStorage {
 }
 
 impl AzureStorage {
-    pub fn new(account: String, container: String) -> AzureStorage {
-        let access_key = env::var("STORAGE_ACCESS_KEY").expect("missing STORAGE_ACCOUNT_KEY");
+    pub fn new(container: String) -> AzureStorage {
+        let connection_string = env::var("AZURE_CONNECTION_STRING").unwrap();
+        let account = env::var("STORAGE_ACCOUNT").unwrap();
 
-        let storage_credentials =
-            StorageCredentials::access_key(account.clone(), access_key.clone());
-
-        let container_client =
-            ClientBuilder::new(account, storage_credentials).container_client(&container);
+        let container_client = ClientBuilder::new(
+            account,
+            ConnectionString::new(connection_string.as_str())
+                .unwrap()
+                .storage_credentials()
+                .unwrap(),
+        )
+        .container_client(&container);
 
         AzureStorage { container_client }
     }
@@ -60,7 +66,26 @@ impl ProofStorage for AzureStorage {
         Ok(())
     }
 
-    async fn get_keys_count(&mut self, _pattern: String) -> usize {
-        unimplemented!()
+    async fn get_keys_count(&mut self, pattern: String) -> usize {
+        let mut count = 0;
+        let pattern = glob::Pattern::new(&pattern).unwrap();
+        let mut iter = self.container_client.list_blobs().into_stream();
+
+        while let Some(Ok(reponse)) = iter.next().await {
+            count += reponse
+                .blobs
+                .items
+                .iter()
+                .filter(|&item| {
+                    if let BlobItem::Blob(blob) = item {
+                        pattern.matches(&blob.name)
+                    } else {
+                        false
+                    }
+                })
+                .count();
+        }
+
+        count
     }
 }

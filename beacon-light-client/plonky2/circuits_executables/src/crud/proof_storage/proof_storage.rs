@@ -66,10 +66,7 @@ pub async fn create_proof_storage(args: &ArgMatches) -> Box<dyn ProofStorage> {
         }
         ProofStorageType::Azure => {
             dotenv::from_path("../.env").ok();
-            Box::new(AzureStorage::new(
-                args.value_of("azure_account").unwrap().to_string(),
-                args.value_of("azure_container").unwrap().to_string(),
-            ))
+            Box::new(AzureStorage::new(env::var("STORAGE_CONTAINER").unwrap()))
         }
         ProofStorageType::Aws => {
             dotenv::from_path("../.env").ok();
