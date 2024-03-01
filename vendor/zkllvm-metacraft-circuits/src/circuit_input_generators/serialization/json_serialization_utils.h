@@ -40,7 +40,7 @@ nlohmann::json bytes32_to_hash_type(const Bytes32& bytes) {
         Byte bytes[32];
     } c;
     for(size_t i = 0; i < bytes.size(); i++) {
-        c.bytes[i] = bytes[i];
+        c.bytes[bytes.size() - i - 1] = bytes[i];
     }
     std::stringstream val[2];
     nlohmann::json field[2];

@@ -31,4 +31,8 @@ ${Boost_LIBRARIES})
 
 target_include_directories(verify_attestation_data_input_generators PRIVATE ${PROJECT_SOURCE_DIR}/src)
 
-
+add_custom_command(TARGET verify_attestation_data_input_generators POST_BUILD
+    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/verify_attestation_data_input_generators ${CMAKE_CURRENT_BINARY_DIR}/../circuits/verify_attestation_data
+    DEPENDS compile_commands.json
+    VERBATIM ON
+)
