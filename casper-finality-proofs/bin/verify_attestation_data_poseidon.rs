@@ -8,19 +8,18 @@ use plonky2x::{
 use casper_finality_proofs::{constants::TEST_VALIDATORS_IN_COMMITMENT_SIZE, utils::{eth_objects::{AttestationInput, HashOutPoseidonInput, ValidatorDataInput, ValidatorDataPoseidonInput}, json::read_json_from_file}, verify_attestation_data::{verify_attestation_data::VerifyAttestationData, verify_attestation_data_poseidon::VerifyAttestationDataPoseidon}};
 fn main() {
     plonky2x::utils::setup_logger();
+    
+        type L = DefaultParameters;
+        const D: usize = 2;
 
     let file_path_attestation 
-        = "/home/stefan/code/repos/metacraft-labs/DendrETH/casper-finality-proofs/data/merged_234400.json";
+        // Using this because of memory overflow
+        = "/home/stefan/code/repos/metacraft-labs/DendrETH/casper-finality-proofs/data/merged_234400_poseidon_short.json";
     let attestations_json = read_json_from_file(file_path_attestation).unwrap();
 
     let file_path_validators_poseidon 
         = "/home/stefan/code/repos/metacraft-labs/DendrETH/casper-finality-proofs/data/all_validators_234400_poseidon.json";
     let validators_poseidon_json = read_json_from_file(file_path_validators_poseidon).unwrap();
-
-    
-
-    type L = DefaultParameters;
-    const D: usize = 2;
 
     let mut builder = CircuitBuilder::<L, D>::new();
 

@@ -14,7 +14,7 @@ use crate::utils::eth_objects::CheckpointVariable;
 
 use super::sequential_verification::prove_attestations;
 
-pub fn vad_recursive<L: PlonkParameters<D>, const D: usize>(file_path_attestations: &str) 
+pub fn vad_recursive<L: PlonkParameters<D>, const D: usize>(file_path_attestations: &str, is_poseidon_hash: bool) 
     -> (ProofWithPublicInputs<L::Field, L::Config, D>, CircuitBuild<L,D>)
 where
 <<L as PlonkParameters<D>>::Config as plonky2::plonk::config::GenericConfig<D>>::Hasher:
@@ -23,8 +23,9 @@ where
     let vad_recurssive_proof_final: ProofWithPublicInputs<L::Field, L::Config, D>;
 
     // VerifyAttestationData
-    // let file_path_attestations = "./data/merged_234400.json";
-    let (attestation_data_proofs, vad_circuit) = prove_attestations(file_path_attestations);
+
+    let (attestation_data_proofs, vad_circuit) = 
+        prove_attestations(file_path_attestations, is_poseidon_hash);
 
     //CombineAttestationData
     let mut proofs = attestation_data_proofs;

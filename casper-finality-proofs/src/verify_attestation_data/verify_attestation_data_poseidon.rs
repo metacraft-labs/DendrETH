@@ -191,7 +191,6 @@ fn verify_validator<L: PlonkParameters<D>, const D: usize>(
         align_epoch3.variable,
     ];
     let aligned_count = builder.add_many(&valid_epochs);
-    // implement add_many for BoolVariable or better yet and_many
 
     let field_three = <L as PlonkParameters<D>>::Field::from_canonical_u64(3);
     let const_three = builder.constant(field_three);
@@ -203,13 +202,13 @@ fn verify_validator<L: PlonkParameters<D>, const D: usize>(
         builder.constant(2u64.pow(VALIDATORS_HASH_TREE_DEPTH as u32));
     let gindex = builder.add(first_validators_gindex, validator.validator_index);
 
-    // ssz_verify_proof_poseidon( //TODO: PoseidonHash
-    //     builder,
-    //     validators_root,
-    //     validator.beacon_validator_variable_hash,
-    //     validator.validator_root_proof.as_slice(),
-    //     validator.validator_index
-    // );
+    ssz_verify_proof_poseidon( //TODO: PoseidonHash
+        builder,
+        validators_root,
+        validator.beacon_validator_variable_hash,
+        validator.validator_root_proof.as_slice(),
+        validator.validator_index
+    );
 
     
     //TODO: I need access to validator.slot to prove slot is part of beacon state [NOT RELEVANT?]

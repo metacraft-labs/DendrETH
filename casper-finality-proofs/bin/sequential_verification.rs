@@ -24,10 +24,20 @@ fn main() {
 
     plonky2x::utils::setup_logger();
 
+    let is_poseidon_hash = true;
+
+    let file_path_attestations;
+    if is_poseidon_hash {
+        file_path_attestations = "/home/stefan/code/repos/metacraft-labs/DendrETH/casper-finality-proofs/data/merged_234400_poseidon.json";
+    }
+    else {
+        file_path_attestations = "/home/stefan/code/repos/metacraft-labs/DendrETH/casper-finality-proofs/data/merged_234400.json";
+    }
+
     println!("vad_proof_prev:");
-    let file_path_attestations = "/home/stefan/code/repos/metacraft-labs/DendrETH/casper-finality-proofs/data/merged_234400.json";
+    
     let (vad_proof_prev, vad_circuit_prev) 
-        = vad_recursive::<L,D>(file_path_attestations);
+        = vad_recursive::<L,D>(file_path_attestations, is_poseidon_hash);
 
     println!("cuv_proof_prev:");
     let file_path_sorted_validators = "/home/stefan/code/repos/metacraft-labs/DendrETH/casper-finality-proofs/data/sorted_validator_indices_234400.json";
@@ -37,7 +47,7 @@ fn main() {
     println!("vad_proof_cur:");
     let file_path_attestations = "/home/stefan/code/repos/metacraft-labs/DendrETH/casper-finality-proofs/data/merged_234401.json";
     let (vad_proof_cur, vad_circuit_cur) 
-        = vad_recursive::<L,D>(file_path_attestations);
+        = vad_recursive::<L,D>(file_path_attestations, is_poseidon_hash);
 
     println!("cuv_proof_cur:");
     let file_path_sorted_validators = "/home/stefan/code/repos/metacraft-labs/DendrETH/casper-finality-proofs/data/sorted_validator_indices_234401.json";

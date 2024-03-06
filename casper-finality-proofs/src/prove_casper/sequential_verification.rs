@@ -3,12 +3,13 @@ use plonky2x::{backend::circuit::{Circuit, CircuitBuild, DefaultParameters}, fro
 use serde_json::Value;
 use plonky2x::prelude::{Field, bytes32, PlonkParameters};
 
-use crate::{constants::{TEST_ATTESTATIONS_READ, TEST_VALIDATORS_IN_COMMITMENT_SIZE}, utils::{eth_objects::ValidatorDataInput, json::read_json_from_file}, verify_attestation_data::verify_attestation_data::VerifyAttestationData};
+use crate::{constants::{TEST_ATTESTATIONS_READ, TEST_VALIDATORS_IN_COMMITMENT_SIZE}, utils::{eth_objects::ValidatorDataInput, json::read_json_from_file}, verify_attestation_data::{verify_attestation_data::VerifyAttestationData, verify_attestation_data_poseidon::VerifyAttestationDataPoseidon}};
 use crate::utils::eth_objects::AttestationInput;
 
 pub fn prove_verify_attestation_data<L: PlonkParameters<D>, const D: usize>(
     circuit: &CircuitBuild<L,D>,
-    attestation: &Value
+    attestation: &Value,
+    is_poseidon_hash: bool
 ) -> ProofWithPublicInputs<<L as PlonkParameters<D>>::Field, <L as PlonkParameters<D>>::Config, D>
 where
     <<L as PlonkParameters<D>>::Config as plonky2::plonk::config::GenericConfig<D>>::Hasher:
@@ -46,6 +47,7 @@ where
 
 pub fn prove_attestations<L: PlonkParameters<D>, const D: usize>(
     file_path_attestations: &str,
+    is_poseidon_hash: bool
 ) -> (
     Vec<ProofWithPublicInputs<<L as PlonkParameters<D>>::Field, <L as PlonkParameters<D>>::Config, D>>,
     CircuitBuild<L, D>
@@ -59,7 +61,12 @@ where
     let mut proofs = vec![];
 
     let mut vad_builder = CircuitBuilder::<L, D>::new();
-    VerifyAttestationData::define(&mut vad_builder);
+    if is_poseidon_hash {
+        VerifyAttestationDataPoseidon::define(&mut vad_builder);
+    }
+    else {
+        VerifyAttestationData::define(&mut vad_builder);
+    }
     let vad_circuit = vad_builder.build();
 
     let attestations = attestations_json.get("attestations").and_then(Value::as_array).unwrap();
@@ -68,7 +75,7 @@ where
         println!("====Attestation {}====", counter);
         counter += 1;
 
-        let proof = prove_verify_attestation_data::<L, D>(&vad_circuit, attestation);
+        let proof = prove_verify_attestation_data::<L, D>(&vad_circuit, attestation,is_poseidon_hash);
         proofs.push(proof);
     }
     
