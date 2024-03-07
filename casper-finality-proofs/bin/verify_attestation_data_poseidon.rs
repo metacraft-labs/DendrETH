@@ -18,7 +18,7 @@ fn main() {
     let attestations_json = read_json_from_file(file_path_attestation).unwrap();
 
     let file_path_validators_poseidon 
-        = "/home/stefan/code/repos/metacraft-labs/DendrETH/casper-finality-proofs/data/all_validators_234400_poseidon.json";
+        = "/home/stefan/code/repos/metacraft-labs/DendrETH/casper-finality-proofs/data/all_validators_234400_poseidon_rev.json";
     let validators_poseidon_json = read_json_from_file(file_path_validators_poseidon).unwrap();
 
     let mut builder = CircuitBuilder::<L, D>::new();

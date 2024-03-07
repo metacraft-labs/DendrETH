@@ -301,7 +301,7 @@ impl BeaconValidatorVariable {
 pub struct ValidatorDataPoseidon { 
     pub trusted: BoolVariable,
     
-    pub validator_index: U64Variable, // validator_gindex
+    pub validator_gindex: U64Variable,
     pub beacon_validator_variable: BeaconValidatorVariable,
     pub beacon_validator_variable_hash: PoseidonHashOutVariable,
 
@@ -311,7 +311,7 @@ pub struct ValidatorDataPoseidon {
 impl ValidatorDataPoseidon {
     pub fn new(
         trusted: BoolVariable,
-        validator_index: U64Variable,
+        validator_gindex: U64Variable,
         beacon_validator_variable: BeaconValidatorVariable,
         beacon_validator_variable_hash: PoseidonHashOutVariable,
         validator_root_proof: ArrayVariable<PoseidonHashOutVariable,VALIDATORS_HASH_TREE_DEPTH>,  
@@ -319,7 +319,7 @@ impl ValidatorDataPoseidon {
     ) -> Self {
         ValidatorDataPoseidon {
             trusted: trusted,
-            validator_index: validator_index,
+            validator_gindex: validator_gindex,
             beacon_validator_variable: beacon_validator_variable,
             beacon_validator_variable_hash: beacon_validator_variable_hash,
             validator_root_proof: validator_root_proof,
