@@ -58,8 +58,7 @@ impl MerkleTree {
         }
     }
 
-    pub fn 
-    generate_proof<F: RichField + Extendable<D>, const D: usize>(
+    pub fn generate_proof<F: RichField + Extendable<D>, const D: usize>(
         &self,
         index: usize,
         depth: usize,

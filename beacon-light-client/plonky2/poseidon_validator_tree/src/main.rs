@@ -34,9 +34,9 @@ pub fn main() {
 
     //TODO: validator count is - 911215, hashed validators are - 911203, why?
     let file_path_attestations = 
-                "/home/stefan/code/repos/metacraft-labs/DendrETH/casper-finality-proofs/data/all_validators_234400.json";
+                "/home/stefan/code/repos/metacraft-labs/DendrETH/casper-finality-proofs/data/all_validators_234400_unique.json";
     let file_path_attestations_out = 
-        "/home/stefan/code/repos/metacraft-labs/DendrETH/casper-finality-proofs/data/all_validators_234400_poseidon.json";
+        "/home/stefan/code/repos/metacraft-labs/DendrETH/casper-finality-proofs/data/all_validators_234400_poseidon_unique.json";
 
     let  validators_raw: Vec<Validator> = read_validator_data(file_path_attestations);
 
