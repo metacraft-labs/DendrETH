@@ -65,7 +65,8 @@ export function* iterateLevel(
   leafNodes?: bigint,
 ): Generator<LevelIndexAndGIndex> {
   const { levelStart, levelEnd } = fromDepth(level);
-  const end = leafNodes ? levelStart + leafNodes : levelEnd + 1n;
+  const end = leafNodes !== undefined ? levelStart + leafNodes : levelEnd;
+  console.log({ levelStart, end });
   return yield* range(levelStart, min(levelEnd + 1n, end));
 }
 

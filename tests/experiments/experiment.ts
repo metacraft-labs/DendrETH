@@ -1,15 +1,8 @@
 import fs from 'fs-extra';
 import { log, logError } from './logging';
-import {
-  readFile,
-  writeFile,
-  experimentalDir,
-  removeFile,
-} from './utils/file-utils';
+import { readFile, writeFile, experimentalDir } from './utils/file-utils';
 import {
   NodeData,
-  childrenFromGIndex,
-  iterateLevel,
   TreeParams,
   iterateTree,
   gIndexToLevel,
@@ -25,6 +18,7 @@ import {
 } from './utils/common-utils';
 
 import { sha256 } from 'ethers/lib/utils';
+import { fromGIndex } from './utils/gindex';
 
 export async function execTask(
   gIndex: bigint,
@@ -34,7 +28,10 @@ export async function execTask(
   shouldExist: (gIndex: bigint) => boolean,
 ) {
   if (delay) await sleep(delay);
-  const { leftChild, rightChild } = childrenFromGIndex(gIndex);
+
+  const gIndexData = fromGIndex(gIndex);
+  const leftChild = gIndexData.left;
+  const rightChild = gIndexData.right;
 
   let nodeData: NodeData;
   if (placeholder) {
@@ -104,7 +101,10 @@ export function executeTree(
       continue;
     }
 
-    const { leftChild, rightChild } = childrenFromGIndex(gIndex);
+    const gIndexData = fromGIndex(gIndex);
+    const leftChild = gIndexData.left;
+    const rightChild = gIndexData.right;
+
     tasks[`${gIndex}`] = Promise.all([
       tasks[`${leftChild}`],
       tasks[`${rightChild}`],
@@ -143,7 +143,7 @@ export async function runIt(config?) {
   await tasks[1];
   const now = new Date();
   const diff = `${(now.getTime() - startTime).toString(10)}`.padStart(2);
-  log('Task finished in ', `Δt₀: ${diff} ms`);
+  log('  ', `Δt₀: ${diff} ms`);
 
   const results = {
     config: `{ depth: ${depth}, validatorCount: ${validatorCount}, sparseAmount: ${sparseAmount} }`,
