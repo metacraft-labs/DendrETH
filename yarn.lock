@@ -5510,6 +5510,7 @@ __metadata:
     snarkit2: "npm:^0.2.0"
     snarkjs: "https://github.com/metacraft-labs/snarkjs.git#commit=091ee9c3744c660b0ecd961f9197a8249a8f7d3b"
     ts-jest: "npm:^29.1.2"
+    ts-node: "npm:^10.9.2"
     typescript: "npm:5.2.2"
     uuid: "npm:^9.0.0"
     winston: "npm:^3.10.0"
@@ -15125,7 +15126,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ts-node@npm:^10.9.1":
+"ts-node@npm:^10.9.1, ts-node@npm:^10.9.2":
   version: 10.9.2
   resolution: "ts-node@npm:10.9.2"
   dependencies:

@@ -51,7 +51,10 @@ export class BVFileMock implements BalanceVerifier {
   async execTask(gIndex: bigint, delay = 0) {
     const isLeaff = isLeaf(gIndex, this.configuration.depth);
     if (delay) await sleep(delay);
-    const { leftChild, rightChild } = fromGIndex(gIndex);
+
+    const gIndexData = fromGIndex(gIndex);
+    const leftChild = gIndexData.left;
+    const rightChild = gIndexData.right;
 
     let nodeData: NodeData;
     if (isLeaff) {
@@ -110,7 +113,9 @@ export class BVFileMock implements BalanceVerifier {
         continue;
       }
 
-      const { leftChild, rightChild } = fromGIndex(gIndex);
+      const gIndexData = fromGIndex(gIndex);
+      const leftChild = gIndexData.left;
+      const rightChild = gIndexData.right;
 
       this.tasks[`${gIndex}`] = Promise.all([
         this.tasks[`${leftChild}`],

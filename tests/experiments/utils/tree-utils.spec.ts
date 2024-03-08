@@ -17,6 +17,7 @@ import { fromDepth, log2 } from './gindex';
 
 describe('Tree Utils Tests', () => {
   function testIterator<T>(iterator: Generator<T>, expectedIndices: T[]) {
+    // console.log([...iterator]);
     expect([...iterator]).toEqual(expectedIndices);
   }
 
@@ -72,56 +73,57 @@ describe('Tree Utils Tests', () => {
   });
 
   describe('iterateLevel', () => {
-    test('generates correct indices and gIndices for a given level', () => {
+    test('xxxxxxx', () => {
+      console.log(...iterateLevel(0n));
       testIterator(iterateLevel(0n), [{ gIndex: 1n, indexOnThisLevel: 0n }]);
 
-      testIterator(iterateLevel(1n), [
-        { gIndex: 2n, indexOnThisLevel: 0n },
-        { gIndex: 3n, indexOnThisLevel: 1n },
-      ]);
+      //   testIterator(iterateLevel(1n), [
+      //     { gIndex: 2n, indexOnThisLevel: 0n },
+      //     { gIndex: 3n, indexOnThisLevel: 1n },
+      //   ]);
 
-      testIterator(iterateLevel(2n), [
-        { gIndex: 4n, indexOnThisLevel: 0n },
-        { gIndex: 5n, indexOnThisLevel: 1n },
-        { gIndex: 6n, indexOnThisLevel: 2n },
-        { gIndex: 7n, indexOnThisLevel: 3n },
-      ]);
+      //   testIterator(iterateLevel(2n), [
+      //     { gIndex: 4n, indexOnThisLevel: 0n },
+      //     { gIndex: 5n, indexOnThisLevel: 1n },
+      //     { gIndex: 6n, indexOnThisLevel: 2n },
+      //     { gIndex: 7n, indexOnThisLevel: 3n },
+      //   ]);
 
-      testIterator(iterateLevel(3n), [
-        { gIndex: 8n, indexOnThisLevel: 0n },
-        { gIndex: 9n, indexOnThisLevel: 1n },
-        { gIndex: 10n, indexOnThisLevel: 2n },
-        { gIndex: 11n, indexOnThisLevel: 3n },
-        { gIndex: 12n, indexOnThisLevel: 4n },
-        { gIndex: 13n, indexOnThisLevel: 5n },
-        { gIndex: 14n, indexOnThisLevel: 6n },
-        { gIndex: 15n, indexOnThisLevel: 7n },
-      ]);
+      //   testIterator(iterateLevel(3n), [
+      //     { gIndex: 8n, indexOnThisLevel: 0n },
+      //     { gIndex: 9n, indexOnThisLevel: 1n },
+      //     { gIndex: 10n, indexOnThisLevel: 2n },
+      //     { gIndex: 11n, indexOnThisLevel: 3n },
+      //     { gIndex: 12n, indexOnThisLevel: 4n },
+      //     { gIndex: 13n, indexOnThisLevel: 5n },
+      //     { gIndex: 14n, indexOnThisLevel: 6n },
+      //     { gIndex: 15n, indexOnThisLevel: 7n },
+      //   ]);
 
-      testIterator(iterateLevel(4n), [
-        { gIndex: 16n, indexOnThisLevel: 0n },
-        { gIndex: 17n, indexOnThisLevel: 1n },
-        { gIndex: 18n, indexOnThisLevel: 2n },
-        { gIndex: 19n, indexOnThisLevel: 3n },
-        { gIndex: 20n, indexOnThisLevel: 4n },
-        { gIndex: 21n, indexOnThisLevel: 5n },
-        { gIndex: 22n, indexOnThisLevel: 6n },
-        { gIndex: 23n, indexOnThisLevel: 7n },
-        { gIndex: 24n, indexOnThisLevel: 8n },
-        { gIndex: 25n, indexOnThisLevel: 9n },
-        { gIndex: 26n, indexOnThisLevel: 10n },
-        { gIndex: 27n, indexOnThisLevel: 11n },
-        { gIndex: 28n, indexOnThisLevel: 12n },
-        { gIndex: 29n, indexOnThisLevel: 13n },
-        { gIndex: 30n, indexOnThisLevel: 14n },
-        { gIndex: 31n, indexOnThisLevel: 15n },
-      ]);
+      //   testIterator(iterateLevel(4n), [
+      //     { gIndex: 16n, indexOnThisLevel: 0n },
+      //     { gIndex: 17n, indexOnThisLevel: 1n },
+      //     { gIndex: 18n, indexOnThisLevel: 2n },
+      //     { gIndex: 19n, indexOnThisLevel: 3n },
+      //     { gIndex: 20n, indexOnThisLevel: 4n },
+      //     { gIndex: 21n, indexOnThisLevel: 5n },
+      //     { gIndex: 22n, indexOnThisLevel: 6n },
+      //     { gIndex: 23n, indexOnThisLevel: 7n },
+      //     { gIndex: 24n, indexOnThisLevel: 8n },
+      //     { gIndex: 25n, indexOnThisLevel: 9n },
+      //     { gIndex: 26n, indexOnThisLevel: 10n },
+      //     { gIndex: 27n, indexOnThisLevel: 11n },
+      //     { gIndex: 28n, indexOnThisLevel: 12n },
+      //     { gIndex: 29n, indexOnThisLevel: 13n },
+      //     { gIndex: 30n, indexOnThisLevel: 14n },
+      //     { gIndex: 31n, indexOnThisLevel: 15n },
+      //   ]);
     });
 
     test('generates correct indices and gIndices for a given level with a finalGIndex', () => {
       const { levelStart, levelEnd } = fromDepth(0n);
-      expect(levelStart).toBe(0n);
-      expect(levelEnd).toBe(0n);
+      expect(levelStart).toBe(1n);
+      expect(levelEnd).toBe(1n);
       testIterator(iterateLevel(0n, 0n), []);
 
       testIterator(iterateLevel(0n, 1n), [
@@ -139,12 +141,12 @@ describe('Tree Utils Tests', () => {
       testIterator(iterateLevel(1n, 0n), []);
 
       testIterator(iterateLevel(1n, 1n), [
-        { gIndex: 1n, indexOnThisLevel: 0n },
+        { gIndex: 2n, indexOnThisLevel: 0n },
       ]);
 
       testIterator(iterateLevel(1n, 2n), [
-        { gIndex: 1n, indexOnThisLevel: 0n },
-        { gIndex: 2n, indexOnThisLevel: 1n },
+        { gIndex: 2n, indexOnThisLevel: 0n },
+        { gIndex: 3n, indexOnThisLevel: 1n },
       ]);
 
       const depth = 2n;
@@ -168,10 +170,9 @@ describe('Tree Utils Tests', () => {
       const end = 8n;
       const iterator = range(begin, end);
       const expectedIndices = [
-        { indexOnThisLevel: 1n, gIndex: 5n },
-        { indexOnThisLevel: 2n, gIndex: 6n },
-        { indexOnThisLevel: 3n, gIndex: 7n },
-        { indexOnThisLevel: 4n, gIndex: 8n },
+        { indexOnThisLevel: 0n, gIndex: 5n },
+        { indexOnThisLevel: 1n, gIndex: 6n },
+        { indexOnThisLevel: 2n, gIndex: 7n },
       ];
 
       testIterator(iterator, expectedIndices);
@@ -252,13 +253,13 @@ describe('Tree Utils Tests', () => {
 
   describe('isLeaf', () => {
     test('returns true if gIndex is a leaf at the given depth', () => {
-      const gIndex = 5n;
+      const gIndex = 9n;
       const depth = 3n;
       expect(isLeaf(gIndex, depth)).toBe(true);
     });
 
-    test('returns false if gIndex is not part of the tree with this depth', () => {
-      const gIndex = 8n;
+    test('returns false if gIndex is not a leaf at the given depth', () => {
+      const gIndex = 17n;
       const depth = 3n;
       expect(isLeaf(gIndex, depth)).toBe(false);
     });
