@@ -19,6 +19,8 @@ pub struct ValidatorCommitmentConstants<'a> {
     pub final_proof_input_key: &'a str,
     pub final_layer_proof_key: &'a str,
     pub epoch_lookup_key: &'a str,
+    pub validators_length_key: &'a str,
+    pub validators_root_key: &'a str,
 }
 
 pub fn get_validator_commitment_constants() -> ValidatorCommitmentConstants<'static> {

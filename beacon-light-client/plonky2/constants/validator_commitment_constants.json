@@ -15,5 +15,9 @@
   "finalProofInputKey": "final_proof_input",
   "finalLayerProofKey": "final_layer_proof",
   "zeroHashesForLevelKey": "zero_hashes_for_level",
-  "epochLookupKey": "epoch_lookup"
+  "epochLookupKey": "epoch_lookup",
+  "validatorsLengthKey": "validators_length",
+  "validatorsRootKey": "validators_root",
+  "lastFinalizedEpochLookupKey": "last_finalized_epoch"
+
 }

@@ -51,7 +51,7 @@ async fn async_main() -> Result<()> {
         format!("Redis connection took: {:?}", elapsed).yellow()
     );
 
-    let balance_data = load_circuit_data("37").unwrap();
+    let balance_data = load_circuit_data("balance_verification_37").unwrap();
     let commitment_data = load_circuit_data("commitment_mapper_40").unwrap();
 
     let (circuit_targets, circuit_data) = build_final_circuit::<1>(&balance_data, &commitment_data);

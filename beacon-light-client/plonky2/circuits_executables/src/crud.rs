@@ -13,6 +13,7 @@ use circuits::{
     build_commitment_mapper_first_level_circuit::CommitmentMapperProofExt,
     build_validator_balance_circuit::ValidatorBalanceProofExt,
     generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
+    utils::hash_bytes,
 };
 use num::BigUint;
 use plonky2::{
@@ -21,7 +22,7 @@ use plonky2::{
         circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs,
     },
 };
-use redis::{aio::Connection, AsyncCommands, JsonAsyncCommands, RedisError};
+use redis::{aio::Connection, AsyncCommands, RedisError};
 use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -197,12 +198,11 @@ pub async fn fetch_validator_balance_accumulator_input(
 }
 
 pub async fn fetch_final_layer_input(con: &mut Connection) -> Result<FinalCircuitInput> {
-    let result: String = con
-        .json_get(VALIDATOR_COMMITMENT_CONSTANTS.final_proof_input_key, "$")
+    let json: String = con
+        .get(VALIDATOR_COMMITMENT_CONSTANTS.final_proof_input_key)
         .await?;
-    let result_vec = &serde_json::from_str::<Vec<FinalCircuitInput>>(&result)?;
-    ensure!(!result_vec.is_empty(), "Could not fetch json object");
-    Ok(result_vec[0].clone())
+    let result = serde_json::from_str::<FinalCircuitInput>(&json)?;
+    Ok(result)
 }
 
 pub async fn save_balance_proof<const N: usize>(
@@ -234,8 +234,9 @@ pub async fn save_balance_proof<const N: usize>(
         proof: proof.to_bytes(),
     };
 
-    con.json_set(
-        format!(
+    save_json_object(
+        con,
+        &format!(
             "{}:{}:{}",
             VALIDATOR_COMMITMENT_CONSTANTS
                 .balance_verification_proof_key
@@ -243,7 +244,6 @@ pub async fn save_balance_proof<const N: usize>(
             level,
             index
         ),
-        "$",
         &balance_proof,
     )
     .await?;
@@ -262,8 +262,9 @@ pub async fn save_balance_accumulator_proof(
         proof: proof.to_bytes(),
     };
 
-    con.json_set(
-        format!(
+    save_json_object(
+        con,
+        &format!(
             "{}:{}:{}",
             VALIDATOR_COMMITMENT_CONSTANTS
                 .balance_verification_accumulator_proof_key
@@ -271,7 +272,6 @@ pub async fn save_balance_accumulator_proof(
             level,
             index
         ),
-        "$",
         &balance_proof,
     )
     .await?;
@@ -300,11 +300,9 @@ pub async fn save_final_proof(
         proof: proof.to_bytes(),
     };
 
-    con.json_set(
-        VALIDATOR_COMMITMENT_CONSTANTS
-            .final_layer_proof_key
-            .to_owned(),
-        "$",
+    save_json_object(
+        con,
+        VALIDATOR_COMMITMENT_CONSTANTS.final_layer_proof_key,
         &final_proof,
     )
     .await?;
@@ -405,20 +403,43 @@ pub async fn save_zero_validator_proof(
         needs_change: false,
     };
 
-    con.json_set(
-        format!(
+    save_json_object(
+        con,
+        &format!(
             "{}:zeroes:{}",
             VALIDATOR_COMMITMENT_CONSTANTS
                 .validator_proof_key
                 .to_owned(),
             depth,
         ),
-        "$",
         &validator_proof,
     )
     .await?;
 
     Ok(())
+}
+
+pub async fn save_json_object<T: Serialize>(
+    con: &mut Connection,
+    key: &str,
+    object: &T,
+) -> Result<()> {
+    let json = serde_json::to_string(object)?;
+    con.set(key, json).await?;
+    Ok(())
+}
+
+pub fn u64_to_ssz_leaf(value: u64) -> [u8; 32] {
+    let mut ret = vec![0u8; 32];
+    ret[0..8].copy_from_slice(value.to_le_bytes().as_slice());
+    println!("ssz leaf: {:?}", hex::encode(&ret));
+    ret.try_into().unwrap()
+}
+
+fn bits_to_bytes(bits: &[u64]) -> Vec<u8> {
+    bits.chunks(8)
+        .map(|bits| (0..8usize).fold(0u8, |byte, pos| byte | ((bits[pos]) << (7 - pos)) as u8))
+        .collect::<Vec<_>>()
 }
 
 pub async fn save_validator_proof(
@@ -436,8 +457,52 @@ pub async fn save_validator_proof(
         needs_change: false,
     };
 
-    con.json_set(
-        format!(
+    // fetch validators len
+    if gindex == 0 {
+        let length_result: Result<u64, _> = con
+            // NOTE: Vsushtnost mai ne iskame da triem, zashtoto ni trqbva kato
+            // input na casper finality circuit-a
+            .get_del(format!(
+                "{}:{}",
+                VALIDATOR_COMMITMENT_CONSTANTS.validators_length_key, epoch
+            ))
+            .await;
+
+        match length_result {
+            Ok(length) => {
+                let validators_root_bytes: Vec<u8> = [
+                    &bits_to_bytes(&validator_proof.sha256_hash)[..],
+                    &u64_to_ssz_leaf(length)[..],
+                ]
+                .concat()
+                .try_into()
+                .unwrap();
+
+                let validators_root = hex::encode(hash_bytes(validators_root_bytes.as_slice()));
+                println!(
+                    "redis root: {}",
+                    hex::encode(bits_to_bytes(&validator_proof.sha256_hash))
+                );
+                println!("validators hash tree root: {}", validators_root);
+
+                con.set(
+                    format!(
+                        "{}:{}",
+                        VALIDATOR_COMMITMENT_CONSTANTS.validators_root_key, epoch
+                    ),
+                    validators_root,
+                )
+                .await?;
+            }
+            // The validators root has already been saved and the length is deleted
+            Err(_) => {}
+        }
+        // delete the length
+    }
+
+    save_json_object(
+        con,
+        &format!(
             "{}:{}:{}",
             VALIDATOR_COMMITMENT_CONSTANTS
                 .validator_proof_key
@@ -445,7 +510,6 @@ pub async fn save_validator_proof(
             gindex,
             epoch
         ),
-        "$",
         &validator_proof,
     )
     .await?;
@@ -467,15 +531,15 @@ pub async fn save_zero_validator_accumulator_proof(
         needs_change: false,
     };
 
-    con.json_set(
-        format!(
+    save_json_object(
+        con,
+        &format!(
             "{}:zeroes:{}",
             VALIDATOR_COMMITMENT_CONSTANTS
                 .validator_accumulator_proof_key
                 .to_owned(),
             depth,
         ),
-        "$",
         &validator_proof,
     )
     .await?;
@@ -498,20 +562,19 @@ pub async fn save_validator_accumulator_proof(
         needs_change: false,
     };
 
-    let _: () = con
-        .json_set(
-            format!(
-                "{}:{}:{}",
-                VALIDATOR_COMMITMENT_CONSTANTS
-                    .validator_accumulator_proof_key
-                    .to_owned(),
-                protocol,
-                gindex
-            ),
-            "$",
-            &validator_proof,
-        )
-        .await?;
+    save_json_object(
+        con,
+        &format!(
+            "{}:{}:{}",
+            VALIDATOR_COMMITMENT_CONSTANTS
+                .validator_accumulator_proof_key
+                .to_owned(),
+            protocol,
+            gindex
+        ),
+        &validator_proof,
+    )
+    .await?;
 
     Ok(())
 }
@@ -557,10 +620,9 @@ pub async fn fetch_redis_json_object<T: DeserializeOwned + Clone>(
     con: &mut Connection,
     key: String,
 ) -> Result<T> {
-    let result: String = con.json_get(key, "$").await?;
-    let result_vec = &serde_json::from_str::<Vec<T>>(&result)?;
-    ensure!(!result_vec.is_empty(), "Could not fetch json object");
-    Ok(result_vec[0].clone())
+    let json: String = con.get(key).await?;
+    let result = serde_json::from_str::<T>(&json)?;
+    Ok(result)
 }
 
 pub async fn fetch_proof<T: NeedsChange + KeyProvider + DeserializeOwned + Clone>(
