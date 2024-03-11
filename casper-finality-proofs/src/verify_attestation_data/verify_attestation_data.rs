@@ -208,13 +208,7 @@ fn verify_validator<L: PlonkParameters<D>, const D: usize>(
         validator.validator_root_proof.as_slice(),
         gindex,
     );
-    // ssz_verify_proof_poseidon( //TODO: PoseidonHash
-    // builder,
-    // validator_hash.validator_state_root,
-    // validator_hash.validator_leaf,
-    // validator_hash.validator_root_proof.as_slice(),
-    // validator_hash.validator_gindex
-    // );
+
     //TODO: I need access to validator.slot to prove slot is part of beacon state [NOT RELEVANT?]
 }
 

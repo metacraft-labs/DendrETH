@@ -45,7 +45,7 @@ impl VerifyAttestationDataPoseidon {
         private_accumulator = accumulate_private(
             builder,
             private_accumulator,
-            first_validator.validator_gindex,
+            first_validator.validator_index,
             sigma,
         );
 
@@ -71,7 +71,7 @@ impl VerifyAttestationDataPoseidon {
             private_accumulator = accumulate_private(
                 builder,
                 private_accumulator,
-                cur_validator.validator_gindex,
+                cur_validator.validator_index,
                 sigma,
             );
 
@@ -199,16 +199,13 @@ fn verify_validator<L: PlonkParameters<D>, const D: usize>(
     // Prove validator is part of the validator set
 
     // // This check will be performed only at the prove_finality step
-    // let first_validators_gindex: U64Variable =
-    //     builder.constant(2u64.pow(VALIDATORS_HASH_TREE_DEPTH as u32));
-    // let gindex = builder.add(first_validators_gindex, validator.validator_gindex);
 
     ssz_verify_proof_poseidon( //TODO: PoseidonHash
         builder,
         validators_root,
         validator.beacon_validator_variable_hash,
         validator.validator_root_proof.as_slice(),
-        validator.validator_gindex
+        validator.validator_index
     );
 
     

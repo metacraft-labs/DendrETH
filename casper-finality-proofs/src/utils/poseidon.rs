@@ -29,11 +29,9 @@ where
     let bits = builder.to_le_bits(gindex);
     let mut hash = leaf;
     for i in 0..branch.len() {
-        let left = branch[i].clone();
-        let right = hash.clone();
 
-        let case1 = builder.poseidon_hash_pair(left.clone(), right.clone());
-        let case2 = builder.poseidon_hash_pair(right, left);
+        let case1 = builder.poseidon_hash_pair(branch[i].clone(), hash.clone());
+        let case2 = builder.poseidon_hash_pair(hash.clone(), branch[i].clone());
         hash = builder.select(bits[i], case1, case2);
     }
 

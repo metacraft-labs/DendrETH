@@ -10,7 +10,8 @@ pub const BEACON_STATE_BLOCK_ROOTS_GINDEX: u64 = 37;
 pub const DEPTH18_START_BLOCK_ROOTS_GINDEX: u64 = 303104;
 
 pub const VALIDATORS_PER_COMMITTEE: usize = 128; // 2048
-pub const VALIDATORS_HASH_TREE_DEPTH: usize = 40; 
+pub const VALIDATORS_HASH_TREE_DEPTH: usize = 41; // SHA256 Proof Depth
+pub const VALIDATORS_HASH_TREE_DEPTH_POSEIDON: usize = 40; // Poseidon Proof Depth
 pub const VALIDATORS_ROOT_PROOF_LEN: usize = 5;
 pub const STATE_ROOT_PROOF_LEN: usize = 3;
 

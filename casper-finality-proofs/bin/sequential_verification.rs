@@ -24,7 +24,7 @@ fn main() {
 
     plonky2x::utils::setup_logger();
 
-    let is_poseidon_hash = true;
+    let is_poseidon_hash = false;
 
     let file_path_attestations;
     if is_poseidon_hash {
