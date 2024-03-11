@@ -96,6 +96,11 @@ pub fn main() {
                 validator_poseidon_proof: proof
             }
         );
+
+        // TODO: this
+
+        // if not succesfull go from using index to using gindex
+        
     }
 
     end_time = Instant::now();
