@@ -66,21 +66,14 @@ pub fn main() {
     start_time = Instant::now();
     
     let merkle_tree = MerkleTree::new::<F, D>(&validators_hashed, DEPTH);
-
-    // let exponent = u64::pow(2,DEPTH as u32);
-    // let poseidon_hash_tree_root 
-    //     = compute_poseidon_hash_tree_root::<F, D>(validators_hashed.len() as usize,validators_hashed.clone());
-    
-    // println!("ROOT: {:?}", poseidon_hash_tree_root);
-
-    // end_time = Instant::now();
-    // duration = end_time - start_time;
-    // println!("HashTreeRoot Generation Took: {}", duration.as_millis());
-    // start_time = Instant::now();
     
     for i in 0..num_validators {
 
-        let (_leaf, proof) = merkle_tree.generate_proof::<F, D>(i, DEPTH).unwrap();
+        let (_leaf, proof) = 
+            merkle_tree.generate_proof::<F, D>(
+                validators_raw[i].validator_index as usize,
+                DEPTH
+            ).unwrap();
 
         if i%10_000 == 0 {
             println!("On {}-th validator hash..", i);
@@ -105,10 +98,10 @@ pub fn main() {
         );
     }
 
-    // end_time = Instant::now();
-    // duration = end_time - start_time;
+    end_time = Instant::now();
+    duration = end_time - start_time;
 
-    // println!("Proof Generation Took: {}", duration.as_millis());
+    println!("Proof Generation Took: {}", duration.as_millis());
 
     let poseidon_data = PoseidonData {
         validators: poseidon_validator_obj_vec,
