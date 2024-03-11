@@ -9,6 +9,7 @@ use plonky2::iop::generator::{GeneratedValues, SimpleGenerator};
 use plonky2::iop::target::{BoolTarget, Target};
 use plonky2::iop::witness::{PartitionWitness, Witness};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::circuit_data::CommonCircuitData;
 use plonky2::util::serialization::{Read, Write};
 use plonky2_u32::gadgets::arithmetic_u32::{CircuitBuilderU32, U32Target};
 use plonky2_u32::gadgets::multiple_comparison::list_le_u32_circuit;
@@ -323,7 +324,7 @@ pub struct BigUintDivRemGenerator<F: RichField + Extendable<D>, const D: usize> 
     _phantom: PhantomData<F>,
 }
 
-impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
+impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
     for BigUintDivRemGenerator<F, D>
 {
     fn dependencies(&self) -> Vec<Target> {
@@ -348,7 +349,11 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
         "BigUintDivRemGenerator".to_string()
     }
 
-    fn serialize(&self, dst: &mut Vec<u8>) -> plonky2::util::serialization::IoResult<()> {
+    fn serialize(
+        &self,
+        dst: &mut Vec<u8>,
+        _common_data: &CommonCircuitData<F, D>,
+    ) -> plonky2::util::serialization::IoResult<()> {
         println!("Serialization gets called at least");
         dst.write_usize(self.a.num_limbs())?;
 
@@ -379,6 +384,7 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F>
 
     fn deserialize(
         src: &mut plonky2::util::serialization::Buffer,
+        _common_data: &CommonCircuitData<F, D>,
     ) -> plonky2::util::serialization::IoResult<Self>
     where
         Self: Sized,
