@@ -37,7 +37,7 @@ export class BeaconApi implements IBeaconApi {
   constructor(
     public readonly beaconRestApis: string[],
     public readonly ssz: SSZ,
-  ) {}
+  ) { }
 
   async getCurrentSSZ(slot: bigint): Promise<CapellaOrDeneb> {
     const forkSchedule = await (
@@ -247,8 +247,7 @@ export class BeaconApi implements IBeaconApi {
 
     const prevFinalizedHeaderResult = await (
       await this.fetchWithFallback(
-        `/eth/v1/beacon/headers/${
-          '0x' + bytesToHex(prevBeaconSate.finalizedCheckpoint.root)
+        `/eth/v1/beacon/headers/${'0x' + bytesToHex(prevBeaconSate.finalizedCheckpoint.root)
         }`,
       )
     ).json();
@@ -300,7 +299,7 @@ export class BeaconApi implements IBeaconApi {
         bytesToHex(
           prevFinalizedBeaconState[
             prevUpdateFinalizedSyncCommmitteePeriod ===
-            currentSyncCommitteePeriod
+              currentSyncCommitteePeriod
               ? 'currentSyncCommittee'
               : 'nextSyncCommittee'
           ].aggregatePubkey,
@@ -334,8 +333,7 @@ export class BeaconApi implements IBeaconApi {
 
     const finalizedHeaderResult = await (
       await this.fetchWithFallback(
-        `/eth/v1/beacon/headers/${
-          '0x' + bytesToHex(beaconState.finalizedCheckpoint.root)
+        `/eth/v1/beacon/headers/${'0x' + bytesToHex(beaconState.finalizedCheckpoint.root)
         }`,
       )
     ).json();
@@ -452,7 +450,7 @@ export class BeaconApi implements IBeaconApi {
       }
 
       const validators = await response.json();
-      validators.data.sort((v1, v2) => +v1.index - +v2.index);
+      validators.data.sort((v1: any, v2: any) => +v1.index - +v2.index);
       return ssz.phase0.Validators.fromJson(
         validators.data.map((x: any) => x.validator),
       );
@@ -463,6 +461,21 @@ export class BeaconApi implements IBeaconApi {
         panic('Could not fetch beacon state');
       return beaconState.validators.slice(offset || 0, validatorsCount);
     }
+  }
+
+  async getFirstNonMissingSlotInEpoch(epoch: bigint): Promise<bigint> {
+    for (let relativeSlot = 0n; relativeSlot < 31n; ++relativeSlot) {
+      const slot = epoch * 32n + relativeSlot;
+      try {
+        const status = await this.pingEndpoint(`/eth/v1/beacon/blocks/${slot}/root`);
+        if (status === 200) {
+          return slot;
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    }
+    throw new Error("Did not find non-empty slot in epoch");
   }
 
   async getBlockRootBySlot(stateId: StateId) {
@@ -583,9 +596,8 @@ export class BeaconApi implements IBeaconApi {
 
   private concatUrl(urlPath: string): string {
     const baseUrl = this.getCurrentApi();
-    const finalUrl = `${
-      baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl
-    }/${urlPath.startsWith('/') ? urlPath.slice(1) : urlPath}`;
+    const finalUrl = `${baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl
+      }/${urlPath.startsWith('/') ? urlPath.slice(1) : urlPath}`;
 
     console.log('url href', finalUrl);
     return finalUrl;

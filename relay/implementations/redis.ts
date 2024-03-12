@@ -599,6 +599,11 @@ export class Redis implements IRedis {
     );
   }
 
+  async updateCommitmentMapperSlot(epoch: bigint, slot: bigint) {
+    await this.waitForConnection();
+    await this.client.set(`${CONSTANTS.commitmentMapperSlotKey}:${epoch}`, slot.toString());
+  }
+
   async subscribeForProofs(
     listener: (message: string, channel: string) => unknown,
   ): Promise<void> {
