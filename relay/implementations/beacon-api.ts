@@ -443,6 +443,21 @@ export class BeaconApi implements IBeaconApi {
     }
   }
 
+  async getFirstNonMissingSlotInEpoch(epoch: number): Promise<number> {
+    for (let relativeSlot = 0; relativeSlot < 31; ++relativeSlot) {
+      const slot = epoch * 32 + relativeSlot;
+      try {
+        const status = await this.pingEndpoint(`/eth/v1/beacon/blocks/${slot}/root`);
+        if (status === 200) {
+          return slot;
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    }
+    throw new Error("Did not find non-empty slot in epoch");
+  }
+
   async getBlockRootBySlot(stateId: StateId) {
     let url = `/eth/v1/beacon/blocks/${stateId}/root`;
     const json = await (await this.fetchWithFallback(url)).json();

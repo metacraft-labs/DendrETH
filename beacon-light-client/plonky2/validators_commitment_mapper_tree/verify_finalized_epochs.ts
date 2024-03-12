@@ -117,7 +117,7 @@ async function verifyEpoch(api: BeaconApi, redis: Redis, scheduler: CommitmentMa
   console.log(`Verifying epoch: ${epoch}`)
   const { ssz } = await import('@lodestar/types');
   try {
-    const slot = await getFirstNonMissingSlotInEpoch(api, Number(epoch));
+    const slot = await api.getFirstNonMissingSlotInEpoch(Number(epoch));
     const { beaconState } = await api.getBeaconState(slot);
     beaconState.validators = beaconState.validators.slice(0, take);
     const validatorsRoot = bytesToHex(ssz.capella.BeaconState.fields.validators.hashTreeRoot(beaconState.validators));
@@ -134,6 +134,7 @@ async function verifyEpoch(api: BeaconApi, redis: Redis, scheduler: CommitmentMa
     if (validatorsRoot !== storedValidatorsRoot) {
       console.log(`Validators roots for epoch ${epoch} differ: expected "${validatorsRoot}", got "${storedValidatorsRoot}"`);
       // reschedule tasks for epoch
+      await redis.updateCommitmentMapperSlot(epoch, BigInt(slot));
       const changedValidators = await getValidatorsDiff(redis, beaconState, BigInt(epoch));
       await scheduler.saveValidatorsInBatches(changedValidators, BigInt(epoch));
       await redis.setValidatorsLength(BigInt(epoch), beaconState.validators.length);
@@ -145,19 +146,3 @@ async function verifyEpoch(api: BeaconApi, redis: Redis, scheduler: CommitmentMa
     console.error(error);
   }
 }
-
-async function getFirstNonMissingSlotInEpoch(api: BeaconApi, epoch: number): Promise<number> {
-  for (let relativeSlot = 0; relativeSlot < 31; ++relativeSlot) {
-    const slot = epoch * 32 + relativeSlot;
-    try {
-      const status = await api.pingEndpoint(`/eth/v1/beacon/blocks/${slot}/root`);
-      if (status === 200) {
-        return slot;
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  }
-  throw new Error("Did not find non-empty slot in epoch");
-}
-

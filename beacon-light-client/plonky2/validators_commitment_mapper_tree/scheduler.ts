@@ -157,11 +157,14 @@ export class CommitmentMapperScheduler {
   }
 
   async updateValidators() {
+    const slot = await this.api.getFirstNonMissingSlotInEpoch(Number(this.currentEpoch));
     const newValidators = await this.api.getValidators(
-      Number(this.currentEpoch * 32n),
+      slot,
       this.take,
       this.offset,
     );
+
+    await this.redis.updateCommitmentMapperSlot(this.currentEpoch, BigInt(slot));
 
     if (this.currentEpoch % 3n === 0n) {
       let modifiedIndices = [...new Array(this.take).keys()];
@@ -298,20 +301,3 @@ function hasValidatorChanged(prevValidators: Validator[]) {
     validator.withdrawableEpoch !== prevValidators[index].withdrawableEpoch;
 }
 
-async function getFirstNonMissingSlotInEpoch(api: BeaconApi, epoch: number): Promise<number> {
-  for (let relativeSlot = 0; relativeSlot < 31; ++relativeSlot) {
-    const slot = epoch * 32 + relativeSlot;
-    try {
-      const status = await api.pingEndpoint(`/eth/v1/beacon/states/${slot}/root`);
-      if (status === 200) {
-        return slot;
-      }
-
-      // const validators = await api.getBlockRootBySlot(epoch * 32 + slot);
-      // return epoch * 32 + slot;
-    } catch (error) {
-      console.error(error);
-    }
-  }
-  throw new Error("Did not find non-empty slot in epoch");
-}
