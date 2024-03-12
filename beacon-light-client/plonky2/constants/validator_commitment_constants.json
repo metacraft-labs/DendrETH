@@ -21,5 +21,6 @@
   "validatorsLengthKey": "validators_length",
   "validatorsRootKey": "validators_root",
   "lastFinalizedEpochLookupKey": "last_finalized_epoch",
-  "lastProcessedEpochLookupKey": "last_processed_epoch"
+  "lastProcessedEpochLookupKey": "last_processed_epoch",
+  "commitmentMapperSlotKey": "commitment_mapper_slot"
 }

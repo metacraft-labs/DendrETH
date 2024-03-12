@@ -2,29 +2,31 @@ import { bytesToHex } from "../../../libs/typescript/ts-utils/bls";
 import { BeaconApi, getBeaconApi } from "../../../relay/implementations/beacon-api";
 import { Redis } from "@dendreth/relay/implementations/redis";
 import { IndexedValidator } from "../../../relay/types/types";
+import { panic } from '@dendreth/utils/ts-utils/common-utils';
 import config from "../common_config.json";
 import { CommitmentMapperScheduler } from "./scheduler";
 import { Tree, zeroNode } from '@chainsafe/persistent-merkle-tree';
 import CONSTANTS from '../constants/validator_commitment_constants.json';
 // @ts-ignore
-import { sleep } from '@dendreth/utils/ts-utils/common-utils";
-import yargs from "yargs";
+import { sleep } from "@dendreth/utils/ts-utils/common-utils";
 import { getDepthByGindex } from "./utils";
+import { CommandLineOptionsBuilder } from "../cmdline";
 
 
 let zeroHashes: string[] = [];
 
 (async () => {
-  const options = yargs.option('take', {
-    type: 'number',
-  }).argv;
+  const options = new CommandLineOptionsBuilder()
+    .option('take', {
+      type: 'number'
+    }).build();
 
   // Pre-calc zero hashes
   zeroHashes = Array.from({ length: 41 }, (_, level) => bytesToHex(zeroNode(level).root)).reverse();
 
   const redis = new Redis(config['redis-host'], Number(config['redis-port']));
-  const api = await getBeaconApi([config['beacon-node']]);
-  const eventSource = await api.subscribeForEvents(['finalized_checkpoint']);
+  const api = await getBeaconApi(config['beacon-node']);
+  const eventSource = api.subscribeForEvents(['finalized_checkpoint']);
 
   const scheduler = new CommitmentMapperScheduler();
   await scheduler.init(config);
@@ -32,7 +34,7 @@ let zeroHashes: string[] = [];
   let lastFinalizedCheckpoint = await api.getLastFinalizedCheckpoint();
   let lastVerifiedEpoch = BigInt((await redis.get(CONSTANTS.lastFinalizedEpochLookupKey))!);
 
-  eventSource.on('finalized_checkpoint', async (event: any) => {
+  eventSource.addEventListener('finalized_checkpoint', async (event: any) => {
     lastFinalizedCheckpoint = BigInt(JSON.parse(event.data).epoch);
   });
 
@@ -129,8 +131,8 @@ async function verifyEpoch(api: BeaconApi, redis: Redis, scheduler: CommitmentMa
   console.log(`Verifying epoch: ${epoch}`)
   const { ssz } = await import('@lodestar/types');
   try {
-    const slot = await getFirstNonMissingSlotInEpoch(api, Number(epoch));
-    const { beaconState } = await api.getBeaconState(slot);
+    const slot = await api.getFirstNonMissingSlotInEpoch(epoch);
+    const { beaconState } = await api.getBeaconState(slot) || panic("Could not fetch beacon state!");
     beaconState.validators = beaconState.validators.slice(0, take);
     const validatorsRoot = bytesToHex(ssz.capella.BeaconState.fields.validators.hashTreeRoot(beaconState.validators));
 
@@ -146,6 +148,7 @@ async function verifyEpoch(api: BeaconApi, redis: Redis, scheduler: CommitmentMa
     if (validatorsRoot !== storedValidatorsRoot) {
       console.log(`Validators roots for epoch ${epoch} differ: expected "${validatorsRoot}", got "${storedValidatorsRoot}"`);
       // reschedule tasks for epoch
+      await redis.updateCommitmentMapperSlot(epoch, BigInt(slot));
       const changedValidators = await getValidatorsDiff(redis, beaconState, BigInt(epoch));
       await scheduler.saveValidatorsInBatches(changedValidators, BigInt(epoch));
       await redis.setValidatorsLength(BigInt(epoch), beaconState.validators.length);
@@ -157,19 +160,3 @@ async function verifyEpoch(api: BeaconApi, redis: Redis, scheduler: CommitmentMa
     console.error(error);
   }
 }
-
-async function getFirstNonMissingSlotInEpoch(api: BeaconApi, epoch: number): Promise<number> {
-  for (let relativeSlot = 0; relativeSlot < 31; ++relativeSlot) {
-    const slot = epoch * 32 + relativeSlot;
-    try {
-      const status = await api.pingEndpoint(`/eth/v1/beacon/blocks/${slot}/root`);
-      if (status === 200) {
-        return slot;
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  }
-  throw new Error("Did not find non-empty slot in epoch");
-}
-
