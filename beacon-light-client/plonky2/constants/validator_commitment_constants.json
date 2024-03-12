@@ -20,6 +20,6 @@
   "balanceVerificationProofStorage": "balance_verification_proof_storage",
   "validatorsLengthKey": "validators_length",
   "validatorsRootKey": "validators_root",
-  "lastFinalizedEpochLookupKey": "last_finalized_epoch"
-
+  "lastFinalizedEpochLookupKey": "last_finalized_epoch",
+  "lastProcessedEpochLookupKey": "last_processed_epoch"
 }

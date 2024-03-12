@@ -46,7 +46,7 @@ async fn async_main() -> Result<()> {
     let config = parse_config_file("../common_config.json".to_owned())?;
 
     let matches = CommandLineOptionsBuilder::new("commitment_mapper")
-        .with_redis_options(&config)
+        .with_redis_options(&config.redis_host, &config.redis_port)
         .with_work_queue_options()
         .with_proof_storage_options()
         .get_matches();

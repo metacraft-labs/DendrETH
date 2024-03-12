@@ -10,7 +10,7 @@ import config from '../common_config.json';
     .withRedisOpts()
     .option('beacon-node', {
       describe: 'The beacon node url',
-      type: 'string',
+      type: 'array',
       default: config['beacon-node'],
       description: 'Sets a custom beacon node url',
     })

@@ -101,6 +101,12 @@ export class Redis implements IRedis {
     this.client.set(CONSTANTS.lastFinalizedEpochLookupKey, epoch.toString());
   }
 
+  async updateLastProcessedEpoch(epoch: bigint) {
+    await this.waitForConnection();
+
+    this.client.set(CONSTANTS.lastProcessedEpochLookupKey, epoch.toString());
+  }
+
   async getAllKeys(pattern: string): Promise<string[]> {
     await this.waitForConnection();
     return this.client.keys(pattern);
