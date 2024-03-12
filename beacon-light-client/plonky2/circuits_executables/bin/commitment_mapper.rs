@@ -45,32 +45,7 @@ fn main() -> Result<()> {
 }
 
 async fn async_main() -> Result<()> {
-    /*
-        let sha_bits: Vec<u64> = [
-            1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1,
-            1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1,
-            0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0,
-            0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1,
-            0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 1, 1,
-            1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1,
-            1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1,
-            1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1,
-            0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1,
-        ]
-        .to_vec();
-
-        let sha_bytes = bits_to_bytes(&sha_bits);
-        let length = u64_to_ssz_leaf(100);
-        let concatenation: Vec<u8> = [&sha_bytes[..], &length].concat().try_into().unwrap();
-        let concatenation_hash = hash_bytes(concatenation.as_slice());
-        println!("hash: {}", hex::encode(concatenation_hash));
-        return Ok(());
-    */
-
-    println!("a");
     let config = parse_config_file("../common_config.json".to_owned())?;
-    println!("b");
-
     let matches = App::new("")
     .arg(
         Arg::with_name("redis_connection")
@@ -333,7 +308,6 @@ async fn async_main() -> Result<()> {
 }
 
 fn get_inner_targets(i: usize) -> Result<CommitmentMapperInnerCircuitTargets> {
-    println!("gurmi2?");
     let target_bytes = read_from_file(&format!("{}_{}.plonky2_targets", CIRCUIT_NAME, i))?;
     let mut target_buffer = Buffer::new(&target_bytes);
 
@@ -341,7 +315,6 @@ fn get_inner_targets(i: usize) -> Result<CommitmentMapperInnerCircuitTargets> {
 }
 
 fn get_first_level_targets() -> Result<ValidatorCommitmentTargets> {
-    println!("gurmi1?");
     let target_bytes = read_from_file(&format!("{}_{}.plonky2_targets", CIRCUIT_NAME, 0))?;
     let mut target_buffer = Buffer::new(&target_bytes);
 

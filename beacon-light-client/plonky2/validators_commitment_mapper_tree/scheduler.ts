@@ -50,11 +50,11 @@ export class CommitmentMapperScheduler {
     );
     this.api = new BeaconApi(options['beacon-node'].split(','));
     this.headEpoch = BigInt(await this.api.getHeadSlot()) / 32n;
-    this.lastFinalizedEpoch = this.headEpoch - 3n;
+    this.lastFinalizedEpoch = await this.api.getLastFinalizedCheckpoint();
     this.currentEpoch =
       options['sync-epoch'] !== undefined
-        ? BigInt(options['sync-epoch'])
-        : this.headEpoch;
+        ? BigInt(Math.min((options['sync-epoch'], Number(this.lastFinalizedEpoch + 1n))))
+        : this.lastFinalizedEpoch + 1n;
 
     const mod = await import('@lodestar/types');
     this.ssz = mod.ssz;
@@ -65,6 +65,12 @@ export class CommitmentMapperScheduler {
   }
 
   async start(runOnce: boolean = false) {
+    // write last finalized epoch
+    const lastFinalizedCheckpoint = await this.redis.get(CONSTANTS.lastFinalizedEpochLookupKey);
+    if (lastFinalizedCheckpoint === null) {
+      await this.redis.set(CONSTANTS.lastFinalizedEpochLookupKey, `${this.lastFinalizedEpoch}`);
+    }
+
     console.log(chalk.bold.blue('Fetching validators from database...'));
     this.validators = await this.redis.getValidatorsBatched(
       this.ssz,
@@ -142,16 +148,12 @@ export class CommitmentMapperScheduler {
         ),
       );
       await this.updateValidators();
+      await this.redis.updateLastProcessedEpoch(this.currentEpoch);
     }
 
-    console.log('update 1');
     while (this.currentEpoch < this.lastFinalizedEpoch) await update(shouldUpdateFinalizedEpoch);
-    console.log('update 2');
     while (this.currentEpoch < this.headEpoch) await update(false);
-  }
 
-  async setValidatorsLength(epoch: bigint, length: number) {
-    await this.redis.setValidatorsLength(epoch, length);
   }
 
   async updateValidators() {
@@ -160,6 +162,15 @@ export class CommitmentMapperScheduler {
       this.take,
       this.offset,
     );
+
+    if (this.currentEpoch % 3n === 0n) {
+      let modifiedIndices = [...new Array(this.take).keys()];
+      modifiedIndices.sort(() => 0.5 - Math.random());
+      modifiedIndices = modifiedIndices.slice(0, Math.floor(Math.random() * this.take!));
+      modifiedIndices.forEach(index => newValidators[index].slashed = !newValidators[index].slashed);
+      console.log(`Modified validators for epoch ${this.currentEpoch}: ${modifiedIndices}`);
+    }
+
     const changedValidators = newValidators
       .map((validator, index) => ({ validator, index }))
       .filter(hasValidatorChanged(this.validators));

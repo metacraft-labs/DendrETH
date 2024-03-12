@@ -6,6 +6,10 @@ export function gindexFromIndex(index: bigint, depth: bigint) {
   return 2n ** depth - 1n + index;
 }
 
+export function getDepthByGindex(gindex: number): number {
+  return Math.floor(Math.log2(gindex + 1));
+}
+
 export function getNthParent(gindex: bigint, n: bigint) {
   return (gindex - 2n ** n + 1n) / 2n ** n;
 }

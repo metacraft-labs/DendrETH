@@ -3,7 +3,7 @@
   rust-stable,
 }:
 with pkgs; let
-  nodejs = nodejs-18_x;
+  # nodejs = nodejs-18_x;
   llvm = llvmPackages_14;
   emscripten = metacraft-labs.emscripten;
   nim-wasm = callPackage ./nim-wasm {inherit llvm emscripten;};
@@ -26,7 +26,7 @@ in
     tmux
     tmuxinator
     # Node.js dev environment for unit tests
-    nodejs
+    nodejs_20
     metacraft-labs.corepack-shims
 
     # For WebAssembly unit-testing

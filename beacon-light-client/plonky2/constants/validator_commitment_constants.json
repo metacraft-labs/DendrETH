@@ -18,6 +18,6 @@
   "epochLookupKey": "epoch_lookup",
   "validatorsLengthKey": "validators_length",
   "validatorsRootKey": "validators_root",
-  "lastFinalizedEpochLookupKey": "last_finalized_epoch"
-
+  "lastFinalizedEpochLookupKey": "last_finalized_epoch",
+  "lastProcessedEpochLookupKey": "last_processed_epoch"
 }
