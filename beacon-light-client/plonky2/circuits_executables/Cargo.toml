@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 circuits = { path = "../circuits" }
 num = { version = "0.4.0", features = ["serde"] }
-plonky2 = { git = "https://github.com/metacraft-labs/plonky2", branch = "update" }
+plonky2 = { git = "https://github.com/metacraft-labs/plonky2" }
 redis = { version = "0.23", features = ["aio", "tokio-comp"] }
 serde = "1.0.164"
 serde_json = "1.0.96"

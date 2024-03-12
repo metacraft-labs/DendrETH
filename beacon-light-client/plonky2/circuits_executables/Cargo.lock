@@ -32,9 +32,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.80"
+version = "1.0.81"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ad32ce52e4161730f7098c077cd2ed6229b5804ccf99e5366be1ab72a98b4e1"
+checksum = "0952808a6c2afd1aa8947271f3a60f1a6763c7b912d210184c5149b5cf147247"
 
 [[package]]
 name = "arc-swap"
@@ -1191,7 +1191,7 @@ dependencies = [
 [[package]]
 name = "plonky2"
 version = "0.2.0"
-source = "git+https://github.com/metacraft-labs/plonky2?branch=update#1141be7a42147a40baf6acb92ba8444dd7ca9d2f"
+source = "git+https://github.com/metacraft-labs/plonky2#3ae50655f371184023815f50a42555c1cd9d7023"
 dependencies = [
  "ahash",
  "anyhow",
@@ -1215,7 +1215,7 @@ dependencies = [
 [[package]]
 name = "plonky2_field"
 version = "0.2.0"
-source = "git+https://github.com/metacraft-labs/plonky2?branch=update#1141be7a42147a40baf6acb92ba8444dd7ca9d2f"
+source = "git+https://github.com/metacraft-labs/plonky2#3ae50655f371184023815f50a42555c1cd9d7023"
 dependencies = [
  "anyhow",
  "itertools 0.11.0",
@@ -1230,7 +1230,7 @@ dependencies = [
 [[package]]
 name = "plonky2_maybe_rayon"
 version = "0.2.0"
-source = "git+https://github.com/metacraft-labs/plonky2?branch=update#1141be7a42147a40baf6acb92ba8444dd7ca9d2f"
+source = "git+https://github.com/metacraft-labs/plonky2#3ae50655f371184023815f50a42555c1cd9d7023"
 dependencies = [
  "rayon",
 ]
@@ -1238,7 +1238,7 @@ dependencies = [
 [[package]]
 name = "plonky2_u32"
 version = "0.1.0"
-source = "git+https://github.com/metacraft-labs/plonky2-u32?branch=update#64ccb182310ac02102b140aa65dd388bf69ee403"
+source = "git+https://github.com/metacraft-labs/plonky2-u32#2f460df88dc85b90815d2c895caab85a16b796a1"
 dependencies = [
  "anyhow",
  "itertools 0.10.5",
@@ -1249,7 +1249,7 @@ dependencies = [
 [[package]]
 name = "plonky2_util"
 version = "0.2.0"
-source = "git+https://github.com/metacraft-labs/plonky2?branch=update#1141be7a42147a40baf6acb92ba8444dd7ca9d2f"
+source = "git+https://github.com/metacraft-labs/plonky2#3ae50655f371184023815f50a42555c1cd9d7023"
 
 [[package]]
 name = "polling"
@@ -1308,9 +1308,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.78"
+version = "1.0.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2422ad645d89c99f8f3e6b88a9fdeca7fabeac836b1002371c4367c8f984aae"
+checksum = "e835ff2298f5721608eb1a980ecaee1aef2c132bf95ecc026a11b7bf3c01c02e"
 dependencies = [
  "unicode-ident",
 ]
