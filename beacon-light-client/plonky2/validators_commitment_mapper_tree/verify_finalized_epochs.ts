@@ -54,7 +54,6 @@ let zeroHashes: string[] = [];
 async function nodesAreSame(redis: Redis, newValidatorsTree: Tree, gindex: bigint, epoch: bigint): Promise<boolean> {
   const redisGindex = gindex - 1n; // TODO: Delete this and use gindex when we change the indexing scheme
 
-  console.log('gindex: ', gindex, newValidatorsTree.getNode(gindex).isLeaf());
   const lastChangeEpoch = await redis.getLatestEpoch(`${CONSTANTS.validatorProofKey}:${redisGindex}`, epoch);
   let node = await redis.get(`${CONSTANTS.validatorProofKey}:${redisGindex}:${lastChangeEpoch}`);
 
