@@ -1,5 +1,3 @@
-import * as fs from 'fs';
-import Redis from 'ioredis';
 import chalk from 'chalk';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
@@ -10,7 +8,6 @@ import { KeyPrefix, WorkQueue, Item } from '@mevitae/redis-work-queue';
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
 import { computeEpochAt } from '@dendreth/utils/ts-utils/ssz-utils';
 import { panic } from '@dendreth/utils/ts-utils/common-utils';
-import { Validator } from '@dendreth/relay/types/types';
 import { CommandLineOptionsBuilder } from '../cmdline';
 import config from '../common_config.json';
 import {
@@ -32,7 +29,7 @@ let TAKE: number;
     .option('beacon-node', {
       alias: 'beacon-node',
       describe: 'The beacon node url',
-      type: 'string',
+      type: 'array',
       default: config['beacon-node'],
       description: 'Sets a custom beacon node url',
     })
@@ -68,7 +65,6 @@ let TAKE: number;
   const redis = new RedisLocal(options['redis-host'], options['redis-port']);
 
   TAKE = options['take'];
-  let MOCK = options['mock'];
 
   const queues: any[] = [];
 
@@ -90,7 +86,7 @@ let TAKE: number;
     ),
   );
 
-  const beaconApi = await getBeaconApi([options['beacon-node']]);
+  const beaconApi = await getBeaconApi(options['beacon-node']);
 
   const slot =
     options['slot'] !== undefined
@@ -110,10 +106,6 @@ let TAKE: number;
 
   const balancesView = ssz.capella.BeaconState.fields.balances.toViewDU(
     beaconState.balances,
-  );
-
-  const db = new Redis(
-    `redis://${options['redis-host']}:${options['redis-port']}`,
   );
 
   const balancesTree = new Tree(balancesView.node);
@@ -210,7 +202,7 @@ let TAKE: number;
               .map(v => convertValidatorToValidatorPoseidonInput(v)),
             ...Array(
               (j + 1) * CIRCUIT_SIZE -
-                Math.min((j + 1) * CIRCUIT_SIZE, validators.length),
+              Math.min((j + 1) * CIRCUIT_SIZE, validators.length),
             ).fill(getZeroValidatorPoseidonInput()),
           ],
           withdrawalCredentials: [
@@ -289,7 +281,8 @@ let TAKE: number;
     validatorsSizeBits: hexToBits(bytesToHex(ssz.UintNum64.hashTreeRoot(TAKE))),
   });
 
-  queues[39].addItem(redis.client, new Item(Buffer.from(new ArrayBuffer(0))));
+  // NOTE: Maybe this is unecessarry
+  queues[38].addItem(redis.client, new Item(Buffer.from(new ArrayBuffer(0))));
 
   console.log(chalk.bold.greenBright('Done'));
 

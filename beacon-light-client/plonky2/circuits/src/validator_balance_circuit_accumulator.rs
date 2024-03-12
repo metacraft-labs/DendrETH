@@ -10,11 +10,9 @@ use plonky2::{
 use crate::{
     biguint::{BigUintTarget, CircuitBuilderBiguint},
     hash_tree_root_poseidon::hash_tree_root_poseidon,
-    is_active_validator::get_validator_status,
     is_valid_merkle_branch::is_valid_merkle_branch_sha256_result,
-    is_valid_merkle_branch_poseidon::is_valid_merkle_branch_poseidon_result,
     targets_serialization::{ReadTargets, WriteTargets},
-    utils::{create_bool_target_array, if_biguint, ssz_num_from_bits, ETH_SHA256_BIT_SIZE},
+    utils::{create_bool_target_array, ETH_SHA256_BIT_SIZE},
     validator_accumulator_commitment_mapper::get_validators_accumulator_leaves,
     validator_hash_tree_root_poseidon::{
         hash_tree_root_validator_poseidon, ValidatorPoseidonHashTreeRootTargets,

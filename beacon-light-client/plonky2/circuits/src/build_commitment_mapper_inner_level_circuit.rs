@@ -68,7 +68,8 @@ pub fn build_commitment_mapper_inner_circuit(
     let mut builder = CircuitBuilder::<F, D>::new(standard_recursion_config);
 
     let verifier_circuit_target = VerifierCircuitTarget {
-        constants_sigmas_cap: builder.constant_merkle_cap(&inner_circuit_data.verifier_only.constants_sigmas_cap),
+        constants_sigmas_cap: builder
+            .constant_merkle_cap(&inner_circuit_data.verifier_only.constants_sigmas_cap),
         circuit_digest: builder.constant_hash(inner_circuit_data.verifier_only.circuit_digest),
     };
 

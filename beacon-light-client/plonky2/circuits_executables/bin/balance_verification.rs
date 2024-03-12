@@ -60,7 +60,7 @@ async fn async_main() -> Result<()> {
 
     let matches = CommandLineOptionsBuilder::new("balance_verification")
         .with_balance_verification_options()
-        .with_redis_options(&common_config)
+        .with_redis_options(&common_config.redis_host, &common_config.redis_port)
         .with_work_queue_options()
         .with_proof_storage_options()
         .get_matches();

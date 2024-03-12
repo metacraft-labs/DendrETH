@@ -52,7 +52,7 @@ let
       rm $out/.gitignore
     '';
     outputHashMode = "recursive";
-    outputHash = "sha512-CZ6kyOFx7qFDu1kYLWYsb8IlIJp0MbUrIgGbXym+YbaWTvMN4Pa+xOXTuLqGb4MMjNSJhWVqaUDMtJzNH9BgRw==";
+    outputHash = "sha512-nyVlGSF/aN/KEbmOdJG7CzdKC74uXcWafuDtJ390xMHA0YUqV7EqVM7IGUY2cS1IHjwLwdseVHWEbAtOmUqD/g==";
   };
 
   # Create a derivation that builds a module in isolation.
@@ -160,11 +160,6 @@ let
         "blake-hash@npm:2.0.0" \
         ${isolated."blake-hash@npm:2.0.0"} \
         ".yarn/unplugged/blake-hash-npm-2.0.0-c63b9a2c2d/node_modules/blake-hash"
-      echo 'injecting build for bcrypt'
-      yarn nixify inject-build \
-        "bcrypt@npm:5.0.1" \
-        ${isolated."bcrypt@npm:5.0.1"} \
-        ".yarn/unplugged/bcrypt-npm-5.0.1-6815be1cfe/node_modules/bcrypt"
       echo 'injecting build for keccak'
       yarn nixify inject-build \
         "keccak@npm:3.0.1" \
@@ -190,6 +185,11 @@ let
         "utf-8-validate@npm:5.0.7" \
         ${isolated."utf-8-validate@npm:5.0.7"} \
         ".yarn/unplugged/utf-8-validate-npm-5.0.7-88d731f8ad/node_modules/utf-8-validate"
+      echo 'injecting build for bcrypt'
+      yarn nixify inject-build \
+        "bcrypt@npm:5.0.1" \
+        ${isolated."bcrypt@npm:5.0.1"} \
+        ".yarn/unplugged/bcrypt-npm-5.0.1-6815be1cfe/node_modules/bcrypt"
       echo 'injecting build for redis-commander'
       yarn nixify inject-build \
         "redis-commander@npm:0.8.0" \
@@ -260,11 +260,11 @@ isolated."bufferutil@npm:4.0.7" = optionalOverride (args.overrideBufferutilAttrs
 isolated."utf-8-validate@npm:5.0.10" = optionalOverride (args.overrideUtf8ValidateAttrs or null) (mkIsolatedBuild { pname = "utf-8-validate"; version = "5.0.10"; reference = "npm:5.0.10"; });
 isolated."msgpackr-extract@npm:3.0.0" = optionalOverride (args.overrideMsgpackrExtractAttrs or null) (mkIsolatedBuild { pname = "msgpackr-extract"; version = "3.0.0"; reference = "npm:3.0.0"; });
 isolated."blake-hash@npm:2.0.0" = optionalOverride (args.overrideBlakeHashAttrs or null) (mkIsolatedBuild { pname = "blake-hash"; version = "2.0.0"; reference = "npm:2.0.0"; });
-isolated."bcrypt@npm:5.0.1" = optionalOverride (args.overrideBcryptAttrs or null) (mkIsolatedBuild { pname = "bcrypt"; version = "5.0.1"; reference = "npm:5.0.1"; });
 isolated."keccak@npm:3.0.1" = optionalOverride (args.overrideKeccakAttrs or null) (mkIsolatedBuild { pname = "keccak"; version = "3.0.1"; reference = "npm:3.0.1"; });
 isolated."bufferutil@npm:4.0.5" = optionalOverride (args.overrideBufferutilAttrs or null) (mkIsolatedBuild { pname = "bufferutil"; version = "4.0.5"; reference = "npm:4.0.5"; });
 isolated."keccak@npm:3.0.2" = optionalOverride (args.overrideKeccakAttrs or null) (mkIsolatedBuild { pname = "keccak"; version = "3.0.2"; reference = "npm:3.0.2"; });
 isolated."leveldown@npm:6.1.0" = optionalOverride (args.overrideLeveldownAttrs or null) (mkIsolatedBuild { pname = "leveldown"; version = "6.1.0"; reference = "npm:6.1.0"; });
 isolated."utf-8-validate@npm:5.0.7" = optionalOverride (args.overrideUtf8ValidateAttrs or null) (mkIsolatedBuild { pname = "utf-8-validate"; version = "5.0.7"; reference = "npm:5.0.7"; });
+isolated."bcrypt@npm:5.0.1" = optionalOverride (args.overrideBcryptAttrs or null) (mkIsolatedBuild { pname = "bcrypt"; version = "5.0.1"; reference = "npm:5.0.1"; });
 isolated."redis-commander@npm:0.8.0" = optionalOverride (args.overrideRedisCommanderAttrs or null) (mkIsolatedBuild { pname = "redis-commander"; version = "0.8.0"; reference = "npm:0.8.0"; });
 in overriddenProject

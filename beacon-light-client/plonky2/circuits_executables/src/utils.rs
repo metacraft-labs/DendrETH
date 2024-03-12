@@ -1,6 +1,7 @@
 use anyhow::Result;
 use clap::{Arg, ArgMatches, Command};
-use std::{collections::HashMap, fs::File, io::Read, time::Duration};
+use serde::Deserialize;
+use std::{fs::File, io::Read, time::Duration};
 
 pub struct BalanceVerificationConfig {
     pub redis_connection: String,
@@ -154,7 +155,7 @@ impl<'a> CommandLineOptionsBuilder<'a> {
         Self { command }
     }
 
-    pub fn with_redis_options(self, config: &HashMap<String, String>) -> Self {
+    pub fn with_redis_options(self, host: &str, port: &str) -> Self {
         let command = self.command.arg(
             Arg::with_name("redis_connection")
                 .short('r')
@@ -162,10 +163,7 @@ impl<'a> CommandLineOptionsBuilder<'a> {
                 .value_name("Redis Connection")
                 .help("Sets a custom Redis connection")
                 .takes_value(true)
-                .default_value(Box::leak(Box::new(format!(
-                    "redis://{}:{}/",
-                    config["redis-host"], config["redis-port"]
-                )))),
+                .default_value(Box::leak(Box::new(format!("redis://{host}:{port}/",)))),
         );
 
         Self { command }
@@ -195,7 +193,14 @@ impl<'a> CommandLineOptionsBuilder<'a> {
     }
 }
 
-pub fn parse_config_file(filepath: String) -> Result<HashMap<String, String>> {
+#[derive(Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct CommonConfigOptions {
+    pub redis_host: String,
+    pub redis_port: String,
+}
+
+pub fn parse_config_file(filepath: String) -> Result<CommonConfigOptions> {
     let mut content = String::new();
     let mut file = File::open(filepath)?;
     file.read_to_string(&mut content)?;

@@ -485,7 +485,13 @@ export class BeaconApi implements IBeaconApi {
     return beaconStateSZZ;
   }
 
-  async getBeaconState(slot: StateId) {
+  async getLastFinalizedCheckpoint(): Promise<bigint> {
+    const reponse = await this.fetchWithFallback('/eth/v1/beacon/states/head/finality_checkpoints');
+    const json = await reponse.json();
+    return BigInt(json.data.finalized.epoch);
+  }
+
+  async getBeaconState(slot: bigint) {
     logger.info('Getting Beacon State..');
 
     const beaconStateSZZ = await this.fetchWithFallback(
