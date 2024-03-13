@@ -96,6 +96,8 @@ let TAKE: number;
     (await beaconApi.getBeaconState(slot)) ||
     panic('Could not fetch beacon state');
 
+  const currentSSZFork = await beaconApi.getCurrentSSZ(slot);
+
   const offset = Number(options['offset']) || 0;
   const take = TAKE !== Infinity ? TAKE + offset : Infinity;
   const validators = beaconState.validators.slice(offset, take);
@@ -104,13 +106,13 @@ let TAKE: number;
 
   TAKE = validators.length;
 
-  const balancesView = ssz.capella.BeaconState.fields.balances.toViewDU(
+  const balancesView = currentSSZFork.BeaconState.fields.balances.toViewDU(
     beaconState.balances,
   );
 
   const balancesTree = new Tree(balancesView.node);
 
-  const balanceZeroIndex = ssz.capella.BeaconState.fields.balances.getPathInfo([
+  const balanceZeroIndex = currentSSZFork.BeaconState.fields.balances.getPathInfo([
     0,
   ]).gindex;
 
@@ -255,13 +257,13 @@ let TAKE: number;
     }
   }
 
-  const beaconStateView = ssz.capella.BeaconState.toViewDU(beaconState);
+  const beaconStateView = currentSSZFork.BeaconState.toViewDU(beaconState);
   const beaconStateTree = new Tree(beaconStateView.node);
 
   console.log(chalk.bold.blue('Adding final proof input...'));
   await redis.saveFinalProofInput({
     stateRoot: hexToBits(
-      bytesToHex(ssz.capella.BeaconState.hashTreeRoot(beaconState)),
+      bytesToHex(currentSSZFork.BeaconState.hashTreeRoot(beaconState)),
     ),
     slot: beaconState.slot.toString(),
     slotBranch: beaconStateTree

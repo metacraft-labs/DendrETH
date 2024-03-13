@@ -27,6 +27,17 @@ use circuits_executables::{
         format_hex, gindex_from_validator_index, parse_config_file, CommandLineOptionsBuilder,
     },
     validator::{ValidatorAccumulatorInput, VALIDATOR_REGISTRY_LIMIT},
+use circuits_executables::crud::get_depth_for_gindex;
+use circuits_executables::{
+    commitment_mapper_task::CommitmentMapperAccumulatorTask,
+    crud::{
+        fetch_accumulator_proofs, fetch_validator_accumulator, fetch_zero_accumulator_proof,
+        load_circuit_data, read_from_file, save_validator_accumulator_proof,
+        save_zero_validator_accumulator_proof, ProofProvider,
+    },
+    provers::handle_commitment_mapper_inner_level_proof,
+    utils::{format_hex, get_depth_for_gindex, gindex_from_validator_index},
+    validator::VALIDATOR_REGISTRY_LIMIT,
     validator_commitment_constants::VALIDATOR_COMMITMENT_CONSTANTS,
 };
 use futures_lite::future;
