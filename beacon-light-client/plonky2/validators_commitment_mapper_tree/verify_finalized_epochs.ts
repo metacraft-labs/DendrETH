@@ -10,7 +10,7 @@ import CONSTANTS from '../constants/validator_commitment_constants.json';
 import { BeaconState } from "@lodestar/types/lib/capella";
 import { sleep } from "../../../libs/typescript/ts-utils/common-utils";
 import yargs from "yargs";
-import { getDepthByGindex } from "./utils";
+import { getDepthByGindex, indexFromGindex } from "./utils";
 
 
 let zeroHashes: string[] = [];
@@ -52,14 +52,12 @@ let zeroHashes: string[] = [];
 })();
 
 async function nodesAreSame(redis: Redis, newValidatorsTree: Tree, gindex: bigint, epoch: bigint): Promise<boolean> {
-  const redisGindex = gindex - 1n; // TODO: Delete this and use gindex when we change the indexing scheme
-
-  const lastChangeEpoch = await redis.getLatestEpoch(`${CONSTANTS.validatorProofKey}:${redisGindex}`, epoch);
-  let node = await redis.get(`${CONSTANTS.validatorProofKey}:${redisGindex}:${lastChangeEpoch}`);
+  const lastChangeEpoch = await redis.getLatestEpoch(`${CONSTANTS.validatorProofKey}:${gindex}`, epoch);
+  let node = await redis.get(`${CONSTANTS.validatorProofKey}:${gindex}:${lastChangeEpoch}`);
 
   const sha256 = (node !== null)
     ? bytesToHex(bitArrayToByteArray(JSON.parse(node).sha256Hash))
-    : zeroHashes[getDepthByGindex(Number(redisGindex))];
+    : zeroHashes[getDepthByGindex(Number(gindex))];
 
   const newNodeSha256 = bytesToHex(newValidatorsTree.getNode(gindex).root);
   return sha256 === newNodeSha256;
@@ -91,7 +89,7 @@ async function getValidatorsDiff(redis: Redis, newBeaconState: BeaconState, epoc
     changedNodes = newChangedNodes;
   }
 
-  const changedValidatorIndices = changedNodes.map(gindex => gindex - 2n ** 40n);
+  const changedValidatorIndices = changedNodes.map(gindex => indexFromGindex(gindex, 40n));
   return changedValidatorIndices.map(index => (
     {
       index: Number(index),
@@ -124,7 +122,7 @@ async function verifyEpoch(api: BeaconApi, redis: Redis, scheduler: CommitmentMa
 
     let storedValidatorsRoot: String | null = null;
     while (storedValidatorsRoot === null) {
-      const latestValidatorsChangedEpoch = await redis.getLatestEpoch(`${CONSTANTS.validatorProofKey}:0`, BigInt(epoch));
+      const latestValidatorsChangedEpoch = await redis.getLatestEpoch(`${CONSTANTS.validatorProofKey}:1`, BigInt(epoch));
       if (latestValidatorsChangedEpoch !== null) {
         storedValidatorsRoot = await redis.getValidatorsRoot(latestValidatorsChangedEpoch);
       }

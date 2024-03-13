@@ -1,18 +1,16 @@
 use anyhow::Result;
 use circuits::{
     build_commitment_mapper_inner_level_circuit::CommitmentMapperInnerCircuitTargets,
-    targets_serialization::ReadTargets, utils::hash_bytes,
-    validator_commitment_mapper::ValidatorCommitmentTargets,
+    targets_serialization::ReadTargets, validator_commitment_mapper::ValidatorCommitmentTargets,
 };
 use circuits_executables::{
     commitment_mapper_task::CommitmentMapperTask,
     crud::{
-        fetch_proofs, fetch_validator, fetch_zero_proof, get_depth_for_gindex, load_circuit_data,
-        read_from_file, save_validator_proof, save_zero_validator_proof, u64_to_ssz_leaf,
-        ProofProvider, ValidatorProof,
+        fetch_proofs, fetch_validator, fetch_zero_proof, load_circuit_data, read_from_file,
+        save_validator_proof, save_zero_validator_proof, ProofProvider, ValidatorProof,
     },
     provers::{handle_commitment_mapper_inner_level_proof, SetPWValues},
-    utils::{gindex_from_validator_index, parse_config_file},
+    utils::{get_depth_for_gindex, gindex_from_validator_index, parse_config_file},
     validator::VALIDATOR_REGISTRY_LIMIT,
     validator_commitment_constants,
 };

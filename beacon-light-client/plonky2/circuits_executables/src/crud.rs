@@ -1,6 +1,7 @@
 use std::{fs, marker::PhantomData, thread, time::Duration};
 
 use crate::{
+    utils::get_depth_for_gindex,
     validator::{
         bool_vec_as_int_vec, bool_vec_as_int_vec_nested, ValidatorAccumulatorInput,
         ValidatorShaInput, VALIDATOR_REGISTRY_LIMIT,
@@ -458,46 +459,32 @@ pub async fn save_validator_proof(
     };
 
     // fetch validators len
-    if gindex == 0 {
-        let length_result: Result<u64, _> = con
-            // NOTE: Vsushtnost mai ne iskame da triem, zashtoto ni trqbva kato
-            // input na casper finality circuit-a
+    if gindex == 1 {
+        let length: u64 = con
             .get_del(format!(
                 "{}:{}",
                 VALIDATOR_COMMITMENT_CONSTANTS.validators_length_key, epoch
             ))
-            .await;
+            .await?;
 
-        match length_result {
-            Ok(length) => {
-                let validators_root_bytes: Vec<u8> = [
-                    &bits_to_bytes(&validator_proof.sha256_hash)[..],
-                    &u64_to_ssz_leaf(length)[..],
-                ]
-                .concat()
-                .try_into()
-                .unwrap();
+        let validators_root_bytes: Vec<u8> = [
+            &bits_to_bytes(&validator_proof.sha256_hash)[..],
+            &u64_to_ssz_leaf(length)[..],
+        ]
+        .concat()
+        .try_into()
+        .unwrap();
 
-                let validators_root = hex::encode(hash_bytes(validators_root_bytes.as_slice()));
-                println!(
-                    "redis root: {}",
-                    hex::encode(bits_to_bytes(&validator_proof.sha256_hash))
-                );
-                println!("validators hash tree root: {}", validators_root);
+        let validators_root = hex::encode(hash_bytes(validators_root_bytes.as_slice()));
 
-                con.set(
-                    format!(
-                        "{}:{}",
-                        VALIDATOR_COMMITMENT_CONSTANTS.validators_root_key, epoch
-                    ),
-                    validators_root,
-                )
-                .await?;
-            }
-            // The validators root has already been saved and the length is deleted
-            Err(_) => {}
-        }
-        // delete the length
+        con.set(
+            format!(
+                "{}:{}",
+                VALIDATOR_COMMITMENT_CONSTANTS.validators_root_key, epoch
+            ),
+            validators_root,
+        )
+        .await?;
     }
 
     save_json_object(
@@ -675,8 +662,8 @@ pub async fn fetch_proofs<
     gindex: u64,
     epoch: u64,
 ) -> Result<(Vec<u8>, Vec<u8>)> {
-    let left_child_gindex = gindex * 2 + 1;
-    let right_child_gindex = gindex * 2 + 2;
+    let left_child_gindex = gindex * 2;
+    let right_child_gindex = gindex * 2 + 1;
 
     let proof1 = fetch_proof::<T>(con, left_child_gindex, epoch).await?;
     let proof2 = fetch_proof::<T>(con, right_child_gindex, epoch).await?;
@@ -689,8 +676,8 @@ pub async fn fetch_accumulator_proofs(
     protocol: String,
     gindex: u64,
 ) -> Result<(Vec<u8>, Vec<u8>)> {
-    let left_child_gindex = gindex * 2 + 1;
-    let right_child_gindex = gindex * 2 + 2;
+    let left_child_gindex = gindex * 2;
+    let right_child_gindex = gindex * 2 + 1;
 
     let proof1 = fetch_proof_accumulator(con, protocol.clone(), left_child_gindex).await?;
     let proof2 = fetch_proof_accumulator(con, protocol.clone(), right_child_gindex).await?;
@@ -867,8 +854,4 @@ pub fn load_circuit_data(
         )
         .unwrap(),
     )
-}
-
-pub fn get_depth_for_gindex(gindex: u64) -> u64 {
-    (gindex + 1).ilog2() as u64
 }

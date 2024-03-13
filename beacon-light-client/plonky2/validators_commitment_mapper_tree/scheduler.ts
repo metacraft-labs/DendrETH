@@ -21,7 +21,6 @@ import {
   gindexFromIndex,
   makeBranchIterator,
 } from './utils';
-import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
 
 enum TaskTag {
   UPDATE_PROOF_NODE = 0,

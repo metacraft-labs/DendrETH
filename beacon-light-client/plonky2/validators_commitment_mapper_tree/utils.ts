@@ -3,15 +3,19 @@ import { Redis as RedisLocal } from '../../../relay/implementations/redis';
 import { Validator, ValidatorShaInput } from '../../../relay/types/types';
 
 export function gindexFromIndex(index: bigint, depth: bigint) {
-  return 2n ** depth - 1n + index;
+  return 2n ** depth + index;
+}
+
+export function indexFromGindex(gindex: bigint, depth: bigint) {
+  return gindex - 2n ** depth;
 }
 
 export function getDepthByGindex(gindex: number): number {
-  return Math.floor(Math.log2(gindex + 1));
+  return Math.floor(Math.log2(gindex));
 }
 
 export function getNthParent(gindex: bigint, n: bigint) {
-  return (gindex - 2n ** n + 1n) / 2n ** n;
+  return gindex / 2n ** n;
 }
 
 export function getParent(gindex: bigint) {
@@ -30,7 +34,7 @@ export function* makeBranchIterator(indices: bigint[], depth: bigint) {
     const newNodesNeedingUpdate = new Set<bigint>();
 
     for (const gindex of nodesNeedingUpdate) {
-      if (gindex !== 0n) {
+      if (gindex !== 1n) {
         newNodesNeedingUpdate.add(getParent(gindex));
       }
     }
@@ -39,8 +43,6 @@ export function* makeBranchIterator(indices: bigint[], depth: bigint) {
     nodesNeedingUpdate = newNodesNeedingUpdate;
   }
 }
-
-type HashAlgorithm = 'sha256' | 'poseidon';
 
 function bitArrayToByteArray(hash: number[]): Uint8Array {
   const result = new Uint8Array(32);
@@ -67,8 +69,8 @@ export async function getCommitmentMapperProof<T extends 'sha256' | 'poseidon'>(
 ): Promise<PoseidonOrSha256<T>> {
   let path: PoseidonOrSha256<T> = [];
 
-  while (gindex !== 0n) {
-    const siblingGindex = gindex % 2n === 0n ? gindex - 1n : gindex + 1n;
+  while (gindex !== 1n) {
+    const siblingGindex = gindex % 2n === 0n ? gindex + 1n : gindex - 1n;
 
     const hash = await redis.extractHashFromCommitmentMapperProof(
       siblingGindex,
@@ -79,7 +81,7 @@ export async function getCommitmentMapperProof<T extends 'sha256' | 'poseidon'>(
       path.push(hash as any);
     }
 
-    gindex = (gindex - 1n) / 2n;
+    gindex = gindex / 2n;
   }
 
   if (hashAlg === 'sha256') {

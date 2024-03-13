@@ -11,6 +11,7 @@ import {
 } from '../types/types';
 import { RedisClientType, createClient } from 'redis';
 import CONSTANTS from '../../beacon-light-client/plonky2/constants/validator_commitment_constants.json';
+import { getDepthByGindex } from '../../beacon-light-client/plonky2/validators_commitment_mapper_tree/utils';
 import chalk from 'chalk';
 import { Redis as RedisClient } from 'ioredis';
 
@@ -117,7 +118,7 @@ export class Redis implements IRedis {
       BigInt(epoch),
     );
     if (latestEpoch === null) {
-      const depth = Math.floor(Math.log2(Number(gindex) + 1));
+      const depth = getDepthByGindex(Number(gindex));
       const result = (await this.client.get(`${CONSTANTS.validatorProofKey}:zeroes:${depth}`));
 
       if (result == null) {
