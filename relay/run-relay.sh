@@ -3,6 +3,8 @@
 ZKEY_B3SUM_SUM='b36a78df185bc2da310ac6cd9451f143fd13461d059369184d93191972850746'
 DAT_B3SUM_SUM='dc18f6de3f7905964f467e3626773e6960199273706c2df63bf5991091a74032'
 source .env
+cd beacon-light-client/solidity/ && yarn hardhat compile
+cd ../..
 process-compose -t=false &
 
 calculate_checksum() {
