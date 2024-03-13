@@ -4,7 +4,8 @@ use plonky2::{field::{goldilocks_field::GoldilocksField, types::PrimeField64}, h
 use poseidon_validator_tree::{
     objects::{Validator, ValidatorPoseidonDataOutput},
     parse_validators::{binary_to_hex, read_validator_data}, 
-    tree::{compute_poseidon_hash_tree_root, compute_validator_poseidon_hash, compute_validators_merkle_proof, return_every_validator_hash, MerkleTree}
+    tree::{combine_two_hash_n_to_hash_no_pad, compute_poseidon_hash_tree_root, compute_validator_poseidon_hash, MerkleTree}, tree_new::compute_merkle_hash_tree_root, 
+    // tree_new::compute_tree_from_leaves
 };
 use serde::Serialize;
 
@@ -27,10 +28,41 @@ fn biguint_to_u64_unsafe(x: BigUint) -> u64 {
 
 }
 
+pub fn prove_validator_membership( // Function is correct
+    mut validator: ValidatorPoseidonDataOutput,
+    validator_index: usize,
+    merkle_hash_tree_root: HashOut<GoldilocksField>,
+    depth: usize) {
+
+        // let gindex = validator_index + 2usize.pow(depth as u32) - 1;
+        let gindex = validator_index;
+        let mut bool_array = [false; 32];
+        let mut hash = validator.validator_poseidon_hash;
+
+        for i in 0..32 {
+            bool_array[i] = (gindex & (1 << i)) != 0;
+        }
+
+        println!("bool_array: {:?}\n", bool_array);
+
+        for idx in 0..depth {
+            println!("CUR_HASH: {:?}\nCUR_PROOF: {:?}\n", hash, validator.validator_poseidon_proof[idx]);
+            if bool_array[idx] == true { // Right
+                hash = combine_two_hash_n_to_hash_no_pad::<GoldilocksField,2>(validator.validator_poseidon_proof[idx],hash);
+            }
+            else { // Left
+                println!("Hi");
+                hash = combine_two_hash_n_to_hash_no_pad::<GoldilocksField,2>(hash,validator.validator_poseidon_proof[idx]);
+            }
+
+        }
+
+        println!("hash: {:?}\nroot: {:?}\n",hash,merkle_hash_tree_root);
+}
+
 pub fn main() {
 
     // Run some tests
-
     const D: usize = 2;
     type F = GoldilocksField;
 
@@ -44,7 +76,7 @@ pub fn main() {
     let mut poseidon_validator_obj_vec = Vec::with_capacity(validators_raw.len());
     let mut validators_hashed: Vec<HashOut<GoldilocksField>> = Vec::with_capacity(validators_raw.len());
 
-    const DEPTH: usize = 2;
+    const DEPTH: usize = 3;
 
     for i in 0..validators_raw.len() {
 
@@ -54,16 +86,22 @@ pub fn main() {
         validators_hashed.push(cur_validator_hash);
     }
 
-    let num_validators = validators_hashed.len();
-    
+    let result = compute_merkle_hash_tree_root(&validators_hashed, DEPTH as u32);
+
+    println!("\n RESULT \n {:?}",result.len());
+    println!("\n RESULT \n {:?}",result);
+
     let merkle_tree = MerkleTree::new::<F, D>(&validators_hashed, DEPTH);
     
+    let num_validators = validators_hashed.len();
+
+    println!("Number of validators: {}\n", num_validators);
     for i in 0..num_validators {
 
         let (_leaf, proof) = 
             merkle_tree.generate_proof::<F, D>(
                 // validators_raw[i].validator_index as usize,
-                i,
+                i+ 1,
                 DEPTH
             ).unwrap();
 
@@ -87,28 +125,70 @@ pub fn main() {
             }
         );
 
-        // TODO: this
-
-        // if not succesfull go from using index to using gindex
-        
     }
 
     let poseidon_hash_tree_root = 
         compute_poseidon_hash_tree_root::<F,D>(2usize.pow(DEPTH as u32), validators_hashed);
 
+    let hash = combine_two_hash_n_to_hash_no_pad::<F,D>(
+        poseidon_validator_obj_vec[0].validator_poseidon_hash,
+        poseidon_validator_obj_vec[1].validator_poseidon_hash,
+    );
+    println!("My Hash: {:?}\nProof Hash: {:?}\n", hash, poseidon_validator_obj_vec[2].validator_poseidon_proof[1]);
+
+    let hash2 = combine_two_hash_n_to_hash_no_pad::<F,D>(
+        poseidon_validator_obj_vec[2].validator_poseidon_hash,
+        poseidon_validator_obj_vec[3].validator_poseidon_hash,
+    );
+    println!("My Hash: {:?}\nProof Hash: {:?}\n", hash2, poseidon_validator_obj_vec[0].validator_poseidon_proof[1]);
+
+    let hash3 = combine_two_hash_n_to_hash_no_pad::<F,D>(
+        hash,
+        hash2,
+    );
+    println!("My Hash: {:?}\nProof Hash: {:?}\n", hash3, poseidon_hash_tree_root);
+
+    
     
 
-    let poseidon_data = PoseidonData {
-        validators: poseidon_validator_obj_vec,
-        poseidon_root: poseidon_hash_tree_root
-    };
+    // let hash = combine_two_hash_n_to_hash_no_pad::<F,D>(
+    //     poseidon_validator_obj_vec[0].validator_poseidon_hash,
+    //     poseidon_validator_obj_vec[0].validator_poseidon_proof[0],
+    // );
+    // println!("My Hash: {:?}\nProof Hash: {:?}\n", hash, poseidon_validator_obj_vec[3].validator_poseidon_proof[1]);
 
-    let mut data_map = HashMap::new();
-    data_map.insert("data", poseidon_data);
+    // let hash2 = combine_two_hash_n_to_hash_no_pad::<F,D>(
+    //     hash,
+    //     poseidon_validator_obj_vec[0].validator_poseidon_proof[1],
+    // );
+    // println!("My Hash: {:?}\nProof Hash: {:?}\n", hash2, poseidon_hash_tree_root);
+
+    // println!("\n\nAnother!\n\n");
+
+    // let hash_final = combine_two_hash_n_to_hash_no_pad::<F,D>(
+    //     poseidon_validator_obj_vec[3].validator_poseidon_proof[1],
+    //     poseidon_validator_obj_vec[0].validator_poseidon_proof[1],
+    // );
+    // println!("Hash Final: {:?}\nProof Hash: {:?}\n\n", hash_final, poseidon_hash_tree_root);
+
+    // prove_validator_membership(
+    //     poseidon_validator_obj_vec[0].clone(),
+    //     0, 
+    //     poseidon_hash_tree_root,
+    //     DEPTH
+    // );
+
+    // let poseidon_data = PoseidonData {
+    //     validators: poseidon_validator_obj_vec,
+    //     poseidon_root: poseidon_hash_tree_root
+    // };
+
+    // let mut data_map = HashMap::new();
+    // data_map.insert("data", poseidon_data);
 
 
-    let json_poseidon_out = serde_json::to_string(&data_map).expect("Failed to serialize");
-    std::fs::write(file_path_attestations_out, json_poseidon_out).expect("Failed to write file");
+    // let json_poseidon_out = serde_json::to_string(&data_map).expect("Failed to serialize");
+    // std::fs::write(file_path_attestations_out, json_poseidon_out).expect("Failed to write file");
 }
 
 pub fn compute_all_validators_tree() { //TODO: All validators from beacon state, not form all attestations
