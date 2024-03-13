@@ -31,7 +31,6 @@ export class CommitmentMapperScheduler {
   private take: number | undefined = undefined;
   private offset: number | undefined = undefined;
   private validators: Validator[] = [];
-  private mock: boolean;
   private ssz: any;
 
   async init(options: any) {
@@ -93,7 +92,7 @@ export class CommitmentMapperScheduler {
 
     await this.syncEpoch(true);
 
-    const eventSource = await this.api.subscribeForEvents([
+    const eventSource = this.api.subscribeForEvents([
       'head',
       'finalized_checkpoint',
     ]);

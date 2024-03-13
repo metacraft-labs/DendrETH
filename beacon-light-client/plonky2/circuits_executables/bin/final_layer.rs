@@ -149,7 +149,7 @@ async fn async_main() -> Result<()> {
     );
 
     let epoch = BigUint::div(final_input_data.slot, 32u32).to_u64().unwrap();
-    let commitment_proof: ValidatorProof = fetch_proof(&mut con, 0, epoch).await?;
+    let commitment_proof: ValidatorProof = fetch_proof(&mut con, 1, epoch).await?;
     let commitment_proof_bytes = proof_storage
         .get_proof(commitment_proof.proof_index)
         .await?;

@@ -56,7 +56,7 @@ function bitArrayToByteArray(hash: number[]): Uint8Array {
 
   const redis = new RedisLocal(options['redis-host'], options['redis-port']);
 
-  const beaconApi = await getBeaconApi([options['beacon-node']]);
+  const beaconApi = await getBeaconApi(options['beacon-node']);
   const epoch = options['epoch']
     ? BigInt(options['epoch'])
     : (await beaconApi.getHeadSlot()) / 32n;

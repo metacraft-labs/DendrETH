@@ -208,7 +208,11 @@ pub fn parse_config_file(filepath: String) -> Result<CommonConfigOptions> {
 }
 
 pub fn gindex_from_validator_index(index: u64, depth: u32) -> u64 {
-    return 2u64.pow(depth) - 1 + index;
+    return 2u64.pow(depth) + index;
+}
+
+pub fn get_depth_for_gindex(gindex: u64) -> u64 {
+    gindex.ilog2() as u64
 }
 
 pub fn format_hex(str: String) -> String {

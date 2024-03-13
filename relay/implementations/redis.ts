@@ -10,6 +10,7 @@ import {
 } from '../types/types';
 import { RedisClientType, createClient } from 'redis';
 import CONSTANTS from '../../beacon-light-client/plonky2/constants/validator_commitment_constants.json';
+import { getDepthByGindex } from '../../beacon-light-client/plonky2/validators_commitment_mapper_tree/utils';
 import { Redis as RedisClient } from 'ioredis';
 import chalk from 'chalk';
 import { splitIntoBatches } from '@dendreth/utils/ts-utils/common-utils';
@@ -129,11 +130,10 @@ export class Redis implements IRedis {
       BigInt(epoch),
     );
     if (latestEpoch === null) {
-      const depth = Math.floor(Math.log2(Number(gindex) + 1));
-      const result = await this.client.get(
-        `${CONSTANTS.validatorProofKey}:zeroes:${depth}`,
-      );
-      if (result === null) {
+      const depth = getDepthByGindex(Number(gindex));
+      const result = (await this.client.get(`${CONSTANTS.validatorProofKey}:zeroes:${depth}`));
+
+      if (result == null) {
         return null;
       }
 
@@ -499,8 +499,11 @@ export class Redis implements IRedis {
       validatorsCommitment: [],
       proofIndex: '',
       balancesHash: [],
-      withdrawalCredentials: '0',
+      withdrawalCredentials: [],
       currentEpoch: '0',
+      numberOfNonActivatedValidators: 0,
+      numberOfActiveValidators: 0,
+      numberOfExitedValidators: 0,
     },
   ): Promise<void> {
     await this.waitForConnection();
