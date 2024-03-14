@@ -1,6 +1,8 @@
 require('dotenv').config();
 
-import 'hardhat-gas-reporter';
+// Disabled due to compatibility issues with pnpapi
+// TODO: Replace with modern alternative
+// import 'hardhat-gas-reporter';
 
 import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-etherscan';
