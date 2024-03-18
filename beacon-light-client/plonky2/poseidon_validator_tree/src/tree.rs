@@ -160,7 +160,7 @@ pub fn compute_validators_merkle_proof<F: RichField + Extendable<D>, const D: us
     Ok(proof)
 }
 
-fn combine_two_hash_n_to_hash_no_pad<F: RichField + Extendable<D>, const D: usize>(
+pub fn combine_two_hash_n_to_hash_no_pad<F: RichField + Extendable<D>, const D: usize>(
     left: HashOut<GoldilocksField>,
     right: HashOut<GoldilocksField>,
 ) -> HashOut<GoldilocksField> {
