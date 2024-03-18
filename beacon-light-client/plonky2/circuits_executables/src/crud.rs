@@ -433,7 +433,6 @@ pub async fn save_json_object<T: Serialize>(
 pub fn u64_to_ssz_leaf(value: u64) -> [u8; 32] {
     let mut ret = vec![0u8; 32];
     ret[0..8].copy_from_slice(value.to_le_bytes().as_slice());
-    println!("ssz leaf: {:?}", hex::encode(&ret));
     ret.try_into().unwrap()
 }
 
@@ -728,7 +727,6 @@ pub async fn fetch_proof_accumulator(
     }
 }
 
-// @TODO: Rename this later
 pub async fn fetch_proof_balances<T: NeedsChange + KeyProvider + DeserializeOwned + Clone>(
     con: &mut Connection,
     level: u64,
@@ -810,7 +808,6 @@ pub async fn fetch_proof_balance<T: NeedsChange + KeyProvider + DeserializeOwned
     }
 }
 
-// @TODO: Rename this later
 pub async fn fetch_proofs_balances<
     T: NeedsChange + KeyProvider + ProofProvider + DeserializeOwned + Clone,
 >(

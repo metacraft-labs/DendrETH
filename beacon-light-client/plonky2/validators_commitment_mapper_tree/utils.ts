@@ -91,6 +91,34 @@ export async function getCommitmentMapperProof<T extends 'sha256' | 'poseidon'>(
   return path;
 }
 
+type Endianness = 'little' | 'big';
+
+export function toLeBytes(num: number, bytesCount: number): Uint8Array {
+  return toBytes(num, bytesCount, 'little');
+}
+
+export function toBeBytes(num: number, bytesCount: number): Uint8Array {
+  return toBytes(num, bytesCount, 'big');
+}
+
+function toBytes(num: number, bytesCount: number, endianness: Endianness): Uint8Array {
+  if (!Number.isSafeInteger(num)) {
+    throw new Error("Number is out of range");
+  }
+
+  const bytes = new Uint8Array(bytesCount);
+  let x = num;
+  for (let i = (bytesCount - 1); i >= 0; i--) {
+    const rightByte = x & 0xff;
+    bytes[i] = rightByte;
+    x = Math.floor(x / 0x100);
+  }
+
+  return (endianness === 'big')
+    ? bytes
+    : bytes.reverse();
+}
+
 export function convertValidatorToProof(
   validator: Validator,
   ssz: any,

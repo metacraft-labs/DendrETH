@@ -30,13 +30,10 @@ import {
   convertValidatorToValidatorPoseidonInput,
   getZeroValidatorPoseidonInput,
 } from './utils';
+import chalk from 'chalk';
 
 const CIRCUIT_SIZE = 2;
-let TAKE: number | undefined;
-
-enum TaskTag {
-  FIRST_LEVEL = 0,
-}
+let TAKE: number
 
 (async () => {
   const { ssz } = await import('@lodestar/types');
@@ -77,14 +74,14 @@ enum TaskTag {
       alias: 'take',
       describe: 'The number of validators to take',
       type: 'number',
-      default: undefined,
+      default: Infinity,
       description: 'Sets the number of validators to take',
     })
     .options('offset', {
       alias: 'offset',
       describe: 'Index offset in the validator set',
       type: 'number',
-      default: undefined,
+      default: 0,
     })
     .options('protocol', {
       alias: 'protocol',
@@ -101,23 +98,31 @@ enum TaskTag {
 
   TAKE = options['take'];
 
-  const first_level_queue = new WorkQueue(
-    new KeyPrefix(`${CONSTANTS.balanceVerificationAccumulatorProofQueue}:0`),
-  );
+  const queues: any[] = [];
+
+  for (let i = 0; i < 38; i++) {
+    queues.push(
+      new WorkQueue(
+        new KeyPrefix(
+          `${CONSTANTS.balanceVerificationQueue}:${i}`,
+        ),
+      ),
+    );
+  }
 
   const beaconApi = new BeaconApi([options['beacon-node']]);
-  const slot =
-    options['slot'] !== undefined
-      ? options['slot']
-      : Number(await beaconApi.getHeadSlot());
+  const slot = 8633088;
+  // const slot =
+  //   options['slot'] !== undefined
+  //     ? options['slot']
+  //     : Number(await beaconApi.getHeadSlot());
 
   const { beaconState } = await beaconApi.getBeaconState(slot);
 
   const offset = Number(options['offset']) || 0;
-  const take = TAKE !== undefined ? TAKE + offset : undefined;
 
-  beaconState.balances = beaconState.balances.slice(offset, take);
-  beaconState.validators = beaconState.validators.slice(offset, take);
+  beaconState.balances = beaconState.balances.slice(offset, offset + TAKE);
+  beaconState.validators = beaconState.validators.slice(offset, offset + TAKE);
 
   let validatorsAccumulator: any[] = JSON.parse(
     readFileSync('validators.json', 'utf-8'),
@@ -129,7 +134,7 @@ enum TaskTag {
   });
 
   // Should be the balances of the validators
-  const balancesView = ssz.capella.BeaconState.fields.balances.toViewDU(
+  const balancesView = ssz.deneb.BeaconState.fields.balances.toViewDU(
     beaconState.balances,
   );
 
@@ -137,7 +142,7 @@ enum TaskTag {
 
   let balancesProofs = validatorsAccumulator.map(v => {
     return balancesTree
-      .getSingleProof(gindexFromIndex(BigInt(v.validator_index), 39n) + 1n)
+      .getSingleProof(gindexFromIndex(BigInt(v.validator_index), 39n))
       .map(bytesToHex)
       .slice(0, 22);
   });
@@ -146,6 +151,9 @@ enum TaskTag {
   let validatorCommitmentRoot = await redis.getValidatorCommitmentRoot(
     computeEpochAt(beaconState.slot),
   );
+  if (validatorCommitmentRoot === null) {
+    throw new Error(`Validator root for epoch ${computeEpochAt(beaconState.slot)} is missing`);
+  }
 
   // load proofs for the validators from redis
   let validatorCommitmentProofs = await Promise.all(
@@ -179,7 +187,7 @@ enum TaskTag {
       validatorCommitmentProofs: [],
       validatorIsNotZero: [],
       validators: [],
-      validatorCommitmentRoot: validatorCommitmentRoot,
+      validatorCommitmentRoot: validatorCommitmentRoot!,
       currentEpoch: computeEpochAt(beaconState.slot),
       currentEth1DepositIndex: beaconState.eth1DepositIndex,
     };
@@ -188,7 +196,7 @@ enum TaskTag {
       if (idx < validatorsAccumulator.length) {
         balancesInput.balances.push(
           bytesToHex(
-            balancesTree.getNode(gindexFromIndex(BigInt(idx), 38n) + 1n).root,
+            balancesTree.getNode(gindexFromIndex(BigInt(idx), 38n)).root, // tva mai e greshno
           ),
         );
         balancesInput.balancesProofs.push(balancesProofs[idx]);
@@ -196,7 +204,7 @@ enum TaskTag {
           validatorsAccumulator[idx].validator_index,
         );
         balancesInput.validatorIndexes.push(
-          Number(gindexFromIndex(BigInt(idx), 22n) + 1n),
+          Number(gindexFromIndex(BigInt(idx), 22n)),
         );
         balancesInput.validators.push(
           convertValidatorToValidatorPoseidonInput(beaconState.validators[idx]),
@@ -223,20 +231,43 @@ enum TaskTag {
     balancesInputs.push(balancesInput);
   }
 
+  // first level tasks
   await redis.saveBalancesAccumulatorInput(balancesInputs, options['protocol']);
-  scheduleFirstLevelTasks(balancesInputs);
+  await redis.saveBalancesAccumulatorProof(options['protocol'], 0n, BigInt(CONSTANTS.validatorRegistryLimit));
+  await scheduleFirstLevelTasks(queues[0], balancesInputs);
+
+  // inner level tasks
+  console.log(chalk.bold.blue('Adding inner proofs...'));
+  for (let level = 1; level < 38; level++) {
+    await redis.saveBalanceProof(
+      BigInt(level),
+      BigInt(CONSTANTS.validatorRegistryLimit),
+    );
+
+    const range = [
+      ...new Array(Math.ceil(TAKE / CIRCUIT_SIZE / 2 ** level)).keys(),
+    ];
+    for (const key of range) {
+      const buffer = new ArrayBuffer(8);
+      const view = new DataView(buffer);
+
+      await redis.saveBalanceProof(BigInt(level), BigInt(key));
+
+      view.setBigUint64(0, BigInt(key), false);
+      await queues[level].addItem(redis.client, new Item(buffer));
+    }
+  }
+
 
   db.quit();
   await redis.disconnect();
 
-  async function scheduleFirstLevelTasks(
-    balancesInputs: BalancesAccumulatorInput[],
-  ) {
+  async function scheduleFirstLevelTasks(queue: any, balancesInputs: BalancesAccumulatorInput[]) {
     for (let i = 0; i < balancesInputs.length; i++) {
       const buffer = new ArrayBuffer(8);
       const dataView = new DataView(buffer);
       dataView.setBigUint64(0, BigInt(i), false);
-      first_level_queue.addItem(db, new Item(buffer));
+      queue.addItem(db, new Item(buffer));
     }
   }
 })();

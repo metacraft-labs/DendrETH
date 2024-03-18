@@ -8,7 +8,7 @@ import { sleep } from '../../../libs/typescript/ts-utils/common-utils';
   const api = new BeaconApi([config['beacon-node']]);
 
   const es = await api.subscribeForEvents(['head', 'chain_reorg']);
-  es.on('head', async event => {
+  es.addEventListener('head', async event => {
     const slot = JSON.parse(event.data)['slot'];
     const beaconStateBytes = await api.getBeaconStateSSZBytes(slot);
     await saveBeaconState(beaconStateBytes, slot);
@@ -18,7 +18,7 @@ import { sleep } from '../../../libs/typescript/ts-utils/common-utils';
       await fsp.unlink(path);
     }
   });
-  es.on('chain_reorg', async event => {
+  es.addEventListener('chain_reorg', async event => {
     console.log('chain reorg happenned')
     console.log(event);
     await sleep(240000);

@@ -1,5 +1,5 @@
 import { splitIntoBatches } from '../../libs/typescript/ts-utils/common-utils';
-import { hexToBytes } from '../../libs/typescript/ts-utils/bls';
+import { bytesToHex, hexToBytes } from '../../libs/typescript/ts-utils/bls';
 import { IRedis } from '../abstraction/redis-interface';
 import {
   BalanceProof,
@@ -11,7 +11,7 @@ import {
 } from '../types/types';
 import { RedisClientType, createClient } from 'redis';
 import CONSTANTS from '../../beacon-light-client/plonky2/constants/validator_commitment_constants.json';
-import { getDepthByGindex } from '../../beacon-light-client/plonky2/validators_commitment_mapper_tree/utils';
+import { getDepthByGindex, toLeBytes } from '../../beacon-light-client/plonky2/validators_commitment_mapper_tree/utils';
 import chalk from 'chalk';
 import { Redis as RedisClient } from 'ioredis';
 
@@ -355,6 +355,28 @@ export class Redis implements IRedis {
     await this.client.mset(...args);
   }
 
+  async saveBalancesAccumulatorProof(
+    protocol: string,
+    level: bigint,
+    index: bigint,
+    proof: BalanceProof = {
+      needsChange: true,
+      rangeTotalValue: '0',
+      validatorsCommitment: [],
+      proof: [],
+      balancesHash: [],
+      withdrawalCredentials: '0',
+      currentEpoch: '0',
+    },
+  ): Promise<void> {
+    await this.waitForConnection();
+
+    await this.client.set(
+      `${CONSTANTS.balanceVerificationAccumulatorProofKey}:${protocol}:${level}:${index}`,
+      JSON.stringify(proof)
+    );
+  }
+
   async saveBalancesAccumulatorInput(
     balancesInputs: BalancesAccumulatorInput[],
     protocol: string,
@@ -516,20 +538,26 @@ export class Redis implements IRedis {
     return JSON.parse(proof);
   }
 
-  /*
-  async getValidatorCommitmentRoot(epoch: number): Promise<string[]> {
+  async getValidatorCommitmentRoot(epoch: number): Promise<string[] | null> {
     await this.waitForConnection();
 
     const latestEpoch = await this.getLatestEpoch(
-      `${CONSTANTS.validatorProofKey}:65535`,
+      `${CONSTANTS.validatorProofKey}:65536`,
       BigInt(epoch),
     );
-    return (await this.client.json_get(
-      `${CONSTANTS.validatorProofKey}:65535:${latestEpoch}`,
-      'poseidonHash',
-    )) as string[];
+
+    if (latestEpoch === null) {
+      return null;
+    }
+
+    const result = await this.client.get(`${CONSTANTS.validatorProofKey}:65536:${latestEpoch}`);
+    if (result === null) {
+      return null;
+    }
+
+    const json = JSON.parse(result);
+    return json.poseidonHash;
   }
-  */
 
   public async setValidatorsLength(epoch: bigint, length: number) {
     await this.waitForConnection();

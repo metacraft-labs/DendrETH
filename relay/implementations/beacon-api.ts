@@ -16,7 +16,6 @@ import { prometheusTiming } from '../../libs/typescript/ts-utils/prometheus-util
 import EventSource from 'eventsource';
 // @ts-ignore
 import { StateId } from '@lodestar/api/beacon/routes/beacon';
-import path from 'path';
 
 const logger = getGenericLogger();
 export class BeaconApi implements IBeaconApi {
@@ -45,11 +44,11 @@ export class BeaconApi implements IBeaconApi {
 
     const { ssz } = await import('@lodestar/types');
 
-    const beaconBlock = ssz.capella.BeaconBlockBody.fromJson(
+    const beaconBlock = ssz.deneb.BeaconBlockBody.fromJson(
       currentBlock.data.message.body,
     );
 
-    const beaconBlockView = ssz.capella.BeaconBlockBody.toViewDU(beaconBlock);
+    const beaconBlockView = ssz.deneb.BeaconBlockBody.toViewDU(beaconBlock);
     let beaconBlockTree = new Tree(beaconBlockView.node);
 
     const beaconBlockHeader = await this.getExistingBlockHeader(slot);
@@ -66,7 +65,7 @@ export class BeaconApi implements IBeaconApi {
 
     const blockNumberProof = beaconBlockTree
       .getSingleProof(
-        ssz.capella.BeaconBlockBody.getPathInfo([
+        ssz.deneb.BeaconBlockBody.getPathInfo([
           'executionPayload',
           'blockNumber',
         ]).gindex,
@@ -75,7 +74,7 @@ export class BeaconApi implements IBeaconApi {
 
     const blockHashProof = beaconBlockTree
       .getSingleProof(
-        ssz.capella.BeaconBlockBody.getPathInfo([
+        ssz.deneb.BeaconBlockBody.getPathInfo([
           'executionPayload',
           'blockHash',
         ]).gindex,
@@ -240,7 +239,7 @@ export class BeaconApi implements IBeaconApi {
 
     const finalityHeaderBranch = prevStateTree
       .getSingleProof(
-        ssz.capella.BeaconState.getPathInfo(['finalized_checkpoint', 'root'])
+        ssz.deneb.BeaconState.getPathInfo(['finalized_checkpoint', 'root'])
           .gindex,
       )
       .map(x => '0x' + bytesToHex(x));
@@ -259,7 +258,7 @@ export class BeaconApi implements IBeaconApi {
 
     const syncCommitteeBranch = prevFinalizedBeaconStateTree
       .getSingleProof(
-        ssz.capella.BeaconState.getPathInfo([
+        ssz.deneb.BeaconState.getPathInfo([
           prevUpdateFinalizedSyncCommmitteePeriod === currentSyncCommitteePeriod
             ? 'current_sync_committee'
             : 'next_sync_committee',
@@ -323,7 +322,7 @@ export class BeaconApi implements IBeaconApi {
 
     const finalityHeaderBranch = stateTree
       .getSingleProof(
-        ssz.capella.BeaconState.getPathInfo(['finalized_checkpoint', 'root'])
+        ssz.deneb.BeaconState.getPathInfo(['finalized_checkpoint', 'root'])
           .gindex,
       )
       .map(x => '0x' + bytesToHex(x));
@@ -341,29 +340,29 @@ export class BeaconApi implements IBeaconApi {
       await this.fetchWithFallback(`/eth/v2/beacon/blocks/${slot}`)
     ).json();
 
-    const finalizedBlockBody = ssz.capella.BeaconBlockBody.fromJson(
+    const finalizedBlockBody = ssz.deneb.BeaconBlockBody.fromJson(
       finalizedBlockBodyResult.data.message.body,
     );
 
     const finalizedBlockBodyView =
-      ssz.capella.BeaconBlockBody.toViewDU(finalizedBlockBody);
+      ssz.deneb.BeaconBlockBody.toViewDU(finalizedBlockBody);
     const finalizedBlockBodyTree = new Tree(finalizedBlockBodyView.node);
 
     const executionPayloadBranch = finalizedBlockBodyTree
       .getSingleProof(
-        ssz.capella.BeaconBlockBody.getPathInfo(['execution_payload']).gindex,
+        ssz.deneb.BeaconBlockBody.getPathInfo(['execution_payload']).gindex,
       )
       .map(x => '0x' + bytesToHex(x));
 
     const executionPayloadHeader = finalizedBlockBody.executionPayload;
 
     (executionPayloadHeader as any as ExecutionPayloadHeader).withdrawalsRoot =
-      ssz.capella.ExecutionPayload.fields.withdrawals.hashTreeRoot(
+      ssz.deneb.ExecutionPayload.fields.withdrawals.hashTreeRoot(
         executionPayloadHeader.withdrawals,
       );
 
     (executionPayloadHeader as any as ExecutionPayloadHeader).transactionsRoot =
-      ssz.capella.ExecutionPayload.fields.transactions.hashTreeRoot(
+      ssz.deneb.ExecutionPayload.fields.transactions.hashTreeRoot(
         executionPayloadHeader.transactions,
       );
 
@@ -499,9 +498,9 @@ export class BeaconApi implements IBeaconApi {
       .then(response => response.arrayBuffer())
       .then(buffer => new Uint8Array(buffer));
 
-    const beaconState = ssz.capella.BeaconState.deserialize(beaconStateSZZ);
+    const beaconState = ssz.deneb.BeaconState.deserialize(beaconStateSZZ);
 
-    const beaconStateView = ssz.capella.BeaconState.toViewDU(beaconState);
+    const beaconStateView = ssz.deneb.BeaconState.toViewDU(beaconState);
     const stateTree = new Tree(beaconStateView.node);
 
     logger.info('Got Beacon State');

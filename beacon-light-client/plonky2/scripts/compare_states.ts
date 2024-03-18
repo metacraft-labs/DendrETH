@@ -29,8 +29,8 @@ import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
     return hasChanged;
   });
   console.log(changedValidatorIndices);
-  const beforeHash = bytesToHex(ssz.capella.BeaconState.hashTreeRoot(storedState));
-  const afterHash = bytesToHex(ssz.capella.BeaconState.hashTreeRoot(beaconState));
+  const beforeHash = bytesToHex(ssz.deneb.BeaconState.hashTreeRoot(storedState));
+  const afterHash = bytesToHex(ssz.deneb.BeaconState.hashTreeRoot(beaconState));
   console.log(beforeHash);
   console.log(afterHash);
   console.log(changedValidators);
@@ -39,7 +39,7 @@ import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
 async function loadBeaconState(path: string) {
   const { ssz } = await import('@lodestar/types');
   const bytes = await fsp.readFile(path);
-  const beaconState = ssz.capella.BeaconState.deserialize(bytes);
+  const beaconState = ssz.deneb.BeaconState.deserialize(bytes);
   return beaconState;
 }
 

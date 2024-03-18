@@ -7,11 +7,11 @@ import { CommitmentMapperScheduler } from "./scheduler";
 import { Tree, zeroNode } from '@chainsafe/persistent-merkle-tree';
 import CONSTANTS from '../constants/validator_commitment_constants.json';
 // @ts-ignore
-import { BeaconState } from "@lodestar/types/lib/capella";
+import { BeaconState } from "@lodestar/types/lib/deneb";
 import { sleep } from "../../../libs/typescript/ts-utils/common-utils";
 import yargs from "yargs";
 import { getDepthByGindex, indexFromGindex } from "./utils";
-
+import chalk from "chalk";
 
 let zeroHashes: string[] = [];
 
@@ -33,7 +33,7 @@ let zeroHashes: string[] = [];
   let lastFinalizedCheckpoint = await api.getLastFinalizedCheckpoint();
   let lastVerifiedEpoch = BigInt((await redis.get(CONSTANTS.lastFinalizedEpochLookupKey))!);
 
-  eventSource.on('finalized_checkpoint', async (event: any) => {
+  eventSource.addEventListener('finalized_checkpoint', async (event: any) => {
     lastFinalizedCheckpoint = BigInt(JSON.parse(event.data).epoch);
   });
 
@@ -44,10 +44,14 @@ let zeroHashes: string[] = [];
 
   while (true) {
     while (lastVerifiedEpoch < lastProcessedEpoch && lastVerifiedEpoch < lastFinalizedCheckpoint) {
-      ++lastVerifiedEpoch;
-      await verifyEpoch(api, redis, scheduler, lastVerifiedEpoch, options['take']);
+      const verified = await verifyEpoch(api, redis, scheduler, lastVerifiedEpoch + 1n, options['take']);
+      if (verified) {
+        ++lastVerifiedEpoch;
+      } else {
+        break;
+      }
     }
-    await sleep(1000);
+    await sleep(10000);
   }
 })();
 
@@ -66,7 +70,7 @@ async function nodesAreSame(redis: Redis, newValidatorsTree: Tree, gindex: bigin
 
 async function getValidatorsDiff(redis: Redis, newBeaconState: BeaconState, epoch: bigint): Promise<IndexedValidator[]> {
   const { ssz } = await import('@lodestar/types');
-  const validatorsViewDU = ssz.capella.BeaconState.fields.validators.toViewDU(newBeaconState.validators);
+  const validatorsViewDU = ssz.deneb.BeaconState.fields.validators.toViewDU(newBeaconState.validators);
   const newValidatorsTree = new Tree(validatorsViewDU.node.left);
 
   // The roots are the same
@@ -111,14 +115,15 @@ function bitArrayToByteArray(hash: number[]): Uint8Array {
   return result;
 }
 
-async function verifyEpoch(api: BeaconApi, redis: Redis, scheduler: CommitmentMapperScheduler, epoch: bigint, take: number | undefined = undefined) {
-  console.log(`Verifying epoch: ${epoch}`)
+/// Returns true on sucessfully verified epoch
+async function verifyEpoch(api: BeaconApi, redis: Redis, scheduler: CommitmentMapperScheduler, epoch: bigint, take: number | undefined = undefined): Promise<boolean> {
+  console.log(chalk.bold.blue(`Verifying epoch: ${chalk.bold.cyan(epoch.toString())}`))
   const { ssz } = await import('@lodestar/types');
   try {
     const slot = await api.getFirstNonMissingSlotInEpoch(Number(epoch));
     const { beaconState } = await api.getBeaconState(slot);
     beaconState.validators = beaconState.validators.slice(0, take);
-    const validatorsRoot = bytesToHex(ssz.capella.BeaconState.fields.validators.hashTreeRoot(beaconState.validators));
+    const validatorsRoot = bytesToHex(ssz.deneb.BeaconState.fields.validators.hashTreeRoot(beaconState.validators));
 
     let storedValidatorsRoot: String | null = null;
     while (storedValidatorsRoot === null) {
@@ -130,7 +135,7 @@ async function verifyEpoch(api: BeaconApi, redis: Redis, scheduler: CommitmentMa
     }
 
     if (validatorsRoot !== storedValidatorsRoot) {
-      console.log(`Validators roots for epoch ${epoch} differ: expected "${validatorsRoot}", got "${storedValidatorsRoot}"`);
+      console.log(chalk.bold.red(`Validators roots for epoch ${epoch} differ: expected "${validatorsRoot}", got "${storedValidatorsRoot}"`));
       // reschedule tasks for epoch
       await redis.updateCommitmentMapperSlot(epoch, BigInt(slot));
       const changedValidators = await getValidatorsDiff(redis, beaconState, BigInt(epoch));
@@ -142,5 +147,7 @@ async function verifyEpoch(api: BeaconApi, redis: Redis, scheduler: CommitmentMa
     await redis.set(CONSTANTS.lastFinalizedEpochLookupKey, epoch.toString());
   } catch (error) {
     console.error(error);
+    return false;
   }
+  return true;
 }

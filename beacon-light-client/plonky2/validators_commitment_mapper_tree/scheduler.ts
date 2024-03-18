@@ -100,11 +100,11 @@ export class CommitmentMapperScheduler {
     await this.syncEpoch(true);
 
     const eventSource = await this.api.subscribeForEvents(['head', 'finalized_checkpoint']);
-    eventSource.on('head', async (event: any) => {
+    eventSource.addEventListener('head', async (event: any) => {
       this.headEpoch = BigInt(JSON.parse(event.data).slot) / 32n;
       await this.syncEpoch(false);
     });
-    eventSource.on('finalized_checkpoint', (event: any) => {
+    eventSource.addEventListener('finalized_checkpoint', (event: any) => {
       this.lastFinalizedEpoch = BigInt(JSON.parse(event.data).epoch);
     });
   }

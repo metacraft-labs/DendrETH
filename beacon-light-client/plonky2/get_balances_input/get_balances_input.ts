@@ -110,7 +110,7 @@ let TAKE: number | undefined;
 
   TAKE = validators.length;
 
-  const balancesView = ssz.capella.BeaconState.fields.balances.toViewDU(
+  const balancesView = ssz.deneb.BeaconState.fields.balances.toViewDU(
     beaconState.balances,
   );
 
@@ -120,7 +120,7 @@ let TAKE: number | undefined;
 
   const balancesTree = new Tree(balancesView.node);
 
-  const balanceZeroIndex = ssz.capella.BeaconState.fields.balances.getPathInfo([
+  const balanceZeroIndex = ssz.deneb.BeaconState.fields.balances.getPathInfo([
     0,
   ]).gindex;
 
@@ -212,7 +212,7 @@ let TAKE: number | undefined;
               .map(v => convertValidatorToValidatorPoseidonInput(v)),
             ...Array(
               (j + 1) * CIRCUIT_SIZE -
-                Math.min((j + 1) * CIRCUIT_SIZE, validators.length),
+              Math.min((j + 1) * CIRCUIT_SIZE, validators.length),
             ).fill(getZeroValidatorPoseidonInput()),
           ],
           withdrawalCredentials: [
@@ -265,13 +265,13 @@ let TAKE: number | undefined;
     }
   }
 
-  const beaconStateView = ssz.capella.BeaconState.toViewDU(beaconState);
+  const beaconStateView = ssz.deneb.BeaconState.toViewDU(beaconState);
   const beaconStateTree = new Tree(beaconStateView.node);
 
   console.log(chalk.bold.blue('Adding final proof input...'));
   await redis.saveFinalProofInput({
     stateRoot: hexToBits(
-      bytesToHex(ssz.capella.BeaconState.hashTreeRoot(beaconState)),
+      bytesToHex(ssz.deneb.BeaconState.hashTreeRoot(beaconState)),
     ),
     slot: beaconState.slot.toString(),
     slotBranch: beaconStateTree

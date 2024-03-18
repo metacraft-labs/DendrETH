@@ -18,7 +18,7 @@ import { bytesToHex } from "../../../libs/typescript/ts-utils/bls";
   const api = new BeaconApi([config['beacon-node']]);
   const { beaconState } = await api.getBeaconState(slot);
   beaconState.validators = beaconState.validators.slice(offset, offset + take);
-  const hash = ssz.capella.BeaconState.fields.validators.hashTreeRoot(beaconState.validators);
+  const hash = ssz.deneb.BeaconState.fields.validators.hashTreeRoot(beaconState.validators);
   console.log(bytesToHex(hash));
   console.log(beaconState.validators.map(validator => bytesToHex(validator.pubkey)));
 })();
