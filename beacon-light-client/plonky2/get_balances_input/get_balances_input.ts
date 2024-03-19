@@ -83,7 +83,7 @@ let TAKE;
 
   const beaconApi = new BeaconApi([options['beacon-node']]);
 
-  const { beaconState } = await beaconApi.getBeaconState(6953401);
+  const { beaconState } = await beaconApi.getBeaconState();
 
   const validators = beaconState.validators.slice(0, TAKE);
   TAKE = validators.length;
@@ -91,13 +91,13 @@ let TAKE;
   beaconState.validators = validators;
   beaconState.balances = beaconState.balances.slice(0, TAKE);
 
-  const balancesView = ssz.capella.BeaconState.fields.balances.toViewDU(
+  const balancesView = ssz.deneb.BeaconState.fields.balances.toViewDU(
     beaconState.balances,
   );
 
   const balancesTree = new Tree(balancesView.node);
 
-  const balanceZeroIndex = ssz.capella.BeaconState.fields.balances.getPathInfo([
+  const balanceZeroIndex = ssz.deneb.BeaconState.fields.balances.getPathInfo([
     0,
   ]).gindex;
 
@@ -251,12 +251,12 @@ let TAKE;
     }
   }
 
-  const beaconStateView = ssz.capella.BeaconState.toViewDU(beaconState);
+  const beaconStateView = ssz.deneb.BeaconState.toViewDU(beaconState);
   const beaconStateTree = new Tree(beaconStateView.node);
 
   await redis.saveFinalProofInput({
     stateRoot: hexToBits(
-      bytesToHex(ssz.capella.BeaconState.hashTreeRoot(beaconState)),
+      bytesToHex(ssz.deneb.BeaconState.hashTreeRoot(beaconState)),
     ),
     slot: beaconState.slot.toString(),
     slotBranch: beaconStateTree

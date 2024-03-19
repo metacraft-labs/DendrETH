@@ -115,6 +115,10 @@ task('balance-verifier-publisher', 'Run relayer')
         (await redis.get('final_layer_proof'))!,
       );
 
+      let final_layer_proof_input = JSON.parse(
+        (await redis.get('final_proof_input'))!,
+      );
+
       let balance_wrapper_proof_with_public_inputs =
         await redis.getBalanceWrapperProofWithPublicInputs();
       let balance_wrapper_verifier_only =
@@ -167,6 +171,7 @@ task('balance-verifier-publisher', 'Run relayer')
         'verify',
         [
           proof,
+          final_layer_proof_input.slot,
           stateRoot,
           balanceSum,
           numberOfNonActivatedValidators,
@@ -175,7 +180,7 @@ task('balance-verifier-publisher', 'Run relayer')
         ],
         web3,
         args.transactionspeed,
-        true
+        true,
       );
     });
 

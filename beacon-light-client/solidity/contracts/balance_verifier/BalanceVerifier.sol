@@ -2,28 +2,39 @@
 pragma solidity ^0.8.19;
 
 import './verifier.sol';
+import './LidoZKOracle.sol';
 
-contract BalanceVerifier is PlonkVerifier {
-  uint256 public constant VERIFIER_DIGEST =
-    12132998113779983235430917548537520464854579851393401583800381700464695543790;
-  bytes32 public constant WITHDRAWAL_CREDENTIALS =
-    0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b;
+contract BalanceVerifier is PlonkVerifier, LidoZKOracle {
+  uint256 public immutable VERIFIER_DIGEST;
+  bytes32 public immutable WITHDRAWAL_CREDENTIALS;
+
+  mapping(uint256 => bytes32) public stateRoots;
+  mapping(uint256 => uint256) public balanceSums;
+  mapping(uint256 => uint256) public numberOfNonActivatedValidators;
+  mapping(uint256 => uint256) public numberOfActiveValidators;
+  mapping(uint256 => uint256) public numberOfExitedValidators;
+
+  constructor(uint256 verifier_digest, bytes32 withdrawal_credentials) {
+    VERIFIER_DIGEST = verifier_digest;
+    WITHDRAWAL_CREDENTIALS = withdrawal_credentials;
+  }
 
   function verify(
     bytes calldata proof,
-    bytes32 state_root,
-    uint64 balance_sum,
-    uint64 number_of_non_activated_validators,
-    uint64 number_of_active_validators,
-    uint64 number_of_exited_validators
+    uint256 refSlot,
+    bytes32 stateRoot,
+    uint64 balanceSum,
+    uint64 _numberOfNonActivatedValidators,
+    uint64 _numberOfActiveValidators,
+    uint64 _numberOfExitedValidators
   ) public {
     bytes memory concataneted = abi.encodePacked(
-      state_root,
+      stateRoot,
       WITHDRAWAL_CREDENTIALS,
-      balance_sum,
-      number_of_non_activated_validators,
-      number_of_active_validators,
-      number_of_exited_validators
+      balanceSum,
+      _numberOfNonActivatedValidators,
+      _numberOfActiveValidators,
+      _numberOfExitedValidators
     );
 
     bytes32 commitment = sha256(concataneted);
@@ -48,5 +59,32 @@ contract BalanceVerifier is PlonkVerifier {
     bool verificationResult = abi.decode(returnData, (bool));
 
     require(verificationResult, 'Verification failed');
+
+    stateRoots[refSlot] = stateRoot;
+    balanceSums[refSlot] = balanceSum;
+    numberOfNonActivatedValidators[refSlot] = _numberOfNonActivatedValidators;
+    numberOfActiveValidators[refSlot] = _numberOfActiveValidators;
+    numberOfExitedValidators[refSlot] = _numberOfExitedValidators;
+  }
+
+  function getReport(
+    uint256 refSlot
+  )
+    external
+    view
+    override
+    returns (
+      bool success,
+      uint256 clBalanceGwei,
+      uint256 numValidators,
+      uint256 exitedValidators
+    )
+  {
+    return (
+      true,
+      balanceSums[refSlot],
+      numberOfActiveValidators[refSlot],
+      numberOfExitedValidators[refSlot]
+    );
   }
 }

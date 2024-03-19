@@ -177,8 +177,6 @@ func (handler GenerateProofHandler) ServeHTTP(res http.ResponseWriter, req *http
 		PublicInputHash: publicInputHash,
 	}
 
-	log := logger.Logger()
-
 	log.Debug().Msg("Generating witness")
 	witness, err := frontend.NewWitness(&assignment, ecc.BN254.ScalarField())
 	if err != nil {
