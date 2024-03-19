@@ -1,9 +1,25 @@
 use std::collections::HashMap;
 
-use crate::tree::combine_two_hash_n_to_hash_no_pad;
+use crate::{objects::Validator, parse_validators::read_validator_data, tree::combine_two_hash_n_to_hash_no_pad};
+use num_bigint::BigUint;
 use plonky2::{field::{goldilocks_field::GoldilocksField, types::Field}, hash::{hash_types::HashOut, hashing::hash_n_to_hash_no_pad, poseidon::PoseidonPermutation}};
 
-pub const MAX_DEPTH: usize = 3;
+pub const MAX_DEPTH: usize = 40;
+
+pub fn load_validator_data(file_path: &str) -> (Vec<Validator>,Vec<HashOut<GoldilocksField>>) {
+    let  validators_raw: Vec<Validator> = read_validator_data(file_path);
+
+    let mut validators_hashed: Vec<HashOut<GoldilocksField>> = Vec::with_capacity(validators_raw.len());
+
+    for i in 0..validators_raw.len() {
+        let cur_validator_hash = 
+            compute_validator_poseidon_hash(validators_raw[i].clone());
+
+        validators_hashed.push(cur_validator_hash);
+    }
+
+    (validators_raw, validators_hashed)
+}
 
 pub fn gindex_from_validator_index(index: u64, depth: u32) -> u64 {
     return 2u64.pow(depth - 1) - 1 + index;
@@ -27,23 +43,104 @@ pub fn zero_hashes() -> Vec<HashOut<GoldilocksField>> {
     hashes
 }
 
+fn hash_bits_arr_in_goldilocks_to_hash_no_pad(
+    validator_data: &[bool],
+) -> HashOut<GoldilocksField> {
+    let validator_data_in_goldilocks: Vec<GoldilocksField> = validator_data
+        .iter()
+        .map(|x| GoldilocksField::from_bool(*x))
+        .collect();
+
+    hash_n_to_hash_no_pad::<GoldilocksField, PoseidonPermutation<GoldilocksField>>(
+        validator_data_in_goldilocks.as_slice(),
+    )
+}
+
+fn hash_biguint_in_goldilocks_to_hash_no_pad(
+    validator_data: BigUint,
+) -> HashOut<GoldilocksField> {
+    let mut validator_data_in_goldilocks = validator_data.to_u32_digits();
+    assert!(validator_data_in_goldilocks.len() <= 2);
+    validator_data_in_goldilocks.resize(2, 0);
+    hash_n_to_hash_no_pad::<GoldilocksField, PoseidonPermutation<GoldilocksField>>(&[
+        GoldilocksField::from_canonical_u32(validator_data_in_goldilocks[0]),
+        GoldilocksField::from_canonical_u32(validator_data_in_goldilocks[1]),
+    ])
+}
+
+pub fn compute_poseidon_hash_tree_root(
+    leaves_len: usize,
+    leaves: Vec<HashOut<GoldilocksField>>,
+) -> HashOut<GoldilocksField> {
+    let mut hashers: Vec<HashOut<GoldilocksField>> = Vec::new();
+    for i in 0..(leaves_len / 2) {
+        let goldilocks_leaves = leaves[i * 2]
+            .elements
+            .iter()
+            .copied()
+            .chain(leaves[i * 2 + 1].elements.iter().copied())
+            .into_iter();
+        let goldilocks_leaves_collected: Vec<GoldilocksField> = goldilocks_leaves.collect();
+        hashers.push(hash_n_to_hash_no_pad::<
+            GoldilocksField,
+            PoseidonPermutation<GoldilocksField>,
+        >(&goldilocks_leaves_collected));
+    }
+
+    let mut k = 0;
+    for _ in leaves_len / 2..leaves_len - 1 {
+        let goldilocks_leaves = hashers[k * 2]
+            .elements
+            .iter()
+            .copied()
+            .chain(hashers[k * 2 + 1].elements.iter().copied());
+        let goldilocks_leaves_collected: Vec<GoldilocksField> = goldilocks_leaves.collect();
+        hashers.push(hash_n_to_hash_no_pad::<
+            GoldilocksField,
+            PoseidonPermutation<GoldilocksField>,
+        >(&goldilocks_leaves_collected));
+
+        k += 1;
+    }
+
+    hashers[leaves_len - 2]
+}
+
+pub fn compute_validator_poseidon_hash(
+    validator: Validator,
+) -> HashOut<GoldilocksField> {
+    let leaves = vec![
+        hash_bits_arr_in_goldilocks_to_hash_no_pad(&validator.pubkey),
+        hash_bits_arr_in_goldilocks_to_hash_no_pad(&validator.withdrawal_credentials),
+        hash_biguint_in_goldilocks_to_hash_no_pad(validator.effective_balance.clone()),
+        hash_n_to_hash_no_pad::<GoldilocksField, PoseidonPermutation<GoldilocksField>>(&[
+            GoldilocksField::from_bool(validator.slashed),
+        ]),
+        hash_biguint_in_goldilocks_to_hash_no_pad(
+            validator.activation_eligibility_epoch.clone(),
+        ),
+        hash_biguint_in_goldilocks_to_hash_no_pad(validator.activation_epoch.clone()),
+        hash_biguint_in_goldilocks_to_hash_no_pad(validator.exit_epoch.clone()),
+        hash_biguint_in_goldilocks_to_hash_no_pad(validator.withdrawable_epoch.clone()),
+    ];
+    let poseidon_hash_tree_root =
+        compute_poseidon_hash_tree_root(leaves.len(), leaves.clone());
+
+    poseidon_hash_tree_root
+}
 
 pub fn compute_merkle_hash_tree(
     leaves: &[HashOut<GoldilocksField>],
-    leave_indices: &[usize],
 ) -> HashMap<u64, HashOut<GoldilocksField>>
 {    
-    assert!(leave_indices.len() == leaves.len());
-
     let zero_hashes = zero_hashes();
     let mut validator_map = HashMap::new();
 
     for i in 0..leaves.len() {
-        validator_map.insert(gindex_from_validator_index(leave_indices[i] as u64, MAX_DEPTH as u32), leaves[i]);
+        validator_map.insert(gindex_from_validator_index(i as u64, MAX_DEPTH as u32), leaves[i]);
     }
 
     for cur_depth in (0..MAX_DEPTH).rev() {        
-        println!("Cur. Depth: {}", cur_depth);
         compute_hashes_at_depth(
             cur_depth as u32,
             &mut validator_map,
@@ -131,13 +228,13 @@ pub fn prove_validator_membership(
     validator_hash: HashOut<GoldilocksField>,
     validator_proof: Vec<HashOut<GoldilocksField>>,
     merkle_tree_root: HashOut<GoldilocksField>,
-    validator_gindex: usize
+    validator_index: usize
 ) {
     let mut path = [false; MAX_DEPTH - 1];
     let mut hash = validator_hash;
 
     for i in 0..(MAX_DEPTH - 1) {
-        path[i] = (validator_gindex & (1 << i)) == 0;
+        path[i] = (validator_index & (1 << i)) == 0;
     }
 
     for idx in 0..(MAX_DEPTH - 1) {
@@ -161,25 +258,105 @@ pub fn prove_validator_membership(
 
 #[cfg(test)]
 mod tests {
-    use num_bigint::BigUint;
-    use plonky2::field::goldilocks_field::GoldilocksField;
+    use plonky2::{field::goldilocks_field::GoldilocksField, hash::hash_types::HashOut};
 
-    use crate::objects::Validator;
+    use crate::{tree::combine_two_hash_n_to_hash_no_pad, tree_new::{compute_merkle_hash_tree, get_validator_proof, gindex_from_validator_index, load_validator_data, prove_validator_membership, MAX_DEPTH}};
 
-    const D: usize = 2;
-    type F = GoldilocksField;
+    use super::zero_hashes;
 
-    const file_path_attestations: &str = 
+    const FILE_PATH_TOY_DATA: &str = 
         "/home/stefan/code/repos/metacraft-labs/DendrETH/casper-finality-proofs/data/poseidon_toy_data.json";
 
-    const validators_raw: Vec<Validator> = read_validator_data(file_path_attestations);
-
-    // let mut poseidon_validator_obj_vec = Vec::with_capacity(validators_raw.len());
-    let mut validators_hashed: Vec<HashOut<GoldilocksField>> = Vec::with_capacity(validators_raw.len());
-
     #[test]
-    fn test_1() {
+    fn test_leftmost() {
+        // Change MAX_DEPTH constant = 3
 
+        let (_, validators_hashed) = load_validator_data(FILE_PATH_TOY_DATA);
+
+        let mut validator_map = compute_merkle_hash_tree(
+            &validators_hashed, 
+        );
+    
+        let validator_gindex = gindex_from_validator_index(0, MAX_DEPTH as u32);
+        let proof = get_validator_proof(validator_gindex, &mut validator_map);
+    
+        let hash = combine_two_hash_n_to_hash_no_pad::<GoldilocksField, 2>(
+            validators_hashed[0],
+            proof[0]
+        );
+    
+        let hash2 = combine_two_hash_n_to_hash_no_pad::<GoldilocksField, 2>(
+            hash,
+            proof[1]
+        );
+        println!("Manualy Computed Root: {:?}\nGiven Root: {:?}\n", hash2, validator_map[&0]);
+        assert!(hash2 == validator_map[&0]);
+    
+        prove_validator_membership(
+            validators_hashed[0],
+            proof.clone(),
+            validator_map[&0],
+            0,
+        );
     }
 
+    #[test]
+    fn test_with_missing_hash() {
+        // Change MAX_DEPTH constant = 3
+
+        let (_, validators_hashed) = load_validator_data(FILE_PATH_TOY_DATA);
+
+        let zeroes = zero_hashes();
+
+        let mut validators_with_missing: Vec<HashOut<GoldilocksField>> = 
+            validators_hashed;
+
+        validators_with_missing[3] = zeroes[0];
+
+        let validator_map = compute_merkle_hash_tree(
+            &validators_with_missing, 
+        );
+    
+        for i in 0..validators_with_missing.len(){
+    
+            let validator_gindex = gindex_from_validator_index(i as u64, MAX_DEPTH as u32);
+            let proof = get_validator_proof(validator_gindex, &validator_map);
+            println!("\nValidator-{} proof: {:?}", i,proof);
+    
+            prove_validator_membership(
+                validators_with_missing[i],
+                proof.clone(),
+                validator_map[&0],
+                i,
+            );
+            println!("Proof for validator-{} passed!",i);
+        }
+    }
+
+    #[test]
+    fn test_with_depth_40() {
+        // set MAX_DEPTH = 40
+        
+        let (_, validators_hashed) = load_validator_data(FILE_PATH_TOY_DATA);
+
+        let validator_map = compute_merkle_hash_tree(
+            &validators_hashed, 
+        );
+    
+        for i in 0..validators_hashed.len(){
+    
+            let validator_gindex = gindex_from_validator_index(i as u64, MAX_DEPTH as u32);
+            let proof = get_validator_proof(validator_gindex, &validator_map);
+            println!("\nValidator-{} proof: {:?}", i,proof);
+            println!("Proof Len. {}",proof.len());
+            prove_validator_membership(
+                validators_hashed[i],
+                proof.clone(),
+                validator_map[&0],
+                i,
+            );
+            println!("Proof for validator-{} passed!", i);
+        }
+    }
+    
 }
