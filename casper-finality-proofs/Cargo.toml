@@ -51,7 +51,7 @@ path = "bin/sequential_verification.rs"
 
 [[bin]]
 name = "poseidon_merkle_tree"
-path = "poseidon_merkle_tree.rs"
+path = "bin/poseidon_merkle_tree.rs"
 
 [dependencies]
 plonky2 = { git = "https://github.com/mir-protocol/plonky2.git", default-features = false, rev = "2d36559d" }

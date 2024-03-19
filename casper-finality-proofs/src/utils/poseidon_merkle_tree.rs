@@ -3,12 +3,14 @@ use std::collections::HashMap;
 use num_bigint::BigUint;
 use plonky2::{field::{extension::Extendable, goldilocks_field::GoldilocksField, types::Field}, hash::{hash_types::{HashOut, RichField}, hashing::hash_n_to_hash_no_pad, poseidon::PoseidonPermutation}, plonk::config::GenericHashOut};
 
-use super::poseidon_merkle_tree_helpers::{read_validator_data, Validator};
+use super::poseidon_helpers::{read_validator_data, Validator};
 
-pub const MAX_DEPTH: usize = 40;
+pub const MAX_DEPTH: usize = 41;
 
-pub fn load_validator_data(file_path: &str) -> (Vec<Validator>,Vec<HashOut<GoldilocksField>>) {
+pub fn parse_validator_data(file_path: &str) -> (Vec<Validator>,Vec<HashOut<GoldilocksField>>) {
     let  validators_raw: Vec<Validator> = read_validator_data(file_path);
+
+    println!("Total number of validators - {}", validators_raw.len());
 
     let mut validators_hashed: Vec<HashOut<GoldilocksField>> = Vec::with_capacity(validators_raw.len());
 
@@ -222,10 +224,9 @@ pub fn compute_hashes_at_depth(
 
 pub fn get_validator_proof(
     validator_gindex: u64,
-    validator_map: &HashMap<u64, HashOut<GoldilocksField>>
+    validator_map: &HashMap<u64, HashOut<GoldilocksField>>,
+    zero_hashes: &Vec<HashOut<GoldilocksField>>
     ) -> Vec<HashOut<GoldilocksField>> {
-
-    let zero_hashes = zero_hashes();
 
     let mut proof = Vec::with_capacity(MAX_DEPTH as usize);
     let mut gindex = validator_gindex;
@@ -286,7 +287,7 @@ pub fn prove_validator_membership(
 mod tests {
     use plonky2::{field::goldilocks_field::GoldilocksField, hash::hash_types::HashOut};
 
-    use crate::utils::poseidon_merkle_tree::{combine_two_hash_n_to_hash_no_pad,compute_merkle_hash_tree, get_validator_proof, gindex_from_validator_index, load_validator_data, prove_validator_membership, MAX_DEPTH};
+    use crate::utils::poseidon_merkle_tree::{combine_two_hash_n_to_hash_no_pad,compute_merkle_hash_tree, get_validator_proof, gindex_from_validator_index, parse_validator_data, prove_validator_membership, MAX_DEPTH};
 
     use super::zero_hashes;
 
@@ -297,14 +298,16 @@ mod tests {
     fn test_leftmost() {
         // Change MAX_DEPTH constant = 3
 
-        let (_, validators_hashed) = load_validator_data(FILE_PATH_TOY_DATA);
+        let (_, validators_hashed) = parse_validator_data(FILE_PATH_TOY_DATA);
+
+        let zero_hashes = zero_hashes();
 
         let mut validator_map = compute_merkle_hash_tree(
             &validators_hashed, 
         );
     
         let validator_gindex = gindex_from_validator_index(0, MAX_DEPTH as u32);
-        let proof = get_validator_proof(validator_gindex, &mut validator_map);
+        let proof = get_validator_proof(validator_gindex, &mut validator_map, &zero_hashes);
     
         let hash = combine_two_hash_n_to_hash_no_pad::<GoldilocksField, 2>(
             validators_hashed[0],
@@ -330,7 +333,7 @@ mod tests {
     fn test_with_missing_hash() {
         // Change MAX_DEPTH constant = 3
 
-        let (_, validators_hashed) = load_validator_data(FILE_PATH_TOY_DATA);
+        let (_, validators_hashed) = parse_validator_data(FILE_PATH_TOY_DATA);
 
         let zeroes = zero_hashes();
 
@@ -346,7 +349,7 @@ mod tests {
         for i in 0..validators_with_missing.len(){
     
             let validator_gindex = gindex_from_validator_index(i as u64, MAX_DEPTH as u32);
-            let proof = get_validator_proof(validator_gindex, &validator_map);
+            let proof = get_validator_proof(validator_gindex, &validator_map, &zeroes);
             println!("\nValidator-{} proof: {:?}", i,proof);
     
             prove_validator_membership(
@@ -363,16 +366,18 @@ mod tests {
     fn test_with_depth_40() {
         // set MAX_DEPTH = 40
         
-        let (_, validators_hashed) = load_validator_data(FILE_PATH_TOY_DATA);
+        let (_, validators_hashed) = parse_validator_data(FILE_PATH_TOY_DATA);
 
         let validator_map = compute_merkle_hash_tree(
             &validators_hashed, 
         );
     
+        let zero_hashes = zero_hashes();
+
         for i in 0..validators_hashed.len(){
     
             let validator_gindex = gindex_from_validator_index(i as u64, MAX_DEPTH as u32);
-            let proof = get_validator_proof(validator_gindex, &validator_map);
+            let proof = get_validator_proof(validator_gindex, &validator_map, &zero_hashes);
             println!("\nValidator-{} proof: {:?}", i,proof);
             println!("Proof Len. {}",proof.len());
             prove_validator_membership(

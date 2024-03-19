@@ -18,7 +18,7 @@ fn main() {
     let attestations_json = read_json_from_file(file_path_attestation).unwrap();
 
     let file_path_validators_poseidon 
-        = "/home/stefan/code/repos/metacraft-labs/DendrETH/casper-finality-proofs/data/all_validators_234400_poseidon_unique.json";
+        = "/home/stefan/code/repos/metacraft-labs/DendrETH/casper-finality-proofs/data/all_validators_234400_poseidon.json";
     let validators_poseidon_json = read_json_from_file(file_path_validators_poseidon).unwrap();
 
     let mut builder = CircuitBuilder::<L, D>::new();
@@ -35,7 +35,7 @@ fn main() {
     let poseidon_hash_tree_root = validators_poseidon_json
         .get("data").clone()
         .unwrap()
-        .get("poseidon_hash_tree_root")
+        .get("poseidon_root")
         .unwrap();
 
     let poseidon_hash_tree_root_input: HashOutPoseidonInput = serde_json::from_value(poseidon_hash_tree_root.clone()).unwrap();

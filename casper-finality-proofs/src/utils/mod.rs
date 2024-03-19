@@ -5,4 +5,4 @@ pub mod eth_objects;
 pub mod json;
 pub mod poseidon;
 pub mod poseidon_merkle_tree;
-pub mod poseidon_merkle_tree_helpers;
+pub mod poseidon_helpers;
