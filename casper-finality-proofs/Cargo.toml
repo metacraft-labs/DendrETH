@@ -49,6 +49,10 @@ path = "bin/count_unique_validators.rs"
 name = "sequential_verification"
 path = "bin/sequential_verification.rs"
 
+[[bin]]
+name = "poseidon_merkle_tree"
+path = "poseidon_merkle_tree.rs"
+
 [dependencies]
 plonky2 = { git = "https://github.com/mir-protocol/plonky2.git", default-features = false, rev = "2d36559d" }
 plonky2x = {git = "https://github.com/succinctlabs/succinctx.git", branch = "main" }
@@ -62,6 +66,7 @@ primitive-types = "0.12.2"
 colored = "2.0.4"
 anyhow = "1.0.75"
 crossbeam = "0.8.2"
+num-bigint = "0.4.4"
 strum = { version = "0.25", features = ["derive"] }
 serde_yaml = "0.9.25"
 once_cell = "1.18.0"
