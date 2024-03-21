@@ -1,5 +1,5 @@
-use std::{fs, marker::PhantomData};
-
+use std::{fs, marker::PhantomData, ops::RangeInclusive, path::Path, process};
+use num::clamp;
 use anyhow::Result;
 use circuits::{
     build_balance_inner_level_circuit::build_inner_level_circuit,
@@ -21,11 +21,11 @@ fn write_to_file(file_path: &str, data: &[u8]) -> Result<()> {
     Ok(())
 }
 
-fn main() -> Result<()> {
+fn main() -> Result<(),String> {
     future::block_on(async_main())
 }
 
-pub async fn async_main() -> Result<()> {
+pub async fn async_main() -> Result<(),String> {
     let matches = App::new("")
         .arg(
             Arg::with_name("circuit_level")
@@ -44,8 +44,8 @@ pub async fn async_main() -> Result<()> {
                 }),
         )
         .get_matches();
-
-    let level = match matches.value_of("circuit_level").unwrap() {
+    let level_str = matches.value_of("circuit_level").unwrap();
+    let level = match level_str {
         "all" => None,
         x => Some(x.parse::<usize>().unwrap()),
     };
@@ -58,6 +58,10 @@ pub async fn async_main() -> Result<()> {
     let generator_serializer = DendrETHGeneratorSerializer {
         _phantom: PhantomData::<PoseidonGoldilocksConfig>,
     };
+
+    if level != None && level.unwrap() > 37 {
+        return Err(String::from(format!("Supplied level {} is larger than the maximum allowed level 37",level.unwrap())));
+    }
 
     if level == None || level == Some(0) {
         write_first_level_circuit(
@@ -73,10 +77,9 @@ pub async fn async_main() -> Result<()> {
     }
 
     let mut prev_circuit_data = first_level_data;
-
-    for i in 1..38 {
+    let max_level = if level == None {37} else {clamp(level.unwrap(),1,37)};
+    for i in 1..=max_level {
         let (targets, data) = build_inner_level_circuit(&prev_circuit_data);
-
         if level == Some(i) || level == None {
             let circuit_bytes = data
                 .to_bytes(&gate_serializer, &generator_serializer)
@@ -94,6 +97,17 @@ pub async fn async_main() -> Result<()> {
         }
 
         prev_circuit_data = data;
+    }
+
+    let mut exists = false;
+    for i in 1..=max_level {
+        if Path::new(&format!("{}.plonky2_circuit",i)).exists() || Path::new(&format!("{}.plonky2_targets",i)).exists() {
+            exists = true;
+            break;
+        }
+    }
+    if !exists {
+        return Err(String::from(format!("No plonky2 output created. Level used was: {}", level_str)));
     }
 
     Ok(())
