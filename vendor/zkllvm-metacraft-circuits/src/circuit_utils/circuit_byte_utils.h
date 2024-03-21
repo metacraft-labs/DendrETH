@@ -22,14 +22,6 @@ namespace circuit_byte_utils {
         return arr;
     }
 
-    template<class InputIt, class OutputIt>
-    OutputIt copy(InputIt first, InputIt last, OutputIt d_first) {
-        for (; first != last; (void)++first, (void)++d_first)
-            *d_first = *first;
-
-        return d_first;
-    }
-
     template<typename T>
     Byte get_nth_byte(const T val, unsigned int n) {
         static_assert(std::is_integral_v<typename std::remove_reference_t<T>>, "T must be integral");
@@ -69,7 +61,9 @@ namespace circuit_byte_utils {
         static_assert(N <= InputSize);
         assert_true(N + offset <= InputSize);
         static_vector<Byte, N> ret;
-        copy(val.begin() + offset, val.begin() + offset + N, ret.begin());
+        for(size_t i = 0; i < N; i++) {
+            *(ret.begin() + i) = *(val.begin() + offset + i);
+        }
 
         return ret;
     }
@@ -78,7 +72,9 @@ namespace circuit_byte_utils {
     static_vector<Byte, N> expand(const static_vector<Byte, InputSize>& val) {
         static_assert(N >= InputSize);
         static_vector<Byte, N> ret;
-        copy(val.begin(), val.end(), ret.begin());
+        for(size_t i = 0; i < InputSize; i++) {
+            *(ret.begin() + i) = *(val.begin() + i);
+        }
 
         return ret;
     }
@@ -108,8 +104,8 @@ namespace circuit_byte_utils {
 
         T result = 0;
         if constexpr (LittleEndian) {
-            for (unsigned int i = sizeof(T); i > 0; i--) {
-                result = (result << 8) + *(first_element + i - 1);
+            for (unsigned i = 0; i < sizeof(T); ++i) {
+                result = (result << 8) + *(first_element + sizeof(T) - i - 1);
             }
         } else {
             for (unsigned i = 0; i < sizeof(T); ++i) {

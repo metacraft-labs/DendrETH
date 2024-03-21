@@ -15,6 +15,8 @@ using namespace circuit_byte_utils;
 using namespace ssz_utils;
 using namespace nil::crypto3::algebra::curves;
 
+static constexpr auto MAX_PUB_KEYS_TO_PROCESS = 1'000'000;
+
 using Proof = static_vector<HashType, 41>;
 using PubKey = Bytes48;
 
@@ -102,7 +104,8 @@ struct VoteToken {
 
 using TransitionKey = Bytes32;
 
-static_vector<HashType> compute_zero_hashes(int length = 64) {
+template <size_t Length = 64>
+static_vector<HashType> compute_zero_hashes() {
     static_vector<HashType> xs;
 #ifdef __ZKLLVM__
     sha256_t empty_hash = {0};
@@ -111,7 +114,7 @@ static_vector<HashType> compute_zero_hashes(int length = 64) {
     xs.push_back(get_empty_byte_array<32>());
 #endif
 
-    for (int i = 1; i < length; i++) {
+    for (int i = 1; i < Length; i++) {
         xs.push_back(sha256_pair(xs[i - 1], xs[i - 1]));
     }
     return xs;
@@ -183,8 +186,8 @@ VoteToken
     // attestation.
 
     base_field_type token = 0;
-
-    for (size_t i = 0; i < attestation.validators.size(); i++) {
+    for (size_t i = 0; i < std::remove_reference<decltype(attestation.validators)>::type::capacity; i++) {
+    if(i < attestation.validators.size()) {
         auto& v = attestation.validators[i];
         // Aggregate this validator's public key.
         auto validator_pubkey = v.pubkey;
@@ -231,17 +234,21 @@ VoteToken
     //     signing_root,
     //     signature,
     // )
-
+    }
     return VoteToken {{attestation.data.source, attestation.data.target}, token};
 }
+
+#ifndef __ZKLLVM__
 
 VoteToken combine_finality_votes(const static_vector<VoteToken, 8192>& tokens) {
     VoteToken result;
     result.transition = tokens[0].transition;
     result.token = {0};
-    for (size_t i = 0; i < tokens.size(); i++) {
-        assert_true(result.transition == tokens[i].transition);
-        result.token += tokens[i].token;
+    for (size_t i = 0; i < std::remove_reference<decltype(tokens)>::type::capacity; i++) {
+        if(i < tokens.size()) {
+            assert_true(result.transition == tokens[i].transition);
+            result.token += tokens[i].token;
+        }
     }
     return result;
 }
@@ -281,3 +288,5 @@ void prove_finality(const VoteToken& token,
     assert_true(votes_count * 5 > active_validators_count * 4);
     assert_true(reconstructed_token == token.token);
 }
+
+#endif
