@@ -28,7 +28,7 @@
     "circom_tester": "^0.0.14",
     "crypto-js": "^4.1.1",
     "ethers": "^5.6.9",
-    "hardhat": "^2.20.1",
+    "hardhat": "^2.22.0",
     "hardhat-gas-reporter": "^1.0.8",
     "r1csfile": "^0.0.40",
     "snarkjs": "^0.4.24",
@@ -40,6 +40,7 @@
     "@types/node": "^20.11.21",
     "bullmq": "^5.4.0",
     "dotenv": "^16.4.4",
+    "env-paths": "^3.0.0",
     "typescript": "5.2.2"
   }
 }
