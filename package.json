@@ -99,5 +99,10 @@
   "bin": {
     "get-balances-input": "dist/beacon-light-client/plonky2/get_balances_input/get_balances_input.js",
     "get-changed-validators": "dist/beacon-light-client/plonky2/validators_commitment_mapper_tree/get_changed_validators.js"
+  },
+  "dependenciesMeta": {
+    "circomlib@2.0.2": {
+      "unplugged": true
+    }
   }
 }
