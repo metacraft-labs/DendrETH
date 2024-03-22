@@ -16,7 +16,7 @@ const {
 
 import colors from 'colors/safe';
 
-import { BeaconApi } from '../../../relay/implementations/beacon-api';
+import { getBeaconApi } from '../../../relay/implementations/beacon-api';
 
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
 import yargs from 'yargs';
@@ -81,7 +81,7 @@ let MOCK: boolean;
     new KeyPrefix(`${validator_commitment_constants.validatorProofsQueue}`),
   );
 
-  const beaconApi = new BeaconApi([options['beacon-node']]);
+  const beaconApi = await getBeaconApi([options['beacon-node']]);
 
   // handle zeros validators
   if (await redis.isZeroValidatorEmpty()) {

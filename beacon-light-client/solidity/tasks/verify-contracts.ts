@@ -1,5 +1,5 @@
 import { task } from 'hardhat/config';
-import { BeaconApi } from '../../../relay/implementations/beacon-api';
+import { getBeaconApi } from '../../../relay/implementations/beacon-api';
 import { getConstructorArgs } from './utils';
 import { getNetworkConfig } from '../../../relay/utils/get_current_network_config';
 import { getGenericLogger } from '../../../libs/typescript/ts-utils/logger';
@@ -18,7 +18,7 @@ task('verify-contracts', 'Verify')
 
     const currentConfig = getNetworkConfig(args.follownetwork);
 
-    const beaconApi = new BeaconApi(currentConfig.BEACON_REST_API!);
+    const beaconApi = await getBeaconApi(currentConfig.BEACON_REST_API!);
 
     await run('verify:verify', {
       address: args.lightclient,

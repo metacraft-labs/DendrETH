@@ -15,7 +15,7 @@ import { hexToBits } from '../../../libs/typescript/ts-utils/hex-utils';
     ).join(', '),
   );
 
-  // const beaconApi = new BeaconApi([
+  // const beaconApi = await getBeaconApi([
   //   'http://unstable.mainnet.beacon-api.nimbus.team',
   // ]);
 

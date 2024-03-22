@@ -23,3 +23,18 @@ export const PRATER: Config = {
 
 export const UPDATE_POLING_QUEUE = 'update_poling';
 export const PROOF_GENERATOR_QUEUE = 'proof';
+
+export const phase0_FORK_VERSION = '0x00000000';
+export const phase0_FORK_EPOCH = 0;
+
+export const ALTAIR_FORK_VERSION = '0x01000000';
+export const ALTAIR_FORK_EPOCH = 74240;
+
+export const BELLATRIX_FORK_VERSION = '0x02000000';
+export const BELLATRIX_FORK_EPOCH = 144896;
+
+export const CAPELLA_FORK_VERSION = '0x03000000';
+export const CAPELLA_FORK_EPOCH = 194048;
+
+export const DENEB_FORK_VERSION = '0x02000000';
+export const DENEB_FORK_EPOCH = 269568;

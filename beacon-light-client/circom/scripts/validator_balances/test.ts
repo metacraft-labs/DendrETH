@@ -1,5 +1,5 @@
 import { ListBasicType, UintNumberType, ValueOf } from '@chainsafe/ssz';
-import { BeaconApi } from '../../../../relay/implementations/beacon-api';
+import { getBeaconApi } from '../../../../relay/implementations/beacon-api';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { bytesToHex } from '../../../../libs/typescript/ts-utils/bls';
 import { sha256 } from 'ethers/lib/utils';
@@ -11,7 +11,7 @@ import { get } from 'node:http';
 
 (async () => {
   const { ssz } = await import('@lodestar/types');
-  const beaconApi = new BeaconApi([
+  const beaconApi = await getBeaconApi([
     'http://unstable.prater.beacon-api.nimbus.team/',
   ]);
 

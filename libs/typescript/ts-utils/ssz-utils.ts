@@ -1,7 +1,19 @@
-import { Type } from '@chainsafe/ssz';
-import { formatHex, hexToBytes } from './bls';
 import { readFile } from 'fs/promises';
+
 import { sha256 } from 'ethers/lib/utils';
+
+import { Type } from '@chainsafe/ssz';
+
+import { formatHex, hexToBytes } from './bls';
+import { DENEB_FORK_EPOCH } from '../../../relay/constants/constants';
+
+import type { ssz } from '@lodestar/types';
+
+export type SSZ = typeof ssz;
+export type Phase0 = typeof ssz.phase0;
+export type Deneb = typeof ssz.deneb;
+export type Capella = typeof ssz.capella;
+export type CapellaOrDeneb = Capella & Deneb;
 
 export function verifyMerkleProof(
   branch: string[],
