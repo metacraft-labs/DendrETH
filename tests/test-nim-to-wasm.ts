@@ -15,12 +15,13 @@ interface NimTestState<T extends WebAssembly.Exports = {}> {
 }
 
 describe('calling Nim functions compiled to Wasm', () => {
-  const filesToTest = glob(
-    dirname(fileURLToPath(import.meta.url)) + '/nimToWasm/*.nim',
-    {
-      ignore: '**/panicoverride\\.nim',
-    },
-  );
+  const basePath = dirname(fileURLToPath(import.meta.url)) + '/nimToWasm';
+
+  const filesToTest = glob(basePath + '/*.nim', {
+    ignore: '**/panicoverride\\.nim',
+  });
+
+  console.log({ filesToTest });
 
   const perFileState: Record<string, NimTestState> = {};
 
@@ -29,35 +30,32 @@ describe('calling Nim functions compiled to Wasm', () => {
     path: string,
     func: (state: NimTestState<T>) => void,
   ) {
-    test(`Testing '${path}': '${testName}'`, () =>
-      func(perFileState[path] as NimTestState<T>));
-  }
+    test(`Testing '${path}': '${testName}'`, async () => {
+      const nimFilePath = basePath + `/${path}`;
 
-  beforeAll(async () => {
-    await Promise.all(
-      filesToTest.map(async nimFilePath => {
-        const wasmFilePath = (
-          await compileNimFileToWasm(nimFilePath, '--d:lightClientWASM')
-        ).outputFileName;
-        const exports = await loadWasm<{}>({
-          from: {
-            filepath: wasmFilePath,
+      const wasmFilePath = (
+        await compileNimFileToWasm(nimFilePath, '--d:lightClientWASM')
+      ).outputFileName;
+      const exports = await loadWasm<{}>({
+        from: {
+          filepath: wasmFilePath,
+        },
+        importObject: {
+          env: {
+            print: (x: unknown) =>
+              perFileState[basename(nimFilePath)].logMessages.push(String(x)),
           },
-          importObject: {
-            env: {
-              print: (x: unknown) =>
-                perFileState[basename(nimFilePath)].logMessages.push(String(x)),
-            },
-          },
-        });
-        perFileState[basename(nimFilePath)] = {
-          wasmFilePath,
-          logMessages: [],
-          exports,
-        };
-      }),
-    );
-  }, 20000 /* timeout in milliseconds */);
+        },
+      });
+      perFileState[basename(nimFilePath)] = {
+        wasmFilePath,
+        logMessages: [],
+        exports,
+      };
+
+      func(perFileState[path] as NimTestState<T>);
+    });
+  }
 
   testNimToWasmFile<{
     printAdd: (a: number, b: number) => void;
