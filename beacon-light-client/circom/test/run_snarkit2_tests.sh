@@ -10,7 +10,10 @@ else
 fi
 
 # generate the ssz_num test cases
-yarn ts-node gen_ssz_num_positive_tests.ts
+(
+  cd "$DENDRETH_DIR/beacon-light-client/circom/test"
+  yarn tsx ./gen_ssz_num_positive_tests.ts
+)
 
 # Get the list of all directories one level deep inside the "test" folder
 folders=$(find ${DENDRETH_DIR}/beacon-light-client/circom/test/* -maxdepth 0 -type d)
