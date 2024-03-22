@@ -5335,6 +5335,7 @@ __metadata:
     snarkit2: "https://github.com/fluidex/snarkit2#70142d8bbc5ec79cfa6869205263ff77e8423975"
     snarkjs: "github:metacraft-labs/snarkjs"
     ts-node: "npm:^10.9.1"
+    tsx: "npm:^4.7.1"
     typescript: "npm:5.2.2"
   languageName: unknown
   linkType: soft
