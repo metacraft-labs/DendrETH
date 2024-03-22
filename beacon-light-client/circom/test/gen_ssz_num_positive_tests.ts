@@ -1,18 +1,20 @@
 import * as fs from 'fs';
+import * as path from 'path';
 import * as yaml from 'js-yaml';
 import { groupBy } from '../../../libs/typescript/ts-utils/common-utils';
 import { formatHex } from '../../solidity/test/utils/bls';
 
+const sszTestCasesDir = path.resolve(
+  __dirname,
+  '../../../vendor/eth2.0-tests/ssz',
+);
+
 // circom prime is 254 bits
-const testCasesBounds = readTestCases(
-  '../../../vendor/eth2.0-tests/ssz/uint_bounds.yaml',
-)
+const testCasesBounds = readTestCases(`${sszTestCasesDir}/uint_bounds.yaml`)
   .filter(x => x.valid)
   .filter(x => getBitsNumberFromType(x.type) <= 248);
 
-const testCasesRandom = readTestCases(
-  '../../../vendor/eth2.0-tests/ssz/uint_random.yaml',
-)
+const testCasesRandom = readTestCases(`${sszTestCasesDir}/uint_random.yaml`)
   .filter(x => x.valid)
   .filter(x => getBitsNumberFromType(x.type) <= 248);
 
