@@ -1,6 +1,6 @@
 pragma circom 2.1.5;
 
-include "../../../node_modules/circomlib/circuits/comparators.circom";
+include "comparators.circom";
 
 template VerifySyncCommitee(N) {
   signal input root[256];

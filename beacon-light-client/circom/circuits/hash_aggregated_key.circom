@@ -1,6 +1,6 @@
 pragma circom 2.1.5;
 
-include "../../../node_modules/circomlib/circuits/sha256/sha256.circom";
+include "sha256/sha256.circom";
 
 template hashAggregatedKey(){
   signal input aggregatedKey[384];

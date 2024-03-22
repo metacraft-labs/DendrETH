@@ -1,6 +1,6 @@
 pragma circom 2.1.5;
 
-include "../../../node_modules/circomlib/circuits/bitify.circom";
+include "bitify.circom";
 
 template SSZNum(N) {
   signal input in;

@@ -1,7 +1,7 @@
 pragma circom 2.1.5;
 
-include "../../../node_modules/circomlib/circuits/sha256/sha256.circom";
-include "../../../node_modules/circomlib/circuits/bitify.circom";
+include "sha256/sha256.circom";
+include "bitify.circom";
 
 template ExpandMessage() {
   signal input in[256];

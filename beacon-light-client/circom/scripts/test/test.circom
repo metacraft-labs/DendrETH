@@ -1,5 +1,5 @@
 pragma circom 2.1.5;
-include "../../../../node_modules/circomlib/circuits/gates.circom";
+include "gates.circom";
 include "../../../../vendor/circom-pairing/circuits/bn254/groth16.circom";
 
 template Test() {
