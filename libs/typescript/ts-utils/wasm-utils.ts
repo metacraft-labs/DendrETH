@@ -84,6 +84,9 @@ export async function loadWasm<Exports extends WebAssembly.Exports>({
       },
       emscripten_notify_memory_growth: (x: undefined) =>
         console.log('emscripten_notify_memory_growth'),
+      emscripten_memcpy_js: (dest: any, src: any, num: any) => {
+        HEAPU8.copyWithin(dest, src, src + num);
+      },
       emscripten_memcpy_big: (dest: any, src: any, num: any) => {
         HEAPU8.copyWithin(dest, src, src + num);
       },
