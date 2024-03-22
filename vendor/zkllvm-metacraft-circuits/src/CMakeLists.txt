@@ -1,4 +1,7 @@
-set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_BUILD_TYPE "Debug")
+
+add_compile_options(-fsanitize=address)
+add_link_options(-fsanitize=address)
 
 function(add_example example_target)
     set(prefix ARG)

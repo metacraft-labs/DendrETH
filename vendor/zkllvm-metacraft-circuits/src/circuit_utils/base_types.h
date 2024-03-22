@@ -112,7 +112,7 @@ struct JustificationBitsVariable {
         assert_in_executable(upper_bound_non_inclusive <= bits.size());
         bool result = true;
         for (size_t i = 0; i < bits_size; i++) {
-            if(i + lower_bound < upper_bound_non_inclusive) {
+            if (i + lower_bound < upper_bound_non_inclusive) {
                 result = result && bits[i + lower_bound];
             } else {
                 return result;

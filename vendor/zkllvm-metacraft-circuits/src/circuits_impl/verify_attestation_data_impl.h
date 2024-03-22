@@ -104,7 +104,7 @@ struct VoteToken {
 
 using TransitionKey = Bytes32;
 
-template <size_t Length = 64>
+template<size_t Length = 64>
 static_vector<HashType> compute_zero_hashes() {
     static_vector<HashType> xs;
 #ifdef __ZKLLVM__
@@ -187,53 +187,53 @@ VoteToken
 
     base_field_type token = 0;
     for (size_t i = 0; i < std::remove_reference<decltype(attestation.validators)>::type::capacity; i++) {
-    if(i < attestation.validators.size()) {
-        auto& v = attestation.validators[i];
-        // Aggregate this validator's public key.
-        auto validator_pubkey = v.pubkey;
-        ///! pubkey_point = pubkey_to_G1(validator_pubkey)
-        ///! aggregated_point = bls.add(aggregated_point, pubkey_point)
+        if (i < attestation.validators.size()) {
+            auto& v = attestation.validators[i];
+            // Aggregate this validator's public key.
+            auto validator_pubkey = v.pubkey;
+            ///! pubkey_point = pubkey_to_G1(validator_pubkey)
+            ///! aggregated_point = bls.add(aggregated_point, pubkey_point)
 
-        // Check if this validator was part of the source state.
-        if (v.trusted) {
-            auto leaf = hash_validator(circuit_byte_utils::expand<64>(v.pubkey),
-                                       v.withdrawal_credentials,
-                                       v.effective_balance,
-                                       v.activation_eligibility_epoch,
-                                       v.activation_epoch,
-                                       v.exit_epoch,
-                                       v.withdrawable_epoch);
-            // Hash the validator data and make sure it's part of:
-            // validators_root -> state_root -> block_root.
-            ssz_verify_proof(
-                attestation.validators_root, leaf, v.validator_list_proof, 0x020000000000ul + v.validator_index);
+            // Check if this validator was part of the source state.
+            if (v.trusted) {
+                auto leaf = hash_validator(circuit_byte_utils::expand<64>(v.pubkey),
+                                           v.withdrawal_credentials,
+                                           v.effective_balance,
+                                           v.activation_eligibility_epoch,
+                                           v.activation_epoch,
+                                           v.exit_epoch,
+                                           v.withdrawable_epoch);
+                // Hash the validator data and make sure it's part of:
+                // validators_root -> state_root -> block_root.
+                ssz_verify_proof(
+                    attestation.validators_root, leaf, v.validator_list_proof, 0x020000000000ul + v.validator_index);
 
-            // TODO: Needed?
-            // assert spec.is_active_validator(
-            //     v['activation_epoch'],
-            //     v['exit_epoch'],
-            //     EPOCH,
-            // )
+                // TODO: Needed?
+                // assert spec.is_active_validator(
+                //     v['activation_epoch'],
+                //     v['exit_epoch'],
+                //     EPOCH,
+                // )
 
-            // Include this validator's pubkey in the result.
-            base_field_type element;
-            memcpy(&element, &(v.pubkey), sizeof(element));
-            token = (token + (element * sigma));
+                // Include this validator's pubkey in the result.
+                base_field_type element;
+                memcpy(&element, &(v.pubkey), sizeof(element));
+                token = (token + (element * sigma));
+            }
         }
-    }
-    // Verify the aggregated signature.
-    // aggregated_pubkey: BLSPubkey = G1_to_pubkey(aggregated_point)
-    // signing_root: bytes = spec.compute_attestation_signing_root(
-    //     attestation['fork'],
-    //     attestation['genesis_validators_root'],
-    //     attestation['data'],
-    // )
-    // signature: BLSSignature = BLSSignature(to_bytes(hexstr=attestation['signature']))
-    // assert bls_pop.Verify(
-    //     aggregated_pubkey,
-    //     signing_root,
-    //     signature,
-    // )
+        // Verify the aggregated signature.
+        // aggregated_pubkey: BLSPubkey = G1_to_pubkey(aggregated_point)
+        // signing_root: bytes = spec.compute_attestation_signing_root(
+        //     attestation['fork'],
+        //     attestation['genesis_validators_root'],
+        //     attestation['data'],
+        // )
+        // signature: BLSSignature = BLSSignature(to_bytes(hexstr=attestation['signature']))
+        // assert bls_pop.Verify(
+        //     aggregated_pubkey,
+        //     signing_root,
+        //     signature,
+        // )
     }
     return VoteToken {{attestation.data.source, attestation.data.target}, token};
 }
@@ -245,7 +245,7 @@ VoteToken combine_finality_votes(const static_vector<VoteToken, 8192>& tokens) {
     result.transition = tokens[0].transition;
     result.token = {0};
     for (size_t i = 0; i < std::remove_reference<decltype(tokens)>::type::capacity; i++) {
-        if(i < tokens.size()) {
+        if (i < tokens.size()) {
             assert_true(result.transition == tokens[i].transition);
             result.token += tokens[i].token;
         }

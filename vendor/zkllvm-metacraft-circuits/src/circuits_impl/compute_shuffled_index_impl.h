@@ -18,17 +18,15 @@ uint64_t compute_shuffled_index_impl(uint64_t index, uint64_t index_count, Bytes
     // See the 'generalized domain' algorithm on page 3
     for (Byte current_round = 0; current_round < MAX_SHUFFLE_ROUND_COUNT; current_round++) {
         // Exit after shuffle_round_count iterations
-        if(current_round == shuffle_round_count){
+        if (current_round == shuffle_round_count) {
             return index;
         }
 
-        auto shac = sha256(seed, current_round);
-        auto temp = take<8>(shac);
-        auto pivot = bytes_to_int<uint64_t>(temp) % index_count;
+        auto pivot = bytes_to_int<uint64_t>(take<8>(sha256_33(seed, current_round))) % index_count;
         uint64_t flip = (pivot + index_count - index) % index_count;
         auto position = std::max(index, flip);
 
-        Bytes32 seed_hash = sha256(seed, current_round, int_to_bytes(uint32_t(position / 256)));
+        Bytes32 seed_hash = sha256_37(seed, current_round, int_to_bytes(uint32_t(position / 256)));
         auto byte = seed_hash[(position % 256) / 8];
         auto bit = (byte >> (position % 8)) % 2;
 

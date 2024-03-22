@@ -39,11 +39,10 @@ THE SOFTWARE.
 namespace picosha2 {
 
     template<class ForwardIt, class T>
-    void fill(ForwardIt first, ForwardIt last, const T& value)
-    {
+    void fill(ForwardIt first, ForwardIt last, const T& value) {
         assert_in_executable((last - first) < PICOSHA2_BUFFER_SIZE_FOR_INPUT_ITERATOR);
-        for(size_t i = 0; i < PICOSHA2_BUFFER_SIZE_FOR_INPUT_ITERATOR; i++) {
-            if(first + i != last) {
+        for (size_t i = 0; i < PICOSHA2_BUFFER_SIZE_FOR_INPUT_ITERATOR; i++) {
+            if (first + i != last) {
                 *(first + i) = value;
             } else {
                 return;
@@ -55,8 +54,8 @@ namespace picosha2 {
     OutputIt copy(InputIt first, InputIt last, OutputIt d_first) {
         assert_in_executable((last - first) < PICOSHA2_BUFFER_SIZE_FOR_INPUT_ITERATOR);
         size_t i = 0;
-        for(; i < PICOSHA2_BUFFER_SIZE_FOR_INPUT_ITERATOR; i++) {
-            if(first + i != last) {
+        for (; i < PICOSHA2_BUFFER_SIZE_FOR_INPUT_ITERATOR; i++) {
+            if (first + i != last) {
                 *(d_first + i) = *(first + i);
             } else {
                 return (d_first + i);
@@ -199,14 +198,14 @@ namespace picosha2 {
             buffer_size_ += last - first;
             std::size_t processed = 0;
             for (size_t i = 0; i + 64 <= PICOSHA2_BUFFER_SIZE_FOR_INPUT_ITERATOR; i += 64) {
-                if(i + 64 <= buffer_size_) {
+                if (i + 64 <= buffer_size_) {
                     detail::hash256_block(h_, buffer_.begin() + i, buffer_.begin() + i + 64);
                     processed += 64;
                 }
             }
             buffer_size_ -= processed;
             for (int j = 0; j < PICOSHA2_BUFFER_SIZE_FOR_INPUT_ITERATOR; j++) {
-                if(j < buffer_size_) {
+                if (j < buffer_size_) {
                     buffer_[j] = buffer_[processed + j];
                 }
             }
@@ -233,10 +232,10 @@ namespace picosha2 {
 
         template<typename OutIter>
         void get_hash_bytes(OutIter first, OutIter last) const {
-            for(size_t i = 0; i < 8; i++){
+            for (size_t i = 0; i < 8; i++) {
                 const word_t* iter = h_ + i;
                 for (std::size_t i = 0; i < 4; ++i) {
-                    if(first != last) {
+                    if (first != last) {
                         *(first++) = detail::mask_8bit(static_cast<byte_t>((*iter >> (24 - 8 * i))));
                     }
                 }
@@ -300,16 +299,26 @@ namespace picosha2 {
             std::array<byte_t, PICOSHA2_BUFFER_SIZE_FOR_INPUT_ITERATOR> buffer {};
             hash256_one_by_one hasher;
             // hasher.init();
-            while (first != last) {
-                int size = buffer_size;
-                for (int i = 0; i != buffer_size; ++i, ++first) {
-                    if (first == last) {
-                        size = i;
-                        break;
+            for (size_t loop = 0; loop < 1024; loop++) {
+                if (first != last) {
+                    int size = buffer_size;
+                    for (int i = 0; i != buffer_size; ++i, ++first) {
+                        if (first == last) {
+                            size = i;
+                            buffer[i] = *first;
+                            hasher.process(buffer.begin(), buffer.begin() + size);
+                            hasher.finish();
+                            hasher.get_hash_bytes(first2, last2);
+                            return;
+                        }
+                        buffer[i] = *first;
                     }
-                    buffer[i] = *first;
+                    hasher.process(buffer.begin(), buffer.begin() + size);
+                } else {
+                    hasher.finish();
+                    hasher.get_hash_bytes(first2, last2);
+                    return;
                 }
-                hasher.process(buffer.begin(), buffer.begin() + size);
             }
             hasher.finish();
             hasher.get_hash_bytes(first2, last2);

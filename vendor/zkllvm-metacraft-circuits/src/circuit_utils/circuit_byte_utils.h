@@ -61,7 +61,7 @@ namespace circuit_byte_utils {
         static_assert(N <= InputSize);
         assert_true(N + offset <= InputSize);
         static_vector<Byte, N> ret;
-        for(size_t i = 0; i < N; i++) {
+        for (size_t i = 0; i < N; i++) {
             *(ret.begin() + i) = *(val.begin() + offset + i);
         }
 
@@ -72,7 +72,7 @@ namespace circuit_byte_utils {
     static_vector<Byte, N> expand(const static_vector<Byte, InputSize>& val) {
         static_assert(N >= InputSize);
         static_vector<Byte, N> ret;
-        for(size_t i = 0; i < InputSize; i++) {
+        for (size_t i = 0; i < InputSize; i++) {
             *(ret.begin() + i) = *(val.begin() + i);
         }
 
@@ -213,6 +213,29 @@ namespace circuit_byte_utils {
 
         Bytes32 hashed;
         picosha2::hash256(buffer.begin(), buffer.begin() + NBytesToHash, hashed.begin(), hashed.end());
+        return hashed;
+    }
+
+    // This is needed, because since version 17.0.4 of clang-zkllvm the variadic template generates "warning: loop not unrolled"
+    Bytes32 sha256_33(const Bytes32& bytes, Byte b) {
+        static constexpr auto SIZE = 33;
+        std::array<Byte, SIZE> buffer;
+        memcpy(&buffer[0], &bytes.content_[0], Bytes32::capacity);
+        memcpy(&buffer[Bytes32::capacity], &b, 1);
+        Bytes32 hashed;
+        picosha2::hash256(buffer.begin(), buffer.begin() + SIZE, hashed.begin(), hashed.end());
+        return hashed;
+    }
+
+    // This is needed, because since version 17.0.4 of clang-zkllvm the variadic template generates "warning: loop not unrolled"
+    Bytes32 sha256_37(const Bytes32& bytes, Byte b, const static_vector<Byte, 4>& end) {
+        static constexpr auto SIZE = 37;
+        std::array<Byte, SIZE> buffer;
+        memcpy(&buffer[0], &bytes.content_[0], Bytes32::capacity);
+        memcpy(&buffer[Bytes32::capacity], &b, 1);
+        memcpy(&buffer[Bytes32::capacity] + 1, &end.content_[0], std::remove_reference<decltype(end)>::type::capacity);
+        Bytes32 hashed;
+        picosha2::hash256(buffer.begin(), buffer.begin() + SIZE, hashed.begin(), hashed.end());
         return hashed;
     }
 
