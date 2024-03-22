@@ -11,6 +11,8 @@
     inherit (pkgs) callPackage rust-bin runCommandLocal writeScriptBin;
     inherit (lib) getExe;
 
+    nodejs = pkgs.nodejs_21;
+
     rust-nightly = rust-bin.nightly."2023-06-12".default;
 
     craneLib = (crane.mkLib pkgs).overrideToolchain rust-nightly;
@@ -117,8 +119,8 @@
         allLevels
       );
 
-    get-balances-input = callPackage ../libs/nix/get_balances_input {};
-    get-changed-validators = callPackage ../libs/nix/get_changed_validators {};
+    get-balances-input = callPackage ../libs/nix/get_balances_input {inherit nodejs;};
+    get-changed-validators = callPackage ../libs/nix/get_changed_validators {inherit nodejs;};
     misc-images =
       writeScriptBin "misc-images"
       (
