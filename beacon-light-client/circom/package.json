@@ -30,6 +30,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.21",
+    "tsx": "^4.7.1",
     "typescript": "5.2.2"
   }
 }
