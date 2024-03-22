@@ -1,38 +1,32 @@
-{pkgs ? import <nixpkgs> {}}: let
+{
+  lib,
+  nodejs,
+  python3,
+  sqlite,
+  callPackage,
+  ...
+}: let
+  overrideDep = old: {
+    buildInputs = old.buildInputs ++ [python3 sqlite];
+  };
   project =
-    pkgs.callPackage ../../../yarn-project.nix {
-      nodejs = pkgs.nodejs-18_x;
+    callPackage ../../../yarn-project.nix {
+      inherit nodejs;
     } {
-      src = pkgs.lib.cleanSource ../../..;
-      overrideBcryptoAttrs = old: {
-        buildInputs = old.buildInputs ++ [pkgs.python3 pkgs.sqlite];
-      };
-      overrideBufferutilAttrs = old: {
-        buildInputs = old.buildInputs ++ [pkgs.python3 pkgs.sqlite];
-      };
-      overrideClassicLevelAttrs = old: {
-        buildInputs = old.buildInputs ++ [pkgs.python3 pkgs.sqlite];
-      };
-      overrideMsgpackrExtractAttrs = old: {
-        buildInputs = old.buildInputs ++ [pkgs.python3 pkgs.sqlite];
-      };
-      overrideUtf8ValidateAttrs = old: {
-        buildInputs = old.buildInputs ++ [pkgs.python3 pkgs.sqlite];
-      };
-      overrideLeveldownAttrs = old: {
-        buildInputs = old.buildInputs ++ [pkgs.python3 pkgs.sqlite];
-      };
-      overrideBcryptAttrs = old: {
-        buildInputs = old.buildInputs ++ [pkgs.python3 pkgs.sqlite];
-      };
-      overrideGetBalancesInputAttrs = old: {
-        buildInputs = old.buildInputs ++ [pkgs.python3 pkgs.sqlite];
-      };
+      src = lib.cleanSource ../../..;
+      overrideBcryptoAttrs = overrideDep;
+      overrideBufferutilAttrs = overrideDep;
+      overrideClassicLevelAttrs = overrideDep;
+      overrideMsgpackrExtractAttrs = overrideDep;
+      overrideUtf8ValidateAttrs = overrideDep;
+      overrideLeveldownAttrs = overrideDep;
+      overrideBcryptAttrs = overrideDep;
+      overrideGetBalancesInputAttrs = overrideDep;
     };
 in
   project.overrideAttrs (oldAttrs: {
     name = "get-changed-validators";
-    buildInputs = oldAttrs.buildInputs ++ [pkgs.python3 pkgs.sqlite];
+    buildInputs = oldAttrs.buildInputs ++ [python3 sqlite];
     buildPhase = ''
       yarn build-plonky-2
     '';
