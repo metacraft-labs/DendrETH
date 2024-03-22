@@ -1,7 +1,7 @@
 pragma circom 2.1.5;
 
-include "../../../../node_modules/circomlib/circuits/comparators.circom";
-include "../../../../node_modules/circomlib/circuits/bitify.circom";
+include "comparators.circom";
+include "bitify.circom";
 
 template LessThanBitsCheck(n) {
   signal input in[2];

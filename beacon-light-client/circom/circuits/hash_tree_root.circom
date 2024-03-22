@@ -1,6 +1,6 @@
 pragma circom 2.1.5;
 
-include "../../../node_modules/circomlib/circuits/sha256/sha256.circom";
+include "sha256/sha256.circom";
 include "hash_two.circom";
 
 template HashTreeRoot(N) {

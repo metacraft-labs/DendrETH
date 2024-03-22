@@ -2,7 +2,7 @@ pragma circom 2.1.5;
 
 include "hash_two.circom";
 include "is_valid_merkle_branch_out.circom";
-include "../../../node_modules/circomlib/circuits/comparators.circom";
+include "comparators.circom";
 
 template IsValidMerkleBranch(N) {
   signal input branch[N][256];

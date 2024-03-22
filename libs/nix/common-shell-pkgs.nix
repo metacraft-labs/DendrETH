@@ -36,7 +36,12 @@ in
     # 15% size reduction of the generated .wasm files.
     binaryen
 
-    metacraft-labs.circom
+    (
+      pkgs.writeShellScriptBin "circom" ''
+        ${metacraft-labs.circom}/bin/circom -l "$CIRCOM_LIB" "$@"
+      ''
+    )
+
     nlohmann_json
     python-with-my-packages
     gmp

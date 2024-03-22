@@ -1,6 +1,6 @@
 pragma circom 2.1.5;
 
-include "../../../node_modules/circomlib/circuits/bitify.circom";
+include "bitify.circom";
 include "hash_tree_root.circom";
 include "hash_two.circom";
 include "validator_hash_tree_root.circom";
