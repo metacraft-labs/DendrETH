@@ -1,5 +1,8 @@
 import { task } from 'hardhat/config';
-import { BeaconApi } from '../../../relay/implementations/beacon-api';
+import {
+  getBeaconApi,
+  BeaconApi,
+} from '../../../relay/implementations/beacon-api';
 import { getConstructorArgs } from './utils';
 import { getNetworkConfig } from '../../../relay/utils/get_current_network_config';
 import { getGenericLogger } from '../../../libs/typescript/ts-utils/logger';
@@ -23,7 +26,7 @@ task('deploy', 'Deploy the beacon light client contract')
     logger.info(`Deploying contracts with the account: ${deployer.address}`);
     logger.info(`Account balance: ${(await deployer.getBalance()).toString()}`);
 
-    const beaconApi = new BeaconApi(currentConfig.BEACON_REST_API);
+    const beaconApi = await getBeaconApi(currentConfig.BEACON_REST_API);
 
     const beaconLightClient = await (
       await ethers.getContractFactory('BeaconLightClient')

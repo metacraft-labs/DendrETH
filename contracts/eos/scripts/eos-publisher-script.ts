@@ -1,4 +1,4 @@
-import { BeaconApi } from '../../../relay/implementations/beacon-api';
+import { getBeaconApi } from '../../../relay/implementations/beacon-api';
 import { Redis } from '../../../relay/implementations/redis';
 import { EOSContract } from '../../../relay/implementations/eos-contract';
 import { publishProofs } from '../../../relay/on_chain_publisher';
@@ -29,7 +29,7 @@ async function publishTask() {
   console.log(`Contract address `, contractAddress);
 
   const redis = new Redis(config.REDIS_HOST!, config.REDIS_PORT);
-  const beaconApi = new BeaconApi(currentNetwork.BEACON_REST_API!);
+  const beaconApi = await getBeaconApi(currentNetwork.BEACON_REST_API!);
   const contract = new EOSContract(contractAddress, rpcEndpoint);
   publishProofs(redis, beaconApi, contract, currentNetwork, config.SLOT_JUMP);
 }

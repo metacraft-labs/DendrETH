@@ -1,5 +1,5 @@
 import { SolidityContract } from '../implementations/solidity-contract';
-import { BeaconApi } from '../implementations/beacon-api';
+import { getBeaconApi, BeaconApi } from '../implementations/beacon-api';
 import { ethers } from 'ethers';
 import { sleep } from '../../libs/typescript/ts-utils/common-utils';
 import { GatewayIntentBits, Events, Partials } from 'discord.js';
@@ -110,7 +110,7 @@ class DiscordMonitor {
   public static async initializeDiscordMonitor(
     alert_threshold: number,
   ): Promise<DiscordMonitor> {
-    const beaconApi = new BeaconApi([
+    const beaconApi = await getBeaconApi([
       'http://unstable.prater.beacon-api.nimbus.team/',
     ]);
 

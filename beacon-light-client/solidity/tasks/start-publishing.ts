@@ -1,5 +1,5 @@
 import { task } from 'hardhat/config';
-import { BeaconApi } from '../../../relay/implementations/beacon-api';
+import { getBeaconApi } from '../../../relay/implementations/beacon-api';
 import { Redis } from '../../../relay/implementations/redis';
 import { SolidityContract } from '../../../relay/implementations/solidity-contract';
 import { publishProofs } from '../../../relay/on_chain_publisher';
@@ -110,7 +110,7 @@ task('start-publishing', 'Run relayer')
 
     const redis = new Redis(config.REDIS_HOST!, config.REDIS_PORT);
 
-    const beaconApi = new BeaconApi(currentConfig.BEACON_REST_API);
+    const beaconApi = await getBeaconApi(currentConfig.BEACON_REST_API);
     const contract = new SolidityContract(
       lightClientContract,
       (network.config as any).url,

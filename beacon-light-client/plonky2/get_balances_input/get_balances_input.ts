@@ -1,7 +1,7 @@
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { Redis as RedisLocal } from '../../../relay/implementations/redis';
 import Redis from 'ioredis';
-import { BeaconApi } from '../../../relay/implementations/beacon-api';
+import { getBeaconApi } from '../../../relay/implementations/beacon-api';
 import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
 import { hexToBits } from '../../../libs/typescript/ts-utils/hex-utils';
 import { bigint_to_array } from '../../solidity/test/utils/bls';
@@ -90,7 +90,7 @@ let TAKE;
     ),
   );
 
-  const beaconApi = new BeaconApi([options['beacon-node']]);
+  const beaconApi = await getBeaconApi([options['beacon-node']]);
 
   const beaconState_bin = fs.existsSync('../mock_data/beaconState.bin')
     ? '../mock_data/beaconState.bin'
