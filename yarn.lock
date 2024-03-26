@@ -3895,6 +3895,7 @@ __metadata:
     redis: "npm:^4.6.10"
     snarkjs: "npm:^0.7.3"
     ts-node: "npm:^10.9.1"
+    tsx: "npm:^4.7.1"
     typescript: "npm:5.2.2"
     web3: "npm:^1.10.0"
     web3-eth: "npm:^1.10.0"
