@@ -30,13 +30,12 @@ impl VerifyAttestationDataPoseidon {
         // builder.assert_is_equal(is_zero_sigma_pred, _false);
 
         // let prev_block_root = builder.read::<Bytes32Variable>();
-        //TODO: Add Poseidon Validator Root Hash
+
         let validator_hash_root_poseidon = builder.read::<PoseidonHashOutVariable>();
 
         let attestation = Attestation::circuit_input(builder);
 
         //TODO: This should be part of the final proof as it is only needed once
-        // 2. 3.
         // block_merkle_branch_proof(builder, prev_block_root, attestation.clone());
 
         let first_validator = builder.read::<ValidatorDataPoseidon>();
@@ -200,7 +199,7 @@ fn verify_validator<L: PlonkParameters<D>, const D: usize>(
 
     // // This check will be performed only at the prove_finality step
 
-    ssz_verify_proof_poseidon( //TODO: PoseidonHash
+    ssz_verify_proof_poseidon( 
         builder,
         validators_root,
         validator.beacon_validator_variable_hash,

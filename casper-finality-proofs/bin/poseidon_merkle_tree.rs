@@ -1,5 +1,5 @@
 use std::{collections::HashMap, num, time::Instant};
-use casper_finality_proofs::utils::{poseidon_helpers::{binary_to_hex, ValidatorPoseidonDataOutput}, poseidon_merkle_tree::{compute_merkle_hash_tree, get_validator_proof, gindex_from_validator_index, parse_validator_data, zero_hashes, MAX_DEPTH}};
+use casper_finality_proofs::utils::{poseidon_helpers::{binary_to_hex, ValidatorPoseidonDataOutput}, poseidon_merkle_tree::{compute_merkle_hash_tree, get_validator_proof, gindex_from_validator_index, parse_validator_data, prove_validator_membership, zero_hashes, MAX_DEPTH}};
 use num_bigint::BigUint;
 use plonky2::{field::goldilocks_field::GoldilocksField, hash::{hash_types::HashOut, poseidon::PoseidonPermutation}};
 use serde::Serialize;
@@ -34,12 +34,14 @@ pub fn main() {
 
 pub fn compute_all_validators_tree(file_path: &str) -> PoseidonData
 {
-    let (validators_raw,validators_hashed) = parse_validator_data(file_path);
+    let (validators_raw,mut validators_hashed) = parse_validator_data(file_path);
 
     let mut poseidon_validator_obj_vec = Vec::with_capacity(validators_hashed.len());
 
     let mut start_time = Instant::now();
     
+    // validators_hashed = validators_hashed[0..1000].to_vec();
+
     let validator_map = compute_merkle_hash_tree(
         &validators_hashed, 
     );
@@ -55,15 +57,23 @@ pub fn compute_all_validators_tree(file_path: &str) -> PoseidonData
         let validator_gindex = gindex_from_validator_index(i as u64, MAX_DEPTH as u32);
         let proof = get_validator_proof(validator_gindex, &validator_map, &zero_hashes);
 
+        prove_validator_membership(
+            validators_hashed[i], 
+            proof.clone(), 
+            validator_map[&0], 
+            i
+        );
 
-        if i%10_000 == 0 {
+        if i%1 == 0 {
             println!("On {}-th validator hash..", i);
         }
 
         poseidon_validator_obj_vec.push(
         ValidatorPoseidonDataOutput {
                 trusted: validators_raw[i].trusted,
-                validator_index: validators_raw[i].validator_index,
+                // validator_index: validators_raw[i].validator_index,
+                // validator_index: validator_gindex,
+                validator_index: i as u64,
 
                 activation_eligibility_epoch: biguint_to_u64_unsafe(validators_raw[i].activation_eligibility_epoch.clone()),
                 activation_epoch: biguint_to_u64_unsafe(validators_raw[i].activation_epoch.clone()),

@@ -5,7 +5,7 @@ use plonky2::{field::{extension::Extendable, goldilocks_field::GoldilocksField, 
 
 use super::poseidon_helpers::{read_validator_data, Validator};
 
-pub const MAX_DEPTH: usize = 41;
+pub const MAX_DEPTH: usize = 10;
 
 pub fn parse_validator_data(file_path: &str) -> (Vec<Validator>,Vec<HashOut<GoldilocksField>>) {
     let  validators_raw: Vec<Validator> = read_validator_data(file_path);
@@ -30,7 +30,7 @@ pub fn gindex_from_validator_index(index: u64, depth: u32) -> u64 {
 
 pub fn zero_hashes() -> Vec<HashOut<GoldilocksField>> {
 
-    const ZERO_HASHES_MAX_INDEX: usize = 41;
+    const ZERO_HASHES_MAX_INDEX: usize = MAX_DEPTH + 1;
 
     let mut hashes = vec![
         hash_n_to_hash_no_pad::<

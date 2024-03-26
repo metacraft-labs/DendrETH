@@ -30,8 +30,8 @@ where
     let mut hash = leaf;
     for i in 0..branch.len() {
 
-        let case1 = builder.poseidon_hash_pair(branch[i].clone(), hash.clone());
-        let case2 = builder.poseidon_hash_pair(hash.clone(), branch[i].clone());
+        let case1 = builder.poseidon_hash_pair(hash.clone(), branch[i].clone());
+        let case2 = builder.poseidon_hash_pair(branch[i].clone(), hash.clone());
         hash = builder.select(bits[i], case1, case2);
     }
 
