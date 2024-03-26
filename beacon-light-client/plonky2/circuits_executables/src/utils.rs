@@ -93,6 +93,12 @@ impl<'a> CommandLineOptionsBuilder<'a> {
                 Arg::with_name("preserve_intermediary_proofs")
                     .long("preserve-intermediary-proofs")
                     .action(clap::ArgAction::SetTrue),
+            )
+            .arg(
+                Arg::with_name("protocol")
+                    .long("protocol")
+                    .takes_value(true)
+                    .required(true),
             );
 
         Self { command }

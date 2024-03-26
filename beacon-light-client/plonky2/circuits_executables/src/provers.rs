@@ -3,10 +3,12 @@ use circuits::{
     build_commitment_mapper_inner_level_circuit::CommitmentMapperInnerCircuitTargets,
     build_final_circuit::FinalCircuitTargets, utils::SetBytesArray,
     validator_balance_circuit::ValidatorBalanceVerificationTargets,
+    validator_balance_circuit_accumulator::ValidatorBalanceVerificationTargetsAccumulator,
     validator_hash_tree_root::ValidatorShaTargets,
     validator_hash_tree_root_poseidon::ValidatorPoseidonTargets,
 };
 
+use num::BigUint;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     iop::{
@@ -23,7 +25,9 @@ use plonky2::{
 use crate::{
     crud::common::FinalCircuitInput,
     validator::ValidatorShaInput,
-    validator_balances_input::{ValidatorBalancesInput, ValidatorPoseidonInput},
+    validator_balances_input::{
+        ValidatorBalanceAccumulatorInput, ValidatorBalancesInput, ValidatorPoseidonInput,
+    },
 };
 
 use anyhow::Result;
@@ -174,6 +178,126 @@ impl<const N: usize> SetPWValues<ValidatorBalancesInput>
         set_boolean_pw_values(pw, &self.validator_is_zero, &source.validator_is_zero);
 
         pw.set_biguint_target(&self.current_epoch, &source.current_epoch);
+    }
+}
+
+impl SetPWValues<ValidatorBalanceAccumulatorInput>
+    for ValidatorBalanceVerificationTargetsAccumulator
+{
+    fn set_pw_values(
+        &self,
+        pw: &mut PartialWitness<GoldilocksField>,
+        source: &ValidatorBalanceAccumulatorInput,
+    ) {
+        for i in 0..source.balances.len() {
+            pw.set_bytes_array(
+                &self.balances_leaves[i],
+                &hex::decode(&source.balances[i]).unwrap(),
+            );
+        }
+
+        pw.set_bytes_array(
+            &self.balances_root,
+            &hex::decode(&source.balances_root).unwrap(),
+        );
+
+        for i in 0..source.balances_proofs.len() {
+            for j in 0..source.balances_proofs[i].len() {
+                pw.set_bytes_array(
+                    &self.balances_proofs[i][j],
+                    &hex::decode(&source.balances_proofs[i][j]).unwrap(),
+                );
+            }
+        }
+
+        /*
+
+                for i in 0..source.balances_proofs.len() {
+                    for j in 0..source.balances_proofs[i].len() {
+                        pw.set_bytes_array(
+                            &self.balances_proofs[i][j],
+                            &hex::decode(&source.balances_proofs[i][j]).unwrap(),
+                        );
+                    }
+                }
+
+                for i in 0..source.validator_deposit_indexes.len() {
+                    pw.set_biguint_target(
+                        &self.validator_deposit_indexes[i],
+                        &BigUint::from(source.validator_deposit_indexes[i]),
+                    );
+                }
+
+                for i in 0..source.validator_indexes.len() {
+                    pw.set_target(
+                        self.validator_indexes[i],
+                        GoldilocksField::from_canonical_u64(source.validator_indexes[i]),
+                    );
+                }
+
+        */
+        for i in 0..source.validators.len() {
+            self.validators[i].set_pw_values(pw, &source.validators[i]);
+        }
+
+        // println!(
+        //     "source.validators_gindices: {:?}",
+        //     source
+        //         .validators_gindices
+        //         .iter()
+        //         .map(|&gindex| BigUint::from(gindex).iter_u32_digits().len())
+        //         .collect::<Vec<_>>()
+        // );
+        //
+        // println!(
+        //     "self.validators_gindices: {:?}",
+        //     self.validators_gindices
+        //         .iter()
+        //         .map(|gindex| gindex.limbs.len())
+        //         .collect::<Vec<_>>()
+        // );
+
+        for i in 0..source.validators_gindices.len() {
+            pw.set_biguint_target(
+                &self.validators_gindices[i],
+                &BigUint::from(source.validators_gindices[i]),
+            );
+        }
+
+        // pw.set_biguint_target(
+        //     &self.validators_gindices,
+        //     &BigUint::from(source.validators_gindices),
+        // );
+
+        /*
+
+                pw.set_hash_target(
+                    self.validator_commitment_root,
+                    string_vec_to_hash_out(&source.validator_commitment_root),
+                );
+
+                for i in 0..source.validator_commitment_proofs.len() {
+                    for j in 0..source.validator_commitment_proofs[i].len() {
+                        pw.set_hash_target(
+                            self.validator_commitment_proofs[i][j],
+                            string_vec_to_hash_out(&source.validator_commitment_proofs[i][j]),
+                        );
+                    }
+                }
+
+                for i in 0..source.validator_is_not_zero.len() {
+                    pw.set_bool_target(
+                        self.validator_is_not_zero[i],
+                        source.validator_is_not_zero[i],
+                    );
+                }
+
+                pw.set_biguint_target(&self.current_epoch, &BigUint::from(source.current_epoch));
+                pw.set_biguint_target(
+                    &self.current_eth1_deposit_index,
+                    &BigUint::from(source.current_eth1_deposit_index),
+                );
+        */
     }
 }
 

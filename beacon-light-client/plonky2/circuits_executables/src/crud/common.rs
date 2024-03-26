@@ -6,7 +6,7 @@ use crate::{
         bool_vec_as_int_vec, bool_vec_as_int_vec_nested, ValidatorShaInput,
         VALIDATOR_REGISTRY_LIMIT,
     },
-    validator_balances_input::ValidatorBalancesInput,
+    validator_balances_input::{ValidatorBalanceAccumulatorInput, ValidatorBalancesInput},
     validator_commitment_constants::VALIDATOR_COMMITMENT_CONSTANTS,
 };
 use anyhow::{ensure, Result};
@@ -54,6 +54,13 @@ pub struct BalanceProof {
     pub number_of_active_validators: u64,
     pub number_of_exited_validators: u64,
     pub proof_key: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BalanceAccumulatorProof {
+    pub needs_change: bool,
+    pub proof: Vec<u8>,
 }
 
 pub fn biguint_to_str<S>(value: &BigUint, serializer: S) -> Result<S::Ok, S::Error>
@@ -191,9 +198,56 @@ pub async fn fetch_validator_balance_input<const N: usize>(
     .await?)
 }
 
-pub async fn fetch_final_layer_input(
+pub async fn fetch_validator_balance_accumulator_input(
     con: &mut Connection,
     protocol: String,
+    index: u64,
+) -> Result<ValidatorBalanceAccumulatorInput> {
+    Ok(fetch_redis_json_object::<ValidatorBalanceAccumulatorInput>(
+        con,
+        format!(
+            "{}:{}:{}",
+            VALIDATOR_COMMITMENT_CONSTANTS
+                .balance_verification_accumulator_key
+                .to_owned(),
+            protocol,
+            index
+        ),
+    )
+    .await?)
+}
+
+pub async fn save_balance_accumulator_proof(
+    con: &mut Connection,
+    proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    level: u64,
+    index: u64,
+) -> Result<()> {
+    let balance_proof = BalanceAccumulatorProof {
+        needs_change: false,
+        proof: proof.to_bytes(),
+    };
+
+    save_json_object(
+        con,
+        &format!(
+            "{}:{}:{}",
+            VALIDATOR_COMMITMENT_CONSTANTS
+                .balance_verification_accumulator_proof_key
+                .to_owned(),
+            level,
+            index
+        ),
+        &balance_proof,
+    )
+    .await?;
+
+    Ok(())
+}
+
+pub async fn fetch_final_layer_input(
+    con: &mut Connection,
+    protocol: &str,
 ) -> Result<FinalCircuitInput> {
     let json: String = con
         .get(format!(
@@ -441,7 +495,8 @@ pub fn u64_to_ssz_leaf(value: u64) -> [u8; 32] {
     ret.try_into().unwrap()
 }
 
-pub fn bits_to_bytes(bits: &[u64]) -> Vec<u8> {
+// TODO: This must go in utils
+fn bits_to_bytes(bits: &[u64]) -> Vec<u8> {
     bits.chunks(8)
         .map(|bits| (0..8usize).fold(0u8, |byte, pos| byte | ((bits[pos]) << (7 - pos)) as u8))
         .collect::<Vec<_>>()

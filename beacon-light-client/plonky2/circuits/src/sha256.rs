@@ -1,8 +1,11 @@
-use plonky2::field::extension::Extendable;
+use itertools::Itertools;
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::target::BoolTarget;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::{field::extension::Extendable, iop::target::Target};
 use plonky2_u32::gadgets::arithmetic_u32::{CircuitBuilderU32, U32Target};
+
+use crate::is_valid_merkle_branch::Sha256;
 
 #[rustfmt::skip]
 pub const H256: [u32; 8] = [
@@ -269,6 +272,195 @@ fn add_u32<F: RichField + Extendable<D>, const D: usize>(
 ) -> U32Target {
     let (res, _carry) = builder.add_u32(*a, *b);
     res
+}
+
+pub fn connect_arrays<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    first: &[Target],
+    second: &[Target],
+) {
+    assert!(first.len() == second.len());
+
+    for idx in 0..first.len() {
+        builder.connect(first[idx], second[idx]);
+    }
+}
+
+pub fn connect_bool_arrays<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    first: &[BoolTarget],
+    second: &[BoolTarget],
+) {
+    let first = first
+        .iter()
+        .map(|bool_target| bool_target.target)
+        .collect_vec();
+    let second = second
+        .iter()
+        .map(|bool_target| bool_target.target)
+        .collect_vec();
+    connect_arrays(builder, first.as_slice(), second.as_slice())
+}
+
+pub fn bool_arrays_are_equal<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    first: &[BoolTarget],
+    second: &[BoolTarget],
+) -> BoolTarget {
+    let first = first
+        .iter()
+        .map(|bool_target| bool_target.target)
+        .collect_vec();
+    let second = second
+        .iter()
+        .map(|bool_target| bool_target.target)
+        .collect_vec();
+    arrays_are_equal(builder, first.as_slice(), second.as_slice())
+}
+
+pub fn arrays_are_equal<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    first: &[Target],
+    second: &[Target],
+) -> BoolTarget {
+    assert!(first.len() == second.len());
+
+    let mut result = builder._true();
+    for idx in 0..first.len() {
+        let is_equal = builder.is_equal(first[idx], second[idx]);
+        result = builder.and(result, is_equal);
+    }
+    result
+}
+
+pub fn sha256_pair<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    left: &[BoolTarget],
+    right: &[BoolTarget],
+) -> Sha256 {
+    let message = [left, right].concat();
+    sha256(builder, message.as_slice())
+}
+
+pub fn sha256<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    message: &[BoolTarget],
+) -> Sha256 {
+    let mut digest = Vec::new();
+    let block_count = (message.len() + 65 + 511) / 512;
+    let padded_msg_len = 512 * block_count;
+    let p = padded_msg_len - 64 - message.len();
+    assert!(p > 1);
+
+    let mut msg = message.to_owned();
+
+    msg.push(builder.constant_bool(true));
+    for _ in 0..p - 1 {
+        msg.push(builder.constant_bool(false));
+    }
+    for i in 0..64 {
+        let b = ((message.len() as u64) >> (63 - i)) & 1;
+        msg.push(builder.constant_bool(b == 1));
+    }
+
+    // init states
+    let mut state = Vec::new();
+    for i in 0..8 {
+        state.push(builder.constant_u32(H256[i]));
+    }
+
+    let mut k256 = Vec::new();
+    for i in 0..64 {
+        k256.push(builder.constant_u32(K256[i]));
+    }
+
+    for blk in 0..block_count {
+        let mut x = Vec::new();
+        let mut a = state[0].clone();
+        let mut b = state[1].clone();
+        let mut c = state[2].clone();
+        let mut d = state[3].clone();
+        let mut e = state[4].clone();
+        let mut f = state[5].clone();
+        let mut g = state[6].clone();
+        let mut h = state[7].clone();
+
+        for i in 0..16 {
+            let index = blk as usize * 512 + i * 32;
+            let u32_target = builder.le_sum(msg[index..index + 32].iter().rev());
+
+            x.push(U32Target(u32_target));
+            let mut t1 = h.clone();
+            let big_sigma1_e = big_sigma1(builder, &e);
+            t1 = add_u32(builder, &t1, &big_sigma1_e);
+            let ch_e_f_g = ch(builder, &e, &f, &g);
+            t1 = add_u32(builder, &t1, &ch_e_f_g);
+            t1 = add_u32(builder, &t1, &k256[i]);
+            t1 = add_u32(builder, &t1, &x[i]);
+
+            let mut t2 = big_sigma0(builder, &a);
+            let maj_a_b_c = maj(builder, &a, &b, &c);
+            t2 = add_u32(builder, &t2, &maj_a_b_c);
+
+            h = g;
+            g = f;
+            f = e;
+            e = add_u32(builder, &d, &t1);
+            d = c;
+            c = b;
+            b = a;
+            a = add_u32(builder, &t1, &t2);
+        }
+
+        for i in 16..64 {
+            let s0 = sigma0(builder, &x[(i + 1) & 0x0f]);
+            let s1 = sigma1(builder, &x[(i + 14) & 0x0f]);
+
+            let s0_add_s1 = add_u32(builder, &s0, &s1);
+            let s0_add_s1_add_x = add_u32(builder, &s0_add_s1, &x[(i + 9) & 0xf]);
+            x[i & 0xf] = add_u32(builder, &x[i & 0xf], &s0_add_s1_add_x);
+
+            let big_sigma0_a = big_sigma0(builder, &a);
+            let big_sigma1_e = big_sigma1(builder, &e);
+            let ch_e_f_g = ch(builder, &e, &f, &g);
+            let maj_a_b_c = maj(builder, &a, &b, &c);
+
+            let h_add_sigma1 = add_u32(builder, &h, &big_sigma1_e);
+            let h_add_sigma1_add_ch_e_f_g = add_u32(builder, &h_add_sigma1, &ch_e_f_g);
+            let h_add_sigma1_add_ch_e_f_g_add_k256 =
+                add_u32(builder, &h_add_sigma1_add_ch_e_f_g, &k256[i]);
+
+            let t1 = add_u32(builder, &x[i & 0xf], &h_add_sigma1_add_ch_e_f_g_add_k256);
+            let t2 = add_u32(builder, &big_sigma0_a, &maj_a_b_c);
+
+            h = g;
+            g = f;
+            f = e;
+            e = add_u32(builder, &d, &t1);
+            d = c;
+            c = b;
+            b = a;
+            a = add_u32(builder, &t1, &t2);
+        }
+
+        state[0] = add_u32(builder, &state[0], &a);
+        state[1] = add_u32(builder, &state[1], &b);
+        state[2] = add_u32(builder, &state[2], &c);
+        state[3] = add_u32(builder, &state[3], &d);
+        state[4] = add_u32(builder, &state[4], &e);
+        state[5] = add_u32(builder, &state[5], &f);
+        state[6] = add_u32(builder, &state[6], &g);
+        state[7] = add_u32(builder, &state[7], &h);
+    }
+
+    for i in 0..8 {
+        let bit_targets = builder.split_le_base::<2>(state[i].0, 32);
+        for j in (0..32).rev() {
+            digest.push(BoolTarget::new_unsafe(bit_targets[j]));
+        }
+    }
+
+    digest.try_into().unwrap()
 }
 
 // padded_msg_len = block_count x 512 bits

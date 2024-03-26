@@ -1,6 +1,7 @@
+use itertools::Itertools;
 use plonky2::{
     field::{extension::Extendable, types::Field},
-    hash::hash_types::RichField,
+    hash::{hash_types::RichField, merkle_proofs::MerkleProof},
     iop::{
         target::BoolTarget,
         witness::{PartialWitness, WitnessWrite},
@@ -10,7 +11,10 @@ use plonky2::{
 use plonky2_u32::gadgets::arithmetic_u32::U32Target;
 use sha2::{Digest, Sha256};
 
-use crate::biguint::{BigUintTarget, CircuitBuilderBiguint};
+use crate::{
+    biguint::{BigUintTarget, CircuitBuilderBiguint},
+    is_valid_merkle_branch::MerkleBranch,
+};
 
 pub const ETH_SHA256_BIT_SIZE: usize = 256;
 pub const POSEIDON_HASH_SIZE: usize = 4;
@@ -51,6 +55,16 @@ pub fn bool_target_equal<F: RichField + Extendable<D>, const D: usize>(
     }
 
     all_equal
+}
+
+pub fn create_sha256_merkle_proof<
+    const DEPTH: usize,
+    F: RichField + Extendable<D>,
+    const D: usize,
+>(
+    builder: &mut CircuitBuilder<F, D>,
+) -> MerkleBranch<DEPTH> {
+    [(); DEPTH].map(|_| create_bool_target_array(builder))
 }
 
 pub fn create_bool_target_array<F: RichField + Extendable<D>, const D: usize>(
@@ -95,6 +109,15 @@ pub fn biguint_to_bits_target<F: RichField + Extendable<D>, const D: usize, cons
     res
 }
 
+pub fn biguint_to_le_bits_target<F: RichField + Extendable<D>, const D: usize, const B: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    a: &BigUintTarget,
+) -> Vec<BoolTarget> {
+    biguint_to_bits_target::<F, D, B>(builder, a)
+        .into_iter()
+        .rev()
+        .collect_vec()
+}
 pub fn _right_rotate<const S: usize>(n: [BoolTarget; S], bits: usize) -> [BoolTarget; S] {
     let mut res = [None; S];
     for i in 0..S {

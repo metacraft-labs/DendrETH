@@ -42,6 +42,7 @@ glob = "0.3.1"
 sha256 = "1.5.0"
 lazy_static = "1.4.0"
 ff = { package = "ff", version = "0.13", features = ["derive"] }
+itertools = "0.12.1"
 
 [[bin]]
 name = "balance_verification"
@@ -66,3 +67,23 @@ path = "bin/wrapper.rs"
 [[bin]]
 name = "commitment_mapper_circuit_data_generation"
 path = "bin/commitment_mapper_circuit_data_generation.rs"
+
+[[bin]]
+name = "balance_verification_accumulator"
+path = "bin/balance_verification_accumulator.rs"
+
+[[bin]]
+name = "commitment_mapper_accumulator"
+path = "bin/commitment_mapper_accumulator.rs"
+
+[[bin]]
+name = "commitment_mapper_accumulator_circuit_data_generation"
+path = "bin/commitment_mapper_accumulator_circuit_data_generation.rs"
+
+[[bin]]
+name = "basic_recursion"
+path = "bin/basic_recursion.rs"
+
+[[bin]]
+name = "test"
+path = "bin/test.rs"
