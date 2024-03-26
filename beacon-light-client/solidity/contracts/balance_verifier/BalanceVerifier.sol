@@ -5,31 +5,60 @@ import './verifier.sol';
 import './LidoZKOracle.sol';
 
 contract BalanceVerifier is PlonkVerifier, LidoZKOracle {
+  /// @notice The address of the beacon roots precompile.
+  /// @dev https://eips.ethereum.org/EIPS/eip-4788
+  address internal constant BEACON_ROOTS =
+    0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02;
+
+  /// @notice the verifier_digest of the plonky2 circuit
   uint256 public immutable VERIFIER_DIGEST;
+
+  /// @notice lido validators withdrawal credentials
   bytes32 public immutable WITHDRAWAL_CREDENTIALS;
 
-  mapping(uint256 => bytes32) public stateRoots;
-  mapping(uint256 => uint256) public balanceSums;
-  mapping(uint256 => uint256) public numberOfNonActivatedValidators;
-  mapping(uint256 => uint256) public numberOfActiveValidators;
-  mapping(uint256 => uint256) public numberOfExitedValidators;
+  /// @notice The genesis block timestamp.
+  uint256 public immutable GENESIS_BLOCK_TIMESTAMP;
 
-  constructor(uint256 verifier_digest, bytes32 withdrawal_credentials) {
+  /// @notice The length of the beacon roots ring buffer.
+  uint256 internal constant BEACON_ROOTS_HISTORY_BUFFER_LENGTH = 8191;
+
+  /// @dev Beacon root out of range
+  error BeaconRootOutOfRange();
+
+  /// @dev No block root is found using the beacon roots precompile.
+  error NoBlockRootFound();
+
+  mapping(uint256 => Report) reports;
+
+  constructor(
+    uint256 verifier_digest,
+    bytes32 withdrawal_credentials,
+    uint256 genesis_block_timestamp
+  ) {
     VERIFIER_DIGEST = verifier_digest;
     WITHDRAWAL_CREDENTIALS = withdrawal_credentials;
+    GENESIS_BLOCK_TIMESTAMP = genesis_block_timestamp;
   }
 
+  /// @notice Verifies the proof and writes the data for given slot if valid
+  /// @param proof the zk proof for total value locked
+  /// @param refSlot the slot for which the proof is ran
+  /// @param balanceSum the sum of the balances of all validators with withdrawal credentials equal to WITHDRAWAL_CREDENTIALS
+  /// @param _numberOfNonActivatedValidators number of validators yet to be activated
+  /// @param _numberOfActiveValidators number of active validators
+  /// @param _numberOfExitedValidators number of exited validators
   function verify(
     bytes calldata proof,
     uint256 refSlot,
-    bytes32 stateRoot,
     uint64 balanceSum,
     uint64 _numberOfNonActivatedValidators,
     uint64 _numberOfActiveValidators,
     uint64 _numberOfExitedValidators
   ) public {
+    bytes32 blockRoot = findBlockRoot(refSlot);
+
     bytes memory concataneted = abi.encodePacked(
-      stateRoot,
+      blockRoot,
       WITHDRAWAL_CREDENTIALS,
       balanceSum,
       _numberOfNonActivatedValidators,
@@ -60,11 +89,14 @@ contract BalanceVerifier is PlonkVerifier, LidoZKOracle {
 
     require(verificationResult, 'Verification failed');
 
-    stateRoots[refSlot] = stateRoot;
-    balanceSums[refSlot] = balanceSum;
-    numberOfNonActivatedValidators[refSlot] = _numberOfNonActivatedValidators;
-    numberOfActiveValidators[refSlot] = _numberOfActiveValidators;
-    numberOfExitedValidators[refSlot] = _numberOfExitedValidators;
+    reports[refSlot] = Report({
+      present: true,
+      cBalanceGwei: balanceSum,
+      numValidators: _numberOfNonActivatedValidators +
+        _numberOfActiveValidators +
+        _numberOfExitedValidators,
+      exitedValidators: _numberOfExitedValidators
+    });
   }
 
   function getReport(
@@ -80,11 +112,44 @@ contract BalanceVerifier is PlonkVerifier, LidoZKOracle {
       uint256 exitedValidators
     )
   {
+    Report memory report = reports[refSlot];
+
     return (
-      true,
-      balanceSums[refSlot],
-      numberOfActiveValidators[refSlot],
-      numberOfExitedValidators[refSlot]
+      report.present,
+      report.cBalanceGwei,
+      report.numValidators,
+      report.exitedValidators
     );
+  }
+
+  /// @notice Attempts to find the block root for the given slot.
+  /// @param _slot The slot to get the block root for.
+  /// @return blockRoot The beacon block root of the given slot.
+  /// @dev BEACON_ROOTS returns a block root for a given parent block's timestamp. To get the block root for slot
+  ///      N, you use the timestamp of slot N+1. If N+1 is not avaliable, you use the timestamp of slot N+2, and
+  //       so on.
+  function findBlockRoot(uint256 _slot) public view returns (bytes32 blockRoot) {
+    uint256 currBlockTimestamp = GENESIS_BLOCK_TIMESTAMP + ((_slot + 1) * 12);
+
+    uint256 earliestBlockTimestamp = block.timestamp -
+      (BEACON_ROOTS_HISTORY_BUFFER_LENGTH * 12);
+    if (currBlockTimestamp <= earliestBlockTimestamp) {
+      revert BeaconRootOutOfRange();
+    }
+
+    while (currBlockTimestamp <= block.timestamp) {
+      (bool success, bytes memory result) = BEACON_ROOTS.staticcall(
+        abi.encode(currBlockTimestamp)
+      );
+      if (success && result.length > 0) {
+        return abi.decode(result, (bytes32));
+      }
+
+      unchecked {
+        currBlockTimestamp += 12;
+      }
+    }
+
+    revert NoBlockRootFound();
   }
 }

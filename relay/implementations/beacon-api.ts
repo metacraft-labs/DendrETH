@@ -72,10 +72,8 @@ export class BeaconApi implements IBeaconApi {
 
     const blockHashProof = beaconBlockTree
       .getSingleProof(
-        ssz.deneb.BeaconBlockBody.getPathInfo([
-          'executionPayload',
-          'blockHash',
-        ]).gindex,
+        ssz.deneb.BeaconBlockBody.getPathInfo(['executionPayload', 'blockHash'])
+          .gindex,
       )
       .map(bytesToHex);
 
@@ -165,6 +163,22 @@ export class BeaconApi implements IBeaconApi {
 
     throw new Error(
       `Closest existing block is beyond the limit of ${limitSlot}`,
+    );
+  }
+
+  async getBlockHeader(slot: number | string) {
+    const { ssz } = await import('@lodestar/types');
+
+    let blockHeaderResult = await (
+      await this.fetchWithFallback(`/eth/v1/beacon/headers/${slot}`)
+    ).json();
+
+    if (blockHeaderResult.code === 404) {
+      throw new Error('block header is not present');
+    }
+
+    return ssz.phase0.BeaconBlockHeader.fromJson(
+      blockHeaderResult.data.header.message,
     );
   }
 

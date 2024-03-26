@@ -43,6 +43,8 @@ pub struct FinalCircuitTargets {
     pub slot: BigUintTarget,
     pub slot_branch: [[BoolTarget; ETH_SHA256_BIT_SIZE]; 5],
     pub state_root: [BoolTarget; ETH_SHA256_BIT_SIZE],
+    pub block_root: [BoolTarget; ETH_SHA256_BIT_SIZE],
+    pub state_root_branch: [[BoolTarget; ETH_SHA256_BIT_SIZE]; 3],
     pub validators_branch: [[BoolTarget; ETH_SHA256_BIT_SIZE]; 5],
     pub balance_branch: [[BoolTarget; ETH_SHA256_BIT_SIZE]; 5],
     pub balance_sum: BigUintTarget,
@@ -53,7 +55,7 @@ pub struct FinalCircuitTargets {
 pub type FinalCircuitProof = ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>;
 
 pub trait FinalCircuitProofExt {
-    fn get_final_circuit_state_root(&self) -> [u64; ETH_SHA256_BIT_SIZE];
+    fn get_final_circuit_block_root(&self) -> [u64; ETH_SHA256_BIT_SIZE];
 
     fn get_final_circuit_withdrawal_credentials(&self) -> [u64; ETH_SHA256_BIT_SIZE];
 
@@ -67,7 +69,7 @@ pub trait FinalCircuitProofExt {
 }
 
 impl FinalCircuitProofExt for FinalCircuitProof {
-    fn get_final_circuit_state_root(&self) -> [u64; ETH_SHA256_BIT_SIZE] {
+    fn get_final_circuit_block_root(&self) -> [u64; ETH_SHA256_BIT_SIZE] {
         self.public_inputs[0..256]
             .iter()
             .map(|x| x.0 % GoldilocksField::ORDER)
@@ -161,6 +163,11 @@ pub fn build_final_circuit(
 
     let state_root = create_bool_target_array(&mut builder);
 
+    let block_root = create_bool_target_array(&mut builder);
+
+    let state_root_branch =
+        create_and_connect_merkle_branch(&mut builder, 11, &state_root, &block_root, 3);
+
     let validator_size_bits = create_bool_target_array(&mut builder);
 
     let validators_hasher = make_circuits(&mut builder, (2 * ETH_SHA256_BIT_SIZE) as u64);
@@ -176,8 +183,13 @@ pub fn build_final_circuit(
         );
     }
 
-    let validators_merkle_branch =
-        create_and_connect_merkle_branch(&mut builder, 43, &validators_hasher.digest, &state_root);
+    let validators_merkle_branch = create_and_connect_merkle_branch(
+        &mut builder,
+        43,
+        &validators_hasher.digest,
+        &state_root,
+        5,
+    );
 
     let balances_hasher = make_circuits(&mut builder, (2 * ETH_SHA256_BIT_SIZE) as u64);
 
@@ -193,7 +205,7 @@ pub fn build_final_circuit(
     }
 
     let balance_merkle_branch =
-        create_and_connect_merkle_branch(&mut builder, 44, &balances_hasher.digest, &state_root);
+        create_and_connect_merkle_branch(&mut builder, 44, &balances_hasher.digest, &state_root, 5);
 
     let slot = builder.add_virtual_biguint_target(2);
 
@@ -202,15 +214,27 @@ pub fn build_final_circuit(
     let slot_bits = ssz_num_to_bits(&mut builder, &slot, 64);
 
     let slot_merkle_branch =
-        create_and_connect_merkle_branch(&mut builder, 34, &slot_bits, &state_root);
+        create_and_connect_merkle_branch(&mut builder, 34, &slot_bits, &state_root, 5);
 
     let public_inputs_hasher = make_circuits(&mut builder, 3 * ETH_SHA256_BIT_SIZE as u64);
 
     let final_sum_bits = biguint_to_bits_target::<F, D, 2>(&mut builder, &balance_sum);
 
-    let non_active_validators_bits = builder.split_le(number_of_non_activated_validators, 64).into_iter().rev().collect_vec();
-    let active_validators_bits = builder.split_le(number_of_active_validators, 64).into_iter().rev().collect_vec();
-    let exited_validators_bits = builder.split_le(number_of_exited_validators, 64).into_iter().rev().collect_vec();
+    let non_active_validators_bits = builder
+        .split_le(number_of_non_activated_validators, 64)
+        .into_iter()
+        .rev()
+        .collect_vec();
+    let active_validators_bits = builder
+        .split_le(number_of_active_validators, 64)
+        .into_iter()
+        .rev()
+        .collect_vec();
+    let exited_validators_bits = builder
+        .split_le(number_of_exited_validators, 64)
+        .into_iter()
+        .rev()
+        .collect_vec();
 
     for i in 0..ETH_SHA256_BIT_SIZE {
         builder.connect(public_inputs_hasher.message[i].target, state_root[i].target);
@@ -266,7 +290,9 @@ pub fn build_final_circuit(
                 verifier_circuit_target: commitment_mapper_verifier_circuit_target,
             },
             validators_branch: validators_merkle_branch.branch.try_into().unwrap(),
+            block_root,
             state_root,
+            state_root_branch: state_root_branch.branch.try_into().unwrap(),
             balance_branch: balance_merkle_branch.branch.try_into().unwrap(),
             balance_sum,
             slot,
@@ -383,8 +409,9 @@ fn create_and_connect_merkle_branch(
     index: u32,
     leaf_targets: &[BoolTarget],
     root_targets: &[BoolTarget; ETH_SHA256_BIT_SIZE],
+    depth: usize,
 ) -> IsValidMerkleBranchTargets {
-    let merkle_branch = is_valid_merkle_branch(builder, 5);
+    let merkle_branch = is_valid_merkle_branch(builder, depth);
     let index = builder.constant(GoldilocksField::from_canonical_u32(index));
 
     builder.connect(merkle_branch.index, index);

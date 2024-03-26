@@ -144,6 +144,8 @@ export class Redis implements IRedis {
 
   async saveFinalProofInput(input: {
     stateRoot: number[];
+    stateRootBranch: number[][];
+    blockRoot: number[];
     slot: string;
     slotBranch: number[][];
     withdrawalCredentials: number[];
@@ -237,9 +239,7 @@ export class Redis implements IRedis {
   async getBalanceWrapperProofWithPublicInputs(): Promise<any> {
     await this.waitForConnection();
 
-    return this.redisClient.get(
-      'balance_wrapper_proof_with_public_inputs',
-    );
+    return this.redisClient.get('balance_wrapper_proof_with_public_inputs');
   }
 
   async getBalanceWrapperVerifierOnly(): Promise<any> {

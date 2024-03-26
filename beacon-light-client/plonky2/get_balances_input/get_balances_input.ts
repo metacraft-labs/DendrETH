@@ -83,7 +83,7 @@ let TAKE;
 
   const beaconApi = new BeaconApi([options['beacon-node']]);
 
-  const { beaconState } = await beaconApi.getBeaconState();
+  const { beaconState } = await beaconApi.getBeaconState(8670323);
 
   const validators = beaconState.validators.slice(0, TAKE);
   TAKE = validators.length;
@@ -254,9 +254,26 @@ let TAKE;
   const beaconStateView = ssz.deneb.BeaconState.toViewDU(beaconState);
   const beaconStateTree = new Tree(beaconStateView.node);
 
+  const beaconBlockHeader = await beaconApi.getBlockHeader(8670323);
+
+  beaconBlockHeader.stateRoot = ssz.deneb.BeaconState.hashTreeRoot(beaconState);
+
+  const beaconBlockHeaderView =
+    ssz.phase0.BeaconBlockHeader.toViewDU(beaconBlockHeader);
+  const beaconBlockHeaderTree = new Tree(beaconBlockHeaderView.node);
+  const stateRootProof = beaconBlockHeaderTree
+    .getSingleProof(
+      ssz.phase0.BeaconBlockHeader.getPathInfo(['state_root']).gindex,
+    )
+    .map(bytesToHex);
+
   await redis.saveFinalProofInput({
     stateRoot: hexToBits(
       bytesToHex(ssz.deneb.BeaconState.hashTreeRoot(beaconState)),
+    ),
+    stateRootBranch: stateRootProof.map(x => hexToBits(x)),
+    blockRoot: hexToBits(
+      bytesToHex(ssz.phase0.BeaconBlockHeader.hashTreeRoot(beaconBlockHeader)),
     ),
     slot: beaconState.slot.toString(),
     slotBranch: beaconStateTree
@@ -268,6 +285,7 @@ let TAKE;
     balanceBranch: beaconStateTree
       .getSingleProof(44n)
       .map(x => hexToBits(bytesToHex(x))),
+
     validatorsBranch: beaconStateTree
       .getSingleProof(43n)
       .map(x => hexToBits(bytesToHex(x))),
