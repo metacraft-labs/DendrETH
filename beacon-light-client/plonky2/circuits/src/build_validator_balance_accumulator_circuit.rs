@@ -21,18 +21,18 @@ use crate::{
     },
 };
 
-pub const RANGE_TOTAL_VALUE_PUB_INDEX: usize = 0;
-pub const RANGE_START_PUB_INDEX: usize = 2;
-pub const RANGE_END_PUB_INDEX: usize = 3;
-pub const RANGE_DEPOSIT_COUNT: usize = 4;
-pub const BALANCES_ROOT_PUB_INDEX: usize = 5;
-pub const RANGE_VALIDATOR_ACCUMULATOR_PUB_INDEX: usize = 261;
-pub const VALIDATORS_COMMITMENT_PUB_INDEX: usize = 265;
-pub const CURRENT_ETH1_DEPOSIT_PUB_INDEX: usize = 269;
-pub const CURRENT_EPOCH_PUB_INDEX: usize = 271;
-pub const NUMBER_OF_NON_ACTIVATED_VALIDATORS_INDEX: usize = 273;
-pub const NUMBER_OF_ACTIVE_VALIDATORS_INDEX: usize = 274;
-pub const NUMBER_OF_EXITED_VALIDATORS_INDEX: usize = 275;
+pub const RANGE_TOTAL_VALUE_PUB_INDEX: usize = 0; // size 2
+pub const RANGE_START_PUB_INDEX: usize = 2; // size 1
+pub const RANGE_END_PUB_INDEX: usize = 3; // size 1
+pub const RANGE_DEPOSIT_COUNT: usize = 4; // size 1
+pub const BALANCES_ROOT_PUB_INDEX: usize = 5; // size 256
+pub const RANGE_VALIDATOR_ACCUMULATOR_PUB_INDEX: usize = 261; // size 4
+pub const VALIDATORS_COMMITMENT_PUB_INDEX: usize = 265; // size 4
+pub const CURRENT_ETH1_DEPOSIT_PUB_INDEX: usize = 269; // size 2
+pub const CURRENT_EPOCH_PUB_INDEX: usize = 271; // size 2
+pub const NUMBER_OF_NON_ACTIVATED_VALIDATORS_INDEX: usize = 273; // size 1
+pub const NUMBER_OF_ACTIVE_VALIDATORS_INDEX: usize = 274; // size 1
+pub const NUMBER_OF_EXITED_VALIDATORS_INDEX: usize = 275; // size 1
 
 pub type ValidatorBalanceAccumulatorProof =
     ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>;
@@ -272,32 +272,11 @@ pub fn build_validator_balance_accumulator_circuit(
     type C = PoseidonGoldilocksConfig;
     type F = <C as GenericConfig<D>>::F;
 
-    let standard_recursion_config = CircuitConfig::standard_recursion_config();
+    let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
+    let targets = validator_balance_accumulator_verification(&mut builder, validators_len);
 
-    let mut builder = CircuitBuilder::<F, D>::new(standard_recursion_config);
-
-    let validator_balance_verification_targets =
-        validator_balance_accumulator_verification(&mut builder, validators_len);
-
-    set_public_variables(
-        &mut builder,
-        &validator_balance_verification_targets.range_total_value,
-        validator_balance_verification_targets.range_start,
-        validator_balance_verification_targets.range_end,
-        validator_balance_verification_targets.range_deposit_count,
-        validator_balance_verification_targets.balances_root,
-        validator_balance_verification_targets.accumulator_commitment_range_root,
-        validator_balance_verification_targets.validator_commitment_root,
-        &validator_balance_verification_targets.current_eth1_deposit_index,
-        &validator_balance_verification_targets.current_epoch,
-        validator_balance_verification_targets.number_of_non_activated_validators,
-        validator_balance_verification_targets.number_of_active_validators,
-        validator_balance_verification_targets.number_of_exited_validators,
-    );
-
-    let data = builder.build::<C>();
-
-    (validator_balance_verification_targets, data)
+    let circuit_data = builder.build::<C>();
+    (targets, circuit_data)
 }
 
 pub fn set_public_variables(

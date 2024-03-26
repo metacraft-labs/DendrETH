@@ -200,7 +200,7 @@ export interface BalancesAccumulatorInput {
   balances: string[];
   balancesProofs: string[][];
   validatorDepositIndexes: number[];
-  validatorIndexes: number[];
+  validatorsGindices: number[];
   validators: ValidatorPoseidonInput[];
   validatorCommitmentProofs: string[][][];
   validatorIsNotZero: number[];

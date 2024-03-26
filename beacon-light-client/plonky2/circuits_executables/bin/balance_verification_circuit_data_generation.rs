@@ -62,7 +62,7 @@ pub async fn async_main() -> Result<()> {
                 .value_name("number")
                 .help("Sets the number of validators")
                 .takes_value(true)
-                .default_value("8"),
+                .default_value("2"),
         )
         .arg(
             Arg::with_name("circuit_name")
@@ -89,6 +89,7 @@ pub async fn async_main() -> Result<()> {
 
     let (validators_balance_verification_targets, first_level_data) =
         if circuit_name == "balance_accumulator" {
+            println!("building accumulator");
             let (targets, data) = build_validator_balance_accumulator_circuit(validators_len);
             (
                 ValidatorBalanceTargets::<1>::ValidatorBalanceAccumulatorFirstLevel(targets),

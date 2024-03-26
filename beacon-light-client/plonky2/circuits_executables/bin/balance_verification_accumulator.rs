@@ -21,6 +21,7 @@ use circuits_executables::{
 };
 use colored::Colorize;
 use futures_lite::future;
+use itertools::Itertools;
 use jemallocator::Jemalloc;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
@@ -39,6 +40,12 @@ const CIRCUIT_NAME: &str = "balance_accumulator";
 enum Targets {
     FirstLevel(Option<ValidatorBalanceVerificationTargetsAccumulator>),
     InnerLevel(Option<BalanceInnerCircuitTargets>),
+}
+
+fn bits_to_bytes(bits: &[u64]) -> Vec<u8> {
+    bits.chunks(8)
+        .map(|bits| (0..8usize).fold(0u8, |byte, pos| byte | ((bits[pos]) << (7 - pos)) as u8))
+        .collect::<Vec<_>>()
 }
 
 fn main() -> Result<()> {
@@ -202,6 +209,7 @@ async fn process_first_level_task(
 ) -> Result<()> {
     let balance_input_index = u64::from_be_bytes(queue_item.data[0..8].try_into().unwrap());
 
+    println!("balance input index: {}", balance_input_index);
     if balance_input_index as usize != VALIDATOR_REGISTRY_LIMIT {
         println!(
             "{}",
@@ -230,6 +238,14 @@ async fn process_first_level_task(
 
     let proof = circuit_data.prove(pw)?;
 
+    // let merkle_root_bits = proof.public_inputs[0..256]
+    //     .iter()
+    //     .map(|element| element.0)
+    //     .collect_vec();
+    //
+    // let merkle_root = hex::encode(bits_to_bytes(merkle_root_bits.as_slice()));
+    // println!("merkle_root: {}", merkle_root);
+
     match save_balance_accumulator_proof(con, proof, 0, balance_input_index).await {
         Err(err) => {
             println!(
@@ -242,7 +258,8 @@ async fn process_first_level_task(
             return Err(err);
         }
         Ok(_) => {
-            queue.complete(con, &queue_item).await?;
+            // TODO: Uncomment this
+            // queue.complete(con, &queue_item).await?;
         }
     }
 

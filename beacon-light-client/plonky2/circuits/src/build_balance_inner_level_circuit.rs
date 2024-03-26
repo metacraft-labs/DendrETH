@@ -1,5 +1,5 @@
 use plonky2::{
-    hash::{poseidon::PoseidonHash},
+    hash::poseidon::PoseidonHash,
     iop::target::BoolTarget,
     plonk::{
         circuit_builder::CircuitBuilder,
@@ -12,9 +12,7 @@ use plonky2::{
 
 use crate::{
     biguint::CircuitBuilderBiguint,
-    build_validator_balance_circuit::{
-        set_public_variables, ValidatorBalanceProofTargetsExt,
-    },
+    build_validator_balance_circuit::{set_public_variables, ValidatorBalanceProofTargetsExt},
     sha256::make_circuits,
     targets_serialization::{ReadTargets, WriteTargets},
     utils::ETH_SHA256_BIT_SIZE,
@@ -80,26 +78,10 @@ pub fn build_inner_level_circuit<const N: usize>(
     let pt2 = builder.add_virtual_proof_with_pis(&inner_circuit_data.common);
 
     builder.verify_proof::<C>(&pt1, &verifier_circuit_target, &inner_circuit_data.common);
-
     builder.verify_proof::<C>(&pt2, &verifier_circuit_target, &inner_circuit_data.common);
 
     let poseidon_hash = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_range_validator_commitment(&pt1);
-
-    let sha256_hash = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_range_balances_root(&pt1);
-
     let poseidon_hash2 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_range_validator_commitment(&pt2);
-
-    let sha256_hash2 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_range_balances_root(&pt2);
-
-    let hasher = make_circuits(&mut builder, (2 * ETH_SHA256_BIT_SIZE) as u64);
-
-    for i in 0..ETH_SHA256_BIT_SIZE {
-        builder.connect(hasher.message[i].target, sha256_hash[i].target);
-        builder.connect(
-            hasher.message[i + ETH_SHA256_BIT_SIZE].target,
-            sha256_hash2[i].target,
-        );
-    }
 
     let hash = builder.hash_n_to_hash_no_pad::<PoseidonHash>(
         poseidon_hash
@@ -109,6 +91,18 @@ pub fn build_inner_level_circuit<const N: usize>(
             .cloned()
             .collect(),
     );
+
+    let sha256_hash = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_range_balances_root(&pt1);
+    let sha256_hash2 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_range_balances_root(&pt2);
+    let hasher = make_circuits(&mut builder, (2 * ETH_SHA256_BIT_SIZE) as u64);
+
+    for i in 0..ETH_SHA256_BIT_SIZE {
+        builder.connect(hasher.message[i].target, sha256_hash[i].target);
+        builder.connect(
+            hasher.message[i + ETH_SHA256_BIT_SIZE].target,
+            sha256_hash2[i].target,
+        );
+    }
 
     let number_of_non_activated_validators1 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_number_of_non_activated_validators(&pt1);
     let number_of_non_activated_validators2 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_number_of_non_activated_validators(&pt2);
@@ -151,8 +145,14 @@ pub fn build_inner_level_circuit<const N: usize>(
         }
     }
 
-    let current_epoch1 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_current_epoch(&pt1);
-    let current_epoch2 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_current_epoch(&pt2);
+    let current_epoch1 =
+        <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_current_epoch(
+            &pt1,
+        );
+    let current_epoch2 =
+        <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_current_epoch(
+            &pt2,
+        );
 
     builder.connect_biguint(&current_epoch1, &current_epoch2);
 

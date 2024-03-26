@@ -1,6 +1,6 @@
 pub mod biguint;
-pub mod build_balance_inner_level_circuit;
 pub mod build_balance_accumulator_inner_level;
+pub mod build_balance_inner_level_circuit;
 pub mod build_commitment_mapper_first_level_circuit;
 pub mod build_commitment_mapper_inner_level_circuit;
 pub mod build_final_circuit;

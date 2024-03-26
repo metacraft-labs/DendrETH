@@ -1,47 +1,58 @@
-use itertools::Itertools;
+use itertools::{izip, Itertools};
+use num::{BigUint, FromPrimitive};
 use plonky2::{
     field::extension::Extendable,
-    hash::hash_types::{HashOutTarget, RichField},
-    iop::target::{BoolTarget, Target},
+    hash::{
+        hash_types::{HashOutTarget, RichField},
+        poseidon::PoseidonHash,
+    },
+    iop::target::Target,
     plonk::circuit_builder::CircuitBuilder,
     util::serialization::{Buffer, IoResult, Read, Write},
 };
+use plonky2_u32::gadgets::arithmetic_u32::U32Target;
 
 use crate::{
     biguint::{BigUintTarget, CircuitBuilderBiguint},
     hash_tree_root_poseidon::hash_tree_root_poseidon,
-    is_active_validator::get_validator_status,
-    is_valid_merkle_branch::is_valid_merkle_branch_sha256_result,
-    is_valid_merkle_branch_poseidon::is_valid_merkle_branch_poseidon_result,
-    targets_serialization::{ReadTargets, WriteTargets},
-    utils::{create_bool_target_array, if_biguint, ssz_num_from_bits, ETH_SHA256_BIT_SIZE},
-    validator_accumulator_commitment_mapper::get_validators_accumulator_leaves,
-    validator_hash_tree_root_poseidon::{
-        hash_tree_root_validator_poseidon, ValidatorPoseidonHashTreeRootTargets,
-        ValidatorPoseidonTargets,
+    is_valid_merkle_branch::{
+        assert_merkle_proof_is_valid, restore_merkle_root, validate_merkle_proof, MerkleBranch,
+        Sha256,
     },
+    sha256::{make_circuits, sha256, sha256_pair},
+    targets_serialization::{ReadTargets, WriteTargets},
+    utils::{
+        biguint_to_bits_target, biguint_to_le_bits_target, create_bool_target_array,
+        create_sha256_merkle_proof,
+    },
+    validator_hash_tree_root_poseidon::ValidatorPoseidonTargets,
 };
 
 pub struct ValidatorBalanceVerificationTargetsAccumulator {
-    pub range_total_value: BigUintTarget,
-    pub range_start: Target,
-    pub range_end: Target,
-    pub range_deposit_count: Target,
-    pub balances_root: [BoolTarget; ETH_SHA256_BIT_SIZE],
-    pub balances: Vec<[BoolTarget; ETH_SHA256_BIT_SIZE]>,
-    pub balances_proofs: Vec<Vec<[BoolTarget; ETH_SHA256_BIT_SIZE]>>,
-    pub validator_commitment_root: HashOutTarget,
-    pub accumulator_commitment_range_root: HashOutTarget,
+    // Inputs
+    pub balances_leaves: Vec<Sha256>,
+    pub balances_root: Sha256,
+    // pub validator_is_not_zero: Vec<BoolTarget>,
+    // pub current_eth1_deposit_index: BigUintTarget,
+    // pub validator_deposit_indexes: Vec<BigUintTarget>,
+    pub balances_proofs: Vec<MerkleBranch<22>>,
     pub validators: Vec<ValidatorPoseidonTargets>,
-    pub validator_deposit_indexes: Vec<BigUintTarget>,
-    pub validator_indexes: Vec<Target>,
-    pub validator_commitment_proofs: Vec<Vec<HashOutTarget>>,
-    pub validator_is_not_zero: Vec<BoolTarget>,
-    pub current_epoch: BigUintTarget,
-    pub current_eth1_deposit_index: BigUintTarget,
-    pub number_of_non_activated_validators: Target,
-    pub number_of_active_validators: Target,
-    pub number_of_exited_validators: Target,
+    pub validators_gindices: Vec<BigUintTarget>,
+    // delete this
+    // pub validators_commitment_root: HashOutTarget,
+    // pub validator_commitment_proofs: Vec<Vec<HashOutTarget>>,
+    // pub current_epoch: BigUintTarget,
+
+    // Outputs
+    pub validators_range_commitment: HashOutTarget,
+    // pub accumulator_commitment_range_root: HashOutTarget, //
+    // pub number_of_non_activated_validators: Target,
+    // pub number_of_active_validators: Target,
+    // pub number_of_exited_validators: Target,
+    // pub range_total_value: BigUintTarget,
+    // pub range_start: Target,
+    // pub range_end: Target,
+    // pub range_deposit_count: Target,
 }
 
 impl ReadTargets for ValidatorBalanceVerificationTargetsAccumulator {
@@ -49,44 +60,62 @@ impl ReadTargets for ValidatorBalanceVerificationTargetsAccumulator {
         let validators_len = data.read_usize()?;
 
         Ok(ValidatorBalanceVerificationTargetsAccumulator {
-            range_total_value: BigUintTarget::read_targets(data)?,
-            range_start: data.read_target()?,
-            range_end: data.read_target()?,
-            range_deposit_count: data.read_target()?,
-            balances_root: data.read_target_bool_vec()?.try_into().unwrap(),
-            balances: (0..validators_len)
-                .map(|_| data.read_target_bool_vec().unwrap().try_into().unwrap())
-                .collect(),
-            balances_proofs: (0..validators_len)
+            /*
+                        range_total_value: BigUintTarget::read_targets(data)?,
+                        range_start: data.read_target()?,
+                        range_end: data.read_target()?,
+                        range_deposit_count: data.read_target()?,
+                        balances_root: data.read_target_bool_vec()?.try_into().unwrap(),
+            */
+            balances_leaves: (0..validators_len)
                 .map(|_| {
-                    (0..22)
-                        .map(|_| data.read_target_bool_vec().unwrap().try_into().unwrap())
-                        .collect_vec()
+                    data.read_target_bool_vec()
+                        .expect("read target bool vec fails")
+                        .try_into()
+                        .expect("this fails")
                 })
-                .collect_vec(),
-            validator_commitment_root: data.read_target_hash()?,
-            accumulator_commitment_range_root: data.read_target_hash()?,
-            validators: (0..validators_len)
-                .map(|_| ValidatorPoseidonTargets::read_targets(data).unwrap())
                 .collect(),
-            validator_deposit_indexes: (0..validators_len)
+            balances_root: data.read_target_bool_vec()?.try_into().unwrap(),
+            balances_proofs: (0..validators_len)
+                .map(|_| MerkleBranch::<DEPTH>::read_targets(data).unwrap())
+                .collect_vec(),
+            /*
+                        balances_proofs: (0..validators_len)
+                            .map(|_| [(); 22].map(|_| data.read_target_bool_vec().unwrap().try_into().unwrap()))
+                            .collect_vec(),
+                        validator_commitment_root: data.read_target_hash()?,
+                        accumulator_commitment_range_root: data.read_target_hash()?,
+            */
+            validators: (0..validators_len)
+                .map(|_| {
+                    ValidatorPoseidonTargets::read_targets(data)
+                        .expect("ValidatorPoseidonTargets::read_targets failes")
+                })
+                .collect(),
+            validators_gindices: (0..validators_len)
                 .map(|_| BigUintTarget::read_targets(data).unwrap())
                 .collect_vec(),
-            validator_indexes: data.read_target_vec()?,
-            validator_commitment_proofs: (0..validators_len)
-                .map(|_| {
-                    (0..24)
-                        .map(|_| data.read_target_hash().unwrap())
-                        .collect_vec()
-                })
-                .collect_vec(),
+            validators_range_commitment: data.read_target_hash().unwrap(),
+            /*
+                        validator_deposit_indexes: (0..validators_len)
+                            .map(|_| BigUintTarget::read_targets(data).unwrap())
+                            .collect_vec(),
+                        validator_indexes: data.read_target_vec()?,
+                        validator_commitment_proofs: (0..validators_len)
+                            .map(|_| {
+                                (0..24)
+                                    .map(|_| data.read_target_hash().unwrap())
+                                    .collect_vec()
+                            })
+                            .collect_vec(),
 
-            validator_is_not_zero: data.read_target_bool_vec()?,
-            current_epoch: BigUintTarget::read_targets(data)?,
-            current_eth1_deposit_index: BigUintTarget::read_targets(data)?,
-            number_of_non_activated_validators: data.read_target()?,
-            number_of_active_validators: data.read_target()?,
-            number_of_exited_validators: data.read_target()?,
+                        validator_is_not_zero: data.read_target_bool_vec()?,
+                        current_epoch: BigUintTarget::read_targets(data)?,
+                        current_eth1_deposit_index: BigUintTarget::read_targets(data)?,
+                        number_of_non_activated_validators: data.read_target()?,
+                        number_of_active_validators: data.read_target()?,
+                        number_of_exited_validators: data.read_target()?,
+            */
         })
     }
 }
@@ -96,286 +125,269 @@ impl WriteTargets for ValidatorBalanceVerificationTargetsAccumulator {
         let mut data = Vec::<u8>::new();
 
         data.write_usize(self.validators.len())?;
-        data.extend(BigUintTarget::write_targets(&self.range_total_value)?);
-        data.write_target(self.range_start)?;
-        data.write_target(self.range_end)?;
-        data.write_target(self.range_deposit_count)?;
-        data.write_target_bool_vec(&self.balances_root)?;
+        /*
+                data.extend(BigUintTarget::write_targets(&self.range_total_value)?);
+                data.write_target(self.range_start)?;
+                data.write_target(self.range_end)?;
+                data.write_target(self.range_deposit_count)?;
+                data.write_target_bool_vec(&self.balances_root)?;
+        */
 
-        for balance in &self.balances {
+        for balance in &self.balances_leaves {
             data.write_target_bool_vec(balance)?;
         }
 
-        for balance_proof in &self.balances_proofs {
-            for element in balance_proof {
-                data.write_target_bool_vec(element)?;
-            }
+        data.write_target_bool_vec(&self.balances_root)?;
+
+        // self.balances_proofs.write_targets();
+        for balances_proof in &self.balances_proofs {
+            data.extend(&MerkleBranch::<DEPTH>::write_targets(balances_proof)?);
         }
 
-        data.write_target_hash(&self.validator_commitment_root)?;
-        data.write_target_hash(&self.accumulator_commitment_range_root)?;
+        /*
+                for balance_proof in &self.balances_proofs {
+                    for element in balance_proof {
+                        data.write_target_bool_vec(element)?;
+                    }
+                }
+
+                data.write_target_hash(&self.validator_commitment_root)?;
+                data.write_target_hash(&self.accumulator_commitment_range_root)?;
+        */
 
         for validator in &self.validators {
             data.extend(ValidatorPoseidonTargets::write_targets(validator)?);
         }
 
-        for validator_deposit_index in &self.validator_deposit_indexes {
-            data.extend(BigUintTarget::write_targets(validator_deposit_index)?);
+        for gindex in &self.validators_gindices {
+            data.extend(gindex.write_targets()?);
         }
 
-        data.write_target_vec(&self.validator_indexes)?;
+        data.write_target_hash(&self.validators_range_commitment)?;
 
-        for validator_proof in &self.validator_commitment_proofs {
-            for element in validator_proof {
-                data.write_target_hash(element)?;
-            }
-        }
+        /*
 
-        data.write_target_bool_vec(&self.validator_is_not_zero)?;
+                for validator_deposit_index in &self.validator_deposit_indexes {
+                    data.extend(BigUintTarget::write_targets(validator_deposit_index)?);
+                }
 
-        data.extend(BigUintTarget::write_targets(&self.current_epoch)?);
+                data.write_target_vec(&self.validator_indexes)?;
 
-        data.extend(BigUintTarget::write_targets(
-            &self.current_eth1_deposit_index,
-        )?);
+                for validator_proof in &self.validator_commitment_proofs {
+                    for element in validator_proof {
+                        data.write_target_hash(element)?;
+                    }
+                }
 
-        data.write_target(self.number_of_non_activated_validators)?;
-        data.write_target(self.number_of_active_validators)?;
-        data.write_target(self.number_of_exited_validators)?;
+                data.write_target_bool_vec(&self.validator_is_not_zero)?;
+
+                data.extend(BigUintTarget::write_targets(&self.current_epoch)?);
+
+                data.extend(BigUintTarget::write_targets(
+                    &self.current_eth1_deposit_index,
+                )?);
+
+                data.write_target(self.number_of_non_activated_validators)?;
+                data.write_target(self.number_of_active_validators)?;
+                data.write_target(self.number_of_exited_validators)?;
+        */
 
         Ok(data)
     }
 }
 
-pub fn validator_balance_accumulator_verification<F: RichField + Extendable<D>, const D: usize>(
+const DEPTH: usize = 22;
+
+struct CircuitInput {
+    pub balances_leaves: Vec<Sha256>,
+    pub balances_root: Sha256,
+    pub balances_proofs: Vec<MerkleBranch<DEPTH>>,
+    pub validators: Vec<ValidatorPoseidonTargets>,
+    pub validators_gindices: Vec<BigUintTarget>,
+}
+
+fn read_input<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    validators_len: usize,
-) -> ValidatorBalanceVerificationTargetsAccumulator {
-    if !validators_len.is_power_of_two() {
-        panic!("validators_len must be a power of two");
-    }
-
-    let balances_leaves: Vec<[BoolTarget; ETH_SHA256_BIT_SIZE]> = (0..validators_len)
+    validators_count: usize,
+) -> CircuitInput {
+    let balances_leaves: Vec<Sha256> = (0..validators_count)
         .map(|_| create_bool_target_array(builder))
-        .collect();
-
-    let balances_root = create_bool_target_array(builder);
-
-    let mut balances_proofs = Vec::new();
-
-    let validator_gindex = (0..validators_len)
-        .map(|_| builder.add_virtual_target())
         .collect_vec();
 
-    // Maybe constraint that it begins with 1s and ends with 0s
-    let validator_is_not_zero = (0..validators_len)
-        .map(|_| builder.add_virtual_bool_target_safe())
+    let balances_root: Sha256 = create_bool_target_array(builder);
+
+    let balances_proofs: Vec<MerkleBranch<DEPTH>> = (0..validators_count)
+        .map(|_| create_sha256_merkle_proof(builder))
         .collect_vec();
 
-    let current_eth1_deposit_index = builder.add_virtual_biguint_target(2);
+    let validators: Vec<ValidatorPoseidonTargets> = (0..validators_count)
+        .map(|_| ValidatorPoseidonTargets::new(builder))
+        .collect_vec();
 
-    let validator_deposit_indexes = (0..validators_len)
+    let validators_gindices: Vec<BigUintTarget> = (0..validators_count)
         .map(|_| builder.add_virtual_biguint_target(2))
         .collect_vec();
 
-    for i in 0..balances_leaves.len() {
-        let is_valid_merkle_branch_balance = is_valid_merkle_branch_sha256_result(builder, 22);
-
-        balances_proofs.push(is_valid_merkle_branch_balance.branch);
-
-        // let three = builder.constant(F::from_canonical_u64(3u64));
-        // let dividend = builder.sub(validator_gindex[i], three);
-        // let four = builder.constant(F::from_canonical_u64(4u64));
-        // let balance_gindex = builder.div(dividend, four);
-
-        builder.connect(is_valid_merkle_branch_balance.index, validator_gindex[i]);
-
-        for j in 0..256 {
-            builder.connect(
-                is_valid_merkle_branch_balance.leaf[j].target,
-                balances_leaves[i][j].target,
-            );
-
-            builder.connect(
-                is_valid_merkle_branch_balance.root[j].target,
-                balances_root[j].target,
-            );
-        }
-
-        let is_part_of_the_beacon_chain =
-            builder.cmp_biguint(&validator_deposit_indexes[i], &current_eth1_deposit_index);
-
-        let should_be_checked = builder.and(validator_is_not_zero[i], is_part_of_the_beacon_chain);
-
-        let _false = builder._false();
-
-        builder.connect(
-            is_valid_merkle_branch_balance.is_valid.target,
-            _false.target,
-        );
-    }
-
-    let validators_leaves: Vec<ValidatorPoseidonHashTreeRootTargets> = (0..validators_len)
-        .map(|_| hash_tree_root_validator_poseidon(builder))
-        .collect();
-
-    let zero = builder.zero();
-
-    let validator_accumulator_leaves: Vec<HashOutTarget> = get_validators_accumulator_leaves(
-        builder,
-        &validators_leaves
-            .iter()
-            .map(|x| x.validator.pubkey)
-            .collect(),
-        &validator_deposit_indexes,
-    )
-    .iter()
-    .enumerate()
-    .map(|(index, x)| HashOutTarget {
-        elements: x
-            .elements
-            .map(|e| builder._if(validator_is_not_zero[index], e, zero)),
-    })
-    .collect_vec();
-
-    let accumulator_commitment_range_root = hash_tree_root_poseidon(builder, validators_len);
-
-    for i in 0..validators_len {
-        builder.connect_hashes(
-            accumulator_commitment_range_root.leaves[i],
-            validator_accumulator_leaves[i],
-        );
-    }
-
-    let validator_commitment_root = builder.add_virtual_hash();
-
-    let validator_commitment_proofs = (0..validators_len)
-        .map(|_| (0..24).map(|_| builder.add_virtual_hash()).collect_vec())
-        .collect_vec();
-
-    // for i in 0..validators_leaves.len() {
-    //     let is_valid_merkle_branch_commitment = is_valid_merkle_branch_poseidon_result(builder, 24);
-
-    //     builder.connect_hashes(
-    //         is_valid_merkle_branch_commitment.root,
-    //         validator_commitment_root,
-    //     );
-    //     builder.connect_hashes(
-    //         is_valid_merkle_branch_commitment.leaf,
-    //         validators_leaves[i].hash_tree_root,
-    //     );
-    //     builder.connect(is_valid_merkle_branch_commitment.index, validator_gindex[i]);
-
-    //     for j in 0..24 {
-    //         builder.connect_hashes(
-    //             is_valid_merkle_branch_commitment.branch[j],
-    //             validator_commitment_proofs[i][j],
-    //         );
-    //     }
-
-    //     let is_part_of_the_beacon_chain =
-    //         builder.cmp_biguint(&validator_deposit_indexes[i], &current_eth1_deposit_index);
-    //     let should_be_checked = builder.and(validator_is_not_zero[i], is_part_of_the_beacon_chain);
-
-    //     builder.connect(
-    //         is_valid_merkle_branch_commitment.is_valid.target,
-    //         should_be_checked.target,
-    //     );
-    // }
-
-    let current_epoch = builder.add_virtual_biguint_target(2);
-
-    let mut number_of_non_activated_validators = builder.zero();
-    let mut number_of_active_validators = builder.zero();
-    let mut number_of_exited_validators = builder.zero();
-
-    let mut range_total_value = builder.zero_biguint();
-
-    // TODO: calculate range_start and range_end
-    let range_start = builder.zero();
-    let range_end = builder.zero();
-
-    let mut range_deposit_count = builder.zero();
-
-    // for i in 0..validators_len {
-    //     // TODO: abstraction is missing same code as validator balance circuit
-    //     let (is_non_activated_validator, is_valid_validator, is_exited_validator) =
-    //         get_validator_status(
-    //             builder,
-    //             &validators_leaves[i].validator.activation_epoch,
-    //             &current_epoch,
-    //             &validators_leaves[i].validator.exit_epoch,
-    //         );
-
-    //     let balance = ssz_num_from_bits(
-    //         builder,
-    //         &balances_leaves[i / 4][((i % 4) * 64)..(((i % 4) * 64) + 64)],
-    //     );
-
-    //     let zero = builder.zero_biguint();
-
-    //     let is_part_of_the_beacon_chain =
-    //         builder.cmp_biguint(&validator_deposit_indexes[i], &current_eth1_deposit_index);
-
-    //     let will_be_counted_as_part_of_the_beacon_chain =
-    //         builder.and(is_valid_validator, is_part_of_the_beacon_chain);
-
-    //     let current = if_biguint(
-    //         builder,
-    //         will_be_counted_as_part_of_the_beacon_chain,
-    //         &balance,
-    //         &zero,
-    //     );
-
-    //     range_total_value = builder.add_biguint(&range_total_value, &current);
-    //     range_total_value.limbs.pop();
-
-    //     number_of_active_validators = builder.add(
-    //         number_of_active_validators,
-    //         will_be_counted_as_part_of_the_beacon_chain.target,
-    //     );
-
-    //     let will_be_counted_as_pending =
-    //         builder.and(is_part_of_the_beacon_chain, is_non_activated_validator);
-
-    //     number_of_non_activated_validators = builder.add(
-    //         number_of_non_activated_validators,
-    //         will_be_counted_as_pending.target,
-    //     );
-
-    //     let will_be_counted_as_exited =
-    //         builder.and(is_part_of_the_beacon_chain, is_exited_validator);
-
-    //     number_of_exited_validators = builder.add(
-    //         number_of_exited_validators,
-    //         will_be_counted_as_exited.target,
-    //     );
-
-    //     range_deposit_count = builder.add(range_deposit_count, validator_is_not_zero[i].target);
-    // }
-
-    ValidatorBalanceVerificationTargetsAccumulator {
-        range_total_value,
-        range_start,
-        range_end,
-        range_deposit_count,
+    CircuitInput {
+        balances_leaves,
         balances_root,
         balances_proofs,
-        validator_commitment_root,
-        accumulator_commitment_range_root: accumulator_commitment_range_root.hash_tree_root,
-        validators: validators_leaves
-            .iter()
-            .map(|x| x.validator.clone())
-            .collect_vec(),
-        validator_deposit_indexes,
-        validator_indexes: validator_gindex,
-        validator_commitment_proofs,
-        validator_is_not_zero,
-        balances: balances_leaves,
-        current_epoch,
-        current_eth1_deposit_index,
-        number_of_non_activated_validators,
-        number_of_active_validators,
-        number_of_exited_validators,
+        validators,
+        validators_gindices,
+    }
+}
+
+fn hash_poseidon_validator<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    validator: &ValidatorPoseidonTargets,
+) -> HashOutTarget {
+    let leaves = vec![
+        builder.hash_n_to_hash_no_pad::<PoseidonHash>(
+            validator.pubkey.iter().map(|x| x.target).collect(),
+        ),
+        builder.hash_n_to_hash_no_pad::<PoseidonHash>(
+            validator
+                .withdrawal_credentials
+                .iter()
+                .map(|x| x.target)
+                .collect(),
+        ),
+        builder.hash_n_to_hash_no_pad::<PoseidonHash>(
+            validator
+                .effective_balance
+                .limbs
+                .iter()
+                .map(|x| x.0)
+                .collect(),
+        ),
+        builder.hash_n_to_hash_no_pad::<PoseidonHash>(vec![validator.slashed.target]),
+        builder.hash_n_to_hash_no_pad::<PoseidonHash>(
+            validator
+                .activation_eligibility_epoch
+                .limbs
+                .iter()
+                .map(|x| x.0)
+                .collect(),
+        ),
+        builder.hash_n_to_hash_no_pad::<PoseidonHash>(
+            validator
+                .activation_epoch
+                .limbs
+                .iter()
+                .map(|x| x.0)
+                .collect(),
+        ),
+        builder.hash_n_to_hash_no_pad::<PoseidonHash>(
+            validator.exit_epoch.limbs.iter().map(|x| x.0).collect(),
+        ),
+        builder.hash_n_to_hash_no_pad::<PoseidonHash>(
+            validator
+                .withdrawable_epoch
+                .limbs
+                .iter()
+                .map(|x| x.0)
+                .collect(),
+        ),
+    ];
+
+    let hash_tree_root_poseidon = hash_tree_root_poseidon(builder, leaves.len());
+
+    for i in 0..leaves.len() {
+        builder.connect_hashes(leaves[i], hash_tree_root_poseidon.leaves[i]);
+    }
+
+    hash_tree_root_poseidon.hash_tree_root
+}
+
+fn hash_poseidon<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    targets: Vec<Target>,
+) -> HashOutTarget {
+    builder.hash_n_to_hash_no_pad::<PoseidonHash>(targets)
+}
+
+fn calc_validators_commitment<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    validators: &[ValidatorPoseidonTargets],
+) -> HashOutTarget {
+    let validator_hashes = validators
+        .iter()
+        .map(|validator| hash_poseidon_validator(builder, validator))
+        .collect_vec();
+
+    let validator_targets = validator_hashes
+        .iter()
+        .flat_map(|hash| hash.elements)
+        .collect_vec();
+
+    hash_poseidon(builder, validator_targets)
+}
+
+pub fn validator_balance_accumulator_verification<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    validators_count: usize,
+) -> ValidatorBalanceVerificationTargetsAccumulator {
+    if !validators_count.is_power_of_two() {
+        panic!("validators_count must be a power of two");
+    }
+
+    let input = read_input(builder, validators_count);
+
+    let validators_range_commitment =
+        calc_validators_commitment(builder, input.validators.as_slice());
+
+    for (leaf, proof, validator_gindex) in izip!(
+        &input.balances_leaves,
+        &input.balances_proofs,
+        &input.validators_gindices,
+    ) {
+        // (validator_gindex / 4) + (validator_gindex % 4)
+        let four = builder.constant_biguint(&BigUint::from(4u64));
+        // let validator_gindex_div_four = builder.div_biguint(validator_gindex, &four);
+        // let validator_gindex_mod_four = builder.rem_biguint(validator_gindex, &four);
+        // let balance_gindex =
+        //     builder.add_biguint(&validator_gindex_div_four, &validator_gindex_mod_four);
+        let balance_gindex = builder.div_biguint(validator_gindex, &four);
+        assert_merkle_proof_is_valid(builder, leaf, &input.balances_root, proof, &balance_gindex);
+    }
+
+    return ValidatorBalanceVerificationTargetsAccumulator {
+        balances_leaves: input.balances_leaves,
+        balances_root: input.balances_root,
+        balances_proofs: input.balances_proofs,
+        validators: input.validators,
+        validators_gindices: input.validators_gindices,
+        validators_range_commitment,
+    };
+}
+
+pub struct Targets {
+    pub leaf: Sha256,
+    pub proof: MerkleBranch<1>,
+    pub gindex: BigUintTarget,
+}
+
+pub fn test_circuit<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+) -> Targets {
+    let leaf = create_bool_target_array(builder);
+    let proof: MerkleBranch<1> = create_sha256_merkle_proof(builder);
+    let gindex = builder.add_virtual_biguint_target(2);
+    let root = restore_merkle_root(builder, &leaf, &proof, &gindex);
+
+    let bits = biguint_to_le_bits_target::<F, D, 2>(builder, &gindex);
+
+    builder.register_public_inputs(root.map(|bool_target| bool_target.target).as_slice());
+    builder.register_public_inputs(
+        bits.iter()
+            .map(|bool_target| bool_target.target)
+            .collect_vec()
+            .as_slice(),
+    );
+
+    Targets {
+        leaf,
+        proof,
+        gindex,
     }
 }

@@ -26,6 +26,7 @@ num-derive = "0.4.1"
 num-traits = "0.2.17"
 colored = "2.1.0"
 sha256 = "1.5.0"
+itertools = "0.12.1"
 
 [[bin]]
 name = "balance_verification"
@@ -62,3 +63,7 @@ path = "bin/commitment_mapper_accumulator_circuit_data_generation.rs"
 [[bin]]
 name = "basic_recursion"
 path = "bin/basic_recursion.rs"
+
+[[bin]]
+name = "test"
+path = "bin/test.rs"

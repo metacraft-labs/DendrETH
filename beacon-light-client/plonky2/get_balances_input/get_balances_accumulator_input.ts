@@ -104,14 +104,14 @@ let TAKE: number
     queues.push(
       new WorkQueue(
         new KeyPrefix(
-          `${CONSTANTS.balanceVerificationQueue}:${i}`,
+          `${CONSTANTS.balanceVerificationAccumulatorProofQueue}:${i}`,
         ),
       ),
     );
   }
 
   const beaconApi = new BeaconApi([options['beacon-node']]);
-  const slot = 8633088;
+  const slot = 8669632;
   // const slot =
   //   options['slot'] !== undefined
   //     ? options['slot']
@@ -142,7 +142,7 @@ let TAKE: number
 
   let balancesProofs = validatorsAccumulator.map(v => {
     return balancesTree
-      .getSingleProof(gindexFromIndex(BigInt(v.validator_index), 39n))
+      .getSingleProof(gindexFromIndex(BigInt(v.validator_index) / 4n, 39n))
       .map(bytesToHex)
       .slice(0, 22);
   });
@@ -179,11 +179,11 @@ let TAKE: number
     chunkIdx++
   ) {
     let balancesInput: BalancesAccumulatorInput = {
-      balancesRoot: bytesToHex(balancesTree.getRoot(65536n)),
+      balancesRoot: bytesToHex(balancesTree.getRoot(2n ** 17n)), // NOTE: this is probably wrong
       balances: [],
       balancesProofs: [],
       validatorDepositIndexes: [],
-      validatorIndexes: [],
+      validatorsGindices: [],
       validatorCommitmentProofs: [],
       validatorIsNotZero: [],
       validators: [],
@@ -196,15 +196,15 @@ let TAKE: number
       if (idx < validatorsAccumulator.length) {
         balancesInput.balances.push(
           bytesToHex(
-            balancesTree.getNode(gindexFromIndex(BigInt(idx), 38n)).root, // tva mai e greshno
+            balancesTree.getNode(gindexFromIndex(BigInt(validatorsAccumulator[idx].validator_index) / 4n, 39n)).root, // tva mai e greshno
           ),
         );
         balancesInput.balancesProofs.push(balancesProofs[idx]);
         balancesInput.validatorDepositIndexes.push(
           validatorsAccumulator[idx].validator_index,
         );
-        balancesInput.validatorIndexes.push(
-          Number(gindexFromIndex(BigInt(idx), 22n)),
+        balancesInput.validatorsGindices.push(
+          Number(gindexFromIndex(BigInt(validatorsAccumulator[idx].validator_index), 24n)),
         );
         balancesInput.validators.push(
           convertValidatorToValidatorPoseidonInput(beaconState.validators[idx]),
@@ -220,7 +220,7 @@ let TAKE: number
         );
         balancesInput.validators.push(getZeroValidatorPoseidonInput());
         balancesInput.validatorDepositIndexes.push(0);
-        balancesInput.validatorIndexes.push(0);
+        balancesInput.validatorsGindices.push(0);
         balancesInput.validatorCommitmentProofs.push(
           new Array(22).map(x => new Array(4).fill(0)),
         );
@@ -238,8 +238,9 @@ let TAKE: number
 
   // inner level tasks
   console.log(chalk.bold.blue('Adding inner proofs...'));
-  for (let level = 1; level < 38; level++) {
-    await redis.saveBalanceProof(
+  for (let level = 1; level < 24; level++) {
+    await redis.saveBalancesAccumulatorProof(
+      options['protocl'],
       BigInt(level),
       BigInt(CONSTANTS.validatorRegistryLimit),
     );
@@ -251,13 +252,13 @@ let TAKE: number
       const buffer = new ArrayBuffer(8);
       const view = new DataView(buffer);
 
-      await redis.saveBalanceProof(BigInt(level), BigInt(key));
+      await redis.saveBalancesAccumulatorProof(options['protocol'], BigInt(level), BigInt(key));
+      // schedule tasks
 
       view.setBigUint64(0, BigInt(key), false);
       await queues[level].addItem(redis.client, new Item(buffer));
     }
   }
-
 
   db.quit();
   await redis.disconnect();

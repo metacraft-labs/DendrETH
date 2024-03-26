@@ -436,6 +436,7 @@ pub fn u64_to_ssz_leaf(value: u64) -> [u8; 32] {
     ret.try_into().unwrap()
 }
 
+// TODO: This must go in utils
 fn bits_to_bytes(bits: &[u64]) -> Vec<u8> {
     bits.chunks(8)
         .map(|bits| (0..8usize).fold(0u8, |byte, pos| byte | ((bits[pos]) << (7 - pos)) as u8))

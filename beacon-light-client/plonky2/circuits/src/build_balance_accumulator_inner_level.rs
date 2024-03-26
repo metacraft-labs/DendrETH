@@ -17,6 +17,7 @@ use crate::{
     build_validator_balance_accumulator_circuit::{
         set_public_variables, ValidatorBalanceProofAccumulatorTargetsExt,
     },
+    sha256::make_circuits,
     targets_serialization::{ReadTargets, WriteTargets},
     utils::ETH_SHA256_BIT_SIZE,
 };
@@ -81,28 +82,40 @@ pub fn build_inner_level_circuit(
     let pt2 = builder.add_virtual_proof_with_pis(&inner_circuit_data.common);
 
     builder.verify_proof::<C>(&pt1, &verifier_circuit_target, &inner_circuit_data.common);
-
     builder.verify_proof::<C>(&pt2, &verifier_circuit_target, &inner_circuit_data.common);
 
-    let poseidon_hash = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofAccumulatorTargetsExt>::get_validator_commitment(&pt1);
-
-    let sha256_hash = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofAccumulatorTargetsExt>::get_balances_root(&pt1);
-
-    let poseidon_hash2 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofAccumulatorTargetsExt>::get_validator_commitment(&pt2);
-
-    let sha256_hash2 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofAccumulatorTargetsExt>::get_balances_root(&pt2);
-
+    let balances_root_hash1 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofAccumulatorTargetsExt>::get_balances_root(&pt1);
+    let balances_root_hash2 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofAccumulatorTargetsExt>::get_balances_root(&pt2);
     for i in 0..ETH_SHA256_BIT_SIZE {
-        builder.connect(sha256_hash[i].target, sha256_hash2[i].target);
+        builder.connect(balances_root_hash1[i].target, balances_root_hash2[i].target);
     }
 
-    builder.connect_hashes(poseidon_hash, poseidon_hash2);
+    let mut balances_root_hasher = make_circuits(&mut builder, (2 * ETH_SHA256_BIT_SIZE) as u64);
+    balances_root_hasher.message = [
+        balances_root_hash1.as_slice(),
+        balances_root_hash2.as_slice(),
+    ]
+    .concat()
+    .try_into()
+    .unwrap();
+
+    let validator_commitment_root1 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofAccumulatorTargetsExt>::get_validator_commitment(&pt1);
+    let validator_commitment_root2 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofAccumulatorTargetsExt>::get_validator_commitment(&pt2);
+    builder.connect_hashes(validator_commitment_root1, validator_commitment_root2);
+
+    let validator_commitment_root = builder.hash_n_to_hash_no_pad::<PoseidonHash>(
+        validator_commitment_root1
+            .elements
+            .iter()
+            .chain(validator_commitment_root2.elements.iter())
+            .cloned()
+            .collect(),
+    );
 
     let accumulator_hash = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofAccumulatorTargetsExt>::get_range_validator_accumulator(&pt1);
-
     let accumulator_hash2 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofAccumulatorTargetsExt>::get_range_validator_accumulator(&pt2);
 
-    let hash = builder.hash_n_to_hash_no_pad::<PoseidonHash>(
+    let accumulator_commitment_range_root = builder.hash_n_to_hash_no_pad::<PoseidonHash>(
         accumulator_hash
             .elements
             .iter()
@@ -112,15 +125,11 @@ pub fn build_inner_level_circuit(
     );
 
     let deposit_count1 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofAccumulatorTargetsExt>::get_range_deposit_count(&pt1);
-
     let deposit_count2 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofAccumulatorTargetsExt>::get_range_deposit_count(&pt2);
-
     let deposit_count = builder.add(deposit_count1, deposit_count2);
 
     let current_eth1_deposit_index1 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofAccumulatorTargetsExt>::get_current_eth1_deposit_index(&pt1);
-
     let current_eth1_deposit_index2 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofAccumulatorTargetsExt>::get_current_eth1_deposit_index(&pt2);
-
     builder.connect_biguint(&current_eth1_deposit_index1, &current_eth1_deposit_index2);
 
     let number_of_non_activated_validators1 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofAccumulatorTargetsExt>::get_number_of_non_activated_validators(&pt1);
@@ -179,9 +188,9 @@ pub fn build_inner_level_circuit(
         range_start1,
         range_end2,
         deposit_count,
-        sha256_hash,
-        hash,
-        poseidon_hash,
+        balances_root_hasher.digest.try_into().unwrap(),
+        accumulator_commitment_range_root,
+        validator_commitment_root,
         &current_eth1_deposit_index1,
         &current_epoch1,
         number_of_non_activated_validators,
@@ -195,7 +204,7 @@ pub fn build_inner_level_circuit(
         BalanceInnerCircuitTargets {
             proof1: pt1,
             proof2: pt2,
-            verifier_circuit_target: verifier_circuit_target,
+            verifier_circuit_target,
         },
         data,
     )
