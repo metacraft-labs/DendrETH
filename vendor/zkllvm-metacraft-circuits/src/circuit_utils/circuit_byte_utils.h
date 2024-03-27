@@ -22,14 +22,6 @@ namespace circuit_byte_utils {
         return arr;
     }
 
-    template<class InputIt, class OutputIt>
-    OutputIt copy(InputIt first, InputIt last, OutputIt d_first) {
-        for (; first != last; (void)++first, (void)++d_first)
-            *d_first = *first;
-
-        return d_first;
-    }
-
     template<typename T>
     Byte get_nth_byte(const T val, unsigned int n) {
         static_assert(std::is_integral_v<typename std::remove_reference_t<T>>, "T must be integral");
@@ -69,7 +61,9 @@ namespace circuit_byte_utils {
         static_assert(N <= InputSize);
         assert_true(N + offset <= InputSize);
         static_vector<Byte, N> ret;
-        copy(val.begin() + offset, val.begin() + offset + N, ret.begin());
+        for (size_t i = 0; i < N; i++) {
+            *(ret.begin() + i) = *(val.begin() + offset + i);
+        }
 
         return ret;
     }
@@ -78,7 +72,9 @@ namespace circuit_byte_utils {
     static_vector<Byte, N> expand(const static_vector<Byte, InputSize>& val) {
         static_assert(N >= InputSize);
         static_vector<Byte, N> ret;
-        copy(val.begin(), val.end(), ret.begin());
+        for (size_t i = 0; i < InputSize; i++) {
+            *(ret.begin() + i) = *(val.begin() + i);
+        }
 
         return ret;
     }
@@ -108,8 +104,8 @@ namespace circuit_byte_utils {
 
         T result = 0;
         if constexpr (LittleEndian) {
-            for (unsigned int i = sizeof(T); i > 0; i--) {
-                result = (result << 8) + *(first_element + i - 1);
+            for (unsigned i = 0; i < sizeof(T); ++i) {
+                result = (result << 8) + *(first_element + sizeof(T) - i - 1);
             }
         } else {
             for (unsigned i = 0; i < sizeof(T); ++i) {
@@ -217,6 +213,29 @@ namespace circuit_byte_utils {
 
         Bytes32 hashed;
         picosha2::hash256(buffer.begin(), buffer.begin() + NBytesToHash, hashed.begin(), hashed.end());
+        return hashed;
+    }
+
+    // This is needed, because since version 17.0.4 of clang-zkllvm the variadic template generates "warning: loop not unrolled"
+    Bytes32 sha256_33(const Bytes32& bytes, Byte b) {
+        static constexpr auto SIZE = 33;
+        std::array<Byte, SIZE> buffer;
+        memcpy(&buffer[0], &bytes.content_[0], Bytes32::capacity);
+        memcpy(&buffer[Bytes32::capacity], &b, 1);
+        Bytes32 hashed;
+        picosha2::hash256(buffer.begin(), buffer.begin() + SIZE, hashed.begin(), hashed.end());
+        return hashed;
+    }
+
+    // This is needed, because since version 17.0.4 of clang-zkllvm the variadic template generates "warning: loop not unrolled"
+    Bytes32 sha256_37(const Bytes32& bytes, Byte b, const static_vector<Byte, 4>& end) {
+        static constexpr auto SIZE = 37;
+        std::array<Byte, SIZE> buffer;
+        memcpy(&buffer[0], &bytes.content_[0], Bytes32::capacity);
+        memcpy(&buffer[Bytes32::capacity], &b, 1);
+        memcpy(&buffer[Bytes32::capacity] + 1, &end.content_[0], std::remove_reference<decltype(end)>::type::capacity);
+        Bytes32 hashed;
+        picosha2::hash256(buffer.begin(), buffer.begin() + SIZE, hashed.begin(), hashed.end());
         return hashed;
     }
 
