@@ -4,6 +4,8 @@ pragma solidity ^0.8.19;
 import './verifier.sol';
 import './LidoZKOracle.sol';
 
+uint256 constant BUFER_SIZE = 32;
+
 contract BalanceVerifier is PlonkVerifier, LidoZKOracle {
   /// @notice The address of the beacon roots precompile.
   /// @dev https://eips.ethereum.org/EIPS/eip-4788
@@ -28,13 +30,18 @@ contract BalanceVerifier is PlonkVerifier, LidoZKOracle {
   /// @dev No block root is found using the beacon roots precompile.
   error NoBlockRootFound();
 
-  mapping(uint256 => Report) reports;
+  /// @notice The ring buffer of the reports.
+  Report[BUFER_SIZE] reports;
+
+  /// @notice The current index in the ring buffer
+  uint256 public currentIndex;
 
   constructor(
     uint256 verifier_digest,
     bytes32 withdrawal_credentials,
     uint256 genesis_block_timestamp
   ) {
+    currentIndex = 0;
     VERIFIER_DIGEST = verifier_digest;
     WITHDRAWAL_CREDENTIALS = withdrawal_credentials;
     GENESIS_BLOCK_TIMESTAMP = genesis_block_timestamp;
@@ -49,7 +56,7 @@ contract BalanceVerifier is PlonkVerifier, LidoZKOracle {
   /// @param _numberOfExitedValidators number of exited validators
   function verify(
     bytes calldata proof,
-    uint256 refSlot,
+    uint64 refSlot,
     uint64 balanceSum,
     uint64 _numberOfNonActivatedValidators,
     uint64 _numberOfActiveValidators,
@@ -89,8 +96,9 @@ contract BalanceVerifier is PlonkVerifier, LidoZKOracle {
 
     require(verificationResult, 'Verification failed');
 
-    reports[refSlot] = Report({
-      present: true,
+    currentIndex++;
+    reports[currentIndex % BUFER_SIZE] = Report({
+      slot: refSlot,
       cBalanceGwei: balanceSum,
       numValidators: _numberOfNonActivatedValidators +
         _numberOfActiveValidators +
@@ -112,14 +120,25 @@ contract BalanceVerifier is PlonkVerifier, LidoZKOracle {
       uint256 exitedValidators
     )
   {
-    Report memory report = reports[refSlot];
+    uint256 i = 0;
+    uint256 checkIndex = currentIndex % BUFER_SIZE;
+    do {
+      Report memory report = reports[checkIndex];
 
-    return (
-      report.present,
-      report.cBalanceGwei,
-      report.numValidators,
-      report.exitedValidators
-    );
+      if (report.slot == refSlot) {
+        return (
+          true,
+          report.cBalanceGwei,
+          report.numValidators,
+          report.exitedValidators
+        );
+      }
+
+      i++;
+      checkIndex--;
+    } while (i < BUFER_SIZE);
+
+    return (false, 0, 0, 0);
   }
 
   /// @notice Attempts to find the block root for the given slot.
@@ -128,7 +147,9 @@ contract BalanceVerifier is PlonkVerifier, LidoZKOracle {
   /// @dev BEACON_ROOTS returns a block root for a given parent block's timestamp. To get the block root for slot
   ///      N, you use the timestamp of slot N+1. If N+1 is not avaliable, you use the timestamp of slot N+2, and
   //       so on.
-  function findBlockRoot(uint256 _slot) public view returns (bytes32 blockRoot) {
+  function findBlockRoot(
+    uint256 _slot
+  ) public view returns (bytes32 blockRoot) {
     uint256 currBlockTimestamp = GENESIS_BLOCK_TIMESTAMP + ((_slot + 1) * 12);
 
     uint256 earliestBlockTimestamp = block.timestamp -
