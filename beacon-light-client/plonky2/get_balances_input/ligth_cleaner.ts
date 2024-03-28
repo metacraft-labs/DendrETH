@@ -7,9 +7,10 @@ import Redis from 'ioredis';
 import { sleep } from '@dendreth/utils/ts-utils/common-utils';
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
 import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
 
 (async () => {
-  const options = yargs
+  const options = yargs(hideBin(process.argv))
     .usage('Usage: -redis-host <Redis host> -redis-port <Redis port>')
     .option('redis-host ', {
       alias: 'redis-host',

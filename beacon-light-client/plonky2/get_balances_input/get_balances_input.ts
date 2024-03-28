@@ -13,6 +13,7 @@ const {
 } = require('@mevitae/redis-work-queue/dist/WorkQueue');
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
 import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
 import { computeEpochAt } from '@dendreth/utils/ts-utils/ssz-utils';
 import { panic } from '@dendreth/utils/ts-utils/common-utils';
 const CIRCUIT_SIZE = 8;
@@ -21,7 +22,7 @@ let TAKE;
 (async () => {
   const { ssz } = await import('@lodestar/types');
 
-  const options = yargs
+  const options = yargs(hideBin(process.argv))
     .usage(
       'Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>',
     )
