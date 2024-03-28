@@ -567,7 +567,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@chainsafe/ssz@npm:^0.14.0, @chainsafe/ssz@npm:^0.14.3":
+"@chainsafe/ssz@npm:^0.14.3":
   version: 0.14.3
   resolution: "@chainsafe/ssz@npm:0.14.3"
   dependencies:
@@ -2253,14 +2253,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@lodestar/config@npm:^1.16.0":
-  version: 1.16.0
-  resolution: "@lodestar/config@npm:1.16.0"
+"@lodestar/config@npm:^1.17.0":
+  version: 1.17.0
+  resolution: "@lodestar/config@npm:1.17.0"
   dependencies:
-    "@chainsafe/ssz": "npm:^0.14.0"
-    "@lodestar/params": "npm:^1.16.0"
-    "@lodestar/types": "npm:^1.16.0"
-  checksum: 10/82a10b706b69a313d5d6b7b8a153c6115ddec7d92384c4d952e1117179497312ce302b22b62ae2a1f200b71e361eb469e68a34521f3d76535e268c0871463af3
+    "@chainsafe/ssz": "npm:^0.14.3"
+    "@lodestar/params": "npm:^1.17.0"
+    "@lodestar/types": "npm:^1.17.0"
+  checksum: 10/e60df26fcab188d6eb556fd64120fa3f8d424c7b1b9edc156b2c0065a20eff2dd4a5e6ccd790bb14b35db5e66b875ab2dd8aa08a5ad92f4d3427073e035afede
   languageName: node
   linkType: hard
 
@@ -2271,14 +2271,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@lodestar/types@npm:^1.16.0":
-  version: 1.16.0
-  resolution: "@lodestar/types@npm:1.16.0"
+"@lodestar/params@npm:^1.17.0":
+  version: 1.17.0
+  resolution: "@lodestar/params@npm:1.17.0"
+  checksum: 10/c9a9bc64dd5e357eab4fb7635385c0efc87a2f5f629dad8e95bbde878110222ba8b054432cf29dc416c87fca0ca9bb22cc1b08f82a1aa3ced77ac56963a31d19
+  languageName: node
+  linkType: hard
+
+"@lodestar/types@npm:^1.17.0":
+  version: 1.17.0
+  resolution: "@lodestar/types@npm:1.17.0"
   dependencies:
-    "@chainsafe/ssz": "npm:^0.14.0"
-    "@lodestar/params": "npm:^1.16.0"
+    "@chainsafe/ssz": "npm:^0.14.3"
+    "@lodestar/params": "npm:^1.17.0"
     ethereum-cryptography: "npm:^2.0.0"
-  checksum: 10/663dbbeca901d8e284eb93994389e08bc1f31ace18c505b17cff11bcb809929392d76346279923307318510c215c3a96c343a6465d5fec73927c60ffdb6906e9
+  checksum: 10/8003410700e80382ca871182d8d513d4b5d048c57c0e18e5165de6101c37cf982c6289f96fdadf745a5e187d34f2965c48cb9919c92088ec4e289bf0a9384246
   languageName: node
   linkType: hard
 
@@ -3787,7 +3794,7 @@ __metadata:
     "@chainsafe/lodestar-types": "npm:^0.34.4"
     "@chainsafe/ssz": "npm:^0.14.3"
     "@iden3/binfileutils": "npm:^0.0.11"
-    "@lodestar/types": "npm:^1.16.0"
+    "@lodestar/types": "npm:^1.17.0"
     "@noble/bls12-381": "npm:^1.3.0"
     "@nomiclabs/hardhat-ethers": "npm:^2.2.2"
     "@nomiclabs/hardhat-etherscan": "npm:^3.1.7"
@@ -3827,7 +3834,7 @@ __metadata:
     "@jest/globals": "npm:^29.7.0"
     "@jest/types": "npm:^29.6.3"
     "@lodestar/params": "npm:^1.16.0"
-    "@lodestar/types": "npm:^1.16.0"
+    "@lodestar/types": "npm:^1.17.0"
     "@mevitae/redis-work-queue": "npm:^0.0.4"
     "@noble/bls12-381": "npm:^1.3.0"
     "@nomiclabs/hardhat-ethers": "npm:^2.1.1"
@@ -3885,7 +3892,7 @@ __metadata:
     "@cosmjs/proto-signing": "npm:^0.32.2"
     "@cosmjs/stargate": "npm:^0.32.2"
     "@effect/schema": "npm:^0.33.0"
-    "@lodestar/types": "npm:^1.16.0"
+    "@lodestar/types": "npm:^1.17.0"
     "@noble/bls12-381": "npm:^1.4.0"
     "@types/node": "npm:^20.11.19"
     "@types/snarkjs": "npm:^0.7.8"
@@ -5315,9 +5322,9 @@ __metadata:
     "@chainsafe/lodestar-types": "npm:^0.39.0"
     "@chainsafe/persistent-merkle-tree": "npm:^0.6.1"
     "@chainsafe/ssz": "npm:^0.14.3"
-    "@lodestar/config": "npm:^1.16.0"
+    "@lodestar/config": "npm:^1.17.0"
     "@lodestar/params": "npm:^1.16.0"
-    "@lodestar/types": "npm:^1.16.0"
+    "@lodestar/types": "npm:^1.17.0"
     "@noble/bls12-381": "npm:^1.4.0"
     "@nomiclabs/hardhat-ethers": "npm:^2.0.5"
     "@nomiclabs/hardhat-waffle": "npm:^2.0.3"
