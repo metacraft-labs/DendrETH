@@ -21,12 +21,12 @@
     "circom_tester": "^0.0.14",
     "circomlib": "2.0.2",
     "ethereum-waffle": "^4.0.7",
-    "ethers": "^5.6.4",
+    "ethers": "^5.7.0",
     "hardhat": "^2.22.0",
     "js-yaml": "^4.1.0",
     "redis": "^4.6.5",
     "snarkit2": "https://github.com/fluidex/snarkit2#70142d8bbc5ec79cfa6869205263ff77e8423975",
-    "snarkjs": "github:metacraft-labs/snarkjs",
+    "snarkjs": "https://github.com/metacraft-labs/snarkjs.git#commit=091ee9c3744c660b0ecd961f9197a8249a8f7d3b",
     "ts-node": "^10.9.1"
   },
   "devDependencies": {
