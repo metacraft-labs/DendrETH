@@ -4,12 +4,7 @@ import { sleep, splitIntoBatches } from '@dendreth/utils/ts-utils/common-utils';
 import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import * as fs from 'fs';
 import Redis from 'ioredis';
-const {
-  KeyPrefix,
-  WorkQueue,
-  Item,
-} = require('@mevitae/redis-work-queue/dist/WorkQueue');
-
+import { KeyPrefix, WorkQueue, Item } from '@mevitae/redis-work-queue';
 import colors from 'colors/safe';
 
 import { getBeaconApi } from '../../../relay/implementations/beacon-api';
@@ -108,7 +103,7 @@ let MOCK: boolean;
       false,
     );
 
-    await work_queue.addItem(db, new Item(buffer));
+    await work_queue.addItem(db, new Item(Buffer.from(buffer)));
 
     for (let i = 0; i < 40; i++) {
       const buffer = new ArrayBuffer(24);
@@ -126,7 +121,7 @@ let MOCK: boolean;
         false,
       );
 
-      await work_queue.addItem(db, new Item(buffer));
+      await work_queue.addItem(db, new Item(Buffer.from(buffer)));
 
       if (i % 10 === 0 && i !== 0) {
         console.log('Added zeros tasks');
@@ -235,7 +230,7 @@ let MOCK: boolean;
         const buffer = new ArrayBuffer(8);
         const dataView = new DataView(buffer);
         dataView.setBigUint64(0, BigInt(vi.index), false);
-        await work_queue.addItem(db, new Item(buffer));
+        work_queue.addItem(db, new Item(Buffer.from(buffer)));
       }
 
       if (i % GRANULITY == 0) {
@@ -276,7 +271,7 @@ let MOCK: boolean;
 
         await redis.saveValidatorProof(j + 1n, first);
 
-        await work_queue.addItem(db, new Item(buffer));
+        work_queue.addItem(db, new Item(Buffer.from(buffer)));
 
         prev_index = first;
       }

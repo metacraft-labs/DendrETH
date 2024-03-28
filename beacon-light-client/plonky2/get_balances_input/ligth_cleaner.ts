@@ -1,8 +1,4 @@
-const {
-  KeyPrefix,
-  WorkQueue,
-  Item,
-} = require('@mevitae/redis-work-queue/dist/WorkQueue');
+import { KeyPrefix, WorkQueue } from '@mevitae/redis-work-queue';
 import Redis from 'ioredis';
 import { sleep } from '@dendreth/utils/ts-utils/common-utils';
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
