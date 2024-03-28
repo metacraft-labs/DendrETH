@@ -18,6 +18,7 @@ import {
 import path from 'path';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 import { prometheusTiming } from '@dendreth/utils/ts-utils/prometheus-utils';
+import { panic } from '@dendreth/utils/ts-utils/common-utils';
 import { DENEB_FORK_EPOCH } from '../constants/constants';
 
 const logger = getGenericLogger();
@@ -231,7 +232,9 @@ export class BeaconApi implements IBeaconApi {
   }> {
     const { beaconState: prevBeaconSate, stateTree: prevStateTree } =
       await prometheusTiming(
-        async () => await this.getBeaconState(prevSlot),
+        async () =>
+          (await this.getBeaconState(prevSlot)) ||
+          panic('Could not fetch beacon state'),
         'getPrevBeaconState',
       );
 
@@ -259,7 +262,9 @@ export class BeaconApi implements IBeaconApi {
       beaconState: prevFinalizedBeaconState,
       stateTree: prevFinalizedBeaconStateTree,
     } = await prometheusTiming(
-      async () => await this.getBeaconState(finalityHeader.slot),
+      async () =>
+        (await this.getBeaconState(finalityHeader.slot)) ||
+        panic('Could not fetch beacon state'),
       'getPrevFinalizedBeaconState',
     );
 
@@ -314,7 +319,9 @@ export class BeaconApi implements IBeaconApi {
     finalityHeaderBranch: string[];
   }> {
     const { beaconState, stateTree } = await prometheusTiming(
-      async () => await this.getBeaconState(slot),
+      async () =>
+        (await this.getBeaconState(slot)) ||
+        panic('Could not fetch beacon state'),
       'getBeaconState',
     );
 
@@ -434,8 +441,18 @@ export class BeaconApi implements IBeaconApi {
         },
       },
     )
-      .then(response => response.arrayBuffer())
-      .then(buffer => new Uint8Array(buffer));
+      .then(response => {
+        if (response.status === 404) {
+          throw 'Could not fetch beacon state (404 not found)';
+        }
+        return response.arrayBuffer();
+      })
+      .then(buffer => new Uint8Array(buffer))
+      .catch(console.error);
+
+    if (!beaconStateSZZ) {
+      return null;
+    }
 
     const currentSszFork = this.getCurrentSSZ(slot);
     const beaconState = currentSszFork.BeaconState.deserialize(beaconStateSZZ);
