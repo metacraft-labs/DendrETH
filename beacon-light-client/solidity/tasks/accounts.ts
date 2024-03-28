@@ -1,5 +1,5 @@
 import { task } from 'hardhat/config';
-import { getGenericLogger } from '../../../libs/typescript/ts-utils/logger';
+import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 
 const logger = getGenericLogger();
 

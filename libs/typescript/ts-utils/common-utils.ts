@@ -219,3 +219,8 @@ export async function loopWhile<T>(
   }
   return r;
 }
+
+export function panic(message: string): never {
+  console.error(message);
+  return process.exit(1);
+}

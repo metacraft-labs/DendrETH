@@ -8,8 +8,8 @@ import {
   compileVerifierParseDataTool,
   replaceInTextProof,
 } from '../helpers/helpers';
-import { getRootDir, sleep } from '../../libs/typescript/ts-utils/common-utils';
-import { getDataFromPrintHeaderResult } from '../../libs/typescript/cosmos-utils/cosmos-utils';
+import { getRootDir, sleep } from '@dendreth/utils/ts-utils/common-utils';
+import { getDataFromPrintHeaderResult } from '@dendreth/utils/cosmos-utils/cosmos-utils';
 
 const exec = promisify(exec_);
 

@@ -1,6 +1,6 @@
 import { sha256 } from 'ethers/lib/utils';
-import { IBeaconApi } from '../../../../relay/abstraction/beacon-api-interface';
-import { Config } from '../../../../relay/constants/constants';
+import { IBeaconApi } from '@dendreth/relay/abstraction/beacon-api-interface';
+import { Config } from '@dendreth/relay/constants/constants';
 
 export const getConstructorArgs = async (
   beaconApi: IBeaconApi,

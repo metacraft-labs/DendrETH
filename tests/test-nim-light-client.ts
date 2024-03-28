@@ -6,16 +6,16 @@ import glob_ from 'glob';
 const glob = glob_.sync;
 import { ssz } from '@lodestar/types';
 
-import { compileNimFileToWasm } from '../libs/typescript/ts-utils/compile-nim-to-wasm';
+import { compileNimFileToWasm } from '@dendreth/utils/ts-utils/compile-nim-to-wasm';
 import {
   loadWasm,
   marshalSzzObjectToWasm,
   writeSSZObjectToWasm,
   WasmError,
   readJson,
-} from '../libs/typescript/ts-utils/wasm-utils';
-import { hexToArray } from '../libs/typescript/ts-utils/hex-utils';
-import { SSZSpecTypes } from '../libs/typescript/ts-utils/sszSpecTypes';
+} from '@dendreth/utils/ts-utils/wasm-utils';
+import { hexToArray } from '@dendreth/utils/ts-utils/hex-utils';
+import { SSZSpecTypes } from '@dendreth/utils/ts-utils/sszSpecTypes';
 
 import BOOTSTRAP from '../vendor/eth2-light-client-updates/mainnet/bootstrap.json';
 import UPDATE from '../vendor/eth2-light-client-updates/mainnet/updates/00290.json';

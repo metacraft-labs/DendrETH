@@ -2,7 +2,7 @@ import { BigNumber, Contract } from 'ethers';
 import Web3 from 'web3';
 import { FeeHistoryResult } from 'web3-eth';
 import { groth16 } from 'snarkjs';
-import { getGenericLogger } from '../../libs/typescript/ts-utils/logger';
+import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 
 const logger = getGenericLogger();
 

@@ -1,9 +1,9 @@
 import yargs from 'yargs/yargs';
-import { getCosmosTxClient } from '../../../libs/typescript/cosmos-utils/cosmos-utils';
+import { getCosmosTxClient } from '@dendreth/utils/cosmos-utils/cosmos-utils';
 import {
   startCosmosNode,
   stopCosmosNode,
-} from '../../../libs/typescript/cosmos-utils/testnet-setup';
+} from '@dendreth/utils/cosmos-utils/testnet-setup';
 import {
   instantiateVerifierContract,
   uploadVerifierContract,

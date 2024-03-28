@@ -1,5 +1,5 @@
 import { buildPoseidon } from 'circomlibjs';
-import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
+import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 
 (async () => {
   const poseidon = await buildPoseidon();

@@ -2,8 +2,8 @@ import { Config } from '../../constants/constants';
 import { getProofInput } from './get_ligth_client_input';
 import { IBeaconApi } from '../../abstraction/beacon-api-interface';
 import { BeaconBlockHeader, SyncAggregate } from '../../types/types';
-import { getGenericLogger } from '../../../libs/typescript/ts-utils/logger';
-import { prometheusTiming } from '../../../libs/typescript/ts-utils/prometheus-utils';
+import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
+import { prometheusTiming } from '@dendreth/utils/ts-utils/prometheus-utils';
 
 const logger = getGenericLogger();
 

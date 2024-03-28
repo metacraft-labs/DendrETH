@@ -1,15 +1,14 @@
 import { PointG1, PointG2 } from '@noble/bls12-381';
 import {
   bigint_to_array,
-  bytesToHex,
   formatHex,
   hexToBytes,
   utils,
-} from '../../../../libs/typescript/ts-utils/bls';
+} from '@dendreth/utils/ts-utils/bls';
+import { getFilesInDir } from '@dendreth/utils/ts-utils/data';
 import { writeFileSync } from 'fs';
 import { BitVectorType } from '@chainsafe/ssz';
 import * as path from 'path';
-import { getFilesInDir } from '../../../../libs/typescript/ts-utils/data';
 import { ssz } from '@lodestar/types';
 
 const hashToField = utils.hashToField;

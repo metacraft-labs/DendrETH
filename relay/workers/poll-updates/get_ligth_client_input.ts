@@ -12,7 +12,7 @@ import {
   bigint_to_array,
   bytesToHex,
   formatHex,
-} from '../../../libs/typescript/ts-utils/bls';
+} from '@dendreth/utils/ts-utils/bls';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { Config } from '../../constants/constants';
 import {
@@ -22,7 +22,7 @@ import {
   SyncCommittee,
   WitnessGeneratorInput,
 } from '../../types/types';
-import { computeSyncCommitteePeriodAt } from '../../../libs/typescript/ts-utils/ssz-utils';
+import { computeSyncCommitteePeriodAt } from '@dendreth/utils/ts-utils/ssz-utils';
 
 const ExecutionPayload = new ContainerType({
   parentHash: new ByteVectorType(32),

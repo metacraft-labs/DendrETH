@@ -1,6 +1,6 @@
 import { groth16 } from 'snarkjs';
 import { readFileSync } from 'fs';
-import { getGenericLogger } from '../../../../libs/typescript/ts-utils/logger';
+import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 
 const logger = getGenericLogger();
 

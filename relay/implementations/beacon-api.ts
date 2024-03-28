@@ -9,15 +9,16 @@ import {
   Validator,
 } from '../types/types';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
-import { bytesToHex } from '../../libs/typescript/ts-utils/bls';
+import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import {
   SSZ,
   CapellaOrDeneb,
   computeSyncCommitteePeriodAt,
-} from '../../libs/typescript/ts-utils/ssz-utils';
+} from '@dendreth/utils/ts-utils/ssz-utils';
 import path from 'path';
-import { getGenericLogger } from '../../libs/typescript/ts-utils/logger';
-import { prometheusTiming } from '../../libs/typescript/ts-utils/prometheus-utils';
+import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
+import { prometheusTiming } from '@dendreth/utils/ts-utils/prometheus-utils';
+import { panic } from '@dendreth/utils/ts-utils/common-utils';
 import { DENEB_FORK_EPOCH } from '../constants/constants';
 
 const logger = getGenericLogger();
@@ -37,9 +38,10 @@ export class BeaconApi implements IBeaconApi {
     public readonly ssz: SSZ,
   ) {}
 
-  getCurrentSsz(slot: number): CapellaOrDeneb {
+  getCurrentSSZ(slot: number): CapellaOrDeneb {
+    const denebForkSlot = DENEB_FORK_EPOCH * 32;
     return (
-      slot > DENEB_FORK_EPOCH ? this.ssz.deneb : this.ssz.capella
+      slot >= denebForkSlot ? this.ssz.deneb : this.ssz.capella
     ) as CapellaOrDeneb;
   }
 
@@ -58,7 +60,7 @@ export class BeaconApi implements IBeaconApi {
       await this.fetchWithFallback(`/eth/v2/beacon/blocks/${slot}`)
     ).json();
 
-    const currentSszFork = this.getCurrentSsz(slot);
+    const currentSszFork = this.getCurrentSSZ(slot);
     const beaconBlock = currentSszFork.BeaconBlockBody.fromJson(
       currentBlock.data.message.body,
     );
@@ -230,7 +232,9 @@ export class BeaconApi implements IBeaconApi {
   }> {
     const { beaconState: prevBeaconSate, stateTree: prevStateTree } =
       await prometheusTiming(
-        async () => await this.getBeaconState(prevSlot),
+        async () =>
+          (await this.getBeaconState(prevSlot)) ||
+          panic('Could not fetch beacon state'),
         'getPrevBeaconState',
       );
 
@@ -246,7 +250,7 @@ export class BeaconApi implements IBeaconApi {
       prevFinalizedHeaderResult.data.header.message,
     );
 
-    const currentSszFork = this.getCurrentSsz(nextSlot);
+    const currentSszFork = this.getCurrentSSZ(nextSlot);
     const finalityHeaderBranch = prevStateTree
       .getSingleProof(
         currentSszFork.BeaconState.getPathInfo(['finalized_checkpoint', 'root'])
@@ -258,7 +262,9 @@ export class BeaconApi implements IBeaconApi {
       beaconState: prevFinalizedBeaconState,
       stateTree: prevFinalizedBeaconStateTree,
     } = await prometheusTiming(
-      async () => await this.getBeaconState(finalityHeader.slot),
+      async () =>
+        (await this.getBeaconState(finalityHeader.slot)) ||
+        panic('Could not fetch beacon state'),
       'getPrevFinalizedBeaconState',
     );
 
@@ -313,7 +319,9 @@ export class BeaconApi implements IBeaconApi {
     finalityHeaderBranch: string[];
   }> {
     const { beaconState, stateTree } = await prometheusTiming(
-      async () => await this.getBeaconState(slot),
+      async () =>
+        (await this.getBeaconState(slot)) ||
+        panic('Could not fetch beacon state'),
       'getBeaconState',
     );
 
@@ -325,7 +333,7 @@ export class BeaconApi implements IBeaconApi {
       )
     ).json();
 
-    const currentSszFork = this.getCurrentSsz(slot);
+    const currentSszFork = this.getCurrentSSZ(slot);
     const finalityHeader = this.ssz.phase0.BeaconBlockHeader.fromJson(
       finalizedHeaderResult.data.header.message,
     );
@@ -343,7 +351,7 @@ export class BeaconApi implements IBeaconApi {
     executionPayloadHeader: ExecutionPayloadHeader;
     executionPayloadBranch: string[];
   }> {
-    const currentSszFork = this.getCurrentSsz(slot);
+    const currentSszFork = this.getCurrentSSZ(slot);
     const finalizedBlockBodyResult = await (
       await this.fetchWithFallback(`/eth/v2/beacon/blocks/${slot}`)
     ).json();
@@ -433,10 +441,20 @@ export class BeaconApi implements IBeaconApi {
         },
       },
     )
-      .then(response => response.arrayBuffer())
-      .then(buffer => new Uint8Array(buffer));
+      .then(response => {
+        if (response.status === 404) {
+          throw 'Could not fetch beacon state (404 not found)';
+        }
+        return response.arrayBuffer();
+      })
+      .then(buffer => new Uint8Array(buffer))
+      .catch(console.error);
 
-    const currentSszFork = this.getCurrentSsz(slot);
+    if (!beaconStateSZZ) {
+      return null;
+    }
+
+    const currentSszFork = this.getCurrentSSZ(slot);
     const beaconState = currentSszFork.BeaconState.deserialize(beaconStateSZZ);
     const beaconStateView = currentSszFork.BeaconState.toViewDU(beaconState);
     const stateTree = new Tree(beaconStateView.node);

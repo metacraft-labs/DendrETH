@@ -1,5 +1,5 @@
 import { PointG1 } from '@noble/bls12-381';
-import { bigint_to_array } from '../../../../libs/typescript/ts-utils/bls';
+import { bigint_to_array } from '@dendreth/utils/ts-utils/bls';
 import * as update from '../../../../vendor/eth2-light-client-updates/mainnet/updates/00290.json';
 import { writeFileSync } from 'fs';
 import { BitVectorType } from '@chainsafe/ssz';

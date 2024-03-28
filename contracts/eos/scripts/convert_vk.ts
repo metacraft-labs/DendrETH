@@ -1,6 +1,6 @@
 import { fromBinary } from '@cosmjs/cosmwasm-stargate';
 import { readFileSync } from 'fs';
-import { hexToBytes } from '../../../libs/typescript/ts-utils/bls';
+import { hexToBytes } from '@dendreth/utils/ts-utils/bls';
 
 function toHex(number: string) {
   return BigInt(number).toString(16).padStart(64, '0');

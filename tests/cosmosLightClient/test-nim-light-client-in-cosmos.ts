@@ -9,18 +9,18 @@ import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
 import { calculateFee, GasPrice } from '@cosmjs/stargate';
 import * as fs from 'fs';
 
-import { SSZSpecTypes } from '../../libs/typescript/ts-utils/sszSpecTypes';
-import { jsonToSerializedBase64 } from '../../libs/typescript/ts-utils/ssz-utils';
-import { compileNimFileToWasm } from '../../libs/typescript/ts-utils/compile-nim-to-wasm';
+import { SSZSpecTypes } from '@dendreth/utils/ts-utils/sszSpecTypes';
+import { jsonToSerializedBase64 } from '@dendreth/utils/ts-utils/ssz-utils';
+import { compileNimFileToWasm } from '@dendreth/utils/ts-utils/compile-nim-to-wasm';
 import {
   byteArrayToNumber,
   appendJsonFile,
   getRootDir,
-} from '../../libs/typescript/ts-utils/common-utils';
+} from '@dendreth/utils/ts-utils/common-utils';
 import {
   setUpCosmosTestnet,
   stopCosmosNode,
-} from '../../libs/typescript/cosmos-utils/testnet-setup';
+} from '@dendreth/utils/cosmos-utils/testnet-setup';
 import { gasUsed } from '../helpers/helpers';
 
 const exec = promisify(exec_);

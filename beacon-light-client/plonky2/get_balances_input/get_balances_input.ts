@@ -1,26 +1,24 @@
 import { Tree } from '@chainsafe/persistent-merkle-tree';
-import { Redis as RedisLocal } from '../../../relay/implementations/redis';
+import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
 import Redis from 'ioredis';
-import { getBeaconApi } from '../../../relay/implementations/beacon-api';
-import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
-import { hexToBits } from '../../../libs/typescript/ts-utils/hex-utils';
-import { bigint_to_array } from '../../solidity/test/utils/bls';
+import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
+import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
+import { hexToBits } from '@dendreth/utils/ts-utils/hex-utils';
 import * as fs from 'fs';
-const {
-  KeyPrefix,
-  WorkQueue,
-  Item,
-} = require('@mevitae/redis-work-queue/dist/WorkQueue');
+import { KeyPrefix, WorkQueue, Item } from '@mevitae/redis-work-queue';
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
 import yargs from 'yargs';
-import { computeEpochAt } from '../../../libs/typescript/ts-utils/ssz-utils';
+import { hideBin } from 'yargs/helpers';
+import { computeEpochAt } from '@dendreth/utils/ts-utils/ssz-utils';
+import { panic } from '@dendreth/utils/ts-utils/common-utils';
+
 const CIRCUIT_SIZE = 8;
 let TAKE;
 
 (async () => {
   const { ssz } = await import('@lodestar/types');
 
-  const options = yargs
+  const options = yargs(hideBin(process.argv))
     .usage(
       'Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>',
     )
@@ -101,7 +99,8 @@ let TAKE;
           fs.readFileSync(beaconState_bin),
         ),
       }
-    : await beaconApi.getBeaconState(6953401);
+    : (await beaconApi.getBeaconState(6524176)) ||
+      panic('Could not fetch beacon state');
 
   const validators = beaconState.validators.slice(0, TAKE);
   TAKE = validators.length;
@@ -158,7 +157,7 @@ let TAKE;
     false,
   );
 
-  await queues[0].addItem(db, new Item(buffer));
+  await queues[0].addItem(db, new Item(Buffer.from(buffer)));
 
   for (let i = 0; i < 38; i++) {
     const buffer = new ArrayBuffer(24);
@@ -176,7 +175,7 @@ let TAKE;
       false,
     );
 
-    await queues[i + 1].addItem(db, new Item(buffer));
+    await queues[i + 1].addItem(db, new Item(Buffer.from(buffer)));
 
     if (i % (GRANULITY / 10) === 0 && i !== 0) console.log('Added zeros tasks');
   }
@@ -233,7 +232,7 @@ let TAKE;
     const view = new DataView(buffer);
     view.setBigUint64(0, BigInt(i * CIRCUIT_SIZE), false);
 
-    await queues[0].addItem(db, new Item(buffer));
+    await queues[0].addItem(db, new Item(Buffer.from(buffer)));
     if (i % (GRANULITY * 100) === 0 && i !== 0)
       console.log(`added ${i * CIRCUIT_SIZE}`);
   }
@@ -268,7 +267,7 @@ let TAKE;
       view.setBigUint64(16, second, false);
 
       await redis.saveBalanceProof(BigInt(j - 1), first);
-      await queues[j].addItem(db, new Item(buffer));
+      await queues[j].addItem(db, new Item(Buffer.from(buffer)));
 
       prev_index = first;
     }
@@ -299,7 +298,7 @@ let TAKE;
     validatorsSizeBits: hexToBits(bytesToHex(ssz.UintNum64.hashTreeRoot(TAKE))),
   });
 
-  queues[39].addItem(db, new Item(new ArrayBuffer(0)));
+  queues[39].addItem(db, new Item(Buffer.from(new ArrayBuffer(0))));
 
   console.log('Added final proof input');
 

@@ -5,12 +5,12 @@ import {
   formatHex,
   hexToBytes,
   utils,
-} from '../../../../libs/typescript/ts-utils/bls';
+} from '@dendreth/utils/ts-utils/bls';
+import { getFilesInDir } from '@dendreth/utils/ts-utils/data';
 import { ssz } from '@lodestar/types';
 import { writeFileSync } from 'fs';
 import { BitVectorType } from '@chainsafe/ssz';
 import * as path from 'path';
-import { getFilesInDir } from '../../../../libs/typescript/ts-utils/data';
 
 const hashToField = utils.hashToField;
 

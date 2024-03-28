@@ -1,9 +1,9 @@
 import * as path from 'path';
 import { ethers } from 'hardhat';
 import { getFilesInDir, Proof } from './utils';
-import { convertProofToSolidityCalldata } from '../../../libs/typescript/ts-utils/zk-utils';
+import { convertProofToSolidityCalldata } from '@dendreth/utils/ts-utils/zk-utils';
 import INITIAL_UPDATE from '../../../vendor/eth2-light-client-updates/prater/capella-updates-94/update_5601823_5609044.json';
-import { getGenericLogger } from '../../../libs/typescript/ts-utils/logger';
+import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 
 const logger = getGenericLogger();
 

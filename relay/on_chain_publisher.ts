@@ -9,13 +9,12 @@ import {
   publishTransaction,
 } from './implementations/publish_evm_transaction';
 import Web3 from 'web3';
-import { checkConfig, sleep } from '../libs/typescript/ts-utils/common-utils';
+import { checkConfig, sleep } from '@dendreth/utils/ts-utils/common-utils';
 import { Queue } from 'bullmq';
 import { Config, UPDATE_POLING_QUEUE } from './constants/constants';
-import crypto from 'crypto';
 import { getSlotOnChain } from './utils/smart_contract_utils';
 import { addUpdate } from './utils/orchestrator';
-import { getGenericLogger } from '../libs/typescript/ts-utils/logger';
+import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 
 const logger = getGenericLogger();
 

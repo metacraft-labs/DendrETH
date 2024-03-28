@@ -4,13 +4,13 @@ import {
   bytesToHex,
   formatHex,
   hexToBytes,
-} from '../../../../libs/typescript/ts-utils/bls';
-import { ssz } from '@chainsafe/lodestar-types';
+} from '@dendreth/utils/ts-utils/bls';
+import { getFilesInDir } from '@dendreth/utils/ts-utils/data';
+import { ssz } from '@lodestar/types';
 import { mainnetChainConfig } from '@lodestar/config/configs';
 import { writeFileSync } from 'fs';
 import { BitVectorType } from '@chainsafe/ssz';
 import * as path from 'path';
-import { getFilesInDir } from '../../../../libs/typescript/ts-utils/data';
 
 export async function getProof(vkey, proof, originator, prevUpdate, update) {
   let points: PointG1[] = prevUpdate.next_sync_committee.pubkeys.map(x =>

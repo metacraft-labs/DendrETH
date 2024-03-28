@@ -1,6 +1,6 @@
 import { PointG2 } from '@noble/bls12-381';
 import { BitVectorType } from '@chainsafe/ssz';
-import { ssz } from '@chainsafe/lodestar-types';
+import { ssz } from '@lodestar/types';
 import { hexToBytes, formatHex, bigint_to_array } from './bls';
 import { Proof } from './index';
 

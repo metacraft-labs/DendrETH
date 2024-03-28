@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url';
 import glob_ from 'glob';
 const glob = glob_.sync;
 
-import { compileNimFileToWasm } from '../libs/typescript/ts-utils/compile-nim-to-wasm';
-import { loadWasm } from '../libs/typescript/ts-utils/wasm-utils';
+import { compileNimFileToWasm } from '@dendreth/utils/ts-utils/compile-nim-to-wasm';
+import { loadWasm } from '@dendreth/utils/ts-utils/wasm-utils';
 
 interface NimTestState<T extends WebAssembly.Exports = {}> {
   exports: T;

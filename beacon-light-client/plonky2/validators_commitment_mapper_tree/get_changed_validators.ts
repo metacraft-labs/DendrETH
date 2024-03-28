@@ -1,25 +1,15 @@
-import {
-  sleep,
-  splitIntoBatches,
-} from '../../../libs/typescript/ts-utils/common-utils';
-import { Redis as RedisLocal } from '../../../relay/implementations/redis';
-import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
-import { Validator } from '../../../relay/types/types';
-import { hexToBits } from '../../../libs/typescript/ts-utils/hex-utils';
+import { sleep, splitIntoBatches } from '@dendreth/utils/ts-utils/common-utils';
+import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
+import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
+import { Validator } from '@dendreth/relay/types/types';
 import * as fs from 'fs';
 import Redis from 'ioredis';
-const {
-  KeyPrefix,
-  WorkQueue,
-  Item,
-} = require('@mevitae/redis-work-queue/dist/WorkQueue');
-
+import { KeyPrefix, WorkQueue, Item } from '@mevitae/redis-work-queue';
 import colors from 'colors/safe';
-
-import { getBeaconApi } from '../../../relay/implementations/beacon-api';
-
+import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
 import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
 
 let TAKE: number | undefined;
 let MOCK: boolean;
@@ -27,7 +17,7 @@ let MOCK: boolean;
 (async () => {
   const { ssz } = await import('@lodestar/types');
 
-  const options = yargs
+  const options = yargs(hideBin(process.argv))
     .usage(
       'Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>',
     )
@@ -111,7 +101,7 @@ let MOCK: boolean;
       false,
     );
 
-    await work_queue.addItem(db, new Item(buffer));
+    await work_queue.addItem(db, new Item(Buffer.from(buffer)));
 
     for (let i = 0; i < 40; i++) {
       const buffer = new ArrayBuffer(24);
@@ -129,7 +119,7 @@ let MOCK: boolean;
         false,
       );
 
-      await work_queue.addItem(db, new Item(buffer));
+      await work_queue.addItem(db, new Item(Buffer.from(buffer)));
 
       if (i % 10 === 0 && i !== 0) {
         console.log('Added zeros tasks');
@@ -238,7 +228,7 @@ let MOCK: boolean;
         const buffer = new ArrayBuffer(8);
         const dataView = new DataView(buffer);
         dataView.setBigUint64(0, BigInt(vi.index), false);
-        await work_queue.addItem(db, new Item(buffer));
+        work_queue.addItem(db, new Item(Buffer.from(buffer)));
       }
 
       if (i % GRANULITY == 0) {
@@ -279,7 +269,7 @@ let MOCK: boolean;
 
         await redis.saveValidatorProof(j + 1n, first);
 
-        await work_queue.addItem(db, new Item(buffer));
+        work_queue.addItem(db, new Item(Buffer.from(buffer)));
 
         prev_index = first;
       }
