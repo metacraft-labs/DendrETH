@@ -1,11 +1,11 @@
-import { getFilesInDir } from '../../../../libs/typescript/ts-utils/data';
+import { getFilesInDir } from '@dendreth/utils/ts-utils/data';
+import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 import { getProof } from './get_light_client_recursive_input';
 import * as path from 'path';
 import { readFileSync, writeFileSync } from 'fs';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as vkey from './converted-vkey.json';
-import { getGenericLogger } from '../../../../libs/typescript/ts-utils/logger';
 
 const logger = getGenericLogger();
 const promiseExec = promisify(exec);

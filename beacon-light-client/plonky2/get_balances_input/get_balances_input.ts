@@ -2,9 +2,9 @@ import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { Redis as RedisLocal } from '../../../relay/implementations/redis';
 import Redis from 'ioredis';
 import { getBeaconApi } from '../../../relay/implementations/beacon-api';
-import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
-import { hexToBits } from '../../../libs/typescript/ts-utils/hex-utils';
 import { bigint_to_array } from '../../solidity/test/utils/bls';
+import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
+import { hexToBits } from '@dendreth/utils/ts-utils/hex-utils';
 import * as fs from 'fs';
 const {
   KeyPrefix,
@@ -13,7 +13,8 @@ const {
 } = require('@mevitae/redis-work-queue/dist/WorkQueue');
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
 import yargs from 'yargs';
-import { computeEpochAt } from '../../../libs/typescript/ts-utils/ssz-utils';
+import { computeEpochAt } from '@dendreth/utils/ts-utils/ssz-utils';
+import { panic } from '@dendreth/utils/ts-utils/common-utils';
 const CIRCUIT_SIZE = 8;
 let TAKE;
 

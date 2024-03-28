@@ -3,12 +3,12 @@ import { getBeaconApi } from '../../../relay/implementations/beacon-api';
 import { Redis } from '../../../relay/implementations/redis';
 import { SolidityContract } from '../../../relay/implementations/solidity-contract';
 import { publishProofs } from '../../../relay/on_chain_publisher';
-import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
+import { checkConfig } from '@dendreth/utils/ts-utils/common-utils';
 import { Contract, ethers } from 'ethers';
 import hashi_abi from './hashi_abi.json';
 import { getNetworkConfig } from '../../../relay/utils/get_current_network_config';
-import { getGenericLogger } from '../../../libs/typescript/ts-utils/logger';
-import { initPrometheusSetup } from '../../../libs/typescript/ts-utils/prometheus-utils';
+import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
+import { initPrometheusSetup } from '@dendreth/utils/ts-utils/prometheus-utils';
 
 const logger = getGenericLogger();
 

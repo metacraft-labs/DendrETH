@@ -1,10 +1,10 @@
 import { QueueEvents } from 'bullmq';
-import { checkConfig } from '../libs/typescript/ts-utils/common-utils';
+import { checkConfig } from '@dendreth/utils/ts-utils/common-utils';
 import {
   PROOF_GENERATOR_QUEUE,
   UPDATE_POLING_QUEUE,
 } from './constants/constants';
-import { getGenericLogger } from '../libs/typescript/ts-utils/logger';
+import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 
 const logger = getGenericLogger();
 

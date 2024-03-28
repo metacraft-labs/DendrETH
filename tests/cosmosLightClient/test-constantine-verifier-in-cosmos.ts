@@ -10,11 +10,8 @@ import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
 import {
   setUpCosmosTestnet,
   stopCosmosNode,
-} from '../../libs/typescript/cosmos-utils/testnet-setup';
-import {
-  appendJsonFile,
-  sleep,
-} from '../../libs/typescript/ts-utils/common-utils';
+} from '@dendreth/utils/cosmos-utils/testnet-setup';
+import { appendJsonFile, sleep } from '@dendreth/utils/ts-utils/common-utils';
 import { compileContractMain } from '../../contracts/cosmos/verifier/typescript/verifier-compile-contract-and-tools';
 import {
   instantiateVerifierContract,
@@ -22,7 +19,7 @@ import {
 } from '../../contracts/cosmos/verifier/typescript/verifier-upload-instantiate';
 import { updateVerifierContract } from '../../contracts/cosmos/verifier/typescript/verifier-make-update';
 import { replaceInTextProof, gasUsed } from '../helpers/helpers';
-import { getCosmosContractArtifacts } from '../../libs/typescript/cosmos-utils/cosmos-utils';
+import { getCosmosContractArtifacts } from '@dendreth/utils/cosmos-utils/cosmos-utils';
 
 const exec = promisify(exec_);
 

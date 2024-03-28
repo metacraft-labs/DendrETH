@@ -1,9 +1,9 @@
-import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
+import { checkConfig } from '@dendreth/utils/ts-utils/common-utils';
 import { Queue } from 'bullmq';
 import { GetUpdate } from '../../../relay/types/types';
 import { UPDATE_POLING_QUEUE } from '../../../relay/constants/constants';
 import { task } from 'hardhat/config';
-import { getGenericLogger } from '../../../libs/typescript/ts-utils/logger';
+import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 
 const logger = getGenericLogger();
 

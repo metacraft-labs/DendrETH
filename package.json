@@ -7,6 +7,7 @@
   "workspaces": [
     "beacon-light-client/circom",
     "beacon-light-client/solidity",
+    "libs/typescript",
     "relay"
   ],
   "directories": {
@@ -66,6 +67,7 @@
     "@cosmjs/cosmwasm-stargate": "^0.30.0",
     "@cosmjs/proto-signing": "^0.30.0",
     "@cosmjs/stargate": "^0.30.0",
+    "@dendreth/utils": "workspace:^",
     "@iden3/binfileutils": "^0.0.11",
     "@lodestar/params": "^1.16.0",
     "@lodestar/types": "^1.17.0",

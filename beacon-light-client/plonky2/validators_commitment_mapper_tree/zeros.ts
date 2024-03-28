@@ -1,5 +1,5 @@
 import { sha256 } from 'ethers/lib/utils';
-import { bytesToHex, formatHex } from '../../../libs/typescript/ts-utils/bls';
+import { bytesToHex, formatHex } from '@dendreth/utils/ts-utils/bls';
 
 let zeros: string[] = [];
 

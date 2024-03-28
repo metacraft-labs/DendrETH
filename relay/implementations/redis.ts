@@ -1,5 +1,5 @@
-import { hexToBytes } from '../../libs/typescript/ts-utils/bls';
-import { bitsToBytes } from '../../libs/typescript/ts-utils/hex-utils';
+import { hexToBytes } from '@dendreth/utils/ts-utils/bls';
+import { bitsToBytes } from '@dendreth/utils/ts-utils/hex-utils';
 import { IRedis } from '../abstraction/redis-interface';
 import {
   BalanceProof,

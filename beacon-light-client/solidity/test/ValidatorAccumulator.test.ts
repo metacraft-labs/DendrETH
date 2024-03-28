@@ -1,12 +1,12 @@
 import { ethers } from 'hardhat';
 import { Contract } from 'ethers';
 import { sha256 } from 'ethers/lib/utils';
-import { hashTreeRoot } from '../../../libs/typescript/ts-utils/ssz-utils';
+import { hashTreeRoot } from '@dendreth/utils/ts-utils/ssz-utils';
 import {
   bytesToHex,
   formatHex,
   hexToBytes,
-} from '../../../libs/typescript/ts-utils/bls';
+} from '@dendreth/utils/ts-utils/bls';
 import { expect } from 'chai';
 
 const depositContractAbi = [

@@ -1,3 +1,4 @@
+import { readFileSync } from 'fs';
 import { beforeAll, describe, expect, test } from '@jest/globals';
 
 import glob_ from 'glob';
@@ -8,17 +9,16 @@ import { exec as exec_ } from 'node:child_process';
 import {
   setUpCosmosTestnet,
   stopCosmosNode,
-} from '../../libs/typescript/cosmos-utils/testnet-setup';
+} from '@dendreth/utils/cosmos-utils/testnet-setup';
 import { CosmosContract } from '../../relay/implementations/cosmos-contract';
+import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
+import { getRootDir, sleep } from '@dendreth/utils/ts-utils/common-utils';
 import { compileContractMain } from '../../contracts/cosmos/verifier/typescript/verifier-compile-contract-and-tools';
-import { getRootDir, sleep } from '../../libs/typescript/ts-utils/common-utils';
 import {
   instantiateVerifierContract,
   uploadVerifierContract,
 } from '../../contracts/cosmos/verifier/typescript/verifier-upload-instantiate';
 import { replaceInTextProof } from '../helpers/helpers';
-import { readFileSync } from 'fs';
-import { bytesToHex } from '../../libs/typescript/ts-utils/bls';
 
 const exec = promisify(exec_);
 

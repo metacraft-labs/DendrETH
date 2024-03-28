@@ -2,9 +2,9 @@ import { ISmartContract } from '../abstraction/smart-contract-abstraction';
 import { promisify } from 'node:util';
 import { exec as exec_ } from 'node:child_process';
 import { compileVerifierParseDataTool } from '../../tests/helpers/helpers';
-import { getDataFromPrintHeaderResult } from '../../libs/typescript/cosmos-utils/cosmos-utils';
-import { formatHex } from '../../libs/typescript/ts-utils/bls';
-import { getGenericLogger } from '../../libs/typescript/ts-utils/logger';
+import { getDataFromPrintHeaderResult } from '@dendreth/utils/cosmos-utils/cosmos-utils';
+import { formatHex } from '@dendreth/utils/ts-utils/bls';
+import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 
 const logger = getGenericLogger();
 

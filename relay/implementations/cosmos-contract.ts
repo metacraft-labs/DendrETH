@@ -2,10 +2,10 @@ import { ISmartContract } from '../abstraction/smart-contract-abstraction';
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
 import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
 import { promisify } from 'node:util';
-import { exec as exec_, execSync, spawn } from 'node:child_process';
+import { exec as exec_ } from 'node:child_process';
 import { calculateFee, GasPrice } from '@cosmjs/stargate';
-import { bytesToHex } from '../../libs/typescript/ts-utils/bls';
-import { getGenericLogger } from '../../libs/typescript/ts-utils/logger';
+import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
+import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 
 const logger = getGenericLogger();
 const exec = promisify(exec_);

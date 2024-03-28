@@ -1,7 +1,7 @@
 import { SolidityContract } from '../implementations/solidity-contract';
 import { getBeaconApi, BeaconApi } from '../implementations/beacon-api';
 import { ethers } from 'ethers';
-import { sleep } from '../../libs/typescript/ts-utils/common-utils';
+import { sleep } from '@dendreth/utils/ts-utils/common-utils';
 import { GatewayIntentBits, Events, Partials } from 'discord.js';
 import * as Discord from 'discord.js';
 import lc_abi_json from '../../beacon-light-client/solidity/artifacts/contracts/bridge/src/truth/eth/BeaconLightClient.sol/BeaconLightClient.json';
