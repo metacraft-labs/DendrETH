@@ -1,11 +1,7 @@
-import {
-  sleep,
-  splitIntoBatches,
-} from '../../../libs/typescript/ts-utils/common-utils';
 import { Redis as RedisLocal } from '../../../relay/implementations/redis';
-import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
 import { Validator } from '../../../relay/types/types';
-import { hexToBits } from '../../../libs/typescript/ts-utils/hex-utils';
+import { sleep, splitIntoBatches } from '@dendreth/utils/ts-utils/common-utils';
+import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import * as fs from 'fs';
 import Redis from 'ioredis';
 const {

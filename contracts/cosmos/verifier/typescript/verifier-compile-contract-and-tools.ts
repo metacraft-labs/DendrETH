@@ -1,8 +1,8 @@
 import { promisify } from 'node:util';
 import { exec as exec_ } from 'node:child_process';
 
-import { compileNimFileToWasm } from '../../../../libs/typescript/ts-utils/compile-nim-to-wasm';
-import { getCosmosContractArtifacts } from '../../../../libs/typescript/cosmos-utils/cosmos-utils';
+import { compileNimFileToWasm } from '@dendreth/utils/ts-utils/compile-nim-to-wasm';
+import { getCosmosContractArtifacts } from '@dendreth/utils/cosmos-utils/cosmos-utils';
 
 const exec = promisify(exec_);
 

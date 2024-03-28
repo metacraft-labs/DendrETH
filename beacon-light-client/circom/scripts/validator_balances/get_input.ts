@@ -1,15 +1,12 @@
-import {
-  bytesToHex,
-  formatHex,
-  hexToBytes,
-} from '../../../../libs/typescript/ts-utils/bls';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { writeFileSync } from 'fs';
 import { sha256 } from 'ethers/lib/utils';
 import {
-  hashTreeRoot,
-  verifyMerkleProof,
-} from '../../../../libs/typescript/ts-utils/ssz-utils';
+  bytesToHex,
+  formatHex,
+  hexToBytes,
+} from '@dendreth/utils/ts-utils/bls';
+import { hashTreeRoot } from '@dendreth/utils/ts-utils/ssz-utils';
 
 function bytesToBinaryArray(byteArray: Uint8Array): string[] {
   return BigInt(`0x${bytesToHex(byteArray)}`)

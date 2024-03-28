@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, test } from '@jest/globals';
 
-import { VerifyFromPaths } from './../../libs/typescript/verify-utils/verify-given-proof-ffjavascript';
-import { getRootDir } from '../../libs/typescript/ts-utils/common-utils';
+import { VerifyFromPaths } from '@dendreth/utils/verify-utils/verify-given-proof-ffjavascript';
+import { getRootDir } from '@dendreth/utils/ts-utils/common-utils';
 
 describe('Check verifier build on ffjavascript', () => {
   let keyPath: string;

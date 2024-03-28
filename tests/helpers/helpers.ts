@@ -1,6 +1,6 @@
 import { promisify } from 'node:util';
 import { exec as exec_ } from 'node:child_process';
-import { getRootDir } from '../../libs/typescript/ts-utils/common-utils';
+import { getRootDir } from '@dendreth/utils/ts-utils/common-utils';
 
 const exec = promisify(exec_);
 

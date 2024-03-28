@@ -1,6 +1,6 @@
 import { IBeaconApi } from '../abstraction/beacon-api-interface';
 import { ISmartContract } from '../abstraction/smart-contract-abstraction';
-import { getGenericLogger } from '../../libs/typescript/ts-utils/logger';
+import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 
 const logger = getGenericLogger();
 

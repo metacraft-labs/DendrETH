@@ -8,9 +8,9 @@ import {
   compileVerifierParseDataTool,
   replaceInTextProof,
 } from '../helpers/helpers';
-import { getRootDir, sleep } from '../../libs/typescript/ts-utils/common-utils';
 import { EOSContract } from '../../relay/implementations/eos-contract';
-import { bytesToHex } from '../../libs/typescript/ts-utils/bls';
+import { getRootDir, sleep } from '@dendreth/utils/ts-utils/common-utils';
+import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 
 const exec = promisify(exec_);
 

@@ -5,7 +5,7 @@ import genProof from './gen_proof';
 import { Redis } from '../../implementations/redis';
 import { Prover } from '../../implementations/prover';
 import { PROOF_GENERATOR_QUEUE } from '../../constants/constants';
-import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
+import { checkConfig } from '@dendreth/utils/ts-utils/common-utils';
 import yargs from 'yargs';
 
 (async () => {

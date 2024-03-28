@@ -9,15 +9,15 @@ import {
   Validator,
 } from '../types/types';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
-import { bytesToHex } from '../../libs/typescript/ts-utils/bls';
+import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import {
   SSZ,
   CapellaOrDeneb,
   computeSyncCommitteePeriodAt,
-} from '../../libs/typescript/ts-utils/ssz-utils';
+} from '@dendreth/utils/ts-utils/ssz-utils';
 import path from 'path';
-import { getGenericLogger } from '../../libs/typescript/ts-utils/logger';
-import { prometheusTiming } from '../../libs/typescript/ts-utils/prometheus-utils';
+import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
+import { prometheusTiming } from '@dendreth/utils/ts-utils/prometheus-utils';
 import { DENEB_FORK_EPOCH } from '../constants/constants';
 
 const logger = getGenericLogger();

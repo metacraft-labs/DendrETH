@@ -4,7 +4,7 @@ const {
   Item,
 } = require('@mevitae/redis-work-queue/dist/WorkQueue');
 import Redis from 'ioredis';
-import { sleep } from '../../../libs/typescript/ts-utils/common-utils';
+import { sleep } from '@dendreth/utils/ts-utils/common-utils';
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
 import yargs from 'yargs';
 

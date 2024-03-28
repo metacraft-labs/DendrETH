@@ -2,8 +2,8 @@ import { promisify } from 'node:util';
 import { exec as exec_ } from 'node:child_process';
 
 import { calculateFee, GasPrice } from '@cosmjs/stargate';
-import { CosmosClientWithWallet } from '../../../../libs/typescript/cosmos-utils/cosmos-utils';
-import { getRootDir } from '../../../../libs/typescript/ts-utils/common-utils';
+import { CosmosClientWithWallet } from '@dendreth/utils/cosmos-utils/cosmos-utils';
+import { getRootDir } from '@dendreth/utils/ts-utils/common-utils';
 
 const exec = promisify(exec_);
 

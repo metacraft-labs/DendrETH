@@ -6,11 +6,10 @@ import {
   UPDATE_POLING_QUEUE,
 } from '../../constants/constants';
 import doUpdate from './do_update';
-import { Redis } from '../../implementations/redis';
 import { getBeaconApi } from '../../implementations/beacon-api';
-import { checkConfig } from '../../../libs/typescript/ts-utils/common-utils';
-import { getGenericLogger } from '../../../libs/typescript/ts-utils/logger';
-import { initPrometheusSetup } from '../../../libs/typescript/ts-utils/prometheus-utils';
+import { checkConfig } from '@dendreth/utils/ts-utils/common-utils';
+import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
+import { initPrometheusSetup } from '@dendreth/utils/ts-utils/prometheus-utils';
 
 const logger = getGenericLogger();
 initPrometheusSetup();

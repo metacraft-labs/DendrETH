@@ -8,7 +8,7 @@ import { calculateFee, GasPrice } from '@cosmjs/stargate';
 import {
   CosmosClientWithWallet as CosmosClientWithWallet,
   getCosmosContractArtifacts,
-} from '../../../../libs/typescript/cosmos-utils/cosmos-utils';
+} from '@dendreth/utils/cosmos-utils/cosmos-utils';
 
 const exec = promisify(exec_);
 

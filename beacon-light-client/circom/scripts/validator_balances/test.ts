@@ -1,12 +1,12 @@
 import { ListBasicType, UintNumberType, ValueOf } from '@chainsafe/ssz';
 import { getBeaconApi } from '../../../../relay/implementations/beacon-api';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
-import { bytesToHex } from '../../../../libs/typescript/ts-utils/bls';
+import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import { sha256 } from 'ethers/lib/utils';
 import {
   verifyMerkleProof,
   hashTreeRoot,
-} from '../../../../libs/typescript/ts-utils/ssz-utils';
+} from '@dendreth/utils/ts-utils/ssz-utils';
 import { get } from 'node:http';
 
 (async () => {

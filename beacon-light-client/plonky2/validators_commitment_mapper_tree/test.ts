@@ -1,10 +1,10 @@
 import { sha256 } from 'ethers/lib/utils';
-import { bytesToHex, formatHex } from '../../../libs/typescript/ts-utils/bls';
-import { byteArrayToNumber } from '../../../libs/typescript/ts-utils/common-utils';
 import { BeaconApi } from '../../../relay/implementations/beacon-api';
+import { bytesToHex, formatHex } from '@dendreth/utils/ts-utils/bls';
+import { byteArrayToNumber } from '@dendreth/utils/ts-utils/common-utils';
 import { merkleize } from '@chainsafe/ssz/lib/util/merkleize';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
-import { hexToBits } from '../../../libs/typescript/ts-utils/hex-utils';
+import { hexToBits } from '@dendreth/utils/ts-utils/hex-utils';
 
 (async () => {
   const { ssz } = await import('@lodestar/types');
