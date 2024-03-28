@@ -1,10 +1,7 @@
 import { task } from 'hardhat/config';
-import {
-  getBeaconApi,
-  BeaconApi,
-} from '../../../relay/implementations/beacon-api';
+import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
 import { getConstructorArgs } from './utils';
-import { getNetworkConfig } from '../../../relay/utils/get_current_network_config';
+import { getNetworkConfig } from '@dendreth/relay/utils/get_current_network_config';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 
 const logger = getGenericLogger();

@@ -1,5 +1,5 @@
 import { ListBasicType, UintNumberType, ValueOf } from '@chainsafe/ssz';
-import { getBeaconApi } from '../../../../relay/implementations/beacon-api';
+import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import { sha256 } from 'ethers/lib/utils';

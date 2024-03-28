@@ -8,8 +8,8 @@ import {
   compileVerifierParseDataTool,
   replaceInTextProof,
 } from '../helpers/helpers';
-import { EOSContract } from '../../relay/implementations/eos-contract';
 import { getRootDir, sleep } from '@dendreth/utils/ts-utils/common-utils';
+import { EOSContract } from '@dendreth/relay/implementations/eos-contract';
 import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 
 const exec = promisify(exec_);

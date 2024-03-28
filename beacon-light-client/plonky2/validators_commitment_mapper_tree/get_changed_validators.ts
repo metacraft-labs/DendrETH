@@ -1,14 +1,12 @@
-import { Redis as RedisLocal } from '../../../relay/implementations/redis';
-import { Validator } from '../../../relay/types/types';
 import { sleep, splitIntoBatches } from '@dendreth/utils/ts-utils/common-utils';
+import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
 import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
+import { Validator } from '@dendreth/relay/types/types';
 import * as fs from 'fs';
 import Redis from 'ioredis';
 import { KeyPrefix, WorkQueue, Item } from '@mevitae/redis-work-queue';
 import colors from 'colors/safe';
-
-import { getBeaconApi } from '../../../relay/implementations/beacon-api';
-
+import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';

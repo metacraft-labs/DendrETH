@@ -1,9 +1,9 @@
-import { getBeaconApi } from '../../../relay/implementations/beacon-api';
-import { Redis } from '../../../relay/implementations/redis';
-import { CosmosContract } from '../../../relay/implementations/cosmos-contract';
-import { publishProofs } from '../../../relay/on_chain_publisher';
-import { getNetworkConfig } from '../../../relay/utils/get_current_network_config';
+import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
+import { Redis } from '@dendreth/relay/implementations/redis';
+import { CosmosContract } from '@dendreth/relay/implementations/cosmos-contract';
+import { publishProofs } from '@dendreth/relay/on_chain_publisher';
 import { checkConfig } from '@dendreth/utils/ts-utils/common-utils';
+import { getNetworkConfig } from '@dendreth/relay/utils/get_current_network_config';
 
 async function publishTask() {
   const config = {

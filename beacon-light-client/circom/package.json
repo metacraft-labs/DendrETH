@@ -7,6 +7,7 @@
   "dependencies": {
     "@chainsafe/persistent-merkle-tree": "^0.6.1",
     "@chainsafe/ssz": "0.14.3",
+    "@dendreth/relay": "workspace:^",
     "@dendreth/utils": "workspace:^",
     "@lodestar/config": "^1.17.0",
     "@lodestar/params": "^1.16.0",

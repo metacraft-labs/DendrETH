@@ -1,8 +1,7 @@
 import { Tree } from '@chainsafe/persistent-merkle-tree';
-import { Redis as RedisLocal } from '../../../relay/implementations/redis';
+import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
 import Redis from 'ioredis';
-import { getBeaconApi } from '../../../relay/implementations/beacon-api';
-import { bigint_to_array } from '../../solidity/test/utils/bls';
+import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
 import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import { hexToBits } from '@dendreth/utils/ts-utils/hex-utils';
 import * as fs from 'fs';
@@ -12,6 +11,7 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { computeEpochAt } from '@dendreth/utils/ts-utils/ssz-utils';
 import { panic } from '@dendreth/utils/ts-utils/common-utils';
+
 const CIRCUIT_SIZE = 8;
 let TAKE;
 

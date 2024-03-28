@@ -1,5 +1,5 @@
 {
-  "name": "Relay",
+  "name": "@dendreth/relay",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -36,5 +36,9 @@
     "@types/node": "^20.11.19",
     "@types/snarkjs": "^0.7.8",
     "typescript": "5.2.2"
+  },
+  "types": "./src/index.ts",
+  "exports": {
+    "./*": "./*.ts"
   }
 }
