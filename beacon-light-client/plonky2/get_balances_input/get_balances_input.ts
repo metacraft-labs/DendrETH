@@ -99,7 +99,8 @@ let TAKE;
           fs.readFileSync(beaconState_bin),
         ),
       }
-    : await beaconApi.getBeaconState(6953401);
+    : (await beaconApi.getBeaconState(6524176)) ||
+      panic('Could not fetch beacon state');
 
   const validators = beaconState.validators.slice(0, TAKE);
   TAKE = validators.length;
