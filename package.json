@@ -6,6 +6,7 @@
   "packageManager": "yarn@4.1.1",
   "workspaces": [
     "beacon-light-client/circom",
+    "beacon-light-client/plonky2",
     "beacon-light-client/solidity",
     "libs/typescript",
     "relay"

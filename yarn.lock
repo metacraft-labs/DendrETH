@@ -865,6 +865,27 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@dendreth/plonky2@workspace:beacon-light-client/plonky2":
+  version: 0.0.0-use.local
+  resolution: "@dendreth/plonky2@workspace:beacon-light-client/plonky2"
+  dependencies:
+    "@chainsafe/persistent-merkle-tree": "npm:^0.7.1"
+    "@chainsafe/ssz": "npm:0.14.3"
+    "@dendreth/relay": "workspace:^"
+    "@dendreth/utils": "workspace:^"
+    "@lodestar/types": "npm:^1.17.0"
+    "@mevitae/redis-work-queue": "npm:^0.1.5"
+    "@types/circomlibjs": "npm:^0"
+    "@types/yargs": "npm:^17.0.32"
+    circomlibjs: "npm:^0.1.7"
+    colors: "npm:^1.4.0"
+    ethers: "npm:^5.7.0"
+    ioredis: "npm:^5.3.2"
+    tsx: "npm:^4.7.1"
+    yargs: "npm:^17.7.2"
+  languageName: unknown
+  linkType: soft
+
 "@dendreth/relay@workspace:^, @dendreth/relay@workspace:relay":
   version: 0.0.0-use.local
   resolution: "@dendreth/relay@workspace:relay"
@@ -2342,6 +2363,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@mevitae/redis-work-queue@npm:^0.1.5":
+  version: 0.1.5
+  resolution: "@mevitae/redis-work-queue@npm:0.1.5"
+  dependencies:
+    ioredis: "npm:^5.3.2"
+    uuid: "npm:^9.0.0"
+  checksum: 10/3e90cb47adcc711d01f530ce9859032533f2ecca6016fd09c94e91113da1b9c9bb9cdc5a0189df88dad4f1d170b9cbbd8c5f99cb3c5eaf4c712b0d6303c868f0
+  languageName: node
+  linkType: hard
+
 "@morgan-stanley/ts-mocking-bird@npm:^0.6.2":
   version: 0.6.4
   resolution: "@morgan-stanley/ts-mocking-bird@npm:0.6.4"
@@ -3489,6 +3520,13 @@ __metadata:
   version: 4.3.12
   resolution: "@types/chai@npm:4.3.12"
   checksum: 10/cf465151048f438b11e562ac431842f440b50817e74516f1fb349860a0db4fcdd665197f9fbee4387250d8d077496a1167fe2c75af88372bac6d8f093ee07b3a
+  languageName: node
+  linkType: hard
+
+"@types/circomlibjs@npm:^0":
+  version: 0.1.6
+  resolution: "@types/circomlibjs@npm:0.1.6"
+  checksum: 10/96ca981b7f9eda119200f3513055c7c17f030a4eca51faf9d2c7325a3627e21c99a9e1b8833688fcbf0560b9efe753b68fbbf286e9041319be00c2d7edd0025a
   languageName: node
   linkType: hard
 
