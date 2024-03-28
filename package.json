@@ -68,7 +68,7 @@
     "@cosmjs/stargate": "^0.30.0",
     "@iden3/binfileutils": "^0.0.11",
     "@lodestar/params": "^1.16.0",
-    "@lodestar/types": "^1.16.0",
+    "@lodestar/types": "^1.17.0",
     "@mevitae/redis-work-queue": "^0.0.4",
     "@nomiclabs/hardhat-ethers": "^2.1.1",
     "@nomiclabs/hardhat-etherscan": "^3.1.0",
