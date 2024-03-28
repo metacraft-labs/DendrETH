@@ -13,7 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "@chainsafe/persistent-merkle-tree": "^0.6.1",
-    "@chainsafe/ssz": "^0.14.3",
+    "@chainsafe/ssz": "0.14.3",
     "@cosmjs/cosmwasm-stargate": "^0.32.2",
     "@cosmjs/proto-signing": "^0.32.2",
     "@cosmjs/stargate": "^0.32.2",

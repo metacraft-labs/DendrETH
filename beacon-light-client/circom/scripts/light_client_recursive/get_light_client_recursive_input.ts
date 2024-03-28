@@ -5,8 +5,8 @@ import {
   formatHex,
   hexToBytes,
 } from '@dendreth/utils/ts-utils/bls';
-import { ssz } from '@chainsafe/lodestar-types';
 import { getFilesInDir } from '@dendreth/utils/ts-utils/data';
+import { ssz } from '@lodestar/types';
 import { mainnetChainConfig } from '@lodestar/config/configs';
 import { writeFileSync } from 'fs';
 import { BitVectorType } from '@chainsafe/ssz';

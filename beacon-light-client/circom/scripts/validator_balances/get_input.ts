@@ -1,6 +1,8 @@
-import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { writeFileSync } from 'fs';
+
 import { sha256 } from 'ethers/lib/utils';
+import { Tree } from '@chainsafe/persistent-merkle-tree';
+
 import {
   bytesToHex,
   formatHex,
