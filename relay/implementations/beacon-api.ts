@@ -37,9 +37,10 @@ export class BeaconApi implements IBeaconApi {
     public readonly ssz: SSZ,
   ) {}
 
-  getCurrentSsz(slot: number): CapellaOrDeneb {
+  getCurrentSSZ(slot: number): CapellaOrDeneb {
+    const denebForkSlot = DENEB_FORK_EPOCH * 32;
     return (
-      slot > DENEB_FORK_EPOCH ? this.ssz.deneb : this.ssz.capella
+      slot >= denebForkSlot ? this.ssz.deneb : this.ssz.capella
     ) as CapellaOrDeneb;
   }
 
@@ -58,7 +59,7 @@ export class BeaconApi implements IBeaconApi {
       await this.fetchWithFallback(`/eth/v2/beacon/blocks/${slot}`)
     ).json();
 
-    const currentSszFork = this.getCurrentSsz(slot);
+    const currentSszFork = this.getCurrentSSZ(slot);
     const beaconBlock = currentSszFork.BeaconBlockBody.fromJson(
       currentBlock.data.message.body,
     );
@@ -246,7 +247,7 @@ export class BeaconApi implements IBeaconApi {
       prevFinalizedHeaderResult.data.header.message,
     );
 
-    const currentSszFork = this.getCurrentSsz(nextSlot);
+    const currentSszFork = this.getCurrentSSZ(nextSlot);
     const finalityHeaderBranch = prevStateTree
       .getSingleProof(
         currentSszFork.BeaconState.getPathInfo(['finalized_checkpoint', 'root'])
@@ -325,7 +326,7 @@ export class BeaconApi implements IBeaconApi {
       )
     ).json();
 
-    const currentSszFork = this.getCurrentSsz(slot);
+    const currentSszFork = this.getCurrentSSZ(slot);
     const finalityHeader = this.ssz.phase0.BeaconBlockHeader.fromJson(
       finalizedHeaderResult.data.header.message,
     );
@@ -343,7 +344,7 @@ export class BeaconApi implements IBeaconApi {
     executionPayloadHeader: ExecutionPayloadHeader;
     executionPayloadBranch: string[];
   }> {
-    const currentSszFork = this.getCurrentSsz(slot);
+    const currentSszFork = this.getCurrentSSZ(slot);
     const finalizedBlockBodyResult = await (
       await this.fetchWithFallback(`/eth/v2/beacon/blocks/${slot}`)
     ).json();
@@ -436,7 +437,7 @@ export class BeaconApi implements IBeaconApi {
       .then(response => response.arrayBuffer())
       .then(buffer => new Uint8Array(buffer));
 
-    const currentSszFork = this.getCurrentSsz(slot);
+    const currentSszFork = this.getCurrentSSZ(slot);
     const beaconState = currentSszFork.BeaconState.deserialize(beaconStateSZZ);
     const beaconStateView = currentSszFork.BeaconState.toViewDU(beaconState);
     const stateTree = new Tree(beaconStateView.node);
