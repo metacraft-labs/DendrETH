@@ -6,6 +6,7 @@
   "scripts": {
     "build:tsc": "tsc -p ./tsconfig.json",
     "build:sol": "hardhat compile",
+    "ts": "yarn node --import tsx",
     "test": "yarn hardhat test",
     "gas": "yarn hardhat run test/utils/gas-reporter/src/index.ts"
   },

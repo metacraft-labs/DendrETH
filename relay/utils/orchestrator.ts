@@ -59,7 +59,7 @@ export async function addUpdate(
         type: 'fixed',
         delay: 15000,
       },
-      priority: optimisticSlot,
+      priority: Math.round(optimisticSlot / 10000),
     },
   );
 
