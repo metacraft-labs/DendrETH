@@ -1,5 +1,5 @@
 {
-  "name": "DendrETH-darwinia",
+  "name": "@dendreth/solidity",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -43,5 +43,9 @@
     "dotenv": "^16.4.4",
     "env-paths": "^3.0.0",
     "typescript": "5.2.2"
+  },
+  "exports": {
+    "./*": "./*.ts",
+    "./artifacts/BeaconLightClient.json": "./artifacts/contracts/bridge/src/truth/eth/BeaconLightClient.sol/BeaconLightClient.json"
   }
 }

@@ -7,7 +7,7 @@ import { ethers } from 'ethers';
 import { sleep } from '@dendreth/utils/ts-utils/common-utils';
 import { GatewayIntentBits, Events, Partials } from 'discord.js';
 import * as Discord from 'discord.js';
-import lc_abi_json from '../../beacon-light-client/solidity/artifacts/contracts/bridge/src/truth/eth/BeaconLightClient.sol/BeaconLightClient.json';
+import lc_abi_json from '@dendreth/solidity/artifacts/BeaconLightClient.json';
 
 const env = process.env;
 
