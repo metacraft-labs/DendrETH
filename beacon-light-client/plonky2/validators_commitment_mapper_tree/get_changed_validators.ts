@@ -16,6 +16,7 @@ import { getBeaconApi } from '../../../relay/implementations/beacon-api';
 
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
 import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
 
 let TAKE: number | undefined;
 let MOCK: boolean;
@@ -23,7 +24,7 @@ let MOCK: boolean;
 (async () => {
   const { ssz } = await import('@lodestar/types');
 
-  const options = yargs
+  const options = yargs(hideBin(process.argv))
     .usage(
       'Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>',
     )
