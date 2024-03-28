@@ -865,6 +865,35 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@dendreth/relay@workspace:^, @dendreth/relay@workspace:relay":
+  version: 0.0.0-use.local
+  resolution: "@dendreth/relay@workspace:relay"
+  dependencies:
+    "@chainsafe/persistent-merkle-tree": "npm:^0.6.1"
+    "@chainsafe/ssz": "npm:0.14.3"
+    "@cosmjs/cosmwasm-stargate": "npm:^0.32.2"
+    "@cosmjs/proto-signing": "npm:^0.32.2"
+    "@cosmjs/stargate": "npm:^0.32.2"
+    "@dendreth/utils": "workspace:^"
+    "@effect/schema": "npm:^0.33.0"
+    "@lodestar/types": "npm:^1.17.0"
+    "@noble/bls12-381": "npm:^1.4.0"
+    "@types/node": "npm:^20.11.19"
+    "@types/snarkjs": "npm:^0.7.8"
+    bullmq: "npm:^5.3.1"
+    discord.js: "npm:^14.12.1"
+    ethers: "npm:^5.7.0"
+    redis: "npm:^4.6.10"
+    snarkjs: "npm:^0.7.3"
+    ts-node: "npm:^10.9.1"
+    typescript: "npm:5.2.2"
+    web3: "npm:^1.10.0"
+    web3-eth: "npm:^1.10.0"
+    winston: "npm:^3.10.0"
+    yargs: "npm:^17.7.1"
+  languageName: unknown
+  linkType: soft
+
 "@dendreth/utils@workspace:^, @dendreth/utils@workspace:libs/typescript":
   version: 0.0.0-use.local
   resolution: "@dendreth/utils@workspace:libs/typescript"
@@ -3853,6 +3882,7 @@ __metadata:
     "@chainsafe/bls": "npm:^6.0.3"
     "@chainsafe/blst": "npm:0.2.4"
     "@chainsafe/ssz": "npm:0.14.3"
+    "@dendreth/relay": "workspace:^"
     "@dendreth/utils": "workspace:^"
     "@iden3/binfileutils": "npm:^0.0.11"
     "@lodestar/types": "npm:^1.17.0"
@@ -3891,6 +3921,7 @@ __metadata:
     "@cosmjs/cosmwasm-stargate": "npm:^0.30.0"
     "@cosmjs/proto-signing": "npm:^0.30.0"
     "@cosmjs/stargate": "npm:^0.30.0"
+    "@dendreth/relay": "workspace:^"
     "@dendreth/utils": "workspace:^"
     "@iden3/binfileutils": "npm:^0.0.11"
     "@jest/globals": "npm:^29.7.0"
@@ -3941,35 +3972,6 @@ __metadata:
   bin:
     get-balances-input: dist/beacon-light-client/plonky2/get_balances_input/get_balances_input.js
     get-changed-validators: dist/beacon-light-client/plonky2/validators_commitment_mapper_tree/get_changed_validators.js
-  languageName: unknown
-  linkType: soft
-
-"Relay@workspace:relay":
-  version: 0.0.0-use.local
-  resolution: "Relay@workspace:relay"
-  dependencies:
-    "@chainsafe/persistent-merkle-tree": "npm:^0.6.1"
-    "@chainsafe/ssz": "npm:0.14.3"
-    "@cosmjs/cosmwasm-stargate": "npm:^0.32.2"
-    "@cosmjs/proto-signing": "npm:^0.32.2"
-    "@cosmjs/stargate": "npm:^0.32.2"
-    "@dendreth/utils": "workspace:^"
-    "@effect/schema": "npm:^0.33.0"
-    "@lodestar/types": "npm:^1.17.0"
-    "@noble/bls12-381": "npm:^1.4.0"
-    "@types/node": "npm:^20.11.19"
-    "@types/snarkjs": "npm:^0.7.8"
-    bullmq: "npm:^5.3.1"
-    discord.js: "npm:^14.12.1"
-    ethers: "npm:^5.7.0"
-    redis: "npm:^4.6.10"
-    snarkjs: "npm:^0.7.3"
-    ts-node: "npm:^10.9.1"
-    typescript: "npm:5.2.2"
-    web3: "npm:^1.10.0"
-    web3-eth: "npm:^1.10.0"
-    winston: "npm:^3.10.0"
-    yargs: "npm:^17.7.1"
   languageName: unknown
   linkType: soft
 
@@ -5377,6 +5379,7 @@ __metadata:
   dependencies:
     "@chainsafe/persistent-merkle-tree": "npm:^0.6.1"
     "@chainsafe/ssz": "npm:0.14.3"
+    "@dendreth/relay": "workspace:^"
     "@dendreth/utils": "workspace:^"
     "@lodestar/config": "npm:^1.17.0"
     "@lodestar/params": "npm:^1.16.0"

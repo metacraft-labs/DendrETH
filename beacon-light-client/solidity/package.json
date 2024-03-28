@@ -16,6 +16,7 @@
     "@chainsafe/bls": "^6.0.3",
     "@chainsafe/blst": "0.2.4",
     "@chainsafe/ssz": "0.14.3",
+    "@dendreth/relay": "workspace:^",
     "@dendreth/utils": "workspace:^",
     "@iden3/binfileutils": "^0.0.11",
     "@lodestar/types": "^1.17.0",

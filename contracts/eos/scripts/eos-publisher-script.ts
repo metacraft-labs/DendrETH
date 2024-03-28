@@ -1,8 +1,8 @@
-import { getBeaconApi } from '../../../relay/implementations/beacon-api';
-import { Redis } from '../../../relay/implementations/redis';
-import { EOSContract } from '../../../relay/implementations/eos-contract';
-import { publishProofs } from '../../../relay/on_chain_publisher';
-import { getNetworkConfig } from '../../../relay/utils/get_current_network_config';
+import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
+import { Redis } from '@dendreth/relay/implementations/redis';
+import { EOSContract } from '@dendreth/relay/implementations/eos-contract';
+import { publishProofs } from '@dendreth/relay/on_chain_publisher';
+import { getNetworkConfig } from '@dendreth/relay/utils/get_current_network_config';
 import { checkConfig } from '@dendreth/utils/ts-utils/common-utils';
 
 async function publishTask() {

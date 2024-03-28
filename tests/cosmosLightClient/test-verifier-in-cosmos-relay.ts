@@ -10,7 +10,7 @@ import {
   setUpCosmosTestnet,
   stopCosmosNode,
 } from '@dendreth/utils/cosmos-utils/testnet-setup';
-import { CosmosContract } from '../../relay/implementations/cosmos-contract';
+import { CosmosContract } from '@dendreth/relay/implementations/cosmos-contract';
 import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import { getRootDir, sleep } from '@dendreth/utils/ts-utils/common-utils';
 import { compileContractMain } from '../../contracts/cosmos/verifier/typescript/verifier-compile-contract-and-tools';
