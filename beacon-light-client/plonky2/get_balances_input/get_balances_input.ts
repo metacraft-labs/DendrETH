@@ -20,7 +20,9 @@ let TAKE: number;
   const { ssz } = await import('@lodestar/types');
 
   const options = new CommandLineOptionsBuilder()
-    .usage('Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>')
+    .usage(
+      'Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>',
+    )
     .withRedisOpts()
     .option('beacon-node', {
       alias: 'beacon-node',

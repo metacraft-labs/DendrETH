@@ -62,12 +62,22 @@ export class Redis implements IRedis {
     return BigInt(values[0]);
   }
 
-  async collectOutdatedEpochs(key: string, newOldestEpoch: bigint): Promise<number[]> {
+  async collectOutdatedEpochs(
+    key: string,
+    newOldestEpoch: bigint,
+  ): Promise<number[]> {
     await this.waitForConnection();
 
     const latestEpoch = await this.getLatestEpoch(key, newOldestEpoch);
     if (latestEpoch !== null) {
-      return (await this.client.zrange(`${key}:${CONSTANTS.epochLookupKey}`, 0, (latestEpoch - 1n).toString(), 'BYSCORE')).map(Number);
+      return (
+        await this.client.zrange(
+          `${key}:${CONSTANTS.epochLookupKey}`,
+          0,
+          (latestEpoch - 1n).toString(),
+          'BYSCORE',
+        )
+      ).map(Number);
     }
     return [];
   }
@@ -78,7 +88,7 @@ export class Redis implements IRedis {
     const epochs = await this.collectOutdatedEpochs(key, newOldestEpoch);
     if (epochs.length !== 0) {
       await this.client.zrem(`${key}:${CONSTANTS.epochLookupKey}`, epochs);
-      return this.client.del(epochs.map((suffix) => `${key}:${suffix}`));
+      return this.client.del(epochs.map(suffix => `${key}:${suffix}`));
     }
     return 0;
   }
@@ -106,15 +116,22 @@ export class Redis implements IRedis {
     );
     if (latestEpoch === null) {
       const depth = Math.floor(Math.log2(Number(gindex) + 1));
-      const result = (await this.client.json_get(
+      const result = await this.client.get(
         `${CONSTANTS.validatorProofKey}:zeroes:${depth}`,
-        hashKey,
-      )) as any;
-      return result;
+      );
+      if (result === null) {
+        return null;
+      }
+
+      return JSON.parse(result)[hashKey];
     }
 
     const key = `${CONSTANTS.validatorProofKey}:${gindex}:${latestEpoch}`;
-    return this.client.json_get(key, hashKey) as any;
+    const result = await this.client.get(key);
+    if (result === null) {
+      return null;
+    }
+    return JSON.parse(result)[hashKey];
   }
 
   async notifyAboutNewProof(): Promise<void> {
@@ -157,11 +174,13 @@ export class Redis implements IRedis {
       keys,
       batchSize,
     ).entries()) {
-      const res = await this.client.json_mget(batchKeys, '$');
+      const res = await this.client.mget(batchKeys);
       if (res === null) {
         continue;
       }
-      const batchValidators = (res as any[]).filter(v => v !== null).flat();
+      const batchValidators = (res.filter(v => v !== null) as string[]).map(
+        (json: any) => JSON.parse(json),
+      );
 
       for (const [index, redisValidator] of batchValidators.entries()) {
         try {
@@ -228,10 +247,9 @@ export class Redis implements IRedis {
   async isZeroBalanceEmpty() {
     await this.waitForConnection();
 
-    const result = await this.client.json_get(
+    const result = await this.client.get(
       `${CONSTANTS.validatorBalanceInputKey}:${CONSTANTS.validatorRegistryLimit}`,
     );
-
     return result == null;
   }
 
@@ -249,13 +267,12 @@ export class Redis implements IRedis {
         );
         return [
           `${CONSTANTS.validatorKey}:${validator.index}:${epoch}`,
-          '$',
           JSON.stringify(validator.data),
         ];
       }),
     );
 
-    await this.client.sendCommand(new RedisReJSON.Command('JSON.MSET', args));
+    await this.client.mset(args);
   }
 
   async saveValidatorBalancesInput(
@@ -266,12 +283,11 @@ export class Redis implements IRedis {
     const args = inputsWithIndices.map(ii => {
       return [
         `${CONSTANTS.validatorBalanceInputKey}:${ii.index}`,
-        '$',
         JSON.stringify(ii.input),
       ];
     });
 
-    await this.client.sendCommand(new RedisReJSON.Command('JSON.MSET', args));
+    await this.client.mset(args);
   }
 
   async saveFinalProofInput(input: {
@@ -285,7 +301,7 @@ export class Redis implements IRedis {
   }) {
     await this.waitForConnection();
 
-    await this.client.json_set(CONSTANTS.finalProofInputKey, '$', input as any);
+    await this.client.set(CONSTANTS.finalProofInputKey, JSON.stringify(input));
   }
 
   async saveValidatorProof(
@@ -299,10 +315,9 @@ export class Redis implements IRedis {
     },
   ): Promise<void> {
     await this.waitForConnection();
-    await this.client.json_set(
+    await this.client.set(
       `${CONSTANTS.validatorProofKey}:${gindex}:${epoch}`,
-      '$',
-      proof as any,
+      JSON.stringify(proof),
     );
   }
 
@@ -316,10 +331,9 @@ export class Redis implements IRedis {
     },
   ): Promise<void> {
     await this.waitForConnection();
-    await this.client.json_set(
+    await this.client.set(
       `${CONSTANTS.validatorProofKey}:zeroes:${depth}`,
-      '$',
-      proof as any,
+      JSON.stringify(proof),
     );
   }
 
@@ -338,10 +352,9 @@ export class Redis implements IRedis {
   ): Promise<void> {
     await this.waitForConnection();
 
-    await this.client.json_set(
+    await this.client.set(
       `${CONSTANTS.balanceVerificationProofKey}:${level}:${index}`,
-      '$',
-      proof as any,
+      JSON.stringify(proof),
     );
   }
 
@@ -404,10 +417,9 @@ export class Redis implements IRedis {
   ): Promise<void> {
     await this.waitForConnection();
 
-    await this.client.json_set(
+    await this.client.set(
       `proof:${prevSlot}:${nextSlot}`,
-      '$',
-      proof as any,
+      JSON.stringify(proof),
     );
   }
 

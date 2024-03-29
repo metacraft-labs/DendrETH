@@ -1,9 +1,9 @@
-import path from "path";
-import { IProofStorage } from "./proof_storage";
+import path from 'path';
+import { IProofStorage } from './proof_storage';
 import fs from 'fs/promises';
 
 export class FileStorage implements IProofStorage {
-  constructor(private folderName: string) { }
+  constructor(private folderName: string) {}
 
   getPathFromKey(key: string): string {
     return path.join(this.folderName, key);
@@ -21,5 +21,5 @@ export class FileStorage implements IProofStorage {
     return fs.unlink(this.getPathFromKey(key));
   }
 
-  async quit(): Promise<void> { }
+  async quit(): Promise<void> {}
 }

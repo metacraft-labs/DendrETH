@@ -1,11 +1,12 @@
-import { BlobServiceClient, ContainerClient } from "@azure/storage-blob";
-import { IProofStorage } from "./proof_storage";
+import { BlobServiceClient, ContainerClient } from '@azure/storage-blob';
+import { IProofStorage } from './proof_storage';
 
 export class AzureStorage implements IProofStorage {
   private containerClient: ContainerClient;
 
   constructor(connectionString: string, containerName: string) {
-    const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
+    const blobServiceClient =
+      BlobServiceClient.fromConnectionString(connectionString);
     this.containerClient = blobServiceClient.getContainerClient(containerName);
   }
 
@@ -14,7 +15,9 @@ export class AzureStorage implements IProofStorage {
 
     try {
       const downloadResponse = await blobClient.download();
-      const buffer = Buffer.from(await streamToBuffer(downloadResponse.readableStreamBody!));
+      const buffer = Buffer.from(
+        await streamToBuffer(downloadResponse.readableStreamBody!),
+      );
       return buffer;
     } catch (error: any) {
       if (error.statusCode === 404) {
@@ -26,7 +29,9 @@ export class AzureStorage implements IProofStorage {
 
   async setProof(key: string, proof: Buffer): Promise<void> {
     const blockBlobClient = this.containerClient.getBlockBlobClient(key);
-    await blockBlobClient.uploadData(proof, { blobHTTPHeaders: { blobContentType: 'application/octet-stream' } });
+    await blockBlobClient.uploadData(proof, {
+      blobHTTPHeaders: { blobContentType: 'application/octet-stream' },
+    });
   }
 
   async delProof(key: string): Promise<void> {
@@ -34,13 +39,17 @@ export class AzureStorage implements IProofStorage {
     await blobClient.delete();
   }
 
-  async quit(): Promise<void> { }
+  async quit(): Promise<void> {}
 }
 
-async function streamToBuffer(readableStream: NodeJS.ReadableStream): Promise<Buffer> {
+async function streamToBuffer(
+  readableStream: NodeJS.ReadableStream,
+): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const chunks: any[] = [];
-    readableStream.on('data', (data) => chunks.push(data instanceof Buffer ? data : Buffer.from(data)));
+    readableStream.on('data', data =>
+      chunks.push(data instanceof Buffer ? data : Buffer.from(data)),
+    );
     readableStream.on('end', () => resolve(Buffer.concat(chunks)));
     readableStream.on('error', reject);
   });
