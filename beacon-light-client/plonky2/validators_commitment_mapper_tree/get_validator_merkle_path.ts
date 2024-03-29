@@ -1,8 +1,8 @@
-import { Redis as RedisLocal } from '../../../relay/implementations/redis';
-import { BeaconApi } from '../../../relay/implementations/beacon-api';
+import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
+import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
 
-import yargs from 'yargs';
-import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
+import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
+import { CommandLineOptionsBuilder } from '../cmdline';
 
 type HashAlgorithm = 'sha256' | 'poseidon';
 
@@ -20,24 +20,11 @@ function bitArrayToByteArray(hash: number[]): Uint8Array {
 }
 
 (async () => {
-  const options = yargs
+  const options = new CommandLineOptionsBuilder()
+    .withRedisOpts()
     .usage(
       'Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>',
     )
-    .option('redis-host ', {
-      alias: 'redis-host',
-      describe: 'The Redis host',
-      type: 'string',
-      default: '127.0.0.1',
-      description: 'Sets a custom redis connection',
-    })
-    .option('redis-port', {
-      alias: 'redis-port',
-      describe: 'The Redis port',
-      type: 'number',
-      default: 6379,
-      description: 'Sets a custom redis connection',
-    })
     .option('beacon-node', {
       alias: 'beacon-node',
       describe: 'The beacon node url',
@@ -64,11 +51,12 @@ function bitArrayToByteArray(hash: number[]): Uint8Array {
       type: 'string',
       default: 'sha256',
       choices: ['sha256', 'poseidon'],
-    }).argv;
+    })
+    .build();
 
   const redis = new RedisLocal(options['redis-host'], options['redis-port']);
 
-  const beaconApi = new BeaconApi([options['beacon-node']]);
+  const beaconApi = await getBeaconApi([options['beacon-node']]);
   const epoch = options['epoch']
     ? BigInt(options['epoch'])
     : (await beaconApi.getHeadSlot()) / 32n;

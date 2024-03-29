@@ -37,6 +37,7 @@
     "yargs": "^17.7.1"
   },
   "devDependencies": {
+    "@types/eventsource": "^1.1.15",
     "@types/ioredis": "^4.27.6",
     "@types/node": "^20.11.19",
     "@types/snarkjs": "^0.7.8",

@@ -25,18 +25,7 @@ use circuits::{
     targets_serialization::ReadTargets,
     validator_balance_circuit::ValidatorBalanceVerificationTargets,
 };
-use circuits_executables::{
-    crud::{
-        common::{
-            fetch_proofs, fetch_validator_balance_input, load_circuit_data, read_from_file,
-            save_balance_proof, BalanceProof,
-        },
-        proof_storage::proof_storage::{create_proof_storage, ProofStorage},
-    },
-    provers::{handle_balance_inner_level_proof, SetPWValues},
-    validator_balances_input::ValidatorBalancesInput,
-    validator_commitment_constants::get_validator_commitment_constants,
-};
+
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     iop::witness::PartialWitness,

@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
 import { groupBy } from '@dendreth/utils/ts-utils/common-utils';
-import { formatHex } from '../../solidity/test/utils/bls';
+import { formatHex } from '@dendreth/utils/ts-utils/bls';
 
 const sszTestCasesDir = path.resolve(
   __dirname,

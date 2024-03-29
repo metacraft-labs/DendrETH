@@ -11,6 +11,7 @@ import { RedisClientType, createClient } from 'redis';
 import CONSTANTS from '../../beacon-light-client/plonky2/constants/validator_commitment_constants.json';
 import { Redis as RedisClient } from 'ioredis';
 import chalk from 'chalk';
+import { splitIntoBatches } from '@dendreth/utils/ts-utils/common-utils';
 
 export class Redis implements IRedis {
   public readonly client: RedisClient;
@@ -259,18 +260,20 @@ export class Redis implements IRedis {
   ) {
     await this.waitForConnection();
 
-    const args = await Promise.all(
-      validatorsWithIndices.map(async validator => {
-        await this.addToEpochLookup(
-          `${CONSTANTS.validatorKey}:${validator.index}`,
-          epoch,
-        );
-        return [
-          `${CONSTANTS.validatorKey}:${validator.index}:${epoch}`,
-          JSON.stringify(validator.data),
-        ];
-      }),
-    );
+    const args = (
+      await Promise.all(
+        validatorsWithIndices.map(async validator => {
+          await this.addToEpochLookup(
+            `${CONSTANTS.validatorKey}:${validator.index}`,
+            epoch,
+          );
+          return [
+            `${CONSTANTS.validatorKey}:${validator.index}:${epoch}`,
+            JSON.stringify(validator.data),
+          ];
+        }),
+      )
+    ).flat();
 
     await this.client.mset(args);
   }
@@ -280,12 +283,14 @@ export class Redis implements IRedis {
   ) {
     await this.waitForConnection();
 
-    const args = inputsWithIndices.map(ii => {
-      return [
-        `${CONSTANTS.validatorBalanceInputKey}:${ii.index}`,
-        JSON.stringify(ii.input),
-      ];
-    });
+    const args = inputsWithIndices
+      .map(ii => {
+        return [
+          `${CONSTANTS.validatorBalanceInputKey}:${ii.index}`,
+          JSON.stringify(ii.input),
+        ];
+      })
+      .flat();
 
     await this.client.mset(args);
   }
