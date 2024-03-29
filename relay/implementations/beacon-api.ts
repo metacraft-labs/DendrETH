@@ -19,7 +19,6 @@ import path from 'path';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 import { prometheusTiming } from '@dendreth/utils/ts-utils/prometheus-utils';
 import { panic } from '@dendreth/utils/ts-utils/common-utils';
-import { DENEB_FORK_EPOCH } from '../constants/constants';
 
 const logger = getGenericLogger();
 
@@ -38,10 +37,16 @@ export class BeaconApi implements IBeaconApi {
     public readonly ssz: SSZ,
   ) {}
 
-  getCurrentSSZ(slot: number): CapellaOrDeneb {
-    const denebForkSlot = DENEB_FORK_EPOCH * 32;
+  async getCurrentSSZ(slot: number): Promise<CapellaOrDeneb> {
+    const forkSchedule = await (
+      await this.fetchWithFallback('/eth/v1/config/fork_schedule')
+    ).json();
+    const forkEpoch = Number(
+      forkSchedule.data[forkSchedule.data.length - 1].epoch,
+    );
+    const SLOTS_PER_EPOCH = 32;
     return (
-      slot >= denebForkSlot ? this.ssz.deneb : this.ssz.capella
+      slot >= forkEpoch * SLOTS_PER_EPOCH ? this.ssz.deneb : this.ssz.capella
     ) as CapellaOrDeneb;
   }
 
@@ -60,7 +65,7 @@ export class BeaconApi implements IBeaconApi {
       await this.fetchWithFallback(`/eth/v2/beacon/blocks/${slot}`)
     ).json();
 
-    const currentSszFork = this.getCurrentSSZ(slot);
+    const currentSszFork = await this.getCurrentSSZ(slot);
     const beaconBlock = currentSszFork.BeaconBlockBody.fromJson(
       currentBlock.data.message.body,
     );
@@ -250,7 +255,7 @@ export class BeaconApi implements IBeaconApi {
       prevFinalizedHeaderResult.data.header.message,
     );
 
-    const currentSszFork = this.getCurrentSSZ(nextSlot);
+    const currentSszFork = await this.getCurrentSSZ(nextSlot);
     const finalityHeaderBranch = prevStateTree
       .getSingleProof(
         currentSszFork.BeaconState.getPathInfo(['finalized_checkpoint', 'root'])
@@ -333,7 +338,7 @@ export class BeaconApi implements IBeaconApi {
       )
     ).json();
 
-    const currentSszFork = this.getCurrentSSZ(slot);
+    const currentSszFork = await this.getCurrentSSZ(slot);
     const finalityHeader = this.ssz.phase0.BeaconBlockHeader.fromJson(
       finalizedHeaderResult.data.header.message,
     );
@@ -351,7 +356,7 @@ export class BeaconApi implements IBeaconApi {
     executionPayloadHeader: ExecutionPayloadHeader;
     executionPayloadBranch: string[];
   }> {
-    const currentSszFork = this.getCurrentSSZ(slot);
+    const currentSszFork = await this.getCurrentSSZ(slot);
     const finalizedBlockBodyResult = await (
       await this.fetchWithFallback(`/eth/v2/beacon/blocks/${slot}`)
     ).json();
@@ -454,7 +459,7 @@ export class BeaconApi implements IBeaconApi {
       return null;
     }
 
-    const currentSszFork = this.getCurrentSSZ(slot);
+    const currentSszFork = await this.getCurrentSSZ(slot);
     const beaconState = currentSszFork.BeaconState.deserialize(beaconStateSZZ);
     const beaconStateView = currentSszFork.BeaconState.toViewDU(beaconState);
     const stateTree = new Tree(beaconStateView.node);
