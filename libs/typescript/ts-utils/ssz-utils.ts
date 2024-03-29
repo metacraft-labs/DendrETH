@@ -5,7 +5,6 @@ import { sha256 } from 'ethers/lib/utils';
 import { Type } from '@chainsafe/ssz';
 
 import { formatHex, hexToBytes } from './bls';
-import { DENEB_FORK_EPOCH } from '../../../relay/constants/constants';
 
 import type { ssz } from '@lodestar/types';
 
