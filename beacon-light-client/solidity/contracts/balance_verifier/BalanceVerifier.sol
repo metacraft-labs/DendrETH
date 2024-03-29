@@ -5,11 +5,6 @@ import './verifier.sol';
 import './LidoZKOracle.sol';
 
 contract BalanceVerifier is PlonkVerifier, LidoZKOracle {
-  /// @notice The address of the beacon roots precompile.
-  /// @dev https://eips.ethereum.org/EIPS/eip-4788
-  address internal constant BEACON_ROOTS =
-    0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02;
-
   /// @notice the verifier_digest of the plonky2 circuit
   uint256 public immutable VERIFIER_DIGEST;
 
@@ -22,11 +17,29 @@ contract BalanceVerifier is PlonkVerifier, LidoZKOracle {
   /// @notice The length of the beacon roots ring buffer.
   uint256 internal constant BEACON_ROOTS_HISTORY_BUFFER_LENGTH = 8191;
 
+  /// @notice The address of the beacon roots precompile.
+  /// @dev https://eips.ethereum.org/EIPS/eip-4788
+  address internal constant BEACON_ROOTS =
+    0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02;
+
   /// @dev Beacon root out of range
   error BeaconRootOutOfRange();
 
   /// @dev No block root is found using the beacon roots precompile.
   error NoBlockRootFound();
+
+  /// @dev Verification call failed
+  error VerificationCallFailed();
+
+  /// @dev Verification failed
+  error VerificationFailed();
+
+  event ReportAdded(
+    uint256 refSlot,
+    uint64 balanceSum,
+    uint64 numValidators,
+    uint64 exitedValidators
+  );
 
   mapping(uint256 => Report) reports;
 
@@ -68,9 +81,10 @@ contract BalanceVerifier is PlonkVerifier, LidoZKOracle {
 
     bytes32 commitment = sha256(concataneted);
 
-    uint256[] memory publicInputs = new uint256[](2);
-    publicInputs[0] = VERIFIER_DIGEST;
-    publicInputs[1] = (uint256(commitment) & ((1 << 253) - 1));
+    uint256[2] memory publicInputs = [
+      VERIFIER_DIGEST,
+      (uint256(commitment) & ((1 << 253) - 1))
+    ];
 
     // Encode the call to the `verify` function with the public inputs
     bytes memory data = abi.encodeWithSelector(
@@ -83,20 +97,33 @@ contract BalanceVerifier is PlonkVerifier, LidoZKOracle {
     (bool success, bytes memory returnData) = address(this).call(data);
 
     // Check if the call was successful
-    require(success, 'Verify function call failed');
+    if (!success) {
+      revert VerificationCallFailed();
+    }
 
     bool verificationResult = abi.decode(returnData, (bool));
 
-    require(verificationResult, 'Verification failed');
+    if (!verificationResult) {
+      revert VerificationFailed();
+    }
+
+    uint64 numValidators = _numberOfNonActivatedValidators +
+      _numberOfActiveValidators +
+      _numberOfExitedValidators;
 
     reports[refSlot] = Report({
       present: true,
       cBalanceGwei: balanceSum,
-      numValidators: _numberOfNonActivatedValidators +
-        _numberOfActiveValidators +
-        _numberOfExitedValidators,
+      numValidators: numValidators,
       exitedValidators: _numberOfExitedValidators
     });
+
+    emit ReportAdded(
+      refSlot,
+      balanceSum,
+      numValidators,
+      _numberOfExitedValidators
+    );
   }
 
   function getReport(
@@ -128,7 +155,9 @@ contract BalanceVerifier is PlonkVerifier, LidoZKOracle {
   /// @dev BEACON_ROOTS returns a block root for a given parent block's timestamp. To get the block root for slot
   ///      N, you use the timestamp of slot N+1. If N+1 is not avaliable, you use the timestamp of slot N+2, and
   //       so on.
-  function findBlockRoot(uint256 _slot) public view returns (bytes32 blockRoot) {
+  function findBlockRoot(
+    uint256 _slot
+  ) public view returns (bytes32 blockRoot) {
     uint256 currBlockTimestamp = GENESIS_BLOCK_TIMESTAMP + ((_slot + 1) * 12);
 
     uint256 earliestBlockTimestamp = block.timestamp -
