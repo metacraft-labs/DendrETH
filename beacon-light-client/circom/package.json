@@ -1,0 +1,37 @@
+{
+  "name": "circom",
+  "type": "commonjs",
+  "scripts": {
+    "build:tsc": "tsc -p ./tsconfig.json"
+  },
+  "dependencies": {
+    "@chainsafe/persistent-merkle-tree": "^0.6.1",
+    "@chainsafe/ssz": "0.14.3",
+    "@dendreth/relay": "workspace:^",
+    "@dendreth/utils": "workspace:^",
+    "@lodestar/config": "^1.17.0",
+    "@lodestar/params": "^1.16.0",
+    "@lodestar/types": "^1.17.0",
+    "@noble/bls12-381": "^1.4.0",
+    "@nomiclabs/hardhat-ethers": "^2.0.5",
+    "@nomiclabs/hardhat-waffle": "^2.0.3",
+    "@types/js-yaml": "^4.0.5",
+    "bullmq": "^3.7.1",
+    "chai": "^4.3.6",
+    "circom_tester": "^0.0.14",
+    "circomlib": "2.0.2",
+    "ethereum-waffle": "^4.0.7",
+    "ethers": "^5.7.0",
+    "hardhat": "^2.22.0",
+    "js-yaml": "^4.1.0",
+    "redis": "^4.6.5",
+    "snarkit2": "https://github.com/fluidex/snarkit2#70142d8bbc5ec79cfa6869205263ff77e8423975",
+    "snarkjs": "https://github.com/metacraft-labs/snarkjs.git#commit=091ee9c3744c660b0ecd961f9197a8249a8f7d3b",
+    "ts-node": "^10.9.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.21",
+    "tsx": "^4.7.1",
+    "typescript": "5.2.2"
+  }
+}

@@ -1,0 +1,21 @@
+name: 'Common Setup Steps'
+description: 'Checks out the repo and installs dependencies'
+inputs:
+  cachix_auth_token:
+    description: 'Cachix Cache Authentication Token'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@v9
+    - uses: cachix/cachix-action@v14
+      with:
+        name: mcl-blockchain-packages
+        authToken: '${{ inputs.cachix_auth_token }}'
+    - name: Build Nix dev shell
+      shell: bash
+      run: ./scripts/build-nix-shell.sh
+    - name: Install Node.js dependencies
+      shell: bash
+      run: nix develop -c yarn install --immutable

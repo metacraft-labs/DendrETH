@@ -1,0 +1,1 @@
+098c2ba5b50976636ece981c571a9c10f2b3b39bea5efe7edb9fba8695ab8f55  ./target/wasm32-unknown-unknown/release/verifier.wasm

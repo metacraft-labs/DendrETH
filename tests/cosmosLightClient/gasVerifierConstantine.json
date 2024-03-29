@@ -1,0 +1,144 @@
+[
+  [
+    {
+      "description": "Upload Verifier",
+      "gas": 1378889
+    },
+    {
+      "description": "Init Verifier",
+      "gas": 391408
+    },
+    {
+      "description": "Update 1",
+      "gas": 871846
+    },
+    {
+      "description": "Update 2",
+      "gas": 872028
+    },
+    {
+      "description": "Update 3",
+      "gas": 871806
+    },
+    {
+      "description": "Update 4",
+      "gas": 871866
+    },
+    {
+      "description": "Update 5",
+      "gas": 871927
+    },
+    {
+      "description": "Update 6",
+      "gas": 871886
+    },
+    {
+      "description": "Update 7",
+      "gas": 871796
+    },
+    {
+      "description": "Update 8",
+      "gas": 871917
+    },
+    {
+      "description": "Update 9",
+      "gas": 871826
+    },
+    {
+      "description": "Update 10",
+      "gas": 872078
+    },
+    {
+      "description": "Update 11",
+      "gas": 871856
+    },
+    {
+      "description": "Update 12",
+      "gas": 872038
+    },
+    {
+      "description": "Update 13",
+      "gas": 871856
+    },
+    {
+      "description": "Update 14",
+      "gas": 871977
+    },
+    {
+      "description": "Update 15",
+      "gas": 871796
+    },
+    {
+      "description": "Update 16",
+      "gas": 871826
+    },
+    {
+      "description": "Update 17",
+      "gas": 872027
+    },
+    {
+      "description": "Update 18",
+      "gas": 871917
+    },
+    {
+      "description": "Update 19",
+      "gas": 871987
+    },
+    {
+      "description": "Update 20",
+      "gas": 871836
+    },
+    {
+      "description": "Update 21",
+      "gas": 871967
+    },
+    {
+      "description": "Update 22",
+      "gas": 871886
+    },
+    {
+      "description": "Update 23",
+      "gas": 871785
+    },
+    {
+      "description": "Update 24",
+      "gas": 872038
+    },
+    {
+      "description": "Update 25",
+      "gas": 871947
+    },
+    {
+      "description": "Update 26",
+      "gas": 871967
+    },
+    {
+      "description": "Update 27",
+      "gas": 871856
+    },
+    {
+      "description": "Update 28",
+      "gas": 871937
+    },
+    {
+      "description": "Update 29",
+      "gas": 872068
+    },
+    {
+      "description": "Update 30",
+      "gas": 871836
+    },
+    {
+      "description": "Update 31",
+      "gas": 872058
+    },
+    {
+      "description": "Update 32",
+      "gas": 871977
+    },
+    {
+      "description": "Update 33",
+      "gas": 871725
+    }
+  ]
+]
