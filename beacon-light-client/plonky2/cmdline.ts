@@ -1,6 +1,6 @@
-import yargs from "yargs";
+import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import config from "./common_config.json";
+import config from './common_config.json';
 
 const args = yargs(hideBin(process.argv));
 
@@ -28,11 +28,10 @@ export class CommandLineOptionsBuilder {
   }
 
   withFileSStorageOps() {
-    args
-      .option('folder_name', {
-        describe: 'Sets the name of the folder proofs will be stored in',
-        type: 'string',
-      });
+    args.option('folder_name', {
+      describe: 'Sets the name of the folder proofs will be stored in',
+      type: 'string',
+    });
 
     return this;
   }
@@ -64,18 +63,16 @@ export class CommandLineOptionsBuilder {
       .option('azure-container-name', {
         describe: 'Sets the name of the azure container',
         type: 'string',
-      })
+      });
 
     return this;
-
   }
 
   withProofStorageOpts() {
-    return this
-      .option('proof_storage_type', {
-        describe: 'Sets the type of proof storage',
-        type: 'string',
-      })
+    return this.option('proof_storage_type', {
+      describe: 'Sets the type of proof storage',
+      type: 'string',
+    })
       .withRedisOpts()
       .withFileSStorageOps()
       .withS3StorageOpts()

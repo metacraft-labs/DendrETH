@@ -1,5 +1,5 @@
-import { Redis } from "../../../relay/implementations/redis";
-import { IProofStorage } from "./proof_storage";
+import { Redis } from '../../../relay/implementations/redis';
+import { IProofStorage } from './proof_storage';
 
 export class RedisStorage implements IProofStorage {
   private connection: Redis;

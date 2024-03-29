@@ -3,7 +3,6 @@ import { AzureStorage } from './azure_proof_storage';
 import { FileStorage } from './file_proof_storage';
 import { RedisStorage } from './redis_proof_storage';
 
-
 export interface IProofStorage {
   getProof(key: string): Promise<Buffer | null>;
   setProof(key: string, proof: Buffer): Promise<void>;
@@ -49,7 +48,6 @@ export function createProofStorage(options: any): IProofStorage {
       }
 
       return new AzureStorage('placeholder', 'placeholder');
-
     }
     case 'aws': {
       const endpoint = options['aws-endpoint-url'];
@@ -70,8 +68,7 @@ export function createProofStorage(options: any): IProofStorage {
 
       return new S3Storage(endpoint, region, bucket);
     }
-    default: throw new Error(`Proof storage type not supported: ${type}`);
+    default:
+      throw new Error(`Proof storage type not supported: ${type}`);
   }
 }
-
-

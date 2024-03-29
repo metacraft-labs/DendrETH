@@ -1,6 +1,11 @@
-import { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { IProofStorage } from "./proof_storage";
-import { Readable } from "stream";
+import {
+  S3Client,
+  GetObjectCommand,
+  PutObjectCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
+import { IProofStorage } from './proof_storage';
+import { Readable } from 'stream';
 
 export class S3Storage implements IProofStorage {
   private s3: S3Client;
@@ -11,8 +16,8 @@ export class S3Storage implements IProofStorage {
       region,
       endpoint,
       credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID || "unset",
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "unset",
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID || 'unset',
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || 'unset',
       },
       forcePathStyle: true,
     });
@@ -62,5 +67,5 @@ export class S3Storage implements IProofStorage {
     await this.s3.send(new DeleteObjectCommand(params));
   }
 
-  async quit(): Promise<void> { }
+  async quit(): Promise<void> {}
 }

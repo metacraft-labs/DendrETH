@@ -1,10 +1,12 @@
 import { CommandLineOptionsBuilder } from '../cmdline';
 import { CommitmentMapperScheduler } from './scheduler';
-import config from "../common_config.json";
+import config from '../common_config.json';
 
 (async () => {
   const options = new CommandLineOptionsBuilder()
-    .usage('Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>')
+    .usage(
+      'Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>',
+    )
     .withRedisOpts()
     .option('beacon-node', {
       describe: 'The beacon node url',
