@@ -108,7 +108,7 @@ pub fn build_commitment_mapper_first_level_circuit() -> (
 #[cfg(test)]
 mod test {
     use anyhow::Result;
-    use plonky2::iop::witness::PartialWitness;
+    use plonky2::iop::witness::{PartialWitness, WitnessWrite};
 
     use crate::{
         build_commitment_mapper_first_level_circuit::build_commitment_mapper_first_level_circuit,
@@ -168,6 +168,8 @@ mod test {
             "1", "1", "0", "0", "0", "0", "1", "1", "1", "1", "1", "1", "0", "1", "0", "1", "0",
             "1",
         ];
+
+        pw.set_bool_target(validator_commitment.validator_is_zero, false);
 
         pw.set_bytes_array(&validator_commitment.validator.pubkey, &validator_pubkey);
 

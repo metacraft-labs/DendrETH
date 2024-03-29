@@ -1601,6 +1601,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@dendreth/plonky2@workspace:beacon-light-client/plonky2"
   dependencies:
+    "@aws-sdk/client-s3": "npm:^3.521.0"
+    "@azure/storage-blob": "npm:^12.17.0"
     "@chainsafe/persistent-merkle-tree": "npm:^0.7.1"
     "@chainsafe/ssz": "npm:0.14.3"
     "@dendreth/relay": "workspace:^"
@@ -1633,6 +1635,7 @@ __metadata:
     "@effect/schema": "npm:^0.33.0"
     "@lodestar/types": "npm:^1.17.0"
     "@noble/bls12-381": "npm:^1.4.0"
+    "@types/eventsource": "npm:^1.1.15"
     "@types/ioredis": "npm:^4.27.6"
     "@types/node": "npm:^20.11.19"
     "@types/snarkjs": "npm:^0.7.8"
@@ -4847,6 +4850,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/eventsource@npm:^1.1.15":
+  version: 1.1.15
+  resolution: "@types/eventsource@npm:1.1.15"
+  checksum: 10/52e024f5aebfd6bc166f2162d6e408cf788886007e571519c75f8c3623feaa3c5a74681fd3a128de6d21b28ef88dd683421264f10d5c98728959b99b1229b85e
+  languageName: node
+  linkType: hard
+
 "@types/express-serve-static-core@npm:^4.17.33":
   version: 4.17.43
   resolution: "@types/express-serve-static-core@npm:4.17.43"
@@ -5271,8 +5281,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "DendrETH@workspace:."
   dependencies:
-    "@aws-sdk/client-s3": "npm:^3.521.0"
-    "@azure/storage-blob": "npm:^12.17.0"
     "@chainsafe/bls": "npm:^6.0.3"
     "@chainsafe/blst": "npm:^0.2.4"
     "@chainsafe/persistent-merkle-tree": "npm:^0.6.1"
@@ -5302,7 +5310,6 @@ __metadata:
     dotenv: "npm:^16.0.2"
     ejs: "npm:^3.1.9"
     ethers: "npm:^5.7.0"
-    eventsource: "npm:^2.0.2"
     express: "npm:^4.18.2"
     ffjavascript: "npm:0.2.57"
     glob: "npm:^8.0.3"

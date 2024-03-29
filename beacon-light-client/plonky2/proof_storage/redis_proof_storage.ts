@@ -1,4 +1,4 @@
-import { Redis } from '../../../relay/implementations/redis';
+import { Redis } from '@dendreth/relay/implementations/redis';
 import { IProofStorage } from './proof_storage';
 
 export class RedisStorage implements IProofStorage {

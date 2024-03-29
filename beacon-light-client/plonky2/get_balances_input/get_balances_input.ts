@@ -99,8 +99,8 @@ let TAKE: number;
       }
     : (await beaconApi.getBeaconState(
         options['slot'] !== undefined
-          ? options['slot']
-          : Number(await beaconApi.getHeadSlot()),
+          ? BigInt(options['slot'])
+          : await beaconApi.getHeadSlot(),
       )) || panic('Could not fetch beacon state');
 
   const offset = Number(options['offset']) || 0;

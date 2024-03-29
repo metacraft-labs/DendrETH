@@ -142,7 +142,7 @@ mod test {
     use anyhow::Result;
     use plonky2::{
         field::goldilocks_field::GoldilocksField,
-        iop::witness::PartialWitness,
+        iop::witness::{PartialWitness, WitnessWrite},
         plonk::{
             circuit_builder::CircuitBuilder, circuit_data::CircuitConfig,
             config::PoseidonGoldilocksConfig,
@@ -163,8 +163,6 @@ mod test {
         let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
 
         let targets = validator_commitment_mapper(&mut builder);
-
-        let mut pw = PartialWitness::new();
 
         let validator_pubkey =hex::decode("933ad9491b62059dd065b560d256d8957a8c402cc6e8d8ee7290ae11e8f7329267a8811c397529dac52ae1342ba58c95").unwrap();
         let withdrawal_credentials =
@@ -213,6 +211,10 @@ mod test {
             "1", "1", "0", "0", "0", "0", "1", "1", "1", "1", "1", "1", "0", "1", "0", "1", "0",
             "1",
         ];
+
+        let mut pw = PartialWitness::new();
+
+        pw.set_bool_target(targets.validator_is_zero, false);
 
         pw.set_bytes_array(&targets.validator.pubkey, &validator_pubkey);
 

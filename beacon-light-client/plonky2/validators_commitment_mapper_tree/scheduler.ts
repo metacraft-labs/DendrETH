@@ -1,17 +1,14 @@
-import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
-import { splitIntoBatches } from '../../../libs/typescript/ts-utils/common-utils';
-import { BeaconApi } from '../../../relay/implementations/beacon-api';
-import { Redis } from '../../../relay/implementations/redis';
-import { Validator, IndexedValidator } from '../../../relay/types/types';
+import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
+import { splitIntoBatches } from '@dendreth/utils/ts-utils/common-utils';
+import {
+  BeaconApi,
+  getBeaconApi,
+} from '@dendreth/relay/implementations/beacon-api';
+import { Redis } from '@dendreth/relay/implementations/redis';
+import { Validator, IndexedValidator } from '@dendreth/relay/types/types';
 import chalk from 'chalk';
 import fs from 'fs';
-
-const {
-  KeyPrefix,
-  WorkQueue,
-  Item,
-} = require('@mevitae/redis-work-queue/dist/WorkQueue');
-
+import { KeyPrefix, WorkQueue, Item } from '@mevitae/redis-work-queue';
 import CONSTANTS from '../constants/validator_commitment_constants.json';
 
 enum TaskTag {
@@ -39,7 +36,7 @@ export class CommitmentMapperScheduler {
     this.queue = new WorkQueue(
       new KeyPrefix(`${CONSTANTS.validatorProofsQueue}`),
     );
-    this.api = new BeaconApi([options['beacon-node']]);
+    this.api = await getBeaconApi([options['beacon-node']]);
     this.headEpoch = BigInt(await this.api.getHeadSlot()) / 32n;
     this.currentEpoch =
       options['sync-epoch'] !== undefined
@@ -107,8 +104,8 @@ export class CommitmentMapperScheduler {
     if (!this.mock) {
       await this.syncEpoch();
 
-      const es = await this.api.subscribeForEvents(['head']);
-      es.on('head', async event => {
+      const es = this.api.subscribeForEvents(['head']);
+      es.addEventListener('head', async event => {
         this.headEpoch = BigInt(JSON.parse(event.data).slot) / 32n;
         await this.syncEpoch();
       });
@@ -164,7 +161,7 @@ export class CommitmentMapperScheduler {
 
   async updateValidators() {
     const newValidators = await this.api.getValidators(
-      Number(this.currentEpoch * 32n),
+      this.currentEpoch * 32n,
       this.take,
       this.offset,
     );
@@ -210,7 +207,7 @@ export class CommitmentMapperScheduler {
     dataView.setUint8(0, TaskTag.UPDATE_VALIDATOR_PROOF);
     dataView.setBigUint64(1, validatorIndex, false);
     dataView.setBigUint64(9, this.currentEpoch, false);
-    this.queue.addItem(this.redis.client, new Item(buffer));
+    this.queue.addItem(this.redis.client, new Item(Buffer.from(buffer)));
 
     // Don't create an epoch lookup for the zero validator proof
     if (validatorIndex !== BigInt(CONSTANTS.validatorRegistryLimit)) {
@@ -235,7 +232,7 @@ export class CommitmentMapperScheduler {
     dataView.setUint8(0, TaskTag.UPDATE_PROOF_NODE);
     dataView.setBigUint64(1, gindex, false);
     dataView.setBigUint64(9, this.currentEpoch, false);
-    this.queue.addItem(this.redis.client, new Item(buffer));
+    this.queue.addItem(this.redis.client, new Item(Buffer.from(buffer)));
   }
 
   async updateBranches(validators: IndexedValidator[]) {
@@ -272,7 +269,7 @@ export class CommitmentMapperScheduler {
     dataView.setUint8(0, TaskTag.PROVE_ZERO_FOR_DEPTH);
     dataView.setBigUint64(1, depth, false);
 
-    this.queue.addItem(this.redis.client, new Item(buffer));
+    this.queue.addItem(this.redis.client, new Item(Buffer.from(buffer)));
   }
 
   convertValidatorToProof(validator: Validator) {

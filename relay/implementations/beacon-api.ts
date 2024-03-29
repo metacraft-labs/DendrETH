@@ -18,6 +18,7 @@ import {
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 import { prometheusTiming } from '@dendreth/utils/ts-utils/prometheus-utils';
 import { panic } from '@dendreth/utils/ts-utils/common-utils';
+import EventSource from 'eventsource';
 
 const logger = getGenericLogger();
 
@@ -34,16 +35,16 @@ export class BeaconApi implements IBeaconApi {
   constructor(
     public readonly beaconRestApis: string[],
     public readonly ssz: SSZ,
-  ) { }
+  ) {}
 
-  async getCurrentSSZ(slot: number): Promise<CapellaOrDeneb> {
+  async getCurrentSSZ(slot: bigint): Promise<CapellaOrDeneb> {
     const forkSchedule = await (
       await this.fetchWithFallback('/eth/v1/config/fork_schedule')
     ).json();
-    const forkEpoch = Number(
+    const forkEpoch = BigInt(
       forkSchedule.data[forkSchedule.data.length - 1].epoch,
     );
-    const SLOTS_PER_EPOCH = 32;
+    const SLOTS_PER_EPOCH = 32n;
     return (
       slot >= forkEpoch * SLOTS_PER_EPOCH ? this.ssz.deneb : this.ssz.capella
     ) as CapellaOrDeneb;
@@ -64,7 +65,7 @@ export class BeaconApi implements IBeaconApi {
       await this.fetchWithFallback(`/eth/v2/beacon/blocks/${slot}`)
     ).json();
 
-    const currentSszFork = await this.getCurrentSSZ(slot);
+    const currentSszFork = await this.getCurrentSSZ(BigInt(slot));
     const beaconBlock = currentSszFork.BeaconBlockBody.fromJson(
       currentBlock.data.message.body,
     );
@@ -118,7 +119,7 @@ export class BeaconApi implements IBeaconApi {
     };
   }
 
-  async subscribeForEvents(events: string[]): Promise<EventSource> {
+  subscribeForEvents(events: string[]): EventSource {
     return new EventSource(
       this.concatUrl(`/eth/v1/events?topics=${events.join(',')}`),
     );
@@ -175,12 +176,8 @@ export class BeaconApi implements IBeaconApi {
       bodyRoot: ByteVectorType;
     }>
   > {
-    const { ssz } = await import('@lodestar/types');
-
-    let blockHeaderResult;
-
     while (slot <= limitSlot) {
-      blockHeaderResult = await (
+      const blockHeaderResult = await (
         await this.fetchWithFallback(`/eth/v1/beacon/headers/${slot}`)
       ).json();
 
@@ -202,10 +199,8 @@ export class BeaconApi implements IBeaconApi {
     slot: number,
     limitSlot: number,
   ): Promise<{ sync_aggregate: SyncAggregate; slot: number }> {
-    let blockHeaderBodyResult;
-
     while (slot <= limitSlot) {
-      blockHeaderBodyResult = await (
+      const blockHeaderBodyResult = await (
         await this.fetchWithFallback(`/eth/v2/beacon/blocks/${slot}`)
       ).json();
 
@@ -243,14 +238,15 @@ export class BeaconApi implements IBeaconApi {
     const { beaconState: prevBeaconSate, stateTree: prevStateTree } =
       await prometheusTiming(
         async () =>
-          (await this.getBeaconState(prevSlot)) ||
+          (await this.getBeaconState(BigInt(prevSlot))) ||
           panic('Could not fetch beacon state'),
         'getPrevBeaconState',
       );
 
     const prevFinalizedHeaderResult = await (
       await this.fetchWithFallback(
-        `/eth/v1/beacon/headers/${'0x' + bytesToHex(prevBeaconSate.finalizedCheckpoint.root)
+        `/eth/v1/beacon/headers/${
+          '0x' + bytesToHex(prevBeaconSate.finalizedCheckpoint.root)
         }`,
       )
     ).json();
@@ -259,7 +255,7 @@ export class BeaconApi implements IBeaconApi {
       prevFinalizedHeaderResult.data.header.message,
     );
 
-    const currentSszFork = await this.getCurrentSSZ(nextSlot);
+    const currentSszFork = await this.getCurrentSSZ(BigInt(nextSlot));
     const finalityHeaderBranch = prevStateTree
       .getSingleProof(
         currentSszFork.BeaconState.getPathInfo(['finalized_checkpoint', 'root'])
@@ -272,7 +268,7 @@ export class BeaconApi implements IBeaconApi {
       stateTree: prevFinalizedBeaconStateTree,
     } = await prometheusTiming(
       async () =>
-        (await this.getBeaconState(finalityHeader.slot)) ||
+        (await this.getBeaconState(BigInt(finalityHeader.slot))) ||
         panic('Could not fetch beacon state'),
       'getPrevFinalizedBeaconState',
     );
@@ -302,7 +298,7 @@ export class BeaconApi implements IBeaconApi {
         bytesToHex(
           prevFinalizedBeaconState[
             prevUpdateFinalizedSyncCommmitteePeriod ===
-              currentSyncCommitteePeriod
+            currentSyncCommitteePeriod
               ? 'currentSyncCommittee'
               : 'nextSyncCommittee'
           ].aggregatePubkey,
@@ -329,19 +325,20 @@ export class BeaconApi implements IBeaconApi {
   }> {
     const { beaconState, stateTree } = await prometheusTiming(
       async () =>
-        (await this.getBeaconState(slot)) ||
+        (await this.getBeaconState(BigInt(slot))) ||
         panic('Could not fetch beacon state'),
       'getBeaconState',
     );
 
     const finalizedHeaderResult = await (
       await this.fetchWithFallback(
-        `/eth/v1/beacon/headers/${'0x' + bytesToHex(beaconState.finalizedCheckpoint.root)
+        `/eth/v1/beacon/headers/${
+          '0x' + bytesToHex(beaconState.finalizedCheckpoint.root)
         }`,
       )
     ).json();
 
-    const currentSszFork = await this.getCurrentSSZ(slot);
+    const currentSszFork = await this.getCurrentSSZ(BigInt(slot));
     const finalityHeader = this.ssz.phase0.BeaconBlockHeader.fromJson(
       finalizedHeaderResult.data.header.message,
     );
@@ -359,7 +356,7 @@ export class BeaconApi implements IBeaconApi {
     executionPayloadHeader: ExecutionPayloadHeader;
     executionPayloadBranch: string[];
   }> {
-    const currentSszFork = await this.getCurrentSSZ(slot);
+    const currentSszFork = await this.getCurrentSSZ(BigInt(slot));
     const finalizedBlockBodyResult = await (
       await this.fetchWithFallback(`/eth/v2/beacon/blocks/${slot}`)
     ).json();
@@ -432,7 +429,7 @@ export class BeaconApi implements IBeaconApi {
   }
 
   async getValidators(
-    stateId: StateId,
+    slot: bigint,
     validatorsCount: number | undefined = undefined,
     offset: number | undefined = undefined,
   ): Promise<Validator[]> {
@@ -440,7 +437,7 @@ export class BeaconApi implements IBeaconApi {
 
     if (validatorsCount !== undefined && validatorsCount < 10000) {
       // use the validators endpoint
-      let url = `/eth/v1/beacon/states/${stateId}/validators`;
+      let url = `/eth/v1/beacon/states/${slot}/validators`;
       let range = [...Array(validatorsCount).keys()];
       if (offset !== undefined) {
         range = range.map(index => index + offset);
@@ -448,24 +445,24 @@ export class BeaconApi implements IBeaconApi {
       url = url + `?id=${range.join(',')}`;
 
       const validators = await (await this.fetchWithFallback(url)).json();
-      validators.data.sort((v1, v2) => +v1.index - +v2.index);
+      validators.data.sort((v1: any, v2: any) => +v1.index - +v2.index);
       return ssz.phase0.Validators.fromJson(
-        validators.data.map(x => x.validator),
+        validators.data.map((x: any) => x.validator),
       );
     } else {
       // fetch an ssz beacon state to extract the validators from it
       const { beaconState } =
-        (await this.getBeaconState(stateId)) ||
+        (await this.getBeaconState(slot)) ||
         panic('Could not fetch beacon state');
       return beaconState.validators.slice(offset || 0, validatorsCount);
     }
   }
 
-  async getBeaconState(state: StateId) {
+  async getBeaconState(slot: bigint) {
     logger.info('Getting Beacon State..');
 
     const beaconStateSZZ = await this.fetchWithFallback(
-      `/eth/v2/debug/beacon/states/${state}`,
+      `/eth/v2/debug/beacon/states/${slot}`,
       {
         headers: {
           Accept: 'application/octet-stream',

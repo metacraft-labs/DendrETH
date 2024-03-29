@@ -62,8 +62,6 @@
     "build-plonky-2": "tsc -p beacon-light-client/plonky2/tsconfig.json"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.521.0",
-    "@azure/storage-blob": "^12.17.0",
     "@chainsafe/bls": "^6.0.3",
     "@chainsafe/blst": "^0.2.4",
     "@chainsafe/persistent-merkle-tree": "^0.6.1",
@@ -85,7 +83,6 @@
     "dotenv": "^16.0.2",
     "ejs": "^3.1.9",
     "ethers": "^5.7.0",
-    "eventsource": "^2.0.2",
     "express": "^4.18.2",
     "ffjavascript": "0.2.57",
     "hardhat": "^2.22.0",

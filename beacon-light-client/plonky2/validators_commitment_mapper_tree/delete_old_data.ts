@@ -1,4 +1,4 @@
-import { Redis as RedisLocal } from '../../../relay/implementations/redis';
+import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
 
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
 import { createProofStorage } from '../proof_storage/proof_storage';
