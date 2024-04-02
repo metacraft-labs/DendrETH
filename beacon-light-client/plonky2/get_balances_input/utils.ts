@@ -1,5 +1,5 @@
-import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
-import { Validator, ValidatorPoseidonInput } from '../../../relay/types/types';
+import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
+import { Validator, ValidatorPoseidonInput } from '@dendreth/relay/types/types';
 
 export function getZeroValidatorPoseidonInput(): ValidatorPoseidonInput {
   return {

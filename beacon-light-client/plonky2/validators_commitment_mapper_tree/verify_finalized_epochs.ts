@@ -1,17 +1,17 @@
-import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
+import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import {
   BeaconApi,
   getBeaconApi,
-} from '../../../relay/implementations/beacon-api';
+} from '@dendreth/relay/implementations/beacon-api';
 import { Redis } from '@dendreth/relay/implementations/redis';
-import { IndexedValidator } from '../../../relay/types/types';
+import { IndexedValidator } from '@dendreth/relay/types/types';
 import { panic } from '@dendreth/utils/ts-utils/common-utils';
 import config from '../common_config.json';
 import { CommitmentMapperScheduler } from './scheduler';
 import { Tree, zeroNode } from '@chainsafe/persistent-merkle-tree';
 import CONSTANTS from '../constants/validator_commitment_constants.json';
 // @ts-ignore
-import { sleep } from '../../../libs/typescript/ts-utils/common-utils';
+import { sleep } from '@dendreth/utils/ts-utils/common-utils';
 import { getDepthByGindex, indexFromGindex } from './utils';
 import { CommandLineOptionsBuilder } from '../cmdline';
 import chalk from 'chalk';
