@@ -45,7 +45,12 @@ export class CommitmentMapperScheduler {
     this.lastFinalizedEpoch = await this.api.getLastFinalizedCheckpoint();
     this.currentEpoch =
       options['sync-epoch'] !== undefined
-        ? BigInt(Math.min(options['sync-epoch'], Number(this.lastFinalizedEpoch + 1n)))
+        ? BigInt(
+            Math.min(
+              options['sync-epoch'],
+              Number(this.lastFinalizedEpoch + 1n),
+            ),
+          )
         : this.lastFinalizedEpoch + 1n;
 
     const mod = await import('@lodestar/types');
@@ -58,9 +63,14 @@ export class CommitmentMapperScheduler {
 
   async start(runOnce: boolean = false) {
     // write last finalized epoch
-    const lastFinalizedCheckpoint = await this.redis.get(CONSTANTS.lastFinalizedEpochLookupKey);
+    const lastFinalizedCheckpoint = await this.redis.get(
+      CONSTANTS.lastFinalizedEpochLookupKey,
+    );
     if (lastFinalizedCheckpoint === null) {
-      await this.redis.set(CONSTANTS.lastFinalizedEpochLookupKey, `${this.lastFinalizedEpoch}`);
+      await this.redis.set(
+        CONSTANTS.lastFinalizedEpochLookupKey,
+        `${this.lastFinalizedEpoch}`,
+      );
     }
 
     console.log(chalk.bold.blue('Fetching validators from database...'));
@@ -137,32 +147,38 @@ export class CommitmentMapperScheduler {
 
       console.log(
         chalk.bold.blue(
-          `Syncing ${this.currentEpoch === this.headEpoch
-            ? chalk.cyan(this.currentEpoch)
-            : `${chalk.cyanBright(this.currentEpoch)}/${chalk.cyan(
-              this.headEpoch,
-            )}`
+          `Syncing ${
+            this.currentEpoch === this.headEpoch
+              ? chalk.cyan(this.currentEpoch)
+              : `${chalk.cyanBright(this.currentEpoch)}/${chalk.cyan(
+                  this.headEpoch,
+                )}`
           }...`,
         ),
       );
       await this.updateValidators();
       await this.redis.updateLastProcessedEpoch(this.currentEpoch);
-    }
+    };
 
-    while (this.currentEpoch < this.lastFinalizedEpoch) await update(shouldUpdateFinalizedEpoch);
+    while (this.currentEpoch < this.lastFinalizedEpoch)
+      await update(shouldUpdateFinalizedEpoch);
     while (this.currentEpoch < this.headEpoch) await update(false);
-
   }
 
   async updateValidators() {
-    const slot = await this.api.getFirstNonMissingSlotInEpoch(this.currentEpoch);
+    const slot = await this.api.getFirstNonMissingSlotInEpoch(
+      this.currentEpoch,
+    );
     const newValidators = await this.api.getValidators(
       slot,
       this.take,
       this.offset,
     );
 
-    await this.redis.updateCommitmentMapperSlot(this.currentEpoch, BigInt(slot));
+    await this.redis.updateCommitmentMapperSlot(
+      this.currentEpoch,
+      BigInt(slot),
+    );
 
     const changedValidators = newValidators
       .map((validator, index) => ({ validator, index }))
@@ -283,7 +299,7 @@ function hasValidatorChanged(prevValidators: Validator[]) {
     validator.effectiveBalance !== prevValidators[index].effectiveBalance ||
     validator.slashed !== prevValidators[index].slashed ||
     validator.activationEligibilityEpoch !==
-    prevValidators[index].activationEligibilityEpoch ||
+      prevValidators[index].activationEligibilityEpoch ||
     validator.activationEpoch !== prevValidators[index].activationEpoch ||
     validator.exitEpoch !== prevValidators[index].exitEpoch ||
     validator.withdrawableEpoch !== prevValidators[index].withdrawableEpoch;

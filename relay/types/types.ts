@@ -224,9 +224,9 @@ export interface BalanceProof {
   balancesHash: number[];
   withdrawalCredentials: number[][];
   currentEpoch: string;
-  numberOfNonActivatedValidators: number,
-  numberOfActiveValidators: number,
-  numberOfExitedValidators: number,
+  numberOfNonActivatedValidators: number;
+  numberOfActiveValidators: number;
+  numberOfExitedValidators: number;
 }
 
 export interface IndexedValidator {

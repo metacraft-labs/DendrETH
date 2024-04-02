@@ -130,7 +130,9 @@ export class Redis implements IRedis {
     );
     if (latestEpoch === null) {
       const depth = getDepthByGindex(Number(gindex));
-      const result = (await this.client.get(`${CONSTANTS.validatorProofKey}:zeroes:${depth}`));
+      const result = await this.client.get(
+        `${CONSTANTS.validatorProofKey}:zeroes:${depth}`,
+      );
 
       if (result == null) {
         return null;
@@ -458,7 +460,10 @@ export class Redis implements IRedis {
 
   async updateCommitmentMapperSlot(epoch: bigint, slot: bigint) {
     await this.waitForConnection();
-    await this.client.set(`${CONSTANTS.commitmentMapperSlotKey}:${epoch}`, slot.toString());
+    await this.client.set(
+      `${CONSTANTS.commitmentMapperSlotKey}:${epoch}`,
+      slot.toString(),
+    );
   }
 
   async subscribeForProofs(
