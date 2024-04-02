@@ -112,9 +112,8 @@ let TAKE: number;
 
   const balancesTree = new Tree(balancesView.node);
 
-  const balanceZeroIndex = currentSSZFork.BeaconState.fields.balances.getPathInfo([
-    0,
-  ]).gindex;
+  const balanceZeroIndex =
+    currentSSZFork.BeaconState.fields.balances.getPathInfo([0]).gindex;
 
   const balances: number[][] = [];
 
@@ -204,7 +203,7 @@ let TAKE: number;
               .map(v => convertValidatorToValidatorPoseidonInput(v)),
             ...Array(
               (j + 1) * CIRCUIT_SIZE -
-              Math.min((j + 1) * CIRCUIT_SIZE, validators.length),
+                Math.min((j + 1) * CIRCUIT_SIZE, validators.length),
             ).fill(getZeroValidatorPoseidonInput()),
           ],
           withdrawalCredentials: [
