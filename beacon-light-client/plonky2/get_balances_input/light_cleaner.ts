@@ -5,52 +5,34 @@ import validator_commitment_constants from '../constants/validator_commitment_co
 import { getOptions, lightClean } from '../light_cleaner_common';
 
 (async () => {
-  const options = getOptions().argv;
+    const options = getOptions().argv;
 
-  const redis = new Redis(
-    `redis://${options['redis-host']}:${options['redis-port']}`,
-  );
-  const queues: any[] = [];
-
-  for (let i = 0; i < 39; i++) {
-    queues.push(
-      new WorkQueue(
-        new KeyPrefix(
-          `${validator_commitment_constants.balanceVerificationQueue}:${i}`,
-        ),
-      ),
+    const redis = new Redis(
+        `redis://${options['redis-host']}:${options['redis-port']}`,
     );
-  }
+    const queues: any[] = [];
 
-  const accumulatorQueues: any[] = [];
-  for (let i = 0; i < 31; i++) {
-    accumulatorQueues.push(
-      new WorkQueue(
-        new KeyPrefix(
-          `${validator_commitment_constants.balanceVerificationAccumulatorProofQueue}:${i}`,
-        ),
-      ),
-    );
-  }
-
-  while (true) {
-    console.log('Performing light clean');
-
-    for (let i = 0; i < queues.length; i++) {
-      const prefix = new KeyPrefix(
-        `${validator_commitment_constants.balanceVerificationQueue}:${i}`,
-      );
-      await lightClean.call(queues[i], redis, prefix);
+    for (let i = 0; i < 39; i++) {
+        queues.push(
+            new WorkQueue(
+                new KeyPrefix(
+                    `${validator_commitment_constants.balanceVerificationQueue}:${i}`,
+                ),
+            ),
+        );
     }
 
-    for (let i = 0; i < accumulatorQueues.length; i++) {
-      const prefix = new KeyPrefix(
-        `${validator_commitment_constants.balanceVerificationAccumulatorProofQueue}:${i}`,
-      );
-      await lightClean.call(accumulatorQueues[i], redis, prefix);
-    }
+    while (true) {
+        console.log('Performing light clean');
 
-    console.log(`Waiting ${options['clean-duration'] / 1000} seconds`);
-    await sleep(options['clean-duration']);
-  }
+        for (let i = 0; i < queues.length; i++) {
+            const prefix = new KeyPrefix(
+                `${validator_commitment_constants.balanceVerificationQueue}:${i}`,
+            );
+            await lightClean.call(queues[i], redis, prefix);
+        }
+
+        console.log(`Waiting ${options['clean-duration'] / 1000} seconds`);
+        await sleep(options['clean-duration']);
+    }
 })();
