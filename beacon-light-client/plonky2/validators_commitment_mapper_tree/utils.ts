@@ -1,6 +1,6 @@
-import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
-import { Redis as RedisLocal } from '../../../relay/implementations/redis';
-import { Validator, ValidatorShaInput } from '../../../relay/types/types';
+import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
+import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
+import { Validator, ValidatorShaInput } from '@dendreth/relay/types/types';
 
 export function gindexFromIndex(index: bigint, depth: bigint) {
   return 2n ** depth + index;
