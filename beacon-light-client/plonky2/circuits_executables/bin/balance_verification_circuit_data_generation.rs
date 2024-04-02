@@ -1,15 +1,12 @@
-use std::{fs, marker::PhantomData};
-
 use anyhow::Result;
 use circuits::{
-    build_balance_accumulator_inner_level, build_balance_inner_level_circuit,
-    build_validator_balance_accumulator_circuit::build_validator_balance_accumulator_circuit,
+    build_balance_inner_level_circuit::build_inner_level_circuit,
     build_validator_balance_circuit::build_validator_balance_circuit,
     generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
     targets_serialization::WriteTargets,
-    validator_balance_circuit::ValidatorBalanceVerificationTargets,
-    validator_balance_circuit_accumulator::ValidatorBalanceVerificationTargetsAccumulator,
 };
+use num::clamp;
+use std::{fs, marker::PhantomData, path::Path};
 
 use clap::{App, Arg};
 use futures_lite::future;
@@ -25,20 +22,11 @@ fn write_to_file(file_path: &str, data: &[u8]) -> Result<()> {
     Ok(())
 }
 
-enum ValidatorBalanceTargets<const N: usize> {
-    ValidatorBalanceFirstLevel(ValidatorBalanceVerificationTargets<N>),
-    ValidatorBalanceAccumulatorFirstLevel(ValidatorBalanceVerificationTargetsAccumulator),
-    ValidatorBalanceInnerLevel(build_balance_inner_level_circuit::BalanceInnerCircuitTargets),
-    ValidatorBalanceAccumulatorInnerLevel(
-        build_balance_accumulator_inner_level::BalanceInnerCircuitTargets,
-    ),
-}
-
-fn main() -> Result<()> {
+fn main() -> Result<(), String> {
     future::block_on(async_main())
 }
 
-pub async fn async_main() -> Result<()> {
+pub async fn async_main() -> Result<(), String> {
     let matches = App::new("")
         .arg(
             Arg::with_name("circuit_level")
@@ -56,52 +44,15 @@ pub async fn async_main() -> Result<()> {
                     }
                 }),
         )
-        .arg(
-            Arg::with_name("number_of_validators")
-                .long("number_of_validators")
-                .value_name("number")
-                .help("Sets the number of validators")
-                .takes_value(true)
-                .default_value("8"),
-        )
-        .arg(
-            Arg::with_name("circuit_name")
-                .long("circuit_name")
-                .value_name("name")
-                .help("Sets the circuit name")
-                .takes_value(true)
-                .default_value("balance_verification"),
-        )
         .get_matches();
-
-    let level = match matches.value_of("circuit_level").unwrap() {
+    let level_str = matches.value_of("circuit_level").unwrap();
+    let level = match level_str {
         "all" => None,
         x => Some(x.parse::<usize>().unwrap()),
     };
 
-    let circuit_name = matches.value_of("circuit_name").unwrap().to_owned();
-
-    let validators_len = matches
-        .value_of("number_of_validators")
-        .unwrap()
-        .parse::<usize>()
-        .unwrap();
-
     let (validators_balance_verification_targets, first_level_data) =
-        if circuit_name == "balance_accumulator" {
-            println!("building accumulator");
-            let (targets, data) = build_validator_balance_accumulator_circuit(validators_len);
-            (
-                ValidatorBalanceTargets::<1>::ValidatorBalanceAccumulatorFirstLevel(targets),
-                data,
-            )
-        } else {
-            let (targets, data) = build_validator_balance_circuit(validators_len);
-            (
-                ValidatorBalanceTargets::ValidatorBalanceFirstLevel(targets),
-                data,
-            )
-        };
+        build_validator_balance_circuit(8);
 
     let gate_serializer = DendrETHGateSerializer;
 
@@ -109,13 +60,19 @@ pub async fn async_main() -> Result<()> {
         _phantom: PhantomData::<PoseidonGoldilocksConfig>,
     };
 
+    if level != None && level.unwrap() > 37 {
+        return Err(String::from(format!(
+            "Supplied level {} is larger than the maximum allowed level 37",
+            level.unwrap()
+        )));
+    }
+
     if level == None || level == Some(0) {
         write_first_level_circuit(
             &first_level_data,
             &gate_serializer,
             &generator_serializer,
             validators_balance_verification_targets,
-            circuit_name.clone(),
         );
     }
 
@@ -124,28 +81,13 @@ pub async fn async_main() -> Result<()> {
     }
 
     let mut prev_circuit_data = first_level_data;
-
-    for i in 1..38 {
-        let (targets, data) = if circuit_name == "balance_accumulator" {
-            let (targets, data) = build_balance_accumulator_inner_level::build_inner_level_circuit(
-                &prev_circuit_data,
-            );
-
-            (
-                ValidatorBalanceTargets::<1>::ValidatorBalanceAccumulatorInnerLevel(targets),
-                data,
-            )
-        } else {
-            let (targets, data) = build_balance_inner_level_circuit::build_inner_level_circuit::<1>(
-                &prev_circuit_data,
-            );
-
-            (
-                ValidatorBalanceTargets::ValidatorBalanceInnerLevel(targets),
-                data,
-            )
-        };
-
+    let max_level = if level == None {
+        37
+    } else {
+        clamp(level.unwrap(), 1, 37)
+    };
+    for i in 1..=max_level {
+        let (targets, data) = build_inner_level_circuit::<1>(&prev_circuit_data);
         if level == Some(i) || level == None {
             let circuit_bytes = data
                 .to_bytes(&gate_serializer, &generator_serializer)
@@ -157,15 +99,7 @@ pub async fn async_main() -> Result<()> {
             )
             .unwrap();
 
-            let inner_level_targets = match targets {
-                ValidatorBalanceTargets::ValidatorBalanceInnerLevel(targets) => {
-                    targets.write_targets().unwrap()
-                }
-                ValidatorBalanceTargets::ValidatorBalanceAccumulatorInnerLevel(targets) => {
-                    targets.write_targets().unwrap()
-                }
-                _ => unreachable!(),
-            };
+            let inner_level_targets = targets.write_targets().unwrap();
 
             write_to_file(
                 &format!("{}_{}.plonky2_targets", circuit_name, i),
@@ -184,7 +118,7 @@ pub async fn async_main() -> Result<()> {
     Ok(())
 }
 
-fn write_first_level_circuit<const N: usize>(
+fn write_first_level_circuit(
     first_level_data: &plonky2::plonk::circuit_data::CircuitData<
         plonky2::field::goldilocks_field::GoldilocksField,
         PoseidonGoldilocksConfig,
@@ -192,8 +126,7 @@ fn write_first_level_circuit<const N: usize>(
     >,
     gate_serializer: &DendrETHGateSerializer,
     generator_serializer: &DendrETHGeneratorSerializer<PoseidonGoldilocksConfig, 2>,
-    validators_balance_verification_targets: ValidatorBalanceTargets<N>,
-    circuit_name: String,
+    validators_balance_verification_targets: circuits::validator_balance_circuit::ValidatorBalanceVerificationTargets<1>,
 ) {
     let circuit_bytes = first_level_data
         .to_bytes(gate_serializer, generator_serializer)
@@ -205,16 +138,9 @@ fn write_first_level_circuit<const N: usize>(
     )
     .unwrap();
 
-    let validator_balance_verification_targets_bytes = match validators_balance_verification_targets
-    {
-        ValidatorBalanceTargets::ValidatorBalanceFirstLevel(targets) => {
-            targets.write_targets().unwrap()
-        }
-        ValidatorBalanceTargets::ValidatorBalanceAccumulatorFirstLevel(targets) => {
-            targets.write_targets().unwrap()
-        }
-        _ => unreachable!(),
-    };
+    let validator_balance_verification_targets_bytes = validators_balance_verification_targets
+        .write_targets()
+        .unwrap();
 
     write_to_file(
         &format!("{}_{}.plonky2_targets", circuit_name, 0),

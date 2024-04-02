@@ -3,10 +3,10 @@ use std::{fs, marker::PhantomData, thread, time::Duration};
 use crate::{
     utils::get_depth_for_gindex,
     validator::{
-        bool_vec_as_int_vec, bool_vec_as_int_vec_nested, ValidatorAccumulatorInput,
-        ValidatorShaInput, VALIDATOR_REGISTRY_LIMIT,
+        bool_vec_as_int_vec, bool_vec_as_int_vec_nested, ValidatorShaInput,
+        VALIDATOR_REGISTRY_LIMIT,
     },
-    validator_balances_input::{ValidatorBalanceAccumulatorInput, ValidatorBalancesInput},
+    validator_balances_input::ValidatorBalancesInput,
     validator_commitment_constants::VALIDATOR_COMMITMENT_CONSTANTS,
 };
 use anyhow::{ensure, Result};
@@ -54,13 +54,6 @@ pub struct BalanceProof {
     pub number_of_active_validators: u64,
     pub number_of_exited_validators: u64,
     pub proof_index: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct BalanceAccumulatorProof {
-    pub needs_change: bool,
-    pub proof: Vec<u8>,
 }
 
 pub fn biguint_to_str<S>(value: &BigUint, serializer: S) -> Result<S::Ok, S::Error>
@@ -192,25 +185,6 @@ pub async fn fetch_validator_balance_input<const N: usize>(
     .await?)
 }
 
-pub async fn fetch_validator_balance_accumulator_input(
-    con: &mut Connection,
-    protocol: String,
-    index: u64,
-) -> Result<ValidatorBalanceAccumulatorInput> {
-    Ok(fetch_redis_json_object::<ValidatorBalanceAccumulatorInput>(
-        con,
-        format!(
-            "{}:{}:{}",
-            VALIDATOR_COMMITMENT_CONSTANTS
-                .balance_verification_accumulator_key
-                .to_owned(),
-            protocol,
-            index
-        ),
-    )
-    .await?)
-}
-
 pub async fn fetch_final_layer_input(con: &mut Connection) -> Result<FinalCircuitInput> {
     let json: String = con
         .get(VALIDATOR_COMMITMENT_CONSTANTS.final_proof_input_key)
@@ -257,34 +231,6 @@ pub async fn save_balance_proof<const N: usize>(
             "{}:{}:{}",
             VALIDATOR_COMMITMENT_CONSTANTS
                 .balance_verification_proof_key
-                .to_owned(),
-            level,
-            index
-        ),
-        &balance_proof,
-    )
-    .await?;
-
-    Ok(())
-}
-
-pub async fn save_balance_accumulator_proof(
-    con: &mut Connection,
-    proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    level: u64,
-    index: u64,
-) -> Result<()> {
-    let balance_proof = BalanceAccumulatorProof {
-        needs_change: false,
-        proof: proof.to_bytes(),
-    };
-
-    save_json_object(
-        con,
-        &format!(
-            "{}:{}:{}",
-            VALIDATOR_COMMITMENT_CONSTANTS
-                .balance_verification_accumulator_proof_key
                 .to_owned(),
             level,
             index
@@ -398,23 +344,6 @@ pub async fn get_latest_epoch(con: &mut Connection, key: &String, epoch: u64) ->
 
     ensure!(!result.is_empty(), "Could not find data for epoch");
     Ok(result[0].clone())
-}
-
-pub async fn fetch_validator_accumulator(
-    con: &mut Connection,
-    validator_accumulator_index: u64,
-    protocol: String,
-) -> Result<ValidatorAccumulatorInput> {
-    let key = format!(
-        "{}:{}:{}",
-        VALIDATOR_COMMITMENT_CONSTANTS
-            .validator_accumulator_key
-            .to_owned(),
-        protocol,
-        validator_accumulator_index
-    );
-
-    Ok(fetch_redis_json_object::<ValidatorAccumulatorInput>(con, key).await?)
 }
 
 pub async fn fetch_validator(
@@ -567,62 +496,6 @@ pub async fn save_validator_proof(
     Ok(())
 }
 
-pub async fn save_zero_validator_accumulator_proof(
-    con: &mut Connection,
-    proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    depth: u64,
-) -> Result<()> {
-    let proof_index = format!(
-        "{}:zeroes:{}",
-        VALIDATOR_COMMITMENT_CONSTANTS
-            .validator_accumulator_proof_key
-            .to_owned(),
-        depth,
-    );
-
-    let validator_proof = ValidatorProof {
-        poseidon_hash: proof
-            .get_commitment_mapper_poseidon_hash_tree_root()
-            .to_vec(),
-        sha256_hash: proof.get_commitment_mapper_sha256_hash_tree_root().to_vec(),
-        needs_change: false,
-        proof_index: proof_index.clone(),
-    };
-
-    save_json_object(con, &proof_index, &validator_proof).await?;
-
-    Ok(())
-}
-
-pub async fn save_validator_accumulator_proof(
-    con: &mut Connection,
-    proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    protocol: String,
-    gindex: u64,
-) -> Result<()> {
-    let proof_index = format!(
-        "{}:{}:{}",
-        VALIDATOR_COMMITMENT_CONSTANTS
-            .validator_accumulator_proof_key
-            .to_owned(),
-        protocol,
-        gindex
-    );
-
-    let validator_proof = ValidatorProof {
-        poseidon_hash: proof
-            .get_commitment_mapper_poseidon_hash_tree_root()
-            .to_vec(),
-        sha256_hash: proof.get_commitment_mapper_sha256_hash_tree_root().to_vec(),
-        needs_change: false,
-        proof_index: proof_index.clone(),
-    };
-
-    save_json_object(con, &proof_index, &validator_proof).await?;
-
-    Ok(())
-}
-
 pub async fn fetch_zero_proof<T: NeedsChange + KeyProvider + DeserializeOwned + Clone>(
     con: &mut Connection,
     depth: u64,
@@ -644,20 +517,6 @@ pub async fn fetch_zero_proof<T: NeedsChange + KeyProvider + DeserializeOwned + 
         }
         return Ok(proof);
     }
-}
-
-pub async fn fetch_zero_accumulator_proof(
-    con: &mut Connection,
-    depth: u64,
-) -> Result<ValidatorProof> {
-    Ok(fetch_redis_json_object::<ValidatorProof>(
-        con,
-        format!(
-            "{}:zeroes:{}",
-            VALIDATOR_COMMITMENT_CONSTANTS.validator_accumulator_proof_key, depth
-        ),
-    )
-    .await?)
 }
 
 pub async fn fetch_redis_json_object<T: DeserializeOwned + Clone>(
@@ -730,67 +589,6 @@ pub async fn fetch_proofs<
         proof1.get_proof(proof_storage).await,
         proof2.get_proof(proof_storage).await,
     ))
-}
-
-pub async fn fetch_accumulator_proofs(
-    con: &mut Connection,
-    proof_storage: &mut dyn ProofStorage,
-    protocol: String,
-    gindex: u64,
-) -> Result<(Vec<u8>, Vec<u8>)> {
-    let left_child_gindex = gindex * 2;
-    let right_child_gindex = gindex * 2 + 1;
-
-    let proof1 = fetch_proof_accumulator(con, protocol.clone(), left_child_gindex).await?;
-    let proof2 = fetch_proof_accumulator(con, protocol.clone(), right_child_gindex).await?;
-
-    Ok((
-        proof1.get_proof(proof_storage).await,
-        proof2.get_proof(proof_storage).await,
-    ))
-}
-
-pub async fn fetch_proof_accumulator(
-    con: &mut Connection,
-    protocol: String,
-    gindex: u64,
-) -> Result<ValidatorProof> {
-    let mut retries = 0;
-    let key = format!(
-        "{}:{}:{}",
-        VALIDATOR_COMMITMENT_CONSTANTS.validator_accumulator_proof_key, protocol, gindex
-    );
-
-    loop {
-        if retries > 5 {
-            return Err(anyhow::anyhow!("Not able to complete, try again"));
-        }
-
-        let mut proof_result = fetch_redis_json_object::<ValidatorProof>(con, key.clone()).await;
-
-        if proof_result.is_err() {
-            // get the zeroth proof
-            let key = format!(
-                "{}:{}:{}",
-                VALIDATOR_COMMITMENT_CONSTANTS.validator_accumulator_proof_key,
-                "zeroes",
-                get_depth_for_gindex(gindex)
-            );
-            proof_result = fetch_redis_json_object::<ValidatorProof>(con, key.clone()).await;
-        }
-
-        let proof = proof_result?;
-
-        if proof.needs_change() {
-            // Wait a bit and try again
-            thread::sleep(Duration::from_secs(10));
-            retries += 1;
-
-            continue;
-        }
-
-        return Ok(proof);
-    }
 }
 
 // @TODO: Rename this later

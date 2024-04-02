@@ -13,9 +13,6 @@ use plonky2::{
 
 use crate::{
     utils::{ETH_SHA256_BIT_SIZE, POSEIDON_HASH_SIZE},
-    validator_accumulator_commitment_mapper::{
-        validator_accumulator_commitment_mapper, ValidatorAccumulatorCommitmentTargets,
-    },
     validator_commitment_mapper::{validator_commitment_mapper, ValidatorCommitmentTargets},
 };
 
@@ -94,16 +91,6 @@ impl CommitmentMapperTargets for ValidatorCommitmentTargets {
     }
 }
 
-impl CommitmentMapperTargets for ValidatorAccumulatorCommitmentTargets {
-    fn get_commitment_mapper_poseidon_hash_tree_root(&self) -> HashOutTarget {
-        self.poseidon_hash_tree_root
-    }
-
-    fn get_commitment_mapper_sha256_hash_tree_root(&self) -> [BoolTarget; ETH_SHA256_BIT_SIZE] {
-        self.sha256_hash_tree_root
-    }
-}
-
 fn build_commitment_mapper_first_level_circuit_generic<F, T>(
     mapper_function: F,
 ) -> (
@@ -138,17 +125,6 @@ where
     let data = builder.build::<PoseidonGoldilocksConfig>();
 
     (validator_commitment_result, data)
-}
-
-pub fn build_accumulator_commitment_mapper_first_level_circuit() -> (
-    ValidatorAccumulatorCommitmentTargets,
-    plonky2::plonk::circuit_data::CircuitData<
-        plonky2::field::goldilocks_field::GoldilocksField,
-        PoseidonGoldilocksConfig,
-        2,
-    >,
-) {
-    build_commitment_mapper_first_level_circuit_generic(validator_accumulator_commitment_mapper)
 }
 
 pub fn build_commitment_mapper_first_level_circuit() -> (
