@@ -17,6 +17,9 @@ use plonky2::plonk::config::PoseidonGoldilocksConfig;
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
+const CIRCUIT_DIR: &str = "circuits";
+const CIRCUIT_NAME: &str = "balance_verification";
+
 fn write_to_file(file_path: &str, data: &[u8]) -> Result<()> {
     fs::write(file_path, data)?;
     Ok(())
@@ -67,6 +70,8 @@ pub async fn async_main() -> Result<(), String> {
         )));
     }
 
+    fs::create_dir_all(CIRCUIT_DIR).unwrap();
+
     if level == None || level == Some(0) {
         write_first_level_circuit(
             &first_level_data,
@@ -94,7 +99,7 @@ pub async fn async_main() -> Result<(), String> {
                 .unwrap();
 
             write_to_file(
-                &format!("{}_{}.plonky2_circuit", circuit_name, i),
+                &format!("{}/{}_{}.plonky2_circuit", CIRCUIT_DIR, CIRCUIT_NAME, i),
                 &circuit_bytes,
             )
             .unwrap();
@@ -102,7 +107,7 @@ pub async fn async_main() -> Result<(), String> {
             let inner_level_targets = targets.write_targets().unwrap();
 
             write_to_file(
-                &format!("{}_{}.plonky2_targets", circuit_name, i),
+                &format!("{}/{}_{}.plonky2_targets", CIRCUIT_DIR, CIRCUIT_NAME, i),
                 &inner_level_targets,
             )
             .unwrap();
@@ -113,6 +118,30 @@ pub async fn async_main() -> Result<(), String> {
         }
 
         prev_circuit_data = data;
+    }
+
+    let mut exists = false;
+    for i in 1..=max_level {
+        if Path::new(&format!(
+            "{}/{}_{}.plonky2_circuit",
+            CIRCUIT_DIR, CIRCUIT_NAME, i
+        ))
+        .exists()
+            || Path::new(&format!(
+                "{}/{}_{}.plonky2_targets",
+                CIRCUIT_DIR, CIRCUIT_NAME, i
+            ))
+            .exists()
+        {
+            exists = true;
+            break;
+        }
+    }
+    if !exists {
+        return Err(String::from(format!(
+            "No plonky2 output created. Level used was: {}",
+            level_str
+        )));
     }
 
     Ok(())
@@ -133,7 +162,7 @@ fn write_first_level_circuit(
         .unwrap();
 
     write_to_file(
-        &format!("{}_{}.plonky2_circuit", circuit_name, 0),
+        &format!("{}/{}_0.plonky2_circuit", CIRCUIT_DIR, CIRCUIT_NAME),
         &circuit_bytes,
     )
     .unwrap();
@@ -143,7 +172,7 @@ fn write_first_level_circuit(
         .unwrap();
 
     write_to_file(
-        &format!("{}_{}.plonky2_targets", circuit_name, 0),
+        &format!("{}/{}_0.plonky2_targets", CIRCUIT_DIR, CIRCUIT_NAME),
         &validator_balance_verification_targets_bytes,
     )
     .unwrap();
