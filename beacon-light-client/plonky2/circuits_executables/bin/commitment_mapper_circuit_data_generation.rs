@@ -23,6 +23,7 @@ fn write_to_file(file_path: &str, data: &[u8]) -> Result<()> {
     Ok(())
 }
 
+const CIRCUIT_DIR: &str = "circuits";
 const CIRCUIT_NAME: &str = "commitment_mapper";
 
 fn main() -> Result<()> {
@@ -63,6 +64,8 @@ pub async fn async_main() -> Result<()> {
         _phantom: PhantomData::<PoseidonGoldilocksConfig>,
     };
 
+    fs::create_dir_all(CIRCUIT_DIR).unwrap();
+
     if level == None || level == Some(0) {
         write_first_level_circuit(
             &first_level_data,
@@ -87,7 +90,7 @@ pub async fn async_main() -> Result<()> {
                 .unwrap();
 
             write_to_file(
-                &format!("{}_{}.plonky2_circuit", CIRCUIT_NAME, i),
+                &format!("{}/{}_{}.plonky2_circuit", CIRCUIT_DIR, CIRCUIT_NAME, i),
                 &circuit_bytes,
             )
             .unwrap();
@@ -95,7 +98,7 @@ pub async fn async_main() -> Result<()> {
             let inner_level_targets = targets.write_targets().unwrap();
 
             write_to_file(
-                &format!("{}_{}.plonky2_targets", CIRCUIT_NAME, i),
+                &format!("{}/{}_{}.plonky2_targets", CIRCUIT_DIR, CIRCUIT_NAME, i),
                 &inner_level_targets,
             )
             .unwrap();
@@ -126,7 +129,7 @@ fn write_first_level_circuit(
         .unwrap();
 
     write_to_file(
-        &format!("{}_{}.plonky2_circuit", CIRCUIT_NAME, 0),
+        &format!("{}/{}_{}.plonky2_circuit", CIRCUIT_DIR, CIRCUIT_NAME, 0),
         &circuit_bytes,
     )
     .unwrap();
@@ -134,7 +137,7 @@ fn write_first_level_circuit(
     let validator_commitment_targets_bytes = validator_commitment_targets.write_targets().unwrap();
 
     write_to_file(
-        &format!("{}_{}.plonky2_targets", CIRCUIT_NAME, 0),
+        &format!("{}/{}_{}.plonky2_targets", CIRCUIT_DIR, CIRCUIT_NAME, 0),
         &validator_commitment_targets_bytes,
     )
     .unwrap();

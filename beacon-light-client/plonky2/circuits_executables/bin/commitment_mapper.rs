@@ -35,6 +35,7 @@ use std::{format, println, thread, time::Duration};
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
+const CIRCUIT_DIR: &str = "circuits";
 const CIRCUIT_NAME: &str = "commitment_mapper";
 
 fn main() -> Result<()> {
@@ -65,7 +66,8 @@ async fn async_main() -> Result<()> {
             .to_owned(),
     ));
 
-    let first_level_circuit_data = load_circuit_data(&format!("{}_{}", CIRCUIT_NAME, 0))?;
+    let first_level_circuit_data =
+        load_circuit_data(&format!("{}/{}_0", CIRCUIT_DIR, CIRCUIT_NAME))?;
     let validator_commitment = get_first_level_targets()?;
 
     let mut inner_circuits: Vec<(
@@ -76,7 +78,7 @@ async fn async_main() -> Result<()> {
     for i in 1..41 {
         inner_circuits.push((
             get_inner_targets(i)?,
-            load_circuit_data(&format!("{}_{}", CIRCUIT_NAME, i))?,
+            load_circuit_data(&format!("{}/{}_{}", CIRCUIT_DIR, CIRCUIT_NAME, i))?,
         ));
     }
 
@@ -312,14 +314,20 @@ async fn async_main() -> Result<()> {
 }
 
 fn get_inner_targets(i: usize) -> Result<CommitmentMapperInnerCircuitTargets> {
-    let target_bytes = read_from_file(&format!("{}_{}.plonky2_targets", CIRCUIT_NAME, i))?;
+    let target_bytes = read_from_file(&format!(
+        "{}/{}_{}.plonky2_targets",
+        CIRCUIT_DIR, CIRCUIT_NAME, i
+    ))?;
     let mut target_buffer = Buffer::new(&target_bytes);
 
     Ok(CommitmentMapperInnerCircuitTargets::read_targets(&mut target_buffer).unwrap())
 }
 
 fn get_first_level_targets() -> Result<ValidatorCommitmentTargets> {
-    let target_bytes = read_from_file(&format!("{}_{}.plonky2_targets", CIRCUIT_NAME, 0))?;
+    let target_bytes = read_from_file(&format!(
+        "{}/{}_0.plonky2_targets",
+        CIRCUIT_DIR, CIRCUIT_NAME
+    ))?;
     let mut target_buffer = Buffer::new(&target_bytes);
 
     Ok(ValidatorCommitmentTargets::read_targets(&mut target_buffer).unwrap())

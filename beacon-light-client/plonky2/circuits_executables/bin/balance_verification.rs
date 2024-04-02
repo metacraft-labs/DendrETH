@@ -44,6 +44,7 @@ use jemallocator::Jemalloc;
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
+const CIRCUIT_DIR: &str = "circuits";
 const CIRCUIT_NAME: &str = "balance_verification";
 
 enum Targets<const N: usize> {
@@ -74,14 +75,18 @@ async fn async_main() -> Result<()> {
     let mut proof_storage = create_proof_storage(&matches).await;
 
     println!("{}", "Loading circuit data...".yellow());
-    let circuit_data = load_circuit_data(&format!("{}_{}", CIRCUIT_NAME, &config.circuit_level))?;
+    let circuit_data = load_circuit_data(&format!(
+        "{}/{}_{}",
+        CIRCUIT_DIR, CIRCUIT_NAME, &config.circuit_level
+    ))?;
 
     let (inner_circuit_data, targets) = if config.circuit_level == 0 {
         (None, get_first_level_targets::<1>()?)
     } else {
         (
             Some(load_circuit_data(&format!(
-                "{}_{}",
+                "{}/{}_{}",
+                CIRCUIT_DIR,
                 CIRCUIT_NAME,
                 config.circuit_level - 1
             ))?),
@@ -344,7 +349,10 @@ async fn process_inner_level_job<const N: usize>(
 }
 
 fn get_first_level_targets<const N: usize>() -> Result<Targets<N>, anyhow::Error> {
-    let target_bytes = read_from_file(&format!("{}_{}.plonky2_targets", CIRCUIT_NAME, 0))?;
+    let target_bytes = read_from_file(&format!(
+        "{}/{}_0.plonky2_targets",
+        CIRCUIT_DIR, CIRCUIT_NAME
+    ))?;
     let mut target_buffer = Buffer::new(&target_bytes);
 
     Ok(Targets::FirstLevel(Some(
@@ -353,7 +361,10 @@ fn get_first_level_targets<const N: usize>() -> Result<Targets<N>, anyhow::Error
 }
 
 fn get_inner_level_targets<const N: usize>(level: u64) -> Result<Targets<N>> {
-    let target_bytes = read_from_file(&format!("{}_{}.plonky2_targets", CIRCUIT_NAME, level))?;
+    let target_bytes = read_from_file(&format!(
+        "{}/{}_{}.plonky2_targets",
+        CIRCUIT_DIR, CIRCUIT_NAME, level
+    ))?;
     let mut target_buffer = Buffer::new(&target_bytes);
 
     Ok(Targets::<N>::InnerLevel(Some(

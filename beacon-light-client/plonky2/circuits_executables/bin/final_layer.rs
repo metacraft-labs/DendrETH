@@ -24,6 +24,8 @@ use plonky2::{
 };
 use std::ops::Div;
 
+const CIRCUIT_DIR: &str = "circuits";
+
 fn main() -> Result<()> {
     future::block_on(async_main())
 }
@@ -107,8 +109,10 @@ async fn async_main() -> Result<()> {
         format!("Redis connection took: {:?}", elapsed).yellow()
     );
 
-    let balance_data = load_circuit_data("balance_verification_37").unwrap();
-    let commitment_data = load_circuit_data("commitment_mapper_40").unwrap();
+    let balance_data =
+        load_circuit_data(&format!("{}/balance_verification_37", CIRCUIT_DIR)).unwrap();
+    let commitment_data =
+        load_circuit_data(&format!("{}/commitment_mapper_40", CIRCUIT_DIR)).unwrap();
 
     let (circuit_targets, circuit_data) = build_final_circuit::<1>(&balance_data, &commitment_data);
 
