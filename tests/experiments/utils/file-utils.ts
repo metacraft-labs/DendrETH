@@ -1,12 +1,7 @@
 import fs from 'fs-extra';
 // import { execTask } from '../experiment';
 import { fromDepth } from './gindex';
-import {
-  childrenFromGIndex,
-  range,
-  isLeaf,
-  NodeData,
-} from './tree-utils';
+import { range, isLeaf, NodeData } from './tree-utils';
 import { fromGIndex, log2 } from './gindex';
 import { logWrite } from './common-utils';
 
@@ -60,8 +55,8 @@ export async function checkContent(gIndex: bigint) {
 }
 
 export function childLeafsExists(gIndex: bigint) {
-  const { leftChild, rightChild } = fromGIndex(gIndex);
-  return Promise.all([checkContent(leftChild), checkContent(rightChild)]).then(
+  const { left, right } = fromGIndex(gIndex);
+  return Promise.all([checkContent(left), checkContent(right)]).then(
     ([a, b]) => a && b,
   );
 }

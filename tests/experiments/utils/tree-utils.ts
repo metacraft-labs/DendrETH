@@ -41,17 +41,15 @@ export function* iterateTree({
   depth: bigint;
   lastLeafIndex?: bigint;
 }) {
-  console.log({ depth, lastLeafIndex });
   let lastIndex = lastLeafIndex ?? fromDepth(depth).levelEnd;
 
-  // let lastGIndex = fromDepth(depth).levelStart + lastIndex;
-
-  for (let level = depth; level >= 0; level--, lastIndex /= 2n) {
-    console.log({ level, lastIndex });
+  for (
+    let level = depth;
+    level >= 0;
+    level--, lastIndex = lastIndex / 2n + 1n
+  ) {
     for (let { levelIndex, gIndex } of iterateLevel(level, lastIndex)) {
-      // if (gIndex <= lastGIndex) {
       yield { levelIndex, gIndex, level };
-      // }
     }
   }
 }
@@ -65,8 +63,10 @@ export function* iterateLevel(
   lastLeafNodeIndex?: bigint,
 ): Generator<LevelIndexAndGIndex> {
   const { levelStart, levelEnd } = fromDepth(depth);
-  const end = lastLeafNodeIndex !== undefined ? levelStart + lastLeafNodeIndex : levelEnd;
-  console.log({ levelStart, end });
+  const end =
+    lastLeafNodeIndex !== undefined
+      ? levelStart + lastLeafNodeIndex
+      : levelEnd + 1n;
   return yield* range(levelStart, min(levelEnd + 1n, end));
 }
 
@@ -94,15 +94,15 @@ export function parentAndNeighbourFromGIndex(gIndex: bigint): {
       };
 }
 
-export function indexToGIndex(lastIndex: GIndex, depth: Depth): bigint {
-  return fromDepth(depth).levelStart + lastIndex - 1n;
+export function indexToGIndex(index: bigint, depth: Depth): GIndex {
+  return fromDepth(depth).levelStart + index;
 }
 
 export function gIndexToIndex(gIndex: GIndex, depth: Depth): bigint {
-  return gIndex - fromDepth(depth).levelStart + 1n;
+  return gIndex - fromDepth(depth).levelStart;
 }
 
-export function gIndexToLevel(gIndex: GIndex): Depth {
+export function gIndexToDepth(gIndex: GIndex): Depth {
   return fromGIndex(gIndex).depth;
 }
 
@@ -111,19 +111,3 @@ export function isLeaf(gIndex: GIndex, depth: Depth): boolean {
     gIndex >= fromDepth(depth).levelStart && gIndex <= fromDepth(depth).levelEnd
   );
 }
-
-// export function fromDepth(depth: bigint): {
-//   beg: bigint;
-//   end: bigint;
-//   levelBeg: bigint;
-//   levelEnd: bigint;
-//   elementCount: bigint;
-// } {
-//   return {
-//     beg: 1n,
-//     end: 2n ** depth - 1n,
-//     levelBeg: 2n ** (depth - 1n),
-//     levelEnd: 2n ** depth - 1n,
-//     elementCount: 2n ** (depth - 1n),
-//   };
-// }

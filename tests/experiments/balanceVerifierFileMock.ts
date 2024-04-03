@@ -6,7 +6,7 @@ import { readFile, writeFile, removeFile } from './utils/file-utils';
 import {
   NodeData,
   iterateTree,
-  gIndexToLevel,
+  gIndexToDepth,
   isLeaf,
 } from './utils/tree-utils';
 import { exampleLeafData, zeroHashes } from './utils/constants';
@@ -74,7 +74,7 @@ export class BVFileMock implements BalanceVerifier {
       if (left.isMissing && right.isMissing && true) {
         nodeData = {
           gIndex,
-          content: { gIndex, hash: zeroHashes[`${gIndexToLevel(gIndex)}`] }, // TODO: Use pre-calculated hash for this depth
+          content: { gIndex, hash: zeroHashes[`${gIndexToDepth(gIndex)}`] }, // TODO: Use pre-calculated hash for this depth
           isMissing: true,
         };
       } else

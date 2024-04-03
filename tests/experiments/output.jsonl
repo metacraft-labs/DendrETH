@@ -1,0 +1,9 @@
+{"runtimeMilliseconds":5,"config":{"logWrites":false,"removeCompleteTasks":false,"depth":"4","validatorCount":"4","sparseAmount":"1"}}
+{"runtimeMilliseconds":3,"config":{"logWrites":false,"removeCompleteTasks":false,"depth":"4","validatorCount":"8","sparseAmount":"3"}}
+{"runtimeMilliseconds":5,"config":{"logWrites":false,"removeCompleteTasks":false,"depth":"20","validatorCount":"8","sparseAmount":"3"}}
+{"runtimeMilliseconds":107,"config":{"logWrites":false,"removeCompleteTasks":false,"depth":"20","validatorCount":"1024","sparseAmount":"3"}}
+{"runtimeMilliseconds":82,"config":{"logWrites":false,"removeCompleteTasks":false,"depth":"24","validatorCount":"1024","sparseAmount":"3"}}
+{"runtimeMilliseconds":17,"config":{"logWrites":false,"removeCompleteTasks":false,"depth":"37","validatorCount":"8","sparseAmount":"3"}}
+{"runtimeMilliseconds":58,"config":{"logWrites":false,"removeCompleteTasks":false,"depth":"37","validatorCount":"1024","sparseAmount":"3"}}
+{"runtimeMilliseconds":4175,"config":{"logWrites":false,"removeCompleteTasks":false,"depth":"37","validatorCount":"65536","sparseAmount":"3"}}
+{"runtimeMilliseconds":96375,"config":{"logWrites":false,"removeCompleteTasks":false,"depth":"37","validatorCount":"1048576","sparseAmount":"3"}}
