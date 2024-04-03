@@ -7024,7 +7024,7 @@ __metadata:
     hardhat: "npm:^2.22.0"
     js-yaml: "npm:^4.1.0"
     redis: "npm:^4.6.5"
-    snarkit2: "https://github.com/fluidex/snarkit2#70142d8bbc5ec79cfa6869205263ff77e8423975"
+    snarkit2: "git+https://git@github.com/fluidex/snarkit2.git#commit=70142d8bbc5ec79cfa6869205263ff77e8423975"
     snarkjs: "https://github.com/metacraft-labs/snarkjs.git#commit=091ee9c3744c660b0ecd961f9197a8249a8f7d3b"
     ts-node: "npm:^10.9.1"
     tsx: "npm:^4.7.1"
@@ -14703,9 +14703,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"snarkit2@https://github.com/fluidex/snarkit2#70142d8bbc5ec79cfa6869205263ff77e8423975":
+"snarkit2@git+https://git@github.com/fluidex/snarkit2.git#commit=70142d8bbc5ec79cfa6869205263ff77e8423975":
   version: 0.2.0
-  resolution: "snarkit2@git+ssh://git@github.com/fluidex/snarkit2.git#commit=70142d8bbc5ec79cfa6869205263ff77e8423975"
+  resolution: "snarkit2@https://git@github.com/fluidex/snarkit2.git#commit=70142d8bbc5ec79cfa6869205263ff77e8423975"
   dependencies:
     "@iden3/binfileutils": "npm:^0.0.8"
     chai: "npm:^4.3.4"
