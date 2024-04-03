@@ -1,5 +1,0 @@
-{"runtimeMilliseconds":11,"config":{"logWrites":false,"removeCompleteTasks":false,"depth":"4","validatorCount":"4","sparseAmount":"1"}}
-{"runtimeMilliseconds":2,"config":{"logWrites":false,"removeCompleteTasks":false,"depth":"4","validatorCount":"8","sparseAmount":"3"}}
-{"runtimeMilliseconds":2118,"config":{"logWrites":false,"removeCompleteTasks":false,"depth":"20","validatorCount":"8","sparseAmount":"3"}}
-{"runtimeMilliseconds":43,"config":{"logWrites":false,"removeCompleteTasks":false,"depth":"20","validatorCount":"1024","sparseAmount":"3"}}
-{"runtimeMilliseconds":297,"config":{"logWrites":false,"removeCompleteTasks":false,"depth":"24","validatorCount":"1024","sparseAmount":"3"}}
