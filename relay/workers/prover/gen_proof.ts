@@ -19,7 +19,7 @@ export default async function genProof(
 
   let mock = Boolean(process.env.MOCK);
 
-  const proof = await prover.genProof(proofInput, mock);
+  const proof = await prover.genProof(proofInput);
 
   await redis.saveProof(proofInput.prevUpdateSlot, proofInput.updateSlot, {
     ...proofInput,
