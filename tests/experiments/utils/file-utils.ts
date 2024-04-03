@@ -1,8 +1,8 @@
 import fs from 'fs-extra';
 // import { execTask } from '../experiment';
+import { fromDepth } from './gindex';
 import {
   childrenFromGIndex,
-  fromDepth,
   range,
   isLeaf,
   NodeData,

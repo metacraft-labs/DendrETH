@@ -16,30 +16,29 @@ import {
 import { fromDepth, log2 } from './gindex';
 
 describe('Tree Utils Tests', () => {
-  function testIterator<T>(iterator: Generator<T>, expectedIndices: T[]) {
-    // console.log([...iterator]);
-    expect([...iterator]).toEqual(expectedIndices);
+  function testIterator<T>(iterable: Iterable<T>, expectedElements: T[]) {
+    expect([...iterable]).toEqual(expectedElements);
   }
 
   describe('iterateTree', () => {
     test('generates correct indices and gIndices for a given depth with no leaf restrictions', () => {
       const iterator = iterateTree({ depth: 4n });
       const expectedIndices = [
-        { indexOnThisLevel: 1n, gIndex: 8n, level: 4n },
-        { indexOnThisLevel: 2n, gIndex: 9n, level: 4n },
-        { indexOnThisLevel: 3n, gIndex: 10n, level: 4n },
-        { indexOnThisLevel: 4n, gIndex: 11n, level: 4n },
-        { indexOnThisLevel: 5n, gIndex: 12n, level: 4n },
-        { indexOnThisLevel: 6n, gIndex: 13n, level: 4n },
-        { indexOnThisLevel: 7n, gIndex: 14n, level: 4n },
-        { indexOnThisLevel: 8n, gIndex: 15n, level: 4n },
-        { indexOnThisLevel: 1n, gIndex: 4n, level: 3n },
-        { indexOnThisLevel: 2n, gIndex: 5n, level: 3n },
-        { indexOnThisLevel: 3n, gIndex: 6n, level: 3n },
-        { indexOnThisLevel: 4n, gIndex: 7n, level: 3n },
-        { indexOnThisLevel: 1n, gIndex: 2n, level: 2n },
-        { indexOnThisLevel: 2n, gIndex: 3n, level: 2n },
-        { indexOnThisLevel: 1n, gIndex: 1n, level: 1n },
+        { levelIndex: 1n, gIndex: 8n, level: 4n },
+        { levelIndex: 2n, gIndex: 9n, level: 4n },
+        { levelIndex: 3n, gIndex: 10n, level: 4n },
+        { levelIndex: 4n, gIndex: 11n, level: 4n },
+        { levelIndex: 5n, gIndex: 12n, level: 4n },
+        { levelIndex: 6n, gIndex: 13n, level: 4n },
+        { levelIndex: 7n, gIndex: 14n, level: 4n },
+        { levelIndex: 8n, gIndex: 15n, level: 4n },
+        { levelIndex: 1n, gIndex: 4n, level: 3n },
+        { levelIndex: 2n, gIndex: 5n, level: 3n },
+        { levelIndex: 3n, gIndex: 6n, level: 3n },
+        { levelIndex: 4n, gIndex: 7n, level: 3n },
+        { levelIndex: 1n, gIndex: 2n, level: 2n },
+        { levelIndex: 2n, gIndex: 3n, level: 2n },
+        { levelIndex: 1n, gIndex: 1n, level: 1n },
       ];
 
       testIterator(iterator, expectedIndices);
@@ -49,21 +48,21 @@ describe('Tree Utils Tests', () => {
       const iterator = iterateTree({ depth: 4n, lastLeafIndex: 5n });
       const expectedIndices = [
         // Do not remove the comments below, they are used to keep track of the expected indices
-        { indexOnThisLevel: 1n, gIndex: 8n, level: 4n },
-        { indexOnThisLevel: 2n, gIndex: 9n, level: 4n },
-        { indexOnThisLevel: 3n, gIndex: 10n, level: 4n },
-        { indexOnThisLevel: 4n, gIndex: 11n, level: 4n },
-        { indexOnThisLevel: 5n, gIndex: 12n, level: 4n },
-        // { indexOnThisLevel: 6n, gIndex: 13n, level: 4n },
-        // { indexOnThisLevel: 7n, gIndex: 14n, level: 4n },
-        // { indexOnThisLevel: 8n, gIndex: 15n, level: 4n },
-        { indexOnThisLevel: 1n, gIndex: 4n, level: 3n },
-        { indexOnThisLevel: 2n, gIndex: 5n, level: 3n },
-        { indexOnThisLevel: 3n, gIndex: 6n, level: 3n },
-        // { indexOnThisLevel: 4n, gIndex: 7n, level: 3n },
-        { indexOnThisLevel: 1n, gIndex: 2n, level: 2n },
-        { indexOnThisLevel: 2n, gIndex: 3n, level: 2n },
-        { indexOnThisLevel: 1n, gIndex: 1n, level: 1n },
+        { levelIndex: 1n, gIndex: 8n, level: 4n },
+        { levelIndex: 2n, gIndex: 9n, level: 4n },
+        { levelIndex: 3n, gIndex: 10n, level: 4n },
+        { levelIndex: 4n, gIndex: 11n, level: 4n },
+        { levelIndex: 5n, gIndex: 12n, level: 4n },
+        // { levelIndex: 6n, gIndex: 13n, level: 4n },
+        // { levelIndex: 7n, gIndex: 14n, level: 4n },
+        // { levelIndex: 8n, gIndex: 15n, level: 4n },
+        { levelIndex: 1n, gIndex: 4n, level: 3n },
+        { levelIndex: 2n, gIndex: 5n, level: 3n },
+        { levelIndex: 3n, gIndex: 6n, level: 3n },
+        // { levelIndex: 4n, gIndex: 7n, level: 3n },
+        { levelIndex: 1n, gIndex: 2n, level: 2n },
+        { levelIndex: 2n, gIndex: 3n, level: 2n },
+        { levelIndex: 1n, gIndex: 1n, level: 1n },
       ];
 
       // console.log([...iterator]);
@@ -75,48 +74,48 @@ describe('Tree Utils Tests', () => {
   describe('iterateLevel', () => {
     test('xxxxxxx', () => {
       console.log(...iterateLevel(0n));
-      testIterator(iterateLevel(0n), [{ gIndex: 1n, indexOnThisLevel: 0n }]);
+      testIterator(iterateLevel(0n), [{ gIndex: 1n, levelIndex: 0n }]);
 
       //   testIterator(iterateLevel(1n), [
-      //     { gIndex: 2n, indexOnThisLevel: 0n },
-      //     { gIndex: 3n, indexOnThisLevel: 1n },
+      //     { gIndex: 2n, levelIndex: 0n },
+      //     { gIndex: 3n, levelIndex: 1n },
       //   ]);
 
       //   testIterator(iterateLevel(2n), [
-      //     { gIndex: 4n, indexOnThisLevel: 0n },
-      //     { gIndex: 5n, indexOnThisLevel: 1n },
-      //     { gIndex: 6n, indexOnThisLevel: 2n },
-      //     { gIndex: 7n, indexOnThisLevel: 3n },
+      //     { gIndex: 4n, levelIndex: 0n },
+      //     { gIndex: 5n, levelIndex: 1n },
+      //     { gIndex: 6n, levelIndex: 2n },
+      //     { gIndex: 7n, levelIndex: 3n },
       //   ]);
 
       //   testIterator(iterateLevel(3n), [
-      //     { gIndex: 8n, indexOnThisLevel: 0n },
-      //     { gIndex: 9n, indexOnThisLevel: 1n },
-      //     { gIndex: 10n, indexOnThisLevel: 2n },
-      //     { gIndex: 11n, indexOnThisLevel: 3n },
-      //     { gIndex: 12n, indexOnThisLevel: 4n },
-      //     { gIndex: 13n, indexOnThisLevel: 5n },
-      //     { gIndex: 14n, indexOnThisLevel: 6n },
-      //     { gIndex: 15n, indexOnThisLevel: 7n },
+      //     { gIndex: 8n, levelIndex: 0n },
+      //     { gIndex: 9n, levelIndex: 1n },
+      //     { gIndex: 10n, levelIndex: 2n },
+      //     { gIndex: 11n, levelIndex: 3n },
+      //     { gIndex: 12n, levelIndex: 4n },
+      //     { gIndex: 13n, levelIndex: 5n },
+      //     { gIndex: 14n, levelIndex: 6n },
+      //     { gIndex: 15n, levelIndex: 7n },
       //   ]);
 
       //   testIterator(iterateLevel(4n), [
-      //     { gIndex: 16n, indexOnThisLevel: 0n },
-      //     { gIndex: 17n, indexOnThisLevel: 1n },
-      //     { gIndex: 18n, indexOnThisLevel: 2n },
-      //     { gIndex: 19n, indexOnThisLevel: 3n },
-      //     { gIndex: 20n, indexOnThisLevel: 4n },
-      //     { gIndex: 21n, indexOnThisLevel: 5n },
-      //     { gIndex: 22n, indexOnThisLevel: 6n },
-      //     { gIndex: 23n, indexOnThisLevel: 7n },
-      //     { gIndex: 24n, indexOnThisLevel: 8n },
-      //     { gIndex: 25n, indexOnThisLevel: 9n },
-      //     { gIndex: 26n, indexOnThisLevel: 10n },
-      //     { gIndex: 27n, indexOnThisLevel: 11n },
-      //     { gIndex: 28n, indexOnThisLevel: 12n },
-      //     { gIndex: 29n, indexOnThisLevel: 13n },
-      //     { gIndex: 30n, indexOnThisLevel: 14n },
-      //     { gIndex: 31n, indexOnThisLevel: 15n },
+      //     { gIndex: 16n, levelIndex: 0n },
+      //     { gIndex: 17n, levelIndex: 1n },
+      //     { gIndex: 18n, levelIndex: 2n },
+      //     { gIndex: 19n, levelIndex: 3n },
+      //     { gIndex: 20n, levelIndex: 4n },
+      //     { gIndex: 21n, levelIndex: 5n },
+      //     { gIndex: 22n, levelIndex: 6n },
+      //     { gIndex: 23n, levelIndex: 7n },
+      //     { gIndex: 24n, levelIndex: 8n },
+      //     { gIndex: 25n, levelIndex: 9n },
+      //     { gIndex: 26n, levelIndex: 10n },
+      //     { gIndex: 27n, levelIndex: 11n },
+      //     { gIndex: 28n, levelIndex: 12n },
+      //     { gIndex: 29n, levelIndex: 13n },
+      //     { gIndex: 30n, levelIndex: 14n },
+      //     { gIndex: 31n, levelIndex: 15n },
       //   ]);
     });
 
@@ -126,27 +125,19 @@ describe('Tree Utils Tests', () => {
       expect(levelEnd).toBe(1n);
       testIterator(iterateLevel(0n, 0n), []);
 
-      testIterator(iterateLevel(0n, 1n), [
-        { gIndex: 1n, indexOnThisLevel: 0n },
-      ]);
+      testIterator(iterateLevel(0n, 1n), [{ gIndex: 1n, levelIndex: 0n }]);
 
-      testIterator(iterateLevel(0n, 2n), [
-        { gIndex: 1n, indexOnThisLevel: 0n },
-      ]);
+      testIterator(iterateLevel(0n, 2n), [{ gIndex: 1n, levelIndex: 0n }]);
 
-      testIterator(iterateLevel(0n, 3n), [
-        { gIndex: 1n, indexOnThisLevel: 0n },
-      ]);
+      testIterator(iterateLevel(0n, 3n), [{ gIndex: 1n, levelIndex: 0n }]);
 
       testIterator(iterateLevel(1n, 0n), []);
 
-      testIterator(iterateLevel(1n, 1n), [
-        { gIndex: 2n, indexOnThisLevel: 0n },
-      ]);
+      testIterator(iterateLevel(1n, 1n), [{ gIndex: 2n, levelIndex: 0n }]);
 
       testIterator(iterateLevel(1n, 2n), [
-        { gIndex: 2n, indexOnThisLevel: 0n },
-        { gIndex: 3n, indexOnThisLevel: 1n },
+        { gIndex: 2n, levelIndex: 0n },
+        { gIndex: 3n, levelIndex: 1n },
       ]);
 
       const depth = 2n;
@@ -154,10 +145,10 @@ describe('Tree Utils Tests', () => {
       const iterator = iterateLevel(depth, leafNodes);
       const expectedIndices = [
         // Do not remove the comments below, they are used to keep track of the expected indices
-        { gIndex: 4n, indexOnThisLevel: 0n },
-        { gIndex: 5n, indexOnThisLevel: 1n },
-        // { gIndex: 6n, indexOnThisLevel: 2n },
-        // { gIndex: 7n, indexOnThisLevel: 3n },
+        { gIndex: 4n, levelIndex: 0n },
+        { gIndex: 5n, levelIndex: 1n },
+        // { gIndex: 6n, levelIndex: 2n },
+        // { gIndex: 7n, levelIndex: 3n },
       ];
 
       testIterator(iterator, expectedIndices);
@@ -170,9 +161,9 @@ describe('Tree Utils Tests', () => {
       const end = 8n;
       const iterator = range(begin, end);
       const expectedIndices = [
-        { indexOnThisLevel: 0n, gIndex: 5n },
-        { indexOnThisLevel: 1n, gIndex: 6n },
-        { indexOnThisLevel: 2n, gIndex: 7n },
+        { levelIndex: 0n, gIndex: 5n },
+        { levelIndex: 1n, gIndex: 6n },
+        { levelIndex: 2n, gIndex: 7n },
       ];
 
       testIterator(iterator, expectedIndices);

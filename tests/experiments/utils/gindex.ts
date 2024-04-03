@@ -21,11 +21,11 @@ export class GIndexWrapper {
   }
 
   get levelStart(): GIndex {
-    return 2n ** log2(this.gIndex);
+    return 2n ** this.depth;
   }
 
   get levelIndex(): bigint {
-    return this.gIndex - fromDepth(this.depth).levelStart + 1n;
+    return this.gIndex - this.levelStart;
   }
 
   get left(): GIndex {
@@ -73,6 +73,10 @@ export class DepthWrapper {
 }
 
 export function log2(x: bigint) {
+  if (x <= 0n) {
+    throw new Error('log2: x must be greater than 0');
+  }
+
   let result = 0n;
   while (x > 1n) {
     x = x / 2n;

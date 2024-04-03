@@ -1,18 +1,84 @@
 import { describe, test, expect } from '@jest/globals';
 
 import { fromDepth, fromGIndex, log2 } from './gindex';
+import { stringify } from './common-utils';
 
 describe('GIndex Tests', () => {
+  describe('log2', () => {
+    test('log2(0) throws error', () => {
+      expect(() => log2(0n)).toThrowError('log2: x must be greater than 0');
+    });
+
+    test('log2(1) == 0', () => {
+      expect(log2(1n)).toBe(0n);
+    });
+
+    test('log2(2) == 1', () => {
+      expect(log2(2n)).toBe(1n);
+    });
+
+    test('log2(3) == 1', () => {
+      expect(log2(3n)).toBe(1n);
+    });
+
+    test('log2(4) == 2', () => {
+      expect(log2(4n)).toBe(2n);
+    });
+
+    test('log2(8) == 3', () => {
+      expect(log2(8n)).toBe(3n);
+    });
+
+    // test with 15
+    test('log2(15) == 3', () => {
+      expect(log2(15n)).toBe(3n);
+    });
+
+    test('log2(16) == 4', () => {
+      expect(log2(16n)).toBe(4n);
+    });
+
+    test('log2(32) == 5', () => {
+      expect(log2(32n)).toBe(5n);
+    });
+
+    test('log2(64) == 6', () => {
+      expect(log2(64n)).toBe(6n);
+    });
+
+    test('log2(128) == 7', () => {
+      expect(log2(128n)).toBe(7n);
+    });
+
+    test('log2(173) == 7', () => {
+      expect(log2(173n)).toBe(7n);
+    });
+
+    test('log2(256) == 8', () => {
+      expect(log2(256n)).toBe(8n);
+    });
+
+    test('log2(512) == 9', () => {
+      expect(log2(512n)).toBe(9n);
+    });
+
+    test('log2(1024) == 10', () => {
+      expect(log2(1024n)).toBe(10n);
+    });
+  });
+
   describe('Depth', () => {
-    test('depth == 1', () => {
-      expect({ ...fromDepth(0n) }).toEqual({
-        depth: 0n,
-        first: 1n,
-        last: 1n,
-        levelStart: 1n,
-        levelEnd: 1n,
-        elementCount: 1n,
-      });
+    test('depth == 0', () => {
+      expect(fromDepth(0n)).toEqual(
+        expect.objectContaining({
+          depth: 0n,
+          first: 1n,
+          last: 1n,
+          levelStart: 1n,
+          levelEnd: 1n,
+          elementCount: 1n,
+        }),
+      );
     });
 
     test('depth == 1', () => {
@@ -141,7 +207,7 @@ describe('GIndex Tests', () => {
       expect(fromGIndex(1n)).toEqual(
         expect.objectContaining({
           gIndex: 1n,
-          level: 0n,
+          depth: 0n,
           levelStart: 1n,
           levelIndex: 0n,
           left: 2n,
@@ -155,7 +221,7 @@ describe('GIndex Tests', () => {
       expect(fromGIndex(2n)).toEqual(
         expect.objectContaining({
           gIndex: 2n,
-          level: 1n,
+          depth: 1n,
           levelStart: 2n,
           levelIndex: 0n,
           left: 4n,
@@ -169,7 +235,7 @@ describe('GIndex Tests', () => {
       expect(fromGIndex(3n)).toEqual(
         expect.objectContaining({
           gIndex: 3n,
-          level: 1n,
+          depth: 1n,
           levelStart: 2n,
           levelIndex: 1n,
           left: 6n,
@@ -183,7 +249,7 @@ describe('GIndex Tests', () => {
       expect(fromGIndex(4n)).toEqual(
         expect.objectContaining({
           gIndex: 4n,
-          level: 2n,
+          depth: 2n,
           levelStart: 4n,
           levelIndex: 0n,
           left: 8n,
@@ -197,7 +263,7 @@ describe('GIndex Tests', () => {
       expect(fromGIndex(5n)).toEqual(
         expect.objectContaining({
           gIndex: 5n,
-          level: 2n,
+          depth: 2n,
           levelStart: 4n,
           levelIndex: 1n,
           left: 10n,
@@ -211,7 +277,7 @@ describe('GIndex Tests', () => {
       expect(fromGIndex(6n)).toEqual(
         expect.objectContaining({
           gIndex: 6n,
-          level: 2n,
+          depth: 2n,
           levelStart: 4n,
           levelIndex: 2n,
           left: 12n,
@@ -225,7 +291,7 @@ describe('GIndex Tests', () => {
       expect(fromGIndex(7n)).toEqual(
         expect.objectContaining({
           gIndex: 7n,
-          level: 2n,
+          depth: 2n,
           levelStart: 4n,
           levelIndex: 3n,
           left: 14n,
@@ -239,7 +305,7 @@ describe('GIndex Tests', () => {
       expect(fromGIndex(8n)).toEqual(
         expect.objectContaining({
           gIndex: 8n,
-          level: 3n,
+          depth: 3n,
           levelStart: 8n,
           levelIndex: 0n,
           left: 16n,
@@ -253,7 +319,7 @@ describe('GIndex Tests', () => {
       expect(fromGIndex(9n)).toEqual(
         expect.objectContaining({
           gIndex: 9n,
-          level: 3n,
+          depth: 3n,
           levelStart: 8n,
           levelIndex: 1n,
           left: 18n,
@@ -267,7 +333,7 @@ describe('GIndex Tests', () => {
       expect(fromGIndex(10n)).toEqual(
         expect.objectContaining({
           gIndex: 10n,
-          level: 3n,
+          depth: 3n,
           levelStart: 8n,
           levelIndex: 2n,
           left: 20n,
@@ -281,7 +347,7 @@ describe('GIndex Tests', () => {
       expect(fromGIndex(11n)).toEqual(
         expect.objectContaining({
           gIndex: 11n,
-          level: 3n,
+          depth: 3n,
           levelStart: 8n,
           levelIndex: 3n,
           left: 22n,
@@ -295,7 +361,7 @@ describe('GIndex Tests', () => {
       expect(fromGIndex(12n)).toEqual(
         expect.objectContaining({
           gIndex: 12n,
-          level: 3n,
+          depth: 3n,
           levelStart: 8n,
           levelIndex: 4n,
           left: 24n,
@@ -309,7 +375,7 @@ describe('GIndex Tests', () => {
       expect(fromGIndex(13n)).toEqual(
         expect.objectContaining({
           gIndex: 13n,
-          level: 3n,
+          depth: 3n,
           levelStart: 8n,
           levelIndex: 5n,
           left: 26n,
@@ -323,7 +389,7 @@ describe('GIndex Tests', () => {
       expect(fromGIndex(14n)).toEqual(
         expect.objectContaining({
           gIndex: 14n,
-          level: 3n,
+          depth: 3n,
           levelStart: 8n,
           levelIndex: 6n,
           left: 28n,
@@ -337,7 +403,7 @@ describe('GIndex Tests', () => {
       expect(fromGIndex(15n)).toEqual(
         expect.objectContaining({
           gIndex: 15n,
-          level: 3n,
+          depth: 3n,
           levelStart: 8n,
           levelIndex: 7n,
           left: 30n,
@@ -351,12 +417,54 @@ describe('GIndex Tests', () => {
       expect(fromGIndex(16n)).toEqual(
         expect.objectContaining({
           gIndex: 16n,
-          level: 4n,
+          depth: 4n,
           levelStart: 16n,
           levelIndex: 0n,
           left: 32n,
           right: 33n,
           parent: 8n,
+        }),
+      );
+    });
+
+    test('gIndex == 1022', () => {
+      expect(fromGIndex(1022n)).toEqual(
+        expect.objectContaining({
+          gIndex: 1022n,
+          depth: 9n,
+          levelStart: 512n,
+          levelIndex: 510n,
+          left: 2044n,
+          right: 2045n,
+          parent: 511n,
+        }),
+      );
+    });
+
+    test('gIndex == 1023', () => {
+      expect(fromGIndex(1023n)).toEqual(
+        expect.objectContaining({
+          gIndex: 1023n,
+          depth: 9n,
+          levelStart: 512n,
+          levelIndex: 511n,
+          left: 2046n,
+          right: 2047n,
+          parent: 511n,
+        }),
+      );
+    });
+
+    test('gIndex == 1024', () => {
+      expect(fromGIndex(1024n)).toEqual(
+        expect.objectContaining({
+          gIndex: 1024n,
+          depth: 10n,
+          levelStart: 1024n,
+          levelIndex: 0n,
+          left: 2048n,
+          right: 2049n,
+          parent: 512n,
         }),
       );
     });

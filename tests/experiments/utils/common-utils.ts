@@ -1,7 +1,7 @@
 import { log } from '../logging';
 
 export interface LevelIndexAndGIndex {
-  indexOnThisLevel: bigint;
+  levelIndex: bigint;
   gIndex: bigint;
 }
 
