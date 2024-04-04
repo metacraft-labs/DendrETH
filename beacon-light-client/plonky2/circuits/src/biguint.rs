@@ -1,5 +1,4 @@
 use core::marker::PhantomData;
-use std::println;
 
 use num::{BigUint, Integer, Zero};
 use plonky2::field::extension::Extendable;

@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import { promisify } from 'node:util';
 import { exec as exec_ } from 'node:child_process';
 import { sha256 } from 'ethers/lib/utils';
+import { assert } from 'console';
 
 const exec = promisify(exec_);
 
@@ -223,4 +224,19 @@ export async function loopWhile<T>(
 export function panic(message: string): never {
   console.error(message);
   return process.exit(1);
+}
+
+export function getBigIntFromLimbs(limbs: number[]): bigint {
+  let result = 0n;
+
+  for (let i = 0; i < limbs.length; i++) {
+    assert(
+      Number.isInteger(limbs[i]) && 0 <= limbs[i] && limbs[i] <= 0xffffffff,
+      'Each word must fit in uint32',
+    );
+
+    result |= BigInt(limbs[i]) << BigInt(32 * i);
+  }
+
+  return result;
 }

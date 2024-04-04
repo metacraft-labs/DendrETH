@@ -194,7 +194,7 @@ async fn async_main() -> Result<()> {
         &mut con,
         &proof,
         final_input_data
-            .state_root
+            .block_root
             .iter()
             .map(|x| *x as u64)
             .collect::<Vec<u64>>(),

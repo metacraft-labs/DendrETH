@@ -19,7 +19,7 @@ use crate::{
     build_validator_balance_circuit::ValidatorBalanceProofTargetsExt,
     is_valid_merkle_branch::{is_valid_merkle_branch_sha256, IsValidMerkleBranchTargets},
     sha256::make_circuits,
-    utils::{create_bool_target_array, ssz_num_to_bits, ETH_SHA256_BIT_SIZE},
+    utils::{create_bool_target_array, ssz_num_to_bits, ETH_SHA256_BIT_SIZE, biguint_to_bits_target},
 };
 
 pub struct BalanceFinalLayerTargets {
@@ -156,15 +156,19 @@ pub fn build_final_circuit<const N: usize>(
 
     let public_inputs_hasher = make_circuits(
         &mut builder,
-        ((N + 2) * ETH_SHA256_BIT_SIZE + 3 * 64) as u64,
+        ((N + 2) * ETH_SHA256_BIT_SIZE) as u64,
     );
 
-    let final_sum_bits = ssz_num_to_bits(&mut builder, &balance_sum, 64);
+    let final_sum_bits = biguint_to_bits_target::<F, D, 2>(&mut builder, &balance_sum);
 
     let flattened_withdrawal_credentials = withdrawal_credentials
         .iter()
         .flat_map(|array| array.iter())
         .collect_vec();
+
+    for i in 0..ETH_SHA256_BIT_SIZE {
+        builder.connect(public_inputs_hasher.message[i].target, block_root[i].target);
+    }
 
     for i in 0..ETH_SHA256_BIT_SIZE * N {
         builder.connect(
@@ -173,31 +177,40 @@ pub fn build_final_circuit<const N: usize>(
         );
     }
 
-    for i in 0..ETH_SHA256_BIT_SIZE {
-        builder.connect(public_inputs_hasher.message[i].target, state_root[i].target);
+    let number_of_non_activated_validators_bits = builder
+        .split_le(number_of_non_activated_validators, 64)
+        .into_iter()
+        .rev()
+        .collect_vec();
 
+    let number_of_active_validators_bits = builder
+        .split_le(number_of_active_validators, 64)
+        .into_iter()
+        .rev()
+        .collect_vec();
+
+    let number_of_exited_validators_bits = builder
+        .split_le(number_of_exited_validators, 64)
+        .into_iter()
+        .rev()
+        .collect_vec();
+
+
+    for i in 0..64 {
         builder.connect(
             public_inputs_hasher.message[(N + 1) * ETH_SHA256_BIT_SIZE + i].target,
             final_sum_bits[i].target,
         );
-    }
-
-    let number_of_non_activated_validators_bits =
-        builder.split_le(number_of_non_activated_validators, 64);
-    let number_of_active_validators_bits = builder.split_le(number_of_active_validators, 64);
-    let number_of_exited_validators_bits = builder.split_le(number_of_exited_validators, 64);
-
-    for i in 0..64 {
         builder.connect(
-            public_inputs_hasher.message[(N + 2) * ETH_SHA256_BIT_SIZE + i].target,
+            public_inputs_hasher.message[(N + 1) * ETH_SHA256_BIT_SIZE + 64 + i].target,
             number_of_non_activated_validators_bits[i].target,
         );
         builder.connect(
-            public_inputs_hasher.message[(N + 2) * ETH_SHA256_BIT_SIZE + 64 + i].target,
+            public_inputs_hasher.message[(N + 1) * ETH_SHA256_BIT_SIZE + 128 + i].target,
             number_of_active_validators_bits[i].target,
         );
         builder.connect(
-            public_inputs_hasher.message[(N + 2) * ETH_SHA256_BIT_SIZE + 128 + i].target,
+            public_inputs_hasher.message[(N + 1) * ETH_SHA256_BIT_SIZE + 192 + i].target,
             number_of_exited_validators_bits[i].target,
         );
     }

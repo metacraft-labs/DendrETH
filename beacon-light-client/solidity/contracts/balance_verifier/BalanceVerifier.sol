@@ -81,10 +81,9 @@ contract BalanceVerifier is PlonkVerifier, LidoZKOracle {
 
     bytes32 commitment = sha256(concataneted);
 
-    uint256[2] memory publicInputs = [
-      VERIFIER_DIGEST,
-      (uint256(commitment) & ((1 << 253) - 1))
-    ];
+    uint256[] memory publicInputs = new uint256[](2);
+    publicInputs[0] = VERIFIER_DIGEST;
+    publicInputs[1] = (uint256(commitment) & ((1 << 253) - 1));
 
     // Encode the call to the `verify` function with the public inputs
     bytes memory data = abi.encodeWithSelector(
