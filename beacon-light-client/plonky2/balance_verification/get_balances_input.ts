@@ -8,56 +8,53 @@ import { KeyPrefix, WorkQueue, Item } from '@mevitae/redis-work-queue';
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
 import { computeEpochAt } from '@dendreth/utils/ts-utils/ssz-utils';
 import { panic } from '@dendreth/utils/ts-utils/common-utils';
-import { CommandLineOptionsBuilder } from '../cmdline';
-import config from '../common_config.json';
 import {
   convertValidatorToValidatorPoseidonInput,
   getZeroValidatorPoseidonInput,
 } from './utils';
+import commonConfig from '../common_config.json';
+
+const commonConfigChecked = commonConfig satisfies CommonConfig;
 
 const CIRCUIT_SIZE = 8;
-let TAKE: number;
 
-(async () => {
+export type GetBalancesInputConfigRequiredFields = {
+  withdrawCredentials: string;
+};
+
+export type GetBalancesInputConfig = GetBalancesInputConfigRequiredFields & {
+  beaconNodeUrls: string[];
+  slot?: number;
+  take: number;
+  offset?: number;
+  redisHost: string;
+  redisPort: number;
+};
+
+export type GetBalancesInputParameterType =
+  GetBalancesInputConfigRequiredFields & Partial<GetBalancesInputConfig>;
+
+function getDefaultBalancesConfig(): Omit<
+  GetBalancesInputConfig,
+  keyof GetBalancesInputConfigRequiredFields
+> {
+  return {
+    beaconNodeUrls: commonConfigChecked['beacon-node'],
+    slot: undefined,
+    take: Infinity,
+    offset: undefined,
+    redisHost: commonConfigChecked['redis-host'],
+    redisPort: Number(commonConfigChecked['redis-port']),
+  };
+}
+
+export async function getBalancesInput(options: GetBalancesInputParameterType) {
+  const config = { ...getDefaultBalancesConfig(), ...options };
+
   const { ssz } = await import('@lodestar/types');
+  const redis = new RedisLocal(config.redisHost, config.redisPort);
 
-  const options = new CommandLineOptionsBuilder()
-    .usage(
-      'Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>',
-    )
-    .withRedisOpts()
-    .option('beacon-node', {
-      alias: 'beacon-node',
-      describe: 'The beacon node url',
-      type: 'array',
-      default: config['beacon-node'],
-      description: 'Sets a custom beacon node url',
-    })
-    .option('slot', {
-      alias: 'slot',
-      describe: 'The state slot',
-      type: 'number',
-      default: undefined,
-      description: 'Fetches the balances for this slot',
-    })
-    .option('take', {
-      alias: 'take',
-      describe: 'The number of validators to take',
-      type: 'number',
-      default: Infinity,
-      description: 'Sets the number of validators to take',
-    })
-    .option('offset', {
-      alias: 'offset',
-      describe: 'Index offset in the validator set',
-      type: 'number',
-      default: undefined,
-    })
-    .build();
-
-  const redis = new RedisLocal(options['redis-host'], options['redis-port']);
-
-  TAKE = options['take'];
+  const withdrawCredentials = config.withdrawCredentials;
 
   const queues: any[] = [];
 
@@ -79,11 +76,11 @@ let TAKE: number;
     ),
   );
 
-  const beaconApi = await getBeaconApi(options['beacon-node']);
+  const beaconApi = await getBeaconApi(config.beaconNodeUrls);
 
   const slot =
-    options['slot'] !== undefined
-      ? BigInt(options['slot'])
+    config.slot !== undefined
+      ? BigInt(config.slot)
       : await beaconApi.getHeadSlot();
   const { beaconState } =
     (await beaconApi.getBeaconState(slot)) ||
@@ -91,13 +88,13 @@ let TAKE: number;
 
   const currentSSZFork = await beaconApi.getCurrentSSZ(slot);
 
-  const offset = Number(options['offset']) || 0;
-  const take = TAKE !== Infinity ? TAKE + offset : Infinity;
+  const offset = Number(config.offset) || 0;
+  let take = config.take !== Infinity ? config.take + offset : Infinity;
   const validators = beaconState.validators.slice(offset, take);
   beaconState.balances = beaconState.balances.slice(offset, take);
   beaconState.validators = validators;
 
-  TAKE = validators.length;
+  take = validators.length;
 
   const balancesView = currentSSZFork.BeaconState.fields.balances.toViewDU(
     beaconState.balances,
@@ -110,7 +107,7 @@ let TAKE: number;
 
   const balances: number[][] = [];
 
-  for (let i = 0; i < TAKE / 4; i++) {
+  for (let i = 0; i < take / 4; i++) {
     balances.push(
       hexToBits(
         bytesToHex(balancesTree.getNode(balanceZeroIndex + BigInt(i)).root),
@@ -130,11 +127,7 @@ let TAKE: number;
           .fill('')
           .map(() => ''.padStart(256, '0').split('').map(Number)),
         validators: Array(CIRCUIT_SIZE).fill(getZeroValidatorPoseidonInput()),
-        withdrawalCredentials: [
-          hexToBits(
-            '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
-          ),
-        ],
+        withdrawalCredentials: [hexToBits(withdrawCredentials)],
         currentEpoch: computeEpochAt(beaconState.slot).toString(),
         validatorIsZero: Array(CIRCUIT_SIZE).fill(1),
       },
@@ -169,11 +162,11 @@ let TAKE: number;
 
   console.log(chalk.bold.blue('Saving validator balance input...'));
   const batchSize = 100;
-  for (let i = 0; i <= TAKE / CIRCUIT_SIZE / batchSize; i++) {
+  for (let i = 0; i <= take / CIRCUIT_SIZE / batchSize; i++) {
     let batch: any[] = [];
     for (
       let j = i * batchSize;
-      j < i * batchSize + batchSize && j < TAKE / CIRCUIT_SIZE;
+      j < i * batchSize + batchSize && j < take / CIRCUIT_SIZE;
       j++
     ) {
       let size =
@@ -199,11 +192,7 @@ let TAKE: number;
                 Math.min((j + 1) * CIRCUIT_SIZE, validators.length),
             ).fill(getZeroValidatorPoseidonInput()),
           ],
-          withdrawalCredentials: [
-            hexToBits(
-              '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
-            ),
-          ],
+          withdrawalCredentials: [hexToBits(withdrawCredentials)],
           currentEpoch: computeEpochAt(beaconState.slot).toString(),
           validatorIsZero: array.concat(new Array(CIRCUIT_SIZE - size).fill(1)),
         },
@@ -218,7 +207,7 @@ let TAKE: number;
     BigInt(validator_commitment_constants.validatorRegistryLimit),
   );
 
-  for (let i = 0; i < TAKE / CIRCUIT_SIZE; i++) {
+  for (let i = 0; i < take / CIRCUIT_SIZE; i++) {
     const buffer = new ArrayBuffer(8);
     const view = new DataView(buffer);
     view.setBigUint64(0, BigInt(i), false);
@@ -236,7 +225,7 @@ let TAKE: number;
     );
 
     const range = [
-      ...new Array(Math.ceil(TAKE / CIRCUIT_SIZE / 2 ** level)).keys(),
+      ...new Array(Math.ceil(take / CIRCUIT_SIZE / 2 ** level)).keys(),
     ];
     for (const key of range) {
       const buffer = new ArrayBuffer(8);
@@ -278,11 +267,7 @@ let TAKE: number;
     slotBranch: beaconStateTree
       .getSingleProof(34n)
       .map(x => hexToBits(bytesToHex(x))),
-    withdrawalCredentials: [
-      hexToBits(
-        '0x01000000000000000000000015f4b914a0ccd14333d850ff311d6dafbfbaa32b',
-      ),
-    ],
+    withdrawalCredentials: [hexToBits(withdrawCredentials)],
     balanceBranch: beaconStateTree
       .getSingleProof(44n)
       .map(x => hexToBits(bytesToHex(x))),
@@ -290,7 +275,7 @@ let TAKE: number;
     validatorsBranch: beaconStateTree
       .getSingleProof(43n)
       .map(x => hexToBits(bytesToHex(x))),
-    validatorsSizeBits: hexToBits(bytesToHex(ssz.UintNum64.hashTreeRoot(TAKE))),
+    validatorsSizeBits: hexToBits(bytesToHex(ssz.UintNum64.hashTreeRoot(take))),
   });
 
   // NOTE: Maybe this is unnecessary
@@ -299,4 +284,4 @@ let TAKE: number;
   console.log(chalk.bold.greenBright('Done'));
 
   await redis.quit();
-})();
+}

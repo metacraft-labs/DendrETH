@@ -1,0 +1,15 @@
+[
+  {
+    "inputs": [],
+    "name": "getWithdrawalCredentials",
+    "outputs": [
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

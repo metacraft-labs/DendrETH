@@ -102,7 +102,7 @@ pub struct FinalCircuitInput {
 #[serde(rename_all = "camelCase")]
 pub struct FinalProof {
     pub needs_change: bool,
-    pub state_root: Vec<u64>,
+    pub block_root: Vec<u64>,
     pub withdrawal_credentials: Vec<Vec<u64>>,
     pub balance_sum: BigUint,
     pub number_of_non_activated_validators: u64,
@@ -249,7 +249,7 @@ pub async fn save_balance_proof<const N: usize>(
 pub async fn save_final_proof(
     con: &mut Connection,
     proof: &ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    state_root: Vec<u64>,
+    block_root: Vec<u64>,
     withdrawal_credentials: Vec<Vec<u64>>,
     balance_sum: BigUint,
     number_of_non_activated_validators: u64,
@@ -258,7 +258,7 @@ pub async fn save_final_proof(
 ) -> Result<()> {
     let final_proof = FinalProof {
         needs_change: false,
-        state_root: state_root,
+        block_root,
         withdrawal_credentials: withdrawal_credentials,
         balance_sum: balance_sum,
         number_of_non_activated_validators: number_of_non_activated_validators,

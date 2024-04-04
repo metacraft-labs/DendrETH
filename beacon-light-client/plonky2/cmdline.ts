@@ -1,4 +1,4 @@
-import yargs from 'yargs';
+import yargs, { Options } from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import config from './common_config.json';
 
@@ -79,7 +79,7 @@ export class CommandLineOptionsBuilder {
       .withAzureBlobStorageOpts();
   }
 
-  option(opt: string, settings: any) {
+  option(opt: string, settings: Options) {
     args.option(opt, settings);
     return this;
   }
