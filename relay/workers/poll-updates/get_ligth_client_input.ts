@@ -43,7 +43,7 @@ const ExecutionPayload = new ContainerType({
 });
 
 function getMerkleProof(
-  container: ContainerType<any>,
+  container: any,
   path: JsonPath,
   value: any,
 ) {

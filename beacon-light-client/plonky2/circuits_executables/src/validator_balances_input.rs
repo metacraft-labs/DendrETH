@@ -64,8 +64,8 @@ mod tests {
     fn test_serialize_deserialize() {
         let input = ValidatorBalancesInput {
             validators: vec![ValidatorPoseidonInput {
-                pubkey: [false; 384].to_vec(),
-                withdrawal_credentials: [false; 256].to_vec(),
+                pubkey: "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000".to_string(),
+                withdrawal_credentials: "0000000000000000000000000000000000000000000000000000000000000000".to_string(),
                 effective_balance: BigUint::from(3u64),
                 slashed: 0,
                 activation_eligibility_epoch: BigUint::from(4u64),

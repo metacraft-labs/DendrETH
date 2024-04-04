@@ -216,6 +216,12 @@ impl<const N: usize> SetPWValues<FinalCircuitInput> for FinalCircuitTargets<N> {
     fn set_pw_values(&self, pw: &mut PartialWitness<GoldilocksField>, source: &FinalCircuitInput) {
         set_boolean_pw_values(pw, &self.state_root, &source.state_root);
 
+        for i in 0..source.state_root_branch.len() {
+            set_boolean_pw_values(pw, &self.state_root_branch[i], &source.state_root_branch[i]);
+        }
+
+        set_boolean_pw_values(pw, &self.block_root, &source.block_root);
+
         pw.set_biguint_target(&self.slot, &source.slot);
 
         for i in 0..source.slot_branch.len() {

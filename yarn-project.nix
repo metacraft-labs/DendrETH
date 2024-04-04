@@ -52,7 +52,7 @@ let
       rm $out/.gitignore
     '';
     outputHashMode = "recursive";
-    outputHash = "sha512-GtE3Rw1Cdme22XI4DjyE5NtlcG3Zzi4NJ7+eKmZk+jS3zg1DhImybZ101tn/e3dyUVG/rSsKvAR4sOMPm+psgQ==";
+    outputHash = "sha512-34krr+qZ0uFxURSBKRd3WBw14u+MTPbqkVHk+mxgFRuqwD5hqiquQo/EJkfTvTbyWHtwx1D57gOVL7sA6dlSTg==";
   };
 
   # Create a derivation that builds a module in isolation.
@@ -127,14 +127,14 @@ let
         ".yarn/unplugged/msgpackr-extract-npm-3.0.2-93e8773fad/node_modules/msgpackr-extract"
       echo 'injecting build for bcrypto'
       yarn nixify inject-build \
-        "bcrypto@npm:5.4.0" \
-        ${isolated."bcrypto@npm:5.4.0"} \
-        ".yarn/unplugged/bcrypto-npm-5.4.0-8d9b86dfa6/node_modules/bcrypto"
+        "bcrypto@npm:5.5.2" \
+        ${isolated."bcrypto@npm:5.5.2"} \
+        ".yarn/unplugged/bcrypto-npm-5.5.2-f3838b92ce/node_modules/bcrypto"
       echo 'injecting build for keccak'
       yarn nixify inject-build \
-        "keccak@npm:3.0.3" \
-        ${isolated."keccak@npm:3.0.3"} \
-        ".yarn/unplugged/keccak-npm-3.0.3-0a04b1d590/node_modules/keccak"
+        "keccak@npm:3.0.4" \
+        ${isolated."keccak@npm:3.0.4"} \
+        ".yarn/unplugged/keccak-npm-3.0.4-a84763aab8/node_modules/keccak"
       echo 'injecting build for secp256k1'
       yarn nixify inject-build \
         "secp256k1@npm:4.0.3" \
@@ -142,19 +142,14 @@ let
         ".yarn/unplugged/secp256k1-npm-4.0.3-b4e9ce065b/node_modules/secp256k1"
       echo 'injecting build for bufferutil'
       yarn nixify inject-build \
-        "bufferutil@npm:4.0.7" \
-        ${isolated."bufferutil@npm:4.0.7"} \
-        ".yarn/unplugged/bufferutil-npm-4.0.7-77a45bb7a3/node_modules/bufferutil"
+        "bufferutil@npm:4.0.8" \
+        ${isolated."bufferutil@npm:4.0.8"} \
+        ".yarn/unplugged/bufferutil-npm-4.0.8-8005ed6210/node_modules/bufferutil"
       echo 'injecting build for utf-8-validate'
       yarn nixify inject-build \
         "utf-8-validate@npm:5.0.10" \
         ${isolated."utf-8-validate@npm:5.0.10"} \
         ".yarn/unplugged/utf-8-validate-npm-5.0.10-93e9b6f750/node_modules/utf-8-validate"
-      echo 'injecting build for msgpackr-extract'
-      yarn nixify inject-build \
-        "msgpackr-extract@npm:3.0.0" \
-        ${isolated."msgpackr-extract@npm:3.0.0"} \
-        ".yarn/unplugged/msgpackr-extract-npm-3.0.0-cdff11f83e/node_modules/msgpackr-extract"
       echo 'injecting build for blake-hash'
       yarn nixify inject-build \
         "blake-hash@npm:2.0.0" \
@@ -253,12 +248,11 @@ let
   overriddenProject = optionalOverride overrideAttrs project;
 
 isolated."msgpackr-extract@npm:3.0.2" = optionalOverride (args.overrideMsgpackrExtractAttrs or null) (mkIsolatedBuild { pname = "msgpackr-extract"; version = "3.0.2"; reference = "npm:3.0.2"; });
-isolated."bcrypto@npm:5.4.0" = optionalOverride (args.overrideBcryptoAttrs or null) (mkIsolatedBuild { pname = "bcrypto"; version = "5.4.0"; reference = "npm:5.4.0"; });
-isolated."keccak@npm:3.0.3" = optionalOverride (args.overrideKeccakAttrs or null) (mkIsolatedBuild { pname = "keccak"; version = "3.0.3"; reference = "npm:3.0.3"; });
+isolated."bcrypto@npm:5.5.2" = optionalOverride (args.overrideBcryptoAttrs or null) (mkIsolatedBuild { pname = "bcrypto"; version = "5.5.2"; reference = "npm:5.5.2"; });
+isolated."keccak@npm:3.0.4" = optionalOverride (args.overrideKeccakAttrs or null) (mkIsolatedBuild { pname = "keccak"; version = "3.0.4"; reference = "npm:3.0.4"; });
 isolated."secp256k1@npm:4.0.3" = optionalOverride (args.overrideSecp256k1Attrs or null) (mkIsolatedBuild { pname = "secp256k1"; version = "4.0.3"; reference = "npm:4.0.3"; });
-isolated."bufferutil@npm:4.0.7" = optionalOverride (args.overrideBufferutilAttrs or null) (mkIsolatedBuild { pname = "bufferutil"; version = "4.0.7"; reference = "npm:4.0.7"; });
+isolated."bufferutil@npm:4.0.8" = optionalOverride (args.overrideBufferutilAttrs or null) (mkIsolatedBuild { pname = "bufferutil"; version = "4.0.8"; reference = "npm:4.0.8"; });
 isolated."utf-8-validate@npm:5.0.10" = optionalOverride (args.overrideUtf8ValidateAttrs or null) (mkIsolatedBuild { pname = "utf-8-validate"; version = "5.0.10"; reference = "npm:5.0.10"; });
-isolated."msgpackr-extract@npm:3.0.0" = optionalOverride (args.overrideMsgpackrExtractAttrs or null) (mkIsolatedBuild { pname = "msgpackr-extract"; version = "3.0.0"; reference = "npm:3.0.0"; });
 isolated."blake-hash@npm:2.0.0" = optionalOverride (args.overrideBlakeHashAttrs or null) (mkIsolatedBuild { pname = "blake-hash"; version = "2.0.0"; reference = "npm:2.0.0"; });
 isolated."bcrypt@npm:5.0.1" = optionalOverride (args.overrideBcryptAttrs or null) (mkIsolatedBuild { pname = "bcrypt"; version = "5.0.1"; reference = "npm:5.0.1"; });
 isolated."keccak@npm:3.0.1" = optionalOverride (args.overrideKeccakAttrs or null) (mkIsolatedBuild { pname = "keccak"; version = "3.0.1"; reference = "npm:3.0.1"; });

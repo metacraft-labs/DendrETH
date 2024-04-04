@@ -47,13 +47,6 @@ let TAKE: number;
       default: Infinity,
       description: 'Sets the number of validators to take',
     })
-    .option('mock', {
-      alias: 'mock',
-      describe: 'Runs the tool without doing actual calculations',
-      type: 'boolean',
-      default: false,
-      description: 'Runs the tool without doing actual calculations.',
-    })
     .option('offset', {
       alias: 'offset',
       describe: 'Index offset in the validator set',
@@ -259,10 +252,26 @@ let TAKE: number;
   const beaconStateView = currentSSZFork.BeaconState.toViewDU(beaconState);
   const beaconStateTree = new Tree(beaconStateView.node);
 
+  const beaconBlockHeader = await beaconApi.getBlockHeader(slot);
+  beaconBlockHeader.stateRoot = currentSSZFork.BeaconState.hashTreeRoot(beaconState);
+
+  const beaconBlockHeaderView =
+    ssz.phase0.BeaconBlockHeader.toViewDU(beaconBlockHeader);
+  const beaconBlockHeaderTree = new Tree(beaconBlockHeaderView.node);
+  const stateRootProof = beaconBlockHeaderTree
+    .getSingleProof(
+      ssz.phase0.BeaconBlockHeader.getPathInfo(['state_root']).gindex,
+    )
+    .map(bytesToHex);
+
   console.log(chalk.bold.blue('Adding final proof input...'));
   await redis.saveFinalProofInput({
     stateRoot: hexToBits(
       bytesToHex(currentSSZFork.BeaconState.hashTreeRoot(beaconState)),
+    ),
+    stateRootBranch: stateRootProof.map(x => hexToBits(x)),
+    blockRoot: hexToBits(
+      bytesToHex(ssz.phase0.BeaconBlockHeader.hashTreeRoot(beaconBlockHeader)),
     ),
     slot: beaconState.slot.toString(),
     slotBranch: beaconStateTree
@@ -276,13 +285,14 @@ let TAKE: number;
     balanceBranch: beaconStateTree
       .getSingleProof(44n)
       .map(x => hexToBits(bytesToHex(x))),
+
     validatorsBranch: beaconStateTree
       .getSingleProof(43n)
       .map(x => hexToBits(bytesToHex(x))),
     validatorsSizeBits: hexToBits(bytesToHex(ssz.UintNum64.hashTreeRoot(TAKE))),
   });
 
-  // NOTE: Maybe this is unecessarry
+  // NOTE: Maybe this is unnecessary
   queues[38].addItem(redis.client, new Item(Buffer.from(new ArrayBuffer(0))));
 
   console.log(chalk.bold.greenBright('Done'));

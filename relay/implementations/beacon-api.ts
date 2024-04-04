@@ -197,6 +197,22 @@ export class BeaconApi implements IBeaconApi {
     );
   }
 
+  async getBlockHeader(slot: StateId) {
+    const { ssz } = await import('@lodestar/types');
+
+    let blockHeaderResult = await (
+      await this.fetchWithFallback(`/eth/v1/beacon/headers/${slot}`)
+    ).json();
+
+    if (blockHeaderResult.code === 404) {
+      throw new Error('block header is not present');
+    }
+
+    return ssz.phase0.BeaconBlockHeader.fromJson(
+      blockHeaderResult.data.header.message,
+    );
+  }
+
   async getBlockSyncAggregateOrClosestExisting(
     slot: number,
     limitSlot: number,

@@ -61,6 +61,7 @@ export default {
       {
         version: '0.8.9',
         settings: {
+          viaIR: true,
           optimizer: {
             enabled: true,
             runs: 200,
@@ -70,6 +71,17 @@ export default {
       {
         version: '0.8.18',
         settings: {
+          viaIR: true,
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
+      {
+        version: '0.8.19',
+        settings: {
+          viaIR: true,
           optimizer: {
             enabled: true,
             runs: 200,
