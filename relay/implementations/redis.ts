@@ -316,6 +316,8 @@ export class Redis implements IRedis {
 
   async saveFinalProofInput(input: {
     stateRoot: number[];
+    stateRootBranch: number[][];
+    blockRoot: number[];
     slot: string;
     slotBranch: number[][];
     withdrawalCredentials: [number[]];
@@ -435,6 +437,18 @@ export class Redis implements IRedis {
     await this.client.set(key, buffer);
   }
 
+  async getBalanceWrapperProofWithPublicInputs(): Promise<any> {
+    await this.waitForConnection();
+
+    return this.client.get('balance_wrapper_proof_with_public_inputs');
+  }
+
+  async getBalanceWrapperVerifierOnly(): Promise<any> {
+    await this.waitForConnection();
+
+    return this.client.get('balance_wrapper_verifier_only');
+  }
+
   async set(key: string, value: string): Promise<void> {
     await this.waitForConnection();
     await this.client.set(key, value);
@@ -472,6 +486,14 @@ export class Redis implements IRedis {
     await this.waitForConnection();
 
     await this.pubSub.subscribe('proofs_channel', listener);
+  }
+
+  async subscribeForGnarkProofs(
+    listener: (message: string, channel: string) => unknown,
+  ): Promise<void> {
+    await this.waitForConnection();
+
+    await this.pubSub.subscribe('gnark_proofs_channel', listener);
   }
 
   private async waitForConnection() {

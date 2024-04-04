@@ -354,7 +354,6 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
         dst: &mut Vec<u8>,
         _common_data: &CommonCircuitData<F, D>,
     ) -> plonky2::util::serialization::IoResult<()> {
-        println!("Serialization gets called at least");
         dst.write_usize(self.a.num_limbs())?;
 
         for i in 0..self.a.num_limbs() {

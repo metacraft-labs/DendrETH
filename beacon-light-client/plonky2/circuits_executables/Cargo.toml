@@ -6,10 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+redis = { version = "0.23", features = ["aio", "async-std-comp", "connection-manager", "json"] }
 circuits = { path = "../circuits" }
 num = { version = "0.4.0", features = ["serde"] }
 plonky2 = { git = "https://github.com/metacraft-labs/plonky2" }
-redis = { version = "0.23", features = ["aio", "tokio-comp"] }
 serde = "1.0.164"
 serde_json = "1.0.96"
 anyhow = "1.0.71"
@@ -40,6 +40,8 @@ num-traits = "0.2.17"
 colored = "2.1.0"
 glob = "0.3.1"
 sha256 = "1.5.0"
+lazy_static = "1.4.0"
+ff = { package = "ff", version = "0.13", features = ["derive"] }
 
 [[bin]]
 name = "balance_verification"
@@ -54,9 +56,13 @@ name = "balance_verification_circuit_data_generation"
 path = "bin/balance_verification_circuit_data_generation.rs"
 
 [[bin]]
-name = "commitment_mapper_circuit_data_generation"
-path = "bin/commitment_mapper_circuit_data_generation.rs"
-
-[[bin]]
 name = "final_layer"
 path = "bin/final_layer.rs"
+
+[[bin]]
+name = "wrapper"
+path = "bin/wrapper.rs"
+
+[[bin]]
+name = "commitment_mapper_circuit_data_generation"
+path = "bin/commitment_mapper_circuit_data_generation.rs"

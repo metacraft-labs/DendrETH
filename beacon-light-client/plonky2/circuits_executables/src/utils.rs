@@ -2,6 +2,7 @@ use anyhow::Result;
 use clap::{Arg, ArgMatches, Command};
 use serde::Deserialize;
 use std::{fs::File, io::Read, time::Duration};
+use ff::PrimeField;
 
 pub struct BalanceVerificationConfig {
     pub redis_connection: String,
@@ -222,3 +223,9 @@ pub fn format_hex(str: String) -> String {
 
     return str;
 }
+
+#[derive(PrimeField)]
+#[PrimeFieldModulus = "21888242871839275222246405745257275088548364400416034343698204186575808495617"]
+#[PrimeFieldGenerator = "7"]
+#[PrimeFieldReprEndianness = "little"]
+pub struct Fr([u64; 4]);

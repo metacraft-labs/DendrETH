@@ -31,12 +31,6 @@ import config from '../common_config.json';
       default: Infinity,
       description: 'Sets the number of validators to take',
     })
-    .option('mock', {
-      describe: 'Runs the tool without doing actual calculations',
-      type: 'boolean',
-      default: false,
-      description: 'Runs the tool without doing actual calculations.',
-    })
     .option('run-once', {
       describe: 'Should run script for one epoch',
       type: 'boolean',

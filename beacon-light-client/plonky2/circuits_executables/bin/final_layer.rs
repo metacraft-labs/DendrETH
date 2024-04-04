@@ -1,8 +1,11 @@
 use colored::Colorize;
-use std::{println, time::Instant};
+use std::{fs, marker::PhantomData, println, time::Instant};
 
 use anyhow::Result;
-use circuits::build_final_circuit::build_final_circuit;
+use circuits::{
+    build_final_circuit::build_final_circuit,
+    generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
+};
 use circuits_executables::{
     crud::{
         common::{
@@ -214,6 +217,20 @@ async fn async_main() -> Result<()> {
     );
 
     println!("{}", "Final proof saved!".blue().bold());
+
+    let gate_serializer = DendrETHGateSerializer;
+
+    let generator_serializer = DendrETHGeneratorSerializer {
+        _phantom: PhantomData::<PoseidonGoldilocksConfig>,
+    };
+
+    let circuit_data_bytes = circuit_data
+        .to_bytes(&gate_serializer, &generator_serializer)
+        .unwrap();
+
+    fs::write("circuits/final_layer.plonky2_circuit", circuit_data_bytes).unwrap();
+
+    println!("{}", "Circuit data saved!".blue().bold());
 
     Ok(())
 }

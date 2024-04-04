@@ -75,11 +75,15 @@ where
         .map_err(serde::de::Error::custom)
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct FinalCircuitInput {
     #[serde(with = "bool_vec_as_int_vec")]
     pub state_root: Vec<bool>,
+    #[serde(with = "bool_vec_as_int_vec_nested")]
+    pub state_root_branch: Vec<Vec<bool>>,
+    #[serde(with = "bool_vec_as_int_vec")]
+    pub block_root: Vec<bool>,
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub slot: BigUint,
     #[serde(with = "bool_vec_as_int_vec_nested")]

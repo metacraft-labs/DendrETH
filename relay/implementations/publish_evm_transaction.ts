@@ -47,7 +47,7 @@ export async function publishTransaction(
         maxPriorityFeePerGas: priorityFeePerGasNumber,
       };
 
-      logger.info(transactionData);
+      logger.info(JSON.stringify(transactionData));
 
       let estimateGas;
       let transaction;
@@ -71,7 +71,7 @@ export async function publishTransaction(
         });
       }
 
-      logger.info(transaction);
+      logger.info(JSON.stringify(transaction));
 
       transactionPromise = transaction.wait();
     } catch (e) {
