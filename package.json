@@ -19,7 +19,8 @@
     "url": "git+https://github.com/metacraft-labs/DendrETH.git"
   },
   "resolutions": {
-    "ffjavascript": "0.2.57"
+    "ffjavascript": "0.2.57",
+    "web-worker": "1.2.0"
   },
   "bugs": {
     "url": "https://github.com/metacraft-labs/DendrETH/issues"
