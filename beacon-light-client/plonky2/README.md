@@ -18,10 +18,13 @@ The Balance Verification relies heavily on a Redis instance to handle task manag
 
    Flags:
 
-   - `--redis-host [value]`: Optional. Specifies the Redis host address. Defaults to: `127.0.0.1`
+   - `--redis-host [string]`: Optional. Specifies the Redis host address. Defaults to: `127.0.0.1`
    - `--redis-port [number]`: Optional. Specifies the Redis port number. Defaults to: `6379`
    - `--take [number]`: Optional. Limits the number of validators for task creation. Useful for testing. Defaults to: `takes all`
-   - `--beacon-node [value]`: Optional. Sets the beacon api url. Defaults to: `http://unstable.mainnet.beacon-api.nimbus.team`
+   - `--beacon-node [array]`: Optional. Sets the beacon api url. Defaults to: `http://unstable.mainnet.beacon-api.nimbus.team`
+   - `--slot [number]`: Optional. Fetches the balances for this slot. Defaults to: `undefined`
+   - `--take [number]`: Optional. Sets the number of validators to take. Defaults to: `Infinity`
+   - `--offset [number]`: Optional. Index offset in the validator set. Defaults to: `undefined`
 
 2. **Task Consumption**
 
