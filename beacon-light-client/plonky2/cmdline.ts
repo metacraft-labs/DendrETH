@@ -16,13 +16,13 @@ export class CommandLineOptionsBuilder {
         describe: 'The Redis host',
         type: 'string',
         default: config['redis-host'],
-        description: 'Sets a custom redis connection',
+        description: 'Specifies the Redis host address',
       })
       .option('redis-port', {
         describe: 'The Redis port',
         type: 'number',
         default: Number(config['redis-port']),
-        description: 'Sets a custom redis connection',
+        description: 'Specifies the Redis port number',
       });
     return this;
   }
