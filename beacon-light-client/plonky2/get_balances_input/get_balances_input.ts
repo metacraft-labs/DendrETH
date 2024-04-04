@@ -253,7 +253,8 @@ let TAKE: number;
   const beaconStateTree = new Tree(beaconStateView.node);
 
   const beaconBlockHeader = await beaconApi.getBlockHeader(slot);
-  beaconBlockHeader.stateRoot = currentSSZFork.BeaconState.hashTreeRoot(beaconState);
+  beaconBlockHeader.stateRoot =
+    currentSSZFork.BeaconState.hashTreeRoot(beaconState);
 
   const beaconBlockHeaderView =
     ssz.phase0.BeaconBlockHeader.toViewDU(beaconBlockHeader);

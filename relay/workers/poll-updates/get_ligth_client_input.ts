@@ -42,11 +42,7 @@ const ExecutionPayload = new ContainerType({
   withdrawalsRoot: new ByteVectorType(32),
 });
 
-function getMerkleProof(
-  container: any,
-  path: JsonPath,
-  value: any,
-) {
+function getMerkleProof(container: any, path: JsonPath, value: any) {
   const view = container.toViewDU(value);
   const tree = new Tree(view.node);
   const proof = tree.getSingleProof(container.getPathInfo(path).gindex);

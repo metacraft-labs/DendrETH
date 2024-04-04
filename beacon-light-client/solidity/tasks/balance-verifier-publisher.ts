@@ -3,11 +3,9 @@ import { Redis } from '@dendreth/relay/implementations/redis';
 import { checkConfig } from '@dendreth/utils/ts-utils/common-utils';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 import { initPrometheusSetup } from '@dendreth/utils/ts-utils/prometheus-utils';
-import {
-  bitsToBytes,
-} from '../../../libs/typescript/ts-utils/hex-utils';
+import { bitsToBytes } from '@dendreth/utils/ts-utils/hex-utils';
 import JSONbig from 'json-bigint';
-import { publishTransaction } from '../../../relay/implementations/publish_evm_transaction';
+import { publishTransaction } from '@dendreth/relay/implementations/publish_evm_transaction';
 import Web3 from 'web3';
 
 const logger = getGenericLogger();
