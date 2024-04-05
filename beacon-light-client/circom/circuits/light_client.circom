@@ -38,7 +38,7 @@ template LightClient(N, K) {
   signal input finalizedHeaderBranch[9][256];
 
   signal input execution_state_root[256];
-  signal input execution_state_root_branch[11][256];
+  signal input execution_state_root_branch[12][256];
 
   // Exposed as public via domain
   signal input fork_version[32];
@@ -121,7 +121,7 @@ template LightClient(N, K) {
 
   IsValidMerkleBranch(9)(finalizedHeaderBranch, finalizedHeaderRoot, nextHeaderHash, 745);
 
-  IsValidMerkleBranch(11)(execution_state_root_branch, execution_state_root, finalizedHeaderRoot, 3218);
+  IsValidMerkleBranch(12)(execution_state_root_branch, execution_state_root, finalizedHeaderRoot, 6434);
 
   signal arePeriodsEqual <== IsEqual()([signatureSlotSyncCommitteePeriod,finalizedHeaderSlotSyncCommitteePeriod]);
 
