@@ -15,8 +15,9 @@ use circuits_executables::{
         proof_storage::proof_storage::create_proof_storage,
     },
     provers::SetPWValues,
+    utils::{parse_config_file, CommandLineOptionsBuilder},
+    wrap_final_layer_in_poseidon_bn128::wrap_final_layer_in_poseidon_bn_128,
 };
-use clap::{App, Arg};
 use futures_lite::future;
 use num::BigUint;
 use num_traits::ToPrimitive;
@@ -34,67 +35,11 @@ fn main() -> Result<()> {
 }
 
 async fn async_main() -> Result<()> {
-    let matches = App::new("")
-        .arg(
-            Arg::with_name("redis_connection")
-                .short('r')
-                .long("redis")
-                .value_name("Redis Connection")
-                .help("Sets a custom Redis connection")
-                .takes_value(true)
-                .default_value("redis://127.0.0.1:6379/"),
-        )
-        .arg(
-            Arg::with_name("proof_storage_type")
-                .long("proof-storage-type")
-                .value_name("proof_storage_type")
-                .help("Sets the type of proof storage")
-                .takes_value(true)
-                .required(true)
-                .possible_values(&["redis", "file", "azure", "aws"]),
-        )
-        .arg(
-            Arg::with_name("folder_name")
-                .long("folder-name")
-                .value_name("folder_name")
-                .help("Sets the name of the folder proofs will be stored in")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("azure_account")
-                .long("azure-account-name")
-                .value_name("azure_account")
-                .help("Sets the name of the azure account")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("azure_container")
-                .long("azure-container-name")
-                .value_name("azure_container")
-                .help("Sets the name of the azure container")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("aws_endpoint_url")
-                .long("aws-endpoint-url")
-                .value_name("aws_endpoint_url")
-                .help("Sets the aws endpoint url")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("aws_region")
-                .long("aws-region")
-                .value_name("aws_region")
-                .help("Sets the aws region")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("aws_bucket_name")
-                .long("aws-bucket-name")
-                .value_name("aws_bucket_name")
-                .help("Sets the aws bucket name")
-                .takes_value(true),
-        )
+    let config = parse_config_file("../common_config.json".to_owned())?;
+
+    let matches = CommandLineOptionsBuilder::new("final_layer")
+        .with_redis_options(&config.redis_host, &config.redis_port)
+        .with_proof_storage_options()
         .get_matches();
 
     let redis_connection = matches.value_of("redis_connection").unwrap();
@@ -231,6 +176,12 @@ async fn async_main() -> Result<()> {
     fs::write("circuits/final_layer.plonky2_circuit", circuit_data_bytes).unwrap();
 
     println!("{}", "Circuit data saved!".blue().bold());
+
+    println!("{}", "Running wrapper...".blue().bold());
+
+    wrap_final_layer_in_poseidon_bn_128(con, false, circuit_data, proof).await?;
+
+    println!("{}", "Wrapper finished!".blue().bold());
 
     Ok(())
 }

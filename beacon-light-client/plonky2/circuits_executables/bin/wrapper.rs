@@ -3,18 +3,15 @@ use std::{fs, println, time::Instant};
 use anyhow::Result;
 use circuits_executables::{
     crud::common::{load_circuit_data, FinalProof},
-    poseidon_bn128_config::PoseidonBN128GoldilocksConfig,
     validator_commitment_constants::get_validator_commitment_constants,
+    wrap_final_layer_in_poseidon_bn128::wrap_final_layer_in_poseidon_bn_128,
 };
 use clap::{App, Arg};
 use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
-    fri::{reduction_strategies::FriReductionStrategy, FriConfig},
-    iop::witness::{PartialWitness, WitnessWrite},
     plonk::{
-        circuit_builder::CircuitBuilder, circuit_data::CircuitConfig,
-        config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs,
+        circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs,
     },
 };
 use redis::AsyncCommands;
@@ -51,81 +48,25 @@ async fn async_main() -> Result<()> {
     let mut con = client.get_async_connection().await?;
 
     let elapsed = start.elapsed();
-
     println!("Redis connection took: {:?}", elapsed);
-
-    let final_layer_circuit = load_circuit_data("circuits/final_layer").unwrap();
-
-    let standard_recursion_config = CircuitConfig::standard_recursion_config();
-
-    let config = CircuitConfig {
-        fri_config: FriConfig {
-            rate_bits: 6,
-            cap_height: 4,
-            proof_of_work_bits: 16,
-            reduction_strategy: FriReductionStrategy::ConstantArityBits(4, 5),
-            num_query_rounds: 14,
-        },
-        ..standard_recursion_config
-    };
-
-    let mut builder = CircuitBuilder::<GoldilocksField, 2>::new(config);
-
-    let verifier_target = builder.constant_verifier_data(&final_layer_circuit.verifier_only);
-
-    let proof_target = builder.add_virtual_proof_with_pis(&final_layer_circuit.common);
-
-    builder.verify_proof::<PoseidonGoldilocksConfig>(
-        &proof_target.clone(),
-        &verifier_target,
-        &final_layer_circuit.common,
-    );
-
-    builder.register_public_inputs(&proof_target.public_inputs);
+    let final_layer_circuit: CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2> =
+        load_circuit_data("circuits/final_layer").unwrap();
 
     let proof_str: String = con
         .get(get_validator_commitment_constants().final_layer_proof_key)
         .await?;
-
     let final_layer_proof: FinalProof = serde_json::from_str(&proof_str)?;
-
     let final_layer_proof = final_layer_proof.proof;
-
-    let final_proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> =
+    let final_layer_proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> =
         ProofWithPublicInputs::from_bytes(final_layer_proof, &final_layer_circuit.common)?;
 
-    let mut pw = PartialWitness::new();
-
-    pw.set_proof_with_pis_target(&proof_target, &final_proof);
-
-    let circuit_data = builder.build::<PoseidonBN128GoldilocksConfig>();
-
-    let proof = circuit_data.prove(pw)?;
-    let proof = serde_json::to_string(&proof)?;
-
-    let verifier_only_circuit_data = serde_json::to_string(&circuit_data.verifier_only).unwrap();
-
-    let common_circuit_data = serde_json::to_string(&circuit_data.common).unwrap();
-
-    if compile_circuit {
-        fs::write(
-            "verifier_only_circuit_data.json",
-            verifier_only_circuit_data,
-        )
-        .unwrap();
-
-        fs::write("proof_with_public_inputs.json", proof).unwrap();
-
-        fs::write("common_circuit_data.json", common_circuit_data).unwrap();
-    } else {
-        con.set("balance_wrapper_proof_with_public_inputs", proof)
-            .await?;
-
-        con.set("balance_wrapper_verifier_only", verifier_only_circuit_data)
-            .await?;
-
-        con.publish("gnark_proofs_channel", "start").await?;
-    }
+    wrap_final_layer_in_poseidon_bn_128(
+        con,
+        compile_circuit,
+        final_layer_circuit,
+        final_layer_proof,
+    )
+    .await?;
 
     Ok(())
 }
