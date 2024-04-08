@@ -1,9 +1,7 @@
-import {
-  BeaconBlockHeader,
-  ExecutionPayloadHeader,
-  SyncAggregate,
-  SyncCommittee,
-} from '@/types/types';
+import { BeaconBlockHeader } from '@lodestar/types/phase0';
+import { ExecutionPayloadHeader } from '@lodestar/types/deneb';
+
+import { SyncAggregate, SyncCommittee } from '@/types/types';
 
 export interface IBeaconApi {
   getBeaconRestApis(): string[];

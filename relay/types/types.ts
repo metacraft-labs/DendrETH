@@ -1,37 +1,4 @@
-import {
-  UintNumberType,
-  ByteVectorType,
-  ByteListType,
-  UintBigintType,
-} from '@chainsafe/ssz';
-import { ValueOfFields } from '@chainsafe/ssz/lib/view/container';
 import { Config } from '@/constants/constants';
-
-export type BeaconBlockHeader = ValueOfFields<{
-  slot: UintNumberType;
-  proposerIndex: UintNumberType;
-  parentRoot: ByteVectorType;
-  stateRoot: ByteVectorType;
-  bodyRoot: ByteVectorType;
-}>;
-
-export type ExecutionPayloadHeader = ValueOfFields<{
-  withdrawalsRoot: ByteVectorType;
-  transactionsRoot: ByteVectorType;
-  blockHash: ByteVectorType;
-  parentHash: ByteVectorType;
-  feeRecipient: ByteVectorType;
-  stateRoot: ByteVectorType;
-  receiptsRoot: ByteVectorType;
-  logsBloom: ByteVectorType;
-  prevRandao: ByteVectorType;
-  blockNumber: UintNumberType;
-  gasLimit: UintNumberType;
-  gasUsed: UintNumberType;
-  timestamp: UintNumberType;
-  extraData: ByteListType;
-  baseFeePerGas: UintBigintType;
-}>;
 
 export type ProofInputType = {
   prevUpdateSlot: number;
