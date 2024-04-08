@@ -2,6 +2,7 @@ import { task } from 'hardhat/config';
 import { Redis } from '@dendreth/relay/implementations/redis';
 import {
   checkConfig,
+  extractHostnameAndPort,
   getBigIntFromLimbs,
 } from '@dendreth/utils/ts-utils/common-utils';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
@@ -10,6 +11,8 @@ import JSONbig from 'json-bigint';
 import { publishTransaction } from '@dendreth/relay/implementations/publish_evm_transaction';
 import Web3 from 'web3';
 import assert from 'assert';
+import http from 'http';
+import { RequestOptions } from 'https';
 
 const logger = getGenericLogger();
 
@@ -23,7 +26,7 @@ task('balance-verifier-publisher', 'Run relayer')
     true,
   )
   .addParam(
-    'gnarkServerUrl',
+    'gnarkserverurl',
     'The url of the gnark server',
     'http://localhost:3333',
     undefined,
@@ -129,54 +132,61 @@ task('balance-verifier-publisher', 'Run relayer')
         ),
       };
 
-      let proof = await fetch(args.gnarkServerUrl + '/genProof', {
+      const { hostname, port } = extractHostnameAndPort(args.gnarkserverurl);
+
+      const options: RequestOptions = {
+        hostname: hostname,
+        port: port,
+        path: '/genProof',
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSONbig.stringify(postData),
-      })
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Network response was not ok');
-          }
-          return response.arrayBuffer();
-        })
-        .then(arrayBuffer => {
-          const uint8Array = new Uint8Array(arrayBuffer);
-          return uint8Array;
-        })
-        .catch(error => {
-          console.error(
-            'There was a problem with your fetch operation:',
-            error,
-          );
+      };
+
+      let proof: number[] = [];
+
+      let request = http.request(options, res => {
+        console.log('response received');
+        res.on('data', chunk => {
+          proof.push(...chunk);
         });
 
-      assert(final_layer_proof.balanceSum.length <= 2, 'Invalid balance sum');
+        res.on('end', async () => {
+          assert(
+            final_layer_proof.balanceSum.length <= 2,
+            'Invalid balance sum',
+          );
 
-      let balanceSum = getBigIntFromLimbs(final_layer_proof.balanceSum);
+          let balanceSum = getBigIntFromLimbs(final_layer_proof.balanceSum);
 
-      let numberOfNonActivatedValidators =
-        final_layer_proof.numberOfNonActivatedValidators;
-      let numberOfActiveValidators = final_layer_proof.numberOfActiveValidators;
-      let numberOfExitedValidators = final_layer_proof.numberOfExitedValidators;
+          let numberOfNonActivatedValidators =
+            final_layer_proof.numberOfNonActivatedValidators;
+          let numberOfActiveValidators =
+            final_layer_proof.numberOfActiveValidators;
+          let numberOfExitedValidators =
+            final_layer_proof.numberOfExitedValidators;
 
-      await publishTransaction(
-        balanceVerifierContract,
-        'verify',
-        [
-          proof,
-          final_layer_proof_input.slot,
-          balanceSum,
-          numberOfNonActivatedValidators,
-          numberOfActiveValidators,
-          numberOfExitedValidators,
-        ],
-        web3,
-        args.transactionspeed,
-        true,
-      );
+          await publishTransaction(
+            balanceVerifierContract,
+            'verify',
+            [
+              proof,
+              final_layer_proof_input.slot,
+              balanceSum,
+              numberOfNonActivatedValidators,
+              numberOfActiveValidators,
+              numberOfExitedValidators,
+            ],
+            web3,
+            args.transactionspeed,
+            true,
+          );
+        });
+      });
+
+      request.write(JSONbig.stringify(postData));
+      request.end();
     });
 
     // never resolving promise to block the task

@@ -260,3 +260,11 @@ export function range(low: number, highExclusive: number): number[] {
   }
   return result;
 }
+
+export function extractHostnameAndPort(url: string) {
+  const urlObj = new URL(url);
+  const hostname = urlObj.hostname;
+  const port = urlObj.port
+
+  return { hostname, port };
+}

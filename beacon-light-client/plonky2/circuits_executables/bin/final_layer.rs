@@ -73,8 +73,7 @@ async fn async_main() -> Result<()> {
 
     circuit_targets.set_pw_values(&mut pw, &final_input_data);
 
-    let balance_proof: BalanceProof =
-        fetch_proof_balances(&mut con, protocol, 37, 0).await?;
+    let balance_proof: BalanceProof = fetch_proof_balances(&mut con, protocol, 37, 0).await?;
     let balance_proof_bytes = proof_storage.get_proof(balance_proof.proof_key).await?;
 
     let balance_final_proof =
@@ -104,12 +103,10 @@ async fn async_main() -> Result<()> {
         balance_data.verifier_only.circuit_digest,
     );
 
-    let epoch = BigUint::div(final_input_data.slot, 32u32).to_u64().unwrap();
-    let commitment_proof: ValidatorProof = fetch_proof(&mut con, 1, epoch).await?;
+    let commitment_proof: ValidatorProof =
+        fetch_proof(&mut con, 1, final_input_data.slot.to_u64().unwrap()).await?;
 
-    let commitment_proof_bytes = proof_storage
-        .get_proof(commitment_proof.proof_key)
-        .await?;
+    let commitment_proof_bytes = proof_storage.get_proof(commitment_proof.proof_key).await?;
 
     let commitment_final_proof = ProofWithPublicInputs::<
         GoldilocksField,

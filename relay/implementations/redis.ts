@@ -336,7 +336,7 @@ export class Redis implements IRedis {
     slot: bigint,
     proof: ValidatorProof = {
       needsChange: true,
-      proofIndex: '',
+      proofKey: '',
       poseidonHash: [],
       sha256Hash: [],
     },
@@ -352,7 +352,7 @@ export class Redis implements IRedis {
     depth: bigint,
     proof: ValidatorProof = {
       needsChange: true,
-      proofIndex: 'invalid',
+      proofKey: 'invalid',
       poseidonHash: [],
       sha256Hash: [],
     },
@@ -372,7 +372,7 @@ export class Redis implements IRedis {
       needsChange: true,
       rangeTotalValue: '0',
       validatorsCommitment: [],
-      proofIndex: '',
+      proofKey: '',
       balancesHash: [],
       withdrawalCredentials: [],
       currentEpoch: '0',

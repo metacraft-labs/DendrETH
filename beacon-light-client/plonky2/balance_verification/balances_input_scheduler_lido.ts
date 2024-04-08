@@ -1,4 +1,4 @@
-import { ethers, providers } from 'ethers';
+import { BigNumber, ethers, providers } from 'ethers';
 import { getBalancesInput } from './get_balances_input';
 import { CommandLineOptionsBuilder } from '../cmdline';
 import commonConfig from '../common_config.json';
@@ -7,6 +7,10 @@ import { getLidoWithdrawCredentials } from '@dendreth/utils/balance-verification
 import lidoLocatorAbi from './abi/lido_locator_abi.json';
 import accountingOracleAbi from './abi/lido_accounting_oracle_abi.json';
 import hashConsensusAbi from './abi/hash_consensus_abi.json';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const promisified_exec = promisify(exec);
 
 (async () => {
   const options = new CommandLineOptionsBuilder()
@@ -41,15 +45,24 @@ import hashConsensusAbi from './abi/hash_consensus_abi.json';
     options['network'],
   );
 
+  let startedCalculation = {};
+
+  console.log(nextRefSlot);
+
   eventSource.addEventListener('head', async (event: any) => {
-    const headSlot = BigInt(JSON.parse(event.data).slot);
-    if (headSlot >= nextRefSlot) {
+    const headSlot = JSON.parse(event.data).slot;
+
+    if (headSlot >= nextRefSlot && !startedCalculation[nextRefSlot]) {
+      startedCalculation[nextRefSlot] = true;
+
       await getBalancesInput({
         protocol: 'lido',
         withdrawCredentials: LIDO_WITHDRAWAL_CREDENTIALS,
         slot: nextRefSlot,
         beaconNodeUrls: options['beacon-node'],
       });
+
+      await promisified_exec('./circuits_executables/run_everywhere.sh lido');
 
       nextRefSlot = await getNextRefSlot(provider, lidoLocatorContractAddress);
     }
@@ -82,9 +95,9 @@ async function getNextRefSlot(
     provider,
   );
 
-  const [refSlot] = await hashConsensus.getCurrentFrame();
-  const epochsPerFrame = await hashConsensus.getFrameConfig()[1];
-  const [slotsPerEpoch] = await hashConsensus.getChainConfig();
+  const refSlot: BigNumber = (await hashConsensus.getCurrentFrame())[0];
+  const epochsPerFrame: BigNumber = (await hashConsensus.getFrameConfig())[1];
+  const slotsPerEpoch: BigNumber = (await hashConsensus.getChainConfig())[0];
 
-  return refSlot + epochsPerFrame * slotsPerEpoch;
+  return refSlot.add(epochsPerFrame.mul(slotsPerEpoch)).toNumber();
 }
