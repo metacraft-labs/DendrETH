@@ -1,13 +1,7 @@
 import { UintNumberType, ByteVectorType } from '@chainsafe/ssz';
 import { ValueOfFields } from '@chainsafe/ssz/lib/view/container';
 import { IBeaconApi } from '@/abstraction/beacon-api-interface';
-import {
-  BeaconBlockHeader,
-  ExecutionPayloadHeader,
-  SyncAggregate,
-  SyncCommittee,
-  Validator,
-} from '@/types/types';
+import { SyncAggregate, SyncCommittee, Validator } from '@/types/types';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import {
@@ -21,6 +15,8 @@ import { panic, sleep } from '@dendreth/utils/ts-utils/common-utils';
 import EventSource from 'eventsource';
 // @ts-ignore
 import { StateId } from '@lodestar/api/beacon/routes/beacon';
+import { BeaconBlockHeader } from '@lodestar/types/phase0';
+import { ExecutionPayloadHeader } from '@lodestar/types/deneb';
 
 const logger = getGenericLogger();
 
