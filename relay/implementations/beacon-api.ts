@@ -367,7 +367,7 @@ export class BeaconApi implements IBeaconApi {
   }
 
   async getBlockExecutionPayloadAndProof(slot: number): Promise<{
-    executionPayloadHeader: ExecutionPayloadHeader;
+    executionPayloadHeader: any;
     executionPayloadBranch: string[];
   }> {
     const currentSszFork = await this.getCurrentSSZ(BigInt(slot));
@@ -404,8 +404,7 @@ export class BeaconApi implements IBeaconApi {
 
     return {
       executionPayloadBranch,
-      executionPayloadHeader:
-        finalizedBlockBody.executionPayload as any as ExecutionPayloadHeader,
+      executionPayloadHeader: finalizedBlockBody.executionPayload,
     };
   }
 
