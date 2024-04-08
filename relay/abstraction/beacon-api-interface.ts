@@ -1,7 +1,10 @@
 import { SyncAggregate, SyncCommittee } from '../types/types';
+import { CapellaOrDeneb } from '@dendreth/utils/ts-utils/ssz-utils';
 import { BeaconBlockHeader } from '@lodestar/types/phase0';
 import { ExecutionPayloadHeader } from '@lodestar/types/deneb';
 export interface IBeaconApi {
+  getCurrentSSZ(slot: bigint): Promise<CapellaOrDeneb>;
+
   getBeaconRestApis(): string[];
 
   getHashiAdapterInfo(slot: number): Promise<{
