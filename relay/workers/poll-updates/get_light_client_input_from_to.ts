@@ -42,14 +42,14 @@ export async function getInputFromTo(
   );
 
   logger.info('Getting getBlockExecutionPayloadAndProof..');
-  const {
-    executionPayloadHeader: executionPayload,
-    executionPayloadBranch: finalizedHeaderExecutionBranch,
-  } = await prometheusTiming(
-    async () =>
-      await beaconApi.getBlockExecutionPayloadAndProof(finalizedHeader.slot),
-    'getBlockExecutionPayloadAndProof',
-  );
+  const { executionPayloadHeader, executionPayloadBranch } =
+    await prometheusTiming(
+      async () =>
+        await beaconApi.getBlockExecutionPayloadAndProof(finalizedHeader.slot),
+      'getBlockExecutionPayloadAndProof',
+    );
+
+  const forkSSZ = await beaconApi.getCurrentSSZ(BigInt(headSlot));
 
   return {
     proofInput: await getProofInput({
@@ -60,12 +60,13 @@ export async function getInputFromTo(
       syncCommittee,
       config: networkConfig,
       prevFinalityBranch,
-      signature_slot: signature_slot,
+      signature_slot,
       finalizedHeader,
       finalityBranch,
-      executionPayload,
-      finalizedHeaderExecutionBranch,
+      executionPayloadHeader,
+      executionPayloadBranch,
       sync_aggregate,
+      forkSSZ,
     }),
     prevUpdateSlot: prevBlockHeader.slot,
     updateSlot: nextBlockHeader.slot,

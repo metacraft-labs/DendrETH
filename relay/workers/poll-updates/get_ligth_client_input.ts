@@ -24,24 +24,6 @@ import { computeSyncCommitteePeriodAt } from '@dendreth/utils/ts-utils/ssz-utils
 import { BeaconBlockHeader } from '@lodestar/types/phase0';
 import { ExecutionPayloadHeader } from '@lodestar/types/deneb';
 
-const ExecutionPayload = new ContainerType({
-  parentHash: new ByteVectorType(32),
-  feeRecipient: new ByteVectorType(20),
-  stateRoot: new ByteVectorType(32),
-  receiptsRoot: new ByteVectorType(32),
-  logsBloom: new ByteVectorType(256),
-  prevRandao: new ByteVectorType(32),
-  blockNumber: new UintNumberType(8),
-  gasLimit: new UintNumberType(8),
-  gasUsed: new UintNumberType(8),
-  timestamp: new UintNumberType(8),
-  extraData: new ByteListType(32),
-  baseFeePerGas: new UintBigintType(32),
-  blockHash: new ByteVectorType(32),
-  transactionsRoot: new ByteVectorType(32),
-  withdrawalsRoot: new ByteVectorType(32),
-});
-
 function getMerkleProof(container: any, path: JsonPath, value: any) {
   const view = container.toViewDU(value);
   const tree = new Tree(view.node);
@@ -65,12 +47,13 @@ export async function getProofInput({
   nextBlockHeader,
   finalizedHeader,
   finalityBranch,
-  finalizedHeaderExecutionBranch,
+  executionPayloadBranch,
   prevFinalizedHeader,
   prevFinalityBranch,
-  executionPayload,
+  executionPayloadHeader,
   signature_slot,
   config,
+  forkSSZ,
 }: {
   syncCommittee: SyncCommittee;
   syncCommitteeBranch: string[];
@@ -79,12 +62,13 @@ export async function getProofInput({
   nextBlockHeader: BeaconBlockHeader;
   finalizedHeader: BeaconBlockHeader;
   finalityBranch: string[];
-  finalizedHeaderExecutionBranch: string[];
+  executionPayloadBranch: string[];
   prevFinalizedHeader: BeaconBlockHeader;
   prevFinalityBranch: string[];
-  executionPayload: ExecutionPayloadHeader;
+  executionPayloadHeader: ExecutionPayloadHeader;
   signature_slot: number;
   config: Config;
+  forkSSZ: any;
 }): Promise<WitnessGeneratorInput> {
   const { ssz } = await import('@lodestar/types');
 
@@ -154,9 +138,9 @@ export async function getProofInput({
   ).map(x => hexToBits(x));
 
   const executionPayloadStateProof = getMerkleProof(
-    ExecutionPayload,
-    ['stateRoot'],
-    executionPayload,
+    forkSSZ.BeaconBlockBody.fields.executionPayload,
+    ['state_root'],
+    executionPayloadHeader,
   );
 
   let dataView = new DataView(new ArrayBuffer(8));
@@ -198,10 +182,12 @@ export async function getProofInput({
       ...nextBlockHeaderStateRootProof,
     ],
 
-    execution_state_root: hexToBits(bytesToHex(executionPayload.stateRoot)),
+    execution_state_root: hexToBits(
+      bytesToHex(executionPayloadHeader.stateRoot),
+    ),
     execution_state_root_branch: [
       ...executionPayloadStateProof,
-      ...finalizedHeaderExecutionBranch,
+      ...executionPayloadBranch,
       ...finalizedHeaderBodyRootProof,
     ].map(x => hexToBits(x)),
 
