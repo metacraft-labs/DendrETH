@@ -16,13 +16,13 @@ import {
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { Config } from '@/constants/constants';
 import {
-  BeaconBlockHeader,
-  ExecutionPayloadHeader,
   SyncAggregate,
   SyncCommittee,
   WitnessGeneratorInput,
 } from '@/types/types';
 import { computeSyncCommitteePeriodAt } from '@dendreth/utils/ts-utils/ssz-utils';
+import { BeaconBlockHeader } from '@lodestar/types/phase0';
+import { ExecutionPayloadHeader } from '@lodestar/types/deneb';
 
 const ExecutionPayload = new ContainerType({
   parentHash: new ByteVectorType(32),
