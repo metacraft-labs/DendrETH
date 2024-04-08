@@ -4,6 +4,10 @@ import config from '../common_config.json';
 import { getBalancesInput } from './get_balances_input';
 import accountManagerAbi from './abi/account_manager_abi.json';
 import validatorManagerAbi from './abi/validator_manager_abi.json';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const promisified_exec = promisify(exec);
 
 const options = new CommandLineOptionsBuilder()
   .withRedisOpts()
@@ -51,4 +55,8 @@ snapshot.on('SnapshotTaken', async (_: number, currentSlot: number) => {
     redisHost: options['redis-host'],
     redisPort: options['redis-port'],
   });
+
+  let r = await promisified_exec('./circuits_executables/run_everywhere.sh diva');
+
+  console.log(r);
 });

@@ -211,7 +211,7 @@ export interface BalancesAccumulatorInput {
 
 export interface ValidatorProof {
   needsChange: boolean;
-  proofIndex: string;
+  proofKey: string;
   poseidonHash: number[];
   sha256Hash: number[];
 }
@@ -220,7 +220,7 @@ export interface BalanceProof {
   needsChange: boolean;
   rangeTotalValue: string;
   validatorsCommitment: number[];
-  proofIndex: string;
+  proofKey: string;
   balancesHash: number[];
   withdrawalCredentials: number[][];
   currentEpoch: string;

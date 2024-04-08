@@ -1,3 +1,4 @@
-verifier/circuit
 verifier/data
 verifier/DendrETH
+verifier/circuit/srs_setup
+verifier/circuit/solidity_bytes.bin
