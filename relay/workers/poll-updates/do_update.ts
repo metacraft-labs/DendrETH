@@ -26,7 +26,7 @@ export default async function doUpdate(
       type: 'fixed',
       delay: 60000,
     },
-    priority: from,
+    priority: Math.round(from / 2000000) + (from % 2000000),
   });
   logger.info('Got Update');
   console.log('');
