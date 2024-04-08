@@ -7,22 +7,26 @@ import {
   UintBigintType,
   UintNumberType,
 } from '@chainsafe/ssz';
+import { Tree } from '@chainsafe/persistent-merkle-tree';
+
 import { PointG1, PointG2 } from '@noble/bls12-381';
+
+import { BeaconBlockHeader } from '@lodestar/types/phase0';
+import { ExecutionPayloadHeader } from '@lodestar/types/deneb';
+
 import {
   bigint_to_array,
   bytesToHex,
   formatHex,
 } from '@dendreth/utils/ts-utils/bls';
-import { Tree } from '@chainsafe/persistent-merkle-tree';
+import { computeSyncCommitteePeriodAt } from '@dendreth/utils/ts-utils/ssz-utils';
+
 import { Config } from '@/constants/constants';
 import {
-  BeaconBlockHeader,
-  ExecutionPayloadHeader,
   SyncAggregate,
   SyncCommittee,
   WitnessGeneratorInput,
 } from '@/types/types';
-import { computeSyncCommitteePeriodAt } from '@dendreth/utils/ts-utils/ssz-utils';
 
 const ExecutionPayload = new ContainerType({
   parentHash: new ByteVectorType(32),
