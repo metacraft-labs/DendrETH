@@ -12,22 +12,23 @@ require('dotenv').config({ path: '../.env' });
       'Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>',
     )
     .withProofStorageOpts()
-    .option('oldest-epoch', {
-      alias: 'oldest-epoch',
-      describe: 'The oldest epoch for which we keep data',
+    .option('oldest-slot', {
+      describe: 'The oldest slot to preserve data for',
       type: 'number',
       demandOption: true,
     })
     .build();
 
+  const oldestSlot = BigInt(options['oldest-slot']);
+
   const redis = new RedisLocal(options['redis-host'], options['redis-port']);
   const proofStorage = createProofStorage(options);
 
   let validatorKeys = await redis.getAllKeys(
-    `${validator_commitment_constants.validatorKey}:*:${validator_commitment_constants.epochLookupKey}`,
+    `${validator_commitment_constants.validatorKey}:*:${validator_commitment_constants.slotLookupKey}`,
   );
   let validatorProofKeys = await redis.getAllKeys(
-    `${validator_commitment_constants.validatorProofKey}:*:${validator_commitment_constants.epochLookupKey}`,
+    `${validator_commitment_constants.validatorProofKey}:*:${validator_commitment_constants.slotLookupKey}`,
   );
 
   validatorKeys = validatorKeys.map(key =>
@@ -45,11 +46,11 @@ require('dotenv').config({ path: '../.env' });
   );
   await Promise.all(
     proofKeys.map(async (proofKey, index) => {
-      const outdatedEpochs = await redis.collectOutdatedEpochs(
+      const outdatedSlots = await redis.collectOutdatedSlots(
         validatorProofKeys[index],
-        options['oldest-epoch'],
+        oldestSlot,
       );
-      const keysToDelete = outdatedEpochs.map(epoch => `${proofKey}:${epoch}`);
+      const keysToDelete = outdatedSlots.map(slot => `${proofKey}:${slot}`);
       return Promise.all(keysToDelete.map(key => proofStorage.delProof(key)));
     }),
   );
@@ -58,7 +59,7 @@ require('dotenv').config({ path: '../.env' });
   const redisKeys = [...validatorKeys, ...validatorProofKeys];
   const deleted = await Promise.all(
     redisKeys.map(async key => {
-      return redis.pruneOldEpochs(key, options['oldest-epoch']);
+      return redis.pruneOldSlots(key, oldestSlot);
     }),
   );
 

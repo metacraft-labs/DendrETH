@@ -15,6 +15,7 @@ import { sleep } from '@dendreth/utils/ts-utils/common-utils';
 import { getDepthByGindex, indexFromGindex } from './utils';
 import { CommandLineOptionsBuilder } from '../cmdline';
 import chalk from 'chalk';
+import { getLastSlotInEpoch } from './utils';
 
 let zeroHashes: string[] = [];
 
@@ -38,38 +39,38 @@ let zeroHashes: string[] = [];
   await scheduler.init(config);
 
   let lastFinalizedCheckpoint = await api.getLastFinalizedCheckpoint();
-  let lastVerifiedEpoch = BigInt(
-    (await redis.get(CONSTANTS.lastFinalizedEpochLookupKey))!,
+  let lastVerifiedSlot = BigInt(
+    (await redis.get(CONSTANTS.lastVerifiedSlotKey))!,
   );
 
   eventSource.addEventListener('finalized_checkpoint', async (event: any) => {
     lastFinalizedCheckpoint = BigInt(JSON.parse(event.data).epoch);
   });
 
-  let lastProcessedEpoch = BigInt(
-    (await redis.get(CONSTANTS.lastProcessedEpochLookupKey))!,
+  let lastProcessedSlot = BigInt(
+    (await redis.get(CONSTANTS.lastProcessedSlotKey))!,
   );
   setInterval(async () => {
-    lastProcessedEpoch = BigInt(
-      (await redis.get(CONSTANTS.lastProcessedEpochLookupKey))!,
+    lastProcessedSlot = BigInt(
+      (await redis.get(CONSTANTS.lastProcessedSlotKey))!,
     );
   }, 10000);
 
   while (true) {
     while (
-      lastVerifiedEpoch < lastProcessedEpoch &&
-      lastVerifiedEpoch < lastFinalizedCheckpoint
+      lastVerifiedSlot < lastProcessedSlot &&
+      lastVerifiedSlot < getLastSlotInEpoch(lastFinalizedCheckpoint)
     ) {
-      ++lastVerifiedEpoch;
-      const verified = await verifyEpoch(
+      const verified = await verifySlot(
         api,
         redis,
         scheduler,
-        lastVerifiedEpoch + 1n,
+        lastVerifiedSlot + 1n,
         options['take'],
       );
+
       if (verified) {
-        ++lastVerifiedEpoch;
+        ++lastVerifiedSlot;
       } else {
         break;
       }
@@ -82,14 +83,14 @@ async function nodesAreSame(
   redis: Redis,
   newValidatorsTree: Tree,
   gindex: bigint,
-  epoch: bigint,
+  slot: bigint,
 ): Promise<boolean> {
-  const lastChangeEpoch = await redis.getLatestEpoch(
+  const lastChangeSlot = await redis.getSlotWithLatestChange(
     `${CONSTANTS.validatorProofKey}:${gindex}`,
-    epoch,
+    slot,
   );
   let node = await redis.get(
-    `${CONSTANTS.validatorProofKey}:${gindex}:${lastChangeEpoch}`,
+    `${CONSTANTS.validatorProofKey}:${gindex}:${lastChangeSlot}`,
   );
 
   const sha256 =
@@ -105,9 +106,9 @@ async function getValidatorsDiff(
   api: BeaconApi,
   redis: Redis,
   newBeaconState: any,
-  epoch: bigint,
+  slot: bigint,
 ): Promise<IndexedValidator[]> {
-  const currentSSZFork = await api.getCurrentSSZ(epoch * 32n);
+  const currentSSZFork = await api.getCurrentSSZ(slot);
   const validatorsViewDU =
     currentSSZFork.BeaconState.fields.validators.toViewDU(
       newBeaconState.validators,
@@ -115,7 +116,7 @@ async function getValidatorsDiff(
   const newValidatorsTree = new Tree(validatorsViewDU.node.left);
 
   // The roots are the same
-  if (await nodesAreSame(redis, newValidatorsTree, 1n, epoch)) {
+  if (await nodesAreSame(redis, newValidatorsTree, 1n, slot)) {
     return [];
   }
 
@@ -130,7 +131,7 @@ async function getValidatorsDiff(
         2n * changedNodeGindex + 1n,
       ]) {
         if (
-          !(await nodesAreSame(redis, newValidatorsTree, childGindex, epoch))
+          !(await nodesAreSame(redis, newValidatorsTree, childGindex, slot))
         ) {
           newChangedNodes.push(childGindex);
         }
@@ -161,21 +162,20 @@ function bitArrayToByteArray(hash: number[]): Uint8Array {
   return result;
 }
 
-/// Returns true on sucessfully verified epoch
-async function verifyEpoch(
+/// Returns true on sucessfully verified slot
+async function verifySlot(
   api: BeaconApi,
   redis: Redis,
   scheduler: CommitmentMapperScheduler,
-  epoch: bigint,
+  slot: bigint,
   take: number | undefined = undefined,
 ): Promise<boolean> {
   console.log(
-    chalk.bold.blue(`Verifying epoch: ${chalk.bold.cyan(epoch.toString())}`),
+    chalk.bold.blue(`Verifying slot: ${chalk.bold.cyan(slot.toString())}`),
   );
-  const currentSSZFork = await api.getCurrentSSZ(epoch * 32n);
+  const currentSSZFork = await api.getCurrentSSZ(slot);
 
   try {
-    const slot = await api.getFirstNonMissingSlotInEpoch(epoch);
     const { beaconState } =
       (await api.getBeaconState(slot)) ||
       panic('Could not fetch beacon state!');
@@ -188,13 +188,13 @@ async function verifyEpoch(
 
     let storedValidatorsRoot: String | null = null;
     while (storedValidatorsRoot === null) {
-      const latestValidatorsChangedEpoch = await redis.getLatestEpoch(
+      const latestValidatorChangeSlot = await redis.getSlotWithLatestChange(
         `${CONSTANTS.validatorProofKey}:1`,
-        BigInt(epoch),
+        BigInt(slot),
       );
-      if (latestValidatorsChangedEpoch !== null) {
+      if (latestValidatorChangeSlot !== null) {
         storedValidatorsRoot = await redis.getValidatorsRoot(
-          latestValidatorsChangedEpoch,
+          latestValidatorChangeSlot,
         );
       }
       await sleep(1000);
@@ -203,29 +203,28 @@ async function verifyEpoch(
     if (validatorsRoot !== storedValidatorsRoot) {
       console.log(
         chalk.bold.red(
-          `Validators roots for epoch ${epoch} differ: expected "${validatorsRoot}", got "${storedValidatorsRoot}"`,
+          `Validators roots for slot ${slot} differ: expected "${validatorsRoot}", got "${storedValidatorsRoot}"`,
         ),
       );
-      // reschedule tasks for epoch
-      await redis.updateCommitmentMapperSlot(epoch, BigInt(slot));
+      // reschedule tasks for slot
       const changedValidators = await getValidatorsDiff(
         api,
         redis,
         beaconState,
-        BigInt(epoch),
+        slot,
       );
-      await scheduler.saveValidatorsInBatches(changedValidators, BigInt(epoch));
+      await scheduler.saveValidatorsInBatches(changedValidators, slot);
       await redis.setValidatorsLength(
-        BigInt(epoch),
+        slot,
         beaconState.validators.length,
       );
       await redis.set(
-        `${CONSTANTS.validatorsRootKey}:${epoch}`,
+        `${CONSTANTS.validatorsRootKey}:${slot}`,
         validatorsRoot,
       );
     }
 
-    await redis.set(CONSTANTS.lastFinalizedEpochLookupKey, epoch.toString());
+    await redis.set(CONSTANTS.lastVerifiedSlotKey, slot.toString());
   } catch (error) {
     console.error(error);
     return false;

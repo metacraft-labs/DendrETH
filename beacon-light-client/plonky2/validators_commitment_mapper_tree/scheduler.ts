@@ -13,6 +13,7 @@ import {
   getZeroValidatorInput,
   gindexFromIndex,
   makeBranchIterator,
+  getLastSlotInEpoch,
 } from './utils';
 
 enum TaskTag {
@@ -25,33 +26,52 @@ export class CommitmentMapperScheduler {
   private redis: Redis;
   private api: BeaconApi;
   private queue: any;
-  private currentEpoch: bigint;
+  private currentSlot: bigint;
   private lastFinalizedEpoch: bigint;
-  private headEpoch: bigint;
+  private headSlot: bigint;
   private take: number | undefined = undefined;
   private offset: number | undefined = undefined;
   private validators: Validator[] = [];
   private ssz: any;
+  // This is used to prevent spawning multiple async jobs on head event
+  private isSyncing = false;
+  // This is used to allow rerunning the script if it dies or is intentionally
+  // stopped
+  private isFirstTimeRunning: boolean;
 
   async init(options: any) {
+    this.api = await getBeaconApi(options['beacon-node']);
     this.redis = new Redis(options['redis-host'], options['redis-port']);
-    this.take = options['take'];
-    this.offset = options['offset'];
     this.queue = new WorkQueue(
       new KeyPrefix(`${CONSTANTS.validatorProofsQueue}`),
     );
-    this.api = await getBeaconApi(options['beacon-node']);
-    this.headEpoch = BigInt(await this.api.getHeadSlot()) / 32n;
+
+    this.take = options['take'];
+    this.offset = options['offset'];
+    this.headSlot = await this.api.getHeadSlot();
+
     this.lastFinalizedEpoch = await this.api.getLastFinalizedCheckpoint();
-    this.currentEpoch =
-      options['sync-epoch'] !== undefined
-        ? BigInt(
-            Math.min(
-              options['sync-epoch'],
-              Number(this.lastFinalizedEpoch + 1n),
-            ),
-          )
-        : this.lastFinalizedEpoch + 1n;
+    const lastVerifiedSlot = await this.redis.get(CONSTANTS.lastVerifiedSlotKey);
+    if (lastVerifiedSlot === null) {
+      this.isFirstTimeRunning = true;
+      await this.redis.set(
+        CONSTANTS.lastVerifiedSlotKey,
+        `${getLastSlotInEpoch(this.lastFinalizedEpoch)}`,
+      );
+    } else {
+      this.isFirstTimeRunning = false;
+    }
+
+    const lastProcessedSlot = await this.redis.get(CONSTANTS.lastProcessedSlotKey);
+    if (lastProcessedSlot === null) {
+      this.currentSlot = (() => {
+        const firstNonFinalizedSlot = this.lastFinalizedEpoch * 32n + 32n;
+        const slot = options['sync-slot'] || firstNonFinalizedSlot;
+        return BigInt(Math.min(Number(slot), Number(firstNonFinalizedSlot)));
+      })();
+    } else {
+      this.currentSlot = BigInt(lastProcessedSlot) + 1n;
+    }
 
     const mod = await import('@lodestar/types');
     this.ssz = mod.ssz;
@@ -62,21 +82,10 @@ export class CommitmentMapperScheduler {
   }
 
   async start(runOnce: boolean = false) {
-    // write last finalized epoch
-    const lastFinalizedCheckpoint = await this.redis.get(
-      CONSTANTS.lastFinalizedEpochLookupKey,
-    );
-    if (lastFinalizedCheckpoint === null) {
-      await this.redis.set(
-        CONSTANTS.lastFinalizedEpochLookupKey,
-        `${this.lastFinalizedEpoch}`,
-      );
-    }
-
     console.log(chalk.bold.blue('Fetching validators from database...'));
     this.validators = await this.redis.getValidatorsBatched(
       this.ssz,
-      this.currentEpoch,
+      this.currentSlot,
     );
     console.log(
       `Loaded ${chalk.bold.yellow(
@@ -91,7 +100,7 @@ export class CommitmentMapperScheduler {
 
     console.log(
       chalk.bold.blue(
-        `Initial syncing (${chalk.cyan(this.currentEpoch)} epoch)...`,
+        `Initial syncing (${chalk.cyan(this.currentSlot)} slot)...`,
       ),
     );
     await this.updateValidators();
@@ -100,15 +109,19 @@ export class CommitmentMapperScheduler {
       return;
     }
 
-    await this.syncEpoch(true);
+    await this.syncToHeadSlot(this.isFirstTimeRunning);
 
     const eventSource = this.api.subscribeForEvents([
       'head',
       'finalized_checkpoint',
     ]);
     eventSource.addEventListener('head', async (event: any) => {
-      this.headEpoch = BigInt(JSON.parse(event.data).slot) / 32n;
-      await this.syncEpoch(false);
+      this.headSlot = BigInt(JSON.parse(event.data).slot);
+      // Guarding against api taking too long to respond and firing two async
+      // calls to this function simultaneously
+      if (!this.isSyncing) {
+        await this.syncToHeadSlot(false);
+      }
     });
     eventSource.addEventListener('finalized_checkpoint', (event: any) => {
       this.lastFinalizedEpoch = BigInt(JSON.parse(event.data).epoch);
@@ -123,12 +136,12 @@ export class CommitmentMapperScheduler {
           data: getZeroValidatorInput(),
         },
       ],
-      this.currentEpoch,
+      this.currentSlot,
     );
 
     await this.scheduleValidatorProof(
       BigInt(CONSTANTS.validatorRegistryLimit),
-      this.currentEpoch,
+      this.currentSlot,
     );
     await this.redis.saveZeroValidatorProof(40n);
 
@@ -138,46 +151,38 @@ export class CommitmentMapperScheduler {
     }
   }
 
-  async syncEpoch(shouldUpdateFinalizedEpoch: boolean) {
-    const update = async (alabala: boolean) => {
-      this.currentEpoch++;
-      if (alabala) {
-        this.redis.updateLastFinalizedEpoch(this.currentEpoch);
-      }
+  async syncToHeadSlot(isInitialSyncing: boolean) {
+    this.isSyncing = true;
+
+    while (this.currentSlot < this.headSlot) {
+      this.currentSlot++;
 
       console.log(
         chalk.bold.blue(
-          `Syncing ${
-            this.currentEpoch === this.headEpoch
-              ? chalk.cyan(this.currentEpoch)
-              : `${chalk.cyanBright(this.currentEpoch)}/${chalk.cyan(
-                  this.headEpoch,
-                )}`
+          `Syncing ${this.currentSlot === this.headSlot
+            ? chalk.cyan(this.currentSlot)
+            : `${chalk.cyanBright(this.currentSlot)}/${chalk.cyan(
+              this.headSlot,
+            )}`
           }...`,
         ),
       );
-      await this.updateValidators();
-      await this.redis.updateLastProcessedEpoch(this.currentEpoch);
-    };
 
-    while (this.currentEpoch < this.lastFinalizedEpoch)
-      await update(shouldUpdateFinalizedEpoch);
-    while (this.currentEpoch < this.headEpoch) await update(false);
+      await this.redis.updateLastProcessedSlot(this.currentSlot);
+      if (isInitialSyncing && this.currentSlot <= getLastSlotInEpoch(this.lastFinalizedEpoch)) {
+        this.redis.updateLastVerifiedSlot(this.currentSlot);
+      }
+      await this.updateValidators();
+    }
+
+    this.isSyncing = false;
   }
 
   async updateValidators() {
-    const slot = await this.api.getFirstNonMissingSlotInEpoch(
-      this.currentEpoch,
-    );
     const newValidators = await this.api.getValidators(
-      slot,
+      this.currentSlot,
       this.take,
       this.offset,
-    );
-
-    await this.redis.updateCommitmentMapperSlot(
-      this.currentEpoch,
-      BigInt(slot),
     );
 
     const changedValidators = newValidators
@@ -185,7 +190,7 @@ export class CommitmentMapperScheduler {
       .filter(hasValidatorChanged(this.validators));
 
     await this.redis.setValidatorsLength(
-      this.currentEpoch,
+      this.currentSlot,
       newValidators.length,
     );
     await this.saveValidatorsInBatches(changedValidators);
@@ -200,7 +205,7 @@ export class CommitmentMapperScheduler {
 
   public async saveValidatorsInBatches(
     validators: IndexedValidator[],
-    epoch = this.currentEpoch,
+    slot = this.currentSlot,
     batchSize = 200,
   ) {
     for (const batch of splitIntoBatches(validators, batchSize)) {
@@ -209,54 +214,54 @@ export class CommitmentMapperScheduler {
           index: validator.index,
           data: convertValidatorToProof(validator.validator, this.ssz),
         })),
-        epoch,
+        slot,
       );
       await Promise.all(
         batch.map(validator =>
-          this.scheduleValidatorProof(BigInt(validator.index), epoch),
+          this.scheduleValidatorProof(BigInt(validator.index), slot),
         ),
       );
     }
 
-    await this.updateBranches(validators, epoch);
+    await this.updateBranches(validators, slot);
   }
 
-  async scheduleValidatorProof(validatorIndex: bigint, epoch: bigint) {
+  async scheduleValidatorProof(validatorIndex: bigint, slot: bigint) {
     const buffer = new ArrayBuffer(17);
     const dataView = new DataView(buffer);
     dataView.setUint8(0, TaskTag.UPDATE_VALIDATOR_PROOF);
     dataView.setBigUint64(1, validatorIndex, false);
-    dataView.setBigUint64(9, this.currentEpoch, false);
+    dataView.setBigUint64(9, this.currentSlot, false);
     this.queue.addItem(this.redis.client, new Item(Buffer.from(buffer)));
 
-    // Don't create an epoch lookup for the zero validator proof
+    // Don't create an slot lookup for the zero validator proof
     if (validatorIndex !== BigInt(CONSTANTS.validatorRegistryLimit)) {
-      await this.redis.addToEpochLookup(
+      await this.redis.addToSlotLookup(
         `${CONSTANTS.validatorProofKey}:${gindexFromIndex(
           validatorIndex,
           40n,
         )}`,
-        epoch,
+        slot,
       );
     }
   }
 
-  async scheduleUpdateProofNodeTask(gindex: bigint, epoch: bigint) {
+  async scheduleUpdateProofNodeTask(gindex: bigint, slot: bigint) {
     const buffer = new ArrayBuffer(17);
     const dataView = new DataView(buffer);
 
-    await this.redis.addToEpochLookup(
+    await this.redis.addToSlotLookup(
       `${CONSTANTS.validatorProofKey}:${gindex}`,
-      epoch,
+      slot,
     );
 
     dataView.setUint8(0, TaskTag.UPDATE_PROOF_NODE);
     dataView.setBigUint64(1, gindex, false);
-    dataView.setBigUint64(9, epoch, false);
+    dataView.setBigUint64(9, slot, false);
     this.queue.addItem(this.redis.client, new Item(Buffer.from(buffer)));
   }
 
-  async updateBranches(validators: IndexedValidator[], epoch: bigint) {
+  async updateBranches(validators: IndexedValidator[], slot: bigint) {
     let levelIterator = makeBranchIterator(
       validators.map(validator => BigInt(validator.index)),
       40n,
@@ -265,16 +270,16 @@ export class CommitmentMapperScheduler {
     let leafs = levelIterator.next().value!;
 
     await Promise.all(
-      leafs.map(gindex => this.redis.saveValidatorProof(gindex, epoch)),
+      leafs.map(gindex => this.redis.saveValidatorProof(gindex, slot)),
     );
 
     for (const gindices of levelIterator) {
       await Promise.all(
-        gindices.map(gindex => this.redis.saveValidatorProof(gindex, epoch)),
+        gindices.map(gindex => this.redis.saveValidatorProof(gindex, slot)),
       );
 
       await Promise.all(
-        gindices.map(gindex => this.scheduleUpdateProofNodeTask(gindex, epoch)),
+        gindices.map(gindex => this.scheduleUpdateProofNodeTask(gindex, slot)),
       );
     }
   }
@@ -299,7 +304,7 @@ function hasValidatorChanged(prevValidators: Validator[]) {
     validator.effectiveBalance !== prevValidators[index].effectiveBalance ||
     validator.slashed !== prevValidators[index].slashed ||
     validator.activationEligibilityEpoch !==
-      prevValidators[index].activationEligibilityEpoch ||
+    prevValidators[index].activationEligibilityEpoch ||
     validator.activationEpoch !== prevValidators[index].activationEpoch ||
     validator.exitEpoch !== prevValidators[index].exitEpoch ||
     validator.withdrawableEpoch !== prevValidators[index].withdrawableEpoch;

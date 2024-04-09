@@ -118,8 +118,8 @@ async fn async_main() -> Result<()> {
         task.log();
 
         match task {
-            CommitmentMapperTask::UpdateValidatorProof(validator_index, epoch) => {
-                match fetch_validator(&mut con, validator_index, epoch).await {
+            CommitmentMapperTask::UpdateValidatorProof(validator_index, slot) => {
+                match fetch_validator(&mut con, validator_index, slot).await {
                     Ok(validator) => {
                         let mut pw = PartialWitness::new();
 
@@ -140,7 +140,7 @@ async fn async_main() -> Result<()> {
                                 proof_storage.as_mut(),
                                 proof,
                                 gindex_from_validator_index(validator_index, 40),
-                                epoch,
+                                slot,
                             )
                             .await
                             {
@@ -195,16 +195,11 @@ async fn async_main() -> Result<()> {
                     }
                 };
             }
-            CommitmentMapperTask::UpdateProofNode(gindex, epoch) => {
+            CommitmentMapperTask::UpdateProofNode(gindex, slot) => {
                 let level = 39 - get_depth_for_gindex(gindex) as usize;
 
-                match fetch_proofs::<ValidatorProof>(
-                    &mut con,
-                    proof_storage.as_mut(),
-                    gindex,
-                    epoch,
-                )
-                .await
+                match fetch_proofs::<ValidatorProof>(&mut con, proof_storage.as_mut(), gindex, slot)
+                    .await
                 {
                     Ok(proofs) => {
                         let inner_circuit_data = if level > 0 {
@@ -226,7 +221,7 @@ async fn async_main() -> Result<()> {
                             proof_storage.as_mut(),
                             proof,
                             gindex,
-                            epoch,
+                            slot,
                         )
                         .await
                         {

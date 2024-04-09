@@ -1,7 +1,5 @@
 import { CommandLineOptionsBuilder } from '../cmdline';
 import { CommitmentMapperScheduler } from './scheduler';
-import config from '../common_config.json';
-
 (async () => {
   const options = new CommandLineOptionsBuilder()
     .usage(
@@ -9,15 +7,15 @@ import config from '../common_config.json';
     )
     .withRedisOpts()
     .withBeaconNodeOpts()
-    .option('sync-epoch', {
-      describe: 'The sync epoch',
+    .withRangeOpts()
+    .option('sync-slot', {
+      describe: 'The sync slot',
       type: 'number',
       default: undefined,
-      description: 'Starts syncing from this epoch',
+      description: 'Starts syncing from this slot',
     })
-    .withRangeOpts()
     .option('run-once', {
-      describe: 'Should run script for one epoch',
+      describe: 'Should run script for one slot',
       type: 'boolean',
       default: false,
     })
