@@ -116,3 +116,28 @@ export function computeSyncCommitteePeriodAt(slot: number) {
 export function computeEpochAt(slot: number) {
   return Math.floor(slot / 32);
 }
+
+function log2bigInt(n: bigint): bigint {
+  return BigInt(n.toString(2).length) - 1n;
+}
+
+// Calculates gindex in a concatenated merkle tree. Gindices are sorted from high to low.
+export function concatGIndices(...gindices: bigint[]) {
+  let firstTreeGIndex = gindices[0];
+  for (let i = 1; i < gindices.length; ++i) {
+    const secondTreeGIndex = gindices[i];
+    const firstTreeDepth = log2bigInt(firstTreeGIndex);
+    const secondTreeDepth = log2bigInt(secondTreeGIndex);
+    const bigTreeDepth = firstTreeDepth + secondTreeDepth;
+
+    const leavesToSkip = firstTreeGIndex - 2n ** firstTreeDepth;
+    const indicesPerLeaf = 2n ** secondTreeDepth;
+    const firstLeafGIndexInBigTree = 2n ** bigTreeDepth;
+    const firstSubtreeLeafGIndex =
+      firstLeafGIndexInBigTree + leavesToSkip * indicesPerLeaf;
+    const indexInSubtree = secondTreeGIndex - 2n ** secondTreeDepth;
+    firstTreeGIndex = firstSubtreeLeafGIndex + indexInSubtree;
+  }
+
+  return firstTreeGIndex;
+}
