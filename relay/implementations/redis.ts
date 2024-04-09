@@ -35,22 +35,22 @@ export class Redis implements IRedis {
     this.client.quit();
   }
 
-  async addToEpochLookup(key: string, epoch: bigint) {
+  async addToSlotLookup(key: string, slot: bigint) {
     await this.waitForConnection();
 
     await this.client.zadd(
-      `${key}:${CONSTANTS.epochLookupKey}`,
-      Number(epoch),
-      epoch.toString(),
+      `${key}:${CONSTANTS.slotLookupKey}`,
+      Number(slot),
+      slot.toString(),
     );
   }
 
-  async getLatestEpoch(key: string, epoch: bigint): Promise<bigint | null> {
+  async getSlotWithLatestChange(key: string, slot: bigint): Promise<bigint | null> {
     await this.waitForConnection();
 
     const values = await this.client.zrange(
-      `${key}:${CONSTANTS.epochLookupKey}`,
-      epoch.toString(),
+      `${key}:${CONSTANTS.slotLookupKey}`,
+      slot.toString(),
       0,
       'BYSCORE',
       'REV',
@@ -64,17 +64,17 @@ export class Redis implements IRedis {
     return BigInt(values[0]);
   }
 
-  async collectOutdatedEpochs(
+  async collectOutdatedSlots(
     key: string,
-    newOldestEpoch: bigint,
+    newOldestSlot: bigint,
   ): Promise<number[]> {
     await this.waitForConnection();
 
-    const latestEpoch = await this.getLatestEpoch(key, newOldestEpoch);
+    const latestEpoch = await this.getSlotWithLatestChange(key, newOldestSlot);
     if (latestEpoch !== null) {
       return (
         await this.client.zrange(
-          `${key}:${CONSTANTS.epochLookupKey}`,
+          `${key}:${CONSTANTS.slotLookupKey}`,
           0,
           (latestEpoch - 1n).toString(),
           'BYSCORE',
@@ -84,27 +84,27 @@ export class Redis implements IRedis {
     return [];
   }
 
-  async pruneOldEpochs(key: string, newOldestEpoch: bigint): Promise<number> {
+  async pruneOldSlots(key: string, newOldestSlot: bigint): Promise<number> {
     await this.waitForConnection();
 
-    const epochs = await this.collectOutdatedEpochs(key, newOldestEpoch);
-    if (epochs.length !== 0) {
-      await this.client.zrem(`${key}:${CONSTANTS.epochLookupKey}`, epochs);
-      return this.client.del(epochs.map(suffix => `${key}:${suffix}`));
+    const slots = await this.collectOutdatedSlots(key, newOldestSlot);
+    if (slots.length !== 0) {
+      await this.client.zrem(`${key}:${CONSTANTS.slotLookupKey}`, slots);
+      return this.client.del(slots.map(suffix => `${key}:${suffix}`));
     }
     return 0;
   }
 
-  async updateLastFinalizedEpoch(epoch: bigint) {
+  async updateLastVerifiedSlot(slot: bigint) {
     await this.waitForConnection();
 
-    this.client.set(CONSTANTS.lastFinalizedEpochLookupKey, epoch.toString());
+    this.client.set(CONSTANTS.lastVerifiedSlotKey, slot.toString());
   }
 
-  async updateLastProcessedEpoch(epoch: bigint) {
+  async updateLastProcessedSlot(slot: bigint) {
     await this.waitForConnection();
 
-    this.client.set(CONSTANTS.lastProcessedEpochLookupKey, epoch.toString());
+    this.client.set(CONSTANTS.lastProcessedSlotKey, slot.toString());
   }
 
   async getAllKeys(pattern: string): Promise<string[]> {
@@ -114,7 +114,7 @@ export class Redis implements IRedis {
 
   async extractHashFromCommitmentMapperProof(
     gindex: bigint,
-    epoch: bigint,
+    slot: bigint,
     hashAlgorithm: 'sha256' | 'poseidon',
   ): Promise<number[] | null> {
     const hashAlgorithmOptionMap = {
@@ -124,11 +124,8 @@ export class Redis implements IRedis {
 
     const hashKey = hashAlgorithmOptionMap[hashAlgorithm];
 
-    const latestEpoch = await this.getLatestEpoch(
-      `${CONSTANTS.validatorProofKey}:${gindex}`,
-      BigInt(epoch),
-    );
-    if (latestEpoch === null) {
+    const latestSlot = await this.getSlotWithLatestChange(`${CONSTANTS.validatorProofKey}:${gindex}`, slot);
+    if (latestSlot === null) {
       const depth = getDepthByGindex(Number(gindex));
       const result = await this.client.get(
         `${CONSTANTS.validatorProofKey}:zeroes:${depth}`,
@@ -141,7 +138,7 @@ export class Redis implements IRedis {
       return JSON.parse(result)[hashKey];
     }
 
-    const key = `${CONSTANTS.validatorProofKey}:${gindex}:${latestEpoch}`;
+    const key = `${CONSTANTS.validatorProofKey}:${gindex}:${latestSlot}`;
     const result = await this.client.get(key);
     if (result == null) {
       return null;
@@ -161,7 +158,7 @@ export class Redis implements IRedis {
 
   async getValidatorsBatched(
     ssz: any,
-    epoch: bigint,
+    slot: bigint,
     batchSize = 1000,
   ): Promise<Validator[]> {
     await this.waitForConnection();
@@ -171,21 +168,21 @@ export class Redis implements IRedis {
       .reduce((acc, key) => {
         const split = key.split(':');
         const index = Number(split[1]);
-        const keyEpoch = Number(split[2]);
+        const keySlot = Number(split[2]);
 
-        let latestEpoch = 0;
-        if (keyEpoch <= epoch) {
-          latestEpoch = keyEpoch;
+        let latestSlot = 0;
+        if (keySlot <= slot) {
+          latestSlot = keySlot;
         }
 
-        if (acc[index] && acc[index] > latestEpoch) {
-          latestEpoch = acc[index];
+        if (acc[index] && acc[index] > latestSlot) {
+          latestSlot = acc[index];
         }
 
-        acc[index] = latestEpoch;
+        acc[index] = latestSlot;
         return acc;
       }, new Array())
-      .map((epoch, index) => `validator:${index}:${epoch}`);
+      .map((slot, index) => `validator:${index}:${slot}`);
 
     let allValidators: Validator[] = new Array(keys.length);
 
@@ -275,19 +272,19 @@ export class Redis implements IRedis {
 
   async saveValidators(
     validatorsWithIndices: { index: number; data: ValidatorShaInput }[],
-    epoch: bigint,
+    slot: bigint,
   ) {
     await this.waitForConnection();
 
     const args = (
       await Promise.all(
         validatorsWithIndices.map(async validator => {
-          await this.addToEpochLookup(
+          await this.addToSlotLookup(
             `${CONSTANTS.validatorKey}:${validator.index}`,
-            epoch,
+            slot,
           );
           return [
-            `${CONSTANTS.validatorKey}:${validator.index}:${epoch}`,
+            `${CONSTANTS.validatorKey}:${validator.index}:${slot}`,
             JSON.stringify(validator.data),
           ];
         }),
@@ -339,7 +336,7 @@ export class Redis implements IRedis {
 
   async saveValidatorProof(
     gindex: bigint,
-    epoch: bigint,
+    slot: bigint,
     proof: ValidatorProof = {
       needsChange: true,
       proofIndex: '',
@@ -349,7 +346,7 @@ export class Redis implements IRedis {
   ): Promise<void> {
     await this.waitForConnection();
     await this.client.set(
-      `${CONSTANTS.validatorProofKey}:${gindex}:${epoch}`,
+      `${CONSTANTS.validatorProofKey}:${gindex}:${slot}`,
       JSON.stringify(proof),
     );
   }
@@ -479,14 +476,6 @@ export class Redis implements IRedis {
     await this.client.set(
       `proof:${prevSlot}:${nextSlot}`,
       JSON.stringify(proof),
-    );
-  }
-
-  async updateCommitmentMapperSlot(epoch: bigint, slot: bigint) {
-    await this.waitForConnection();
-    await this.client.set(
-      `${CONSTANTS.commitmentMapperSlotKey}:${epoch}`,
-      slot.toString(),
     );
   }
 

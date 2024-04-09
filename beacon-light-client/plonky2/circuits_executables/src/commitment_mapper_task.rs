@@ -14,26 +14,26 @@ enum CommitmentMapperTaskType {
 }
 
 type Gindex = u64;
-type Epoch = u64;
+type Slot = u64;
 type ValidatorIndex = u64;
 type Depth = u64;
 
 #[derive(Debug)]
 pub enum CommitmentMapperTask {
-    UpdateProofNode(Gindex, Epoch),
+    UpdateProofNode(Gindex, Slot),
     ProveZeroForDepth(Depth),
-    UpdateValidatorProof(ValidatorIndex, Epoch),
+    UpdateValidatorProof(ValidatorIndex, Slot),
 }
 
 impl CommitmentMapperTask {
     pub fn log(&self) {
         match *self {
-            CommitmentMapperTask::UpdateProofNode(gindex, epoch) => println!(
+            CommitmentMapperTask::UpdateProofNode(gindex, slot) => println!(
                 "{}",
                 format!(
-                    "Updating proof node at gindex {} for epoch {}...",
+                    "Updating proof node at gindex {} for slot {}...",
                     gindex.to_string().magenta(),
-                    epoch.to_string().cyan()
+                    slot.to_string().cyan()
                 )
                 .blue()
                 .bold()
@@ -46,14 +46,14 @@ impl CommitmentMapperTask {
                         .bold(),
                 )
             }
-            CommitmentMapperTask::UpdateValidatorProof(validator_index, epoch) => {
+            CommitmentMapperTask::UpdateValidatorProof(validator_index, slot) => {
                 if validator_index != VALIDATOR_REGISTRY_LIMIT as u64 {
                     println!(
                         "{}",
                         format!(
-                            "Updating validator proof at index {} for epoch {}...",
+                            "Updating validator proof at index {} for slot {}...",
                             validator_index.to_string().magenta(),
-                            epoch.to_string().cyan()
+                            slot.to_string().cyan()
                         )
                         .blue()
                         .bold()
@@ -71,8 +71,8 @@ impl CommitmentMapperTask {
         match FromPrimitive::from_u8(u8::from_be_bytes(bytes[0..1].try_into().unwrap()))? {
             CommitmentMapperTaskType::UpdateProofNode => {
                 let gindex = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
-                let epoch = u64::from_be_bytes(bytes[9..17].try_into().unwrap());
-                Some(CommitmentMapperTask::UpdateProofNode(gindex, epoch))
+                let slot = u64::from_be_bytes(bytes[9..17].try_into().unwrap());
+                Some(CommitmentMapperTask::UpdateProofNode(gindex, slot))
             }
             CommitmentMapperTaskType::ProveZeroForDepth => {
                 let depth = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
@@ -80,10 +80,10 @@ impl CommitmentMapperTask {
             }
             CommitmentMapperTaskType::UpdateValidatorProof => {
                 let validator_index = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
-                let epoch = u64::from_be_bytes(bytes[9..17].try_into().unwrap());
+                let slot = u64::from_be_bytes(bytes[9..17].try_into().unwrap());
                 Some(CommitmentMapperTask::UpdateValidatorProof(
                     validator_index,
-                    epoch,
+                    slot,
                 ))
             }
         }

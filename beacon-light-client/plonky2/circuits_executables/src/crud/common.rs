@@ -270,11 +270,11 @@ pub async fn save_final_proof(
     let final_proof = FinalProof {
         needs_change: false,
         block_root,
-        withdrawal_credentials: withdrawal_credentials,
-        balance_sum: balance_sum,
-        number_of_non_activated_validators: number_of_non_activated_validators,
-        number_of_active_validators: number_of_active_validators,
-        number_of_exited_validators: number_of_exited_validators,
+        withdrawal_credentials,
+        balance_sum,
+        number_of_non_activated_validators,
+        number_of_active_validators,
+        number_of_exited_validators,
         proof: proof.to_bytes(),
     };
 
@@ -341,29 +341,33 @@ pub async fn delete_balance_verification_proof_dependencies(
     Ok(())
 }
 
-pub async fn get_latest_epoch(con: &mut Connection, key: &String, epoch: u64) -> Result<String> {
+pub async fn get_slot_with_latest_change(
+    con: &mut Connection,
+    key: &String,
+    slot: u64,
+) -> Result<String> {
     let result: Vec<String> = con
         .zrevrangebyscore_limit(
             format!(
                 "{}:{}",
                 key,
-                VALIDATOR_COMMITMENT_CONSTANTS.epoch_lookup_key.to_owned(),
+                VALIDATOR_COMMITMENT_CONSTANTS.slot_lookup_key.to_owned(),
             ),
-            epoch,
+            slot,
             0,
             0,
             1,
         )
         .await?;
 
-    ensure!(!result.is_empty(), "Could not find data for epoch");
+    ensure!(!result.is_empty(), "Could not find data for slot");
     Ok(result[0].clone())
 }
 
 pub async fn fetch_validator(
     con: &mut Connection,
     validator_index: u64,
-    epoch: u64,
+    slot: u64,
 ) -> Result<ValidatorShaInput> {
     let key = format!(
         "{}:{}",
@@ -371,10 +375,13 @@ pub async fn fetch_validator(
         validator_index,
     );
 
-    let latest_epoch = get_latest_epoch(con, &key, epoch).await?;
+    let latest_change_slot = get_slot_with_latest_change(con, &key, slot).await?;
     Ok(
-        fetch_redis_json_object::<ValidatorShaInput>(con, format!("{}:{}", key, latest_epoch))
-            .await?,
+        fetch_redis_json_object::<ValidatorShaInput>(
+            con,
+            format!("{}:{}", key, latest_change_slot),
+        )
+        .await?,
     )
 }
 
@@ -445,11 +452,11 @@ pub async fn save_validator_proof(
     proof_storage: &mut dyn ProofStorage,
     proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     gindex: u64,
-    epoch: u64,
+    slot: u64,
 ) -> Result<()> {
     let proof_key = format!(
         "{}:{}:{}",
-        VALIDATOR_COMMITMENT_CONSTANTS.validator_proof_storage, gindex, epoch
+        VALIDATOR_COMMITMENT_CONSTANTS.validator_proof_storage, gindex, slot
     );
     let validator_proof = ValidatorProof {
         poseidon_hash: proof
@@ -469,7 +476,7 @@ pub async fn save_validator_proof(
         let length: u64 = con
             .get_del(format!(
                 "{}:{}",
-                VALIDATOR_COMMITMENT_CONSTANTS.validators_length_key, epoch
+                VALIDATOR_COMMITMENT_CONSTANTS.validators_length_key, slot
             ))
             .await?;
 
@@ -486,7 +493,7 @@ pub async fn save_validator_proof(
         con.set(
             format!(
                 "{}:{}",
-                VALIDATOR_COMMITMENT_CONSTANTS.validators_root_key, epoch
+                VALIDATOR_COMMITMENT_CONSTANTS.validators_root_key, slot
             ),
             validators_root,
         )
@@ -501,7 +508,7 @@ pub async fn save_validator_proof(
                 .validator_proof_key
                 .to_owned(),
             gindex,
-            epoch
+            slot
         ),
         &validator_proof,
     )
@@ -545,7 +552,7 @@ pub async fn fetch_redis_json_object<T: DeserializeOwned + Clone>(
 pub async fn fetch_proof<T: NeedsChange + KeyProvider + DeserializeOwned + Clone>(
     con: &mut Connection,
     gindex: u64,
-    epoch: u64,
+    slot: u64,
 ) -> Result<T> {
     let key = format!("{}:{}", T::get_key(), gindex);
     let mut retries = 0;
@@ -555,13 +562,13 @@ pub async fn fetch_proof<T: NeedsChange + KeyProvider + DeserializeOwned + Clone
             return Err(anyhow::anyhow!("Not able to complete, try again"));
         }
 
-        let latest_epoch_result = get_latest_epoch(con, &key, epoch).await;
+        let latest_change_slot_result = get_slot_with_latest_change(con, &key, slot).await;
 
-        let proof = match latest_epoch_result {
-            Ok(latest_epoch) => {
+        let proof = match latest_change_slot_result {
+            Ok(latest_change_slot) => {
                 let proof_result = fetch_redis_json_object::<T>(
                     con,
-                    format!("{}:{}:{}", T::get_key(), gindex, latest_epoch),
+                    format!("{}:{}:{}", T::get_key(), gindex, latest_change_slot),
                 )
                 .await;
 
@@ -591,13 +598,13 @@ pub async fn fetch_proofs<
     con: &mut Connection,
     proof_storage: &mut dyn ProofStorage,
     gindex: u64,
-    epoch: u64,
+    slot: u64,
 ) -> Result<(Vec<u8>, Vec<u8>)> {
     let left_child_gindex = gindex * 2;
     let right_child_gindex = gindex * 2 + 1;
 
-    let proof1 = fetch_proof::<T>(con, left_child_gindex, epoch).await?;
-    let proof2 = fetch_proof::<T>(con, right_child_gindex, epoch).await?;
+    let proof1 = fetch_proof::<T>(con, left_child_gindex, slot).await?;
+    let proof2 = fetch_proof::<T>(con, right_child_gindex, slot).await?;
 
     Ok((
         proof1.get_proof(proof_storage).await,

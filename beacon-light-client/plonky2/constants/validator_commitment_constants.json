@@ -9,12 +9,12 @@
   "finalProofInputKey": "final_proof_input",
   "finalLayerProofKey": "final_layer_proof",
   "zeroHashesForLevelKey": "zero_hashes_for_level",
-  "epochLookupKey": "epoch_lookup",
+  "slotLookupKey": "slot_lookup",
   "validatorProofStorage": "validator_proof_storage",
   "balanceVerificationProofStorage": "balance_verification_proof_storage",
   "validatorsLengthKey": "validators_length",
   "validatorsRootKey": "validators_root",
-  "lastFinalizedEpochLookupKey": "last_finalized_epoch",
-  "lastProcessedEpochLookupKey": "last_processed_epoch",
+  "lastVerifiedSlotKey": "last_verified_slot",
+  "lastProcessedSlotKey": "last_processed_slot",
   "commitmentMapperSlotKey": "commitment_mapper_slot"
 }

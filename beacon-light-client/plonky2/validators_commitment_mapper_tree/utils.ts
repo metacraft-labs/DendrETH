@@ -22,6 +22,10 @@ export function getParent(gindex: bigint) {
   return getNthParent(gindex, 1n);
 }
 
+export function getLastSlotInEpoch(epoch: bigint) {
+  return epoch * 32n + 31n;
+}
+
 export function* makeBranchIterator(indices: bigint[], depth: bigint) {
   const changedValidatorGindices = indices.map(index =>
     gindexFromIndex(index, depth),

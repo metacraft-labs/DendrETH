@@ -12,7 +12,7 @@ pub struct ValidatorCommitmentConstants<'a> {
     pub balance_verification_proof_key: &'a str,
     pub final_proof_input_key: &'a str,
     pub final_layer_proof_key: &'a str,
-    pub epoch_lookup_key: &'a str,
+    pub slot_lookup_key: &'a str,
     pub validator_proof_storage: &'a str,
     pub balance_verification_proof_storage: &'a str,
     pub validators_length_key: &'a str,
