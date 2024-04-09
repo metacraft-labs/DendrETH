@@ -45,7 +45,10 @@ export class Redis implements IRedis {
     );
   }
 
-  async getSlotWithLatestChange(key: string, slot: bigint): Promise<bigint | null> {
+  async getSlotWithLatestChange(
+    key: string,
+    slot: bigint,
+  ): Promise<bigint | null> {
     await this.waitForConnection();
 
     const values = await this.client.zrange(
@@ -124,7 +127,10 @@ export class Redis implements IRedis {
 
     const hashKey = hashAlgorithmOptionMap[hashAlgorithm];
 
-    const latestSlot = await this.getSlotWithLatestChange(`${CONSTANTS.validatorProofKey}:${gindex}`, slot);
+    const latestSlot = await this.getSlotWithLatestChange(
+      `${CONSTANTS.validatorProofKey}:${gindex}`,
+      slot,
+    );
     if (latestSlot === null) {
       const depth = getDepthByGindex(Number(gindex));
       const result = await this.client.get(

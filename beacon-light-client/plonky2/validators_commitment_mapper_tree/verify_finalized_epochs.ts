@@ -214,14 +214,8 @@ async function verifySlot(
         slot,
       );
       await scheduler.saveValidatorsInBatches(changedValidators, slot);
-      await redis.setValidatorsLength(
-        slot,
-        beaconState.validators.length,
-      );
-      await redis.set(
-        `${CONSTANTS.validatorsRootKey}:${slot}`,
-        validatorsRoot,
-      );
+      await redis.setValidatorsLength(slot, beaconState.validators.length);
+      await redis.set(`${CONSTANTS.validatorsRootKey}:${slot}`, validatorsRoot);
     }
 
     await redis.set(CONSTANTS.lastVerifiedSlotKey, slot.toString());

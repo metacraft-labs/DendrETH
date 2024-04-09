@@ -51,7 +51,9 @@ export class CommitmentMapperScheduler {
     this.headSlot = await this.api.getHeadSlot();
 
     this.lastFinalizedEpoch = await this.api.getLastFinalizedCheckpoint();
-    const lastVerifiedSlot = await this.redis.get(CONSTANTS.lastVerifiedSlotKey);
+    const lastVerifiedSlot = await this.redis.get(
+      CONSTANTS.lastVerifiedSlotKey,
+    );
     if (lastVerifiedSlot === null) {
       this.isFirstTimeRunning = true;
       await this.redis.set(
@@ -62,7 +64,9 @@ export class CommitmentMapperScheduler {
       this.isFirstTimeRunning = false;
     }
 
-    const lastProcessedSlot = await this.redis.get(CONSTANTS.lastProcessedSlotKey);
+    const lastProcessedSlot = await this.redis.get(
+      CONSTANTS.lastProcessedSlotKey,
+    );
     if (lastProcessedSlot === null) {
       this.currentSlot = (() => {
         const firstNonFinalizedSlot = this.lastFinalizedEpoch * 32n + 32n;
@@ -159,17 +163,21 @@ export class CommitmentMapperScheduler {
 
       console.log(
         chalk.bold.blue(
-          `Syncing ${this.currentSlot === this.headSlot
-            ? chalk.cyan(this.currentSlot)
-            : `${chalk.cyanBright(this.currentSlot)}/${chalk.cyan(
-              this.headSlot,
-            )}`
+          `Syncing ${
+            this.currentSlot === this.headSlot
+              ? chalk.cyan(this.currentSlot)
+              : `${chalk.cyanBright(this.currentSlot)}/${chalk.cyan(
+                  this.headSlot,
+                )}`
           }...`,
         ),
       );
 
       await this.redis.updateLastProcessedSlot(this.currentSlot);
-      if (isInitialSyncing && this.currentSlot <= getLastSlotInEpoch(this.lastFinalizedEpoch)) {
+      if (
+        isInitialSyncing &&
+        this.currentSlot <= getLastSlotInEpoch(this.lastFinalizedEpoch)
+      ) {
         this.redis.updateLastVerifiedSlot(this.currentSlot);
       }
       await this.updateValidators();
@@ -304,7 +312,7 @@ function hasValidatorChanged(prevValidators: Validator[]) {
     validator.effectiveBalance !== prevValidators[index].effectiveBalance ||
     validator.slashed !== prevValidators[index].slashed ||
     validator.activationEligibilityEpoch !==
-    prevValidators[index].activationEligibilityEpoch ||
+      prevValidators[index].activationEligibilityEpoch ||
     validator.activationEpoch !== prevValidators[index].activationEpoch ||
     validator.exitEpoch !== prevValidators[index].exitEpoch ||
     validator.withdrawableEpoch !== prevValidators[index].withdrawableEpoch;
