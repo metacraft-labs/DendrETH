@@ -31,7 +31,7 @@ pub fn assert_epoch_is_not_genesis_epoch<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
     epoch: Epoch,
 ) {
-    let one = builder.one();
+    let one: U64Variable = builder.one();
     let pred = builder.gte(epoch, one);
     assert_is_true(builder, pred);
 }
