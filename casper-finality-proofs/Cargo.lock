@@ -892,6 +892,7 @@ dependencies = [
  "hex",
  "itertools 0.10.5",
  "merkle_proof",
+ "num-bigint 0.4.4",
  "once_cell",
  "plonky2",
  "plonky2x",
