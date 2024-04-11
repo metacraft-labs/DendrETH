@@ -1535,7 +1535,7 @@ mod tests {
 
     use num_bigint::BigUint;
 
-    use crate::native::sub_u32_slices_12;
+    use crate::verification::native::sub_u32_slices_12;
 
     use super::{get_u32_vec_from_literal, modulus, verify_bls_signatures, Fp12};
 

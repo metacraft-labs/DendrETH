@@ -12,7 +12,7 @@ pub fn big_less_than(a: &[u32], b: &[u32]) -> bool {
 
 pub fn big_add(a: &[u32], b: &[u32]) -> Vec<u32> {
     assert_eq!(a.len(), b.len());
-    let mut c: Vec<u32> = Vec::with_capacity(a.len()+1);
+    let mut c: Vec<u32> = Vec::with_capacity(a.len() + 1);
     let mut carry: u32 = 0;
     for (a_i, b_i) in a.iter().zip(b.iter()) {
         let c_i = (*a_i as u64) + (*b_i as u64) + (carry as u64);
@@ -34,7 +34,7 @@ pub fn big_sub(a: &[u32], b: &[u32]) -> (Vec<u32>, u32) {
             c.push(a_i - (b_plus_carry as u32));
             carry = 0;
         } else {
-            c.push(((1u64<<32) + (*a_i as u64) - b_plus_carry) as u32);
+            c.push(((1u64 << 32) + (*a_i as u64) - b_plus_carry) as u32);
             carry = 1;
         }
     }
@@ -44,7 +44,7 @@ pub fn big_sub(a: &[u32], b: &[u32]) -> (Vec<u32>, u32) {
 // a * b
 pub fn big_multiply(a: &[u32], b: &[u32]) -> Vec<u32> {
     assert_eq!(a.len(), b.len());
-    let mut c: Vec<u32> = Vec::with_capacity(a.len()+1);
+    let mut c: Vec<u32> = Vec::with_capacity(a.len() + 1);
     let mut carry = 0;
     for (a_i, b_i) in a.iter().zip(b.iter()) {
         let c_i = (*a_i as u64) * (*b_i as u64) + (carry as u64);
@@ -57,14 +57,14 @@ pub fn big_multiply(a: &[u32], b: &[u32]) -> Vec<u32> {
 
 #[cfg(test)]
 mod tests {
-    use crate::big_arithmetic::{big_less_than, big_sub};
+    use crate::verification::big_arithmetic::{big_less_than, big_sub};
 
     use super::big_add;
 
     #[test]
     fn test_big_add() {
-        let a = vec![1<<31, ((1u64<<32)-1) as u32, 1];
-        let b = vec![1<<31, 1, 4];
+        let a = vec![1 << 31, ((1u64 << 32) - 1) as u32, 1];
+        let b = vec![1 << 31, 1, 4];
         let ans = vec![0, 1, 6, 0];
         let big_add_ans = big_add(&a, &b);
         assert_eq!(ans, big_add_ans);
@@ -72,8 +72,8 @@ mod tests {
 
     #[test]
     fn test_less_than() {
-        let a = vec![0,1,2];
-        let b = vec![2,3,1];
+        let a = vec![0, 1, 2];
+        let b = vec![2, 3, 1];
         assert_eq!(big_less_than(&a, &b), false);
         assert_eq!(big_less_than(&b, &a), true);
         assert_eq!(big_less_than(&b, &b), false);
@@ -81,9 +81,9 @@ mod tests {
 
     #[test]
     fn test_big_sub() {
-        let a = vec![1<<31, 3, 1];
-        let b = vec![1<<31, 1, 1];
-        let ans = vec![0, ((1u64<<32) - 2) as u32, ((1u64<<32) - 1) as u32];
+        let a = vec![1 << 31, 3, 1];
+        let b = vec![1 << 31, 1, 1];
+        let ans = vec![0, ((1u64 << 32) - 2) as u32, ((1u64 << 32) - 1) as u32];
         let (sub_ans, carry) = big_sub(&b, &a);
         assert_eq!(ans, sub_ans);
         assert_eq!(carry, 1);
