@@ -894,7 +894,7 @@ dependencies = [
  "merkle_proof",
  "num-bigint 0.4.4",
  "once_cell",
- "plonky2",
+ "plonky2 0.2.1",
  "plonky2x",
  "primitive-types 0.12.2",
  "serde",
@@ -902,6 +902,7 @@ dependencies = [
  "serde_json",
  "serde_yaml 0.9.27",
  "snap",
+ "starky",
  "starkyx 0.1.0 (git+https://github.com/succinctlabs/starkyx.git?branch=main)",
  "state_processing",
  "strum 0.25.0",
@@ -5791,6 +5792,31 @@ checksum = "14e6ab3f592e6fb464fc9712d8d6e6912de6473954635fd76a589d832cffcbb0"
 
 [[package]]
 name = "plonky2"
+version = "0.1.4"
+source = "git+https://github.com/NikolayKostadinov21/el-plonky2?branch=derive_bn254_from_ff#45319d6559f37ea62db6b52a603a95e0d3b5470a"
+dependencies = [
+ "ahash 0.8.11",
+ "anyhow",
+ "ff 0.13.0",
+ "getrandom",
+ "hashbrown 0.14.3",
+ "itertools 0.11.0",
+ "keccak-hash 0.8.0",
+ "lazy_static",
+ "log",
+ "num",
+ "plonky2_field 0.1.1",
+ "plonky2_maybe_rayon 0.1.1",
+ "plonky2_util 0.1.1",
+ "rand",
+ "serde",
+ "serde_json",
+ "static_assertions",
+ "unroll",
+]
+
+[[package]]
+name = "plonky2"
 version = "0.2.1"
 source = "git+https://github.com/mir-protocol/plonky2.git#53c5bc3e956379875bad7e4f371325210a6ec06b"
 dependencies = [
@@ -5802,14 +5828,30 @@ dependencies = [
  "keccak-hash 0.8.0",
  "log",
  "num",
- "plonky2_field",
+ "plonky2_field 0.2.1",
  "plonky2_maybe_rayon 0.2.0 (git+https://github.com/mir-protocol/plonky2.git)",
- "plonky2_util",
+ "plonky2_util 0.2.0",
  "rand",
  "serde",
  "static_assertions",
  "unroll",
  "web-time",
+]
+
+[[package]]
+name = "plonky2_field"
+version = "0.1.1"
+source = "git+https://github.com/NikolayKostadinov21/el-plonky2?branch=derive_bn254_from_ff#45319d6559f37ea62db6b52a603a95e0d3b5470a"
+dependencies = [
+ "anyhow",
+ "ff 0.13.0",
+ "itertools 0.11.0",
+ "num",
+ "plonky2_util 0.1.1",
+ "rand",
+ "serde",
+ "static_assertions",
+ "unroll",
 ]
 
 [[package]]
@@ -5820,11 +5862,19 @@ dependencies = [
  "anyhow",
  "itertools 0.11.0",
  "num",
- "plonky2_util",
+ "plonky2_util 0.2.0",
  "rand",
  "serde",
  "static_assertions",
  "unroll",
+]
+
+[[package]]
+name = "plonky2_maybe_rayon"
+version = "0.1.1"
+source = "git+https://github.com/NikolayKostadinov21/el-plonky2?branch=derive_bn254_from_ff#45319d6559f37ea62db6b52a603a95e0d3b5470a"
+dependencies = [
+ "rayon",
 ]
 
 [[package]]
@@ -5843,6 +5893,11 @@ source = "git+https://github.com/mir-protocol/plonky2.git#53c5bc3e956379875bad7e
 dependencies = [
  "rayon",
 ]
+
+[[package]]
+name = "plonky2_util"
+version = "0.1.1"
+source = "git+https://github.com/NikolayKostadinov21/el-plonky2?branch=derive_bn254_from_ff#45319d6559f37ea62db6b52a603a95e0d3b5470a"
 
 [[package]]
 name = "plonky2_util"
@@ -5875,7 +5930,7 @@ dependencies = [
  "log",
  "num",
  "num-bigint 0.4.4",
- "plonky2",
+ "plonky2 0.2.1",
  "plonky2x-derive",
  "rand",
  "reqwest",
@@ -7561,6 +7616,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "starky"
+version = "0.1.2"
+source = "git+https://github.com/NikolayKostadinov21/el-plonky2?branch=derive_bn254_from_ff#45319d6559f37ea62db6b52a603a95e0d3b5470a"
+dependencies = [
+ "anyhow",
+ "itertools 0.11.0",
+ "log",
+ "plonky2 0.1.4",
+ "plonky2_maybe_rayon 0.1.1",
+]
+
+[[package]]
 name = "starkyx"
 version = "0.1.0"
 source = "git+https://github.com/succinctlabs/starkyx.git?branch=main#ad8eb4bae41268dcb2964dab52e66d4e551abf39"
@@ -7573,7 +7640,7 @@ dependencies = [
  "itertools 0.10.5",
  "log",
  "num",
- "plonky2",
+ "plonky2 0.2.1",
  "plonky2_maybe_rayon 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand",
  "serde",
@@ -7593,7 +7660,7 @@ dependencies = [
  "itertools 0.10.5",
  "log",
  "num",
- "plonky2",
+ "plonky2 0.2.1",
  "plonky2_maybe_rayon 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand",
  "serde",
