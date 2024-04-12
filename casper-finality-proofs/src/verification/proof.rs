@@ -4,28 +4,26 @@ use plonky2::{
     field::extension::Extendable, hash::hash_types::RichField, plonk::config::GenericConfig,
     util::timing::TimingTree,
 };
-use starkyx::plonky2::stark::config::StarkyConfig;
+use starky::{
+    config::StarkConfig, proof::StarkProofWithPublicInputs, prover::prove,
+    util::trace_rows_to_poly_values, verifier::verify_stark_proof,
+};
 
-use crate::verification::native;
+use crate::verification::{
+    miller_loop::{self, MillerLoopStark},
+    native,
+};
 
 use super::native::{Fp, Fp2};
 
-pub fn miller_loop_main<
-    F: RichField + Extendable<D>,
-    C: GenericConfig<D, F = F>,
-    const D: usize,
->(
+fn miller_loop_main<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
     x: Fp,
     y: Fp,
     q_x: Fp2,
     q_y: Fp2,
     q_z: Fp2,
-) -> (
-    MillerLoopStark<F, D>,
-    starky::proof::StarkProofWithPublicInputs<F, C, D>,
-    StarkyConfig<C, D>,
 ) {
-    let config = StarkyConfig::standard_fast_config(1024);
+    let config = StarkConfig::standard_fast_config();
     let stark = MillerLoopStark::<F, D>::new(1024);
     let ell_coeffs = native::calc_pairing_precomp(q_x, q_y, q_z);
     let res = native::miller_loop(x, y, q_x, q_y, q_z);
@@ -64,5 +62,5 @@ pub fn miller_loop_main<
     .unwrap();
     println!("Time taken for miller_loop stark proof {:?}", s.elapsed());
     verify_stark_proof(stark, proof.clone(), &config).unwrap();
-    (stark, proof, config)
+    //(stark, proof, config)
 }
