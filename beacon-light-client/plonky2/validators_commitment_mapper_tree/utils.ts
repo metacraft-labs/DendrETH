@@ -48,7 +48,7 @@ export function* makeBranchIterator(indices: bigint[], depth: bigint) {
   }
 }
 
-function bitArrayToByteArray(hash: number[]): Uint8Array {
+export function bitArrayToByteArray(hash: number[]): Uint8Array {
   const result = new Uint8Array(32);
 
   for (let byte = 0; byte < 32; ++byte) {
