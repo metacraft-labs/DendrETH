@@ -6,19 +6,6 @@ import { CommandLineOptionsBuilder } from '../cmdline';
 
 type HashAlgorithm = 'sha256' | 'poseidon';
 
-function bitArrayToByteArray(hash: number[]): Uint8Array {
-  const result = new Uint8Array(32);
-
-  for (let byte = 0; byte < 32; ++byte) {
-    let value = 0;
-    for (let bit = 0; bit < 8; ++bit) {
-      value += 2 ** (7 - bit) * hash[byte * 8 + bit];
-    }
-    result[byte] = value;
-  }
-  return result;
-}
-
 (async () => {
   const options = new CommandLineOptionsBuilder()
     .withRedisOpts()

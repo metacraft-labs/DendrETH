@@ -12,7 +12,7 @@ import { Tree, zeroNode } from '@chainsafe/persistent-merkle-tree';
 import CONSTANTS from '../constants/validator_commitment_constants.json';
 // @ts-ignore
 import { sleep } from '@dendreth/utils/ts-utils/common-utils';
-import { getDepthByGindex, indexFromGindex } from './utils';
+import { bitArrayToByteArray, getDepthByGindex, indexFromGindex } from './utils';
 import { CommandLineOptionsBuilder } from '../cmdline';
 import chalk from 'chalk';
 import { getLastSlotInEpoch } from './utils';
@@ -147,19 +147,7 @@ async function getValidatorsDiff(
     index: Number(index),
     validator: newBeaconState.validators[Number(index)],
   }));
-}
 
-function bitArrayToByteArray(hash: number[]): Uint8Array {
-  const result = new Uint8Array(32);
-
-  for (let byte = 0; byte < 32; ++byte) {
-    let value = 0;
-    for (let bit = 0; bit < 8; ++bit) {
-      value += 2 ** (7 - bit) * hash[byte * 8 + bit];
-    }
-    result[byte] = value;
-  }
-  return result;
 }
 
 /// Returns true on sucessfully verified slot
