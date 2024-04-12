@@ -1,6 +1,6 @@
 import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
 
-import validator_commitment_constants from '../constants/validator_commitment_constants.json';
+import CONSTANTS from '../constants/validator_commitment_constants.json';
 import { createProofStorage } from '../proof_storage/proof_storage';
 import { CommandLineOptionsBuilder } from '../cmdline';
 
@@ -25,10 +25,10 @@ require('dotenv').config({ path: '../.env' });
   const proofStorage = createProofStorage(options);
 
   let validatorKeys = await redis.getAllKeys(
-    `${validator_commitment_constants.validatorKey}:*:${validator_commitment_constants.slotLookupKey}`,
+    `${CONSTANTS.validatorKey}:*:${CONSTANTS.slotLookupKey}`,
   );
   let validatorProofKeys = await redis.getAllKeys(
-    `${validator_commitment_constants.validatorProofKey}:*:${validator_commitment_constants.slotLookupKey}`,
+    `${CONSTANTS.validatorProofKey}:*:${CONSTANTS.slotLookupKey}`,
   );
 
   validatorKeys = validatorKeys.map(key =>
@@ -41,7 +41,7 @@ require('dotenv').config({ path: '../.env' });
   // delete proofs
   const proofKeys = validatorProofKeys.map(
     key =>
-      validator_commitment_constants.validatorProofStorage +
+      CONSTANTS.validatorProofStorage +
       key.slice(key.indexOf(':')),
   );
   await Promise.all(
@@ -69,3 +69,5 @@ require('dotenv').config({ path: '../.env' });
   await proofStorage.quit();
   await redis.quit();
 })();
+
+// TODO: Delete `validators_root` and `validators_length`
