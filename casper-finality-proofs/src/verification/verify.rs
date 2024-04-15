@@ -35,11 +35,11 @@ type MlStark = MillerLoopStark<F, D>;
 //     signature
 // }
 
-pub fn verify_miller_loop(x: Fp, y: Fp, q_x: Fp2, q_y: Fp2, q_z: Fp2) {
+pub fn verify_miller_loop(x: Fp, y: Fp, q_x: Fp2, q_y: Fp2, q_z: Fp2) -> ProofTuple<F, C, D> {
     let (stark_ml, proof_ml, config_ml) = miller_loop_main::<F, C, D>(x, y, q_x, q_y, q_z);
     let recursive_ml = recursive_proof::<F, C, MlStark, C, D>(stark_ml, proof_ml, &config_ml, true);
 
-    // recursive_ml
+    recursive_ml
 }
 
 // pub fn verify_final_exponentiation(f: Fp12) -> ProofTuple<F, C, D> {
