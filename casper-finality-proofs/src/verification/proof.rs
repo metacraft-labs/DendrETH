@@ -1,7 +1,13 @@
 use std::time::Instant;
 
 use plonky2::{
-    field::extension::Extendable, hash::hash_types::RichField, plonk::config::GenericConfig,
+    field::extension::Extendable,
+    hash::hash_types::RichField,
+    plonk::{
+        circuit_data::{CommonCircuitData, VerifierOnlyCircuitData},
+        config::GenericConfig,
+        proof::ProofWithPublicInputs,
+    },
     util::timing::TimingTree,
 };
 use starky::{
@@ -16,7 +22,11 @@ use crate::verification::{
 
 use super::native::{Fp, Fp2};
 
-fn miller_loop_main<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
+pub fn miller_loop_main<
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    const D: usize,
+>(
     x: Fp,
     y: Fp,
     q_x: Fp2,
@@ -68,3 +78,58 @@ fn miller_loop_main<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, co
     verify_stark_proof(stark, proof.clone(), &config).unwrap();
     (stark, proof, config)
 }
+
+pub fn recursive_proof<
+    F: plonky2::hash::hash_types::RichField + plonky2::field::extension::Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    S: starky::stark::Stark<F, D> + Copy,
+    InnerC: GenericConfig<D, F = F>,
+    const D: usize,
+>(
+    stark: S,
+    inner_proof: starky::proof::StarkProofWithPublicInputs<F, InnerC, D>,
+    inner_config: &StarkConfig,
+    print_gate_counts: bool,
+) -> ProofTuple<F, C, D>
+where
+    InnerC::Hasher: plonky2::plonk::config::AlgebraicHasher<F>,
+{
+    let circuit_config = plonky2::plonk::circuit_data::CircuitConfig::standard_recursion_config();
+    let mut builder = plonky2::plonk::circuit_builder::CircuitBuilder::<F, D>::new(circuit_config);
+    let mut pw = plonky2::iop::witness::PartialWitness::new();
+    let degree_bits = inner_proof.proof.recover_degree_bits(inner_config);
+    let pt = starky::recursive_verifier::add_virtual_stark_proof_with_pis(
+        &mut builder,
+        &stark,
+        inner_config,
+        degree_bits,
+        0, // DANGER FIX
+        0, // DANGER FIX
+    );
+    builder.register_public_inputs(&pt.public_inputs);
+    let zero = builder.zero();
+    starky::recursive_verifier::set_stark_proof_with_pis_target(&mut pw, &pt, &inner_proof, zero);
+    starky::recursive_verifier::verify_stark_proof_circuit::<F, InnerC, S, D>(
+        &mut builder,
+        stark,
+        pt,
+        inner_config,
+    );
+
+    if print_gate_counts {
+        builder.print_gate_counts(0);
+    }
+
+    let data = builder.build::<C>();
+    let s = Instant::now();
+    let proof = data.prove(pw).unwrap();
+    println!("time taken for plonky2 recursive proof {:?}", s.elapsed());
+    data.verify(proof.clone()).unwrap();
+    (proof, data.verifier_only, data.common)
+}
+
+pub type ProofTuple<F, C, const D: usize> = (
+    ProofWithPublicInputs<F, C, D>,
+    VerifierOnlyCircuitData<C, D>,
+    CommonCircuitData<F, D>,
+);

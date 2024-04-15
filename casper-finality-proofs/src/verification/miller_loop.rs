@@ -21,7 +21,6 @@ use starky::constraint_consumer::RecursiveConstraintConsumer;
 use starky::evaluation_frame::StarkEvaluationFrame;
 use starky::evaluation_frame::StarkFrame;
 use starky::stark::Stark;
-// use starkyx::plonky2::parser::consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 
 // Miller loop offsets
 /*

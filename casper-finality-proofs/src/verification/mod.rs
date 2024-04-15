@@ -10,6 +10,6 @@ pub mod g1_ec_point;
 pub mod g2_ec_point;
 pub mod miller_loop;
 pub mod native;
-pub mod utils;
-// pub mod verify;
 pub mod proof;
+pub mod utils;
+pub mod verify;
