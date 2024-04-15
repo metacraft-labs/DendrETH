@@ -5,8 +5,8 @@ use plonky2::{
     util::timing::TimingTree,
 };
 use starky::{
-    config::StarkConfig, proof::StarkProofWithPublicInputs, prover::prove,
-    util::trace_rows_to_poly_values, verifier::verify_stark_proof,
+    config::StarkConfig, prover::prove, util::trace_rows_to_poly_values,
+    verifier::verify_stark_proof,
 };
 
 use crate::verification::{
@@ -22,6 +22,10 @@ fn miller_loop_main<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, co
     q_x: Fp2,
     q_y: Fp2,
     q_z: Fp2,
+) -> (
+    MillerLoopStark<F, D>,
+    starky::proof::StarkProofWithPublicInputs<F, C, D>,
+    StarkConfig,
 ) {
     let config = StarkConfig::standard_fast_config();
     let stark = MillerLoopStark::<F, D>::new(1024);
@@ -62,5 +66,5 @@ fn miller_loop_main<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, co
     .unwrap();
     println!("Time taken for miller_loop stark proof {:?}", s.elapsed());
     verify_stark_proof(stark, proof.clone(), &config).unwrap();
-    //(stark, proof, config)
+    (stark, proof, config)
 }

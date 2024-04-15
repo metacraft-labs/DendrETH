@@ -16,9 +16,12 @@ use plonky2::{
     hash::hash_types::RichField,
     iop::ext_target::ExtensionTarget,
 };
+use starky::constraint_consumer::ConstraintConsumer;
+use starky::constraint_consumer::RecursiveConstraintConsumer;
 use starky::evaluation_frame::StarkEvaluationFrame;
 use starky::evaluation_frame::StarkFrame;
-use starkyx::plonky2::parser::consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
+use starky::stark::Stark;
+// use starkyx::plonky2::parser::consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 
 // Miller loop offsets
 /*
@@ -1074,100 +1077,100 @@ pub fn traitless_eval_packed_generic<
 }
 
 // Implement constraint generator
-// impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MillerLoopStark<F, D> {
-//     type EvaluationFrame<FE, P, const D2: usize> = StarkFrame<P, P::Scalar, COLUMNS, PUBLIC_INPUTS>
-//     where
-//         FE: FieldExtension<D2, BaseField = F>,
-//         P: PackedField<Scalar = FE>;
+impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for MillerLoopStark<F, D> {
+    type EvaluationFrame<FE, P, const D2: usize> = StarkFrame<P, P::Scalar, COLUMNS, PUBLIC_INPUTS>
+    where
+        FE: FieldExtension<D2, BaseField = F>,
+        P: PackedField<Scalar = FE>;
 
-//     fn eval_packed_generic<FE, P, const D2: usize>(
-//         &self,
-//         vars: &Self::EvaluationFrame<FE, P, D2>,
-//         yield_constr: &mut ConstraintConsumer<P>,
-//     ) where
-//         FE: FieldExtension<D2, BaseField = F>,
-//         P: PackedField<Scalar = FE>,
-//     {
-//         let local_values = vars.get_local_values();
-//         let next_values = vars.get_next_values();
-//         let public_inputs = vars.get_public_inputs();
-//         let k = self;
-//         // ----
-//         for i in 0..12 {
-//             yield_constr.constraint(local_values[PX_OFFSET + i] - public_inputs[PIS_PX_OFFSET + i]);
-//             yield_constr.constraint(local_values[PY_OFFSET + i] - public_inputs[PIS_PY_OFFSET + i]);
-//         }
-//         for i in 0..68 {
-//             for j in 0..24 * 3 {
-//                 yield_constr.constraint(
-//                     local_values[ELL_COEFFS_INDEX_OFFEST + i]
-//                         * (local_values[ELL_COEFFS_OFFSET + j]
-//                             - public_inputs[PIS_ELL_COEFFS_OFFSET + i * 24 * 3 + j]),
-//                 );
-//             }
-//         }
-//         for i in 0..24 * 3 * 2 {
-//             yield_constr.constraint(
-//                 local_values[MILLER_LOOP_RES_OFFSET + i] - public_inputs[PIS_RES_OFFSET + i],
-//             );
-//         }
-//         add_miller_loop_constraints(local_values, next_values, yield_constr, 0, None);
-//     }
+    fn eval_packed_generic<FE, P, const D2: usize>(
+        &self,
+        vars: &Self::EvaluationFrame<FE, P, D2>,
+        yield_constr: &mut ConstraintConsumer<P>,
+    ) where
+        FE: FieldExtension<D2, BaseField = F>,
+        P: PackedField<Scalar = FE>,
+    {
+        let local_values = vars.get_local_values();
+        let next_values = vars.get_next_values();
+        let public_inputs = vars.get_public_inputs();
 
-//     type EvaluationFrameTarget =
-//         StarkFrame<ExtensionTarget<D>, ExtensionTarget<D>, COLUMNS, PUBLIC_INPUTS>;
+        // ----
+        for i in 0..12 {
+            yield_constr.constraint(local_values[PX_OFFSET + i] - public_inputs[PIS_PX_OFFSET + i]);
+            yield_constr.constraint(local_values[PY_OFFSET + i] - public_inputs[PIS_PY_OFFSET + i]);
+        }
+        for i in 0..68 {
+            for j in 0..24 * 3 {
+                yield_constr.constraint(
+                    local_values[ELL_COEFFS_INDEX_OFFEST + i]
+                        * (local_values[ELL_COEFFS_OFFSET + j]
+                            - public_inputs[PIS_ELL_COEFFS_OFFSET + i * 24 * 3 + j]),
+                );
+            }
+        }
+        for i in 0..24 * 3 * 2 {
+            yield_constr.constraint(
+                local_values[MILLER_LOOP_RES_OFFSET + i] - public_inputs[PIS_RES_OFFSET + i],
+            );
+        }
+        add_miller_loop_constraints(local_values, next_values, yield_constr, 0, None);
+    }
 
-//     fn eval_ext_circuit(
-//         &self,
-//         builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
-//         vars: &Self::EvaluationFrameTarget,
-//         yield_constr: &mut RecursiveConstraintConsumer<F, D>,
-//     ) {
-//         let local_values = vars.get_local_values();
-//         let next_values = vars.get_next_values();
-//         let public_inputs = vars.get_public_inputs();
+    type EvaluationFrameTarget =
+        StarkFrame<ExtensionTarget<D>, ExtensionTarget<D>, COLUMNS, PUBLIC_INPUTS>;
 
-//         for i in 0..12 {
-//             let c1 = builder.sub_extension(
-//                 local_values[PX_OFFSET + i],
-//                 public_inputs[PIS_PX_OFFSET + i],
-//             );
-//             yield_constr.constraint(builder, c1);
+    fn eval_ext_circuit(
+        &self,
+        builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
+        vars: &Self::EvaluationFrameTarget,
+        yield_constr: &mut starky::constraint_consumer::RecursiveConstraintConsumer<F, D>,
+    ) {
+        let local_values = vars.get_local_values();
+        let next_values = vars.get_next_values();
+        let public_inputs = vars.get_public_inputs();
 
-//             let c2 = builder.sub_extension(
-//                 local_values[PY_OFFSET + i],
-//                 public_inputs[PIS_PY_OFFSET + i],
-//             );
-//             yield_constr.constraint(builder, c2);
-//         }
-//         for i in 0..68 {
-//             for j in 0..24 * 3 {
-//                 let sub_tmp = builder.sub_extension(
-//                     local_values[ELL_COEFFS_OFFSET + j],
-//                     public_inputs[PIS_ELL_COEFFS_OFFSET + i * 24 * 3 + j],
-//                 );
-//                 let c = builder.mul_extension(local_values[ELL_COEFFS_INDEX_OFFEST + i], sub_tmp);
-//                 yield_constr.constraint(builder, c);
-//             }
-//         }
-//         for i in 0..24 * 3 * 2 {
-//             let c = builder.sub_extension(
-//                 local_values[MILLER_LOOP_RES_OFFSET + i],
-//                 public_inputs[PIS_RES_OFFSET + i],
-//             );
-//             yield_constr.constraint(builder, c);
-//         }
-//         add_miller_loop_constraints_ext_circuit(
-//             builder,
-//             yield_constr,
-//             local_values,
-//             next_values,
-//             0,
-//             None,
-//         );
-//     }
+        for i in 0..12 {
+            let c1 = builder.sub_extension(
+                local_values[PX_OFFSET + i],
+                public_inputs[PIS_PX_OFFSET + i],
+            );
+            yield_constr.constraint(builder, c1);
 
-//     fn constraint_degree(&self) -> usize {
-//         3
-//     }
-// }
+            let c2 = builder.sub_extension(
+                local_values[PY_OFFSET + i],
+                public_inputs[PIS_PY_OFFSET + i],
+            );
+            yield_constr.constraint(builder, c2);
+        }
+        for i in 0..68 {
+            for j in 0..24 * 3 {
+                let sub_tmp = builder.sub_extension(
+                    local_values[ELL_COEFFS_OFFSET + j],
+                    public_inputs[PIS_ELL_COEFFS_OFFSET + i * 24 * 3 + j],
+                );
+                let c = builder.mul_extension(local_values[ELL_COEFFS_INDEX_OFFEST + i], sub_tmp);
+                yield_constr.constraint(builder, c);
+            }
+        }
+        for i in 0..24 * 3 * 2 {
+            let c = builder.sub_extension(
+                local_values[MILLER_LOOP_RES_OFFSET + i],
+                public_inputs[PIS_RES_OFFSET + i],
+            );
+            yield_constr.constraint(builder, c);
+        }
+        add_miller_loop_constraints_ext_circuit(
+            builder,
+            yield_constr,
+            local_values,
+            next_values,
+            0,
+            None,
+        );
+    }
+
+    fn constraint_degree(&self) -> usize {
+        3
+    }
+}

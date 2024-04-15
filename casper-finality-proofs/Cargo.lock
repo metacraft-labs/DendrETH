@@ -894,8 +894,7 @@ dependencies = [
  "merkle_proof",
  "num-bigint 0.4.4",
  "once_cell",
- "plonky2 0.2.1 (git+https://github.com/mir-protocol/plonky2.git)",
- "plonky2_field 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "plonky2",
  "plonky2x",
  "primitive-types 0.12.2",
  "serde",
@@ -5794,30 +5793,6 @@ checksum = "14e6ab3f592e6fb464fc9712d8d6e6912de6473954635fd76a589d832cffcbb0"
 [[package]]
 name = "plonky2"
 version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d04c7dfa293cd62a8e1e3f21157dba8508ab2de6078b0e5fae202a4fc98ef224"
-dependencies = [
- "ahash 0.8.11",
- "anyhow",
- "getrandom",
- "hashbrown 0.14.3",
- "itertools 0.11.0",
- "keccak-hash 0.8.0",
- "log",
- "num",
- "plonky2_field 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "plonky2_maybe_rayon 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "plonky2_util 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand",
- "serde",
- "static_assertions",
- "unroll",
- "web-time",
-]
-
-[[package]]
-name = "plonky2"
-version = "0.2.1"
 source = "git+https://github.com/mir-protocol/plonky2.git#53c5bc3e956379875bad7e4f371325210a6ec06b"
 dependencies = [
  "ahash 0.8.11",
@@ -5828,30 +5803,15 @@ dependencies = [
  "keccak-hash 0.8.0",
  "log",
  "num",
- "plonky2_field 0.2.1 (git+https://github.com/mir-protocol/plonky2.git)",
+ "plonky2_field",
  "plonky2_maybe_rayon 0.2.0 (git+https://github.com/mir-protocol/plonky2.git)",
- "plonky2_util 0.2.0 (git+https://github.com/mir-protocol/plonky2.git)",
+ "plonky2_util",
  "rand",
+ "rand_chacha",
  "serde",
  "static_assertions",
  "unroll",
  "web-time",
-]
-
-[[package]]
-name = "plonky2_field"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e27aab0723672905a49e4771232d7fcf71b97dd0e57634f1dfb5492635f765fc"
-dependencies = [
- "anyhow",
- "itertools 0.11.0",
- "num",
- "plonky2_util 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand",
- "serde",
- "static_assertions",
- "unroll",
 ]
 
 [[package]]
@@ -5862,7 +5822,7 @@ dependencies = [
  "anyhow",
  "itertools 0.11.0",
  "num",
- "plonky2_util 0.2.0 (git+https://github.com/mir-protocol/plonky2.git)",
+ "plonky2_util",
  "rand",
  "serde",
  "static_assertions",
@@ -5885,12 +5845,6 @@ source = "git+https://github.com/mir-protocol/plonky2.git#53c5bc3e956379875bad7e
 dependencies = [
  "rayon",
 ]
-
-[[package]]
-name = "plonky2_util"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b16136f5f3019c1e83035af76cccddd56d789a5e2933306270185c3f99f12259"
 
 [[package]]
 name = "plonky2_util"
@@ -5923,7 +5877,7 @@ dependencies = [
  "log",
  "num",
  "num-bigint 0.4.4",
- "plonky2 0.2.1 (git+https://github.com/mir-protocol/plonky2.git)",
+ "plonky2",
  "plonky2x-derive",
  "rand",
  "reqwest",
@@ -7611,8 +7565,7 @@ dependencies = [
 [[package]]
 name = "starky"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "acf2fe03f53197fbd5e2f2e5fbb809f8e953881cc729261b55f71134323bbfd6"
+source = "git+https://github.com/mir-protocol/plonky2.git#53c5bc3e956379875bad7e4f371325210a6ec06b"
 dependencies = [
  "ahash 0.8.11",
  "anyhow",
@@ -7620,9 +7573,9 @@ dependencies = [
  "itertools 0.11.0",
  "log",
  "num-bigint 0.4.4",
- "plonky2 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "plonky2_maybe_rayon 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "plonky2_util 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "plonky2",
+ "plonky2_maybe_rayon 0.2.0 (git+https://github.com/mir-protocol/plonky2.git)",
+ "plonky2_util",
 ]
 
 [[package]]
@@ -7638,7 +7591,7 @@ dependencies = [
  "itertools 0.10.5",
  "log",
  "num",
- "plonky2 0.2.1 (git+https://github.com/mir-protocol/plonky2.git)",
+ "plonky2",
  "plonky2_maybe_rayon 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand",
  "serde",
@@ -7658,7 +7611,7 @@ dependencies = [
  "itertools 0.10.5",
  "log",
  "num",
- "plonky2 0.2.1 (git+https://github.com/mir-protocol/plonky2.git)",
+ "plonky2",
  "plonky2_maybe_rayon 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand",
  "serde",

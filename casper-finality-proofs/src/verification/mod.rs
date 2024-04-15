@@ -1,5 +1,5 @@
 pub mod big_arithmetic;
-// pub mod final_exponentiate;
+pub mod final_exponentiate;
 pub mod fp;
 pub mod fp12;
 pub mod fp2;
@@ -12,4 +12,4 @@ pub mod miller_loop;
 pub mod native;
 pub mod utils;
 // pub mod verify;
-// pub mod proof;
+pub mod proof;

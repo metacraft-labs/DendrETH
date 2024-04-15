@@ -10,7 +10,7 @@ use plonky2::{
     iop::ext_target::ExtensionTarget,
     plonk::circuit_builder::CircuitBuilder,
 };
-use starkyx::plonky2::parser::consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
+use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 
 use crate::verification::{
     native::{

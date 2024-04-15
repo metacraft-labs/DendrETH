@@ -7,14 +7,12 @@ use plonky2::{
     },
     hash::hash_types::RichField,
     iop::ext_target::ExtensionTarget,
-    plonk::circuit_builder::CircuitBuilder,
 };
 use starky::{
-    constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
-    evaluation_frame::StarkFrame,
+    constraint_consumer::ConstraintConsumer,
+    evaluation_frame::{StarkEvaluationFrame, StarkFrame},
     stark::Stark,
 };
-// use starkyx::plonky2::parser::consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
 
 use crate::verification::fp::*;
 use crate::verification::fp12::*;
@@ -503,7 +501,7 @@ fn add_constraints_forbenius<F: RichField + Extendable<D>, const D: usize, FE, P
 
 pub fn add_constraints_forbenius_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
-    yield_constr: &mut RecursiveConstraintConsumer<F, D>,
+    yield_constr: &mut starky::constraint_consumer::RecursiveConstraintConsumer<F, D>,
     local_values: &[ExtensionTarget<D>],
     row: usize,
     input_col: usize,
@@ -681,7 +679,7 @@ fn add_constraints_mul<F: RichField + Extendable<D>, const D: usize, FE, P, cons
 
 pub fn add_constraints_mul_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
-    yield_constr: &mut RecursiveConstraintConsumer<F, D>,
+    yield_constr: &mut starky::constraint_consumer::RecursiveConstraintConsumer<F, D>,
     local_values: &[ExtensionTarget<D>],
     row: usize,
     x_col: usize,
@@ -806,7 +804,7 @@ fn add_constraints_cyc_exp<F: RichField + Extendable<D>, const D: usize, FE, P, 
 
 pub fn add_constraints_cyc_exp_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
-    yield_constr: &mut RecursiveConstraintConsumer<F, D>,
+    yield_constr: &mut starky::constraint_consumer::RecursiveConstraintConsumer<F, D>,
     local_values: &[ExtensionTarget<D>],
     row: usize,
     input_col: usize,
@@ -922,7 +920,7 @@ pub fn add_constraints_conjugate<
 
 pub fn add_constraints_conjugate_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
-    yield_constr: &mut RecursiveConstraintConsumer<F, D>,
+    yield_constr: &mut starky::constraint_consumer::RecursiveConstraintConsumer<F, D>,
     local_values: &[ExtensionTarget<D>],
     row: usize,
     input_col: usize,
@@ -1052,7 +1050,7 @@ pub fn add_constraints_cyc_sq<
 
 pub fn add_constraints_cyc_sq_ext_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
-    yield_constr: &mut RecursiveConstraintConsumer<F, D>,
+    yield_constr: &mut starky::constraint_consumer::RecursiveConstraintConsumer<F, D>,
     local_values: &[ExtensionTarget<D>],
     row: usize,
     input_col: usize,
@@ -1145,7 +1143,7 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for FinalExponent
     type EvaluationFrame<FE, P, const D2: usize> = StarkFrame<P, P::Scalar, COLUMNS, PUBLIC_INPUTS>
     where
         FE: FieldExtension<D2, BaseField = F>,
-        P: PackedField<Scalar = FE> + plonky2::field::types::Field;
+        P: PackedField<Scalar = FE>;
 
     fn eval_packed_generic<FE, P, const D2: usize>(
         &self,
@@ -1608,9 +1606,9 @@ impl<F: RichField + Extendable<D>, const D: usize> Stark<F, D> for FinalExponent
 
     fn eval_ext_circuit(
         &self,
-        builder: &mut CircuitBuilder<F, D>,
+        builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
         vars: &Self::EvaluationFrameTarget,
-        yield_constr: &mut RecursiveConstraintConsumer<F, D>,
+        yield_constr: &mut starky::constraint_consumer::RecursiveConstraintConsumer<F, D>,
     ) {
         let local_values = vars.get_local_values();
         let next_values = vars.get_next_values();
