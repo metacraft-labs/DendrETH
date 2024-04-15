@@ -55,3 +55,6 @@
 [submodule "vendor/consensus-spec-tests"]
 	path = vendor/consensus-spec-tests
 	url = https://github.com/ethereum/consensus-spec-tests.git
+[submodule "vendor/snarkjs"]
+	path = vendor/snarkjs
+	url = git@github.com:iden3/snarkjs.git
