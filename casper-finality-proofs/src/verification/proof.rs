@@ -16,11 +16,12 @@ use starky::{
 };
 
 use crate::verification::{
+    final_exponentiate::{self, FinalExponentiateStark},
     miller_loop::{self, MillerLoopStark},
     native,
 };
 
-use super::native::{Fp, Fp2};
+use super::native::{Fp, Fp12, Fp2};
 
 pub fn miller_loop_main<
     F: RichField + Extendable<D>,
@@ -133,3 +134,44 @@ pub type ProofTuple<F, C, const D: usize> = (
     VerifierOnlyCircuitData<C, D>,
     CommonCircuitData<F, D>,
 );
+
+pub fn final_exponentiate_main<
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    const D: usize,
+>(
+    x: Fp12,
+) -> (
+    FinalExponentiateStark<F, D>,
+    starky::proof::StarkProofWithPublicInputs<F, C, D>,
+    StarkConfig,
+) {
+    let mut config = StarkConfig::standard_fast_config();
+    config.fri_config.rate_bits = 2;
+    let stark = FinalExponentiateStark::<F, D>::new(8192);
+    let s = Instant::now();
+    let mut public_inputs = Vec::<F>::new();
+    for e in x.get_u32_slice().concat().iter() {
+        public_inputs.push(F::from_canonical_u32(*e));
+    }
+    for e in x.final_exponentiate().get_u32_slice().concat().iter() {
+        public_inputs.push(F::from_canonical_u32(*e));
+    }
+    assert_eq!(public_inputs.len(), final_exponentiate::PUBLIC_INPUTS);
+    let trace = stark.generate_trace(x);
+    let trace_poly_values = trace_rows_to_poly_values(trace);
+    let proof = prove::<F, C, FinalExponentiateStark<F, D>, D>(
+        stark,
+        &config,
+        trace_poly_values,
+        &public_inputs,
+        &mut TimingTree::default(),
+    )
+    .unwrap();
+    println!(
+        "Time taken for final_exponentiate stark proof {:?}",
+        s.elapsed()
+    );
+    verify_stark_proof(stark, proof.clone(), &config).unwrap();
+    (stark, proof, config)
+}
