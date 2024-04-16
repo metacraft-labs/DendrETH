@@ -248,7 +248,7 @@ pub fn verify_proofs(
 
 #[cfg(test)]
 mod tests {
-    use std::{str::FromStr, time::Instant};
+    use std::str::FromStr;
 
     use ark_bls12_381::{Fr, G1Affine, G2Affine};
     use ark_ec::AffineRepr;
@@ -353,10 +353,8 @@ mod tests {
             &message,
         );
 
-        let now = Instant::now();
         let pw = PartialWitness::new();
         let data = builder.build::<C>();
         let _proof = data.prove(pw);
-        println!("time: {:?}", now.elapsed());
     }
 }
