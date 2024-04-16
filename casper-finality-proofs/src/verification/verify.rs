@@ -11,6 +11,7 @@ use plonky2x::frontend::uint::num::biguint::{BigUintTarget, CircuitBuilderBiguin
 use crate::verification::native::{calc_pairing_precomp, Fp, Fp12, Fp2};
 
 use super::{
+    final_exponentiate::FinalExponentiateStark,
     g1_ec_point::PointG1Target,
     g2_ec_point::PointG2Target,
     miller_loop::MillerLoopStark,
@@ -22,7 +23,7 @@ type C = PoseidonGoldilocksConfig;
 type F = <C as GenericConfig<D>>::F;
 
 type MlStark = MillerLoopStark<F, D>;
-// type FeStark = FinalExponentiateStark<F, D>;
+type FeStark = FinalExponentiateStark<F, D>;
 
 // pub fn calculate_signature<F: RichField + Extendable<D>, const D: usize>(
 //     builder: &mut CircuitBuilder<F, D>,
@@ -42,18 +43,18 @@ pub fn verify_miller_loop(x: Fp, y: Fp, q_x: Fp2, q_y: Fp2, q_z: Fp2) -> ProofTu
     recursive_ml
 }
 
-// pub fn verify_final_exponentiation(f: Fp12) -> ProofTuple<F, C, D> {
-//     let (stark_final_exp, proof_final_exp, config_final_exp) =
-//         final_exponentiate_main::<F, C, D>(f);
-//     let recursive_final_exp = recursive_proof::<F, C, FeStark, C, D>(
-//         stark_final_exp,
-//         proof_final_exp,
-//         &config_final_exp,
-//         true,
-//     );
+pub fn verify_final_exponentiation(f: Fp12) -> ProofTuple<F, C, D> {
+    let (stark_final_exp, proof_final_exp, config_final_exp) =
+        final_exponentiate_main::<F, C, D>(f);
+    let recursive_final_exp = recursive_proof::<F, C, FeStark, C, D>(
+        stark_final_exp,
+        proof_final_exp,
+        &config_final_exp,
+        true,
+    );
 
-//     recursive_final_exp
-// }
+    recursive_final_exp
+}
 
 fn fp12_as_biguint_target(
     builder: &mut CircuitBuilder<F, D>,
