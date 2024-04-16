@@ -181,8 +181,6 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D> for FpI
         Ok(Self { input, input_inv })
     }
 }
-// Start implementation of the other files directly
-// Maybe leave the tests in raw plonky2 format and then try incorporating plonky2x to them
 // #[cfg(test)]
 // mod tests {
 //     use std::str::FromStr;
