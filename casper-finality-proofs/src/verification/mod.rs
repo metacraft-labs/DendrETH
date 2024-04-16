@@ -7,5 +7,6 @@ pub mod miller_loop;
 pub mod native;
 pub mod proofs;
 pub mod pubkey_to_g1_verification;
+pub mod signature;
 pub mod utils;
 pub mod verify;
