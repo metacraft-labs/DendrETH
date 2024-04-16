@@ -1,11 +1,13 @@
 use std::cmp::min;
 
-use crate::verification::fp::*;
-use crate::verification::fp12::*;
-use crate::verification::fp2::*;
-use crate::verification::fp6::*;
-use crate::verification::native::{get_bls_12_381_parameter, Fp, Fp12, Fp2, Fp6};
-use crate::verification::utils::*;
+use crate::verification::{
+    fields::starky::fp::*,
+    fields::starky::fp12::*,
+    fields::starky::fp2::*,
+    fields::starky::fp6::*,
+    native::{get_bls_12_381_parameter, Fp, Fp12, Fp2, Fp6},
+    utils::*,
+};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 use plonky2::{
     field::{
@@ -16,11 +18,11 @@ use plonky2::{
     hash::hash_types::RichField,
     iop::ext_target::ExtensionTarget,
 };
-use starky::constraint_consumer::ConstraintConsumer;
-use starky::constraint_consumer::RecursiveConstraintConsumer;
-use starky::evaluation_frame::StarkEvaluationFrame;
-use starky::evaluation_frame::StarkFrame;
-use starky::stark::Stark;
+use starky::{
+    constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer},
+    evaluation_frame::{StarkEvaluationFrame, StarkFrame},
+    stark::Stark,
+};
 
 // Miller loop offsets
 /*

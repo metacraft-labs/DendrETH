@@ -1,6 +1,6 @@
 //! This module contains functions for filling the stark trace and adding constraints for the corresponding trace for some Fp2 operations (multiplication, addition, subtraction, etc). One Fp2 element is represented as \[u32; 24\] inside the trace. But most of the time, Fp2 elements are broken up into two Fp elements, hence represented as two \[u32; 12\].
 use crate::verification::{
-    fp::*,
+    fields::starky::fp::*,
     native::{get_u32_vec_from_literal, get_u32_vec_from_literal_24, modulus, Fp, Fp2},
     utils::*,
 };

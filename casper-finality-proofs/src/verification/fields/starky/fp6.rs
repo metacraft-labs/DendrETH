@@ -1,7 +1,7 @@
 //! This module contains functions for filling the stark trace and adding constraints for the corresponding trace for some Fp6 operations (multiplication, addition, subtraction, etc). One Fp6 element is represented as \[u32; 72\] inside the trace. But most of the time, Fp6 elements are broken up into six Fp elements, hence represented as six \[u32; 12\].
 use crate::verification::{
-    fp::*,
-    fp2::*,
+    fields::starky::fp::*,
+    fields::starky::fp2::*,
     native::{get_u32_vec_from_literal, modulus, Fp2, Fp6},
     utils::*,
 };

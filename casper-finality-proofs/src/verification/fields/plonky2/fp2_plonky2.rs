@@ -19,7 +19,7 @@ use plonky2x::{
     },
 };
 
-use crate::verification::fp_plonky2::{
+use crate::verification::fields::plonky2::fp_plonky2::{
     add_fp, fp_is_equal, fp_is_zero, mul_fp, negate_fp, range_check_fp, sub_fp, FpTarget, N,
 };
 use crate::verification::native::{Fp, Fp2};

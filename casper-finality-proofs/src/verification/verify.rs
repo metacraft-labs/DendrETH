@@ -15,7 +15,7 @@ use super::{
     g1_ec_point::PointG1Target,
     g2_ec_point::PointG2Target,
     miller_loop::MillerLoopStark,
-    proof::{final_exponentiate_main, miller_loop_main, recursive_proof, ProofTuple},
+    proofs::{final_exponentiate_main, miller_loop_main, recursive_proof, ProofTuple},
 };
 
 const D: usize = 2;
@@ -345,6 +345,7 @@ mod tests {
         let message: PointG2Target = calc_ell_coeffs_and_generate_g2_point(&mut builder, message);
 
         verify_proofs(
+            // verify or verify_bls_signature
             &mut builder,
             first_ml_proof,
             second_ml_proof,

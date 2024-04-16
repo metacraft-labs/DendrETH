@@ -14,11 +14,10 @@ use starky::{
     stark::Stark,
 };
 
-use crate::verification::fp::*;
-use crate::verification::fp12::*;
-use crate::verification::fp2::*;
-use crate::verification::fp6::*;
 use crate::verification::utils::*;
+use crate::verification::{
+    fields::starky::fp::*, fields::starky::fp12::*, fields::starky::fp2::*, fields::starky::fp6::*,
+};
 
 /*
     These offsets are for final_exponentiation function (super::native::Fp12::final_exponentiate). This stark needs 8192 rows. The Ti's are defined in the function definition.
