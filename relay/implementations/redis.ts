@@ -48,7 +48,10 @@ export class Redis implements IRedis {
   async removeFromSlotLookup(key: string, ...slots: bigint[]) {
     await this.waitForConnection();
 
-    await this.client.zrem(`${key}:${CONSTANTS.slotLookupKey}`, slots.map(String));
+    await this.client.zrem(
+      `${key}:${CONSTANTS.slotLookupKey}`,
+      slots.map(String),
+    );
   }
 
   async getSlotWithLatestChange(
@@ -79,7 +82,10 @@ export class Redis implements IRedis {
   ): Promise<bigint[]> {
     await this.waitForConnection();
 
-    const slotWithLatestChange = await this.getSlotWithLatestChange(key, newOldestSlot);
+    const slotWithLatestChange = await this.getSlotWithLatestChange(
+      key,
+      newOldestSlot,
+    );
     if (slotWithLatestChange !== null) {
       return (
         await this.client.zrange(

@@ -272,10 +272,7 @@ export class CommitmentMapperScheduler {
   }
 
   public async updateBranches(validatorIndices: number[], slot: bigint) {
-    let levelIterator = makeBranchIterator(
-      validatorIndices.map(BigInt),
-      40n,
-    );
+    let levelIterator = makeBranchIterator(validatorIndices.map(BigInt), 40n);
 
     let leafs = levelIterator.next().value!;
 
