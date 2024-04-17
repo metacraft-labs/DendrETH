@@ -241,7 +241,7 @@ export class CommitmentMapperScheduler {
     const dataView = new DataView(buffer);
     dataView.setUint8(0, TaskTag.UPDATE_VALIDATOR_PROOF);
     dataView.setBigUint64(1, validatorIndex, false);
-    dataView.setBigUint64(9, this.currentSlot, false);
+    dataView.setBigUint64(9, slot, false);
     this.queue.addItem(this.redis.client, new Item(Buffer.from(buffer)));
 
     // Don't create an slot lookup for the zero validator proof
