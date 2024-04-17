@@ -25,13 +25,7 @@ function bitArrayToByteArray(hash: number[]): Uint8Array {
     .usage(
       'Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>',
     )
-    .option('beacon-node', {
-      alias: 'beacon-node',
-      describe: 'The beacon node url',
-      type: 'string',
-      default: 'http://testing.mainnet.beacon-api.nimbus.team',
-      description: 'Sets a custom beacon node url',
-    })
+    .withBeaconNodeOpts()
     .option('validator-index', {
       alias: 'validator-index',
       describe: 'The index of the validator',

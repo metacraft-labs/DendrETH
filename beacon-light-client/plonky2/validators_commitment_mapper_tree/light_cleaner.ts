@@ -5,10 +5,17 @@ const {
 import Redis from 'ioredis';
 import { sleep } from '@dendreth/utils/ts-utils/common-utils';
 import validator_commitment_constants from '../constants/validator_commitment_constants.json';
-import { getOptions, lightClean } from '../light_cleaner_common';
+import { lightClean } from '../light_cleaner_common';
+import { CommandLineOptionsBuilder } from '../cmdline';
 
 (async () => {
-  const options = getOptions().argv;
+  const options = new CommandLineOptionsBuilder()
+    .usage(
+      'Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>',
+    )
+    .withRedisOpts()
+    .withLightCleanOpts()
+    .build();
 
   const prefix = new KeyPrefix(
     `${validator_commitment_constants.validatorProofsQueue}`,

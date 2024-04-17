@@ -298,6 +298,7 @@ export class Redis implements IRedis {
   }
 
   async saveValidatorBalancesInput(
+    protocol: string,
     inputsWithIndices: { index: number; input: any }[],
   ) {
     await this.waitForConnection();
@@ -305,7 +306,7 @@ export class Redis implements IRedis {
     const args = inputsWithIndices
       .map(ii => {
         return [
-          `${CONSTANTS.validatorBalanceInputKey}:${ii.index}`,
+          `${protocol}:${CONSTANTS.validatorBalanceInputKey}:${ii.index}`,
           JSON.stringify(ii.input),
         ];
       })
@@ -314,20 +315,26 @@ export class Redis implements IRedis {
     await this.client.mset(...args);
   }
 
-  async saveFinalProofInput(input: {
-    stateRoot: number[];
-    stateRootBranch: number[][];
-    blockRoot: number[];
-    slot: string;
-    slotBranch: number[][];
-    withdrawalCredentials: [number[]];
-    balanceBranch: number[][];
-    validatorsBranch: number[][];
-    validatorsSizeBits: number[];
-  }) {
+  async saveFinalProofInput(
+    protocol: string,
+    input: {
+      stateRoot: number[];
+      stateRootBranch: number[][];
+      blockRoot: number[];
+      slot: string;
+      slotBranch: number[][];
+      withdrawalCredentials: [number[]];
+      balanceBranch: number[][];
+      validatorsBranch: number[][];
+      validatorsSizeBits: number[];
+    },
+  ) {
     await this.waitForConnection();
 
-    await this.client.set(CONSTANTS.finalProofInputKey, JSON.stringify(input));
+    await this.client.set(
+      `${protocol}:${CONSTANTS.finalProofInputKey}`,
+      JSON.stringify(input),
+    );
   }
 
   async saveValidatorProof(
@@ -364,6 +371,7 @@ export class Redis implements IRedis {
   }
 
   async saveBalanceProof(
+    protocol: string,
     level: bigint,
     index: bigint,
     proof: BalanceProof = {
@@ -382,7 +390,7 @@ export class Redis implements IRedis {
     await this.waitForConnection();
 
     await this.client.set(
-      `${CONSTANTS.balanceVerificationProofKey}:${level}:${index}`,
+      `${protocol}:${CONSTANTS.balanceVerificationProofKey}:${level}:${index}`,
       JSON.stringify(proof),
     );
   }
@@ -437,10 +445,12 @@ export class Redis implements IRedis {
     await this.client.set(key, buffer);
   }
 
-  async getBalanceWrapperProofWithPublicInputs(): Promise<any> {
+  async getBalanceWrapperProofWithPublicInputs(protocol: string): Promise<any> {
     await this.waitForConnection();
 
-    return this.client.get('balance_wrapper_proof_with_public_inputs');
+    return this.client.get(
+      `${protocol}:balance_wrapper_proof_with_public_inputs`,
+    );
   }
 
   async getBalanceWrapperVerifierOnly(): Promise<any> {
@@ -489,11 +499,12 @@ export class Redis implements IRedis {
   }
 
   async subscribeForGnarkProofs(
+    protocol: string,
     listener: (message: string, channel: string) => unknown,
   ): Promise<void> {
     await this.waitForConnection();
 
-    await this.pubSub.subscribe('gnark_proofs_channel', listener);
+    await this.pubSub.subscribe(`${protocol}:gnark_proofs_channel`, listener);
   }
 
   private async waitForConnection() {

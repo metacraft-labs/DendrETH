@@ -33,8 +33,8 @@ impl AzureStorage {
 
 #[async_trait(?Send)]
 impl ProofStorage for AzureStorage {
-    async fn get_proof(&mut self, identifier: String) -> Result<Vec<u8>> {
-        let blob_client = self.container_client.blob_client(identifier);
+    async fn get_proof(&mut self, key: String) -> Result<Vec<u8>> {
+        let blob_client = self.container_client.blob_client(key);
 
         let result = blob_client
             .get()
@@ -49,8 +49,8 @@ impl ProofStorage for AzureStorage {
         Ok(bytes_result)
     }
 
-    async fn set_proof(&mut self, identifier: String, proof: &[u8]) -> Result<()> {
-        let blob_client = self.container_client.blob_client(identifier);
+    async fn set_proof(&mut self, key: String, proof: &[u8]) -> Result<()> {
+        let blob_client = self.container_client.blob_client(key);
 
         blob_client
             .put_block_blob(proof.to_vec())
@@ -60,16 +60,17 @@ impl ProofStorage for AzureStorage {
         Ok(())
     }
 
-    async fn del_proof(&mut self, identifier: String) -> Result<()> {
-        let blob_client = self.container_client.blob_client(identifier);
+    async fn del_proof(&mut self, key: String) -> Result<()> {
+        let blob_client = self.container_client.blob_client(key);
         blob_client.delete().await?;
         Ok(())
     }
 
     async fn get_keys_count(&mut self, pattern: String) -> usize {
-        let mut count = 0;
         let pattern = glob::Pattern::new(&pattern).unwrap();
         let mut iter = self.container_client.list_blobs().into_stream();
+
+        let mut count = 0;
 
         while let Some(Ok(reponse)) = iter.next().await {
             count += reponse

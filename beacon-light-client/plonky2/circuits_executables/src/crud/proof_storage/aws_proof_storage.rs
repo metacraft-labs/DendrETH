@@ -11,7 +11,11 @@ pub struct AwsStorage {
 }
 
 impl AwsStorage {
-    pub async fn new(endpoint_url: String, region: String, bucket_name: String) -> AwsStorage {
+    pub async fn new(
+        endpoint_url: String,
+        region: String,
+        bucket_name: String,
+    ) -> AwsStorage {
         let aws_config = aws_config::defaults(BehaviorVersion::latest()).load().await;
 
         let s3_config = Config::builder()
@@ -34,12 +38,12 @@ impl AwsStorage {
 
 #[async_trait(?Send)]
 impl ProofStorage for AwsStorage {
-    async fn get_proof(&mut self, identifier: String) -> Result<Vec<u8>> {
+    async fn get_proof(&mut self, key: String) -> Result<Vec<u8>> {
         let resp = self
             .client
             .get_object()
             .bucket(self.bucket_name.clone())
-            .key(identifier)
+            .key(key)
             .send()
             .await?;
 
@@ -49,13 +53,13 @@ impl ProofStorage for AwsStorage {
         Ok(content)
     }
 
-    async fn set_proof(&mut self, identifier: String, proof: &[u8]) -> Result<()> {
+    async fn set_proof(&mut self, key: String, proof: &[u8]) -> Result<()> {
         let byte_stream = ByteStream::from(proof.to_vec());
 
         self.client
             .put_object()
             .bucket(self.bucket_name.clone())
-            .key(identifier)
+            .key(key)
             .body(byte_stream)
             .send()
             .await?;
@@ -63,11 +67,11 @@ impl ProofStorage for AwsStorage {
         Ok(())
     }
 
-    async fn del_proof(&mut self, identifier: String) -> Result<()> {
+    async fn del_proof(&mut self, key: String) -> Result<()> {
         self.client
             .delete_object()
             .bucket(self.bucket_name.clone())
-            .key(identifier)
+            .key(key)
             .send()
             .await?;
 
@@ -75,7 +79,6 @@ impl ProofStorage for AwsStorage {
     }
 
     async fn get_keys_count(&mut self, pattern: String) -> usize {
-        let mut count = 0;
         let pattern = glob::Pattern::new(&pattern).unwrap();
 
         let mut response = self
@@ -85,6 +88,8 @@ impl ProofStorage for AwsStorage {
             .max_keys(10) // In this example, go 10 at a time.
             .into_paginator()
             .send();
+
+        let mut count = 0;
 
         while let Some(Ok(result)) = response.next().await {
             count += result

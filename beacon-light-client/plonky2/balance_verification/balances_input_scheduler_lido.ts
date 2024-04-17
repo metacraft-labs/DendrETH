@@ -21,13 +21,7 @@ import hashConsensusAbi from './abi/hash_consensus_abi.json';
       type: 'string',
       demandOption: true,
     })
-    .option('beacon-node', {
-      alias: 'beacon-node',
-      describe: 'The beacon node url',
-      type: 'array',
-      default: commonConfig['beacon-node'],
-      description: 'Sets a custom beacon node url',
-    })
+    .withBeaconNodeOpts()
     .option('network', {
       describe: 'The network',
       type: 'string',
@@ -51,6 +45,7 @@ import hashConsensusAbi from './abi/hash_consensus_abi.json';
     const headSlot = BigInt(JSON.parse(event.data).slot);
     if (headSlot >= nextRefSlot) {
       await getBalancesInput({
+        protocol: 'lido',
         withdrawCredentials: LIDO_WITHDRAWAL_CREDENTIALS,
         slot: nextRefSlot,
         beaconNodeUrls: options['beacon-node'],

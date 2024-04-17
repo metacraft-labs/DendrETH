@@ -1,6 +1,4 @@
 import Redis from 'ioredis';
-import yargs from 'yargs';
-import { hideBin } from 'yargs/helpers';
 
 export async function lightClean(this: any, db: Redis, prefix: any) {
   const processingKey = prefix.of(':processing');
@@ -31,29 +29,4 @@ export async function lightClean(this: any, db: Redis, prefix: any) {
     }
     await db.lrem(cleaningKey, 0, itemId);
   }
-}
-
-export function getOptions() {
-  return yargs(hideBin(process.argv))
-    .usage('Usage: -redis-host <Redis host> -redis-port <Redis port>')
-    .option('redis-host ', {
-      alias: 'redis-host',
-      describe: 'The Redis host',
-      type: 'string',
-      default: '127.0.0.1',
-      description: 'Sets a custom redis connection',
-    })
-    .option('redis-port', {
-      alias: 'redis-port',
-      describe: 'The Redis port',
-      type: 'number',
-      default: 6379,
-      description: 'Sets a custom redis connection',
-    })
-    .option('clean-duration', {
-      alias: 'clean-duration',
-      describe: 'The time between each clean in ms',
-      type: 'number',
-      default: 5000,
-    });
 }

@@ -8,13 +8,7 @@ import { getBalancesInput } from './get_balances_input';
       'Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>',
     )
     .withRedisOpts()
-    .option('beacon-node', {
-      alias: 'beacon-node',
-      describe: 'The beacon node url',
-      type: 'array',
-      default: commonConfig['beacon-node'],
-      description: 'Sets a custom beacon node url',
-    })
+    .withBeaconNodeOpts()
     .option('slot', {
       alias: 'slot',
       describe: 'The state slot',
@@ -29,19 +23,8 @@ import { getBalancesInput } from './get_balances_input';
       demandOption: true,
       description: 'Sets the withdrawal credentials',
     })
-    .option('take', {
-      alias: 'take',
-      describe: 'The number of validators to take',
-      type: 'number',
-      default: Infinity,
-      description: 'Sets the number of validators to take',
-    })
-    .option('offset', {
-      alias: 'offset',
-      describe: 'Index offset in the validator set',
-      type: 'number',
-      default: undefined,
-    })
+    .withRangeOpts()
+    .withProtocolOpts()
     .build();
 
   await getBalancesInput({
@@ -52,5 +35,6 @@ import { getBalancesInput } from './get_balances_input';
     offset: options['offset'],
     redisHost: options['redis-host'],
     redisPort: options['redis-port'],
+    protocol: options['protocol'],
   });
 })();

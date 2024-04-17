@@ -71,6 +71,8 @@ in
     # llvm.lld
     ldc
 
+    go
+
     rustup
     rust-stable
     # Developer tool to help you get up and running quickly with a new Rust

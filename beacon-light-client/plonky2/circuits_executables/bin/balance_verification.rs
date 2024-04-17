@@ -61,9 +61,10 @@ async fn async_main() -> Result<()> {
 
     let matches = CommandLineOptionsBuilder::new("balance_verification")
         .with_balance_verification_options()
-        .with_redis_options(&common_config.redis_host, &common_config.redis_port)
+        .with_redis_options(&common_config.redis_host, common_config.redis_port)
         .with_work_queue_options()
         .with_proof_storage_options()
+        .with_protocol_options()
         .get_matches();
 
     let config = parse_balance_verification_command_line_options(&matches);
@@ -98,9 +99,12 @@ async fn async_main() -> Result<()> {
         "{}",
         format!("Starting worker for level {}...", config.circuit_level).yellow()
     );
+
+    let protocol = matches.value_of("protocol").unwrap();
+
     let queue = WorkQueue::new(KeyPrefix::new(format!(
-        "{}:{}",
-        VALIDATOR_COMMITMENT_CONSTANTS.balance_verification_queue, config.circuit_level
+        "{}:{}:{}",
+        protocol, VALIDATOR_COMMITMENT_CONSTANTS.balance_verification_queue, config.circuit_level
     )));
 
     let start: Instant = Instant::now();
@@ -117,6 +121,7 @@ async fn async_main() -> Result<()> {
         config.stop_after,
         config.lease_for,
         config.preserve_intermediary_proofs,
+        &protocol,
     )
     .await
 }
@@ -134,6 +139,7 @@ async fn process_queue<const N: usize>(
     stop_after: u64,
     lease_for: u64,
     preserve_intermediary_proofs: bool,
+    protocol: &str,
 ) -> Result<()> {
     while time_to_run.is_none() || start.elapsed() < time_to_run.unwrap() {
         let queue_item = match queue
@@ -168,6 +174,7 @@ async fn process_queue<const N: usize>(
                     queue_item,
                     circuit_data,
                     targets.as_ref().unwrap(),
+                    protocol,
                 )
                 .await
                 {
@@ -194,6 +201,7 @@ async fn process_queue<const N: usize>(
                     inner_circuit_targets,
                     level,
                     preserve_intermediary_proofs,
+                    protocol.clone(),
                 )
                 .await
                 {
@@ -222,6 +230,7 @@ async fn process_first_level_task<const N: usize>(
     queue_item: Item,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     targets: &ValidatorBalanceVerificationTargets<N>,
+    protocol: &str,
 ) -> Result<()> {
     let balance_input_index = u64::from_be_bytes(queue_item.data[0..8].try_into().unwrap());
 
@@ -241,7 +250,7 @@ async fn process_first_level_task<const N: usize>(
 
     let start = Instant::now();
     let validator_balance_input =
-        fetch_validator_balance_input::<N>(con, balance_input_index).await?;
+        fetch_validator_balance_input::<N>(con, protocol.to_owned(), balance_input_index).await?;
 
     let elapsed = start.elapsed();
 
@@ -253,7 +262,16 @@ async fn process_first_level_task<const N: usize>(
 
     let proof = circuit_data.prove(pw)?;
 
-    match save_balance_proof::<N>(con, proof_storage, proof, 0, balance_input_index).await {
+    match save_balance_proof::<N>(
+        con,
+        proof_storage,
+        protocol.to_owned(),
+        proof,
+        0,
+        balance_input_index,
+    )
+    .await
+    {
         Err(err) => {
             println!(
                 "{}",
@@ -282,6 +300,7 @@ async fn process_inner_level_job<const N: usize>(
     inner_circuit_targets: &Option<BalanceInnerCircuitTargets>,
     level: u64,
     preserve_intermediary_proofs: bool,
+    protocol: &str,
 ) -> Result<()> {
     let index = u64::from_be_bytes(queue_item.data[0..8].try_into().unwrap());
 
@@ -299,7 +318,15 @@ async fn process_inner_level_job<const N: usize>(
         println!("{}", "Processing task for zero proof...".blue().bold());
     }
 
-    match fetch_proofs_balances::<BalanceProof>(con, proof_storage, level, index).await {
+    match fetch_proofs_balances::<BalanceProof>(
+        con,
+        proof_storage,
+        protocol.to_owned(),
+        level,
+        index,
+    )
+    .await
+    {
         Err(err) => {
             println!(
                 "{}",
@@ -318,7 +345,16 @@ async fn process_inner_level_job<const N: usize>(
                 &circuit_data,
             )?;
 
-            match save_balance_proof::<N>(con, proof_storage, proof, level, index).await {
+            match save_balance_proof::<N>(
+                con,
+                proof_storage,
+                protocol.to_owned(),
+                proof,
+                level,
+                index,
+            )
+            .await
+            {
                 Err(err) => {
                     println!(
                         "{}",
@@ -336,6 +372,7 @@ async fn process_inner_level_job<const N: usize>(
                         delete_balance_verification_proof_dependencies(
                             con,
                             proof_storage,
+                            protocol,
                             level,
                             index,
                         )

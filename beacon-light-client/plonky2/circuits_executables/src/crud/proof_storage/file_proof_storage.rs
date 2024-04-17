@@ -20,23 +20,20 @@ impl FileStorage {
 
 #[async_trait(?Send)]
 impl ProofStorage for FileStorage {
-    async fn get_proof(&mut self, identifier: String) -> Result<Vec<u8>> {
-        let result = fs::read(format!("{}/{}", self.folder_name, identifier)).unwrap();
+    async fn get_proof(&mut self, key: String) -> Result<Vec<u8>> {
+        let result = fs::read(format!("{}/{}", self.folder_name, key)).unwrap();
 
         Ok(result)
     }
 
-    async fn set_proof(&mut self, identifier: String, proof: &[u8]) -> Result<()> {
-        fs::write(format!("{}/{}", self.folder_name, identifier), proof).unwrap();
+    async fn set_proof(&mut self, key: String, proof: &[u8]) -> Result<()> {
+        fs::write(format!("{}/{}", self.folder_name, key), proof).unwrap();
 
         Ok(())
     }
 
-    async fn del_proof(&mut self, identifier: String) -> Result<()> {
-        Ok(fs::remove_file(format!(
-            "{}/{}",
-            self.folder_name, identifier
-        ))?)
+    async fn del_proof(&mut self, key: String) -> Result<()> {
+        Ok(fs::remove_file(format!("{}/{}", self.folder_name, key))?)
     }
 
     async fn get_keys_count(&mut self, pattern: String) -> usize {
