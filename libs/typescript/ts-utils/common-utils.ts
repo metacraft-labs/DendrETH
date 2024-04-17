@@ -222,7 +222,7 @@ export async function loopWhile<T>(
 }
 
 export function panic(message: string): never {
-  console.error(message);
+  console.error(`panicked: ${message}`);
   return process.exit(1);
 }
 
@@ -237,6 +237,13 @@ export function getBigIntFromLimbs(limbs: number[]): bigint {
 
     result |= BigInt(limbs[i]) << BigInt(32 * i);
   }
+  return result;
+}
 
+export function range(low: number, highExclusive: number): number[] {
+  const result: number[] = [];
+  for (let value = low; value < highExclusive; ++value) {
+    result.push(value);
+  }
   return result;
 }

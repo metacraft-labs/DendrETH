@@ -474,7 +474,7 @@ pub async fn save_validator_proof(
     // fetch validators len
     if gindex == 1 {
         let length: u64 = con
-            .get_del(format!(
+            .get(format!(
                 "{}:{}",
                 VALIDATOR_COMMITMENT_CONSTANTS.validators_length_key, slot
             ))
@@ -566,11 +566,9 @@ pub async fn fetch_proof<T: NeedsChange + KeyProvider + DeserializeOwned + Clone
 
         let proof = match latest_change_slot_result {
             Ok(latest_change_slot) => {
-                let proof_result = fetch_redis_json_object::<T>(
-                    con,
-                    format!("{}:{}:{}", T::get_key(), gindex, latest_change_slot),
-                )
-                .await;
+                let proof_result =
+                    fetch_redis_json_object::<T>(con, format!("{}:{}", key, latest_change_slot))
+                        .await;
 
                 match proof_result {
                     Ok(res) => res,

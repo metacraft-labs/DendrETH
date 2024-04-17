@@ -26,6 +26,7 @@ export function getLastSlotInEpoch(epoch: bigint) {
   return epoch * 32n + 31n;
 }
 
+// TODO: make indices be a number[]
 export function* makeBranchIterator(indices: bigint[], depth: bigint) {
   const changedValidatorGindices = indices.map(index =>
     gindexFromIndex(index, depth),
