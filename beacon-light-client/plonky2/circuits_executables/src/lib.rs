@@ -1,5 +1,6 @@
 #![feature(async_closure)]
 #[warn(unused_variables)]
+pub mod commitment_mapper_context;
 pub mod commitment_mapper_task;
 pub mod crud;
 pub mod poseidon_bn128;
