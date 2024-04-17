@@ -20,6 +20,7 @@ enum TaskTag {
   UPDATE_PROOF_NODE = 0,
   PROVE_ZERO_FOR_DEPTH = 1,
   UPDATE_VALIDATOR_PROOF = 2,
+  ZERO_OUT_VALIDATOR = 3,
 }
 
 export class CommitmentMapperScheduler {
@@ -218,9 +219,9 @@ export class CommitmentMapperScheduler {
   ) {
     for (const batch of splitIntoBatches(validators, batchSize)) {
       await this.redis.saveValidators(
-        batch.map((validator: IndexedValidator) => ({
-          index: validator.index,
-          data: convertValidatorToProof(validator.validator, this.ssz),
+        batch.map((indexedValidator: IndexedValidator) => ({
+          index: indexedValidator.index,
+          data: convertValidatorToProof(indexedValidator.validator, this.ssz),
         })),
         slot,
       );
@@ -231,7 +232,8 @@ export class CommitmentMapperScheduler {
       );
     }
 
-    await this.updateBranches(validators, slot);
+    const validatorIndices = validators.map(validator => validator.index);
+    await this.updateBranches(validatorIndices, slot);
   }
 
   async scheduleValidatorProof(validatorIndex: bigint, slot: bigint) {
@@ -269,9 +271,9 @@ export class CommitmentMapperScheduler {
     this.queue.addItem(this.redis.client, new Item(Buffer.from(buffer)));
   }
 
-  async updateBranches(validators: IndexedValidator[], slot: bigint) {
+  public async updateBranches(validatorIndices: number[], slot: bigint) {
     let levelIterator = makeBranchIterator(
-      validators.map(validator => BigInt(validator.index)),
+      validatorIndices.map(BigInt),
       40n,
     );
 
@@ -298,6 +300,17 @@ export class CommitmentMapperScheduler {
 
     dataView.setUint8(0, TaskTag.PROVE_ZERO_FOR_DEPTH);
     dataView.setBigUint64(1, depth, false);
+
+    this.queue.addItem(this.redis.client, new Item(Buffer.from(buffer)));
+  }
+
+  async scheduleZeroOutValidatorTask(validatorIndex: number, slot: bigint) {
+    const buffer = new ArrayBuffer(17);
+    const dataView = new DataView(buffer);
+
+    dataView.setUint8(0, TaskTag.ZERO_OUT_VALIDATOR);
+    dataView.setBigUint64(1, BigInt(validatorIndex), false);
+    dataView.setBigUint64(9, slot, false);
 
     this.queue.addItem(this.redis.client, new Item(Buffer.from(buffer)));
   }

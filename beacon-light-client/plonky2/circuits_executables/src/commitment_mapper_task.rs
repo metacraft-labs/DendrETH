@@ -22,6 +22,7 @@ enum CommitmentMapperTaskType {
     UpdateProofNode,
     ProveZeroForDepth,
     UpdateValidatorProof,
+    ZeroOutValidator,
 }
 
 type Gindex = u64;
@@ -34,6 +35,7 @@ pub enum CommitmentMapperTask {
     UpdateProofNode(Gindex, Slot),
     ProveZeroForDepth(Depth),
     UpdateValidatorProof(ValidatorIndex, Slot),
+    ZeroOutValidator(ValidatorIndex, Slot),
 }
 
 impl CommitmentMapperTask {
@@ -73,6 +75,16 @@ impl CommitmentMapperTask {
                     println!("{}", "Proving zero validator...".blue().bold());
                 }
             }
+            CommitmentMapperTask::ZeroOutValidator(validator_index, slot) => println!(
+                "{}",
+                format!(
+                    "Zeroing out validator {} for slot {}...",
+                    validator_index.to_string().magenta(),
+                    slot.to_string().cyan()
+                )
+                .blue()
+                .bold()
+            ),
         };
     }
 }
@@ -93,6 +105,14 @@ impl CommitmentMapperTask {
                 let validator_index = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
                 let slot = u64::from_be_bytes(bytes[9..17].try_into().unwrap());
                 Some(CommitmentMapperTask::UpdateValidatorProof(
+                    validator_index,
+                    slot,
+                ))
+            }
+            CommitmentMapperTaskType::ZeroOutValidator => {
+                let validator_index = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
+                let slot = u64::from_be_bytes(bytes[9..17].try_into().unwrap());
+                Some(CommitmentMapperTask::ZeroOutValidator(
                     validator_index,
                     slot,
                 ))
@@ -264,5 +284,45 @@ async fn handle_prove_zero_for_depth_task(
             bail!("Error while proving zero for depth {}: {}", depth, err);
         }
     };
+    Ok(())
+}
+
+async fn handle_zero_out_validator_task(
+    ctx: &mut CommitmentMapperContext,
+    validator_index: u64,
+    slot: u64,
+) -> Result<()> {
+    match fetch_validator(&mut ctx.redis_con, VALIDATOR_REGISTRY_LIMIT as u64, slot).await {
+        Ok(validator) => {
+            let mut pw = PartialWitness::new();
+
+            ctx.first_level_circuit
+                .targets
+                .validator
+                .set_pw_values(&mut pw, &validator);
+
+            pw.set_bool_target(ctx.first_level_circuit.targets.validator_is_zero, true);
+
+            let proof = ctx.first_level_circuit.data.prove(pw)?;
+
+            let save_result = save_validator_proof(
+                &mut ctx.redis_con,
+                ctx.proof_storage.as_mut(),
+                proof,
+                gindex_from_validator_index(validator_index, 40),
+                slot,
+            )
+            .await;
+
+            if let Err(err) = save_result {
+                bail!(
+                    "Error while zeroing out validator {}: {}",
+                    validator_index,
+                    err
+                );
+            }
+        }
+        Err(_) => bail!("Could not fetch zero validator"),
+    }
     Ok(())
 }

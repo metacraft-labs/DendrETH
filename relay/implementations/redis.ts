@@ -1,4 +1,3 @@
-import { hexToBytes } from '@dendreth/utils/ts-utils/bls';
 import { IRedis } from '../abstraction/redis-interface';
 import {
   BalanceProof,
@@ -13,6 +12,7 @@ import { getDepthByGindex } from '../../beacon-light-client/plonky2/validators_c
 import { Redis as RedisClient } from 'ioredis';
 import chalk from 'chalk';
 import { splitIntoBatches } from '@dendreth/utils/ts-utils/common-utils';
+import { validatorFromValidatorJSON } from '../utils/converters';
 
 export class Redis implements IRedis {
   public readonly client: RedisClient;
@@ -45,6 +45,12 @@ export class Redis implements IRedis {
     );
   }
 
+  async removeFromSlotLookup(key: string, ...slots: bigint[]) {
+    await this.waitForConnection();
+
+    await this.client.zrem(`${key}:${CONSTANTS.slotLookupKey}`, slots.map(String));
+  }
+
   async getSlotWithLatestChange(
     key: string,
     slot: bigint,
@@ -70,19 +76,19 @@ export class Redis implements IRedis {
   async collectOutdatedSlots(
     key: string,
     newOldestSlot: bigint,
-  ): Promise<number[]> {
+  ): Promise<bigint[]> {
     await this.waitForConnection();
 
-    const latestEpoch = await this.getSlotWithLatestChange(key, newOldestSlot);
-    if (latestEpoch !== null) {
+    const slotWithLatestChange = await this.getSlotWithLatestChange(key, newOldestSlot);
+    if (slotWithLatestChange !== null) {
       return (
         await this.client.zrange(
           `${key}:${CONSTANTS.slotLookupKey}`,
           0,
-          (latestEpoch - 1n).toString(),
+          (slotWithLatestChange - 1n).toString(),
           'BYSCORE',
         )
-      ).map(Number);
+      ).map(BigInt);
     }
     return [];
   }
@@ -92,8 +98,7 @@ export class Redis implements IRedis {
 
     const slots = await this.collectOutdatedSlots(key, newOldestSlot);
     if (slots.length !== 0) {
-      await this.client.zrem(`${key}:${CONSTANTS.slotLookupKey}`, slots);
-      return this.client.del(slots.map(suffix => `${key}:${suffix}`));
+      await this.removeFromSlotLookup(key, ...slots);
     }
     return 0;
   }
@@ -152,8 +157,12 @@ export class Redis implements IRedis {
     return JSON.parse(result)[hashKey];
   }
 
-  async getValidatorsRoot(epoch: bigint): Promise<String | null> {
-    return this.client.get(`${CONSTANTS.validatorsRootKey}:${epoch}`);
+  async getValidatorsRoot(slot: bigint): Promise<String | null> {
+    return this.client.get(`${CONSTANTS.validatorsRootKey}:${slot}`);
+  }
+
+  async deleteValidatorsRoot(slot: bigint): Promise<void> {
+    await this.client.del(`${CONSTANTS.validatorsRootKey}:${slot}`);
   }
 
   async notifyAboutNewProof(): Promise<void> {
@@ -162,14 +171,13 @@ export class Redis implements IRedis {
     this.pubSub.publish('proofs_channel', 'proof');
   }
 
-  async getValidatorsBatched(
-    ssz: any,
-    slot: bigint,
-    batchSize = 1000,
-  ): Promise<Validator[]> {
-    await this.waitForConnection();
+  async getValidatorsLengthForSlot(slot: bigint): Promise<number | null> {
+    const result = await this.get(`${CONSTANTS.validatorsLengthKey}:${slot}`);
+    return result !== null ? Number(result) : null;
+  }
 
-    let keys = (await this.client.keys(`${CONSTANTS.validatorKey}:*:[0-9]*`))
+  async getValidatorKeysForSlot(slot: bigint): Promise<string[]> {
+    return (await this.client.keys(`${CONSTANTS.validatorKey}:*:[0-9]*`))
       .filter(key => !key.includes(CONSTANTS.validatorRegistryLimit.toString()))
       .reduce((acc, key) => {
         const split = key.split(':');
@@ -188,8 +196,17 @@ export class Redis implements IRedis {
         acc[index] = latestSlot;
         return acc;
       }, new Array())
-      .map((slot, index) => `validator:${index}:${slot}`);
+      .map((slot, index) => `${CONSTANTS.validatorKey}:${index}:${slot}`);
+  }
 
+  async getValidatorsBatched(
+    ssz: any,
+    slot: bigint,
+    batchSize = 1000,
+  ): Promise<Validator[]> {
+    await this.waitForConnection();
+
+    const keys = await this.getValidatorKeysForSlot(slot);
     let allValidators: Validator[] = new Array(keys.length);
 
     for (const [keyBatchIndex, batchKeys] of splitIntoBatches(
@@ -206,39 +223,7 @@ export class Redis implements IRedis {
 
       for (const [index, redisValidator] of batchValidators.entries()) {
         try {
-          const validator: Validator = {
-            pubkey: hexToBytes(redisValidator.pubkey),
-            withdrawalCredentials: hexToBytes(
-              redisValidator.withdrawalCredentials,
-            ),
-            effectiveBalance:
-              ssz.phase0.Validator.fields.effectiveBalance.deserialize(
-                hexToBytes(redisValidator.effectiveBalance).slice(0, 8),
-              ),
-
-            slashed: ssz.phase0.Validator.fields.slashed.deserialize(
-              hexToBytes(redisValidator.slashed).slice(0, 1),
-            ),
-            activationEligibilityEpoch:
-              ssz.phase0.Validator.fields.activationEligibilityEpoch.deserialize(
-                hexToBytes(redisValidator.activationEligibilityEpoch).slice(
-                  0,
-                  8,
-                ),
-              ),
-            activationEpoch:
-              ssz.phase0.Validator.fields.activationEpoch.deserialize(
-                hexToBytes(redisValidator.activationEpoch).slice(0, 8),
-              ),
-            exitEpoch: ssz.phase0.Validator.fields.exitEpoch.deserialize(
-              hexToBytes(redisValidator.exitEpoch).slice(0, 8),
-            ),
-            withdrawableEpoch:
-              ssz.phase0.Validator.fields.withdrawableEpoch.deserialize(
-                hexToBytes(redisValidator.withdrawableEpoch).slice(0, 8),
-              ),
-          };
-
+          const validator = validatorFromValidatorJSON(redisValidator, ssz);
           const validatorIndex = Number(batchKeys[index].split(':')[1]);
           allValidators[validatorIndex] = validator;
         } catch (e) {
@@ -425,10 +410,10 @@ export class Redis implements IRedis {
     return JSON.parse(proof);
   }
 
-  public async setValidatorsLength(epoch: bigint, length: number) {
+  public async setValidatorsLength(slot: bigint, length: number) {
     await this.waitForConnection();
     await this.client.set(
-      `${CONSTANTS.validatorsLengthKey}:${epoch}`,
+      `${CONSTANTS.validatorsLengthKey}:${slot}`,
       length.toString(),
     );
   }
