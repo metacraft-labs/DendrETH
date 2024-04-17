@@ -13,7 +13,12 @@ import { Tree, zeroNode } from '@chainsafe/persistent-merkle-tree';
 import CONSTANTS from '../constants/validator_commitment_constants.json';
 // @ts-ignore
 import { sleep } from '@dendreth/utils/ts-utils/common-utils';
-import { bitArrayToByteArray, getDepthByGindex, getZeroValidatorInput, indexFromGindex } from './utils';
+import {
+  bitArrayToByteArray,
+  getDepthByGindex,
+  getZeroValidatorInput,
+  indexFromGindex,
+} from './utils';
 import { CommandLineOptionsBuilder } from '../cmdline';
 import chalk from 'chalk';
 import { getLastSlotInEpoch } from './utils';
@@ -72,7 +77,10 @@ let zeroHashes: string[] = [];
 
       if (verified) {
         ++lastVerifiedSlot;
-        await redis.set(CONSTANTS.lastVerifiedSlotKey, lastVerifiedSlot.toString());
+        await redis.set(
+          CONSTANTS.lastVerifiedSlotKey,
+          lastVerifiedSlot.toString(),
+        );
       } else {
         break;
       }
@@ -109,7 +117,10 @@ async function getValidatorsDiff(
   redis: Redis,
   newBeaconState: any,
   slot: bigint,
-): Promise<{ changedValidators: IndexedValidator[], expectedValidatorsLength: number }> {
+): Promise<{
+  changedValidators: IndexedValidator[];
+  expectedValidatorsLength: number;
+}> {
   const currentSSZFork = await api.getCurrentSSZ(slot);
   const validatorsViewDU =
     currentSSZFork.BeaconState.fields.validators.toViewDU(
@@ -122,7 +133,7 @@ async function getValidatorsDiff(
     return {
       changedValidators: [],
       expectedValidatorsLength: newBeaconState.validators.length,
-    }
+    };
   }
 
   let changedNodes = [1n];
@@ -148,10 +159,12 @@ async function getValidatorsDiff(
   const changedValidatorIndices = changedNodes.map(gindex =>
     indexFromGindex(gindex, 40n),
   );
-  const changedValidators = changedValidatorIndices.filter(index => index < newBeaconState.validators.length).map(index => ({
-    index: Number(index),
-    validator: newBeaconState.validators[Number(index)],
-  }));
+  const changedValidators = changedValidatorIndices
+    .filter(index => index < newBeaconState.validators.length)
+    .map(index => ({
+      index: Number(index),
+      validator: newBeaconState.validators[Number(index)],
+    }));
 
   return {
     changedValidators,
@@ -204,18 +217,19 @@ async function verifySlot(
         ),
       );
       // reschedule tasks for slot
-      let { changedValidators, expectedValidatorsLength } = await getValidatorsDiff(
-        api,
-        redis,
-        beaconState,
-        slot,
-      );
+      let { changedValidators, expectedValidatorsLength } =
+        await getValidatorsDiff(api, redis, beaconState, slot);
 
-      const actualValidatorsLen = await redis.getValidatorsLengthForSlot(slot) || panic(`Could not fetch validators length for slot ${slot}`);
+      const actualValidatorsLen =
+        (await redis.getValidatorsLengthForSlot(slot)) ||
+        panic(`Could not fetch validators length for slot ${slot}`);
       if (expectedValidatorsLength < actualValidatorsLen) {
         // There are actually less validators in the current state than we know
         // about, so we zero out the obsolete ones
-        const validatorsToBeZeroesIndices = range(expectedValidatorsLength, actualValidatorsLen);
+        const validatorsToBeZeroesIndices = range(
+          expectedValidatorsLength,
+          actualValidatorsLen,
+        );
 
         for (const index of validatorsToBeZeroesIndices) {
           await scheduler.scheduleZeroOutValidatorTask(index, slot);
@@ -223,7 +237,10 @@ async function verifySlot(
 
         const zeroValidators = validatorsToBeZeroesIndices.map(index => ({
           index,
-          validator: validatorFromValidatorJSON(getZeroValidatorInput(), api.ssz),
+          validator: validatorFromValidatorJSON(
+            getZeroValidatorInput(),
+            api.ssz,
+          ),
         }));
         changedValidators = changedValidators.concat(zeroValidators);
       }

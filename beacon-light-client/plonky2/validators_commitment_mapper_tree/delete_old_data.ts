@@ -40,9 +40,7 @@ require('dotenv').config({ path: '../.env' });
 
   // delete proofs
   const proofKeys = validatorProofKeys.map(
-    key =>
-      CONSTANTS.validatorProofStorage +
-      key.slice(key.indexOf(':')),
+    key => CONSTANTS.validatorProofStorage + key.slice(key.indexOf(':')),
   );
   await Promise.all(
     proofKeys.map(async (proofKey, index) => {
