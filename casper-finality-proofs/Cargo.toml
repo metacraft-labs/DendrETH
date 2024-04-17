@@ -23,7 +23,7 @@ path = "src/test_engine/bin/main.rs"
 
 [dependencies]
 plonky2 = { git = "https://github.com/mir-protocol/plonky2.git" }
-plonky2x = { git = "https://github.com/metacraft-labs/succinctx.git", branch = "num_mod_public" }
+plonky2x = { git = "https://github.com/metacraft-labs/succinctx.git", branch = "bls_verification_helper" }
 starky = { git = "https://github.com/mir-protocol/plonky2.git" }
 ark-bls12-381 = "0.4.0"
 ark-ec = "0.4.2"

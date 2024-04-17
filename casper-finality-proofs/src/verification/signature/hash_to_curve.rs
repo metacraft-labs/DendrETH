@@ -1,22 +1,41 @@
-use num_bigint::BigUint;
+use std::str::FromStr;
+
+use num_bigint::{BigUint, ToBigUint};
+use plonky2::{
+    field::extension::Extendable,
+    hash::hash_types::RichField,
+    iop::{
+        generator::{GeneratedValues, SimpleGenerator},
+        target::{BoolTarget, Target},
+        witness::{PartitionWitness, WitnessWrite},
+    },
+    plonk::circuit_data::CommonCircuitData,
+    util::serialization::{Buffer, IoResult, Read, Write},
+};
 use plonky2x::{
     backend::circuit::PlonkParameters,
     frontend::{
         builder::CircuitBuilder,
-        uint::num::{biguint::BigUintTarget, u32::gadgets::arithmetic_u32::U32Target},
+        uint::num::{
+            biguint::{
+                BigUintTarget, CircuitBuilderBiguint, GeneratedValuesBigUint, WitnessBigUint,
+            },
+            u32::gadgets::arithmetic_u32::U32Target,
+        },
+        vars::Variable,
     },
 };
 
 use crate::verification::{
     fields::plonky2::{
         fp2_plonky2::{
-            add_fp2, div_fp2, frobenius_map, mul_fp2, negate_fp2, range_check_fp2, sgn0_fp2,
-            Fp2Target,
+            add_fp2, div_fp2, frobenius_map, is_zero, mul_fp2, negate_fp2, range_check_fp2,
+            sgn0_fp2, Fp2Target,
         },
         fp_plonky2::{mul_fp, N},
     },
-    g2_ec_point::{my_g2_add, PointG2Target},
-    native::{modulus, Fp, Fp2},
+    g2_ec_point::{g2_add, g2_double, g2_negate, g2_scalar_mul, PointG2Target},
+    native::{modulus, Fp, Fp2, Pow},
 };
 
 use super::hash_to_field::hash_to_field;
@@ -100,23 +119,23 @@ pub fn map_to_curve_simple_swu_9mod16<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
     t: &Fp2Target,
 ) -> PointG2Target {
-    let zero = builder.zero();
+    let zero = builder.api.zero();
 
     let iso_3_a = [
-        builder.constant_biguint(&0.to_biguint().unwrap()),
-        builder.constant_biguint(&240.to_biguint().unwrap()),
+        builder.api.constant_biguint(&0.to_biguint().unwrap()),
+        builder.api.constant_biguint(&240.to_biguint().unwrap()),
     ];
     let iso_3_b = [
-        builder.constant_biguint(&1012.to_biguint().unwrap()),
-        builder.constant_biguint(&1012.to_biguint().unwrap()),
+        builder.api.constant_biguint(&1012.to_biguint().unwrap()),
+        builder.api.constant_biguint(&1012.to_biguint().unwrap()),
     ];
     let iso_3_z = [
-        builder.constant_biguint(&(modulus() - 2u32)),
-        builder.constant_biguint(&(modulus() - 1u32)),
+        builder.api.constant_biguint(&(modulus() - 2u32)),
+        builder.api.constant_biguint(&(modulus() - 1u32)),
     ];
     let one = [
-        builder.constant_biguint(&1.to_biguint().unwrap()),
-        builder.constant_biguint(&0.to_biguint().unwrap()),
+        builder.api.constant_biguint(&1.to_biguint().unwrap()),
+        builder.api.constant_biguint(&0.to_biguint().unwrap()),
     ];
 
     let t2 = mul_fp2(builder, &t, &t);
@@ -130,8 +149,8 @@ pub fn map_to_curve_simple_swu_9mod16<L: PlonkParameters<D>, const D: usize>(
 
     let cmp = is_zero(builder, &denominator_tmp);
     let iso_3_z_iso_3_a = [
-        builder.constant_biguint(&240.to_biguint().unwrap()),
-        builder.constant_biguint(&(modulus() - 480u32)),
+        builder.api.constant_biguint(&240.to_biguint().unwrap()),
+        builder.api.constant_biguint(&(modulus() - 480u32)),
     ];
     let denominator = [
         BigUintTarget {
@@ -139,13 +158,15 @@ pub fn map_to_curve_simple_swu_9mod16<L: PlonkParameters<D>, const D: usize>(
                 .into_iter()
                 .map(|i| {
                     U32Target::from_target_unsafe(if i < iso_3_z_iso_3_a[0].num_limbs() {
-                        builder.select(
-                            cmp,
-                            iso_3_z_iso_3_a[0].limbs[i].0,
-                            denominator_tmp[0].limbs[i].0,
+                        builder.api.select(
+                            cmp.into(),
+                            iso_3_z_iso_3_a[0].limbs[i].target,
+                            denominator_tmp[0].limbs[i].target,
                         )
                     } else {
-                        builder.select(cmp, zero, denominator_tmp[0].limbs[i].0)
+                        builder
+                            .api
+                            .select(cmp.into(), zero, denominator_tmp[0].limbs[i].target)
                     })
                 })
                 .collect::<Vec<U32Target>>(),
@@ -154,10 +175,10 @@ pub fn map_to_curve_simple_swu_9mod16<L: PlonkParameters<D>, const D: usize>(
             limbs: (0..N)
                 .into_iter()
                 .map(|i| {
-                    U32Target::from_target_unsafe(builder.select(
-                        cmp,
-                        iso_3_z_iso_3_a[1].limbs[i].0,
-                        denominator_tmp[1].limbs[i].0,
+                    U32Target::from_target_unsafe(builder.api.select(
+                        cmp.into(),
+                        iso_3_z_iso_3_a[1].limbs[i].target,
+                        denominator_tmp[1].limbs[i].target,
                     ))
                 })
                 .collect::<Vec<U32Target>>(),
@@ -174,19 +195,19 @@ pub fn map_to_curve_simple_swu_9mod16<L: PlonkParameters<D>, const D: usize>(
     let xi3t6 = mul_fp2(builder, &iso_3_z_t2_2, &iso_3_z_t2);
     let gx1 = mul_fp2(builder, &xi3t6, &gx0);
 
-    let is_square = builder.add_virtual_bool_target_unsafe();
+    let is_square = builder.api.add_virtual_bool_target_unsafe();
     let sqrt = [
-        builder.add_virtual_biguint_target(N),
-        builder.add_virtual_biguint_target(N),
+        builder.api.add_virtual_biguint_target_unsafe(N),
+        builder.api.add_virtual_biguint_target_unsafe(N),
     ];
-    builder.add_simple_generator(SqrtGenerator {
+    builder.api.add_simple_generator(SqrtGenerator {
         t: t.clone(),
         x0: gx0.clone(),
         x1: gx1.clone(),
         is_square,
         sqrt: sqrt.clone(),
     });
-    builder.assert_bool(is_square);
+    builder.api.assert_bool(is_square);
     range_check_fp2(builder, &sqrt);
     let sqrt2 = mul_fp2(builder, &sqrt, &sqrt);
     let gx0_gx1_select = [
@@ -194,10 +215,10 @@ pub fn map_to_curve_simple_swu_9mod16<L: PlonkParameters<D>, const D: usize>(
             limbs: (0..N)
                 .into_iter()
                 .map(|i| {
-                    U32Target::from_target_unsafe(builder.select(
-                        is_square,
-                        gx0[0].limbs[i].0,
-                        gx1[0].limbs[i].0,
+                    U32Target::from_target_unsafe(builder.api.select(
+                        is_square.into(),
+                        gx0[0].limbs[i].target,
+                        gx1[0].limbs[i].target,
                     ))
                 })
                 .collect::<Vec<U32Target>>(),
@@ -206,31 +227,31 @@ pub fn map_to_curve_simple_swu_9mod16<L: PlonkParameters<D>, const D: usize>(
             limbs: (0..N)
                 .into_iter()
                 .map(|i| {
-                    U32Target::from_target_unsafe(builder.select(
-                        is_square,
-                        gx0[1].limbs[i].0,
-                        gx1[1].limbs[i].0,
+                    U32Target::from_target_unsafe(builder.api.select(
+                        is_square.into(),
+                        gx0[1].limbs[i].target,
+                        gx1[1].limbs[i].target,
                     ))
                 })
                 .collect::<Vec<U32Target>>(),
         },
     ];
-    builder.connect_biguint(&gx0_gx1_select[0], &sqrt2[0]);
-    builder.connect_biguint(&gx0_gx1_select[1], &sqrt2[1]);
+    builder.api.connect_biguint(&gx0_gx1_select[0], &sqrt2[0]);
+    builder.api.connect_biguint(&gx0_gx1_select[1], &sqrt2[1]);
 
     let sgn_t = sgn0_fp2(builder, t);
     let sgn_sqrt = sgn0_fp2(builder, &sqrt);
-    let sgn_eq = builder.is_equal(sgn_t.target, sgn_sqrt.target);
+    let sgn_eq = builder.api.is_equal(sgn_t.variable.0, sgn_sqrt.variable.0);
     let sqrt_negate = negate_fp2(builder, &sqrt);
     let y = [
         BigUintTarget {
             limbs: (0..N)
                 .into_iter()
                 .map(|i| {
-                    U32Target::from_target_unsafe(builder.select(
-                        sgn_eq,
-                        sqrt[0].limbs[i].0,
-                        sqrt_negate[0].limbs[i].0,
+                    U32Target::from_target_unsafe(builder.api.select(
+                        sgn_eq.into(),
+                        sqrt[0].limbs[i].target,
+                        sqrt_negate[0].limbs[i].target,
                     ))
                 })
                 .collect::<Vec<U32Target>>(),
@@ -239,10 +260,10 @@ pub fn map_to_curve_simple_swu_9mod16<L: PlonkParameters<D>, const D: usize>(
             limbs: (0..N)
                 .into_iter()
                 .map(|i| {
-                    U32Target::from_target_unsafe(builder.select(
+                    U32Target::from_target_unsafe(builder.api.select(
                         sgn_eq,
-                        sqrt[1].limbs[i].0,
-                        sqrt_negate[1].limbs[i].0,
+                        sqrt[1].limbs[i].target,
+                        sqrt_negate[1].limbs[i].target,
                     ))
                 })
                 .collect::<Vec<U32Target>>(),
@@ -253,10 +274,10 @@ pub fn map_to_curve_simple_swu_9mod16<L: PlonkParameters<D>, const D: usize>(
             limbs: (0..N)
                 .into_iter()
                 .map(|i| {
-                    U32Target::from_target_unsafe(builder.select(
+                    U32Target::from_target_unsafe(builder.api.select(
                         is_square,
-                        x0[0].limbs[i].0,
-                        x1[0].limbs[i].0,
+                        x0[0].limbs[i].target,
+                        x1[0].limbs[i].target,
                     ))
                 })
                 .collect::<Vec<U32Target>>(),
@@ -265,10 +286,10 @@ pub fn map_to_curve_simple_swu_9mod16<L: PlonkParameters<D>, const D: usize>(
             limbs: (0..N)
                 .into_iter()
                 .map(|i| {
-                    U32Target::from_target_unsafe(builder.select(
+                    U32Target::from_target_unsafe(builder.api.select(
                         is_square,
-                        x0[1].limbs[i].0,
-                        x1[1].limbs[i].0,
+                        x0[1].limbs[i].target,
+                        x1[1].limbs[i].target,
                     ))
                 })
                 .collect::<Vec<U32Target>>(),
@@ -294,7 +315,10 @@ pub fn isogeny_map<L: PlonkParameters<D>, const D: usize>(
                 .map(|c| {
                     let c0 = BigUint::from_str(c[0]).unwrap();
                     let c1 = BigUint::from_str(c[1]).unwrap();
-                    [builder.constant_biguint(&c0), builder.constant_biguint(&c1)]
+                    [
+                        builder.api.constant_biguint(&c0),
+                        builder.api.constant_biguint(&c1),
+                    ]
                 })
                 .collect::<Vec<Fp2Target>>()
         })
@@ -336,12 +360,12 @@ pub fn endomorphism_psi<L: PlonkParameters<D>, const D: usize>(
     inp: &PointG2Target,
 ) -> PointG2Target {
     let c0 = [
-        builder.constant_biguint(&BigUint::from_str("0").unwrap()),
-        builder.constant_biguint(&BigUint::from_str("4002409555221667392624310435006688643935503118305586438271171395842971157480381377015405980053539358417135540939437").unwrap()),
+        builder.api.constant_biguint(&BigUint::from_str("0").unwrap()),
+        builder.api.constant_biguint(&BigUint::from_str("4002409555221667392624310435006688643935503118305586438271171395842971157480381377015405980053539358417135540939437").unwrap()),
     ];
     let c1 = [
-        builder.constant_biguint(&BigUint::from_str("2973677408986561043442465346520108879172042883009249989176415018091420807192182638567116318576472649347015917690530").unwrap()),
-        builder.constant_biguint(&BigUint::from_str("1028732146235106349975324479215795277384839936929757896155643118032610843298655225875571310552543014690878354869257").unwrap()),
+        builder.api.constant_biguint(&BigUint::from_str("2973677408986561043442465346520108879172042883009249989176415018091420807192182638567116318576472649347015917690530").unwrap()),
+        builder.api.constant_biguint(&BigUint::from_str("1028732146235106349975324479215795277384839936929757896155643118032610843298655225875571310552543014690878354869257").unwrap()),
     ];
     let frob = [
         frobenius_map(builder, &inp[0], 1),
@@ -357,7 +381,7 @@ pub fn endomorphism_psi2<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
     inp: &PointG2Target,
 ) -> PointG2Target {
-    let c = builder.constant_biguint(&BigUint::from_str("4002409555221667392624310435006688643935503118305586438271171395842971157480381377015405980053539358417135540939436").unwrap());
+    let c = builder.api.constant_biguint(&BigUint::from_str("4002409555221667392624310435006688643935503118305586438271171395842971157480381377015405980053539358417135540939436").unwrap());
     [
         [
             mul_fp(builder, &inp[0][0], &c),
@@ -372,12 +396,20 @@ pub fn clear_cofactor_g2<L: PlonkParameters<D>, const D: usize>(
     inp: &PointG2Target,
 ) -> PointG2Target {
     let a = [
-        builder.constant_biguint(&BigUint::from_str("0").unwrap()),
-        builder.constant_biguint(&BigUint::from_str("0").unwrap()),
+        builder
+            .api
+            .constant_biguint(&BigUint::from_str("0").unwrap()),
+        builder
+            .api
+            .constant_biguint(&BigUint::from_str("0").unwrap()),
     ];
     let b = [
-        builder.constant_biguint(&BigUint::from_str("4").unwrap()),
-        builder.constant_biguint(&BigUint::from_str("4").unwrap()),
+        builder
+            .api
+            .constant_biguint(&BigUint::from_str("4").unwrap()),
+        builder
+            .api
+            .constant_biguint(&BigUint::from_str("4").unwrap()),
     ];
     let fals = builder._false();
     let x_p = g2_scalar_mul(builder, inp, &b);
@@ -387,33 +419,41 @@ pub fn clear_cofactor_g2<L: PlonkParameters<D>, const D: usize>(
     let double_p = g2_double(builder, &inp, &a, &b);
     let psi2_2p = endomorphism_psi2(builder, &double_p);
 
-    let add0 = my_g2_add(builder, &x_p, fals, &inp, fals, &a, &b);
-    let add1 = my_g2_add(builder, &add0, fals, &neg_psi_p, fals, &a, &b);
+    let add0 = g2_add(builder, &x_p, fals.into(), &inp, fals.into(), &a, &b);
+    let add1 = g2_add(builder, &add0, fals.into(), &neg_psi_p, fals.into(), &a, &b);
     let x_add1 = g2_scalar_mul(builder, &add1, &b);
-    let add2 = my_g2_add(builder, &x_add1, fals, &neg_p, fals, &a, &b);
-    let add3 = my_g2_add(builder, &add2, fals, &neg_psi_p, fals, &a, &b);
-    let add4 = my_g2_add(builder, &add3, fals, &psi2_2p, fals, &a, &b);
+    let add2 = g2_add(builder, &x_add1, fals.into(), &neg_p, fals.into(), &a, &b);
+    let add3 = g2_add(builder, &add2, fals.into(), &neg_psi_p, fals.into(), &a, &b);
+    let add4 = g2_add(builder, &add3, fals.into(), &psi2_2p, fals.into(), &a, &b);
     add4
 }
 
 pub fn hash_to_curve<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
-    msg: &[Target],
+    msg: &[Variable],
 ) -> PointG2Target {
     let iso_3_a = [
-        builder.constant_biguint(&0.to_biguint().unwrap()),
-        builder.constant_biguint(&240.to_biguint().unwrap()),
+        builder.api.constant_biguint(&0.to_biguint().unwrap()),
+        builder.api.constant_biguint(&240.to_biguint().unwrap()),
     ];
     let iso_3_b = [
-        builder.constant_biguint(&1012.to_biguint().unwrap()),
-        builder.constant_biguint(&1012.to_biguint().unwrap()),
+        builder.api.constant_biguint(&1012.to_biguint().unwrap()),
+        builder.api.constant_biguint(&1012.to_biguint().unwrap()),
     ];
 
     let u = hash_to_field(builder, msg, 2);
     let pt1 = map_to_curve_simple_swu_9mod16(builder, &u[0]);
     let pt2 = map_to_curve_simple_swu_9mod16(builder, &u[1]);
     let no = builder._false();
-    let pt1pt2 = my_g2_add(builder, &pt1, no, &pt2, no, &iso_3_a, &iso_3_b);
+    let pt1pt2 = g2_add(
+        builder,
+        &pt1,
+        no.into(),
+        &pt2,
+        no.into(),
+        &iso_3_a,
+        &iso_3_b,
+    );
     let isogeny_mapping = isogeny_map(builder, &pt1pt2);
     let clear_cofactor = clear_cofactor_g2(builder, &isogeny_mapping);
     clear_cofactor
@@ -437,7 +477,7 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D> for Sqr
         self.t
             .iter()
             .chain(self.x0.iter().chain(self.x1.iter()))
-            .flat_map(|f| f.limbs.iter().map(|l| l.0))
+            .flat_map(|f| f.limbs.iter().map(|l| l.target))
             .collect::<Vec<Target>>()
     }
 

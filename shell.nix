@@ -9,7 +9,7 @@
     inherit (inputs'.mcl-blockchain.legacyPackages) pkgs-with-rust-overlay rust-stable;
     inherit (pkgs-with-rust-overlay) rust-bin;
 
-    rust-nightly = rust-bin.nightly."2024-02-13".default.override {
+    rust-nightly = rust-bin.nightly."2023-08-24".default.override {
       extensions = ["rust-src" "rust-analyzer"];
     };
   in {

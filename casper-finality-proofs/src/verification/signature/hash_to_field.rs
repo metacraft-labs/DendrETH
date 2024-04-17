@@ -7,13 +7,16 @@ use plonky2x::{
             biguint::{BigUintTarget, CircuitBuilderBiguint},
             u32::gadgets::arithmetic_u32::{CircuitBuilderU32, U32Target},
         },
-        vars::Variable,
+        vars::{ByteVariable, Variable},
     },
 };
 
 use crate::verification::{
     fields::plonky2::{fp2_plonky2::Fp2Target, fp_plonky2::FpTarget},
     native::modulus,
+    signature::hashing_helpers::{
+        add_virtual_hash_input_target, and_u32, hash_sha256, rsh_u32, xor_u32, SHA256_DIGEST_SIZE,
+    },
 };
 
 const DST: &str = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
@@ -26,15 +29,15 @@ pub fn preprocess1_sha256_input<L: PlonkParameters<D>, const D: usize>(
     input_bytes: &[U32Target],
     hash_len: usize,
 ) -> BigUintTarget {
-    let zero = builder.zero();
-    let one = builder.one();
+    let zero = builder.api.zero();
+    let one = builder.api.one();
 
     let input_bits_len = input_bytes.len() * 8;
     let next_32_multiple = (input_bits_len + 7 + 31) / 32;
 
     let mut input_bits = input_bytes
         .iter()
-        .flat_map(|byte| builder.split_le(byte.0, 8))
+        .flat_map(|byte| builder.api.split_le(byte.target, 8))
         .collect::<Vec<BoolTarget>>();
     input_bits.resize(next_32_multiple * 32, BoolTarget::new_unsafe(zero));
     input_bits[input_bits_len + 7] = BoolTarget::new_unsafe(one);
@@ -43,14 +46,14 @@ pub fn preprocess1_sha256_input<L: PlonkParameters<D>, const D: usize>(
         .chunks(32)
         .map(|bits| {
             let swap_bits = bits.chunks(8).rev().flatten();
-            U32Target::from_target_unsafe(builder.le_sum(swap_bits))
+            U32Target::from_target_unsafe(builder.api.le_sum(swap_bits))
         })
         .collect::<Vec<U32Target>>();
 
     input_u32s.resize(hash_len, U32Target::from_target_unsafe(zero));
 
-    let padding_end1 = builder.constant_u32((input_bits_len >> 32) as u32);
-    let padding_end0 = builder.constant_u32(input_bits_len as u32);
+    let padding_end1 = builder.api.constant_u32((input_bits_len >> 32) as u32);
+    let padding_end0 = builder.api.constant_u32(input_bits_len as u32);
     input_u32s[hash_len - 2] = padding_end1;
     input_u32s[hash_len - 1] = padding_end0;
 
@@ -63,15 +66,15 @@ pub fn preprocess2_sha256_input<L: PlonkParameters<D>, const D: usize>(
     input_bytes: &[U32Target],
     hash_len: usize,
 ) -> BigUintTarget {
-    let zero = builder.zero();
-    let one = builder.one();
+    let zero = builder.api.zero();
+    let one = builder.api.one();
 
     let input_bits_len = input_bytes.len() * 8;
     let next_32_multiple = (input_bits_len + 7 + 31) / 32;
 
     let mut input_bits = input_bytes
         .iter()
-        .flat_map(|byte| builder.split_le(byte.0, 8))
+        .flat_map(|byte| builder.api.split_le(byte.target, 8))
         .collect::<Vec<BoolTarget>>();
     input_bits.resize(next_32_multiple * 32, BoolTarget::new_unsafe(zero));
     input_bits[input_bits_len + 7] = BoolTarget::new_unsafe(one);
@@ -80,7 +83,7 @@ pub fn preprocess2_sha256_input<L: PlonkParameters<D>, const D: usize>(
         .chunks(32)
         .map(|bits| {
             let swap_bits = bits.chunks(8).rev().flatten();
-            U32Target::from_target_unsafe(builder.le_sum(swap_bits))
+            U32Target::from_target_unsafe(builder.api.le_sum(swap_bits))
         })
         .collect::<Vec<U32Target>>();
 
@@ -91,73 +94,77 @@ pub fn preprocess2_sha256_input<L: PlonkParameters<D>, const D: usize>(
     input_u32s.append(&mut tmp_u32s);
     input_u32s.resize(hash_len, U32Target::from_target_unsafe(zero));
 
-    let padding_end1 = builder.constant_u32(((input_bits_len + 256) >> 32) as u32);
-    let padding_end0 = builder.constant_u32((input_bits_len + 256) as u32);
+    let padding_end1 = builder
+        .api
+        .constant_u32(((input_bits_len + 256) >> 32) as u32);
+    let padding_end0 = builder.api.constant_u32((input_bits_len + 256) as u32);
     input_u32s[hash_len - 2] = padding_end1;
     input_u32s[hash_len - 1] = padding_end0;
 
     BigUintTarget { limbs: input_u32s }
 }
 
+pub fn i2osp(value: U32Target, length: usize) {}
+
 pub fn expand_message_xmd<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
-    msg: &[Variable],
-    dst: &[U32Target],
+    msg: &[ByteVariable],
+    dst: &[ByteVariable],
     len_in_bytes: usize,
-) -> Vec<BigUintTarget> {
-    let b_in_bytes = 32; // SHA256 output length
+) -> Vec<ByteVariable> {
+    let b_in_bytes = SHA256_DIGEST_SIZE; // SHA256 output length
     let r_in_bytes = b_in_bytes * 2;
-    let ell = (len_in_bytes + b_in_bytes - 1) / b_in_bytes;
+    let ell = (len_in_bytes as u8 + b_in_bytes as u8 - 1) / b_in_bytes;
     assert!(ell <= 255, "Invalid xmd length");
 
-    let zero = builder.zero();
-    let one = builder.one();
+    //////////////////////////////////////////////////////////////////////////
 
-    let dst_prime = builder.add_virtual_u32_targets(DST_LEN + 1);
+    let dst_prime;
+
+    let zero = builder.api.zero();
+    let one = builder.api.one();
+
+    let dst_prime = builder.api.add_virtual_u32_targets_unsafe(DST_LEN + 1);
     for i in 0..DST_LEN {
-        builder.connect_u32(dst[i], dst_prime[i]);
+        builder.api.connect_u32(dst[i], dst_prime[i]);
     }
-    let io2sp_dst = builder.constant_u32(dst.len() as u32);
-    builder.connect_u32(dst_prime[DST_LEN], io2sp_dst);
-    let z_pad = builder.add_virtual_u32_targets(r_in_bytes);
+    let io2sp_dst = builder.api.constant_u32(dst.len() as u32);
+    builder.api.connect_u32(dst_prime[DST_LEN], io2sp_dst);
+    let z_pad = builder.api.add_virtual_u32_targets_unsafe(r_in_bytes);
     for target in z_pad.iter() {
-        builder.connect(target.0, zero);
+        builder.api.connect(target.target, zero);
     }
-    let l_i_b_str = builder.add_virtual_u32_targets(2);
-    let l_i_b_target = builder.constant_u32(len_in_bytes as u32);
-    let u8_max = builder.constant_u32(0xff);
-    let low = builder.and_u32(l_i_b_target, u8_max);
-    let high = builder.rsh_u32(l_i_b_target, 8);
+    let l_i_b_str = builder.api.add_virtual_u32_targets_unsafe(2);
+    let l_i_b_target = builder.api.constant_u32(len_in_bytes as u32);
+    let u8_max = builder.api.constant_u32(0xff);
+    let low = and_u32(l_i_b_target, u8_max);
+    let high = rsh_u32(builder, l_i_b_target, 8);
 
-    builder.connect_u32(l_i_b_str[0], high);
-    builder.connect_u32(l_i_b_str[1], low);
+    builder.api.connect_u32(l_i_b_str[0], high);
+    builder.api.connect_u32(l_i_b_str[1], low);
 
     let input_len = z_pad.len() + msg.len() + l_i_b_str.len() + 1 + dst_prime.len();
 
-    let mut input_bytes = vec![];
+    let mut input_bytes: Vec<ByteVariable> = vec![];
     for i in 0..z_pad.len() {
-        input_bytes.push(z_pad[i]);
+        input_bytes.push(ByteVariable::from_target(builder, z_pad[i].target));
     }
     for i in 0..msg.len() {
-        input_bytes.push(U32Target::from_target_unsafe(msg[i].0));
+        input_bytes.push(ByteVariable::from_target(builder, msg[i].0));
     }
     for i in 0..l_i_b_str.len() {
-        input_bytes.push(l_i_b_str[i]);
+        input_bytes.push(ByteVariable::from_target(builder, l_i_b_str[i].target));
     }
-    input_bytes.push(U32Target::from_target_unsafe(zero));
+    input_bytes.push(ByteVariable::from_target(builder, zero));
     for i in 0..dst_prime.len() {
-        input_bytes.push(dst_prime[i]);
+        input_bytes.push(ByteVariable::from_target(builder, dst_prime[i].target));
     }
 
-    let b_0_input = builder.add_virtual_hash_input_target((input_len * 8 + 511) / 512, 512);
-    let preprocessed_input =
-        preprocess1_sha256_input(builder, &input_bytes, b_0_input.input.num_limbs());
-    builder.connect_biguint(&preprocessed_input, &b_0_input.input);
-    let b_0 = builder.hash_sha256(&b_0_input);
+    let b_0 = builder.sha256(&input_bytes);
 
     let mut b = vec![];
 
-    let b0_input = builder.add_virtual_hash_input_target(((32 + 1 + 43) * 8 + 511) / 512, 512);
+    let b0_input = add_virtual_hash_input_target(((32 + 1 + 43) * 8 + 511) / 512, 512);
     let mut b0_input_bytes = vec![];
     b0_input_bytes.push(U32Target::from_target_unsafe(one));
     for i in 0..dst_prime.len() {
@@ -165,14 +172,16 @@ pub fn expand_message_xmd<L: PlonkParameters<D>, const D: usize>(
     }
     let preprocessed_input =
         preprocess2_sha256_input(builder, &b_0, &b0_input_bytes, b0_input.input.num_limbs());
-    builder.connect_biguint(&preprocessed_input, &b0_input.input);
-    let b0 = builder.hash_sha256(&b0_input);
+    builder
+        .api
+        .connect_biguint(&preprocessed_input, &b0_input.input);
+    let b0 = hash_sha256(&b0_input);
     b.push(b0);
 
     for i in 1..ell {
         let bi_input = builder.add_virtual_hash_input_target(((32 + 1 + 43) * 8 + 511) / 512, 512);
         let mut bi_input_bytes = vec![];
-        let i2osp_i = builder.constant_u32((i + 1) as u32);
+        let i2osp_i = builder.api.constant_u32((i + 1) as u32);
         bi_input_bytes.push(i2osp_i);
         for i in 0..dst_prime.len() {
             bi_input_bytes.push(dst_prime[i]);
@@ -182,7 +191,7 @@ pub fn expand_message_xmd<L: PlonkParameters<D>, const D: usize>(
                 .limbs
                 .iter()
                 .zip(b[i - 1].limbs.iter())
-                .map(|(b0, bi)| builder.xor_u32(*b0, *bi))
+                .map(|(b0, bi)| xor_u32(*b0, *bi))
                 .collect::<Vec<U32Target>>(),
         };
         let preprocessed_input = preprocess2_sha256_input(
@@ -194,7 +203,7 @@ pub fn expand_message_xmd<L: PlonkParameters<D>, const D: usize>(
         builder
             .api
             .connect_biguint(&preprocessed_input, &bi_input.input);
-        let bi = builder.api.hash_sha256(&bi_input);
+        let bi = hash_sha256(&bi_input);
         b.push(bi);
     }
     b
