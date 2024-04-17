@@ -24,6 +24,7 @@ export class CommandLineOptionsBuilder {
         default: Number(config['redis-port']),
         description: 'Specifies the Redis port number',
       });
+
     return this;
   }
 
@@ -77,6 +78,58 @@ export class CommandLineOptionsBuilder {
       .withFileSStorageOps()
       .withS3StorageOpts()
       .withAzureBlobStorageOpts();
+  }
+
+  withLightCleanOpts() {
+    args.option('clean-duration', {
+      alias: 'clean-duration',
+      describe: 'The time between each clean in ms',
+      type: 'number',
+      default: 5000,
+    });
+
+    return this;
+  }
+
+  withProtocolOpts() {
+    args.option('protocol', {
+      alias: 'protocol',
+      describe: 'The protocol',
+      type: 'string',
+      demandOption: true,
+      description: 'Sets the protocol',
+    });
+
+    return this;
+  }
+
+  withBeaconNodeOpts() {
+    args.option('beacon-node', {
+      alias: 'beacon-node',
+      describe: 'The beacon node url',
+      type: 'array',
+      default: config['beacon-node'],
+      description: 'Sets a custom beacon node url',
+    });
+
+    return this;
+  }
+
+  withRangeOpts() {
+    args
+      .option('offset', {
+        describe: 'Index offset in the validator set',
+        type: 'number',
+        default: undefined,
+      })
+      .option('take', {
+        describe: 'The number of validators to take',
+        type: 'number',
+        default: Infinity,
+        description: 'Sets the number of validators to take',
+      });
+
+    return this;
   }
 
   option(opt: string, settings: Options) {

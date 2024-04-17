@@ -1,12 +1,13 @@
-use std::{fs, println, time::Instant};
+use std::{println, time::Instant};
 
 use anyhow::Result;
 use circuits_executables::{
     crud::common::{load_circuit_data, FinalProof},
-    validator_commitment_constants::get_validator_commitment_constants,
+    utils::{parse_config_file, CommandLineOptionsBuilder},
+    validator_commitment_constants::VALIDATOR_COMMITMENT_CONSTANTS,
     wrap_final_layer_in_poseidon_bn128::wrap_final_layer_in_poseidon_bn_128,
 };
-use clap::{App, Arg};
+use clap::Arg;
 use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
@@ -21,16 +22,11 @@ fn main() -> Result<()> {
 }
 
 async fn async_main() -> Result<()> {
-    let matches = App::new("")
-        .arg(
-            Arg::with_name("redis_connection")
-                .short('r')
-                .long("redis")
-                .value_name("Redis Connection")
-                .help("Sets a custom Redis connection")
-                .takes_value(true)
-                .default_value("redis://127.0.0.1:6379/"),
-        )
+    let common_config = parse_config_file("../common_config.json".to_owned()).unwrap();
+
+    let matches = CommandLineOptionsBuilder::new("wrapper")
+        .with_redis_options(&common_config.redis_host, common_config.redis_port)
+        .with_protocol_options()
         .arg(
             Arg::with_name("compile")
                 .short('c')
@@ -52,8 +48,14 @@ async fn async_main() -> Result<()> {
     let final_layer_circuit: CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2> =
         load_circuit_data("circuits/final_layer").unwrap();
 
+    let protocol = matches.value_of("protocol").unwrap();
+
     let proof_str: String = con
-        .get(get_validator_commitment_constants().final_layer_proof_key)
+        .get(format!(
+            "{}:{}",
+            protocol.to_string(),
+            VALIDATOR_COMMITMENT_CONSTANTS.final_layer_proof_key
+        ))
         .await?;
     let final_layer_proof: FinalProof = serde_json::from_str(&proof_str)?;
     let final_layer_proof = final_layer_proof.proof;
@@ -65,6 +67,7 @@ async fn async_main() -> Result<()> {
         compile_circuit,
         final_layer_circuit,
         final_layer_proof,
+        protocol.to_string(),
     )
     .await?;
 

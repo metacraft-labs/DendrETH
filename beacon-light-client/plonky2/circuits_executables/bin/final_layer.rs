@@ -35,11 +35,12 @@ fn main() -> Result<()> {
 }
 
 async fn async_main() -> Result<()> {
-    let config = parse_config_file("../common_config.json".to_owned())?;
+    let common_config = parse_config_file("../common_config.json".to_owned()).unwrap();
 
     let matches = CommandLineOptionsBuilder::new("final_layer")
-        .with_redis_options(&config.redis_host, &config.redis_port)
+        .with_redis_options(&common_config.redis_host, common_config.redis_port)
         .with_proof_storage_options()
+        .with_protocol_options()
         .get_matches();
 
     let redis_connection = matches.value_of("redis_connection").unwrap();
@@ -64,14 +65,17 @@ async fn async_main() -> Result<()> {
 
     let (circuit_targets, circuit_data) = build_final_circuit::<1>(&balance_data, &commitment_data);
 
-    let final_input_data = fetch_final_layer_input(&mut con).await?;
+    let protocol = matches.value_of("protocol").unwrap();
+
+    let final_input_data = fetch_final_layer_input(&mut con, protocol.to_string()).await?;
 
     let mut pw: PartialWitness<GoldilocksField> = PartialWitness::new();
 
     circuit_targets.set_pw_values(&mut pw, &final_input_data);
 
-    let balance_proof: BalanceProof = fetch_proof_balances(&mut con, 37, 0).await?;
-    let balance_proof_bytes = proof_storage.get_proof(balance_proof.proof_index).await?;
+    let balance_proof: BalanceProof =
+        fetch_proof_balances(&mut con, protocol, 37, 0).await?;
+    let balance_proof_bytes = proof_storage.get_proof(balance_proof.proof_key).await?;
 
     let balance_final_proof =
         ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
@@ -102,8 +106,9 @@ async fn async_main() -> Result<()> {
 
     let epoch = BigUint::div(final_input_data.slot, 32u32).to_u64().unwrap();
     let commitment_proof: ValidatorProof = fetch_proof(&mut con, 1, epoch).await?;
+
     let commitment_proof_bytes = proof_storage
-        .get_proof(commitment_proof.proof_index)
+        .get_proof(commitment_proof.proof_key)
         .await?;
 
     let commitment_final_proof = ProofWithPublicInputs::<
@@ -137,6 +142,7 @@ async fn async_main() -> Result<()> {
 
     save_final_proof(
         &mut con,
+        protocol.to_string(),
         &proof,
         final_input_data
             .block_root
@@ -179,7 +185,8 @@ async fn async_main() -> Result<()> {
 
     println!("{}", "Running wrapper...".blue().bold());
 
-    wrap_final_layer_in_poseidon_bn_128(con, false, circuit_data, proof).await?;
+    wrap_final_layer_in_poseidon_bn_128(con, false, circuit_data, proof, protocol.to_string())
+        .await?;
 
     println!("{}", "Wrapper finished!".blue().bold());
 

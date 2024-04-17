@@ -22,13 +22,7 @@ const options = new CommandLineOptionsBuilder()
     type: 'string',
     demandOption: true,
   })
-  .option('beacon-node', {
-    alias: 'beacon-node',
-    describe: 'The beacon node url',
-    type: 'array',
-    default: config['beacon-node'],
-    description: 'Sets a custom beacon node url',
-  })
+  .withBeaconNodeOpts()
   .build();
 
 const snapshotContractAddress = options['snapshot-contract-address'];
@@ -50,6 +44,7 @@ snapshot.on('SnapshotTaken', async (_: number, currentSlot: number) => {
   const withdrawCredentials = await validatorManager.getWithdrawalCredentials();
 
   await getBalancesInput({
+    protocol: 'diva',
     withdrawCredentials,
     slot: currentSlot,
     beaconNodeUrls: options['beacon-node'],

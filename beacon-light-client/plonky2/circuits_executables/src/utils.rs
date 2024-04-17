@@ -1,8 +1,8 @@
 use anyhow::Result;
 use clap::{Arg, ArgMatches, Command};
+use ff::PrimeField;
 use serde::Deserialize;
 use std::{fs::File, io::Read, time::Duration};
-use ff::PrimeField;
 
 pub struct BalanceVerificationConfig {
     pub redis_connection: String,
@@ -156,7 +156,7 @@ impl<'a> CommandLineOptionsBuilder<'a> {
         Self { command }
     }
 
-    pub fn with_redis_options(self, host: &str, port: &str) -> Self {
+    pub fn with_redis_options(self, host: &str, port: usize) -> Self {
         let command = self.command.arg(
             Arg::with_name("redis_connection")
                 .short('r')
@@ -192,13 +192,26 @@ impl<'a> CommandLineOptionsBuilder<'a> {
     pub fn get_matches(self) -> ArgMatches {
         self.command.get_matches()
     }
+
+    pub fn with_protocol_options(self) -> Self {
+        let command = self.command.arg(
+            Arg::with_name("protocol")
+                .long("protocol")
+                .value_name("protocol")
+                .help("Sets the protocol")
+                .takes_value(true)
+                .required(true),
+        );
+
+        Self { command }
+    }
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct CommonConfigOptions {
     pub redis_host: String,
-    pub redis_port: String,
+    pub redis_port: usize,
 }
 
 pub fn parse_config_file(filepath: String) -> Result<CommonConfigOptions> {

@@ -20,6 +20,7 @@ pub async fn wrap_final_layer_in_poseidon_bn_128(
     compile_circuit: bool,
     final_layer_circuit: CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     final_layer_proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    protocol: String,
 ) -> Result<(), anyhow::Error> {
     let (proof_target, circuit_data) = build_wrapper(final_layer_circuit);
     let proof = generate_wrapper_proof(final_layer_proof, &circuit_data, proof_target)?;
@@ -27,25 +28,38 @@ pub async fn wrap_final_layer_in_poseidon_bn_128(
     let serialized_proof = serde_json::to_string(&proof)?;
     let verifier_only_circuit_data = serde_json::to_string(&circuit_data.verifier_only).unwrap();
     let common_circuit_data = serde_json::to_string(&circuit_data.common).unwrap();
-    Ok(if compile_circuit {
+
+    if compile_circuit {
         fs::write(
             "verifier_only_circuit_data.json",
-            verifier_only_circuit_data,
+            verifier_only_circuit_data.clone(),
         )
         .unwrap();
 
         fs::write("proof_with_public_inputs.json", serialized_proof).unwrap();
 
         fs::write("common_circuit_data.json", common_circuit_data).unwrap();
-    } else {
-        con.set("balance_wrapper_proof_with_public_inputs", serialized_proof)
+
+        con.set("balance_wrapper_verifier_only", verifier_only_circuit_data)
             .await?;
+    } else {
+        con.set(
+            format!(
+                "{}:{}",
+                protocol, "balance_wrapper_proof_with_public_inputs"
+            ),
+            serialized_proof,
+        )
+        .await?;
 
         con.set("balance_wrapper_verifier_only", verifier_only_circuit_data)
             .await?;
 
-        con.publish("gnark_proofs_channel", "start").await?;
-    })
+        con.publish(format!("{}:{}", protocol, "gnark_proofs_channel"), "start")
+            .await?;
+    }
+
+    Ok(())
 }
 
 pub fn generate_wrapper_proof(

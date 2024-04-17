@@ -20,6 +20,7 @@ const CIRCUIT_SIZE = 8;
 
 export type GetBalancesInputConfigRequiredFields = {
   withdrawCredentials: string;
+  protocol: string;
 };
 
 export type GetBalancesInputConfig = GetBalancesInputConfigRequiredFields & {
@@ -55,6 +56,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
   const redis = new RedisLocal(config.redisHost, config.redisPort);
 
   const withdrawCredentials = config.withdrawCredentials;
+  const protocol = config.protocol;
 
   const queues: any[] = [];
 
@@ -62,19 +64,11 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
     queues.push(
       new WorkQueue(
         new KeyPrefix(
-          `${validator_commitment_constants.balanceVerificationQueue}:${i}`,
+          `${protocol}:${validator_commitment_constants.balanceVerificationQueue}:${i}`,
         ),
       ),
     );
   }
-
-  queues.push(
-    new WorkQueue(
-      new KeyPrefix(
-        `${validator_commitment_constants.balanceVerificationQueue}:final`,
-      ),
-    ),
-  );
 
   const beaconApi = await getBeaconApi(config.beaconNodeUrls);
 
@@ -119,7 +113,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
     balances.push(''.padStart(256, '0').split('').map(Number));
   }
 
-  await redis.saveValidatorBalancesInput([
+  await redis.saveValidatorBalancesInput(protocol, [
     {
       index: Number(validator_commitment_constants.validatorRegistryLimit),
       input: {
@@ -199,10 +193,11 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
       });
     }
 
-    await redis.saveValidatorBalancesInput(batch);
+    await redis.saveValidatorBalancesInput(protocol, batch);
   }
 
   await redis.saveBalanceProof(
+    protocol,
     0n,
     BigInt(validator_commitment_constants.validatorRegistryLimit),
   );
@@ -212,7 +207,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
     const view = new DataView(buffer);
     view.setBigUint64(0, BigInt(i), false);
 
-    await redis.saveBalanceProof(0n, BigInt(i));
+    await redis.saveBalanceProof(protocol, 0n, BigInt(i));
 
     await queues[0].addItem(redis.client, new Item(Buffer.from(buffer)));
   }
@@ -220,6 +215,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
   console.log(chalk.bold.blue('Adding inner proofs...'));
   for (let level = 1; level < 38; level++) {
     await redis.saveBalanceProof(
+      protocol,
       BigInt(level),
       BigInt(validator_commitment_constants.validatorRegistryLimit),
     );
@@ -231,7 +227,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
       const buffer = new ArrayBuffer(8);
       const view = new DataView(buffer);
 
-      await redis.saveBalanceProof(BigInt(level), BigInt(key));
+      await redis.saveBalanceProof(protocol, BigInt(level), BigInt(key));
 
       view.setBigUint64(0, BigInt(key), false);
       await queues[level].addItem(redis.client, new Item(Buffer.from(buffer)));
@@ -255,7 +251,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
     .map(bytesToHex);
 
   console.log(chalk.bold.blue('Adding final proof input...'));
-  await redis.saveFinalProofInput({
+  await redis.saveFinalProofInput(protocol, {
     stateRoot: hexToBits(
       bytesToHex(currentSSZFork.BeaconState.hashTreeRoot(beaconState)),
     ),
@@ -277,9 +273,6 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
       .map(x => hexToBits(bytesToHex(x))),
     validatorsSizeBits: hexToBits(bytesToHex(ssz.UintNum64.hashTreeRoot(take))),
   });
-
-  // NOTE: Maybe this is unnecessary
-  queues[38].addItem(redis.client, new Item(Buffer.from(new ArrayBuffer(0))));
 
   console.log(chalk.bold.greenBright('Done'));
 

@@ -31,6 +31,7 @@ task('balance-verifier-publisher', 'Run relayer')
     undefined,
     true,
   )
+  .addParam('protocol', 'The protocol used')
   .addParam(
     'transactionspeed',
     'The speed you want the transactions to be included in a block',
@@ -104,18 +105,20 @@ task('balance-verifier-publisher', 'Run relayer')
 
     console.log('Publishing proofs');
 
-    redis.subscribeForGnarkProofs(async () => {
+    let protocol = args.protocol;
+
+    redis.subscribeForGnarkProofs(protocol, async () => {
       console.log('Received new proof');
       let final_layer_proof = JSON.parse(
-        (await redis.get('final_layer_proof'))!,
+        (await redis.get(`${protocol}:final_layer_proof`))!,
       );
 
       let final_layer_proof_input = JSON.parse(
-        (await redis.get('final_proof_input'))!,
+        (await redis.get(`${protocol}:final_proof_input`))!,
       );
 
       let balance_wrapper_proof_with_public_inputs =
-        await redis.getBalanceWrapperProofWithPublicInputs();
+        await redis.getBalanceWrapperProofWithPublicInputs(protocol);
       let balance_wrapper_verifier_only =
         await redis.getBalanceWrapperVerifierOnly();
 

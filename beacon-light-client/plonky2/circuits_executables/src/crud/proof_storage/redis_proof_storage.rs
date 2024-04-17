@@ -17,16 +17,16 @@ impl RedisStorage {
 
 #[async_trait(?Send)]
 impl ProofStorage for RedisStorage {
-    async fn get_proof(&mut self, identifier: String) -> Result<Vec<u8>> {
-        Ok(self.connection.get(&identifier).await?)
+    async fn get_proof(&mut self, key: String) -> Result<Vec<u8>> {
+        Ok(self.connection.get(&key).await?)
     }
 
-    async fn set_proof(&mut self, identifier: String, proof: &[u8]) -> Result<()> {
-        Ok(self.connection.set(&identifier, proof).await?)
+    async fn set_proof(&mut self, key: String, proof: &[u8]) -> Result<()> {
+        Ok(self.connection.set(&key, proof).await?)
     }
 
-    async fn del_proof(&mut self, identifier: String) -> Result<()> {
-        Ok(self.connection.del(&identifier).await?)
+    async fn del_proof(&mut self, key: String) -> Result<()> {
+        Ok(self.connection.del(&key).await?)
     }
 
     async fn get_keys_count(&mut self, pattern: String) -> usize {

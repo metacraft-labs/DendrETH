@@ -12,11 +12,11 @@ use super::{
 
 #[async_trait(?Send)]
 pub trait ProofStorage {
-    async fn get_proof(&mut self, identifier: String) -> Result<Vec<u8>>;
+    async fn get_proof(&mut self, key: String) -> Result<Vec<u8>>;
 
-    async fn set_proof(&mut self, identifier: String, proof: &[u8]) -> Result<()>;
+    async fn set_proof(&mut self, key: String, proof: &[u8]) -> Result<()>;
 
-    async fn del_proof(&mut self, identifier: String) -> Result<()>;
+    async fn del_proof(&mut self, key: String) -> Result<()>;
 
     async fn get_keys_count(&mut self, pattern: String) -> usize;
 }

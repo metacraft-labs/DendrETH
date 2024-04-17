@@ -36,7 +36,7 @@ pub struct ValidatorProof {
     pub needs_change: bool,
     pub poseidon_hash: Vec<String>,
     pub sha256_hash: Vec<u64>,
-    pub proof_index: String,
+    pub proof_key: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -53,7 +53,7 @@ pub struct BalanceProof {
     pub number_of_non_activated_validators: u64,
     pub number_of_active_validators: u64,
     pub number_of_exited_validators: u64,
-    pub proof_index: String,
+    pub proof_key: String,
 }
 
 pub fn biguint_to_str<S>(value: &BigUint, serializer: S) -> Result<S::Ok, S::Error>
@@ -156,7 +156,7 @@ impl KeyProvider for BalanceProof {
 impl ProofProvider for ValidatorProof {
     async fn get_proof(&self, proof_storage: &mut dyn ProofStorage) -> Vec<u8> {
         proof_storage
-            .get_proof(self.proof_index.clone())
+            .get_proof(self.proof_key.clone())
             .await
             .unwrap()
     }
@@ -166,7 +166,7 @@ impl ProofProvider for ValidatorProof {
 impl ProofProvider for BalanceProof {
     async fn get_proof(&self, proof_storage: &mut dyn ProofStorage) -> Vec<u8> {
         proof_storage
-            .get_proof(self.proof_index.clone())
+            .get_proof(self.proof_key.clone())
             .await
             .unwrap()
     }
@@ -174,12 +174,14 @@ impl ProofProvider for BalanceProof {
 
 pub async fn fetch_validator_balance_input<const N: usize>(
     con: &mut Connection,
+    protocol: String,
     index: u64,
 ) -> Result<ValidatorBalancesInput> {
     Ok(fetch_redis_json_object::<ValidatorBalancesInput>(
         con,
         format!(
-            "{}:{}",
+            "{}:{}:{}",
+            protocol,
             VALIDATOR_COMMITMENT_CONSTANTS
                 .validator_balance_input_key
                 .to_owned(),
@@ -189,9 +191,15 @@ pub async fn fetch_validator_balance_input<const N: usize>(
     .await?)
 }
 
-pub async fn fetch_final_layer_input(con: &mut Connection) -> Result<FinalCircuitInput> {
+pub async fn fetch_final_layer_input(
+    con: &mut Connection,
+    protocol: String,
+) -> Result<FinalCircuitInput> {
     let json: String = con
-        .get(VALIDATOR_COMMITMENT_CONSTANTS.final_proof_input_key)
+        .get(format!(
+            "{}:{}",
+            protocol, VALIDATOR_COMMITMENT_CONSTANTS.final_proof_input_key
+        ))
         .await?;
     let result = serde_json::from_str::<FinalCircuitInput>(&json)?;
     Ok(result)
@@ -200,13 +208,14 @@ pub async fn fetch_final_layer_input(con: &mut Connection) -> Result<FinalCircui
 pub async fn save_balance_proof<const N: usize>(
     con: &mut Connection,
     proof_storage: &mut dyn ProofStorage,
+    protocol: String,
     proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     level: u64,
     index: u64,
 ) -> Result<()> {
-    let proof_index = format!(
-        "{}:{}:{}",
-        VALIDATOR_COMMITMENT_CONSTANTS.balance_verification_proof_storage, level, index
+    let proof_key = format!(
+        "{}:{}:{}:{}",
+        protocol, VALIDATOR_COMMITMENT_CONSTANTS.balance_verification_proof_storage, level, index
     );
 
     let balance_proof = BalanceProof {
@@ -222,17 +231,18 @@ pub async fn save_balance_proof<const N: usize>(
         number_of_non_activated_validators: <ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> as ValidatorBalanceProofExt<N>>::get_number_of_non_activated_validators(&proof),
         number_of_active_validators: <ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> as ValidatorBalanceProofExt<N>>::get_number_of_active_validators(&proof),
         number_of_exited_validators: <ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> as ValidatorBalanceProofExt<N>>::get_number_of_exited_validators(&proof),
-        proof_index: proof_index.clone(),
+        proof_key: proof_key.clone(),
     };
 
     proof_storage
-        .set_proof(proof_index, &proof.to_bytes())
+        .set_proof(proof_key, &proof.to_bytes())
         .await?;
 
     save_json_object(
         con,
         &format!(
-            "{}:{}:{}",
+            "{}:{}:{}:{}",
+            protocol,
             VALIDATOR_COMMITMENT_CONSTANTS
                 .balance_verification_proof_key
                 .to_owned(),
@@ -248,6 +258,7 @@ pub async fn save_balance_proof<const N: usize>(
 
 pub async fn save_final_proof(
     con: &mut Connection,
+    protocol: String,
     proof: &ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     block_root: Vec<u64>,
     withdrawal_credentials: Vec<Vec<u64>>,
@@ -269,7 +280,11 @@ pub async fn save_final_proof(
 
     save_json_object(
         con,
-        &VALIDATOR_COMMITMENT_CONSTANTS.final_layer_proof_key,
+        format!(
+            "{}:{}",
+            protocol, &VALIDATOR_COMMITMENT_CONSTANTS.final_layer_proof_key
+        )
+        .as_str(),
         &final_proof,
     )
     .await?;
@@ -280,19 +295,22 @@ pub async fn save_final_proof(
 pub async fn delete_balance_verification_proof_dependencies(
     con: &mut Connection,
     proof_storage: &mut dyn ProofStorage,
+    protocol: &str,
     level: u64,
     index: u64,
 ) -> Result<()> {
     let proof_prefix = format!(
-        "{}:{}",
+        "{}:{}:{}",
+        protocol,
         VALIDATOR_COMMITMENT_CONSTANTS
             .balance_verification_proof_storage
             .to_owned(),
-        level - 1
+        level - 1,
     );
 
     let redis_prefix = format!(
-        "{}:{}",
+        "{}:{}:{}",
+        protocol,
         VALIDATOR_COMMITMENT_CONSTANTS
             .balance_verification_proof_key
             .to_owned(),
@@ -311,15 +329,7 @@ pub async fn delete_balance_verification_proof_dependencies(
         .del_proof(format!("{}:{}", proof_prefix, index * 2 + 1))
         .await;
 
-    if proof_storage
-        .get_keys_count(format!(
-            "{}:{}:*",
-            VALIDATOR_COMMITMENT_CONSTANTS.balance_verification_proof_storage,
-            level - 1
-        ))
-        .await
-        == 1
-    {
+    if proof_storage.get_keys_count(proof_prefix.to_string()).await == 1 {
         con.del(format!("{}:{}", redis_prefix, VALIDATOR_REGISTRY_LIMIT))
             .await?;
 
@@ -374,7 +384,7 @@ pub async fn save_zero_validator_proof(
     proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     depth: u64,
 ) -> Result<()> {
-    let proof_index = format!(
+    let proof_key = format!(
         "{}:zeroes:{}",
         VALIDATOR_COMMITMENT_CONSTANTS.validator_proof_storage, depth
     );
@@ -385,11 +395,11 @@ pub async fn save_zero_validator_proof(
             .to_vec(),
         sha256_hash: proof.get_commitment_mapper_sha256_hash_tree_root().to_vec(),
         needs_change: false,
-        proof_index: proof_index.clone(),
+        proof_key: proof_key.clone(),
     };
 
     proof_storage
-        .set_proof(proof_index, &proof.to_bytes())
+        .set_proof(proof_key, &proof.to_bytes())
         .await?;
 
     save_json_object(
@@ -437,7 +447,7 @@ pub async fn save_validator_proof(
     gindex: u64,
     epoch: u64,
 ) -> Result<()> {
-    let proof_index = format!(
+    let proof_key = format!(
         "{}:{}:{}",
         VALIDATOR_COMMITMENT_CONSTANTS.validator_proof_storage, gindex, epoch
     );
@@ -446,12 +456,12 @@ pub async fn save_validator_proof(
             .get_commitment_mapper_poseidon_hash_tree_root()
             .to_vec(),
         sha256_hash: proof.get_commitment_mapper_sha256_hash_tree_root().to_vec(),
-        proof_index: proof_index.clone(),
+        proof_key: proof_key.clone(),
         needs_change: false,
     };
 
     proof_storage
-        .set_proof(proof_index, &proof.to_bytes())
+        .set_proof(proof_key, &proof.to_bytes())
         .await?;
 
     // fetch validators len
@@ -598,6 +608,7 @@ pub async fn fetch_proofs<
 // @TODO: Rename this later
 pub async fn fetch_proof_balances<T: NeedsChange + KeyProvider + DeserializeOwned + Clone>(
     con: &mut Connection,
+    protocol: &str,
     level: u64,
     index: u64,
 ) -> Result<T> {
@@ -608,15 +619,23 @@ pub async fn fetch_proof_balances<T: NeedsChange + KeyProvider + DeserializeOwne
             return Err(anyhow::anyhow!("Not able to complete, try again"));
         }
 
-        let mut proof_result =
-            fetch_redis_json_object::<T>(con, format!("{}:{}:{}", T::get_key(), level, index))
-                .await;
+        let mut proof_result = fetch_redis_json_object::<T>(
+            con,
+            format!("{}:{}:{}:{}", protocol, T::get_key(), level, index),
+        )
+        .await;
 
         if proof_result.is_err() {
             // get the zeroth proof
             proof_result = fetch_redis_json_object::<T>(
                 con,
-                format!("{}:{}:{}", T::get_key(), level, VALIDATOR_REGISTRY_LIMIT),
+                format!(
+                    "{}:{}:{}:{}",
+                    protocol,
+                    T::get_key(),
+                    level,
+                    VALIDATOR_REGISTRY_LIMIT
+                ),
             )
             .await;
         }
@@ -637,6 +656,7 @@ pub async fn fetch_proof_balances<T: NeedsChange + KeyProvider + DeserializeOwne
 
 pub async fn fetch_proof_balance<T: NeedsChange + KeyProvider + DeserializeOwned>(
     con: &mut Connection,
+    protocol: String,
     depth: usize,
     index: usize,
 ) -> Result<T> {
@@ -648,14 +668,15 @@ pub async fn fetch_proof_balance<T: NeedsChange + KeyProvider + DeserializeOwned
         }
 
         let mut proof_result: Result<String, RedisError> = con
-            .get(format!("{}:{}:{}", T::get_key(), depth, index))
+            .get(format!("{}:{}:{}:{}", protocol, T::get_key(), depth, index))
             .await;
 
         if proof_result.is_err() {
             // get the zeroth proof
             proof_result = con
                 .get(format!(
-                    "{}:{}:{}",
+                    "{}:{}:{}:{}",
+                    protocol,
                     T::get_key(),
                     depth,
                     VALIDATOR_REGISTRY_LIMIT
@@ -683,13 +704,14 @@ pub async fn fetch_proofs_balances<
 >(
     con: &mut Connection,
     proof_storage: &mut dyn ProofStorage,
+    protocol: String,
     level: u64,
     index: u64,
 ) -> Result<(Vec<u8>, Vec<u8>)> {
     let (left_child_index, right_child_index) = (index * 2, index * 2 + 1);
 
-    let proof1 = fetch_proof_balances::<T>(con, level - 1, left_child_index).await?;
-    let proof2 = fetch_proof_balances::<T>(con, level - 1, right_child_index).await?;
+    let proof1 = fetch_proof_balances::<T>(con, &protocol, level - 1, left_child_index).await?;
+    let proof2 = fetch_proof_balances::<T>(con, &protocol, level - 1, right_child_index).await?;
 
     Ok((
         proof1.get_proof(proof_storage).await,
