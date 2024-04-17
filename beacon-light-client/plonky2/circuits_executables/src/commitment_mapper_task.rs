@@ -1,9 +1,20 @@
+use anyhow::{bail, Result};
 use colored::Colorize;
 
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
+use plonky2::iop::witness::{PartialWitness, WitnessWrite};
 
-use crate::validator::VALIDATOR_REGISTRY_LIMIT;
+use crate::{
+    commitment_mapper_context::CommitmentMapperContext,
+    crud::common::{
+        fetch_proofs, fetch_validator, fetch_zero_proof, save_validator_proof,
+        save_zero_validator_proof, ProofProvider, ValidatorProof,
+    },
+    provers::{handle_commitment_mapper_inner_level_proof, SetPWValues},
+    utils::{get_depth_for_gindex, gindex_from_validator_index},
+    validator::VALIDATOR_REGISTRY_LIMIT,
+};
 
 #[derive(FromPrimitive)]
 #[repr(u8)]
@@ -88,4 +99,170 @@ impl CommitmentMapperTask {
             }
         }
     }
+}
+
+pub async fn handle_task(
+    ctx: &mut CommitmentMapperContext,
+    task: CommitmentMapperTask,
+) -> Result<()> {
+    match task {
+        CommitmentMapperTask::UpdateValidatorProof(validator_index, slot) => {
+            handle_update_validator_proof_task(ctx, validator_index, slot).await
+        }
+        CommitmentMapperTask::UpdateProofNode(gindex, slot) => {
+            handle_update_proof_node_task(ctx, gindex, slot).await
+        }
+        CommitmentMapperTask::ProveZeroForDepth(depth) => {
+            handle_prove_zero_for_depth_task(ctx, depth).await
+        }
+        CommitmentMapperTask::ZeroOutValidator(validator_index, slot) => {
+            handle_zero_out_validator_task(ctx, validator_index, slot).await
+        }
+    }
+}
+
+async fn handle_update_validator_proof_task(
+    ctx: &mut CommitmentMapperContext,
+    validator_index: u64,
+    slot: u64,
+) -> Result<()> {
+    match fetch_validator(&mut ctx.redis_con, validator_index, slot).await {
+        Ok(validator) => {
+            let mut pw = PartialWitness::new();
+
+            ctx.first_level_circuit
+                .targets
+                .validator
+                .set_pw_values(&mut pw, &validator);
+
+            pw.set_bool_target(
+                ctx.first_level_circuit.targets.validator_is_zero,
+                validator_index == VALIDATOR_REGISTRY_LIMIT as u64,
+            );
+
+            let proof = ctx.first_level_circuit.data.prove(pw)?;
+
+            if validator_index as usize != VALIDATOR_REGISTRY_LIMIT {
+                let save_result = save_validator_proof(
+                    &mut ctx.redis_con,
+                    ctx.proof_storage.as_mut(),
+                    proof,
+                    gindex_from_validator_index(validator_index, 40),
+                    slot,
+                )
+                .await;
+
+                if let Err(err) = save_result {
+                    bail!("Error while proving zero validator: {}", err);
+                };
+            } else {
+                let save_result = save_zero_validator_proof(
+                    &mut ctx.redis_con,
+                    ctx.proof_storage.as_mut(),
+                    proof,
+                    40,
+                )
+                .await;
+
+                if let Err(err) = save_result {
+                    bail!("Error while proving validator: {}", err);
+                }
+            }
+        }
+        Err(err) => bail!("Error while fetching validator: {}", err),
+    };
+    Ok(())
+}
+
+async fn handle_update_proof_node_task(
+    ctx: &mut CommitmentMapperContext,
+    gindex: u64,
+    slot: u64,
+) -> Result<()> {
+    let level = 39 - get_depth_for_gindex(gindex) as usize;
+
+    let fetch_result = fetch_proofs::<ValidatorProof>(
+        &mut ctx.redis_con,
+        ctx.proof_storage.as_mut(),
+        gindex,
+        slot,
+    )
+    .await;
+
+    match fetch_result {
+        Ok(proofs) => {
+            let inner_circuit_data = if level > 0 {
+                &ctx.inner_level_circuits[level - 1].data
+            } else {
+                &ctx.first_level_circuit.data
+            };
+
+            let proof = handle_commitment_mapper_inner_level_proof(
+                proofs.0,
+                proofs.1,
+                inner_circuit_data,
+                &ctx.inner_level_circuits[level].targets,
+                &ctx.inner_level_circuits[level].data,
+            )?;
+
+            let save_result = save_validator_proof(
+                &mut ctx.redis_con,
+                ctx.proof_storage.as_mut(),
+                proof,
+                gindex,
+                slot,
+            )
+            .await;
+
+            if let Err(err) = save_result {
+                bail!("Error while saving validator proof: {}", err);
+            };
+        }
+        Err(err) => bail!("Error while fetching validator proof: {}", err),
+    };
+    Ok(())
+}
+
+async fn handle_prove_zero_for_depth_task(
+    ctx: &mut CommitmentMapperContext,
+    depth: u64,
+) -> Result<()> {
+    // the level in the inner proofs tree
+    let level = 39 - depth as usize;
+
+    match fetch_zero_proof::<ValidatorProof>(&mut ctx.redis_con, depth + 1).await {
+        Ok(lower_proof) => {
+            let inner_circuit_data = if level > 0 {
+                &ctx.inner_level_circuits[level - 1].data
+            } else {
+                &ctx.first_level_circuit.data
+            };
+
+            let lower_proof_bytes = lower_proof.get_proof(ctx.proof_storage.as_mut()).await;
+
+            let proof = handle_commitment_mapper_inner_level_proof(
+                lower_proof_bytes.clone(),
+                lower_proof_bytes,
+                inner_circuit_data,
+                &ctx.inner_level_circuits[level].targets,
+                &ctx.inner_level_circuits[level].data,
+            )?;
+
+            let save_result = save_zero_validator_proof(
+                &mut ctx.redis_con,
+                ctx.proof_storage.as_mut(),
+                proof,
+                depth,
+            )
+            .await;
+
+            if let Err(err) = save_result {
+                bail!("Error while saving zero validator proof: {}", err);
+            }
+        }
+        Err(err) => {
+            bail!("Error while proving zero for depth {}: {}", depth, err);
+        }
+    };
+    Ok(())
 }
