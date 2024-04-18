@@ -17,7 +17,7 @@ export function hexToBits(hex: string, numbersOfBits = 256) {
     .map(Number);
 }
 
-export function bitsToBytes(bits: number[]) {
+export function bitsToHex(bits: number[]) {
   const bitsStr = bits.join('');
   const bytesStr =
     '0x' +

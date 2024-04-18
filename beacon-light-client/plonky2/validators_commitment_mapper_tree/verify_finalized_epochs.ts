@@ -6,15 +6,13 @@ import {
 } from '@dendreth/relay/implementations/beacon-api';
 import { Redis } from '@dendreth/relay/implementations/redis';
 import { IndexedValidator } from '@dendreth/relay/types/types';
-import { panic, range } from '@dendreth/utils/ts-utils/common-utils';
 import config from '../common_config.json';
 import { CommitmentMapperScheduler } from './scheduler';
 import { Tree, zeroNode } from '@chainsafe/persistent-merkle-tree';
 import CONSTANTS from '../constants/validator_commitment_constants.json';
 // @ts-ignore
-import { sleep } from '@dendreth/utils/ts-utils/common-utils';
+import { panic, range, sleep } from '@dendreth/utils/ts-utils/common-utils';
 import {
-  bitArrayToByteArray,
   getDepthByGindex,
   getZeroValidatorInput,
   indexFromGindex,
@@ -22,6 +20,7 @@ import {
 import { CommandLineOptionsBuilder } from '../cmdline';
 import chalk from 'chalk';
 import { getLastSlotInEpoch } from './utils';
+import { bitsToHex } from '@dendreth/utils/ts-utils/hex-utils';
 
 let zeroHashes: string[] = [];
 
@@ -105,7 +104,7 @@ async function nodesAreSame(
 
   const sha256 =
     node !== null
-      ? bytesToHex(bitArrayToByteArray(JSON.parse(node).sha256Hash))
+      ? bitsToHex(JSON.parse(node).sha256Hash)
       : zeroHashes[getDepthByGindex(Number(gindex))];
 
   const newNodeSha256 = bytesToHex(newValidatorsTree.getNode(gindex).root);
