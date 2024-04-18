@@ -14,6 +14,7 @@ import {
   gindexFromIndex,
   makeBranchIterator,
   getLastSlotInEpoch,
+  getFirstSlotInEpoch,
 } from './utils';
 
 enum TaskTag {
@@ -70,7 +71,9 @@ export class CommitmentMapperScheduler {
     );
     if (lastProcessedSlot === null) {
       this.currentSlot = (() => {
-        const firstNonFinalizedSlot = this.lastFinalizedEpoch * 32n + 32n;
+        const firstNonFinalizedSlot = getFirstSlotInEpoch(
+          this.lastFinalizedEpoch + 1n,
+        );
         const slot = options['sync-slot'] || firstNonFinalizedSlot;
         return BigInt(Math.min(Number(slot), Number(firstNonFinalizedSlot)));
       })();

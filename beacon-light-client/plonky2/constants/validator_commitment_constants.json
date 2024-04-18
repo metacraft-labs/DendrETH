@@ -15,6 +15,5 @@
   "validatorsLengthKey": "validators_length",
   "validatorsRootKey": "validators_root",
   "lastVerifiedSlotKey": "last_verified_slot",
-  "lastProcessedSlotKey": "last_processed_slot",
-  "commitmentMapperSlotKey": "commitment_mapper_slot"
+  "lastProcessedSlotKey": "last_processed_slot"
 }

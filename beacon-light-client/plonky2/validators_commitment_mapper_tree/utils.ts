@@ -1,12 +1,13 @@
 import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
 import { Validator, ValidatorShaInput } from '@dendreth/relay/types/types';
+import { bitsToHex } from '@dendreth/utils/ts-utils/hex-utils';
 
-export function gindexFromIndex(index: bigint, depth: bigint) {
+export function gindexFromIndex(index: bigint, depth: bigint): bigint {
   return 2n ** depth + index;
 }
 
-export function indexFromGindex(gindex: bigint, depth: bigint) {
+export function indexFromGindex(gindex: bigint, depth: bigint): bigint {
   return gindex - 2n ** depth;
 }
 
@@ -14,16 +15,20 @@ export function getDepthByGindex(gindex: number): number {
   return Math.floor(Math.log2(gindex));
 }
 
-export function getNthParent(gindex: bigint, n: bigint) {
+export function getNthParent(gindex: bigint, n: bigint): bigint {
   return gindex / 2n ** n;
 }
 
-export function getParent(gindex: bigint) {
+export function getParent(gindex: bigint): bigint {
   return getNthParent(gindex, 1n);
 }
 
-export function getLastSlotInEpoch(epoch: bigint) {
+export function getLastSlotInEpoch(epoch: bigint): bigint {
   return epoch * 32n + 31n;
+}
+
+export function getFirstSlotInEpoch(epoch: bigint): bigint {
+  return epoch * 32n;
 }
 
 // TODO: make indices be a number[]
@@ -47,19 +52,6 @@ export function* makeBranchIterator(indices: bigint[], depth: bigint) {
     yield [...nodesNeedingUpdate];
     nodesNeedingUpdate = newNodesNeedingUpdate;
   }
-}
-
-export function bitArrayToByteArray(hash: number[]): Uint8Array {
-  const result = new Uint8Array(32);
-
-  for (let byte = 0; byte < 32; ++byte) {
-    let value = 0;
-    for (let bit = 0; bit < 8; ++bit) {
-      value += 2 ** (7 - bit) * hash[byte * 8 + bit];
-    }
-    result[byte] = value;
-  }
-  return result;
 }
 
 type PoseidonOrSha256<T extends 'sha256' | 'poseidon'> = T extends 'sha256'
@@ -90,7 +82,7 @@ export async function getCommitmentMapperProof<T extends 'sha256' | 'poseidon'>(
   }
 
   if (hashAlg === 'sha256') {
-    path = (path as any).map(bitArrayToByteArray).map(bytesToHex);
+    path = (path as any).map(bitsToHex);
   }
 
   return path;

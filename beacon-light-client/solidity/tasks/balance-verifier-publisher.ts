@@ -6,12 +6,10 @@ import {
 } from '@dendreth/utils/ts-utils/common-utils';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 import { initPrometheusSetup } from '@dendreth/utils/ts-utils/prometheus-utils';
-import { bitsToBytes } from '@dendreth/utils/ts-utils/hex-utils';
 import JSONbig from 'json-bigint';
 import { publishTransaction } from '@dendreth/relay/implementations/publish_evm_transaction';
 import Web3 from 'web3';
-import assert, { fail } from 'assert';
-import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
+import assert from 'assert';
 
 const logger = getGenericLogger();
 
