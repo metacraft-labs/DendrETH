@@ -1,0 +1,42 @@
+[
+  {
+    "inputs": [],
+    "name": "getCurrentFrame",
+    "outputs": [
+      { "internalType": "uint256", "name": "refSlot", "type": "uint256" },
+      {
+        "internalType": "uint256",
+        "name": "reportProcessingDeadlineSlot",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getFrameConfig",
+    "outputs": [
+      { "internalType": "uint256", "name": "initialEpoch", "type": "uint256" },
+      { "internalType": "uint256", "name": "epochsPerFrame", "type": "uint256" },
+      {
+        "internalType": "uint256",
+        "name": "fastLaneLengthSlots",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getChainConfig",
+    "outputs": [
+      { "internalType": "uint256", "name": "slotsPerEpoch", "type": "uint256" },
+      { "internalType": "uint256", "name": "secondsPerSlot", "type": "uint256" },
+      { "internalType": "uint256", "name": "genesisTime", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

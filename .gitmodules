@@ -1,0 +1,57 @@
+[submodule "vendor/nim"]
+	path = vendor/nim
+	url = https://github.com/metacraft-labs/nim.git
+[submodule "vendor/nim-ssz-serialization"]
+	path = vendor/nim-ssz-serialization
+	url = https://github.com/metacraft-labs/nim-ssz-serialization.git
+[submodule "vendor/nimcrypto"]
+	path = vendor/nimcrypto
+	url = https://github.com/cheatfate/nimcrypto.git
+[submodule "vendor/nim-blscurve"]
+	path = vendor/nim-blscurve
+	url = https://github.com/metacraft-labs/nim-blscurve.git
+[submodule "vendor/nim-stew"]
+	path = vendor/nim-stew
+	url = https://github.com/status-im/nim-stew.git
+[submodule "vendor/nim-serialization"]
+	path = vendor/nim-serialization
+	url = https://github.com/status-im/nim-serialization.git
+[submodule "vendor/nim-stint"]
+	path = vendor/nim-stint
+	url = https://github.com/status-im/nim-stint.git
+[submodule "vendor/eth2-light-client-updates"]
+	path = vendor/eth2-light-client-updates
+	url = https://github.com/metacraft-labs/eth2-light-client-updates.git
+[submodule "vendor/circom-pairing"]
+	path = vendor/circom-pairing
+	url = https://github.com/metacraft-labs/circom-pairing.git
+[submodule "vendor/nim-bncurve"]
+	path = vendor/nim-bncurve
+	url = https://github.com/status-im/nim-bncurve
+[submodule "vendor/nim-terminaltables"]
+	path = vendor/nim-terminaltables
+	url = https://github.com/xmonader/nim-terminaltables.git
+[submodule "vendor/build-artifacts"]
+	path = vendor/build-artifacts
+	url = https://github.com/metacraft-labs/DendrETH-build-artifacts.git
+[submodule "vendor/nim-confutils"]
+	path = vendor/nim-confutils
+	url = https://github.com/status-im/nim-confutils.git
+[submodule "vendor/nim-faststreams"]
+	path = vendor/nim-faststreams
+	url = https://github.com/status-im/nim-faststreams.git
+[submodule "vendor/eos"]
+	path = vendor/eos
+	url = https://github.com/EOSIO/eos.git
+[submodule "vendor/constantine"]
+	path = vendor/constantine
+	url = git@github.com:metacraft-labs/constantine.git
+[submodule "vendor/eth2.0-tests"]
+	path = vendor/eth2.0-tests
+	url = git@github.com:ethereum/eth2.0-tests.git
+[submodule "vendor/zkllvm-metacraft-circuits/zkllvm-template"]
+	path = vendor/zkllvm-metacraft-circuits/zkllvm-template
+	url = https://github.com/NilFoundation/zkllvm-template.git
+[submodule "vendor/consensus-spec-tests"]
+	path = vendor/consensus-spec-tests
+	url = https://github.com/ethereum/consensus-spec-tests.git
