@@ -24,7 +24,7 @@
     # * be unable to use the binary cache, since the packages there where
     #   using different versions of their dependencies from nixpkgs
     mcl-blockchain.url = "github:metacraft-labs/nix-blockchain-development";
-    nixpkgs.follows = "mcl-blockchain/nixpkgs";
+    nixpkgs.follows = "mcl-blockchain/nixpkgs-unstable";
     flake-parts.follows = "mcl-blockchain/flake-parts";
   };
 
