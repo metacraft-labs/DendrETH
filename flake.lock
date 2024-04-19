@@ -671,6 +671,11 @@
           "nixos-modules",
           "nixpkgs"
         ],
+        "nixpkgs-unstable": [
+          "mcl-blockchain",
+          "nixos-modules",
+          "nixpkgs-unstable"
+        ],
         "rust-overlay": "rust-overlay",
         "treefmt-nix": [
           "mcl-blockchain",
@@ -679,11 +684,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1713280759,
-        "narHash": "sha256-1Ooeg4VVyti0hSDz/6fzF6En1Ow1CYARzu1ch0/brBI=",
+        "lastModified": 1713541668,
+        "narHash": "sha256-LlqnyoTpwMhxdES5VHijX2OIT6u2sVYV5teV9MOnC1Y=",
         "owner": "metacraft-labs",
         "repo": "nix-blockchain-development",
-        "rev": "ef64fc029eb164862ded7e38a2aa359d637dc145",
+        "rev": "a0df6c8518eaccad7e3b2ed8e16f2de3bf394938",
         "type": "github"
       },
       "original": {
@@ -1168,7 +1173,7 @@
         "mcl-blockchain": "mcl-blockchain",
         "nixpkgs": [
           "mcl-blockchain",
-          "nixpkgs"
+          "nixpkgs-unstable"
         ]
       }
     },
