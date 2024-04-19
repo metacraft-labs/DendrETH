@@ -71,7 +71,7 @@ export class BVFileMock implements BalanceVerifier {
       const left = await readFile(leftChild);
       const right = await readFile(rightChild);
 
-      if (left.isMissing && right.isMissing && true) {
+      if (left.isMissing && right.isMissing) {
         nodeData = {
           gIndex,
           content: { gIndex, hash: zeroHashes[`${gIndexToDepth(gIndex)}`] }, // TODO: Use pre-calculated hash for this depth
@@ -82,6 +82,8 @@ export class BVFileMock implements BalanceVerifier {
           gIndex,
           content: {
             gIndex,
+            // TODO: one of the child nodes might be missing so we can't get the
+            // content
             hash: sha256(stringToBytes(left.content.hash + right.content.hash)),
           },
           isMissing: false,
@@ -106,8 +108,11 @@ export class BVFileMock implements BalanceVerifier {
   }
 
   prepareTasks(jobDelay = 0) {
-    const { depth, validatorCount: lastLeafIndex } = this.configuration;
-    for (let { gIndex, level } of iterateTree({ depth, lastLeafIndex })) {
+    const { depth, validatorCount } = this.configuration;
+    for (let { gIndex, level } of iterateTree({
+      depth,
+      lastLeafIndex: validatorCount - 1n,
+    })) {
       if (level === this.configuration.depth) {
         this.tasks[`${gIndex}`] = this.execTask(gIndex, jobDelay);
         continue;

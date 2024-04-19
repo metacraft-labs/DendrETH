@@ -42,7 +42,7 @@ describe('Tree Utils Tests', () => {
     });
 
     test('generates correct indices and gIndices for a given depth with leaf restrictions', () => {
-      const iterator = iterateTree({ depth: 3n, lastLeafIndex: 5n });
+      const iterator = iterateTree({ depth: 3n, lastLeafIndex: 4n });
       const expectedIndices = [
         // Do not remove the comments below, they are used to keep track of the expected indices
         { levelIndex: 0n, gIndex: 8n, level: 3n },
@@ -118,7 +118,7 @@ describe('Tree Utils Tests', () => {
       expect(levelStart).toBe(1n);
       expect(levelEnd).toBe(1n);
 
-      testIterator(iterateLevel(0n, 0n), []);
+      testIterator(iterateLevel(0n, 0n), [{ gIndex: 1n, levelIndex: 0n }]);
 
       testIterator(iterateLevel(0n, 1n), [{ gIndex: 1n, levelIndex: 0n }]);
 
@@ -126,16 +126,14 @@ describe('Tree Utils Tests', () => {
 
       testIterator(iterateLevel(0n, 3n), [{ gIndex: 1n, levelIndex: 0n }]);
 
-      testIterator(iterateLevel(1n, 0n), []);
+      testIterator(iterateLevel(1n, 0n), [{ gIndex: 2n, levelIndex: 0n }]);
 
-      testIterator(iterateLevel(1n, 1n), [{ gIndex: 2n, levelIndex: 0n }]);
-
-      testIterator(iterateLevel(1n, 2n), [
+      testIterator(iterateLevel(1n, 1n), [
         { gIndex: 2n, levelIndex: 0n },
         { gIndex: 3n, levelIndex: 1n },
       ]);
 
-      testIterator(iterateLevel(1n, 3n), [
+      testIterator(iterateLevel(1n, 2n), [
         { gIndex: 2n, levelIndex: 0n },
         { gIndex: 3n, levelIndex: 1n },
       ]);
@@ -147,7 +145,7 @@ describe('Tree Utils Tests', () => {
         // Do not remove the comments below, they are used to keep track of the expected indices
         { gIndex: 4n, levelIndex: 0n },
         { gIndex: 5n, levelIndex: 1n },
-        // { gIndex: 6n, levelIndex: 2n },
+        { gIndex: 6n, levelIndex: 2n },
         // { gIndex: 7n, levelIndex: 3n },
       ];
 

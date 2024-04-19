@@ -43,11 +43,7 @@ export function* iterateTree({
 }) {
   let lastIndex = lastLeafIndex ?? fromDepth(depth).levelEnd;
 
-  for (
-    let level = depth;
-    level >= 0;
-    level--, lastIndex = lastIndex / 2n + 1n
-  ) {
+  for (let level = depth; level >= 0; level--, lastIndex = lastIndex / 2n) {
     for (let { levelIndex, gIndex } of iterateLevel(level, lastIndex)) {
       yield { levelIndex, gIndex, level };
     }
@@ -58,16 +54,14 @@ export function min(a: bigint, b: bigint) {
   return a < b ? a : b;
 }
 
-export function* iterateLevel(
+export function iterateLevel(
   depth: Depth,
   lastLeafNodeIndex?: bigint,
 ): Generator<LevelIndexAndGIndex> {
   const { levelStart, levelEnd } = fromDepth(depth);
   const end =
-    lastLeafNodeIndex !== undefined
-      ? levelStart + lastLeafNodeIndex
-      : levelEnd + 1n;
-  return yield* range(levelStart, min(levelEnd + 1n, end));
+    lastLeafNodeIndex !== undefined ? levelStart + lastLeafNodeIndex : levelEnd;
+  return range(levelStart, min(levelEnd + 1n, end + 1n));
 }
 
 export function* range(

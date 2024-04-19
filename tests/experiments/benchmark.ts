@@ -1,7 +1,7 @@
 import fs from 'fs-extra';
 
 import { BVFileMock, RunConfig } from './balanceVerifierFileMock';
-import { log, logError } from './logging';
+import { log } from './logging';
 import { parseBoolEnvVar, setLogging, stringify } from './utils/common-utils';
 import { resultsFile } from './utils/constants';
 import { experimentalDir } from './utils/file-utils';
