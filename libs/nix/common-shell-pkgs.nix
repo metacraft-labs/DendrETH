@@ -83,7 +83,6 @@ in
     metacraft-labs.rapidsnark
   ]
   ++ lib.optionals (stdenv.isLinux && stdenv.isx86_64) [
-    metacraft-labs.solana
     nim # Compiling Nim 1.6.8 is currently broken on macOS/M1
     nim-wasm
 
