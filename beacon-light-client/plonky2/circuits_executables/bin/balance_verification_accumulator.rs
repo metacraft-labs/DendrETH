@@ -73,23 +73,8 @@ async fn async_main() -> Result<()> {
     let mut con = client.get_async_connection().await?;
 
     println!("{}", "Loading circuit data...".yellow());
-    let circuit_data = load_circuit_data(&format!(
-        "{}/{}_{}",
-        CIRCUIT_DIR, CIRCUIT_NAME, config.circuit_level
-    ))?;
 
-    let (inner_circuit_data, targets) = if config.circuit_level == 0 {
-        (None, get_first_level_targets()?)
-    } else {
-        (
-            Some(load_circuit_data(&format!(
-                "{}_{}",
-                CIRCUIT_NAME,
-                config.circuit_level - 1
-            ))?),
-            get_inner_level_targets(config.circuit_level)?,
-        )
-    };
+    let recursive_circuit = load_recursive_circuit_for_level(config.circuit_level)?;
 
     println!(
         "{}",
@@ -116,9 +101,9 @@ async fn async_main() -> Result<()> {
     process_queue(
         &mut con,
         &queue,
-        &circuit_data,
-        inner_circuit_data.as_ref(),
-        &targets,
+        &recursive_circuit.data,
+        recursive_circuit.lower_circuit_data.as_ref(),
+        &recursive_circuit.targets,
         config.circuit_level,
         config.protocol.unwrap(),
         start,
@@ -304,4 +289,34 @@ fn get_inner_level_targets(level: u64) -> Result<Targets> {
     Ok(Targets::InnerLevel(Some(
         BalanceInnerCircuitTargets::read_targets(&mut target_buffer).unwrap(),
     )))
+}
+
+struct RecursiveCircuit {
+    data: CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    targets: Targets,
+    lower_circuit_data: Option<CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>>,
+}
+
+fn load_recursive_circuit_for_level(level: u64) -> Result<RecursiveCircuit> {
+    let circuit_data = load_circuit_data(&format!("{}/{}_{}", CIRCUIT_DIR, CIRCUIT_NAME, level))?;
+
+    let (lower_circuit_data, targets) = if level == 0 {
+        (None, get_first_level_targets()?)
+    } else {
+        let lower_circuit_data = Some(load_circuit_data(&format!(
+            "{}_{}",
+            CIRCUIT_NAME,
+            level - 1
+        ))?);
+
+        let targets = get_inner_level_targets(level)?;
+
+        (lower_circuit_data, targets)
+    };
+
+    Ok(RecursiveCircuit {
+        data: circuit_data,
+        targets,
+        lower_circuit_data,
+    })
 }
