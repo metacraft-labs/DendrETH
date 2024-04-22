@@ -316,10 +316,20 @@ fn hash_poseidon<F: RichField + Extendable<D>, const D: usize>(
 fn calc_validators_commitment<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     validators: &[ValidatorPoseidonTargets],
+    non_zero_validator_leaves_mask: &[BoolTarget],
 ) -> HashOutTarget {
     let validator_hashes = validators
         .iter()
-        .map(|validator| hash_poseidon_validator(builder, validator))
+        .zip(non_zero_validator_leaves_mask)
+        .map(|(validator, is_non_zero_leaf)| {
+            HashOutTarget::from_vec(
+                hash_poseidon_validator(builder, validator)
+                    .elements
+                    .iter()
+                    .map(|&element| builder.mul(element, is_non_zero_leaf.target))
+                    .collect_vec(),
+            )
+        })
         .collect_vec();
 
     let validator_targets = validator_hashes
@@ -340,8 +350,11 @@ pub fn validator_balance_accumulator_verification<F: RichField + Extendable<D>, 
 
     let input = read_input(builder, validators_count);
 
-    let validators_range_commitment =
-        calc_validators_commitment(builder, input.validators.as_slice());
+    let validators_range_commitment = calc_validators_commitment(
+        builder,
+        &input.validators,
+        &input.non_zero_validator_leaves_mask,
+    );
 
     for (leaf, proof, validator_gindex) in izip!(
         &input.balances_leaves,
