@@ -1,6 +1,6 @@
 pragma circom 2.1.5;
 
-include "hash_tree_root.circom";
+include "sync_commitee_hash_tree_root.circom";
 include "compress.circom";
 include "aggregate_bitmask.circom";
 include "is_supermajority.circom";
@@ -44,6 +44,8 @@ template LightClientRecursive(N, K) {
   signal input body_root[256];
 
   signal input fork_version[32];
+  signal input GENESIS_VALIDATORS_ROOT[256];
+  signal input DOMAIN_SYNC_COMMITTEE[32];
 
   signal input points[N][2][K];
   signal input aggregatedKey[384];
@@ -55,91 +57,45 @@ template LightClientRecursive(N, K) {
   var prevHeaderHash[256];
   var nextHeaderHash[256];
 
-  component num2bits1 = Num2Bits(253);
-  num2bits1.in <== prevHeaderHashNum[0];
+  signal num2bits1[253] <== Num2Bits(253)(prevHeaderHashNum[0]);
 
-  component num2bits2 = Num2Bits(3);
-  num2bits2.in <== prevHeaderHashNum[1];
+  signal num2bits2[3] <== Num2Bits(3)(prevHeaderHashNum[1]);
 
   for(var i = 0; i < 253; i++) {
-    prevHeaderHash[i] = num2bits1.out[252 - i];
+    prevHeaderHash[i] = num2bits1[252 - i];
   }
 
   for(var i = 253; i < 256; i++) {
-    prevHeaderHash[i] = num2bits2.out[255 - i];
+    prevHeaderHash[i] = num2bits2[255 - i];
   }
 
-  component num2bits3 = Num2Bits(253);
-  num2bits3.in <== nextHeaderHashNum[0];
+  signal num2bits3[253] <== Num2Bits(253)(nextHeaderHashNum[0]);
 
   for(var i = 0; i < 253; i++) {
-    nextHeaderHash[i] = num2bits3.out[252 - i];
+    nextHeaderHash[i] = num2bits3[252 - i];
   }
 
-  component num2bits4 = Num2Bits(3);
-  num2bits4.in <== nextHeaderHashNum[1];
+  signal num2bits4[3] <== Num2Bits(3)(nextHeaderHashNum[1]);
 
   for(var i = 253; i < 256; i++) {
-    nextHeaderHash[i] = num2bits4.out[255 - i];
+    nextHeaderHash[i] = num2bits4[255 - i];
   }
 
-  component isSuperMajority = IsSuperMajority(N);
+  IsSuperMajority(N)(bitmask);
 
-  for(var i = 0; i < N; i++) {
-    isSuperMajority.bitmask[i] <== bitmask[i];
-  }
-
-  isSuperMajority.out === 1;
-
-  component hash_tree_root_beacon = HashTreeRootBeaconHeader();
+  signal hash_tree_root_beacon[256] <== HashTreeRootBeaconHeader()(slot,proposer_index,parent_root,state_root,body_root);
 
   for(var i = 0; i < 256; i++) {
-    hash_tree_root_beacon.slot[i] <== slot[i];
+    hash_tree_root_beacon[i] === prevHeaderHash[i];
   }
 
-  for(var i = 0; i < 256; i++) {
-    hash_tree_root_beacon.proposer_index[i] <== proposer_index[i];
-  }
+  signal computeDomain[256] <== ComputeDomain()(fork_version,GENESIS_VALIDATORS_ROOT,DOMAIN_SYNC_COMMITTEE);
 
-  for(var i = 0; i < 256; i++) {
-    hash_tree_root_beacon.parent_root[i] <== parent_root[i];
-  }
+  signal computeSigningRoot[256] <== ComputeSigningRoot()(nextHeaderHash,computeDomain);
 
-  for(var i = 0; i < 256; i++) {
-    hash_tree_root_beacon.state_root[i] <== state_root[i];
-  }
+  signal hashToField[2][2][K] <== HashToField(K)(computeSigningRoot);
 
-  for(var i = 0; i < 256; i++) {
-    hash_tree_root_beacon.body_root[i] <== body_root[i];
-  }
-
-  for(var i = 0; i < 256; i++) {
-    hash_tree_root_beacon.blockHash[i] === prevHeaderHash[i];
-  }
-
-  component computeDomain = ComputeDomain();
-
-  for(var i = 0; i < 32; i++) {
-    computeDomain.fork_version[i] <== fork_version[i];
-  }
-
-  component computeSigningRoot = ComputeSigningRoot();
-
-  for(var i = 0; i < 256; i++) {
-    computeSigningRoot.headerHash[i] <== nextHeaderHash[i];
-  }
-
-  for(var i = 0; i < 256; i++) {
-    computeSigningRoot.domain[i] <== computeDomain.domain[i];
-  }
-
-  component hashToField = HashToField();
-
-  for(var i = 0; i < 256; i++) {
-    hashToField.in[i] <== computeSigningRoot.signing_root[i];
-  }
-
-  component hasher = HashTreeRoot(N);
+  component hasher = SyncCommiteeHashTreeRoot(N);
   component compress[N];
 
   for(var i = 0; i < N; i++) {
@@ -160,56 +116,11 @@ template LightClientRecursive(N, K) {
     hasher.aggregatedKey[i] <== aggregatedKey[i];
   }
 
-  component isValidMerkleBranch = IsValidMerkleBranch(5);
+  IsValidMerkleBranch(5)(branch,hasher.out,state_root,55);
 
-  for(var i = 0; i < 5; i++) {
-    for(var j = 0; j < 256; j++) {
-      isValidMerkleBranch.branch[i][j] <== branch[i][j];
-    }
-  }
+  signal aggregateKeys[2][K] <== AggregateKeysBitmask(N,K)(points, bitmask);
 
-  for(var i = 0; i < 256; i++) {
-    isValidMerkleBranch.leaf[i] <== hasher.out[i];
-  }
-
-  for(var i = 0; i < 256; i++) {
-    isValidMerkleBranch.root[i] <== state_root[i];
-  }
-
-  isValidMerkleBranch.index <== 55;
-
-  isValidMerkleBranch.out === 1;
-
-  component aggregateKeys = AggregateKeysBitmask(N);
-
-  for(var i = 0; i < N; i++) {
-    for(var j = 0; j < 2; j++) {
-      for(var k = 0; k < K; k++) {
-        aggregateKeys.points[i][j][k] <== points[i][j][k];
-      }
-    }
-  }
-
-  for(var i = 0; i < N; i++) {
-    aggregateKeys.bitmask[i] <== bitmask[i];
-  }
-
-  component verify = CoreVerifyPubkeyG1(55, K);
-
-  for(var j = 0; j < 2; j++) {
-    for(var k = 0; k < K; k++) {
-      verify.pubkey[j][k] <== aggregateKeys.out[j][k];
-    }
-  }
-
-  for(var i = 0; i < 2; i++) {
-    for(var j = 0; j < 2; j++) {
-      for(var k = 0; k < K; k++) {
-        verify.signature[i][j][k] <== signature[i][j][k];
-        verify.hash[i][j][k] <== hashToField.out[i][j][k];
-      }
-    }
-  }
+  CoreVerifyPubkeyG1(55, K)(aggregateKeys,signature,hashToField);
 
   // check recursive snark
   component groth16Verifier = verifyProof(pubInpCount);
@@ -248,15 +159,10 @@ template LightClientRecursive(N, K) {
   groth16Verifier.pubInput[2] <== prevHeaderHashNum[0];
   groth16Verifier.pubInput[3] <== prevHeaderHashNum[1];
 
-  component isFirst = IsFirst();
-
-  isFirst.firstHash[0] <== originator[0];
-  isFirst.firstHash[1] <== originator[1];
-  isFirst.secondHash[0] <== prevHeaderHashNum[0];
-  isFirst.secondHash[1] <== prevHeaderHashNum[1];
+  signal isFirst <== IsFirst()(originator,prevHeaderHashNum);
 
   component firstORcorrect = OR();
-  firstORcorrect.a <== isFirst.out;
+  firstORcorrect.a <== isFirst;
   firstORcorrect.b <== groth16Verifier.out;
 
   firstORcorrect.out === 1;
