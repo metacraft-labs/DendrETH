@@ -6,7 +6,7 @@ use plonky2::{
         hash_types::{HashOutTarget, RichField},
         poseidon::PoseidonHash,
     },
-    iop::target::Target,
+    iop::target::{BoolTarget, Target},
     plonk::circuit_builder::CircuitBuilder,
     util::serialization::{Buffer, IoResult, Read, Write},
 };
@@ -32,7 +32,7 @@ pub struct ValidatorBalanceVerificationTargetsAccumulator {
     // Inputs
     pub balances_leaves: Vec<Sha256>,
     pub balances_root: Sha256,
-    // pub validator_is_not_zero: Vec<BoolTarget>,
+    pub non_zero_validator_leaves_mask: Vec<BoolTarget>,
     // pub current_eth1_deposit_index: BigUintTarget,
     // pub validator_deposit_indexes: Vec<BigUintTarget>,
     pub balances_proofs: Vec<MerkleBranch<22>>,
@@ -76,6 +76,7 @@ impl ReadTargets for ValidatorBalanceVerificationTargetsAccumulator {
                 })
                 .collect(),
             balances_root: data.read_target_bool_vec()?.try_into().unwrap(),
+            non_zero_validator_leaves_mask: data.read_target_bool_vec()?,
             balances_proofs: (0..validators_len)
                 .map(|_| MerkleBranch::<DEPTH>::read_targets(data).unwrap())
                 .collect_vec(),
@@ -109,7 +110,6 @@ impl ReadTargets for ValidatorBalanceVerificationTargetsAccumulator {
                             })
                             .collect_vec(),
 
-                        validator_is_not_zero: data.read_target_bool_vec()?,
                         current_epoch: BigUintTarget::read_targets(data)?,
                         current_eth1_deposit_index: BigUintTarget::read_targets(data)?,
                         number_of_non_activated_validators: data.read_target()?,
@@ -138,6 +138,8 @@ impl WriteTargets for ValidatorBalanceVerificationTargetsAccumulator {
         }
 
         data.write_target_bool_vec(&self.balances_root)?;
+
+        data.write_target_bool_vec(&self.non_zero_validator_leaves_mask)?;
 
         // self.balances_proofs.write_targets();
         for balances_proof in &self.balances_proofs {
@@ -179,7 +181,6 @@ impl WriteTargets for ValidatorBalanceVerificationTargetsAccumulator {
                     }
                 }
 
-                data.write_target_bool_vec(&self.validator_is_not_zero)?;
 
                 data.extend(BigUintTarget::write_targets(&self.current_epoch)?);
 
@@ -198,9 +199,10 @@ impl WriteTargets for ValidatorBalanceVerificationTargetsAccumulator {
 
 const DEPTH: usize = 22;
 
-struct CircuitInput {
+struct CircuitInputTargets {
     pub balances_leaves: Vec<Sha256>,
     pub balances_root: Sha256,
+    pub non_zero_validator_leaves_mask: Vec<BoolTarget>,
     pub balances_proofs: Vec<MerkleBranch<DEPTH>>,
     pub validators: Vec<ValidatorPoseidonTargets>,
     pub validators_gindices: Vec<BigUintTarget>,
@@ -209,12 +211,16 @@ struct CircuitInput {
 fn read_input<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     validators_count: usize,
-) -> CircuitInput {
+) -> CircuitInputTargets {
     let balances_leaves: Vec<Sha256> = (0..validators_count)
         .map(|_| create_bool_target_array(builder))
         .collect_vec();
 
     let balances_root: Sha256 = create_bool_target_array(builder);
+
+    let non_zero_validator_leaves_mask = (0..validators_count)
+        .map(|_| builder.add_virtual_bool_target_safe())
+        .collect_vec();
 
     let balances_proofs: Vec<MerkleBranch<DEPTH>> = (0..validators_count)
         .map(|_| create_sha256_merkle_proof(builder))
@@ -228,9 +234,10 @@ fn read_input<F: RichField + Extendable<D>, const D: usize>(
         .map(|_| builder.add_virtual_biguint_target(2))
         .collect_vec();
 
-    CircuitInput {
+    CircuitInputTargets {
         balances_leaves,
         balances_root,
+        non_zero_validator_leaves_mask,
         balances_proofs,
         validators,
         validators_gindices,
@@ -341,12 +348,7 @@ pub fn validator_balance_accumulator_verification<F: RichField + Extendable<D>, 
         &input.balances_proofs,
         &input.validators_gindices,
     ) {
-        // (validator_gindex / 4) + (validator_gindex % 4)
         let four = builder.constant_biguint(&BigUint::from(4u64));
-        // let validator_gindex_div_four = builder.div_biguint(validator_gindex, &four);
-        // let validator_gindex_mod_four = builder.rem_biguint(validator_gindex, &four);
-        // let balance_gindex =
-        //     builder.add_biguint(&validator_gindex_div_four, &validator_gindex_mod_four);
         let balance_gindex = builder.div_biguint(validator_gindex, &four);
         assert_merkle_proof_is_valid(builder, leaf, &input.balances_root, proof, &balance_gindex);
     }
@@ -354,6 +356,7 @@ pub fn validator_balance_accumulator_verification<F: RichField + Extendable<D>, 
     return ValidatorBalanceVerificationTargetsAccumulator {
         balances_leaves: input.balances_leaves,
         balances_root: input.balances_root,
+        non_zero_validator_leaves_mask: input.non_zero_validator_leaves_mask,
         balances_proofs: input.balances_proofs,
         validators: input.validators,
         validators_gindices: input.validators_gindices,

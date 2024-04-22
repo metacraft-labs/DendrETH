@@ -28,7 +28,7 @@ pub struct ValidatorBalanceVerificationTargets<const N: usize> {
     pub range_balances_root: [BoolTarget; ETH_SHA256_BIT_SIZE],
     pub range_validator_commitment: HashOutTarget,
     pub validators: Vec<ValidatorPoseidonTargets>,
-    pub validator_is_zero: Vec<BoolTarget>,
+    pub non_zero_validator_leaves_mask: Vec<BoolTarget>,
     pub balances: Vec<[BoolTarget; ETH_SHA256_BIT_SIZE]>,
     pub withdrawal_credentials: [[BoolTarget; ETH_SHA256_BIT_SIZE]; N],
     pub current_epoch: BigUintTarget,
@@ -48,7 +48,7 @@ impl<const N: usize> ReadTargets for ValidatorBalanceVerificationTargets<N> {
             validators: (0..validators_len)
                 .map(|_| ValidatorPoseidonTargets::read_targets(data).unwrap())
                 .collect(),
-            validator_is_zero: data.read_target_bool_vec()?,
+            non_zero_validator_leaves_mask: data.read_target_bool_vec()?,
             balances: (0..validators_len / 4)
                 .map(|_| data.read_target_bool_vec().unwrap().try_into().unwrap())
                 .collect(),
@@ -78,7 +78,7 @@ impl<const N: usize> WriteTargets for ValidatorBalanceVerificationTargets<N> {
             data.extend(ValidatorPoseidonTargets::write_targets(validator)?);
         }
 
-        data.write_target_bool_vec(&self.validator_is_zero)?;
+        data.write_target_bool_vec(&self.non_zero_validator_leaves_mask)?;
 
         for balance in &self.balances {
             data.write_target_bool_vec(balance)?;
@@ -227,7 +227,7 @@ pub fn validator_balance_verification<
     }
 
     ValidatorBalanceVerificationTargets {
-        validator_is_zero: validator_is_zero,
+        non_zero_validator_leaves_mask: validator_is_zero,
         range_total_value: sum,
         range_balances_root: balances_hash_tree_root_targets.hash_tree_root,
         range_validator_commitment: hash_tree_root_poseidon_targets.hash_tree_root,

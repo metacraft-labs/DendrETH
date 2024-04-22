@@ -175,7 +175,11 @@ impl<const N: usize> SetPWValues<ValidatorBalancesInput>
             );
         }
 
-        set_boolean_pw_values(pw, &self.validator_is_zero, &source.validator_is_zero);
+        set_boolean_pw_values(
+            pw,
+            &self.non_zero_validator_leaves_mask,
+            &source.validator_is_zero,
+        );
 
         pw.set_biguint_target(&self.current_epoch, &source.current_epoch);
     }
@@ -200,6 +204,13 @@ impl SetPWValues<ValidatorBalanceAccumulatorInput>
             &self.balances_root,
             &hex::decode(&source.balances_root).unwrap(),
         );
+
+        for i in 0..source.validator_is_not_zero.len() {
+            pw.set_bool_target(
+                self.non_zero_validator_leaves_mask[i],
+                source.validator_is_not_zero[i], // TODO: rename this
+            );
+        }
 
         for i in 0..source.balances_proofs.len() {
             for j in 0..source.balances_proofs[i].len() {
