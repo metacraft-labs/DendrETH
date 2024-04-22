@@ -5,6 +5,7 @@ import {
   Validator,
   ValidatorShaInput,
   ValidatorProof,
+  BalancesAccumulatorInput,
 } from '../types/types';
 import { RedisClientType, createClient } from 'redis';
 import CONSTANTS from '../../beacon-light-client/plonky2/constants/validator_commitment_constants.json';
@@ -171,6 +172,20 @@ export class Redis implements IRedis {
     await this.client.del(`${CONSTANTS.validatorsRootKey}:${slot}`);
   }
 
+  async getValidatorsCommitmentRoot(slot: bigint): Promise<string[] | null> {
+    const prefix = `${CONSTANTS.validatorProofKey}:1`;
+    const latestRootChangeSlot = await this.getSlotWithLatestChange(prefix, slot);
+
+    if (latestRootChangeSlot == null) return null;
+
+    const rootData = await this.client.get(`${prefix}:${latestRootChangeSlot}`);
+    if (rootData == null) return null;
+
+    const obj = JSON.parse(rootData);
+    const poseidonHash = obj.poseidonHash;
+    return poseidonHash;
+  }
+
   async notifyAboutNewProof(): Promise<void> {
     await this.waitForConnection();
 
@@ -178,12 +193,12 @@ export class Redis implements IRedis {
   }
 
   async getValidatorsLengthForSlot(slot: bigint): Promise<number | null> {
-    const result = await this.get(`${CONSTANTS.validatorsLengthKey}:${slot}`);
+    const result = await this.get(`${CONSTANTS.validatorsLengthKey}:${slot} `);
     return result !== null ? Number(result) : null;
   }
 
   async getValidatorKeysForSlot(slot: bigint): Promise<string[]> {
-    return (await this.client.keys(`${CONSTANTS.validatorKey}:*:[0-9]*`))
+    return (await this.client.keys(`${CONSTANTS.validatorKey}:*: [0 - 9] * `))
       .filter(key => !key.includes(CONSTANTS.validatorRegistryLimit.toString()))
       .reduce((acc, key) => {
         const split = key.split(':');
@@ -202,7 +217,7 @@ export class Redis implements IRedis {
         acc[index] = latestSlot;
         return acc;
       }, new Array())
-      .map((slot, index) => `${CONSTANTS.validatorKey}:${index}:${slot}`);
+      .map((slot, index) => `${CONSTANTS.validatorKey}:${index}:${slot} `);
   }
 
   async getValidatorsBatched(
@@ -240,7 +255,9 @@ export class Redis implements IRedis {
       console.log(
         `Loaded batch ${chalk.bold.yellowBright(
           keyBatchIndex + 1,
-        )}/${chalk.bold.yellow(Math.ceil(keys.length / batchSize))}`,
+        )
+        } /${chalk.bold.yellow(Math.ceil(keys.length / batchSize))
+        }`,
       );
     }
 
@@ -251,7 +268,7 @@ export class Redis implements IRedis {
     await this.waitForConnection();
 
     const result = await this.client.keys(
-      `${CONSTANTS.validatorKey}:${CONSTANTS.validatorRegistryLimit}:*`,
+      `${CONSTANTS.validatorKey}:${CONSTANTS.validatorRegistryLimit}:* `,
     );
 
     return result.length === 0;
@@ -261,7 +278,7 @@ export class Redis implements IRedis {
     await this.waitForConnection();
 
     const result = await this.client.get(
-      `${CONSTANTS.validatorBalanceInputKey}:${CONSTANTS.validatorRegistryLimit}`,
+      `${CONSTANTS.validatorBalanceInputKey}:${CONSTANTS.validatorRegistryLimit} `,
     );
 
     return result == null;
@@ -277,16 +294,57 @@ export class Redis implements IRedis {
       await Promise.all(
         validatorsWithIndices.map(async validator => {
           await this.addToSlotLookup(
-            `${CONSTANTS.validatorKey}:${validator.index}`,
+            `${CONSTANTS.validatorKey}:${validator.index} `,
             slot,
           );
           return [
-            `${CONSTANTS.validatorKey}:${validator.index}:${slot}`,
+            `${CONSTANTS.validatorKey}:${validator.index}:${slot} `,
             JSON.stringify(validator.data),
           ];
         }),
       )
     ).flat();
+
+    await this.client.mset(...args);
+  }
+
+  async saveBalancesAccumulatorProof(
+    protocol: string,
+    level: bigint,
+    index: bigint,
+    proof: BalanceProof = {
+      needsChange: true,
+      proofIndex: '',
+      rangeTotalValue: '0',
+      validatorsCommitment: [],
+      balancesHash: [],
+      withdrawalCredentials: [],
+      currentEpoch: '0',
+      numberOfNonActivatedValidators: 0,
+      numberOfActiveValidators: 0,
+      numberOfExitedValidators: 0,
+    },
+  ): Promise<void> {
+    await this.waitForConnection();
+
+    await this.client.set(
+      `${CONSTANTS.balanceVerificationAccumulatorProofKey}:${protocol}:${level}:${index}`,
+      JSON.stringify(proof)
+    );
+  }
+
+  async saveBalancesAccumulatorInput(
+    balancesInputs: BalancesAccumulatorInput[],
+    protocol: string,
+  ) {
+    await this.waitForConnection();
+
+    const args = balancesInputs.map((input, index) => {
+      return [
+        `${CONSTANTS.balanceVerificationAccumulatorKey}:${protocol}:${index}`,
+        JSON.stringify(input),
+      ];
+    }).flat();
 
     await this.client.mset(...args);
   }
@@ -300,7 +358,7 @@ export class Redis implements IRedis {
     const args = inputsWithIndices
       .map(ii => {
         return [
-          `${protocol}:${CONSTANTS.validatorBalanceInputKey}:${ii.index}`,
+          `${protocol}:${CONSTANTS.validatorBalanceInputKey}:${ii.index} `,
           JSON.stringify(ii.input),
         ];
       })
@@ -326,7 +384,7 @@ export class Redis implements IRedis {
     await this.waitForConnection();
 
     await this.client.set(
-      `${protocol}:${CONSTANTS.finalProofInputKey}`,
+      `${protocol}:${CONSTANTS.finalProofInputKey} `,
       JSON.stringify(input),
     );
   }
@@ -343,7 +401,7 @@ export class Redis implements IRedis {
   ): Promise<void> {
     await this.waitForConnection();
     await this.client.set(
-      `${CONSTANTS.validatorProofKey}:${gindex}:${slot}`,
+      `${CONSTANTS.validatorProofKey}:${gindex}:${slot} `,
       JSON.stringify(proof),
     );
   }
@@ -359,7 +417,7 @@ export class Redis implements IRedis {
   ): Promise<void> {
     await this.waitForConnection();
     await this.client.set(
-      `${CONSTANTS.validatorProofKey}:zeroes:${depth}`,
+      `${CONSTANTS.validatorProofKey}: zeroes:${depth} `,
       JSON.stringify(proof),
     );
   }
@@ -384,7 +442,7 @@ export class Redis implements IRedis {
     await this.waitForConnection();
 
     await this.client.set(
-      `${protocol}:${CONSTANTS.balanceVerificationProofKey}:${level}:${index}`,
+      `${protocol}:${CONSTANTS.balanceVerificationProofKey}:${level}:${index} `,
       JSON.stringify(proof),
     );
   }
@@ -392,7 +450,7 @@ export class Redis implements IRedis {
   async getNextProof(slot: number): Promise<ProofResultType | null> {
     await this.waitForConnection();
 
-    const keys = await this.client.keys(`proof:${slot}:*`);
+    const keys = await this.client.keys(`proof:${slot}:* `);
 
     if (keys.length == 0) {
       return null;
@@ -407,7 +465,7 @@ export class Redis implements IRedis {
   ): Promise<ProofResultType | null> {
     await this.waitForConnection();
 
-    let proof = await this.client.get(`proof:${prevSlot}:${nextSlot}`);
+    let proof = await this.client.get(`proof:${prevSlot}:${nextSlot} `);
 
     if (proof == null) {
       return null;
@@ -419,7 +477,7 @@ export class Redis implements IRedis {
   public async setValidatorsLength(slot: bigint, length: number) {
     await this.waitForConnection();
     await this.client.set(
-      `${CONSTANTS.validatorsLengthKey}:${slot}`,
+      `${CONSTANTS.validatorsLengthKey}:${slot} `,
       length.toString(),
     );
   }
@@ -443,7 +501,7 @@ export class Redis implements IRedis {
     await this.waitForConnection();
 
     return this.client.get(
-      `${protocol}:balance_wrapper_proof_with_public_inputs`,
+      `${protocol}: balance_wrapper_proof_with_public_inputs`,
     );
   }
 
@@ -471,7 +529,7 @@ export class Redis implements IRedis {
     await this.waitForConnection();
 
     await this.client.set(
-      `proof:${prevSlot}:${nextSlot}`,
+      `proof:${prevSlot}:${nextSlot} `,
       JSON.stringify(proof),
     );
   }
@@ -490,7 +548,7 @@ export class Redis implements IRedis {
   ): Promise<void> {
     await this.waitForConnection();
 
-    await this.pubSub.subscribe(`${protocol}:gnark_proofs_channel`, listener);
+    await this.pubSub.subscribe(`${protocol}: gnark_proofs_channel`, listener);
   }
 
   private async waitForConnection() {

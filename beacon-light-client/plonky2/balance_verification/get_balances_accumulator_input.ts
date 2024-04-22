@@ -30,7 +30,9 @@ import {
   convertValidatorToValidatorPoseidonInput,
   getZeroValidatorPoseidonInput,
 } from './utils';
+import { panic } from '@dendreth/utils/ts-utils/common-utils';
 import chalk from 'chalk';
+import { CommandLineOptionsBuilder } from '../cmdline';
 
 const CIRCUIT_SIZE = 2;
 let TAKE: number
@@ -38,65 +40,23 @@ let TAKE: number
 (async () => {
   const { ssz } = await import('@lodestar/types');
 
-  const options = yargs
-    .usage(
-      'Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>',
-    )
-    .option('redis-host ', {
-      alias: 'redis-host',
-      describe: 'The Redis host',
-      type: 'string',
-      default: config['redis-host'],
-      description: 'Sets a custom redis connection',
-    })
-    .option('redis-port', {
-      alias: 'redis-port',
-      describe: 'The Redis port',
-      type: 'number',
-      default: Number(config['redis-port']),
-      description: 'Sets a custom redis connection',
-    })
-    .option('beacon-node', {
-      alias: 'beacon-node',
-      describe: 'The beacon node url',
-      type: 'string',
-      default: config['beacon-node'],
-      description: 'Sets a custom beacon node url',
-    })
+  const options = new CommandLineOptionsBuilder()
+    .withRedisOpts()
+    .withBeaconNodeOpts()
+    .withProtocolOpts()
+    .withRangeOpts()
     .option('slot', {
       alias: 'slot',
       describe: 'The state slot',
       type: 'number',
       default: undefined,
       description: 'Fetches the balances for this slot',
-    })
-    .option('take', {
-      alias: 'take',
-      describe: 'The number of validators to take',
-      type: 'number',
-      default: Infinity,
-      description: 'Sets the number of validators to take',
-    })
-    .options('offset', {
-      alias: 'offset',
-      describe: 'Index offset in the validator set',
-      type: 'number',
-      default: 0,
-    })
-    .options('protocol', {
-      alias: 'protocol',
-      describe: 'The protocol',
-      type: 'string',
-      default: 'demo',
-      description: 'Sets the protocol',
-    }).argv;
+    }).build();
 
   const redis = new RedisLocal(options['redis-host'], options['redis-port']);
   const db = new Redis(
     `redis://${options['redis-host']}:${options['redis-port']}`,
   );
-
-  TAKE = options['take'];
 
   const queues: any[] = [];
 
@@ -110,23 +70,21 @@ let TAKE: number
     );
   }
 
-  const beaconApi = new BeaconApi([options['beacon-node']]);
-  const slot = 8669632;
+  const beaconApi = new BeaconApi(options['beacon-node'], ssz);
+  const slot = 8915136n;
   // const slot =
   //   options['slot'] !== undefined
   //     ? options['slot']
   //     : Number(await beaconApi.getHeadSlot());
 
-  const { beaconState } = await beaconApi.getBeaconState(slot);
-
-  const offset = Number(options['offset']) || 0;
-
-  beaconState.balances = beaconState.balances.slice(offset, offset + TAKE);
-  beaconState.validators = beaconState.validators.slice(offset, offset + TAKE);
+  const { beaconState } = await beaconApi.getBeaconState(slot) || panic("Could not get beacon state");
 
   let validatorsAccumulator: any[] = JSON.parse(
-    readFileSync('validators.json', 'utf-8'),
+    readFileSync('balance_verification/validators.json', 'utf-8'),
   );
+
+  beaconState.balances = beaconState.balances.slice(0, validatorsAccumulator.length);
+  beaconState.validators = beaconState.validators.slice(0, validatorsAccumulator.length);
 
   validatorsAccumulator.map((x, i) => {
     x.validator_index = i;
@@ -148,11 +106,9 @@ let TAKE: number
   });
 
   // get validator commitment root from redis
-  let validatorCommitmentRoot = await redis.getValidatorCommitmentRoot(
-    computeEpochAt(beaconState.slot),
-  );
+  let validatorCommitmentRoot = await redis.getValidatorsCommitmentRoot(slot);
   if (validatorCommitmentRoot === null) {
-    throw new Error(`Validator root for epoch ${computeEpochAt(beaconState.slot)} is missing`);
+    throw new Error(`Validator root for slot ${slot} is missing`);
   }
 
   // load proofs for the validators from redis
@@ -237,7 +193,6 @@ let TAKE: number
   await scheduleFirstLevelTasks(queues[0], balancesInputs);
 
   // inner level tasks
-  console.log(chalk.bold.blue('Adding inner proofs...'));
   for (let level = 1; level < 24; level++) {
     await redis.saveBalancesAccumulatorProof(
       options['protocl'],
@@ -246,22 +201,22 @@ let TAKE: number
     );
 
     const range = [
-      ...new Array(Math.ceil(TAKE / CIRCUIT_SIZE / 2 ** level)).keys(),
+      ...new Array(Math.ceil(validatorsAccumulator.length / CIRCUIT_SIZE / 2 ** level)).keys(),
     ];
     for (const key of range) {
       const buffer = new ArrayBuffer(8);
       const view = new DataView(buffer);
 
       await redis.saveBalancesAccumulatorProof(options['protocol'], BigInt(level), BigInt(key));
-      // schedule tasks
 
+      // schedule task
       view.setBigUint64(0, BigInt(key), false);
       await queues[level].addItem(redis.client, new Item(buffer));
     }
   }
 
   db.quit();
-  await redis.disconnect();
+  await redis.quit();
 
   async function scheduleFirstLevelTasks(queue: any, balancesInputs: BalancesAccumulatorInput[]) {
     for (let i = 0; i < balancesInputs.length; i++) {
