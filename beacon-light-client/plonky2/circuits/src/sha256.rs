@@ -36,7 +36,7 @@ pub struct Sha256Targets {
     pub digest: Vec<BoolTarget>,
 }
 
-pub fn array_to_bits(bytes: &[u8]) -> Vec<bool> {
+pub fn bytes_to_bits(bytes: &[u8]) -> Vec<bool> {
     let len = bytes.len();
     let mut ret = Vec::new();
     for i in 0..len {
@@ -399,96 +399,107 @@ pub fn make_circuits<F: RichField + Extendable<D>, const D: usize>(
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Result;
+    use plonky2::field::types::Field;
     use plonky2::iop::witness::{PartialWitness, WitnessWrite};
     use plonky2::plonk::circuit_builder::CircuitBuilder;
     use plonky2::plonk::circuit_data::CircuitConfig;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
-    use rand::Rng;
 
-    use crate::sha256::{array_to_bits, make_circuits};
+    use super::super::sha256::{bytes_to_bits, make_circuits};
 
-    const EXPECTED_RES: [u8; 256] = [
-        0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 0,
-        0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0,
-        0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1,
-        0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0,
-        1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1,
-        1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1,
-        1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0,
-        1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0,
-        0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0,
-    ];
-
-    #[test]
-    fn test_sha256() -> Result<()> {
-        let mut msg = vec![0; 128 as usize];
-        for i in 0..127 {
-            msg[i] = i as u8;
-        }
-
-        let msg_bits = array_to_bits(&msg);
-        let len = msg.len() * 8;
+    fn perform_sha256_test(message: &[u8], expected: &[u8]) {
+        let message_bits = bytes_to_bits(message);
         const D: usize = 2;
         type C = PoseidonGoldilocksConfig;
         type F = <C as GenericConfig<D>>::F;
         let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
-        let targets = make_circuits(&mut builder, len as u64);
+        let targets = make_circuits(&mut builder, message_bits.len() as u64);
         let mut pw = PartialWitness::new();
 
-        for i in 0..len {
-            pw.set_bool_target(targets.message[i], msg_bits[i]);
+        for i in 0..message_bits.len() {
+            pw.set_bool_target(targets.message[i], message_bits[i]);
         }
 
-        for i in 0..EXPECTED_RES.len() {
-            if EXPECTED_RES[i] == 1 {
-                builder.assert_one(targets.digest[i].target);
-            } else {
-                builder.assert_zero(targets.digest[i].target);
-            }
+        let expected_bits = bytes_to_bits(expected);
+        for i in 0..expected_bits.len() {
+            let expected_bit = builder.constant(F::from_canonical_u8(expected_bits[i] as u8));
+            builder.connect(targets.digest[i].target, expected_bit);
         }
 
         let data = builder.build::<C>();
         let proof = data.prove(pw).unwrap();
 
-        data.verify(proof)
+        data.verify(proof).unwrap();
+    }
+
+    #[test]
+    fn test_sha256() {
+        const MESSAGE: [u8; 128] = [
+            0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,
+            0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b,
+            0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29,
+            0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
+            0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f, 0x40, 0x41, 0x42, 0x43, 0x44, 0x45,
+            0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f, 0x50, 0x51, 0x52, 0x53,
+            0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b, 0x5c, 0x5d, 0x5e, 0x5f, 0x60, 0x61,
+            0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6a, 0x6b, 0x6c, 0x6d, 0x6e, 0x6f,
+            0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a, 0x7b, 0x7c, 0x7d,
+            0x7e, 0x00,
+        ];
+
+        const EXPECTED: [u8; 32] = [
+            0x3c, 0x5e, 0xa3, 0xe9, 0x28, 0xf9, 0x36, 0x43, 0xe6, 0xf5, 0x70, 0x56, 0x99, 0x16,
+            0xba, 0x9f, 0x71, 0x56, 0x0e, 0x70, 0x84, 0x41, 0x38, 0x55, 0xb4, 0xa0, 0x2d, 0xd7,
+            0x5d, 0x38, 0x3e, 0x02,
+        ];
+
+        perform_sha256_test(&MESSAGE, &EXPECTED);
+    }
+
+    #[test]
+    fn test_sha256_hello_message() {
+        // These bytes correspond to the ASCII message "Welcome to the Noir zk language!".
+        const MESSAGE: [u8; 32] = [
+            0x57, 0x65, 0x6c, 0x63, 0x6f, 0x6d, 0x65, 0x20, 0x74, 0x6f, 0x20, 0x74, 0x68, 0x65,
+            0x20, 0x4e, 0x6f, 0x69, 0x72, 0x20, 0x7a, 0x6b, 0x20, 0x6c, 0x61, 0x6e, 0x67, 0x75,
+            0x61, 0x67, 0x65, 0x21,
+        ];
+
+        // Verified with sha256sum from Linux coreutils-9.3.
+        const EXPECTED: [u8; 32] = [
+            0x79, 0x2a, 0x87, 0x3e, 0x90, 0x73, 0x47, 0x97, 0x52, 0x31, 0x7f, 0x5c, 0xb8, 0xf3,
+            0x2a, 0x39, 0x49, 0x09, 0xe5, 0x43, 0xcf, 0x59, 0x7c, 0x9f, 0x4d, 0x92, 0x4d, 0x34,
+            0x4a, 0xe0, 0xff, 0xdd,
+        ];
+
+        perform_sha256_test(&MESSAGE, &EXPECTED);
     }
 
     #[test]
     #[should_panic]
     fn test_sha256_failure() {
-        let mut msg = vec![0; 128 as usize];
-        for i in 0..127 {
-            msg[i] = i as u8;
-        }
+        const MESSAGE: [u8; 128] = [
+            0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,
+            0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b,
+            0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29,
+            0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
+            0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f, 0x40, 0x41, 0x42, 0x43, 0x44, 0x45,
+            0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f, 0x50, 0x51, 0x52, 0x53,
+            0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b, 0x5c, 0x5d, 0x5e, 0x5f, 0x60, 0x61,
+            0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6a, 0x6b, 0x6c, 0x6d, 0x6e, 0x6f,
+            0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a, 0x7b, 0x7c, 0x7d,
+            0x7e, 0x00,
+        ];
 
-        let msg_bits = array_to_bits(&msg);
-        let len = msg.len() * 8;
-        const D: usize = 2;
-        type C = PoseidonGoldilocksConfig;
-        type F = <C as GenericConfig<D>>::F;
-        let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
-        let targets = make_circuits(&mut builder, len as u64);
-        let mut pw = PartialWitness::new();
+        let mut expected: [u8; 32] = [
+            0x3c, 0x5e, 0xa3, 0xe9, 0x28, 0xf9, 0x36, 0x43, 0xe6, 0xf5, 0x70, 0x56, 0x99, 0x16,
+            0xba, 0x9f, 0x71, 0x56, 0x0e, 0x70, 0x84, 0x41, 0x38, 0x55, 0xb4, 0xa0, 0x2d, 0xd7,
+            0x5d, 0x38, 0x3e, 0x02,
+        ];
 
-        for i in 0..len {
-            pw.set_bool_target(targets.message[i], msg_bits[i]);
-        }
+        // Modify some byte to lead to a wrong result.
+        expected[10] = 0xff;
 
-        let mut rng = rand::thread_rng();
-        let rnd = rng.gen_range(0..256);
-        for i in 0..EXPECTED_RES.len() {
-            let b = (i == rnd && EXPECTED_RES[i] != 1) || (i != rnd && EXPECTED_RES[i] == 1);
-            if b {
-                builder.assert_one(targets.digest[i].target);
-            } else {
-                builder.assert_zero(targets.digest[i].target);
-            }
-        }
-
-        let data = builder.build::<C>();
-        let proof = data.prove(pw).unwrap();
-
-        data.verify(proof).expect("");
+        perform_sha256_test(&MESSAGE, &expected);
     }
 }
