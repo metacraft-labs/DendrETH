@@ -193,10 +193,10 @@ impl SetPWValues<ValidatorBalanceAccumulatorInput>
         pw: &mut PartialWitness<GoldilocksField>,
         source: &ValidatorBalanceAccumulatorInput,
     ) {
-        for i in 0..source.balances.len() {
+        for i in 0..source.balances_leaves.len() {
             pw.set_bytes_array(
                 &self.balances_leaves[i],
-                &hex::decode(&source.balances[i]).unwrap(),
+                &hex::decode(&source.balances_leaves[i]).unwrap(),
             );
         }
 
@@ -268,10 +268,10 @@ impl SetPWValues<ValidatorBalanceAccumulatorInput>
         //         .collect::<Vec<_>>()
         // );
 
-        for i in 0..source.validators_gindices.len() {
+        for i in 0..source.validator_indices.len() {
             pw.set_biguint_target(
-                &self.validators_gindices[i],
-                &BigUint::from(source.validators_gindices[i]),
+                &self.validator_indices[i],
+                &BigUint::from(source.validator_indices[i]),
             );
         }
 

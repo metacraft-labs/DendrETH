@@ -236,7 +236,7 @@ pub fn validator_balance_verification<
             .map(|v| v.validator.clone())
             .collect(),
         balances: balances_leaves,
-        withdrawal_credentials: withdrawal_credentials,
+        withdrawal_credentials,
         current_epoch,
         number_of_non_activated_validators,
         number_of_active_validators,

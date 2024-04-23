@@ -1,5 +1,5 @@
 use itertools::{izip, Itertools};
-use num::{BigUint, FromPrimitive};
+use num::BigUint;
 use plonky2::{
     field::extension::Extendable,
     hash::{
@@ -16,15 +16,10 @@ use crate::{
     biguint::{BigUintTarget, CircuitBuilderBiguint},
     hash_tree_root_poseidon::hash_tree_root_poseidon,
     is_valid_merkle_branch::{
-        assert_merkle_proof_is_valid, restore_merkle_root, validate_merkle_proof, MerkleBranch,
-        Sha256,
+        assert_merkle_proof_is_valid, restore_merkle_root, MerkleBranch, Sha256,
     },
-    sha256::{make_circuits, sha256, sha256_pair},
     targets_serialization::{ReadTargets, WriteTargets},
-    utils::{
-        biguint_to_bits_target, biguint_to_le_bits_target, create_bool_target_array,
-        create_sha256_merkle_proof,
-    },
+    utils::{biguint_to_le_bits_target, create_bool_target_array, create_sha256_merkle_proof},
     validator_hash_tree_root_poseidon::ValidatorPoseidonTargets,
 };
 
@@ -38,11 +33,10 @@ impl ValidatorStatusCountsTarget {
     pub fn new<F: RichField + Extendable<D>, const D: usize>(
         builder: &mut CircuitBuilder<F, D>,
     ) -> Self {
-        let zero = builder.zero();
         Self {
-            active_validators_count: zero,
-            exitted_validators_count: zero,
-            not_activated_validators_count: zero,
+            active_validators_count: builder.zero(),
+            exitted_validators_count: builder.zero(),
+            not_activated_validators_count: builder.zero(),
         }
     }
 }
@@ -78,20 +72,17 @@ pub struct ValidatorBalanceVerificationAccumulatorTargets {
     // pub validator_deposit_indexes: Vec<BigUintTarget>,
     pub balances_proofs: Vec<MerkleBranch<22>>,
     pub validators: Vec<ValidatorPoseidonTargets>,
-    pub validators_gindices: Vec<BigUintTarget>,
+    pub validator_indices: Vec<BigUintTarget>, // TODO: make this a Target vec / rename this to validator_gindices
     pub current_epoch: BigUintTarget,
+    // pub range_start: Target,
+    // pub range_end: Target,
+    // pub range_deposit_count: Target,
 
     // Outputs
     pub validators_commitment_in_range: HashOutTarget,
     pub validator_status_counts: ValidatorStatusCountsTarget,
     // pub accumulator_commitment_range_root: HashOutTarget, //
-    // pub number_of_non_activated_validators: Target,
-    // pub number_of_active_validators: Target,
-    // pub number_of_exited_validators: Target,
-    // pub range_total_value: BigUintTarget,
-    // pub range_start: Target,
-    // pub range_end: Target,
-    // pub range_deposit_count: Target,
+    pub range_total_balance: BigUintTarget,
 }
 
 impl ReadTargets for ValidatorBalanceVerificationAccumulatorTargets {
@@ -132,12 +123,13 @@ impl ReadTargets for ValidatorBalanceVerificationAccumulatorTargets {
                         .expect("ValidatorPoseidonTargets::read_targets failes")
                 })
                 .collect(),
-            validators_gindices: (0..validators_len)
+            validator_indices: (0..validators_len)
                 .map(|_| BigUintTarget::read_targets(data).unwrap())
                 .collect_vec(),
             current_epoch: BigUintTarget::read_targets(data).unwrap(),
             validators_commitment_in_range: data.read_target_hash().unwrap(),
             validator_status_counts: ValidatorStatusCountsTarget::read_targets(data).unwrap(),
+            range_total_balance: BigUintTarget::read_targets(data).unwrap(),
             /*
                         validator_deposit_indexes: (0..validators_len)
                             .map(|_| BigUintTarget::read_targets(data).unwrap())
@@ -202,7 +194,7 @@ impl WriteTargets for ValidatorBalanceVerificationAccumulatorTargets {
             data.extend(ValidatorPoseidonTargets::write_targets(validator)?);
         }
 
-        for gindex in &self.validators_gindices {
+        for gindex in &self.validator_indices {
             data.extend(gindex.write_targets()?);
         }
 
@@ -211,6 +203,8 @@ impl WriteTargets for ValidatorBalanceVerificationAccumulatorTargets {
         data.write_target_hash(&self.validators_commitment_in_range)?;
 
         data.extend(self.validator_status_counts.write_targets().unwrap());
+
+        data.extend(self.range_total_balance.write_targets().unwrap());
 
         /*
 
@@ -250,7 +244,7 @@ struct CircuitInputTargets {
     pub non_zero_validator_leaves_mask: Vec<BoolTarget>,
     pub balances_proofs: Vec<MerkleBranch<DEPTH>>,
     pub validators: Vec<ValidatorPoseidonTargets>,
-    pub validators_gindices: Vec<BigUintTarget>,
+    pub validator_indices: Vec<BigUintTarget>,
     pub current_epoch: BigUintTarget,
 }
 
@@ -276,7 +270,7 @@ fn read_input<F: RichField + Extendable<D>, const D: usize>(
         .map(|_| ValidatorPoseidonTargets::new(builder))
         .collect_vec();
 
-    let validators_gindices: Vec<BigUintTarget> = (0..validators_count)
+    let validator_indices: Vec<BigUintTarget> = (0..validators_count)
         .map(|_| builder.add_virtual_biguint_target(2)) // make this a target vector
         .collect_vec();
 
@@ -288,7 +282,7 @@ fn read_input<F: RichField + Extendable<D>, const D: usize>(
         non_zero_validator_leaves_mask,
         balances_proofs,
         validators,
-        validators_gindices,
+        validator_indices,
         current_epoch,
     }
 }
@@ -473,6 +467,84 @@ fn accumulate_validator_statuses<F: RichField + Extendable<D>, const D: usize>(
     counts
 }
 
+fn extract_balance_from_leaf<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    leaf: &Sha256,
+    offset: &BigUintTarget, // TODO: this doesn't need to be bigint
+) -> BigUintTarget {
+    let zero = builder.constant(F::from_canonical_u32(0));
+    let one = builder.constant(F::from_canonical_u32(1));
+    let two = builder.constant(F::from_canonical_u32(2));
+
+    let const_64 = builder.constant_biguint(&BigUint::from(64u64));
+    let range_begin = builder.mul_biguint(&const_64, offset);
+    let range_end = builder.add_biguint(&range_begin, &const_64);
+
+    let mut balance = builder.constant_biguint(&BigUint::from(0u64));
+    let mut is_inside_range_pred = builder.zero();
+
+    for i in 0..leaf.len() {
+        let idx = builder.constant_biguint(&BigUint::from(i));
+        let is_range_begin_pred = builder.eq_biguint(&idx, &range_begin);
+        let is_range_end_pred = builder.eq_biguint(&idx, &range_end);
+
+        is_inside_range_pred = builder.add(is_inside_range_pred, is_range_begin_pred.target);
+        is_inside_range_pred = builder.sub(is_inside_range_pred, is_range_end_pred.target);
+
+        let multiplier_target =
+            builder.select(BoolTarget::new_unsafe(is_inside_range_pred), two, one);
+        let multiplier = biguint_from_target(builder, multiplier_target);
+
+        let addend_target = builder.select(BoolTarget::new_unsafe(is_inside_range_pred), one, zero);
+        let addend = biguint_from_target(builder, addend_target);
+
+        balance = builder.mul_add_biguint(&balance, &multiplier, &addend);
+    }
+    balance
+}
+
+fn biguint_from_target<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    target: Target,
+) -> BigUintTarget {
+    BigUintTarget {
+        limbs: vec![U32Target(target), U32Target(builder.zero())],
+    }
+}
+
+fn gindex_from_index_at_depth<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    index: &BigUintTarget,
+    depth: u32,
+) -> BigUintTarget {
+    let first_leaf_gindex = builder.constant_biguint(&BigUint::from(2u64.pow(depth)));
+    builder.add_biguint(&first_leaf_gindex, index)
+}
+
+fn prove_and_accumulate_balances<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    leaves: &[Sha256],
+    branches: &[MerkleBranch<22>],
+    root: &Sha256,
+    validator_indices: &[BigUintTarget],
+) -> BigUintTarget {
+    let mut total_balance = builder.constant_biguint(&BigUint::from(0u64));
+
+    for (leaf, branch, validator_index) in izip!(leaves, branches, validator_indices) {
+        let four = builder.constant_biguint(&BigUint::from(4u64));
+        let validator_gindex = gindex_from_index_at_depth(builder, validator_index, 24);
+
+        let balance_gindex = builder.div_biguint(&validator_gindex, &four);
+        assert_merkle_proof_is_valid(builder, leaf, root, branch, &balance_gindex);
+
+        let validator_balance_offset = builder.rem_biguint(&validator_index, &four);
+        let balance = extract_balance_from_leaf(builder, leaf, &validator_balance_offset);
+        total_balance = builder.add_biguint(&total_balance, &balance)
+    }
+
+    total_balance
+}
+
 pub fn validator_balance_verification_accumulator<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     validators_count: usize,
@@ -490,17 +562,6 @@ pub fn validator_balance_verification_accumulator<F: RichField + Extendable<D>, 
         &input.non_zero_validator_leaves_mask,
     );
 
-    // merkle proofs for validators' balances
-    for (leaf, proof, validator_gindex) in izip!(
-        &input.balances_leaves,
-        &input.balances_proofs,
-        &input.validators_gindices,
-    ) {
-        let four = builder.constant_biguint(&BigUint::from(4u64));
-        let balance_gindex = builder.div_biguint(validator_gindex, &four);
-        assert_merkle_proof_is_valid(builder, leaf, &input.balances_root, proof, &balance_gindex);
-    }
-
     // count validators' statuses
     let validator_status_counts = accumulate_validator_statuses(
         builder,
@@ -509,16 +570,25 @@ pub fn validator_balance_verification_accumulator<F: RichField + Extendable<D>, 
         &input.non_zero_validator_leaves_mask,
     );
 
+    let range_total_balance = prove_and_accumulate_balances(
+        builder,
+        &input.balances_leaves,
+        &input.balances_proofs,
+        &input.balances_root,
+        &input.validator_indices,
+    );
+
     return ValidatorBalanceVerificationAccumulatorTargets {
         balances_leaves: input.balances_leaves,
         balances_root: input.balances_root,
         non_zero_validator_leaves_mask: input.non_zero_validator_leaves_mask,
         balances_proofs: input.balances_proofs,
         validators: input.validators,
-        validators_gindices: input.validators_gindices,
+        validator_indices: input.validator_indices,
         current_epoch: input.current_epoch,
         validators_commitment_in_range,
         validator_status_counts,
+        range_total_balance,
     };
 }
 

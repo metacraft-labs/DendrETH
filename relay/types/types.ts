@@ -197,10 +197,10 @@ export interface ValidatorPoseidonInput {
 
 export interface BalancesAccumulatorInput {
   balancesRoot: string;
-  balances: string[];
+  balancesLeaves: string[];
   balancesProofs: string[][];
   validatorDepositIndexes: number[];
-  validatorsGindices: number[];
+  validatorIndices: number[];
   validators: ValidatorPoseidonInput[];
   validatorCommitmentProofs: string[][][];
   validatorIsNotZero: number[];

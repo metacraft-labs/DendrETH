@@ -59,10 +59,10 @@ pub struct ValidatorBalancesInput {
 #[serde(rename_all = "camelCase")]
 pub struct ValidatorBalanceAccumulatorInput {
     pub balances_root: String,
-    pub balances: Vec<String>,
+    pub balances_leaves: Vec<String>,
     pub balances_proofs: Vec<Vec<String>>,
     pub validator_deposit_indexes: Vec<u64>,
-    pub validators_gindices: Vec<u64>,
+    pub validator_indices: Vec<u64>,
     pub validator_commitment_proofs: Vec<Vec<Vec<String>>>,
     pub validators: Vec<ValidatorPoseidonInput>,
     #[serde(with = "bool_vec_as_int_vec")]

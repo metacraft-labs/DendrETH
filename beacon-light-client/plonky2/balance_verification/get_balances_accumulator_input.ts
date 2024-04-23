@@ -136,10 +136,10 @@ let TAKE: number
   ) {
     let balancesInput: BalancesAccumulatorInput = {
       balancesRoot: bytesToHex(balancesTree.getRoot(2n ** 17n)), // NOTE: this is probably wrong
-      balances: [],
+      balancesLeaves: [],
       balancesProofs: [],
       validatorDepositIndexes: [],
-      validatorsGindices: [],
+      validatorIndices: [],
       validatorCommitmentProofs: [],
       validatorIsNotZero: [],
       validators: [],
@@ -150,17 +150,18 @@ let TAKE: number
     for (let j = 0; j < CIRCUIT_SIZE; j++) {
       const idx = chunkIdx * CIRCUIT_SIZE + j;
       if (idx < validatorsAccumulator.length) {
-        balancesInput.balances.push(
+        balancesInput.balancesLeaves.push(
           bytesToHex(
-            balancesTree.getNode(gindexFromIndex(BigInt(validatorsAccumulator[idx].validator_index) / 4n, 39n)).root, // tva mai e greshno
+            balancesTree.getNode(gindexFromIndex(BigInt(validatorsAccumulator[idx].validator_index) / 4n, 39n)).root,
           ),
         );
         balancesInput.balancesProofs.push(balancesProofs[idx]);
         balancesInput.validatorDepositIndexes.push(
           validatorsAccumulator[idx].validator_index,
         );
-        balancesInput.validatorsGindices.push(
-          Number(gindexFromIndex(BigInt(validatorsAccumulator[idx].validator_index), 24n)),
+        balancesInput.validatorIndices.push(
+          // Number(gindexFromIndex(BigInt(validatorsAccumulator[idx].validator_index), 24n)),
+          validatorsAccumulator[idx].validator_index
         );
         balancesInput.validators.push(
           convertValidatorToValidatorPoseidonInput(beaconState.validators[idx]),
@@ -170,13 +171,13 @@ let TAKE: number
         );
         balancesInput.validatorIsNotZero.push(1);
       } else {
-        balancesInput.balances.push(''.padStart(64, '0'));
+        balancesInput.balancesLeaves.push(''.padStart(64, '0'));
         balancesInput.balancesProofs.push(
           new Array(22).map(x => ''.padStart(64, '0')),
         );
         balancesInput.validators.push(getZeroValidatorPoseidonInput());
         balancesInput.validatorDepositIndexes.push(0);
-        balancesInput.validatorsGindices.push(0);
+        balancesInput.validatorIndices.push(0);
         balancesInput.validatorCommitmentProofs.push(
           new Array(22).map(x => new Array(4).fill(0)),
         );
