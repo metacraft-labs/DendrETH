@@ -68,6 +68,7 @@ impl WriteTargets for ValidatorStatusCountsTarget {
     }
 }
 
+// TODO: Reorder fields
 pub struct ValidatorBalanceVerificationAccumulatorTargets {
     // Inputs
     pub balances_leaves: Vec<Sha256>,
@@ -79,10 +80,6 @@ pub struct ValidatorBalanceVerificationAccumulatorTargets {
     pub validators: Vec<ValidatorPoseidonTargets>,
     pub validators_gindices: Vec<BigUintTarget>,
     pub current_epoch: BigUintTarget,
-    // delete this
-    // pub validators_commitment_root: HashOutTarget,
-    // pub validator_commitment_proofs: Vec<Vec<HashOutTarget>>,
-    // pub current_epoch: BigUintTarget,
 
     // Outputs
     pub validators_commitment_in_range: HashOutTarget,
