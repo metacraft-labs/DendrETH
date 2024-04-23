@@ -3,7 +3,7 @@ use circuits::{
     build_commitment_mapper_inner_level_circuit::CommitmentMapperInnerCircuitTargets,
     build_final_circuit::FinalCircuitTargets, utils::SetBytesArray,
     validator_balance_circuit::ValidatorBalanceVerificationTargets,
-    validator_balance_circuit_accumulator::ValidatorBalanceVerificationTargetsAccumulator,
+    validator_balance_circuit_accumulator::ValidatorBalanceVerificationAccumulatorTargets,
     validator_hash_tree_root::ValidatorShaTargets,
     validator_hash_tree_root_poseidon::ValidatorPoseidonTargets,
 };
@@ -186,7 +186,7 @@ impl<const N: usize> SetPWValues<ValidatorBalancesInput>
 }
 
 impl SetPWValues<ValidatorBalanceAccumulatorInput>
-    for ValidatorBalanceVerificationTargetsAccumulator
+    for ValidatorBalanceVerificationAccumulatorTargets
 {
     fn set_pw_values(
         &self,
@@ -274,6 +274,8 @@ impl SetPWValues<ValidatorBalanceAccumulatorInput>
                 &BigUint::from(source.validators_gindices[i]),
             );
         }
+
+        pw.set_biguint_target(&self.current_epoch, &BigUint::from(source.current_epoch));
 
         // pw.set_biguint_target(
         //     &self.validators_gindices,

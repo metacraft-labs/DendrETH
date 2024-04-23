@@ -7,7 +7,7 @@ use circuits::{
     generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
     targets_serialization::WriteTargets,
     validator_balance_circuit::ValidatorBalanceVerificationTargets,
-    validator_balance_circuit_accumulator::ValidatorBalanceVerificationTargetsAccumulator,
+    validator_balance_circuit_accumulator::ValidatorBalanceVerificationAccumulatorTargets,
 };
 use num::clamp;
 use std::{fs, marker::PhantomData, path::Path};
@@ -30,7 +30,7 @@ fn write_to_file(file_path: &str, data: &[u8]) -> Result<()> {
 
 enum ValidatorBalanceTargets<const N: usize> {
     ValidatorBalanceFirstLevel(ValidatorBalanceVerificationTargets<N>),
-    ValidatorBalanceAccumulatorFirstLevel(ValidatorBalanceVerificationTargetsAccumulator),
+    ValidatorBalanceAccumulatorFirstLevel(ValidatorBalanceVerificationAccumulatorTargets),
     ValidatorBalanceInnerLevel(build_balance_inner_level_circuit::BalanceInnerCircuitTargets),
     ValidatorBalanceAccumulatorInnerLevel(
         build_balance_accumulator_inner_level::BalanceInnerCircuitTargets,

@@ -17,7 +17,7 @@ use crate::{
     biguint::BigUintTarget,
     utils::{ETH_SHA256_BIT_SIZE, POSEIDON_HASH_SIZE},
     validator_balance_circuit_accumulator::{
-        validator_balance_accumulator_verification, ValidatorBalanceVerificationTargetsAccumulator,
+        validator_balance_verification_accumulator, ValidatorBalanceVerificationAccumulatorTargets,
     },
 };
 
@@ -261,7 +261,7 @@ impl ValidatorBalanceProofAccumulatorTargetsExt for ValidatorBalanceProofAccumul
 pub fn build_validator_balance_accumulator_circuit(
     validators_len: usize,
 ) -> (
-    ValidatorBalanceVerificationTargetsAccumulator,
+    ValidatorBalanceVerificationAccumulatorTargets,
     plonky2::plonk::circuit_data::CircuitData<
         plonky2::field::goldilocks_field::GoldilocksField,
         PoseidonGoldilocksConfig,
@@ -273,7 +273,7 @@ pub fn build_validator_balance_accumulator_circuit(
     type F = <C as GenericConfig<D>>::F;
 
     let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
-    let targets = validator_balance_accumulator_verification(&mut builder, validators_len);
+    let targets = validator_balance_verification_accumulator(&mut builder, validators_len);
 
     let circuit_data = builder.build::<C>();
     (targets, circuit_data)

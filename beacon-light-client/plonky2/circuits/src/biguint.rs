@@ -44,6 +44,11 @@ pub trait CircuitBuilderBiguint<F: RichField + Extendable<D>, const D: usize> {
     ) -> (BigUintTarget, BigUintTarget);
 
     fn cmp_biguint(&mut self, a: &BigUintTarget, b: &BigUintTarget) -> BoolTarget;
+    fn gt_biguint(&mut self, a: &BigUintTarget, b: &BigUintTarget) -> BoolTarget;
+    fn gte_biguint(&mut self, a: &BigUintTarget, b: &BigUintTarget) -> BoolTarget;
+    fn eq_biguint(&mut self, a: &BigUintTarget, b: &BigUintTarget) -> BoolTarget;
+    fn lt_biguint(&mut self, a: &BigUintTarget, b: &BigUintTarget) -> BoolTarget;
+    fn lte_biguint(&mut self, a: &BigUintTarget, b: &BigUintTarget) -> BoolTarget;
 
     fn add_virtual_biguint_target(&mut self, num_limbs: usize) -> BigUintTarget;
 
@@ -130,6 +135,40 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderBiguint<F, D>
         let (a, b) = self.pad_biguints(a, b);
 
         list_le_u32_circuit(self, a.limbs, b.limbs)
+    }
+
+    fn gt_biguint(&mut self, a: &BigUintTarget, b: &BigUintTarget) -> BoolTarget {
+        let a_lte_b_pred = self.cmp_biguint(a, b);
+        self.not(a_lte_b_pred)
+    }
+
+    fn gte_biguint(&mut self, a: &BigUintTarget, b: &BigUintTarget) -> BoolTarget {
+        let a_gt_b_pred = self.gt_biguint(a, b);
+        let a_equal_to_b_pred = self.eq_biguint(a, b);
+        self.or(a_gt_b_pred, a_equal_to_b_pred)
+    }
+
+    fn eq_biguint(&mut self, a: &BigUintTarget, b: &BigUintTarget) -> BoolTarget {
+        let (a, b) = self.pad_biguints(a, b);
+
+        a.limbs
+            .iter()
+            .zip(b.limbs)
+            .fold(self._false(), |acc, (a_limb, b_limb)| {
+                let a_limb_eq_to_b_limb_pred = self.is_equal(a_limb.0, b_limb.0);
+                self.and(acc, a_limb_eq_to_b_limb_pred)
+            })
+    }
+
+    fn lt_biguint(&mut self, a: &BigUintTarget, b: &BigUintTarget) -> BoolTarget {
+        let a_lte_b_pred = self.cmp_biguint(a, b);
+        let a_eq_to_b_pred = self.eq_biguint(a, b);
+        let a_not_eq_to_b_pred = self.not(a_eq_to_b_pred);
+        self.and(a_lte_b_pred, a_not_eq_to_b_pred)
+    }
+
+    fn lte_biguint(&mut self, a: &BigUintTarget, b: &BigUintTarget) -> BoolTarget {
+        self.cmp_biguint(a, b)
     }
 
     fn add_virtual_biguint_target(&mut self, num_limbs: usize) -> BigUintTarget {

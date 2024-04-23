@@ -28,7 +28,47 @@ use crate::{
     validator_hash_tree_root_poseidon::ValidatorPoseidonTargets,
 };
 
-pub struct ValidatorBalanceVerificationTargetsAccumulator {
+pub struct ValidatorStatusCountsTarget {
+    pub active_validators_count: Target,
+    pub exitted_validators_count: Target,
+    pub not_activated_validators_count: Target,
+}
+
+impl ValidatorStatusCountsTarget {
+    pub fn new<F: RichField + Extendable<D>, const D: usize>(
+        builder: &mut CircuitBuilder<F, D>,
+    ) -> Self {
+        let zero = builder.zero();
+        Self {
+            active_validators_count: zero,
+            exitted_validators_count: zero,
+            not_activated_validators_count: zero,
+        }
+    }
+}
+
+impl ReadTargets for ValidatorStatusCountsTarget {
+    fn read_targets(data: &mut Buffer) -> IoResult<Self> {
+        Ok(Self {
+            active_validators_count: data.read_target().unwrap(),
+            exitted_validators_count: data.read_target().unwrap(),
+            not_activated_validators_count: data.read_target().unwrap(),
+        })
+    }
+}
+
+impl WriteTargets for ValidatorStatusCountsTarget {
+    fn write_targets(&self) -> IoResult<Vec<u8>> {
+        let mut data = Vec::<u8>::new();
+
+        data.write_target(self.active_validators_count)?;
+        data.write_target(self.exitted_validators_count)?;
+        data.write_target(self.not_activated_validators_count)?;
+        Ok(data)
+    }
+}
+
+pub struct ValidatorBalanceVerificationAccumulatorTargets {
     // Inputs
     pub balances_leaves: Vec<Sha256>,
     pub balances_root: Sha256,
@@ -38,13 +78,15 @@ pub struct ValidatorBalanceVerificationTargetsAccumulator {
     pub balances_proofs: Vec<MerkleBranch<22>>,
     pub validators: Vec<ValidatorPoseidonTargets>,
     pub validators_gindices: Vec<BigUintTarget>,
+    pub current_epoch: BigUintTarget,
     // delete this
     // pub validators_commitment_root: HashOutTarget,
     // pub validator_commitment_proofs: Vec<Vec<HashOutTarget>>,
     // pub current_epoch: BigUintTarget,
 
     // Outputs
-    pub validators_range_commitment: HashOutTarget,
+    pub validators_commitment_in_range: HashOutTarget,
+    pub validator_status_counts: ValidatorStatusCountsTarget,
     // pub accumulator_commitment_range_root: HashOutTarget, //
     // pub number_of_non_activated_validators: Target,
     // pub number_of_active_validators: Target,
@@ -55,11 +97,11 @@ pub struct ValidatorBalanceVerificationTargetsAccumulator {
     // pub range_deposit_count: Target,
 }
 
-impl ReadTargets for ValidatorBalanceVerificationTargetsAccumulator {
-    fn read_targets(data: &mut Buffer) -> IoResult<ValidatorBalanceVerificationTargetsAccumulator> {
+impl ReadTargets for ValidatorBalanceVerificationAccumulatorTargets {
+    fn read_targets(data: &mut Buffer) -> IoResult<Self> {
         let validators_len = data.read_usize()?;
 
-        Ok(ValidatorBalanceVerificationTargetsAccumulator {
+        Ok(Self {
             /*
                         range_total_value: BigUintTarget::read_targets(data)?,
                         range_start: data.read_target()?,
@@ -75,8 +117,8 @@ impl ReadTargets for ValidatorBalanceVerificationTargetsAccumulator {
                         .expect("this fails")
                 })
                 .collect(),
-            balances_root: data.read_target_bool_vec()?.try_into().unwrap(),
-            non_zero_validator_leaves_mask: data.read_target_bool_vec()?,
+            balances_root: data.read_target_bool_vec().unwrap().try_into().unwrap(),
+            non_zero_validator_leaves_mask: data.read_target_bool_vec().unwrap(),
             balances_proofs: (0..validators_len)
                 .map(|_| MerkleBranch::<DEPTH>::read_targets(data).unwrap())
                 .collect_vec(),
@@ -96,7 +138,9 @@ impl ReadTargets for ValidatorBalanceVerificationTargetsAccumulator {
             validators_gindices: (0..validators_len)
                 .map(|_| BigUintTarget::read_targets(data).unwrap())
                 .collect_vec(),
-            validators_range_commitment: data.read_target_hash().unwrap(),
+            current_epoch: BigUintTarget::read_targets(data).unwrap(),
+            validators_commitment_in_range: data.read_target_hash().unwrap(),
+            validator_status_counts: ValidatorStatusCountsTarget::read_targets(data).unwrap(),
             /*
                         validator_deposit_indexes: (0..validators_len)
                             .map(|_| BigUintTarget::read_targets(data).unwrap())
@@ -120,7 +164,7 @@ impl ReadTargets for ValidatorBalanceVerificationTargetsAccumulator {
     }
 }
 
-impl WriteTargets for ValidatorBalanceVerificationTargetsAccumulator {
+impl WriteTargets for ValidatorBalanceVerificationAccumulatorTargets {
     fn write_targets(&self) -> IoResult<Vec<u8>> {
         let mut data = Vec::<u8>::new();
 
@@ -143,7 +187,7 @@ impl WriteTargets for ValidatorBalanceVerificationTargetsAccumulator {
 
         // self.balances_proofs.write_targets();
         for balances_proof in &self.balances_proofs {
-            data.extend(&MerkleBranch::<DEPTH>::write_targets(balances_proof)?);
+            data.extend(&balances_proof.write_targets()?);
         }
 
         /*
@@ -165,7 +209,11 @@ impl WriteTargets for ValidatorBalanceVerificationTargetsAccumulator {
             data.extend(gindex.write_targets()?);
         }
 
-        data.write_target_hash(&self.validators_range_commitment)?;
+        data.extend(self.current_epoch.write_targets().unwrap());
+
+        data.write_target_hash(&self.validators_commitment_in_range)?;
+
+        data.extend(self.validator_status_counts.write_targets().unwrap());
 
         /*
 
@@ -206,6 +254,7 @@ struct CircuitInputTargets {
     pub balances_proofs: Vec<MerkleBranch<DEPTH>>,
     pub validators: Vec<ValidatorPoseidonTargets>,
     pub validators_gindices: Vec<BigUintTarget>,
+    pub current_epoch: BigUintTarget,
 }
 
 fn read_input<F: RichField + Extendable<D>, const D: usize>(
@@ -231,8 +280,10 @@ fn read_input<F: RichField + Extendable<D>, const D: usize>(
         .collect_vec();
 
     let validators_gindices: Vec<BigUintTarget> = (0..validators_count)
-        .map(|_| builder.add_virtual_biguint_target(2))
+        .map(|_| builder.add_virtual_biguint_target(2)) // make this a target vector
         .collect_vec();
+
+    let current_epoch = builder.add_virtual_biguint_target(2);
 
     CircuitInputTargets {
         balances_leaves,
@@ -241,6 +292,7 @@ fn read_input<F: RichField + Extendable<D>, const D: usize>(
         balances_proofs,
         validators,
         validators_gindices,
+        current_epoch,
     }
 }
 
@@ -318,7 +370,7 @@ fn calc_validators_commitment<F: RichField + Extendable<D>, const D: usize>(
     validators: &[ValidatorPoseidonTargets],
     non_zero_validator_leaves_mask: &[BoolTarget],
 ) -> HashOutTarget {
-    let validator_hashes = validators
+    let validator_hashes_targets = validators
         .iter()
         .zip(non_zero_validator_leaves_mask)
         .map(|(validator, is_non_zero_leaf)| {
@@ -330,32 +382,118 @@ fn calc_validators_commitment<F: RichField + Extendable<D>, const D: usize>(
                     .collect_vec(),
             )
         })
-        .collect_vec();
-
-    let validator_targets = validator_hashes
-        .iter()
         .flat_map(|hash| hash.elements)
         .collect_vec();
 
-    hash_poseidon(builder, validator_targets)
+    hash_poseidon(builder, validator_hashes_targets)
 }
 
-pub fn validator_balance_accumulator_verification<F: RichField + Extendable<D>, const D: usize>(
+struct ValidatorStatusTarget {
+    is_active: BoolTarget,
+    is_exitted: BoolTarget,
+}
+
+fn get_validator_status<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    current_epoch: &BigUintTarget,
+    activation_epoch: &BigUintTarget,
+    exit_epoch: &BigUintTarget,
+) -> ValidatorStatusTarget {
+    let current_gte_activation_epoch_pred = builder.gte_biguint(current_epoch, activation_epoch);
+    let current_lt_exit_epoch_pred = builder.lt_biguint(current_epoch, exit_epoch);
+    let is_active = builder.and(
+        current_gte_activation_epoch_pred,
+        current_lt_exit_epoch_pred,
+    );
+
+    let is_exitted = builder.gte_biguint(current_epoch, activation_epoch);
+
+    ValidatorStatusTarget {
+        is_active,
+        is_exitted,
+    }
+}
+
+fn increment_if_true<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    target: &mut Target,
+    by: Target,
+    predicate: BoolTarget,
+) {
+    let incr = builder.mul(by, predicate.target);
+    *target = builder.add(*target, incr);
+}
+
+fn accumulate_validator_statuses<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    current_epoch: &BigUintTarget,
+    validators: &[ValidatorPoseidonTargets],
+    non_zero_validator_leaves_mask: &[BoolTarget],
+) -> ValidatorStatusCountsTarget {
+    let mut counts = ValidatorStatusCountsTarget::new(builder);
+
+    for (validator, is_non_zero_leaf) in validators.iter().zip(non_zero_validator_leaves_mask) {
+        let validator_status = get_validator_status(
+            builder,
+            current_epoch,
+            &validator.activation_epoch,
+            &validator.exit_epoch,
+        );
+
+        let validator_is_active_or_exitted_pred =
+            builder.or(validator_status.is_active, validator_status.is_exitted);
+
+        let validator_is_not_active_or_exitted_pred =
+            builder.not(validator_is_active_or_exitted_pred);
+
+        counts.active_validators_count = builder.add(
+            counts.active_validators_count,
+            validator_status.is_active.target,
+        );
+
+        increment_if_true(
+            builder,
+            &mut counts.active_validators_count,
+            validator_status.is_active.target,
+            *is_non_zero_leaf,
+        );
+
+        increment_if_true(
+            builder,
+            &mut counts.exitted_validators_count,
+            validator_status.is_exitted.target,
+            *is_non_zero_leaf,
+        );
+
+        increment_if_true(
+            builder,
+            &mut counts.not_activated_validators_count,
+            validator_is_not_active_or_exitted_pred.target,
+            *is_non_zero_leaf,
+        );
+    }
+
+    counts
+}
+
+pub fn validator_balance_verification_accumulator<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     validators_count: usize,
-) -> ValidatorBalanceVerificationTargetsAccumulator {
+) -> ValidatorBalanceVerificationAccumulatorTargets {
     if !validators_count.is_power_of_two() {
         panic!("validators_count must be a power of two");
     }
 
     let input = read_input(builder, validators_count);
 
-    let validators_range_commitment = calc_validators_commitment(
+    // calculate hash tree root of validators input
+    let validators_commitment_in_range = calc_validators_commitment(
         builder,
         &input.validators,
         &input.non_zero_validator_leaves_mask,
     );
 
+    // merkle proofs for validators' balances
     for (leaf, proof, validator_gindex) in izip!(
         &input.balances_leaves,
         &input.balances_proofs,
@@ -366,14 +504,24 @@ pub fn validator_balance_accumulator_verification<F: RichField + Extendable<D>, 
         assert_merkle_proof_is_valid(builder, leaf, &input.balances_root, proof, &balance_gindex);
     }
 
-    return ValidatorBalanceVerificationTargetsAccumulator {
+    // count validators' statuses
+    let validator_status_counts = accumulate_validator_statuses(
+        builder,
+        &input.current_epoch,
+        &input.validators,
+        &input.non_zero_validator_leaves_mask,
+    );
+
+    return ValidatorBalanceVerificationAccumulatorTargets {
         balances_leaves: input.balances_leaves,
         balances_root: input.balances_root,
         non_zero_validator_leaves_mask: input.non_zero_validator_leaves_mask,
         balances_proofs: input.balances_proofs,
         validators: input.validators,
         validators_gindices: input.validators_gindices,
-        validators_range_commitment,
+        current_epoch: input.current_epoch,
+        validators_commitment_in_range,
+        validator_status_counts,
     };
 }
 

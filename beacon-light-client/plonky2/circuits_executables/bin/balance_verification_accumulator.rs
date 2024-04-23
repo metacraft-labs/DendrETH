@@ -7,7 +7,7 @@ use anyhow::Result;
 use circuits::{
     build_balance_accumulator_inner_level::BalanceInnerCircuitTargets,
     targets_serialization::ReadTargets,
-    validator_balance_circuit_accumulator::ValidatorBalanceVerificationTargetsAccumulator,
+    validator_balance_circuit_accumulator::ValidatorBalanceVerificationAccumulatorTargets,
 };
 use circuits_executables::{
     crud::common::{
@@ -24,7 +24,6 @@ use circuits_executables::{
 };
 use colored::Colorize;
 use futures_lite::future;
-use itertools::Itertools;
 use jemallocator::Jemalloc;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
@@ -42,7 +41,7 @@ const CIRCUIT_DIR: &str = "circuits";
 const CIRCUIT_NAME: &str = "balance_accumulator";
 
 enum Targets {
-    FirstLevel(Option<ValidatorBalanceVerificationTargetsAccumulator>),
+    FirstLevel(Option<ValidatorBalanceVerificationAccumulatorTargets>),
     InnerLevel(Option<BalanceInnerCircuitTargets>),
 }
 
@@ -206,7 +205,7 @@ async fn process_first_level_task(
     queue_item: Item,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     protocol: String,
-    targets: &ValidatorBalanceVerificationTargetsAccumulator,
+    targets: &ValidatorBalanceVerificationAccumulatorTargets,
 ) -> Result<()> {
     let balance_input_index = u64::from_be_bytes(queue_item.data[0..8].try_into().unwrap());
 
@@ -275,7 +274,7 @@ fn get_first_level_targets() -> Result<Targets, anyhow::Error> {
     let mut target_buffer = Buffer::new(&target_bytes);
 
     Ok(Targets::FirstLevel(Some(
-        ValidatorBalanceVerificationTargetsAccumulator::read_targets(&mut target_buffer).unwrap(),
+        ValidatorBalanceVerificationAccumulatorTargets::read_targets(&mut target_buffer).unwrap(),
     )))
 }
 
