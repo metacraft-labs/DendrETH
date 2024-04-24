@@ -2,43 +2,43 @@
 source "${BASH_SOURCE%/*}/../../../../scripts/utils/paths.sh"
 source "${BASH_SOURCE%/*}/../common.sh"
 
-CIRCOM_DIR="${ROOT}/beacon-light-client/circom"
-SNARKJS_DIR="${ROOT}"/vendor/snarkjs
-SNARKJS="${SNARKJS_DIR}"/cli.js
-PHASE1="${BUILD_DIR}"/pot28_final.ptau
-CIRCUIT_NAME=validator_balances
+CIRCUIT_NAME="validator_balances"
 BUILD_DIR="${CIRCOM_DIR}/build/${CIRCUIT_NAME}"
 CIRCUIT_DIR="${CIRCOM_DIR}/scripts/${CIRCUIT_NAME}"
+INPUT_JSON="${CIRCOM_DIR}/scripts/${CIRCUIT_NAME}/${CIRCUIT_NAME}-input.json"
+PHASE1="${BUILD_DIR}/pot28_final.ptau"
 
 git submodule update --init --recursive
 
-look_for_ptau_file
+# ****CHECK FOR PTAU FILE****
+(look_for_ptau_file "${PHASE1}")
 
-create_build_folder
+# ****CHECK FOR BUILD FOLDER****
+(create_build_folder "${BUILD_DIR}")
 
-compile_the_circuit
+# ****COMPILING CIRCUIT****
+(compile_the_circuit "${CIRCUIT_DIR}" "${CIRCUIT_NAME}" "${BUILD_DIR}")
 
-compile_cpp_witness
+# ****COMPILING C++ WITNESS GENERATION CODE****
+(compile_cpp_witness "${BUILD_DIR}" "${CIRCUIT_NAME}")
 
-echo "****VERIFYING WITNESS****"
-start=$(date +%s)
-./"$CIRCUIT_NAME" ../../../scripts/"$CIRCUIT_NAME"/"$CIRCUIT_NAME"-input.json ../witness.wtns
-end=$(date +%s)
-echo "DONE ($((end - start))s)"
+# ****CREATE WITNESS FROM INPUT DATA****
+(verify_witness "${BUILD_DIR}" "${CIRCUIT_NAME}" "${INPUT_JSON}" "${SNARKJS}")
 
-cd ..
-yarn snarkjs wej witness.wtns witness.json
+# ****MAKE SURE WE HAVE CORRECT SNARKJS****
+(install_snarkjs_packages "${SNARKJS_DIR}")
 
-install_snarkjs_packages
+# ****GENERATE ZKEY****
+(generate_zkey "${BUILD_DIR}" "${SNARKJS}" "${PHASE1}" "${CIRCUIT_NAME}")
 
-generate_zkey
+# ****CREATE FINAL ZKEY****
+(verify_final_key "${BUILD_DIR}" "${SNARKJS}" "${CIRCUIT_NAME}" "${PHASE1}")
 
-contribute_to_phase_2_ceremony
+# ****EXPORT ZKEY TO JSON****
+(export_vkey "${BUILD_DIR}" "${SNARKJS}" "${CIRCUIT_NAME}")
 
-verify_final_key
+# ****CREATE PROOF FOR THE WITNESS WE CREATED ABOVE****
+(generate_proof_for_sample_input "${BUILD_DIR}" "${SNARKJS}" "${CIRCUIT_NAME}")
 
-export_vkey
-
-generate_proof_for_sample_input
-
-verify_proof_for_sample_input
+# ****CHECK IF PROOF IS CORRECT****
+(verify_proof_for_sample_input "${BUILD_DIR}" "${SNARKJS}")

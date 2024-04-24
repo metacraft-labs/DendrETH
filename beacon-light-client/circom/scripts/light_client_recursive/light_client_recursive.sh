@@ -2,26 +2,30 @@
 source "${BASH_SOURCE%/*}/../../../../scripts/utils/paths.sh"
 source "${BASH_SOURCE%/*}/../common.sh"
 
-CIRCOM_DIR="${ROOT}/beacon-light-client/circom"
-SNARKJS_DIR="${ROOT}"/vendor/snarkjs
-SNARKJS="${SNARKJS_DIR}"/cli.js
-PHASE1="${BUILD_DIR}"/pot28_final.ptau
-CIRCUIT_NAME=light_client_recursive
+CIRCUIT_NAME="light_client_recursive"
 BUILD_DIR="${CIRCOM_DIR}/build/${CIRCUIT_NAME}"
 CIRCUIT_DIR="${CIRCOM_DIR}/scripts/${CIRCUIT_NAME}"
+PHASE1="${BUILD_DIR}/pot28_final.ptau"
 
 git submodule update --init --recursive
 
-look_for_ptau_file
+# ****CHECK FOR PTAU FILE****
+(look_for_ptau_file "${PHASE1}")
 
-create_build_folder
+# ****CHECK FOR BUILD FOLDER****
+(create_build_folder "${BUILD_DIR}")
 
-compile_the_circuit
+# ****COMPILING CIRCUIT****
+(compile_the_circuit "${CIRCUIT_DIR}" "${CIRCUIT_NAME}" "${BUILD_DIR}")
 
-compile_cpp_witness
+# ****COMPILING C++ WITNESS GENERATION CODE****
+(compile_cpp_witness "${BUILD_DIR}" "${CIRCUIT_NAME}")
 
-install_snarkjs_packages
+# ****MAKE SURE WE HAVE CORRECT SNARKJS****
+(install_snarkjs_packages "${SNARKJS_DIR}")
 
-generate_zkey
+# ****CREATE FINAL ZKEY****
+(verify_final_key "${BUILD_DIR}" "${SNARKJS}" "${CIRCUIT_NAME}" "${PHASE1}")
 
-export_vkey
+# ****EXPORT ZKEY TO JSON****
+(export_vkey "${BUILD_DIR}" "${SNARKJS}" "${CIRCUIT_NAME}")
