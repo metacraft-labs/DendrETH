@@ -1,6 +1,4 @@
-import yargs from 'yargs';
 import { Redis as RedisLocal } from '../../../relay/implementations/redis';
-import config from '../common_config.json';
 const {
   KeyPrefix,
   WorkQueue,
@@ -10,19 +8,13 @@ import CONSTANTS from '../constants/validator_commitment_constants.json';
 import { BeaconApi } from '../../../relay/implementations/beacon-api';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { computeEpochAt } from '../../../libs/typescript/ts-utils/ssz-utils';
-import { readFileSync } from 'fs';
 import {
-  convertValidatorToProof,
   getCommitmentMapperProof,
-  getNthParent,
-  getZeroValidatorInput,
   gindexFromIndex,
 } from '../validators_commitment_mapper_tree/utils';
-import { splitIntoBatches } from '../../../libs/typescript/ts-utils/common-utils';
 import {
   BalancesAccumulatorInput,
-  Validator,
-  ValidatorPoseidonInput,
+  DepositData,
 } from '../../../relay/types/types';
 import Redis from 'ioredis';
 import { bytesToHex } from '../../../libs/typescript/ts-utils/bls';
@@ -31,11 +23,12 @@ import {
   getZeroValidatorPoseidonInput,
 } from './utils';
 import { panic } from '@dendreth/utils/ts-utils/common-utils';
-import chalk from 'chalk';
 import { CommandLineOptionsBuilder } from '../cmdline';
 
+import deposits from './deposits.json';
+deposits satisfies DepositData[];
+
 const CIRCUIT_SIZE = 2;
-let TAKE: number
 
 (async () => {
   const { ssz } = await import('@lodestar/types');
@@ -78,18 +71,19 @@ let TAKE: number
   //     : Number(await beaconApi.getHeadSlot());
 
   const { beaconState } = await beaconApi.getBeaconState(slot) || panic("Could not get beacon state");
+  // const beaconBlock = await beaconApi.getBeaconBlock(slot) || panic("Could not get beacon block");
+  // const deposits = beaconBlock.body.deposits.map(deposit => deposit.data);
+  // const depositsInput = deposits.map(deposit => ({
+  //   pubkey: bytesToHex(deposit.pubkey),
+  //   withdrawalCredentials: bytesToHex(deposit.withdrawalCredentials),
+  //   amount: deposit.amount,
+  //   signature: bytesToHex(deposit.signature),
+  // }));
 
-  let validatorsAccumulator: any[] = JSON.parse(
-    readFileSync('balance_verification/validators.json', 'utf-8'),
-  );
+  beaconState.balances = beaconState.balances.slice(0, deposits.length);
+  beaconState.validators = beaconState.validators.slice(0, deposits.length);
 
-  beaconState.balances = beaconState.balances.slice(0, validatorsAccumulator.length);
-  beaconState.validators = beaconState.validators.slice(0, validatorsAccumulator.length);
-
-  validatorsAccumulator.map((x, i) => {
-    x.validator_index = i;
-    return x;
-  });
+  const validatorIndices = [...deposits].map((_, index) => index);
 
   // Should be the balances of the validators
   const balancesView = ssz.deneb.BeaconState.fields.balances.toViewDU(
@@ -98,9 +92,9 @@ let TAKE: number
 
   const balancesTree = new Tree(balancesView.node);
 
-  let balancesProofs = validatorsAccumulator.map(v => {
+  let balancesProofs = validatorIndices.map((index) => {
     return balancesTree
-      .getSingleProof(gindexFromIndex(BigInt(v.validator_index) / 4n, 39n))
+      .getSingleProof(gindexFromIndex(BigInt(index) / 4n, 39n))
       .map(bytesToHex)
       .slice(0, 22);
   });
@@ -113,11 +107,11 @@ let TAKE: number
 
   // load proofs for the validators from redis
   let validatorCommitmentProofs = await Promise.all(
-    validatorsAccumulator.map(async v => {
+    validatorIndices.map(async index => {
       return (
         await getCommitmentMapperProof(
           BigInt(computeEpochAt(beaconState.slot)),
-          gindexFromIndex(BigInt(v.validator_index), 40n),
+          gindexFromIndex(BigInt(index), 40n),
           'poseidon',
           redis,
         )
@@ -130,7 +124,7 @@ let TAKE: number
     let chunkIdx = 0;
     chunkIdx <
     Math.floor(
-      (validatorsAccumulator.length + CIRCUIT_SIZE - 1) / CIRCUIT_SIZE,
+      (deposits.length + CIRCUIT_SIZE - 1) / CIRCUIT_SIZE,
     );
     chunkIdx++
   ) {
@@ -146,22 +140,25 @@ let TAKE: number
       validatorCommitmentRoot: validatorCommitmentRoot!,
       currentEpoch: computeEpochAt(beaconState.slot),
       currentEth1DepositIndex: beaconState.eth1DepositIndex,
+      depositsData: [],
+      validatorsPoseidonRoot: [2, 2, 2, 2], // TODO: supply the real validators root
     };
     for (let j = 0; j < CIRCUIT_SIZE; j++) {
       const idx = chunkIdx * CIRCUIT_SIZE + j;
-      if (idx < validatorsAccumulator.length) {
+
+      if (idx < deposits.length) {
         balancesInput.balancesLeaves.push(
           bytesToHex(
-            balancesTree.getNode(gindexFromIndex(BigInt(validatorsAccumulator[idx].validator_index) / 4n, 39n)).root,
+            balancesTree.getNode(gindexFromIndex(BigInt(validatorIndices[idx]) / 4n, 39n)).root,
           ),
         );
         balancesInput.balancesProofs.push(balancesProofs[idx]);
-        balancesInput.validatorDepositIndexes.push(
-          validatorsAccumulator[idx].validator_index,
+        balancesInput.validatorDepositIndexes.push( // TODO: delete this, we get this from the deposit
+          validatorIndices[idx],
         );
         balancesInput.validatorIndices.push(
           // Number(gindexFromIndex(BigInt(validatorsAccumulator[idx].validator_index), 24n)),
-          validatorsAccumulator[idx].validator_index
+          idx
         );
         balancesInput.validators.push(
           convertValidatorToValidatorPoseidonInput(beaconState.validators[idx]),
@@ -170,18 +167,25 @@ let TAKE: number
           validatorCommitmentProofs[idx],
         );
         balancesInput.validatorIsNotZero.push(1);
+        balancesInput.depositsData.push(deposits[idx]);
       } else {
         balancesInput.balancesLeaves.push(''.padStart(64, '0'));
         balancesInput.balancesProofs.push(
-          new Array(22).map(x => ''.padStart(64, '0')),
+          new Array(22).map(() => ''.padStart(64, '0')),
         );
         balancesInput.validators.push(getZeroValidatorPoseidonInput());
         balancesInput.validatorDepositIndexes.push(0);
         balancesInput.validatorIndices.push(0);
         balancesInput.validatorCommitmentProofs.push(
-          new Array(22).map(x => new Array(4).fill(0)),
+          new Array(22).map(() => new Array(4).fill(0)),
         );
         balancesInput.validatorIsNotZero.push(0);
+        balancesInput.depositsData.push({
+          pubkey: ''.padStart(48, '0'),
+          withdrawalCredentials: ''.padStart(32, '0'),
+          amount: 0,
+          signature: ''.padStart(96, '0'),
+        });
       }
     }
 
@@ -202,7 +206,7 @@ let TAKE: number
     );
 
     const range = [
-      ...new Array(Math.ceil(validatorsAccumulator.length / CIRCUIT_SIZE / 2 ** level)).keys(),
+      ...new Array(Math.ceil(deposits.length / CIRCUIT_SIZE / 2 ** level)).keys(),
     ];
     for (const key of range) {
       const buffer = new ArrayBuffer(8);

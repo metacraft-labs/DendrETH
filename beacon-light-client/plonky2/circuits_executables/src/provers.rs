@@ -1,16 +1,22 @@
 use circuits::{
-    biguint::WitnessBigUint, build_balance_inner_level_circuit::BalanceInnerCircuitTargets,
+    biguint::WitnessBigUint,
+    build_balance_inner_level_circuit::BalanceInnerCircuitTargets,
     build_commitment_mapper_inner_level_circuit::CommitmentMapperInnerCircuitTargets,
-    build_final_circuit::FinalCircuitTargets, utils::SetBytesArray,
+    build_final_circuit::FinalCircuitTargets,
+    utils::SetBytesArray,
     validator_balance_circuit::ValidatorBalanceVerificationTargets,
-    validator_balance_circuit_accumulator::ValidatorBalanceVerificationAccumulatorTargets,
+    validator_balance_circuit_accumulator::{
+        DepositDataTarget, ValidatorBalanceVerificationAccumulatorTargets,
+    },
     validator_hash_tree_root::ValidatorShaTargets,
     validator_hash_tree_root_poseidon::ValidatorPoseidonTargets,
 };
 
+use itertools::Itertools;
 use num::BigUint;
 use plonky2::{
-    field::goldilocks_field::GoldilocksField,
+    field::{goldilocks_field::GoldilocksField, types::Field},
+    hash::hash_types::HashOut,
     iop::{
         target::BoolTarget,
         witness::{PartialWitness, WitnessWrite},
@@ -26,7 +32,8 @@ use crate::{
     crud::common::FinalCircuitInput,
     validator::ValidatorShaInput,
     validator_balances_input::{
-        ValidatorBalanceAccumulatorInput, ValidatorBalancesInput, ValidatorPoseidonInput,
+        DepositDataInput, ValidatorBalanceAccumulatorInput, ValidatorBalancesInput,
+        ValidatorPoseidonInput,
     },
 };
 
@@ -185,6 +192,18 @@ impl<const N: usize> SetPWValues<ValidatorBalancesInput>
     }
 }
 
+impl SetPWValues<DepositDataInput> for DepositDataTarget {
+    fn set_pw_values(&self, pw: &mut PartialWitness<GoldilocksField>, source: &DepositDataInput) {
+        pw.set_bytes_array(&self.pubkey, &hex::decode(&source.pubkey).unwrap());
+        pw.set_bytes_array(
+            &self.withdrawal_credentials,
+            &hex::decode(&source.withdrawal_credentials).unwrap(),
+        );
+        pw.set_biguint_target(&self.amount, &BigUint::from(source.amount));
+        pw.set_bytes_array(&self.signature, &hex::decode(&source.signature).unwrap());
+    }
+}
+
 impl SetPWValues<ValidatorBalanceAccumulatorInput>
     for ValidatorBalanceVerificationAccumulatorTargets
 {
@@ -221,52 +240,9 @@ impl SetPWValues<ValidatorBalanceAccumulatorInput>
             }
         }
 
-        /*
-
-                for i in 0..source.balances_proofs.len() {
-                    for j in 0..source.balances_proofs[i].len() {
-                        pw.set_bytes_array(
-                            &self.balances_proofs[i][j],
-                            &hex::decode(&source.balances_proofs[i][j]).unwrap(),
-                        );
-                    }
-                }
-
-                for i in 0..source.validator_deposit_indexes.len() {
-                    pw.set_biguint_target(
-                        &self.validator_deposit_indexes[i],
-                        &BigUint::from(source.validator_deposit_indexes[i]),
-                    );
-                }
-
-                for i in 0..source.validator_indexes.len() {
-                    pw.set_target(
-                        self.validator_indexes[i],
-                        GoldilocksField::from_canonical_u64(source.validator_indexes[i]),
-                    );
-                }
-
-        */
         for i in 0..source.validators.len() {
             self.validators[i].set_pw_values(pw, &source.validators[i]);
         }
-
-        // println!(
-        //     "source.validators_gindices: {:?}",
-        //     source
-        //         .validators_gindices
-        //         .iter()
-        //         .map(|&gindex| BigUint::from(gindex).iter_u32_digits().len())
-        //         .collect::<Vec<_>>()
-        // );
-        //
-        // println!(
-        //     "self.validators_gindices: {:?}",
-        //     self.validators_gindices
-        //         .iter()
-        //         .map(|gindex| gindex.limbs.len())
-        //         .collect::<Vec<_>>()
-        // );
 
         for i in 0..source.validator_indices.len() {
             pw.set_biguint_target(
@@ -277,40 +253,21 @@ impl SetPWValues<ValidatorBalanceAccumulatorInput>
 
         pw.set_biguint_target(&self.current_epoch, &BigUint::from(source.current_epoch));
 
-        // pw.set_biguint_target(
-        //     &self.validators_gindices,
-        //     &BigUint::from(source.validators_gindices),
-        // );
+        for i in 0..source.deposits_data.len() {
+            self.deposits_data[i].set_pw_values(pw, &source.deposits_data[i]);
+        }
 
-        /*
-
-                pw.set_hash_target(
-                    self.validator_commitment_root,
-                    string_vec_to_hash_out(&source.validator_commitment_root),
-                );
-
-                for i in 0..source.validator_commitment_proofs.len() {
-                    for j in 0..source.validator_commitment_proofs[i].len() {
-                        pw.set_hash_target(
-                            self.validator_commitment_proofs[i][j],
-                            string_vec_to_hash_out(&source.validator_commitment_proofs[i][j]),
-                        );
-                    }
-                }
-
-                for i in 0..source.validator_is_not_zero.len() {
-                    pw.set_bool_target(
-                        self.validator_is_not_zero[i],
-                        source.validator_is_not_zero[i],
-                    );
-                }
-
-                pw.set_biguint_target(&self.current_epoch, &BigUint::from(source.current_epoch));
-                pw.set_biguint_target(
-                    &self.current_eth1_deposit_index,
-                    &BigUint::from(source.current_eth1_deposit_index),
-                );
-        */
+        let validators_poseidon_root_targets = HashOut::from_vec(
+            source
+                .validators_poseidon_root
+                .iter()
+                .map(|&number| GoldilocksField::from_canonical_u64(number))
+                .collect_vec(),
+        );
+        pw.set_hash_target(
+            self.validators_poseidon_root,
+            validators_poseidon_root_targets,
+        );
     }
 }
 

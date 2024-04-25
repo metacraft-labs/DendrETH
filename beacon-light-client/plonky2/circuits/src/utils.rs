@@ -67,10 +67,14 @@ pub fn create_sha256_merkle_proof<
     [(); DEPTH].map(|_| create_bool_target_array(builder))
 }
 
-pub fn create_bool_target_array<F: RichField + Extendable<D>, const D: usize>(
+pub fn create_bool_target_array<
+    F: RichField + Extendable<D>,
+    const D: usize,
+    const TARGETS_COUNT: usize,
+>(
     builder: &mut CircuitBuilder<F, D>,
-) -> [BoolTarget; ETH_SHA256_BIT_SIZE] {
-    (0..ETH_SHA256_BIT_SIZE)
+) -> [BoolTarget; TARGETS_COUNT] {
+    (0..TARGETS_COUNT)
         .map(|_| builder.add_virtual_bool_target_safe())
         .collect::<Vec<_>>()
         .try_into()

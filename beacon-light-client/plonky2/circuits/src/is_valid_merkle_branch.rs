@@ -37,7 +37,9 @@ pub type MerkleBranch<const DEPTH: usize> = [Sha256; DEPTH];
 
 impl<const DEPTH: usize> ReadTargets for MerkleBranch<DEPTH> {
     fn read_targets(data: &mut Buffer) -> IoResult<MerkleBranch<DEPTH>> {
-        let _depth = data.read_usize()?;
+        let depth = data.read_usize()?;
+        assert_eq!(depth, DEPTH);
+
         let branch = [(); DEPTH].map(|_| data.read_target_bool_vec().unwrap().try_into().unwrap());
         Ok(branch)
     }

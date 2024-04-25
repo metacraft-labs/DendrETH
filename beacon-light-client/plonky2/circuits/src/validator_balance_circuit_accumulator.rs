@@ -62,6 +62,61 @@ impl WriteTargets for ValidatorStatusCountsTarget {
     }
 }
 
+pub type BLSPubkey = [BoolTarget; 384];
+pub type BLSSignature = [BoolTarget; 768];
+pub type Bytes32 = [BoolTarget; 256];
+pub type Gwei = BigUintTarget;
+
+pub struct DepositDataTarget {
+    pub pubkey: BLSPubkey,
+    pub withdrawal_credentials: Bytes32,
+    pub amount: Gwei,
+    pub signature: BLSSignature,
+}
+
+impl DepositDataTarget {
+    pub fn new<F: RichField + Extendable<D>, const D: usize>(
+        builder: &mut CircuitBuilder<F, D>,
+    ) -> Self {
+        Self {
+            pubkey: create_bool_target_array::<F, D, 384>(builder),
+            withdrawal_credentials: create_bool_target_array::<F, D, 256>(builder),
+            amount: builder.add_virtual_biguint_target(2),
+            signature: create_bool_target_array::<F, D, 768>(builder),
+        }
+    }
+}
+
+impl ReadTargets for DepositDataTarget {
+    fn read_targets(data: &mut Buffer) -> IoResult<Self> {
+        // TODO: don't serialize the length
+        let pubkey: BLSPubkey = data.read_target_bool_vec()?.try_into().unwrap();
+        let withdrawal_credentials: Bytes32 = data.read_target_bool_vec()?.try_into().unwrap();
+        let amount: Gwei = Gwei::read_targets(data)?;
+        let signature: BLSSignature = data.read_target_bool_vec()?.try_into().unwrap();
+
+        Ok(Self {
+            pubkey,
+            withdrawal_credentials,
+            amount,
+            signature,
+        })
+    }
+}
+
+impl WriteTargets for DepositDataTarget {
+    fn write_targets(&self) -> IoResult<Vec<u8>> {
+        let mut data = Vec::<u8>::new();
+
+        data.write_target_bool_vec(&self.pubkey)?;
+        data.write_target_bool_vec(&self.withdrawal_credentials)?;
+        data.extend(Gwei::write_targets(&self.amount)?);
+        data.write_target_bool_vec(&self.signature)?;
+
+        Ok(data)
+    }
+}
+
 // TODO: Reorder fields
 pub struct ValidatorBalanceVerificationAccumulatorTargets {
     // Inputs
@@ -77,6 +132,9 @@ pub struct ValidatorBalanceVerificationAccumulatorTargets {
     // pub range_start: Target,
     // pub range_end: Target,
     // pub range_deposit_count: Target,
+    pub deposits_data: Vec<DepositDataTarget>,
+    pub validators_poseidon_root: HashOutTarget,
+    // pub validator_poseidon_proofs: HashOutTarget,
 
     // Outputs
     pub validators_commitment_in_range: HashOutTarget,
@@ -90,13 +148,6 @@ impl ReadTargets for ValidatorBalanceVerificationAccumulatorTargets {
         let validators_len = data.read_usize()?;
 
         Ok(Self {
-            /*
-                        range_total_value: BigUintTarget::read_targets(data)?,
-                        range_start: data.read_target()?,
-                        range_end: data.read_target()?,
-                        range_deposit_count: data.read_target()?,
-                        balances_root: data.read_target_bool_vec()?.try_into().unwrap(),
-            */
             balances_leaves: (0..validators_len)
                 .map(|_| {
                     data.read_target_bool_vec()
@@ -110,13 +161,6 @@ impl ReadTargets for ValidatorBalanceVerificationAccumulatorTargets {
             balances_proofs: (0..validators_len)
                 .map(|_| MerkleBranch::<DEPTH>::read_targets(data).unwrap())
                 .collect_vec(),
-            /*
-                        balances_proofs: (0..validators_len)
-                            .map(|_| [(); 22].map(|_| data.read_target_bool_vec().unwrap().try_into().unwrap()))
-                            .collect_vec(),
-                        validator_commitment_root: data.read_target_hash()?,
-                        accumulator_commitment_range_root: data.read_target_hash()?,
-            */
             validators: (0..validators_len)
                 .map(|_| {
                     ValidatorPoseidonTargets::read_targets(data)
@@ -127,28 +171,13 @@ impl ReadTargets for ValidatorBalanceVerificationAccumulatorTargets {
                 .map(|_| BigUintTarget::read_targets(data).unwrap())
                 .collect_vec(),
             current_epoch: BigUintTarget::read_targets(data).unwrap(),
+            deposits_data: (0..validators_len)
+                .map(|_| DepositDataTarget::read_targets(data).unwrap())
+                .collect_vec(),
+            validators_poseidon_root: data.read_target_hash().unwrap(),
             validators_commitment_in_range: data.read_target_hash().unwrap(),
             validator_status_counts: ValidatorStatusCountsTarget::read_targets(data).unwrap(),
             range_total_balance: BigUintTarget::read_targets(data).unwrap(),
-            /*
-                        validator_deposit_indexes: (0..validators_len)
-                            .map(|_| BigUintTarget::read_targets(data).unwrap())
-                            .collect_vec(),
-                        validator_indexes: data.read_target_vec()?,
-                        validator_commitment_proofs: (0..validators_len)
-                            .map(|_| {
-                                (0..24)
-                                    .map(|_| data.read_target_hash().unwrap())
-                                    .collect_vec()
-                            })
-                            .collect_vec(),
-
-                        current_epoch: BigUintTarget::read_targets(data)?,
-                        current_eth1_deposit_index: BigUintTarget::read_targets(data)?,
-                        number_of_non_activated_validators: data.read_target()?,
-                        number_of_active_validators: data.read_target()?,
-                        number_of_exited_validators: data.read_target()?,
-            */
         })
     }
 }
@@ -158,13 +187,6 @@ impl WriteTargets for ValidatorBalanceVerificationAccumulatorTargets {
         let mut data = Vec::<u8>::new();
 
         data.write_usize(self.validators.len())?;
-        /*
-                data.extend(BigUintTarget::write_targets(&self.range_total_value)?);
-                data.write_target(self.range_start)?;
-                data.write_target(self.range_end)?;
-                data.write_target(self.range_deposit_count)?;
-                data.write_target_bool_vec(&self.balances_root)?;
-        */
 
         for balance in &self.balances_leaves {
             data.write_target_bool_vec(balance)?;
@@ -174,21 +196,9 @@ impl WriteTargets for ValidatorBalanceVerificationAccumulatorTargets {
 
         data.write_target_bool_vec(&self.non_zero_validator_leaves_mask)?;
 
-        // self.balances_proofs.write_targets();
         for balances_proof in &self.balances_proofs {
             data.extend(&balances_proof.write_targets()?);
         }
-
-        /*
-                for balance_proof in &self.balances_proofs {
-                    for element in balance_proof {
-                        data.write_target_bool_vec(element)?;
-                    }
-                }
-
-                data.write_target_hash(&self.validator_commitment_root)?;
-                data.write_target_hash(&self.accumulator_commitment_range_root)?;
-        */
 
         for validator in &self.validators {
             data.extend(ValidatorPoseidonTargets::write_targets(validator)?);
@@ -200,37 +210,20 @@ impl WriteTargets for ValidatorBalanceVerificationAccumulatorTargets {
 
         data.extend(self.current_epoch.write_targets().unwrap());
 
+        // TODO: encode validators_count in the circuit's serialized targets
+        for deposit in &self.deposits_data {
+            data.extend(deposit.write_targets()?);
+        }
+
+        data.write_target_hash(&self.validators_poseidon_root)?;
+
+        // Outputs
+
         data.write_target_hash(&self.validators_commitment_in_range)?;
 
         data.extend(self.validator_status_counts.write_targets().unwrap());
 
         data.extend(self.range_total_balance.write_targets().unwrap());
-
-        /*
-
-                for validator_deposit_index in &self.validator_deposit_indexes {
-                    data.extend(BigUintTarget::write_targets(validator_deposit_index)?);
-                }
-
-                data.write_target_vec(&self.validator_indexes)?;
-
-                for validator_proof in &self.validator_commitment_proofs {
-                    for element in validator_proof {
-                        data.write_target_hash(element)?;
-                    }
-                }
-
-
-                data.extend(BigUintTarget::write_targets(&self.current_epoch)?);
-
-                data.extend(BigUintTarget::write_targets(
-                    &self.current_eth1_deposit_index,
-                )?);
-
-                data.write_target(self.number_of_non_activated_validators)?;
-                data.write_target(self.number_of_active_validators)?;
-                data.write_target(self.number_of_exited_validators)?;
-        */
 
         Ok(data)
     }
@@ -246,6 +239,8 @@ struct CircuitInputTargets {
     pub validators: Vec<ValidatorPoseidonTargets>,
     pub validator_indices: Vec<BigUintTarget>,
     pub current_epoch: BigUintTarget,
+    pub deposits_data: Vec<DepositDataTarget>,
+    pub validators_poseidon_root: HashOutTarget,
 }
 
 fn read_input<F: RichField + Extendable<D>, const D: usize>(
@@ -276,6 +271,12 @@ fn read_input<F: RichField + Extendable<D>, const D: usize>(
 
     let current_epoch = builder.add_virtual_biguint_target(2);
 
+    let deposits_data = (0..validators_count)
+        .map(|_| DepositDataTarget::new(builder))
+        .collect_vec();
+
+    let validators_poseidon_root = builder.add_virtual_hash();
+
     CircuitInputTargets {
         balances_leaves,
         balances_root,
@@ -284,6 +285,8 @@ fn read_input<F: RichField + Extendable<D>, const D: usize>(
         validators,
         validator_indices,
         current_epoch,
+        deposits_data,
+        validators_poseidon_root,
     }
 }
 
@@ -578,7 +581,7 @@ pub fn validator_balance_verification_accumulator<F: RichField + Extendable<D>, 
         &input.validator_indices,
     );
 
-    return ValidatorBalanceVerificationAccumulatorTargets {
+    ValidatorBalanceVerificationAccumulatorTargets {
         balances_leaves: input.balances_leaves,
         balances_root: input.balances_root,
         non_zero_validator_leaves_mask: input.non_zero_validator_leaves_mask,
@@ -586,10 +589,12 @@ pub fn validator_balance_verification_accumulator<F: RichField + Extendable<D>, 
         validators: input.validators,
         validator_indices: input.validator_indices,
         current_epoch: input.current_epoch,
+        deposits_data: input.deposits_data,
+        validators_poseidon_root: input.validators_poseidon_root,
         validators_commitment_in_range,
         validator_status_counts,
         range_total_balance,
-    };
+    }
 }
 
 pub struct Targets {

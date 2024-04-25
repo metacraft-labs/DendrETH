@@ -195,6 +195,13 @@ export interface ValidatorPoseidonInput {
   withdrawableEpoch: string;
 }
 
+export interface DepositData {
+  pubkey: string,
+  withdrawalCredentials: string,
+  amount: number,
+  signature: string,
+}
+
 export interface BalancesAccumulatorInput {
   balancesRoot: string;
   balancesLeaves: string[];
@@ -207,6 +214,8 @@ export interface BalancesAccumulatorInput {
   validatorCommitmentRoot: string[];
   currentEpoch: number;
   currentEth1DepositIndex: number;
+  depositsData: DepositData[],
+  validatorsPoseidonRoot: number[];
 }
 
 export interface ValidatorProof {

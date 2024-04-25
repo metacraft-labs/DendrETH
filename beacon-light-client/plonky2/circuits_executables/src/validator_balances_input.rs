@@ -61,15 +61,26 @@ pub struct ValidatorBalanceAccumulatorInput {
     pub balances_root: String,
     pub balances_leaves: Vec<String>,
     pub balances_proofs: Vec<Vec<String>>,
-    pub validator_deposit_indexes: Vec<u64>,
+    // pub validator_deposit_indexes: Vec<u64>,
     pub validator_indices: Vec<u64>,
-    pub validator_commitment_proofs: Vec<Vec<Vec<String>>>,
+    // pub validator_commitment_proofs: Vec<Vec<Vec<String>>>,
     pub validators: Vec<ValidatorPoseidonInput>,
     #[serde(with = "bool_vec_as_int_vec")]
     pub validator_is_not_zero: Vec<bool>,
-    pub validator_commitment_root: Vec<String>,
+    // pub validator_commitment_root: Vec<String>,
     pub current_epoch: u64,
-    pub current_eth1_deposit_index: u64,
+    // pub current_eth1_deposit_index: u64,
+    pub deposits_data: Vec<DepositDataInput>,
+    pub validators_poseidon_root: Vec<u64>,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct DepositDataInput {
+    pub pubkey: String,
+    pub withdrawal_credentials: String,
+    pub amount: u64,
+    pub signature: String,
 }
 
 #[cfg(test)]
