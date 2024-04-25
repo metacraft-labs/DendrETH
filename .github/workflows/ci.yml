@@ -241,6 +241,20 @@ jobs:
       - name: Run one shot syncing simulation
         run: nix develop -c make one-shot-syncing-simulation
 
+  Bash_Scripts_Building_Circom_Circuits:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Use local my-action
+        uses: ./.github/actions/setup
+        with:
+          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+      - name: Run one of the scripts building the circom circuits
+        run: nix develop -c ./scripts/build-circom-compress-circuits.sh
+
   check:
     if: always()
 
