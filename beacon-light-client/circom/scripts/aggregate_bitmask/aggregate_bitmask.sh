@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+
+set -euo pipefail
+
 source "${BASH_SOURCE%/*}/../../../../scripts/utils/paths.sh"
 source "${BASH_SOURCE%/*}/../common.sh"
 
