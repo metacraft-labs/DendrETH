@@ -18,14 +18,14 @@ git submodule update --init --recursive
 # ****CHECK FOR BUILD FOLDER****
 (create_build_folder "${BUILD_DIR}")
 
+# ****MAKE SURE WE HAVE CORRECT SNARKJS****
+(install_snarkjs_packages "${SNARKJS_DIR}")
+
 # ****COMPILING CIRCUIT****
 (compile_the_circuit "${CIRCUIT_DIR}" "${CIRCUIT_NAME}" "${BUILD_DIR}")
 
 # ****COMPILING C++ WITNESS GENERATION CODE****
 (compile_cpp_witness "${BUILD_DIR}" "${CIRCUIT_NAME}")
-
-# ****MAKE SURE WE HAVE CORRECT SNARKJS****
-(install_snarkjs_packages "${SNARKJS_DIR}")
 
 # ****CREATE FINAL ZKEY****
 (verify_final_key "${BUILD_DIR}" "${SNARKJS}" "${CIRCUIT_NAME}" "${PHASE1}")
