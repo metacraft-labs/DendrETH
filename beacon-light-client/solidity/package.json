@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "ts": "yarn node --import tsx",
     "build:tsc": "tsc -p ./tsconfig.json",
     "build:sol": "hardhat compile",
     "test": "yarn hardhat test",
@@ -44,6 +45,7 @@
     "bullmq": "^5.4.0",
     "dotenv": "^16.4.4",
     "env-paths": "^3.0.0",
+    "tsx": "^4.7.1",
     "typescript": "5.2.2"
   },
   "exports": {
