@@ -19,6 +19,9 @@ git submodule update --init --recursive
 # ****CHECK FOR BUILD FOLDER****
 (create_build_folder "${BUILD_DIR}")
 
+# ****MAKE SURE WE HAVE CORRECT SNARKJS****
+(install_snarkjs_packages "${SNARKJS_DIR}")
+
 # ****COMPILING CIRCUIT****
 (compile_the_circuit "${CIRCUIT_DIR}" "${CIRCUIT_NAME}" "${BUILD_DIR}")
 
@@ -27,9 +30,6 @@ git submodule update --init --recursive
 
 # ****CREATE WITNESS FROM INPUT DATA****
 (verify_witness "${BUILD_DIR}" "${CIRCUIT_NAME}" "${INPUT_JSON}" "${SNARKJS}")
-
-# ****MAKE SURE WE HAVE CORRECT SNARKJS****
-(install_snarkjs_packages "${SNARKJS_DIR}")
 
 # ****GENERATE ZKEY****
 (generate_zkey "${BUILD_DIR}" "${SNARKJS}" "${PHASE1}" "${CIRCUIT_NAME}")
