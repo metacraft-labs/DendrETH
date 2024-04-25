@@ -423,7 +423,7 @@ fn accumulate_validator_statuses<F: RichField + Extendable<D>, const D: usize>(
 ) -> ValidatorStatusCountsTarget {
     let mut counts = ValidatorStatusCountsTarget::new(builder);
 
-    for (validator, is_non_zero_leaf) in validators.iter().zip(non_zero_validator_leaves_mask) {
+    for (validator, &is_non_zero_leaf) in validators.iter().zip(non_zero_validator_leaves_mask) {
         let validator_status = get_validator_status(
             builder,
             current_epoch,
@@ -446,21 +446,21 @@ fn accumulate_validator_statuses<F: RichField + Extendable<D>, const D: usize>(
             builder,
             &mut counts.active_validators_count,
             validator_status.is_active.target,
-            *is_non_zero_leaf,
+            is_non_zero_leaf,
         );
 
         increment_if_true(
             builder,
             &mut counts.exitted_validators_count,
             validator_status.is_exitted.target,
-            *is_non_zero_leaf,
+            is_non_zero_leaf,
         );
 
         increment_if_true(
             builder,
             &mut counts.not_activated_validators_count,
             validator_is_not_active_or_exitted_pred.target,
-            *is_non_zero_leaf,
+            is_non_zero_leaf,
         );
     }
 
