@@ -1,7 +1,7 @@
 use anyhow::Result;
-use circuits::is_valid_merkle_branch::is_valid_merkle_branch_sha256_result;
-use circuits::sha256::make_circuits;
-use circuits::utils::ETH_SHA256_BIT_SIZE;
+use circuits::utils::hashing::is_valid_merkle_branch::is_valid_merkle_branch_sha256_result;
+use circuits::utils::hashing::sha256::make_circuits;
+use circuits::utils::utils::ETH_SHA256_BIT_SIZE;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
 use plonky2::iop::witness::{PartialWitness, WitnessWrite};
