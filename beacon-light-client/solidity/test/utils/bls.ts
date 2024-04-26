@@ -259,7 +259,7 @@ export async function expand_message_xmd(
 // count - the number of elements of F to output.
 // Outputs:
 // [u_0, ..., u_(count - 1)], a list of field elements.
-async function hash_to_field(
+export async function hash_to_field(
   msg: Uint8Array,
   count: number,
   options = {},

@@ -199,28 +199,46 @@ fn string_to_bytes_native(s: &str) -> Vec<u8> {
     bytes
 }
 
+// pub fn get_u32_vec_from_literal(x: BigUint) -> [u32; 12] {
+//     let mut x_u32_vec: Vec<u32> = x.to_u32_digits();
+//     while x_u32_vec.len() != 12 {
+//         x_u32_vec.push(0 as u32);
+//     }
+//     x_u32_vec.try_into().unwrap()
+// }
+
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
 
+    use itertools::Itertools;
     use num_bigint::BigUint;
     use plonky2::{
         field::{goldilocks_field::GoldilocksField, types::Field},
-        iop::witness::{PartialWitness, WitnessWrite},
+        iop::{
+            target::BoolTarget,
+            witness::{PartialWitness, WitnessWrite},
+        },
         plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
     };
     use plonky2x::{
         backend::circuit::DefaultParameters,
         frontend::{
             builder::DefaultBuilder,
-            uint::num::biguint::{BigUintTarget, WitnessBigUint},
-            vars::{ByteVariable, BytesVariable, Variable},
+            uint::num::{
+                biguint::{BigUintTarget, WitnessBigUint},
+                u32::gadgets::arithmetic_u32::CircuitBuilderU32,
+            },
+            vars::{ByteVariable, BytesVariable, CircuitVariable, Variable},
         },
     };
 
-    use crate::verification::signature::hash_to_field::{
-        expand_message_xmd, hash_to_field, octet_stream_to_integer, string_to_bytes_target, strxor,
-        DST, M,
+    use crate::verification::{
+        native::Fp,
+        signature::hash_to_field::{
+            expand_message_xmd, hash_to_field, octet_stream_to_integer, string_to_bytes_target,
+            strxor, DST, M,
+        },
     };
 
     use super::i2osp;
@@ -237,18 +255,18 @@ mod tests {
         let points = vec![
             [
                 BigUint::from_str(
-                    "29049427705470064014372021539200946731799999421508007424058975406727614446045474101630850618806446883308850416212"
+                    "3467206824264915314410328089509568219675264638553717676707032754344263708519856531598030919370345000939272262922340"
                 ).unwrap(),
                 BigUint::from_str(
-                    "1902536696277558307181953186589646430378426314321017542292852776971493752529393071590138748612350933458183942594017"
+                    "967261753488201268360197178061348169493533720124286268768722457533390452889003640920658401692376512788045590844589"
                 ).unwrap(),
             ],
             [
                 BigUint::from_str(
-                    "1469261503385240180838932949518429345203566614064503355039321556894749047984560599095216903263030533722651807245292"
+                    "1694294209433536606759431236849684172181087494531715444756984659355647441866512912746959707332669387366840278465798"
                 ).unwrap(),
                 BigUint::from_str(
-                    "572729459443939985969475830277770585760085104819073756927946494897811696192971610777692627017094870085003613417370"
+                    "2004324217974516925171115353648739595566178169751049984497836828645148247251982057973578533159710504000584560806028"
                 ).unwrap(),
             ]
         ];
@@ -380,32 +398,140 @@ mod tests {
         println!("res is: {:?}", res);
     }
 
-    // #[test]
-    // fn test_octet_stream_to_integer() {
-    //     const D: usize = 2;
-    //     let mut builder = DefaultBuilder::new();
-    //     let x = i2osp::<DefaultParameters, D, 3>(&mut builder, 12444);
-    //     let y: BigUintTarget = octet_stream_to_integer(&mut builder, &x.0);
+    #[test]
+    fn test_hash_to_field_x() {
+        let mut builder = DefaultBuilder::new();
+        let one = builder.constant(GoldilocksField::from_canonical_u8(1));
+        let two = builder.constant(GoldilocksField::from_canonical_u8(2));
+        let three = builder.constant(GoldilocksField::from_canonical_u8(3));
+        let one = ByteVariable::from_variable(&mut builder, one);
+        let two = ByteVariable::from_variable(&mut builder, two);
+        let three = ByteVariable::from_variable(&mut builder, three);
+        let msg = vec![one, two, three];
+        let msg = msg
+            .to_vec()
+            .iter()
+            .map(|f| f.to_variable(&mut builder))
+            .collect_vec();
+        let hash_to_field_res: Vec<[BigUintTarget; 2]> = hash_to_field(&mut builder, &msg, 2);
 
-    //     // Define your circuit.
-    //     builder.write(y);
+        let mut res: Vec<GoldilocksField> = Vec::new();
+        // Define your circuit.
+        for i in 0..hash_to_field_res.len() {
+            for j in 0..hash_to_field_res[i].len() {
+                for k in 0..hash_to_field_res[i][j].limbs.len() {
+                    builder.write(Variable(hash_to_field_res[i][j].limbs[k].target));
+                }
+            }
+        }
 
-    //     // Build your circuit.
-    //     let circuit = builder.build();
+        // Build your circuit.
+        let circuit = builder.build();
 
-    //     // Write to the circuit input.
-    //     let input = circuit.input();
-    //     // input.write::<Variable>(GoldilocksField::from_canonical_u16(258));
+        // Write to the circuit input.
+        let input = circuit.input();
 
-    //     // Generate a proof.
-    //     let (proof, mut output) = circuit.prove(&input);
-    //     // Verify proof.
-    //     circuit.verify(&proof, &input, &output);
+        // Generate a proof.
+        let (proof, mut output) = circuit.prove(&input);
+        // Verify proof.
+        circuit.verify(&proof, &input, &output);
 
-    //     // Read output.
-    //     let res = [output.read::<ByteVariable>(), output.read::<ByteVariable>()];
-    //     assert_eq!(res[0], 1);
-    //     assert_eq!(res[1], 50);
-    //     println!("res is: {:?}", res);
-    // }
+        for i in 0..hash_to_field_res.len() {
+            for j in 0..hash_to_field_res[i].len() {
+                for _ in 0..hash_to_field_res[i][j].limbs.len() {
+                    res.push(output.read::<Variable>())
+                }
+            }
+        }
+        let mut biguint_vec: Vec<BigUint> = Vec::new();
+        let mut temp_res: Vec<GoldilocksField> = Vec::new();
+        biguint_vec.push(BigUint::new(
+            res[0..12].iter().map(|f| f.0 as u32).collect_vec(),
+        ));
+        biguint_vec.push(BigUint::new(
+            res[12..24].iter().map(|f| f.0 as u32).collect_vec(),
+        ));
+        biguint_vec.push(BigUint::new(
+            res[24..36].iter().map(|f| f.0 as u32).collect_vec(),
+        ));
+        biguint_vec.push(BigUint::new(
+            res[36..48].iter().map(|f| f.0 as u32).collect_vec(),
+        ));
+
+        // Read output.
+        // let res = [output.read::<ByteVariable>(), output.read::<ByteVariable>()];
+        // assert_eq!(res[0], 1);
+        // assert_eq!(res[1], 50);
+
+        println!("res is: {:?}", res.len());
+        for i in 0..biguint_vec.len() {
+            println!("biguint_vec is: {:?}", biguint_vec[i]);
+        }
+    }
+
+    #[test]
+    fn test_hash_to_field_y() {
+        let mut builder = DefaultBuilder::new();
+        let zero = ByteVariable::constant(&mut builder, 0);
+        let msg = vec![zero, zero];
+        let msg = msg
+            .to_vec()
+            .iter()
+            .map(|f| f.to_variable(&mut builder))
+            .collect_vec();
+        let hash_to_field_res: Vec<[BigUintTarget; 2]> = hash_to_field(&mut builder, &msg, 2);
+
+        let mut res: Vec<GoldilocksField> = Vec::new();
+        // Define your circuit.
+        for i in 0..hash_to_field_res.len() {
+            for j in 0..hash_to_field_res[i].len() {
+                for k in 0..hash_to_field_res[i][j].limbs.len() {
+                    builder.write(Variable(hash_to_field_res[i][j].limbs[k].target));
+                }
+            }
+        }
+
+        // Build your circuit.
+        let circuit = builder.build();
+
+        // Write to the circuit input.
+        let input = circuit.input();
+
+        // Generate a proof.
+        let (proof, mut output) = circuit.prove(&input);
+        // Verify proof.
+        circuit.verify(&proof, &input, &output);
+
+        for i in 0..hash_to_field_res.len() {
+            for j in 0..hash_to_field_res[i].len() {
+                for _ in 0..hash_to_field_res[i][j].limbs.len() {
+                    res.push(output.read::<Variable>())
+                }
+            }
+        }
+        let mut biguint_vec: Vec<BigUint> = Vec::new();
+        let mut temp_res: Vec<GoldilocksField> = Vec::new();
+        biguint_vec.push(BigUint::new(
+            res[0..12].iter().map(|f| f.0 as u32).collect_vec(),
+        ));
+        biguint_vec.push(BigUint::new(
+            res[12..24].iter().map(|f| f.0 as u32).collect_vec(),
+        ));
+        biguint_vec.push(BigUint::new(
+            res[24..36].iter().map(|f| f.0 as u32).collect_vec(),
+        ));
+        biguint_vec.push(BigUint::new(
+            res[36..48].iter().map(|f| f.0 as u32).collect_vec(),
+        ));
+
+        // Read output.
+        // let res = [output.read::<ByteVariable>(), output.read::<ByteVariable>()];
+        // assert_eq!(res[0], 1);
+        // assert_eq!(res[1], 50);
+
+        println!("res is: {:?}", res.len());
+        for i in 0..biguint_vec.len() {
+            println!("biguint_vec is: {:?}", biguint_vec[i]);
+        }
+    }
 }
