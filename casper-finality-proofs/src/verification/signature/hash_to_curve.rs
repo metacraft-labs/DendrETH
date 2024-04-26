@@ -571,3 +571,79 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D> for Sqr
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use itertools::Itertools;
+    use num_bigint::BigUint;
+    use plonky2::field::goldilocks_field::GoldilocksField;
+    use plonky2x::frontend::{
+        builder::DefaultBuilder,
+        vars::{CircuitVariable, Variable},
+    };
+
+    use super::hash_to_curve;
+
+    #[test]
+    fn test_hash_to_curve() {
+        let mut builder = DefaultBuilder::new();
+        let msg = vec![
+            Variable::constant(&mut builder, GoldilocksField(0)),
+            Variable::constant(&mut builder, GoldilocksField(0)),
+        ];
+        let hash_to_curve_res = hash_to_curve(&mut builder, &msg);
+
+        // Define your circuit.
+        let mut res_output: Vec<GoldilocksField> = Vec::new();
+        for i in 0..hash_to_curve_res.len() {
+            for j in 0..hash_to_curve_res[i].len() {
+                for k in 0..hash_to_curve_res[i][j].limbs.len() {
+                    builder.write(Variable(hash_to_curve_res[i][j].limbs[k].target));
+                }
+            }
+        }
+
+        // Build your circuit.
+        let circuit = builder.build();
+
+        // Write to the circuit input.
+        let input = circuit.input();
+
+        // Generate a proof.
+        let (proof, mut output) = circuit.prove(&input);
+        // Verify proof.
+        circuit.verify(&proof, &input, &output);
+
+        // Read output.
+        for i in 0..hash_to_curve_res.len() {
+            for j in 0..hash_to_curve_res[i].len() {
+                for _ in 0..hash_to_curve_res[i][j].limbs.len() {
+                    res_output.push(output.read::<Variable>())
+                }
+            }
+        }
+
+        let mut biguint_res: Vec<BigUint> = Vec::new();
+        for i in 0..4 {
+            biguint_res.push(BigUint::new(
+                res_output[(i * 12)..(i * 12) + 12]
+                    .iter()
+                    .map(|f| f.0 as u32)
+                    .collect_vec(),
+            ));
+        }
+
+        let expected_biguint_targets = vec![
+                    BigUint::from_str("2484880953070652509895159898261749949971419256101265549903463729658081179969788208734336814677878439015289354663558").unwrap(), 
+                    BigUint::from_str("571286950361770968319560191831515067050084989489837870994029396792668285219017899793859671802388182901315402858724").unwrap(), 
+                    BigUint::from_str("3945400848309661287520855376438021610375515007889273149322439985738679863089347725379973912108534346949384256127526").unwrap(), 
+                    BigUint::from_str("1067268791373784971379690868996146496995005458163356395218843329703930727067637736115073576974603814754170298346268").unwrap()
+                ];
+
+        for i in 0..4 {
+            assert_eq!(biguint_res[i], expected_biguint_targets[i]);
+        }
+    }
+}
