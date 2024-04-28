@@ -1,5 +1,5 @@
-import { CommandLineOptionsBuilder } from '../cmdline';
-import { CommitmentMapperScheduler } from './scheduler';
+import { CommandLineOptionsBuilder } from '../../utils/cmdline';
+import { CommitmentMapperScheduler } from '../lib/scheduler';
 (async () => {
   const options = new CommandLineOptionsBuilder()
     .usage(

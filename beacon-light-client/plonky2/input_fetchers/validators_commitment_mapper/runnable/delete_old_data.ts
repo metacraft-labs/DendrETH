@@ -1,8 +1,8 @@
 import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
 
-import CONSTANTS from '../constants/validator_commitment_constants.json';
-import { createProofStorage } from '../proof_storage/proof_storage';
-import { CommandLineOptionsBuilder } from '../cmdline';
+import CONSTANTS from '../../../kv_db_constants.json';
+import { createProofStorage } from '../../utils/proof_storage/proof_storage';
+import { CommandLineOptionsBuilder } from '../../utils/cmdline';
 
 require('dotenv').config({ path: '../.env' });
 

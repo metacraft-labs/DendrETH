@@ -72,18 +72,3 @@ path = "bin/commitment_mapper_circuit_data_generation.rs"
 name = "balance_verification_accumulator"
 path = "bin/balance_verification_accumulator.rs"
 
-[[bin]]
-name = "commitment_mapper_accumulator"
-path = "bin/commitment_mapper_accumulator.rs"
-
-[[bin]]
-name = "commitment_mapper_accumulator_circuit_data_generation"
-path = "bin/commitment_mapper_accumulator_circuit_data_generation.rs"
-
-[[bin]]
-name = "basic_recursion"
-path = "bin/basic_recursion.rs"
-
-[[bin]]
-name = "test"
-path = "bin/test.rs"

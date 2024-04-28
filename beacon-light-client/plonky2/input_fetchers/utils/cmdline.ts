@@ -1,6 +1,6 @@
 import yargs, { Options } from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import config from '../common_config.json';
+import config from '../../common_config.json';
 
 const args = yargs(hideBin(process.argv));
 

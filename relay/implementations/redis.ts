@@ -8,8 +8,9 @@ import {
   BalancesAccumulatorInput,
 } from '../types/types';
 import { RedisClientType, createClient } from 'redis';
-import CONSTANTS from '../../beacon-light-client/plonky2/constants/validator_commitment_constants.json';
-import { getDepthByGindex } from '../../beacon-light-client/plonky2/validators_commitment_mapper_tree/utils';
+import CONSTANTS from '../../beacon-light-client/plonky2/kv_db_constants.json';
+// TODO: move this to @dendreth/utils
+import { getDepthByGindex } from '../../beacon-light-client/plonky2/input_fetchers/utils/common_utils';
 import { Redis as RedisClient } from 'ioredis';
 import chalk from 'chalk';
 import { splitIntoBatches } from '@dendreth/utils/ts-utils/common-utils';
@@ -358,7 +359,7 @@ export class Redis implements IRedis {
     const args = inputsWithIndices
       .map(ii => {
         return [
-          `${protocol}:${CONSTANTS.validatorBalanceInputKey}:${ii.index} `,
+          `${protocol}:${CONSTANTS.validatorBalanceInputKey}:${ii.index}`,
           JSON.stringify(ii.input),
         ];
       })

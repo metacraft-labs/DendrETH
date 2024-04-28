@@ -9,13 +9,13 @@ use circuit_executables::{
         fetch_validator_balance_accumulator_input, load_circuit_data, read_from_file,
         save_balance_accumulator_proof,
     },
+    db_constants::DB_CONSTANTS,
     provers::SetPWValues,
     utils::{
         parse_balance_verification_command_line_options, parse_config_file,
         CommandLineOptionsBuilder,
     },
     validator::VALIDATOR_REGISTRY_LIMIT,
-    validator_commitment_constants::VALIDATOR_COMMITMENT_CONSTANTS,
 };
 use circuits::{
     deposits_accumulator_balance_aggregator::validator_balance_circuit_accumulator::ValidatorBalanceVerificationAccumulatorTargets,
@@ -84,15 +84,13 @@ async fn async_main() -> Result<()> {
         "Debug {}",
         format!(
             "{}:{}",
-            VALIDATOR_COMMITMENT_CONSTANTS.balance_verification_accumulator_proof_queue,
-            config.circuit_level
+            DB_CONSTANTS.balance_verification_accumulator_proof_queue, config.circuit_level
         )
     );
 
     let queue = WorkQueue::new(KeyPrefix::new(format!(
         "{}:{}",
-        VALIDATOR_COMMITMENT_CONSTANTS.balance_verification_accumulator_proof_queue,
-        config.circuit_level
+        DB_CONSTANTS.balance_verification_accumulator_proof_queue, config.circuit_level
     )));
 
     let start: Instant = Instant::now();

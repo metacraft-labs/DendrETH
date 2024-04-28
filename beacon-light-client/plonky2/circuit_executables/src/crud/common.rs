@@ -1,13 +1,13 @@
 use std::{fs, marker::PhantomData, thread, time::Duration};
 
 use crate::{
+    db_constants::DB_CONSTANTS,
     utils::get_depth_for_gindex,
     validator::{
         bool_vec_as_int_vec, bool_vec_as_int_vec_nested, ValidatorShaInput,
         VALIDATOR_REGISTRY_LIMIT,
     },
     validator_balances_input::{ValidatorBalanceAccumulatorInput, ValidatorBalancesInput},
-    validator_commitment_constants::VALIDATOR_COMMITMENT_CONSTANTS,
 };
 use anyhow::{ensure, Result};
 use async_trait::async_trait;
@@ -139,9 +139,7 @@ impl NeedsChange for ValidatorProof {
 
 impl KeyProvider for ValidatorProof {
     fn get_key() -> String {
-        VALIDATOR_COMMITMENT_CONSTANTS
-            .validator_proof_key
-            .to_owned()
+        DB_CONSTANTS.validator_proof_key.to_owned()
     }
 }
 
@@ -153,9 +151,7 @@ impl NeedsChange for BalanceProof {
 
 impl KeyProvider for BalanceProof {
     fn get_key() -> String {
-        VALIDATOR_COMMITMENT_CONSTANTS
-            .balance_verification_proof_key
-            .to_owned()
+        DB_CONSTANTS.balance_verification_proof_key.to_owned()
     }
 }
 
@@ -189,9 +185,7 @@ pub async fn fetch_validator_balance_input<const N: usize>(
         format!(
             "{}:{}:{}",
             protocol,
-            VALIDATOR_COMMITMENT_CONSTANTS
-                .validator_balance_input_key
-                .to_owned(),
+            DB_CONSTANTS.validator_balance_input_key.to_owned(),
             index
         ),
     )
@@ -207,9 +201,7 @@ pub async fn fetch_validator_balance_accumulator_input(
         con,
         format!(
             "{}:{}:{}",
-            VALIDATOR_COMMITMENT_CONSTANTS
-                .balance_verification_accumulator_key
-                .to_owned(),
+            DB_CONSTANTS.balance_verification_accumulator_key.to_owned(),
             protocol,
             index
         ),
@@ -232,7 +224,7 @@ pub async fn save_balance_accumulator_proof(
         con,
         &format!(
             "{}:{}:{}",
-            VALIDATOR_COMMITMENT_CONSTANTS
+            DB_CONSTANTS
                 .balance_verification_accumulator_proof_key
                 .to_owned(),
             level,
@@ -252,7 +244,7 @@ pub async fn fetch_final_layer_input(
     let json: String = con
         .get(format!(
             "{}:{}",
-            protocol, VALIDATOR_COMMITMENT_CONSTANTS.final_proof_input_key
+            protocol, DB_CONSTANTS.final_proof_input_key
         ))
         .await?;
     let result = serde_json::from_str::<FinalCircuitInput>(&json)?;
@@ -269,7 +261,7 @@ pub async fn save_balance_proof<const N: usize>(
 ) -> Result<()> {
     let proof_key = format!(
         "{}:{}:{}:{}",
-        protocol, VALIDATOR_COMMITMENT_CONSTANTS.balance_verification_proof_storage, level, index
+        protocol, DB_CONSTANTS.balance_verification_proof_storage, level, index
     );
 
     let balance_proof = BalanceProof {
@@ -297,9 +289,7 @@ pub async fn save_balance_proof<const N: usize>(
         &format!(
             "{}:{}:{}:{}",
             protocol,
-            VALIDATOR_COMMITMENT_CONSTANTS
-                .balance_verification_proof_key
-                .to_owned(),
+            DB_CONSTANTS.balance_verification_proof_key.to_owned(),
             level,
             index
         ),
@@ -334,11 +324,7 @@ pub async fn save_final_proof(
 
     save_json_object(
         con,
-        format!(
-            "{}:{}",
-            protocol, &VALIDATOR_COMMITMENT_CONSTANTS.final_layer_proof_key
-        )
-        .as_str(),
+        format!("{}:{}", protocol, &DB_CONSTANTS.final_layer_proof_key).as_str(),
         &final_proof,
     )
     .await?;
@@ -356,18 +342,14 @@ pub async fn delete_balance_verification_proof_dependencies(
     let proof_prefix = format!(
         "{}:{}:{}",
         protocol,
-        VALIDATOR_COMMITMENT_CONSTANTS
-            .balance_verification_proof_storage
-            .to_owned(),
+        DB_CONSTANTS.balance_verification_proof_storage.to_owned(),
         level - 1,
     );
 
     let redis_prefix = format!(
         "{}:{}:{}",
         protocol,
-        VALIDATOR_COMMITMENT_CONSTANTS
-            .balance_verification_proof_key
-            .to_owned(),
+        DB_CONSTANTS.balance_verification_proof_key.to_owned(),
         level - 1
     );
 
@@ -402,11 +384,7 @@ pub async fn get_slot_with_latest_change(
 ) -> Result<String> {
     let result: Vec<String> = con
         .zrevrangebyscore_limit(
-            format!(
-                "{}:{}",
-                key,
-                VALIDATOR_COMMITMENT_CONSTANTS.slot_lookup_key.to_owned(),
-            ),
+            format!("{}:{}", key, DB_CONSTANTS.slot_lookup_key.to_owned(),),
             slot,
             0,
             0,
@@ -425,7 +403,7 @@ pub async fn fetch_validator(
 ) -> Result<ValidatorShaInput> {
     let key = format!(
         "{}:{}",
-        VALIDATOR_COMMITMENT_CONSTANTS.validator_key.to_owned(),
+        DB_CONSTANTS.validator_key.to_owned(),
         validator_index,
     );
 
@@ -445,10 +423,7 @@ pub async fn save_zero_validator_proof(
     proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     depth: u64,
 ) -> Result<()> {
-    let proof_key = format!(
-        "{}:zeroes:{}",
-        VALIDATOR_COMMITMENT_CONSTANTS.validator_proof_storage, depth
-    );
+    let proof_key = format!("{}:zeroes:{}", DB_CONSTANTS.validator_proof_storage, depth);
 
     let validator_proof = ValidatorProof {
         poseidon_hash: proof
@@ -467,9 +442,7 @@ pub async fn save_zero_validator_proof(
         con,
         &format!(
             "{}:zeroes:{}",
-            VALIDATOR_COMMITMENT_CONSTANTS
-                .validator_proof_key
-                .to_owned(),
+            DB_CONSTANTS.validator_proof_key.to_owned(),
             depth,
         ),
         &validator_proof,
@@ -511,7 +484,7 @@ pub async fn save_validator_proof(
 ) -> Result<()> {
     let proof_key = format!(
         "{}:{}:{}",
-        VALIDATOR_COMMITMENT_CONSTANTS.validator_proof_storage, gindex, slot
+        DB_CONSTANTS.validator_proof_storage, gindex, slot
     );
     let validator_proof = ValidatorProof {
         poseidon_hash: proof
@@ -529,10 +502,7 @@ pub async fn save_validator_proof(
     // fetch validators len
     if gindex == 1 {
         let length: u64 = con
-            .get(format!(
-                "{}:{}",
-                VALIDATOR_COMMITMENT_CONSTANTS.validators_length_key, slot
-            ))
+            .get(format!("{}:{}", DB_CONSTANTS.validators_length_key, slot))
             .await?;
 
         let validators_root_bytes: Vec<u8> = [
@@ -546,10 +516,7 @@ pub async fn save_validator_proof(
         let validators_root = hex::encode(hash_bytes(validators_root_bytes.as_slice()));
 
         con.set(
-            format!(
-                "{}:{}",
-                VALIDATOR_COMMITMENT_CONSTANTS.validators_root_key, slot
-            ),
+            format!("{}:{}", DB_CONSTANTS.validators_root_key, slot),
             validators_root,
         )
         .await?;
@@ -559,9 +526,7 @@ pub async fn save_validator_proof(
         con,
         &format!(
             "{}:{}:{}",
-            VALIDATOR_COMMITMENT_CONSTANTS
-                .validator_proof_key
-                .to_owned(),
+            DB_CONSTANTS.validator_proof_key.to_owned(),
             gindex,
             slot
         ),
@@ -599,7 +564,7 @@ pub async fn fetch_redis_json_object<T: DeserializeOwned + Clone>(
     con: &mut Connection,
     key: String,
 ) -> Result<T> {
-    let json: String = con.get(key).await?;
+    let json: String = con.get(&key).await?;
     let result = serde_json::from_str::<T>(&json)?;
     Ok(result)
 }

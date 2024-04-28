@@ -7,13 +7,13 @@ use circuit_executables::{
         },
         proof_storage::proof_storage::{create_proof_storage, ProofStorage},
     },
+    db_constants::DB_CONSTANTS,
     provers::{handle_balance_inner_level_proof, SetPWValues},
     utils::{
         parse_balance_verification_command_line_options, parse_config_file,
         CommandLineOptionsBuilder,
     },
     validator::VALIDATOR_REGISTRY_LIMIT,
-    validator_commitment_constants::VALIDATOR_COMMITMENT_CONSTANTS,
 };
 use circuits::{
     serialization::targets_serialization::ReadTargets,
@@ -106,8 +106,16 @@ async fn async_main() -> Result<()> {
 
     let queue = WorkQueue::new(KeyPrefix::new(format!(
         "{}:{}:{}",
-        protocol, VALIDATOR_COMMITMENT_CONSTANTS.balance_verification_queue, config.circuit_level
+        protocol, DB_CONSTANTS.balance_verification_queue, config.circuit_level
     )));
+
+    println!(
+        "{}",
+        &format!(
+            "{}:{}:{}",
+            protocol, DB_CONSTANTS.balance_verification_queue, config.circuit_level
+        )
+    );
 
     let start: Instant = Instant::now();
     process_queue(

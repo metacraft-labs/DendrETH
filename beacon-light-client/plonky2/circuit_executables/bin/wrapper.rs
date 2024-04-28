@@ -3,8 +3,8 @@ use std::{println, time::Instant};
 use anyhow::Result;
 use circuit_executables::{
     crud::common::{load_circuit_data, FinalProof},
+    db_constants::DB_CONSTANTS,
     utils::{parse_config_file, CommandLineOptionsBuilder},
-    validator_commitment_constants::VALIDATOR_COMMITMENT_CONSTANTS,
     wrap_final_layer_in_poseidon_bn128::wrap_final_layer_in_poseidon_bn_128,
 };
 use clap::Arg;
@@ -54,7 +54,7 @@ async fn async_main() -> Result<()> {
         .get(format!(
             "{}:{}",
             protocol.to_string(),
-            VALIDATOR_COMMITMENT_CONSTANTS.final_layer_proof_key
+            DB_CONSTANTS.final_layer_proof_key
         ))
         .await?;
     let final_layer_proof: FinalProof = serde_json::from_str(&proof_str)?;

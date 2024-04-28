@@ -7,7 +7,7 @@ import { Redis } from '@dendreth/relay/implementations/redis';
 import { Validator, IndexedValidator } from '@dendreth/relay/types/types';
 import chalk from 'chalk';
 import { KeyPrefix, WorkQueue, Item } from '@mevitae/redis-work-queue';
-import CONSTANTS from '../constants/validator_commitment_constants.json';
+import CONSTANTS from '../../../kv_db_constants.json';
 import {
   convertValidatorToProof,
   getZeroValidatorInput,
@@ -15,7 +15,7 @@ import {
   makeBranchIterator,
   getLastSlotInEpoch,
   getFirstSlotInEpoch,
-} from './utils';
+} from '../../utils/common_utils';
 
 enum TaskTag {
   UPDATE_PROOF_NODE = 0,
@@ -167,12 +167,11 @@ export class CommitmentMapperScheduler {
 
       console.log(
         chalk.bold.blue(
-          `Syncing ${
-            this.currentSlot === this.headSlot
-              ? chalk.cyan(this.currentSlot)
-              : `${chalk.cyanBright(this.currentSlot)}/${chalk.cyan(
-                  this.headSlot,
-                )}`
+          `Syncing ${this.currentSlot === this.headSlot
+            ? chalk.cyan(this.currentSlot)
+            : `${chalk.cyanBright(this.currentSlot)}/${chalk.cyan(
+              this.headSlot,
+            )}`
           }...`,
         ),
       );
@@ -247,7 +246,7 @@ export class CommitmentMapperScheduler {
     dataView.setBigUint64(9, slot, false);
     this.queue.addItem(this.redis.client, new Item(Buffer.from(buffer)));
 
-    // Don't create an slot lookup for the zero validator proof
+    // Don't create a slot lookup for the zero validator proof
     if (validatorIndex !== BigInt(CONSTANTS.validatorRegistryLimit)) {
       await this.redis.addToSlotLookup(
         `${CONSTANTS.validatorProofKey}:${gindexFromIndex(
@@ -325,7 +324,7 @@ function hasValidatorChanged(prevValidators: Validator[]) {
     validator.effectiveBalance !== prevValidators[index].effectiveBalance ||
     validator.slashed !== prevValidators[index].slashed ||
     validator.activationEligibilityEpoch !==
-      prevValidators[index].activationEligibilityEpoch ||
+    prevValidators[index].activationEligibilityEpoch ||
     validator.activationEpoch !== prevValidators[index].activationEpoch ||
     validator.exitEpoch !== prevValidators[index].exitEpoch ||
     validator.withdrawableEpoch !== prevValidators[index].withdrawableEpoch;

@@ -1,11 +1,11 @@
 import { ethers, providers } from 'ethers';
-import { getBalancesInput } from './get_balances_input';
-import { CommandLineOptionsBuilder } from '../cmdline';
+import { getBalancesInput } from '../lib/scheduler';
+import { CommandLineOptionsBuilder } from '../../../utils/cmdline';
 import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
 import { getLidoWithdrawCredentials } from '@dendreth/utils/balance-verification-utils/utils';
-import lidoLocatorAbi from './abi/lido_locator_abi.json';
-import accountingOracleAbi from './abi/lido_accounting_oracle_abi.json';
-import hashConsensusAbi from './abi/hash_consensus_abi.json';
+import lidoLocatorAbi from '../../abi/lido_locator_abi.json';
+import accountingOracleAbi from '../../abi/lido_accounting_oracle_abi.json';
+import hashConsensusAbi from '../../abi/hash_consensus_abi.json';
 
 (async () => {
   const options = new CommandLineOptionsBuilder()

@@ -1,13 +1,13 @@
 import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
 import { KeyPrefix, WorkQueue, Item } from '@mevitae/redis-work-queue';
-import CONSTANTS from '../constants/validator_commitment_constants.json';
+import CONSTANTS from '../../../../kv_db_constants.json';
 import { BeaconApi } from '@dendreth/relay/implementations/beacon-api';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { computeEpochAt } from '@dendreth/utils/ts-utils/ssz-utils';
 import {
   getCommitmentMapperProof,
   gindexFromIndex,
-} from '../validators_commitment_mapper_tree/utils';
+} from '../../../utils/common_utils';
 import {
   BalancesAccumulatorInput,
   DepositData,
@@ -17,11 +17,11 @@ import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import {
   convertValidatorToValidatorPoseidonInput,
   getZeroValidatorPoseidonInput,
-} from './utils';
+} from '../../common';
 import { panic } from '@dendreth/utils/ts-utils/common-utils';
-import { CommandLineOptionsBuilder } from '../cmdline';
+import { CommandLineOptionsBuilder } from '../../../utils/cmdline';
 
-import deposits from './deposits.json';
+import deposits from '../deposits.json';
 deposits satisfies DepositData[];
 
 const CIRCUIT_SIZE = 2;

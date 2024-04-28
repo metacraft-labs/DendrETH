@@ -6,20 +6,20 @@ import {
 } from '@dendreth/relay/implementations/beacon-api';
 import { Redis } from '@dendreth/relay/implementations/redis';
 import { IndexedValidator } from '@dendreth/relay/types/types';
-import config from '../../common_config.json';
-import { CommitmentMapperScheduler } from './scheduler';
+import config from '../../../common_config.json';
+import { CommitmentMapperScheduler } from '../lib/scheduler';
 import { Tree, zeroNode } from '@chainsafe/persistent-merkle-tree';
-import CONSTANTS from '../constants/validator_commitment_constants.json';
+import CONSTANTS from '../../../kv_db_constants.json';
 // @ts-ignore
 import { panic, range, sleep } from '@dendreth/utils/ts-utils/common-utils';
 import {
   getDepthByGindex,
   getZeroValidatorInput,
   indexFromGindex,
-} from './utils';
-import { CommandLineOptionsBuilder } from '../cmdline';
+} from '../../utils/common_utils';
+import { CommandLineOptionsBuilder } from '../../utils/cmdline';
 import chalk from 'chalk';
-import { getLastSlotInEpoch } from './utils';
+import { getLastSlotInEpoch } from '../../utils/common_utils';
 import { bitsToHex } from '@dendreth/utils/ts-utils/hex-utils';
 
 let zeroHashes: string[] = [];

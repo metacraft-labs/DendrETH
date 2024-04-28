@@ -3,7 +3,7 @@ use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct ValidatorCommitmentConstants<'a> {
+pub struct DBConstants<'a> {
     pub validator_key: &'a str,
     pub validator_proof_key: &'a str,
     pub validator_proofs_queue: &'a str,
@@ -25,12 +25,8 @@ pub struct ValidatorCommitmentConstants<'a> {
     pub balance_verification_accumulator_proof_key: &'a str,
 }
 
-pub fn get_validator_commitment_constants() -> ValidatorCommitmentConstants<'static> {
-    serde_json::from_str(include_str!(
-        "../../constants/validator_commitment_constants.json"
-    ))
-    .unwrap()
+pub fn get_db_constants() -> DBConstants<'static> {
+    serde_json::from_str(include_str!("../../kv_db_constants.json")).unwrap()
 }
 
-pub static VALIDATOR_COMMITMENT_CONSTANTS: Lazy<ValidatorCommitmentConstants> =
-    Lazy::new(|| get_validator_commitment_constants());
+pub static DB_CONSTANTS: Lazy<DBConstants> = Lazy::new(|| get_db_constants());

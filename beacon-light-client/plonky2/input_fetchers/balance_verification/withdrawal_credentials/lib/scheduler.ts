@@ -5,21 +5,21 @@ import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
 import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import { hexToBits } from '@dendreth/utils/ts-utils/hex-utils';
 import { KeyPrefix, WorkQueue, Item } from '@mevitae/redis-work-queue';
-import validator_commitment_constants from '../constants/validator_commitment_constants.json';
+import CONSTANTS from '../../../../kv_db_constants.json';
 import { computeEpochAt } from '@dendreth/utils/ts-utils/ssz-utils';
 import { panic } from '@dendreth/utils/ts-utils/common-utils';
 import {
   convertValidatorToValidatorPoseidonInput,
   getZeroValidatorPoseidonInput,
-} from './utils';
-import commonConfig from '../../common_config.json';
+} from '../../common';
+import commonConfig from '../../../../common_config.json';
 
 const commonConfigChecked = commonConfig satisfies CommonConfig;
 
 const CIRCUIT_SIZE = 8;
 
 export type GetBalancesInputConfigRequiredFields = {
-  withdrawCredentials: string;
+  withdrawalCredentials: string;
   protocol: string;
 };
 
@@ -55,7 +55,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
   const { ssz } = await import('@lodestar/types');
   const redis = new RedisLocal(config.redisHost, config.redisPort);
 
-  const withdrawCredentials = config.withdrawCredentials;
+  const withdrawalCredentials = config.withdrawalCredentials;
   const protocol = config.protocol;
 
   const queues: any[] = [];
@@ -64,7 +64,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
     queues.push(
       new WorkQueue(
         new KeyPrefix(
-          `${protocol}:${validator_commitment_constants.balanceVerificationQueue}:${i}`,
+          `${protocol}:${CONSTANTS.balanceVerificationQueue}:${i}`,
         ),
       ),
     );
@@ -115,13 +115,13 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
 
   await redis.saveValidatorBalancesInput(protocol, [
     {
-      index: Number(validator_commitment_constants.validatorRegistryLimit),
+      index: Number(CONSTANTS.validatorRegistryLimit),
       input: {
         balances: Array(CIRCUIT_SIZE / 4)
           .fill('')
           .map(() => ''.padStart(256, '0').split('').map(Number)),
         validators: Array(CIRCUIT_SIZE).fill(getZeroValidatorPoseidonInput()),
-        withdrawalCredentials: [hexToBits(withdrawCredentials)],
+        withdrawalCredentials: [hexToBits(withdrawalCredentials)],
         currentEpoch: computeEpochAt(beaconState.slot).toString(),
         validatorIsZero: Array(CIRCUIT_SIZE).fill(1),
       },
@@ -135,7 +135,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
 
   dataView.setBigUint64(
     0,
-    BigInt(validator_commitment_constants.validatorRegistryLimit),
+    BigInt(CONSTANTS.validatorRegistryLimit),
     false,
   );
 
@@ -147,7 +147,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
 
     dataView.setBigUint64(
       0,
-      BigInt(validator_commitment_constants.validatorRegistryLimit),
+      BigInt(CONSTANTS.validatorRegistryLimit),
       false,
     );
 
@@ -186,7 +186,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
               Math.min((j + 1) * CIRCUIT_SIZE, validators.length),
             ).fill(getZeroValidatorPoseidonInput()),
           ],
-          withdrawalCredentials: [hexToBits(withdrawCredentials)],
+          withdrawalCredentials: [hexToBits(withdrawalCredentials)],
           currentEpoch: computeEpochAt(beaconState.slot).toString(),
           validatorIsZero: array.concat(new Array(CIRCUIT_SIZE - size).fill(1)),
         },
@@ -199,7 +199,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
   await redis.saveBalanceProof(
     protocol,
     0n,
-    BigInt(validator_commitment_constants.validatorRegistryLimit),
+    BigInt(CONSTANTS.validatorRegistryLimit),
   );
 
   for (let i = 0; i < take / CIRCUIT_SIZE; i++) {
@@ -217,7 +217,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
     await redis.saveBalanceProof(
       protocol,
       BigInt(level),
-      BigInt(validator_commitment_constants.validatorRegistryLimit),
+      BigInt(CONSTANTS.validatorRegistryLimit),
     );
 
     const range = [
@@ -263,7 +263,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
     slotBranch: beaconStateTree
       .getSingleProof(34n)
       .map(x => hexToBits(bytesToHex(x))),
-    withdrawalCredentials: [hexToBits(withdrawCredentials)],
+    withdrawalCredentials: [hexToBits(withdrawalCredentials)],
     balanceBranch: beaconStateTree
       .getSingleProof(44n)
       .map(x => hexToBits(bytesToHex(x))),

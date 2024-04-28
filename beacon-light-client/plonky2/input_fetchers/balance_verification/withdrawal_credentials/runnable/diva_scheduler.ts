@@ -1,8 +1,8 @@
 import { ethers } from 'ethers';
-import { CommandLineOptionsBuilder } from '../cmdline';
-import { getBalancesInput } from './get_balances_input';
-import accountManagerAbi from './abi/account_manager_abi.json';
-import validatorManagerAbi from './abi/validator_manager_abi.json';
+import { CommandLineOptionsBuilder } from '../../../utils/cmdline';
+import { getBalancesInput } from '../lib/scheduler';
+import accountManagerAbi from '../../abi/account_manager_abi.json';
+import validatorManagerAbi from '../../abi/validator_manager_abi.json';
 
 const options = new CommandLineOptionsBuilder()
   .withRedisOpts()

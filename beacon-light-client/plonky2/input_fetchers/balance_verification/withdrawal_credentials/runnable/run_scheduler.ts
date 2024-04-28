@@ -1,5 +1,5 @@
-import { CommandLineOptionsBuilder } from '../cmdline';
-import { getBalancesInput } from './get_balances_input';
+import { CommandLineOptionsBuilder } from '../../../utils/cmdline';
+import { getBalancesInput } from '../lib/scheduler';
 
 (async () => {
   const options = new CommandLineOptionsBuilder()
@@ -15,8 +15,8 @@ import { getBalancesInput } from './get_balances_input';
       default: undefined,
       description: 'Fetches the balances for this slot',
     })
-    .option('withdraw-credentials', {
-      alias: 'withdraw-credentials',
+    .option('withdrawal-credentials', {
+      alias: 'withdrawal-credentials',
       describe: 'The withdrawal credentials',
       type: 'string',
       demandOption: true,
@@ -27,7 +27,7 @@ import { getBalancesInput } from './get_balances_input';
     .build();
 
   await getBalancesInput({
-    withdrawCredentials: options['withdraw-credentials'],
+    withdrawalCredentials: options['withdrawal-credentials'],
     beaconNodeUrls: options['beacon-node'],
     slot: options['slot'],
     take: options['take'],

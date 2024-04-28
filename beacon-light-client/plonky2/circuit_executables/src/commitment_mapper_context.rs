@@ -19,7 +19,7 @@ use crate::{
         common::{load_circuit_data, read_from_file},
         proof_storage::proof_storage::ProofStorage,
     },
-    validator_commitment_constants::VALIDATOR_COMMITMENT_CONSTANTS,
+    db_constants::DB_CONSTANTS,
 };
 
 const CIRCUIT_DIR: &str = "circuits";
@@ -44,9 +44,7 @@ impl CommitmentMapperContext {
         let redis_con = client.get_async_connection().await?;
 
         let work_queue = WorkQueue::new(KeyPrefix::new(
-            VALIDATOR_COMMITMENT_CONSTANTS
-                .validator_proofs_queue
-                .to_owned(),
+            DB_CONSTANTS.validator_proofs_queue.to_owned(),
         ));
 
         let first_level_circuit = FirstLevelCircuit {
