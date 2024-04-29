@@ -17,7 +17,7 @@ export default async function genProof(
     return;
   }
 
-  let mock = Boolean(process.env.MOCK);
+  // let mock = Boolean(process.env.MOCK);
 
   const proof = await prover.genProof(proofInput);
 
