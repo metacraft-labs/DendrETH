@@ -1,19 +1,18 @@
 use std::{fs, marker::PhantomData, thread, time::Duration};
 
 use crate::{
-    db_constants::DB_CONSTANTS,
-    utils::get_depth_for_gindex,
-    validator::{
-        bool_vec_as_int_vec, bool_vec_as_int_vec_nested, ValidatorShaInput,
-        VALIDATOR_REGISTRY_LIMIT,
-    },
-    validator_balances_input::{ValidatorBalanceAccumulatorInput, ValidatorBalancesInput},
+    db_constants::DB_CONSTANTS, utils::get_depth_for_gindex, validator::VALIDATOR_REGISTRY_LIMIT,
 };
 use anyhow::{ensure, Result};
 use async_trait::async_trait;
 
 use circuits::{
+    circuit_input_common::{
+        BalanceAccumulatorProof, BalanceProof, FinalCircuitInput, FinalProof,
+        ValidatorBalanceAccumulatorInput, ValidatorBalancesInput, ValidatorProof,
+    },
     serialization::generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
+    serializers::ValidatorShaInput,
     utils::utils::hash_bytes,
     validators_commitment_mapper::build_commitment_mapper_first_level_circuit::CommitmentMapperProofExt,
     withdrawal_credentials_balance_aggregator::build_validator_balance_circuit::ValidatorBalanceProofExt,
@@ -26,97 +25,9 @@ use plonky2::{
     },
 };
 use redis::{aio::Connection, AsyncCommands, RedisError};
-use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{de::DeserializeOwned, Serialize};
 
 use super::proof_storage::proof_storage::ProofStorage;
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct ValidatorProof {
-    pub needs_change: bool,
-    pub poseidon_hash: Vec<String>,
-    pub sha256_hash: Vec<u64>,
-    pub proof_key: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct BalanceProof {
-    pub needs_change: bool,
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub range_total_value: BigUint,
-    pub validators_commitment: Vec<String>,
-    pub balances_hash: Vec<u64>,
-    pub withdrawal_credentials: Vec<Vec<u64>>,
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub current_epoch: BigUint,
-    pub number_of_non_activated_validators: u64,
-    pub number_of_active_validators: u64,
-    pub number_of_exited_validators: u64,
-    pub proof_key: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct BalanceAccumulatorProof {
-    pub needs_change: bool,
-    pub proof: Vec<u8>,
-}
-
-pub fn biguint_to_str<S>(value: &BigUint, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    let str_value = value.to_str_radix(10);
-    serializer.serialize_str(&str_value)
-}
-
-pub fn parse_biguint<'de, D>(deserializer: D) -> Result<BigUint, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let str_value = String::deserialize(deserializer)?;
-
-    str_value
-        .parse::<BigUint>()
-        .map_err(serde::de::Error::custom)
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct FinalCircuitInput {
-    #[serde(with = "bool_vec_as_int_vec")]
-    pub state_root: Vec<bool>,
-    #[serde(with = "bool_vec_as_int_vec_nested")]
-    pub state_root_branch: Vec<Vec<bool>>,
-    #[serde(with = "bool_vec_as_int_vec")]
-    pub block_root: Vec<bool>,
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub slot: BigUint,
-    #[serde(with = "bool_vec_as_int_vec_nested")]
-    pub slot_branch: Vec<Vec<bool>>,
-    #[serde(with = "bool_vec_as_int_vec_nested")]
-    pub withdrawal_credentials: Vec<Vec<bool>>,
-    #[serde(with = "bool_vec_as_int_vec_nested")]
-    pub balance_branch: Vec<Vec<bool>>,
-    #[serde(with = "bool_vec_as_int_vec_nested")]
-    pub validators_branch: Vec<Vec<bool>>,
-    #[serde(with = "bool_vec_as_int_vec")]
-    pub validators_size_bits: Vec<bool>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct FinalProof {
-    pub needs_change: bool,
-    pub block_root: Vec<u64>,
-    pub withdrawal_credentials: Vec<Vec<u64>>,
-    pub balance_sum: BigUint,
-    pub number_of_non_activated_validators: u64,
-    pub number_of_active_validators: u64,
-    pub number_of_exited_validators: u64,
-    pub proof: Vec<u8>,
-}
 
 pub trait NeedsChange {
     fn needs_change(&self) -> bool;

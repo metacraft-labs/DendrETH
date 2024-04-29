@@ -4,7 +4,7 @@ use plonky2::{
     field::{goldilocks_field::GoldilocksField, types::Field},
     fri::{reduction_strategies::FriReductionStrategy, FriConfig},
     hash::hash_types::HashOutTarget,
-    iop::target::{BoolTarget, Target},
+    iop::target::BoolTarget,
     plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::{CircuitConfig, CircuitData, VerifierCircuitTarget},
@@ -14,18 +14,20 @@ use plonky2::{
 };
 
 use crate::{
+    traits::CircuitWithPublicInputs,
     utils::{
         biguint::{BigUintTarget, CircuitBuilderBiguint},
         hashing::{
             is_valid_merkle_branch::{is_valid_merkle_branch_sha256, IsValidMerkleBranchTargets},
-            sha256::make_circuits,
+            sha256::{connect_bool_arrays, make_circuits, sha256, sha256_pair},
         },
         utils::{
-            biguint_to_bits_target, create_bool_target_array, ssz_num_to_bits, ETH_SHA256_BIT_SIZE,
+            biguint_to_bits_target, create_bool_target_array, ssz_num_to_bits, target_to_le_bits,
+            ETH_SHA256_BIT_SIZE,
         },
     },
     validators_commitment_mapper::build_commitment_mapper_first_level_circuit::CommitmentMapperProofTargetExt,
-    withdrawal_credentials_balance_aggregator::build_validator_balance_circuit::ValidatorBalanceProofTargetsExt,
+    withdrawal_credentials_balance_aggregator::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
 
 pub struct BalanceFinalLayerTargets {
@@ -80,18 +82,9 @@ pub fn build_final_circuit<const N: usize>(
 
     let mut builder = CircuitBuilder::<F, D>::new(final_config);
 
-    let (
-        balance_proof_targets,
-        balance_verifier_circuit_target,
-        balance_root_hash,
-        balance_sum,
-        withdrawal_credentials,
-        current_epoch,
-        balances_validator_poseidon_root,
-        number_of_non_activated_validators,
-        number_of_active_validators,
-        number_of_exited_validators,
-    ) = setup_balance_targets(&mut builder, balance_data);
+    // TODO: get rid of this call
+    let (balance_proof_targets, balance_verifier_circuit_target, balances_pi_target) =
+        setup_balance_targets(&mut builder, balance_data);
 
     let (
         commitment_mapper_proof_targets,
@@ -102,7 +95,7 @@ pub fn build_final_circuit<const N: usize>(
 
     builder.connect_hashes(
         commitment_mapper_poseidon_root,
-        balances_validator_poseidon_root,
+        balances_pi_target.range_validator_commitment,
     );
 
     let state_root = create_bool_target_array(&mut builder);
@@ -114,122 +107,76 @@ pub fn build_final_circuit<const N: usize>(
 
     let validator_size_bits = create_bool_target_array(&mut builder);
 
-    let validators_hasher = make_circuits(&mut builder, (2 * ETH_SHA256_BIT_SIZE) as u64);
-
-    for i in 0..ETH_SHA256_BIT_SIZE {
-        builder.connect(
-            validators_hasher.message[i].target,
-            commitment_mapper_sha256_root[i].target,
-        );
-        builder.connect(
-            validators_hasher.message[i + ETH_SHA256_BIT_SIZE].target,
-            validator_size_bits[i].target,
-        );
-    }
-
-    let validators_merkle_branch = create_and_connect_merkle_branch(
+    let validators_root = sha256_pair(
         &mut builder,
-        43,
-        &validators_hasher.digest,
-        &state_root,
-        5,
+        &commitment_mapper_sha256_root,
+        &validator_size_bits,
     );
 
-    let balances_hasher = make_circuits(&mut builder, (2 * ETH_SHA256_BIT_SIZE) as u64);
+    let validators_merkle_branch =
+        create_and_connect_merkle_branch(&mut builder, 43, &validators_root, &state_root, 5);
 
-    for i in 0..ETH_SHA256_BIT_SIZE {
-        builder.connect(
-            balances_hasher.message[i].target,
-            balance_root_hash[i].target,
-        );
-        builder.connect(
-            balances_hasher.message[i + ETH_SHA256_BIT_SIZE].target,
-            validator_size_bits[i].target,
-        );
-    }
+    let balances_root = sha256_pair(
+        &mut builder,
+        &balances_pi_target.range_balances_root,
+        &validator_size_bits,
+    );
 
     let balance_merkle_branch =
-        create_and_connect_merkle_branch(&mut builder, 44, &balances_hasher.digest, &state_root, 5);
+        create_and_connect_merkle_branch(&mut builder, 44, &balances_root, &state_root, 5);
 
     let slot = builder.add_virtual_biguint_target(2);
 
-    verify_slot_is_in_range(&mut builder, &slot, &current_epoch);
+    verify_slot_is_in_range(&mut builder, &slot, &balances_pi_target.current_epoch);
 
     let slot_bits = ssz_num_to_bits(&mut builder, &slot, 64);
 
     let slot_merkle_branch =
         create_and_connect_merkle_branch(&mut builder, 34, &slot_bits, &state_root, 5);
 
-    let public_inputs_hasher = make_circuits(&mut builder, ((N + 2) * ETH_SHA256_BIT_SIZE) as u64);
+    let final_sum_bits =
+        biguint_to_bits_target::<F, D, 2>(&mut builder, &balances_pi_target.range_total_value);
 
-    let final_sum_bits = biguint_to_bits_target::<F, D, 2>(&mut builder, &balance_sum);
-
-    let flattened_withdrawal_credentials = withdrawal_credentials
+    let flattened_withdrawal_credentials = balances_pi_target
+        .withdrawal_credentials
         .iter()
         .flat_map(|array| array.iter())
+        .cloned()
         .collect_vec();
 
-    for i in 0..ETH_SHA256_BIT_SIZE {
-        builder.connect(public_inputs_hasher.message[i].target, block_root[i].target);
-    }
+    let number_of_non_activated_validators_bits = target_to_le_bits(
+        &mut builder,
+        balances_pi_target.number_of_non_activated_validators,
+    );
+    let number_of_active_validators_bits =
+        target_to_le_bits(&mut builder, balances_pi_target.number_of_active_validators);
+    let number_of_exited_validators_bits =
+        target_to_le_bits(&mut builder, balances_pi_target.number_of_exited_validators);
 
-    for i in 0..ETH_SHA256_BIT_SIZE * N {
-        builder.connect(
-            public_inputs_hasher.message[ETH_SHA256_BIT_SIZE + i].target,
-            flattened_withdrawal_credentials[i].target,
-        );
-    }
-
-    let number_of_non_activated_validators_bits = builder
-        .split_le(number_of_non_activated_validators, 64)
-        .into_iter()
-        .rev()
-        .collect_vec();
-
-    let number_of_active_validators_bits = builder
-        .split_le(number_of_active_validators, 64)
-        .into_iter()
-        .rev()
-        .collect_vec();
-
-    let number_of_exited_validators_bits = builder
-        .split_le(number_of_exited_validators, 64)
-        .into_iter()
-        .rev()
-        .collect_vec();
-
-    for i in 0..64 {
-        builder.connect(
-            public_inputs_hasher.message[(N + 1) * ETH_SHA256_BIT_SIZE + i].target,
-            final_sum_bits[i].target,
-        );
-        builder.connect(
-            public_inputs_hasher.message[(N + 1) * ETH_SHA256_BIT_SIZE + 64 + i].target,
-            number_of_non_activated_validators_bits[i].target,
-        );
-        builder.connect(
-            public_inputs_hasher.message[(N + 1) * ETH_SHA256_BIT_SIZE + 128 + i].target,
-            number_of_active_validators_bits[i].target,
-        );
-        builder.connect(
-            public_inputs_hasher.message[(N + 1) * ETH_SHA256_BIT_SIZE + 192 + i].target,
-            number_of_exited_validators_bits[i].target,
-        );
-    }
-
-    let mut sha256_hash = public_inputs_hasher.digest;
+    let mut public_inputs_hash = sha256(
+        &mut builder,
+        &[
+            block_root.as_slice(),
+            flattened_withdrawal_credentials.as_slice(),
+            final_sum_bits.as_slice(),
+            number_of_non_activated_validators_bits.as_slice(),
+            number_of_active_validators_bits.as_slice(),
+            number_of_exited_validators_bits.as_slice(),
+        ]
+        .concat(),
+    );
 
     // Mask the last 3 bits in big endian as zero
-    sha256_hash[0] = builder._false();
-    sha256_hash[1] = builder._false();
-    sha256_hash[2] = builder._false();
+    public_inputs_hash[0] = builder._false();
+    public_inputs_hash[1] = builder._false();
+    public_inputs_hash[2] = builder._false();
 
-    let tokens = sha256_hash[0..256]
+    let public_inputs_hash_bytes = public_inputs_hash
         .chunks(8)
         .map(|x| builder.le_sum(x.iter().rev()))
         .collect_vec();
 
-    builder.register_public_inputs(&tokens);
+    builder.register_public_inputs(&public_inputs_hash_bytes);
 
     let data = builder.build::<C>();
 
@@ -248,60 +195,39 @@ pub fn build_final_circuit<const N: usize>(
             state_root,
             state_root_branch: state_root_branch.branch.try_into().unwrap(),
             balance_branch: balance_merkle_branch.branch.try_into().unwrap(),
-            balance_sum,
+            balance_sum: balances_pi_target.range_total_value,
             slot,
             slot_branch: slot_merkle_branch.branch.try_into().unwrap(),
-            withdrawal_credentials: withdrawal_credentials.try_into().unwrap(),
+            withdrawal_credentials: balances_pi_target.withdrawal_credentials,
             validator_size_bits,
         },
         data,
     )
 }
 
-fn setup_balance_targets<const N: usize>(
+fn setup_balance_targets<const WITHDRAWAL_CREDENTIALS_COUNT: usize>(
     builder: &mut CircuitBuilder<F, D>,
     data: &CircuitData<F, C, D>,
 ) -> (
     ProofWithPublicInputsTarget<D>,
     VerifierCircuitTarget,
-    [BoolTarget; ETH_SHA256_BIT_SIZE],
-    BigUintTarget,
-    [[BoolTarget; ETH_SHA256_BIT_SIZE]; N],
-    BigUintTarget,
-    HashOutTarget,
-    Target,
-    Target,
-    Target,
+    <WithdrawalCredentialsBalanceAggregatorFirstLevel<
+        GoldilocksField,
+        PoseidonGoldilocksConfig,
+        2,
+        WITHDRAWAL_CREDENTIALS_COUNT,
+    > as CircuitWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>>::PublicInputsTarget,
 ) {
     let (proof_targets, verifier_circuit_target) = setup_proof_targets(data, builder);
 
-    let root_hash = ValidatorBalanceProofTargetsExt::<N>::get_range_balances_root(&proof_targets);
-    let sum = ValidatorBalanceProofTargetsExt::<N>::get_range_total_value(&proof_targets);
-    let withdrawal_credentials: [[BoolTarget; 256]; N] = proof_targets.get_withdrawal_credentials();
-    let current_epoch = ValidatorBalanceProofTargetsExt::<N>::get_current_epoch(&proof_targets);
-    let poseidon_hash =
-        ValidatorBalanceProofTargetsExt::<N>::get_range_validator_commitment(&proof_targets);
-    let number_of_non_activated_validators =
-        ValidatorBalanceProofTargetsExt::<N>::get_number_of_non_activated_validators(
-            &proof_targets,
-        );
-    let number_of_active_validators =
-        ValidatorBalanceProofTargetsExt::<N>::get_number_of_active_validators(&proof_targets);
-    let number_of_exited_validators =
-        ValidatorBalanceProofTargetsExt::<N>::get_number_of_exited_validators(&proof_targets);
+    let public_inputs_target = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
+        GoldilocksField,
+        PoseidonGoldilocksConfig,
+        2,
+        WITHDRAWAL_CREDENTIALS_COUNT,
+    >::read_public_inputs_target(&proof_targets.public_inputs);
 
-    (
-        proof_targets,
-        verifier_circuit_target,
-        root_hash,
-        sum,
-        withdrawal_credentials,
-        current_epoch,
-        poseidon_hash,
-        number_of_non_activated_validators,
-        number_of_active_validators,
-        number_of_exited_validators,
-    )
+    (proof_targets, verifier_circuit_target, public_inputs_target)
 }
 
 fn setup_commitment_mapper_targets(
@@ -326,6 +252,7 @@ fn setup_commitment_mapper_targets(
     )
 }
 
+// TODO: Rename this function
 fn verify_slot_is_in_range(
     builder: &mut CircuitBuilder<GoldilocksField, 2>,
     slot: &BigUintTarget,

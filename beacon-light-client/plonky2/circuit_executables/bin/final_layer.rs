@@ -2,15 +2,15 @@ use circuit_executables::{
     crud::{
         common::{
             fetch_final_layer_input, fetch_proof, fetch_proof_balances, load_circuit_data,
-            save_final_proof, BalanceProof, ValidatorProof,
+            save_final_proof,
         },
         proof_storage::proof_storage::create_proof_storage,
     },
-    provers::SetPWValues,
     utils::{parse_config_file, CommandLineOptionsBuilder},
     wrap_final_layer_in_poseidon_bn128::wrap_final_layer_in_poseidon_bn_128,
 };
 use circuits::{
+    circuit_input_common::{BalanceProof, SetPWValues, ValidatorProof},
     final_layer::build_final_circuit::build_final_circuit,
     serialization::generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
 };

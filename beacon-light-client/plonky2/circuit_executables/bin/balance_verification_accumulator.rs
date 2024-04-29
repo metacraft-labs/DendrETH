@@ -10,7 +10,6 @@ use circuit_executables::{
         save_balance_accumulator_proof,
     },
     db_constants::DB_CONSTANTS,
-    provers::SetPWValues,
     utils::{
         parse_balance_verification_command_line_options, parse_config_file,
         CommandLineOptionsBuilder,
@@ -18,9 +17,12 @@ use circuit_executables::{
     validator::VALIDATOR_REGISTRY_LIMIT,
 };
 use circuits::{
-    deposits_accumulator_balance_aggregator::validator_balance_circuit_accumulator::ValidatorBalanceVerificationAccumulatorTargets,
+    circuit_input_common::SetPWValues,
+    deposits_accumulator_balance_aggregator::{
+        build_balance_accumulator_inner_level::BalanceInnerCircuitTargets,
+        validator_balance_circuit_accumulator::ValidatorBalanceVerificationAccumulatorTargets,
+    },
     serialization::targets_serialization::ReadTargets,
-    withdrawal_credentials_balance_aggregator::build_balance_inner_level_circuit::BalanceInnerCircuitTargets,
 };
 use colored::Colorize;
 use futures_lite::future;

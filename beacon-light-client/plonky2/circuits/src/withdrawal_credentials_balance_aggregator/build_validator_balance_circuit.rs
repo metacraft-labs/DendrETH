@@ -1,3 +1,4 @@
+// TODO: get rid of this file
 use itertools::Itertools;
 use num::BigUint;
 use plonky2::{
@@ -5,23 +6,16 @@ use plonky2::{
     hash::hash_types::HashOutTarget,
     iop::target::{BoolTarget, Target},
     plonk::{
-        circuit_builder::CircuitBuilder,
-        circuit_data::CircuitConfig,
-        config::{GenericConfig, PoseidonGoldilocksConfig},
+        config::PoseidonGoldilocksConfig,
         proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
     },
 };
 use plonky2_u32::gadgets::arithmetic_u32::U32Target;
 
-use crate::{
-    utils::{
-        biguint::BigUintTarget,
-        utils::{ETH_SHA256_BIT_SIZE, POSEIDON_HASH_SIZE},
-    },
-    withdrawal_credentials_balance_aggregator::validator_balance_circuit::validator_balance_verification,
+use crate::utils::{
+    biguint::BigUintTarget,
+    utils::{ETH_SHA256_BIT_SIZE, POSEIDON_HASH_SIZE},
 };
-
-use super::validator_balance_circuit::ValidatorBalanceVerificationTargets;
 
 pub const RANGE_TOTAL_VALUE_PUB_INDEX: usize = 0;
 pub const RANGE_BALANCES_ROOT_PUB_INDEX: usize = 2;
@@ -209,77 +203,4 @@ impl<const N: usize> ValidatorBalanceProofTargetsExt<N> for ValidatorBalanceProo
     fn get_number_of_exited_validators(&self) -> Target {
         self.public_inputs[NUMBER_OF_EXITED_VALIDATORS_INDEX]
     }
-}
-
-pub fn build_validator_balance_circuit<const N: usize>(
-    validators_len: usize,
-) -> (
-    ValidatorBalanceVerificationTargets<N>,
-    plonky2::plonk::circuit_data::CircuitData<
-        plonky2::field::goldilocks_field::GoldilocksField,
-        PoseidonGoldilocksConfig,
-        2,
-    >,
-) {
-    const D: usize = 2;
-    type C = PoseidonGoldilocksConfig;
-    type F = <C as GenericConfig<D>>::F;
-
-    let standard_recursion_config = CircuitConfig::standard_recursion_config();
-
-    let mut builder = CircuitBuilder::<F, D>::new(standard_recursion_config);
-
-    let validator_balance_verification_targets =
-        validator_balance_verification(&mut builder, validators_len);
-
-    set_public_variables(
-        &mut builder,
-        &validator_balance_verification_targets.range_total_value,
-        validator_balance_verification_targets.range_balances_root,
-        &validator_balance_verification_targets.withdrawal_credentials,
-        validator_balance_verification_targets.range_validator_commitment,
-        &validator_balance_verification_targets.current_epoch,
-        validator_balance_verification_targets.number_of_non_activated_validators,
-        validator_balance_verification_targets.number_of_active_validators,
-        validator_balance_verification_targets.number_of_exited_validators,
-    );
-
-    let data = builder.build::<C>();
-
-    (validator_balance_verification_targets, data)
-}
-
-pub fn set_public_variables<const N: usize>(
-    builder: &mut CircuitBuilder<plonky2::field::goldilocks_field::GoldilocksField, 2>,
-    range_total_value: &BigUintTarget,
-    range_balances_root: [BoolTarget; ETH_SHA256_BIT_SIZE],
-    withdrawal_credentials: &[[BoolTarget; ETH_SHA256_BIT_SIZE]; N],
-    range_validator_commitment: HashOutTarget,
-    current_epoch: &BigUintTarget,
-    number_of_non_activated_validators: Target,
-    number_of_active_validators: Target,
-    number_of_exited_validators: Target,
-) {
-    builder.register_public_inputs(&range_total_value.limbs.iter().map(|x| x.0).collect_vec());
-
-    builder.register_public_inputs(&range_balances_root.map(|x| x.target));
-
-    for i in 0..N {
-        builder.register_public_inputs(
-            &withdrawal_credentials[i]
-                .iter()
-                .map(|x| x.target)
-                .collect_vec(),
-        );
-    }
-
-    builder.register_public_inputs(&range_validator_commitment.elements);
-
-    builder.register_public_inputs(&current_epoch.limbs.iter().map(|x| x.0).collect_vec());
-
-    builder.register_public_input(number_of_non_activated_validators);
-
-    builder.register_public_input(number_of_active_validators);
-
-    builder.register_public_input(number_of_exited_validators);
 }

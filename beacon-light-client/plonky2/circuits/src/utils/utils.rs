@@ -1,9 +1,10 @@
 use itertools::Itertools;
+use num::BigUint;
 use plonky2::{
     field::{extension::Extendable, types::Field},
     hash::hash_types::RichField,
     iop::{
-        target::BoolTarget,
+        target::{BoolTarget, Target},
         witness::{PartialWitness, WitnessWrite},
     },
     plonk::circuit_builder::CircuitBuilder,
@@ -19,10 +20,53 @@ use super::{
 pub const ETH_SHA256_BIT_SIZE: usize = 256;
 pub const POSEIDON_HASH_SIZE: usize = 4;
 
+pub fn hex_string_from_field_element_bits<F: RichField + Extendable<D>, const D: usize>(
+    bits: &[F],
+) -> String {
+    assert!(bits.len() % 4 == 0);
+    let bits = bits
+        .iter()
+        .map(|element| element.to_canonical_u64() != 0)
+        .collect_vec();
+
+    hex::encode(bits_to_bytes(&bits))
+}
+
+pub fn biguint_from_limbs_target(limbs: &[Target]) -> BigUintTarget {
+    BigUintTarget {
+        limbs: limbs.iter().cloned().map(|x| U32Target(x)).collect_vec(),
+    }
+}
+
+pub fn biguint_from_field_elements<F: RichField + Extendable<D>, const D: usize>(
+    limbs: &[F],
+) -> BigUint {
+    BigUint::from_slice(
+        limbs
+            .iter()
+            .map(|element| element.to_canonical_u64() as u32)
+            .collect_vec()
+            .as_slice(),
+    )
+}
+
 pub fn hash_bytes(bytes: &[u8]) -> Vec<u8> {
     let mut hasher = Sha256::new();
     hasher.update(bytes);
     hasher.finalize().to_vec()
+}
+
+pub fn target_to_le_bits<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    number: Target,
+) -> [BoolTarget; 64] {
+    builder
+        .split_le(number, 64)
+        .into_iter()
+        .rev()
+        .collect_vec()
+        .try_into()
+        .unwrap()
 }
 
 pub fn biguint_is_equal<F: RichField + Extendable<D>, const D: usize>(
@@ -185,7 +229,7 @@ pub fn ssz_num_from_bits<F: RichField + Extendable<D>, const D: usize>(
     bits_to_biguint_target(builder, reverse_endianness(bits))
 }
 
-pub fn if_biguint<F: RichField + Extendable<D>, const D: usize>(
+pub fn select_biguint<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     b: BoolTarget,
     x: &BigUintTarget,
@@ -205,24 +249,24 @@ pub fn if_biguint<F: RichField + Extendable<D>, const D: usize>(
     result
 }
 
-pub fn bytes_to_bools(bytes: &[u8]) -> Vec<bool> {
-    let mut bool_values = Vec::new();
+pub fn bytes_to_bits(bytes: &[u8]) -> Vec<bool> {
+    let mut bits = Vec::new();
 
     for value in bytes {
         for i in (0..8).rev() {
             let mask = 1 << i;
-            bool_values.push(value & mask != 0);
+            bits.push(value & mask != 0);
         }
     }
 
-    bool_values
+    bits
 }
 
-pub fn bools_to_bytes(bools: &[bool]) -> Vec<u8> {
+pub fn bits_to_bytes(bits: &[bool]) -> Vec<u8> {
     let mut bytes = Vec::new();
     let mut byte = 0u8;
 
-    for (index, bit) in bools.iter().enumerate() {
+    for (index, bit) in bits.iter().enumerate() {
         if *bit {
             byte |= 1 << (7 - (index % 8));
         }
@@ -233,7 +277,7 @@ pub fn bools_to_bytes(bools: &[bool]) -> Vec<u8> {
         }
     }
 
-    if bools.len() % 8 != 0 {
+    if bits.len() % 8 != 0 {
         bytes.push(byte);
     }
 
@@ -248,7 +292,7 @@ impl<F: Field> SetBytesArray<F> for PartialWitness<F> {
     fn set_bytes_array(&mut self, targets: &[BoolTarget], values: &[u8]) {
         assert!(targets.len() == values.len() * 8);
 
-        let bool_values = bytes_to_bools(values);
+        let bool_values = bytes_to_bits(values);
 
         for i in 0..targets.len() {
             self.set_bool_target(targets[i], bool_values[i]);

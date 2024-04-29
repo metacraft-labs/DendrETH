@@ -9,10 +9,11 @@ use circuits::{
         generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
         targets_serialization::WriteTargets,
     },
+    traits::Circuit,
     withdrawal_credentials_balance_aggregator::{
-        build_balance_inner_level_circuit,
-        build_validator_balance_circuit::build_validator_balance_circuit,
-        validator_balance_circuit::ValidatorBalanceVerificationTargets,
+        first_level::circuit::ValidatorBalanceVerificationTargets,
+        inner_level_circuit::{build_inner_level_circuit, BalanceInnerCircuitTargets},
+        WithdrawalCredentialsBalanceAggregatorFirstLevel,
     },
 };
 use num::clamp;
@@ -22,7 +23,7 @@ use clap::{App, Arg};
 use futures_lite::future;
 
 use jemallocator::Jemalloc;
-use plonky2::plonk::config::PoseidonGoldilocksConfig;
+use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -37,7 +38,7 @@ fn write_to_file(file_path: &str, data: &[u8]) -> Result<()> {
 enum ValidatorBalanceTargets<const N: usize> {
     ValidatorBalanceFirstLevel(ValidatorBalanceVerificationTargets<N>),
     ValidatorBalanceAccumulatorFirstLevel(ValidatorBalanceVerificationAccumulatorTargets),
-    ValidatorBalanceInnerLevel(build_balance_inner_level_circuit::BalanceInnerCircuitTargets),
+    ValidatorBalanceInnerLevel(BalanceInnerCircuitTargets),
     ValidatorBalanceAccumulatorInnerLevel(
         build_balance_accumulator_inner_level::BalanceInnerCircuitTargets,
     ),
@@ -109,7 +110,12 @@ pub async fn async_main() -> Result<()> {
                 data,
             )
         } else {
-            let (targets, data) = build_validator_balance_circuit(validators_len);
+            let (targets, data) = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
+                GoldilocksField,
+                PoseidonGoldilocksConfig,
+                2,
+                1,
+            >::build(validators_len);
             (
                 ValidatorBalanceTargets::ValidatorBalanceFirstLevel(targets),
                 data,
@@ -151,63 +157,61 @@ pub async fn async_main() -> Result<()> {
         clamp(level.unwrap(), 1, 37)
     };
 
-    // let mut prev_circuit_data = first_level_data;
+    let mut prev_circuit_data = first_level_data;
 
-    // for i in 1..=max_level {
-    //     let (targets, data) = if circuit_name == "balance_accumulator" {
-    //         let (targets, data) = build_balance_accumulator_inner_level::build_inner_level_circuit(
-    //             &prev_circuit_data,
-    //         );
-    //
-    //         (
-    //             ValidatorBalanceTargets::<1>::ValidatorBalanceAccumulatorInnerLevel(targets),
-    //             data,
-    //         )
-    //     } else {
-    //         let (targets, data) = build_balance_inner_level_circuit::build_inner_level_circuit::<1>(
-    //             &prev_circuit_data,
-    //         );
-    //
-    //         (
-    //             ValidatorBalanceTargets::ValidatorBalanceInnerLevel(targets),
-    //             data,
-    //         )
-    //     };
-    //
-    //     if level == Some(i) || level == None {
-    //         let circuit_bytes = data
-    //             .to_bytes(&gate_serializer, &generator_serializer)
-    //             .unwrap();
-    //
-    //         write_to_file(
-    //             &format!("{}/{}_{}.plonky2_circuit", CIRCUIT_DIR, circuit_name, i),
-    //             &circuit_bytes,
-    //         )
-    //         .unwrap();
-    //
-    //         let inner_level_targets = match targets {
-    //             ValidatorBalanceTargets::ValidatorBalanceInnerLevel(targets) => {
-    //                 targets.write_targets().unwrap()
-    //             }
-    //             ValidatorBalanceTargets::ValidatorBalanceAccumulatorInnerLevel(targets) => {
-    //                 targets.write_targets().unwrap()
-    //             }
-    //             _ => unreachable!(),
-    //         };
-    //
-    //         write_to_file(
-    //             &format!("{}/{}_{}.plonky2_targets", CIRCUIT_DIR, circuit_name, i),
-    //             &inner_level_targets,
-    //         )
-    //         .unwrap();
-    //     }
-    //
-    //     if level == Some(i) {
-    //         return Ok(());
-    //     }
-    //
-    //     prev_circuit_data = data;
-    // }
+    for i in 1..=max_level {
+        let (targets, data) = if circuit_name == "balance_accumulator" {
+            let (targets, data) = build_balance_accumulator_inner_level::build_inner_level_circuit(
+                &prev_circuit_data,
+            );
+
+            (
+                ValidatorBalanceTargets::<1>::ValidatorBalanceAccumulatorInnerLevel(targets),
+                data,
+            )
+        } else {
+            let (targets, data) = build_inner_level_circuit::<1>(&prev_circuit_data);
+
+            (
+                ValidatorBalanceTargets::ValidatorBalanceInnerLevel(targets),
+                data,
+            )
+        };
+
+        if level == Some(i) || level == None {
+            let circuit_bytes = data
+                .to_bytes(&gate_serializer, &generator_serializer)
+                .unwrap();
+
+            write_to_file(
+                &format!("{}/{}_{}.plonky2_circuit", CIRCUIT_DIR, circuit_name, i),
+                &circuit_bytes,
+            )
+            .unwrap();
+
+            let inner_level_targets = match targets {
+                ValidatorBalanceTargets::ValidatorBalanceInnerLevel(targets) => {
+                    targets.write_targets().unwrap()
+                }
+                ValidatorBalanceTargets::ValidatorBalanceAccumulatorInnerLevel(targets) => {
+                    targets.write_targets().unwrap()
+                }
+                _ => unreachable!(),
+            };
+
+            write_to_file(
+                &format!("{}/{}_{}.plonky2_targets", CIRCUIT_DIR, circuit_name, i),
+                &inner_level_targets,
+            )
+            .unwrap();
+        }
+
+        if level == Some(i) {
+            return Ok(());
+        }
+
+        prev_circuit_data = data;
+    }
 
     Ok(())
 }

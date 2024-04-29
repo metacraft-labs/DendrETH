@@ -1,4 +1,5 @@
-// TODO: This file has to fly
+use num::BigUint;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 pub mod bool_vec_as_int_vec {
     use std::fmt;
@@ -125,9 +126,41 @@ pub mod bool_vec_as_int_vec_nested {
 
 pub const VALIDATOR_REGISTRY_LIMIT: usize = 1099511627776;
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ValidatorShaInput {
+    pub pubkey: String,
+    pub withdrawal_credentials: String,
+    pub effective_balance: String,
+    pub slashed: String,
+    pub activation_eligibility_epoch: String,
+    pub activation_epoch: String,
+    pub exit_epoch: String,
+    pub withdrawable_epoch: String,
+}
+
+pub fn biguint_to_str<S>(value: &BigUint, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let str_value = value.to_str_radix(10);
+    serializer.serialize_str(&str_value)
+}
+
+pub fn parse_biguint<'de, D>(deserializer: D) -> Result<BigUint, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let str_value = String::deserialize(deserializer)?;
+
+    str_value
+        .parse::<BigUint>()
+        .map_err(serde::de::Error::custom)
+}
+
 #[cfg(test)]
 mod tests {
-    use circuits::serializers::ValidatorShaInput;
+    use super::*;
     use serde_json;
 
     #[test]

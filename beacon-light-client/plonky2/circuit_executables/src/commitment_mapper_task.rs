@@ -1,4 +1,5 @@
 use anyhow::{bail, Result};
+use circuits::circuit_input_common::{SetPWValues, ValidatorProof};
 use colored::Colorize;
 
 use num::FromPrimitive;
@@ -9,9 +10,9 @@ use crate::{
     commitment_mapper_context::CommitmentMapperContext,
     crud::common::{
         fetch_proofs, fetch_validator, fetch_zero_proof, save_validator_proof,
-        save_zero_validator_proof, ProofProvider, ValidatorProof,
+        save_zero_validator_proof, ProofProvider,
     },
-    provers::{handle_commitment_mapper_inner_level_proof, SetPWValues},
+    provers::handle_commitment_mapper_inner_level_proof,
     utils::{get_depth_for_gindex, gindex_from_validator_index},
     validator::VALIDATOR_REGISTRY_LIMIT,
 };

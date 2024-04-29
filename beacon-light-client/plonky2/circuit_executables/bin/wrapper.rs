@@ -2,11 +2,12 @@ use std::{println, time::Instant};
 
 use anyhow::Result;
 use circuit_executables::{
-    crud::common::{load_circuit_data, FinalProof},
+    crud::common::load_circuit_data,
     db_constants::DB_CONSTANTS,
     utils::{parse_config_file, CommandLineOptionsBuilder},
     wrap_final_layer_in_poseidon_bn128::wrap_final_layer_in_poseidon_bn_128,
 };
+use circuits::circuit_input_common::FinalProof;
 use clap::Arg;
 use futures_lite::future;
 use plonky2::{

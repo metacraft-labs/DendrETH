@@ -3,12 +3,11 @@ use circuit_executables::{
         common::{
             delete_balance_verification_proof_dependencies, fetch_proofs_balances,
             fetch_validator_balance_input, load_circuit_data, read_from_file, save_balance_proof,
-            BalanceProof,
         },
         proof_storage::proof_storage::{create_proof_storage, ProofStorage},
     },
     db_constants::DB_CONSTANTS,
-    provers::{handle_balance_inner_level_proof, SetPWValues},
+    provers::handle_balance_inner_level_proof,
     utils::{
         parse_balance_verification_command_line_options, parse_config_file,
         CommandLineOptionsBuilder,
@@ -16,10 +15,13 @@ use circuit_executables::{
     validator::VALIDATOR_REGISTRY_LIMIT,
 };
 use circuits::{
+    circuit_input_common::BalanceProof,
     serialization::targets_serialization::ReadTargets,
+    traits::WitnessSetter,
     withdrawal_credentials_balance_aggregator::{
-        build_balance_inner_level_circuit::BalanceInnerCircuitTargets,
-        validator_balance_circuit::ValidatorBalanceVerificationTargets,
+        first_level::circuit::ValidatorBalanceVerificationTargets,
+        inner_level_circuit::BalanceInnerCircuitTargets,
+        WithdrawalCredentialsBalanceAggregatorFirstLevel,
     },
 };
 use colored::Colorize;
@@ -33,7 +35,6 @@ use anyhow::Result;
 use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
-    iop::witness::PartialWitness,
     plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig},
     util::serialization::Buffer,
 };
@@ -266,9 +267,12 @@ async fn process_first_level_task<const N: usize>(
 
     println!("Fetching validator balance input took: {:?}", elapsed);
 
-    let mut pw = PartialWitness::new();
-
-    targets.set_pw_values(&mut pw, &validator_balance_input);
+    let pw = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
+        GoldilocksField,
+        PoseidonGoldilocksConfig,
+        2,
+        N,
+    >::set_witness(targets, &validator_balance_input);
 
     let proof = circuit_data.prove(pw)?;
 
