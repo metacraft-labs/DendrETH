@@ -1,4 +1,6 @@
 import { expand_message_xmd, stringToBytes, htfDefaults, hash_to_field } from "./bls";
+import { PointG2 } from '@noble/bls12-381';
+import { formatHex } from '@dendreth/utils/ts-utils/bls';
 
 function bigintToBytes(value: bigint): Uint8Array {
     // Determine the required number of bytes to represent the bigint
@@ -37,18 +39,25 @@ function bigintTo12Limbs(value: bigint): bigint[] {
     return limbs;
 }
 
+function uint8ArrayToHexString(arr: Uint8Array): string {
+    return Array.from(arr)
+        .map(byte => byte.toString(16).padStart(2, '0'))
+        .join('');
+}
+
 (async () => {
-    let msg = new Uint8Array([0, 0]);
+    let msg = new Uint8Array([1,2,3]);
     const DST = stringToBytes(htfDefaults.DST);
 
-    // let result = await expand_message_xmd(msg, DST, 2);
     let hash_to_field_result = await hash_to_field(msg, 2);
 
-    let hash_to_field_res_0_0 = hash_to_field_result[0][0];
+    let hash_to_curve_test_res: PointG2 = await PointG2.hashToCurve(msg);
 
-    // console.log(result);
+    // let hash_to_curve_test_res: PointG2 = await PointG2.hashToCurve(
+    //     formatHex(uint8ArrayToHexString(msg)),
+    // );
+
     console.log('hash_to_field_result is: ', hash_to_field_result);
-    console.log('hash_to_field_res_0_0 is: ', hash_to_field_res_0_0);
-    //console.log('bytes of hash_to_field_res_0_0 are: ', bigintToBytes(hash_to_field_res_0_0));
-    //console.log('bigintTo12Limbs of hash_to_field_res_0_0 are: ', bigintTo12Limbs(hash_to_field_res_0_0));
+    console.log('####################################################');
+    console.log('hash_to_curve_test_res is: ', hash_to_curve_test_res);
 })();
