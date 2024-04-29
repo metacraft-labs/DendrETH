@@ -153,7 +153,7 @@ export async function postUpdateOnChain(
         .padStart(64, '0'),
   };
 
-  logger.info(update);
+  logger.info(JSON.stringify(update));
 
   if (hashiAdapterContract) {
     const finalizedHeaderSlot = await beaconApi.getBlockSlot(
