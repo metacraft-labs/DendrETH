@@ -45,6 +45,10 @@ initPrometheusSetup();
         host: updatePollingConfig.REDIS_HOST,
         port: updatePollingConfig.REDIS_PORT,
       },
+      //  Well for some reason the job stalls I think parsing beacon state is tedious task
+      maxStalledCount: undefined,
+      // Same it stalls and looses the lock should be investigated further
+      lockDuration: 300000,
       concurrency: 1,
     },
   );
