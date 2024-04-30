@@ -41,13 +41,11 @@ pub struct ValidatorProof {
 #[serde(rename_all = "camelCase")]
 pub struct BalanceProof {
     pub needs_change: bool,
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub range_total_value: BigUint,
+    pub range_total_value: u64,
     pub validators_commitment: Vec<String>,
-    pub balances_hash: Vec<u64>,
-    pub withdrawal_credentials: Vec<Vec<u64>>,
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub current_epoch: BigUint,
+    pub balances_hash: String,
+    pub withdrawal_credentials: Vec<String>,
+    pub current_epoch: u64,
     pub number_of_non_activated_validators: u64,
     pub number_of_active_validators: u64,
     pub number_of_exited_validators: u64,
@@ -88,10 +86,9 @@ pub struct FinalCircuitInput {
 #[serde(rename_all = "camelCase")]
 pub struct FinalProof {
     pub needs_change: bool,
-    pub block_root: Vec<u64>,
-    pub withdrawal_credentials: Vec<Vec<u64>>,
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub balance_sum: BigUint,
+    pub block_root: String,
+    pub withdrawal_credentials: Vec<String>,
+    pub balance_sum: u64,
     pub number_of_non_activated_validators: u64,
     pub number_of_active_validators: u64,
     pub number_of_exited_validators: u64,

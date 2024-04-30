@@ -13,11 +13,12 @@ use circuits::{
     },
     serialization::generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
     serializers::ValidatorShaInput,
+    traits::CircuitWithPublicInputs,
     utils::utils::hash_bytes,
     validators_commitment_mapper::build_commitment_mapper_first_level_circuit::CommitmentMapperProofExt,
-    withdrawal_credentials_balance_aggregator::build_validator_balance_circuit::ValidatorBalanceProofExt,
+    withdrawal_credentials_balance_aggregator::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
-use num::BigUint;
+use itertools::Itertools;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     plonk::{
@@ -175,19 +176,28 @@ pub async fn save_balance_proof<const N: usize>(
         protocol, DB_CONSTANTS.balance_verification_proof_storage, level, index
     );
 
+    let public_inputs = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
+        GoldilocksField,
+        PoseidonGoldilocksConfig,
+        2,
+        N,
+    >::read_public_inputs(&proof.public_inputs);
+
     let balance_proof = BalanceProof {
         needs_change: false,
-        range_total_value: <ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> as ValidatorBalanceProofExt<N>>::get_range_total_value(&proof),
-        balances_hash: <ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> as ValidatorBalanceProofExt<N>>::get_range_balances_root(&proof).to_vec(),
-        withdrawal_credentials: <ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> as ValidatorBalanceProofExt<N>>::
-            get_withdrawal_credentials(&proof)
-            .map(|x| x.to_vec())
-            .to_vec(),
-        validators_commitment: <ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> as ValidatorBalanceProofExt<N>>::get_range_validator_commitment(&proof).to_vec(),
-        current_epoch: <ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> as ValidatorBalanceProofExt<N>>::get_current_epoch(&proof),
-        number_of_non_activated_validators: <ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> as ValidatorBalanceProofExt<N>>::get_number_of_non_activated_validators(&proof),
-        number_of_active_validators: <ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> as ValidatorBalanceProofExt<N>>::get_number_of_active_validators(&proof),
-        number_of_exited_validators: <ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> as ValidatorBalanceProofExt<N>>::get_number_of_exited_validators(&proof),
+        range_total_value: public_inputs.range_total_value,
+        balances_hash: public_inputs.range_balances_root,
+        withdrawal_credentials: public_inputs.withdrawal_credentials.to_vec(),
+        validators_commitment: public_inputs
+            .range_validator_commitment
+            .to_vec()
+            .iter()
+            .map(|x| x.to_string())
+            .collect_vec(),
+        current_epoch: public_inputs.current_epoch,
+        number_of_non_activated_validators: public_inputs.number_of_non_activated_validators,
+        number_of_active_validators: public_inputs.number_of_active_validators,
+        number_of_exited_validators: public_inputs.number_of_exited_validators,
         proof_key: proof_key.clone(),
     };
 
@@ -215,9 +225,9 @@ pub async fn save_final_proof(
     con: &mut Connection,
     protocol: String,
     proof: &ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    block_root: Vec<u64>,
-    withdrawal_credentials: Vec<Vec<u64>>,
-    balance_sum: BigUint,
+    block_root: String,
+    withdrawal_credentials: Vec<String>,
+    balance_sum: u64,
     number_of_non_activated_validators: u64,
     number_of_active_validators: u64,
     number_of_exited_validators: u64,

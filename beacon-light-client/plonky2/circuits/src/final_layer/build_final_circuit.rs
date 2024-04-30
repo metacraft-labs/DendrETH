@@ -19,7 +19,7 @@ use crate::{
         biguint::{BigUintTarget, CircuitBuilderBiguint},
         hashing::{
             is_valid_merkle_branch::{is_valid_merkle_branch_sha256, IsValidMerkleBranchTargets},
-            sha256::{connect_bool_arrays, make_circuits, sha256, sha256_pair},
+            sha256::{sha256, sha256_pair},
         },
         utils::{
             biguint_to_bits_target, create_bool_target_array, ssz_num_to_bits, target_to_le_bits,

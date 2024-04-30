@@ -13,6 +13,7 @@ use circuits::{
     circuit_input_common::{BalanceProof, SetPWValues, ValidatorProof},
     final_layer::build_final_circuit::build_final_circuit,
     serialization::generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
+    utils::utils::bits_to_bytes,
 };
 use colored::Colorize;
 use std::{fs, marker::PhantomData, println, time::Instant};
@@ -139,11 +140,7 @@ async fn async_main() -> Result<()> {
         &mut con,
         protocol.to_string(),
         &proof,
-        final_input_data
-            .block_root
-            .iter()
-            .map(|x| *x as u64)
-            .collect::<Vec<u64>>(),
+        hex::encode(bits_to_bytes(&final_input_data.block_root)),
         balance_proof.withdrawal_credentials,
         balance_proof.range_total_value,
         balance_proof.number_of_non_activated_validators,

@@ -33,7 +33,7 @@ pub struct PublicInputsTarget<const WITHDRAWAL_CREDENTIALS_COUNT: usize> {
 pub struct PublicInputs<const WITHDRAWAL_CREDENTIALS_COUNT: usize> {
     pub range_total_value: u64,
     pub range_balances_root: String,
-    pub withdrawal_credentials: String,
+    pub withdrawal_credentials: [String; WITHDRAWAL_CREDENTIALS_COUNT],
     pub range_validator_commitment: [u64; POSEIDON_HASH_SIZE],
     pub current_epoch: u64,
     pub number_of_non_activated_validators: u64,
@@ -57,7 +57,9 @@ impl<
 
         let range_total_value = reader.read_n(2);
         let range_balances_root = reader.read_n(256);
-        let withdrawal_credentials = reader.read_n(256);
+
+        let withdrawal_credentials = [(); WITHDRAWAL_CREDENTIALS_COUNT].map(|_| reader.read_n(256));
+
         let range_validator_commitment = reader.read_n(POSEIDON_HASH_SIZE);
         let current_epoch = reader.read_n(2);
         let number_of_non_activated_validators = reader.read();
@@ -69,7 +71,7 @@ impl<
                 .to_u64()
                 .unwrap(),
             range_balances_root: hex_string_from_field_element_bits(range_balances_root),
-            withdrawal_credentials: hex_string_from_field_element_bits(withdrawal_credentials),
+            withdrawal_credentials: withdrawal_credentials.map(hex_string_from_field_element_bits),
             range_validator_commitment: range_validator_commitment
                 .iter()
                 .map(|element| element.to_canonical_u64())
