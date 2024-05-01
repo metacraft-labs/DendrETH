@@ -14,12 +14,7 @@ use plonky2x::{
 
 use crate::utils::plonky2x_extensions::{assert_zero, variable_to_le_bits};
 
-use super::{
-    fields::plonky2::fp_plonky2::{FpTarget, N},
-    native::modulus,
-};
-
-pub type PointG1Target = [FpTarget; 2];
+use super::{curves::g1::PointG1Target, fields::fp::N, utils::native_bls::modulus};
 
 pub const PUB_KEY_LEN: usize = 48;
 

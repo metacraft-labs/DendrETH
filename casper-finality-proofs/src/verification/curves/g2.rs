@@ -23,14 +23,14 @@ use plonky2x::{
 
 pub const SIG_LEN: usize = 96;
 
-use super::{
-    fields::plonky2::{
-        fp2_plonky2::{
+use crate::verification::{
+    fields::{
+        fp2::{
             add_fp2, is_equal, is_zero, mul_fp2, negate_fp2, range_check_fp2, sub_fp2, Fp2Target,
         },
-        fp_plonky2::{fp_is_zero, N},
+        fp::{fp_is_zero, N},
     },
-    native::{get_bls_12_381_parameter, modulus, Fp, Fp2},
+    utils::native_bls::{get_bls_12_381_parameter, modulus, Fp, Fp2},
 };
 
 pub type PointG2Target = [Fp2Target; 2];

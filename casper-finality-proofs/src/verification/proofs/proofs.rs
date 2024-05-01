@@ -16,12 +16,12 @@ use starky::{
 };
 
 use crate::verification::{
-    final_exponentiate::{self, FinalExponentiateStark},
-    miller_loop::{self, MillerLoopStark},
-    native,
+    proofs::{
+        final_exponentiate::{self, FinalExponentiateStark},
+        miller_loop::{self, MillerLoopStark},
+    },
+    utils::native_bls::{self, Fp, Fp12, Fp2},
 };
-
-use super::native::{Fp, Fp12, Fp2};
 
 pub fn miller_loop_main<
     F: RichField + Extendable<D>,
@@ -40,8 +40,8 @@ pub fn miller_loop_main<
 ) {
     let config = StarkConfig::standard_fast_config();
     let stark = MillerLoopStark::<F, D>::new(1024);
-    let ell_coeffs = native::calc_pairing_precomp(q_x, q_y, q_z);
-    let res = native::miller_loop(x, y, q_x, q_y, q_z);
+    let ell_coeffs = native_bls::calc_pairing_precomp(q_x, q_y, q_z);
+    let res = native_bls::miller_loop(x, y, q_x, q_y, q_z);
     let mut public_inputs = Vec::<F>::new();
     for e in x.0.iter() {
         public_inputs.push(F::from_canonical_u32(*e));

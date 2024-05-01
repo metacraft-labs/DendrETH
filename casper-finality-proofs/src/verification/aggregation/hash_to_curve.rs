@@ -27,15 +27,15 @@ use plonky2x::{
 };
 
 use crate::verification::{
-    fields::plonky2::{
-        fp2_plonky2::{
+    fields::{
+        fp2::{
             add_fp2, div_fp2, frobenius_map, is_zero, mul_fp2, negate_fp2, range_check_fp2,
             sgn0_fp2, Fp2Target,
         },
-        fp_plonky2::{mul_fp, N},
+        fp::{mul_fp, N},
     },
-    g2_ec_point::{g2_add, g2_double, g2_negate, g2_scalar_mul, PointG2Target},
-    native::{modulus, Fp, Fp2, Pow},
+    curves::g2::{g2_add, g2_double, g2_negate, g2_scalar_mul, PointG2Target},
+    utils::native_bls::{modulus, Fp, Fp2, Pow},
 };
 
 use super::hash_to_field::hash_to_field;
@@ -590,8 +590,9 @@ mod tests {
     fn test_hash_to_curve() {
         let mut builder = DefaultBuilder::new();
         let msg = vec![
-            Variable::constant(&mut builder, GoldilocksField(0)),
-            Variable::constant(&mut builder, GoldilocksField(0)),
+            Variable::constant(&mut builder, GoldilocksField(1)),
+            Variable::constant(&mut builder, GoldilocksField(2)),
+            Variable::constant(&mut builder, GoldilocksField(3)),
         ];
         let hash_to_curve_res = hash_to_curve(&mut builder, &msg);
 
@@ -635,15 +636,18 @@ mod tests {
             ));
         }
 
-        let expected_biguint_targets = vec![
-                    BigUint::from_str("2484880953070652509895159898261749949971419256101265549903463729658081179969788208734336814677878439015289354663558").unwrap(), 
-                    BigUint::from_str("571286950361770968319560191831515067050084989489837870994029396792668285219017899793859671802388182901315402858724").unwrap(), 
-                    BigUint::from_str("3945400848309661287520855376438021610375515007889273149322439985738679863089347725379973912108534346949384256127526").unwrap(), 
-                    BigUint::from_str("1067268791373784971379690868996146496995005458163356395218843329703930727067637736115073576974603814754170298346268").unwrap()
+
+        let _expected_biguint_targets = vec![
+                    BigUint::from_str("1488500447191166672941560528372304391753380984946436836994188271218534863150867665359953446396361952637518019947793").unwrap(), 
+                    BigUint::from_str("1753488088500361592037930400817905775849083730244155560991738322430467341859724570393042632032849437027661169306989").unwrap(), 
+                    BigUint::from_str("2318554203034552579539595992433782267325167891539272149341432418328940006828092065617902886582573506614115347040310").unwrap(), 
+                    BigUint::from_str("3334543002393027129910698389240714444020077356630900497979366055064005959312476382054351648268135934753073076697542").unwrap()
                 ];
 
         for i in 0..4 {
-            assert_eq!(biguint_res[i], expected_biguint_targets[i]);
+            println!("curr: {:?}", biguint_res[i]);
+            // assert_eq!(biguint_res[i], expected_biguint_targets[i]);
         }
+        assert!(false);
     }
 }

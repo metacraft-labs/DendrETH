@@ -1,13 +1,18 @@
 use std::cmp::min;
 
 use crate::verification::{
-    fields::starky::fp::*,
-    fields::starky::fp12::*,
-    fields::starky::fp2::*,
-    fields::starky::fp6::*,
-    native::{get_bls_12_381_parameter, Fp, Fp12, Fp2, Fp6},
-    utils::*,
+    fields::starky::{
+        fp::*,
+        fp12::*,
+        fp2::*,
+        fp6::*,
+    },
+    utils::{
+        native_bls::{get_bls_12_381_parameter, Fp, Fp12, Fp2, Fp6},
+        starky_utils::*,
+    },
 };
+
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 use plonky2::{
     field::{

@@ -24,7 +24,7 @@ use plonky2x::{
     },
 };
 
-use crate::verification::native::{mod_inverse, modulus};
+use crate::verification::utils::native_bls::{mod_inverse, modulus};
 
 pub const N: usize = 12;
 pub type FpTarget = BigUintTarget;

@@ -11,14 +11,13 @@ use plonky2::{
     plonk::circuit_builder::CircuitBuilder,
 };
 use starky::constraint_consumer::{ConstraintConsumer, RecursiveConstraintConsumer};
-
-use crate::verification::{
-    native::{
+use crate::verification::utils::{
+    native_bls::{
         add_u32_slices, add_u32_slices_12, get_bits_as_array, get_div_rem_modulus_from_biguint_12,
         get_selector_bits_from_u32, get_u32_vec_from_literal, get_u32_vec_from_literal_24, modulus,
         mul_u32_slice_u32, multiply_by_slice, sub_u32_slices, sub_u32_slices_12, Fp,
     },
-    utils::*,
+    starky_utils::*,
 };
 
 // Fp Multiplication layout offsets

@@ -6,7 +6,7 @@ use std::{str::FromStr, vec};
 
 use num_bigint::{BigInt, BigUint, Sign, ToBigInt};
 
-use crate::verification::big_arithmetic::{self, big_add, big_less_than};
+use super::big_arithmetic::{self, big_add, big_less_than};
 
 pub fn modulus() -> BigUint {
     BigUint::from_str("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787").unwrap()
@@ -1534,8 +1534,7 @@ mod tests {
     use std::str::FromStr;
 
     use num_bigint::BigUint;
-
-    use crate::verification::native::sub_u32_slices_12;
+    use crate::verification::utils::native_bls::sub_u32_slices_12;
 
     use super::{get_u32_vec_from_literal, modulus, verify_bls_signatures, Fp12};
 

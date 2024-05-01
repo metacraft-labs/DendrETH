@@ -1,12 +1,7 @@
-pub mod big_arithmetic;
 pub mod fields;
-pub mod final_exponentiate;
-pub mod g1_ec_point;
-pub mod g2_ec_point;
-pub mod miller_loop;
-pub mod native;
+pub mod curves;
 pub mod proofs;
-pub mod pubkey_to_g1_verification;
-pub mod signature;
+pub mod pubkey_to_g1;
+pub mod aggregation;
 pub mod utils;
 pub mod verify;

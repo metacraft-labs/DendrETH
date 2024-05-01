@@ -57,7 +57,8 @@ pub fn big_multiply(a: &[u32], b: &[u32]) -> Vec<u32> {
 
 #[cfg(test)]
 mod tests {
-    use crate::verification::big_arithmetic::{big_less_than, big_sub};
+
+    use crate::verification::utils::big_arithmetic::{big_less_than, big_sub};
 
     use super::big_add;
 

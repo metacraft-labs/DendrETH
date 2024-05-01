@@ -8,14 +8,22 @@ use plonky2::plonk::{
 };
 use plonky2x::frontend::uint::num::biguint::{BigUintTarget, CircuitBuilderBiguint};
 
-use crate::verification::native::{calc_pairing_precomp, Fp, Fp12, Fp2};
-
-use super::{
-    final_exponentiate::FinalExponentiateStark,
-    g1_ec_point::PointG1Target,
-    g2_ec_point::PointG2Target,
-    miller_loop::MillerLoopStark,
-    proofs::{final_exponentiate_main, miller_loop_main, recursive_proof, ProofTuple},
+use crate::verification::{
+    proofs::{
+        final_exponentiate::FinalExponentiateStark,
+        miller_loop::MillerLoopStark,
+        proofs::{
+            final_exponentiate_main,
+            miller_loop_main,
+            recursive_proof,
+            ProofTuple,
+        },
+    },
+    curves::{
+        g1::PointG1Target,
+        g2::PointG2Target,
+    },
+    utils::native_bls::{calc_pairing_precomp, Fp, Fp12, Fp2},
 };
 
 const D: usize = 2;
@@ -24,17 +32,6 @@ type F = <C as GenericConfig<D>>::F;
 
 type MlStark = MillerLoopStark<F, D>;
 type FeStark = FinalExponentiateStark<F, D>;
-
-// pub fn calculate_signature<F: RichField + Extendable<D>, const D: usize>(
-//     builder: &mut CircuitBuilder<F, D>,
-//     msg: &[Target],
-//     secret_key: &Fp2Target,
-// ) -> PointG2Target {
-//     let hm_as_g2_point = hash_to_curve(builder, msg);
-//     let signature = g2_scalar_mul(builder, &hm_as_g2_point, secret_key);
-
-//     signature
-// }
 
 pub fn verify_miller_loop(x: Fp, y: Fp, q_x: Fp2, q_y: Fp2, q_z: Fp2) -> ProofTuple<F, C, D> {
     let (stark_ml, proof_ml, config_ml) = miller_loop_main::<F, C, D>(x, y, q_x, q_y, q_z);
@@ -261,13 +258,16 @@ mod tests {
     };
     use plonky2x::frontend::uint::num::biguint::CircuitBuilderBiguint;
 
+    use super::calc_ell_coeffs_and_generate_g2_point;
     use crate::verification::{
-        g1_ec_point::PointG1Target,
-        g2_ec_point::PointG2Target,
-        miller_loop::MillerLoopStark,
-        native::{Fp, Fp2},
-        verify::calc_ell_coeffs_and_generate_g2_point,
+        proofs::miller_loop::MillerLoopStark,
+        curves::{
+            g1::PointG1Target,
+            g2::PointG2Target,
+        },
+        utils::native_bls::{Fp, Fp2},
     };
+    
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;

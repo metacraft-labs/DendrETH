@@ -1,4 +1,3 @@
-use crate::verification::native::Fp12;
 use plonky2::{
     field::{
         extension::{Extendable, FieldExtension},
@@ -13,10 +12,14 @@ use starky::{
     evaluation_frame::{StarkEvaluationFrame, StarkFrame},
     stark::Stark,
 };
-
-use crate::verification::utils::*;
 use crate::verification::{
-    fields::starky::fp::*, fields::starky::fp12::*, fields::starky::fp2::*, fields::starky::fp6::*,
+    utils::{starky_utils::*, native_bls::Fp12},
+    fields::starky::{
+        fp::*,
+        fp2::*,
+        fp6::*,
+        fp12::*
+    },
 };
 
 /*

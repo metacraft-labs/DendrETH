@@ -1,6 +1,6 @@
 use crate::verification::{
-    fields::plonky2::{fp2_plonky2::Fp2Target, fp_plonky2::FpTarget},
-    native::modulus,
+    fields::{fp2::Fp2Target, fp::FpTarget},
+    utils::native_bls::modulus,
 };
 use itertools::Itertools;
 use num_bigint::BigUint;
@@ -204,7 +204,7 @@ mod tests {
     use std::str::FromStr;
 
     use super::i2osp;
-    use crate::verification::signature::hash_to_field::{
+    use crate::verification::aggregation::hash_to_field::{
         expand_message_xmd, hash_to_field, string_to_bytes_target, strxor, DST,
     };
     use itertools::Itertools;

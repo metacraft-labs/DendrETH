@@ -1,9 +1,11 @@
 use crate::verification::{
-    fields::starky::fp::*,
-    fields::starky::fp2::*,
-    fields::starky::fp6::*,
-    native::{fp4_square, get_bls_12_381_parameter, mul_by_nonresidue, Fp, Fp12, Fp2, Fp6},
-    utils::*,
+    fields::starky::{fp::*, fp2::*,fp6::*},
+    utils::{
+        native_bls::{
+            fp4_square, get_bls_12_381_parameter, mul_by_nonresidue, Fp, Fp12, Fp2, Fp6
+        },
+        starky_utils::*,
+    },
 };
 use num_bigint::BigUint;
 use plonky2::{
