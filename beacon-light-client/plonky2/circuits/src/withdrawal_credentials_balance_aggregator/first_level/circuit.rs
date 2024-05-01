@@ -1,11 +1,11 @@
 use plonky2::{
-    field::extension::Extendable,
-    hash::hash_types::{HashOutTarget, RichField},
+    field::goldilocks_field::GoldilocksField,
+    hash::hash_types::HashOutTarget,
     iop::target::{BoolTarget, Target},
     plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::{CircuitConfig, CircuitData},
-        config::GenericConfig,
+        config::PoseidonGoldilocksConfig,
     },
 };
 
@@ -47,46 +47,42 @@ pub struct ValidatorBalanceVerificationTargets<const N: usize> {
 // maybe add a function to expose the targets (returns Targets)
 
 pub struct WithdrawalCredentialsBalanceAggregatorFirstLevel<
-    F: RichField + Extendable<D>,
-    C: GenericConfig<D, F = F>,
-    const D: usize,
     const WITHDRAWAL_CREDENTIALS_COUNT: usize,
 > {
     // maybe sneak the targets in here as well
     pub targets: <WithdrawalCredentialsBalanceAggregatorFirstLevel<
-        F,
-        C,
-        D,
         WITHDRAWAL_CREDENTIALS_COUNT,
-    > as Circuit<F, C, D>>::Targets,
-    pub data: CircuitData<F, C, D>,
+    > as Circuit<GoldilocksField, PoseidonGoldilocksConfig, 2>>::Targets,
+    pub data: CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
 }
 
-impl<
-        F: RichField + Extendable<D>,
-        C: GenericConfig<D, F = F>,
-        const D: usize,
-        const WITHDRAWAL_CREDENTIALS_COUNT: usize,
-    > Circuit<F, C, D>
-    for WithdrawalCredentialsBalanceAggregatorFirstLevel<F, C, D, WITHDRAWAL_CREDENTIALS_COUNT>
+impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize>
+    Circuit<GoldilocksField, PoseidonGoldilocksConfig, 2>
+    for WithdrawalCredentialsBalanceAggregatorFirstLevel<WITHDRAWAL_CREDENTIALS_COUNT>
 {
     type Targets = ValidatorBalanceVerificationTargets<WITHDRAWAL_CREDENTIALS_COUNT>;
     type Params = usize;
 
-    fn build(validators_len: usize) -> (Self::Targets, CircuitData<F, C, D>) {
-        let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
+    fn build(
+        validators_len: usize,
+    ) -> (
+        Self::Targets,
+        CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    ) {
+        let mut builder =
+            CircuitBuilder::<GoldilocksField, 2>::new(CircuitConfig::standard_recursion_config());
 
         let targets = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
-            F,
-            C,
-            D,
             WITHDRAWAL_CREDENTIALS_COUNT,
         >::define(&mut builder, validators_len);
 
-        (targets, builder.build::<C>())
+        (targets, builder.build::<PoseidonGoldilocksConfig>())
     }
 
-    fn define(builder: &mut CircuitBuilder<F, D>, validators_len: usize) -> Self::Targets {
+    fn define(
+        builder: &mut CircuitBuilder<GoldilocksField, 2>,
+        validators_len: usize,
+    ) -> Self::Targets {
         if !validators_len.is_power_of_two() {
             panic!("validators_len must be a power of two");
         }

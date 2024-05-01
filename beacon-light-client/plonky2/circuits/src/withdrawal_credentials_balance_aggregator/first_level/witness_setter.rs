@@ -1,6 +1,6 @@
 use plonky2::{
-    field::extension::Extendable, hash::hash_types::RichField, iop::witness::PartialWitness,
-    plonk::config::GenericConfig,
+    field::goldilocks_field::GoldilocksField, iop::witness::PartialWitness,
+    plonk::config::PoseidonGoldilocksConfig,
 };
 
 use crate::{
@@ -10,17 +10,16 @@ use crate::{
     withdrawal_credentials_balance_aggregator::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
 
-impl<
-        F: RichField + Extendable<D>,
-        C: GenericConfig<D, F = F>,
-        const D: usize,
-        const WITHDRAWAL_CREDENTIALS_COUNT: usize,
-    > WitnessSetter<F, C, D>
-    for WithdrawalCredentialsBalanceAggregatorFirstLevel<F, C, D, WITHDRAWAL_CREDENTIALS_COUNT>
+impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize>
+    WitnessSetter<GoldilocksField, PoseidonGoldilocksConfig, 2>
+    for WithdrawalCredentialsBalanceAggregatorFirstLevel<WITHDRAWAL_CREDENTIALS_COUNT>
 {
     type WitnessInput = ValidatorBalancesInput;
 
-    fn set_witness(targets: &Self::Targets, source: &Self::WitnessInput) -> PartialWitness<F> {
+    fn set_witness(
+        targets: &Self::Targets,
+        source: &Self::WitnessInput,
+    ) -> PartialWitness<GoldilocksField> {
         let mut pw = PartialWitness::new();
 
         for i in 0..targets.balances.len() {

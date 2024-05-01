@@ -1,11 +1,11 @@
-use plonky2::{field::extension::Extendable, hash::hash_types::RichField, iop::target::Target};
+use plonky2::{hash::hash_types::RichField, iop::target::Target};
 
-pub struct PublicInputsReader<'a, F: RichField + Extendable<D>, const D: usize> {
+pub struct PublicInputsReader<'a, F: RichField> {
     offset: usize,
     public_inputs: &'a [F],
 }
 
-impl<'a, F: RichField + Extendable<D>, const D: usize> PublicInputsReader<'a, F, D> {
+impl<'a, F: RichField> PublicInputsReader<'a, F> {
     pub fn new(public_inputs: &'a [F]) -> Self {
         Self {
             offset: 0,

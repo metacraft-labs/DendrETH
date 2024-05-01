@@ -267,12 +267,10 @@ async fn process_first_level_task<const N: usize>(
 
     println!("Fetching validator balance input took: {:?}", elapsed);
 
-    let pw = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
-        GoldilocksField,
-        PoseidonGoldilocksConfig,
-        2,
-        N,
-    >::set_witness(targets, &validator_balance_input);
+    let pw = WithdrawalCredentialsBalanceAggregatorFirstLevel::<N>::set_witness(
+        targets,
+        &validator_balance_input,
+    );
 
     let proof = circuit_data.prove(pw)?;
 

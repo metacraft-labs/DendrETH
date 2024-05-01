@@ -23,7 +23,7 @@ use clap::{App, Arg};
 use futures_lite::future;
 
 use jemallocator::Jemalloc;
-use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
+use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -110,12 +110,8 @@ pub async fn async_main() -> Result<()> {
                 data,
             )
         } else {
-            let (targets, data) = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
-                GoldilocksField,
-                PoseidonGoldilocksConfig,
-                2,
-                1,
-            >::build(validators_len);
+            let (targets, data) =
+                WithdrawalCredentialsBalanceAggregatorFirstLevel::<1>::build(validators_len);
             (
                 ValidatorBalanceTargets::ValidatorBalanceFirstLevel(targets),
                 data,

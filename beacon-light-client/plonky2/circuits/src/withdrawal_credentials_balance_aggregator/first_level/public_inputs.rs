@@ -13,10 +13,10 @@ use crate::{
 use itertools::Itertools;
 use num::ToPrimitive;
 use plonky2::{
-    field::extension::Extendable,
+    field::{extension::Extendable, goldilocks_field::GoldilocksField, types::PrimeField64},
     hash::hash_types::{HashOutTarget, RichField},
     iop::target::{BoolTarget, Target},
-    plonk::{circuit_builder::CircuitBuilder, config::GenericConfig},
+    plonk::{circuit_builder::CircuitBuilder, config::PoseidonGoldilocksConfig},
 };
 
 pub struct PublicInputsTarget<const WITHDRAWAL_CREDENTIALS_COUNT: usize> {
@@ -41,18 +41,14 @@ pub struct PublicInputs<const WITHDRAWAL_CREDENTIALS_COUNT: usize> {
     pub number_of_exited_validators: u64,
 }
 
-impl<
-        F: RichField + Extendable<D>,
-        C: GenericConfig<D, F = F>,
-        const D: usize,
-        const WITHDRAWAL_CREDENTIALS_COUNT: usize,
-    > CircuitWithPublicInputs<F, C, D>
-    for WithdrawalCredentialsBalanceAggregatorFirstLevel<F, C, D, WITHDRAWAL_CREDENTIALS_COUNT>
+impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize>
+    CircuitWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>
+    for WithdrawalCredentialsBalanceAggregatorFirstLevel<WITHDRAWAL_CREDENTIALS_COUNT>
 {
     type PublicInputs = PublicInputs<WITHDRAWAL_CREDENTIALS_COUNT>;
     type PublicInputsTarget = PublicInputsTarget<WITHDRAWAL_CREDENTIALS_COUNT>;
 
-    fn read_public_inputs(public_inputs: &[F]) -> Self::PublicInputs {
+    fn read_public_inputs(public_inputs: &[GoldilocksField]) -> Self::PublicInputs {
         let mut reader = PublicInputsReader::new(public_inputs);
 
         let range_total_value = reader.read_n(2);

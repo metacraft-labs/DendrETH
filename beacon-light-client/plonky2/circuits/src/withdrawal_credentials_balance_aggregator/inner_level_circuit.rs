@@ -111,16 +111,10 @@ pub fn build_inner_level_circuit<const WITHDRAWAL_CREDENTIALS_COUNT: usize>(
     );
 
     let l_input = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
-        F,
-        C,
-        D,
         WITHDRAWAL_CREDENTIALS_COUNT,
     >::read_public_inputs_target(&proof1.public_inputs);
 
     let r_input = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
-        F,
-        C,
-        D,
         WITHDRAWAL_CREDENTIALS_COUNT,
     >::read_public_inputs_target(&proof2.public_inputs);
 

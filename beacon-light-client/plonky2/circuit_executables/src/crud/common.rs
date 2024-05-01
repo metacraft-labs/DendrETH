@@ -176,12 +176,9 @@ pub async fn save_balance_proof<const N: usize>(
         protocol, DB_CONSTANTS.balance_verification_proof_storage, level, index
     );
 
-    let public_inputs = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
-        GoldilocksField,
-        PoseidonGoldilocksConfig,
-        2,
-        N,
-    >::read_public_inputs(&proof.public_inputs);
+    let public_inputs = WithdrawalCredentialsBalanceAggregatorFirstLevel::<N>::read_public_inputs(
+        &proof.public_inputs,
+    );
 
     let balance_proof = BalanceProof {
         needs_change: false,

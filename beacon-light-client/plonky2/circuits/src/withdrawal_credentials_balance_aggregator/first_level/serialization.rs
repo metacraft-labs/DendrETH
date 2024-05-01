@@ -1,10 +1,9 @@
 use crate::serialization::targets_serialization::{ReadTargets, WriteTargets};
 use itertools::Itertools;
 use plonky2::{
-    field::extension::Extendable,
-    hash::hash_types::RichField,
-    plonk::config::GenericConfig,
-    util::serialization::{Read, Write},
+    field::goldilocks_field::GoldilocksField,
+    plonk::config::PoseidonGoldilocksConfig,
+    util::serialization::{Buffer, IoResult, Read, Write},
 };
 
 use crate::{
@@ -16,15 +15,16 @@ use crate::{
     withdrawal_credentials_balance_aggregator::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
 
-impl<
-        F: RichField + Extendable<D>,
-        C: GenericConfig<D, F = F>,
-        const D: usize,
-        const WITHDRAWAL_CREDENTIALS_COUNT: usize,
-    > SerializableCircuit<F, C, D>
-    for WithdrawalCredentialsBalanceAggregatorFirstLevel<F, C, D, WITHDRAWAL_CREDENTIALS_COUNT>
+// serialize
+// deserialize
+// serialize_seperate
+// deserialize_seperate
+
+impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize>
+    SerializableCircuit<GoldilocksField, PoseidonGoldilocksConfig, 2>
+    for WithdrawalCredentialsBalanceAggregatorFirstLevel<WITHDRAWAL_CREDENTIALS_COUNT>
 {
-    fn serialize(targets: &Self::Targets) -> plonky2::util::serialization::IoResult<Vec<u8>> {
+    fn serialize(targets: &Self::Targets) -> IoResult<Vec<u8>> {
         let mut data = Vec::<u8>::new();
 
         data.write_usize(targets.validators.len())?;
@@ -55,9 +55,7 @@ impl<
         Ok(data)
     }
 
-    fn deserialize(
-        data: &mut plonky2::util::serialization::Buffer,
-    ) -> plonky2::util::serialization::IoResult<Self::Targets> {
+    fn deserialize(data: &mut Buffer) -> IoResult<Self::Targets> {
         let validators_len = data.read_usize()?;
 
         Ok(Self::Targets {

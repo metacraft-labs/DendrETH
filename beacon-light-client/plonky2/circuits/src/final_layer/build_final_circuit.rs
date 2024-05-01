@@ -212,18 +212,12 @@ fn setup_balance_targets<const WITHDRAWAL_CREDENTIALS_COUNT: usize>(
     ProofWithPublicInputsTarget<D>,
     VerifierCircuitTarget,
     <WithdrawalCredentialsBalanceAggregatorFirstLevel<
-        GoldilocksField,
-        PoseidonGoldilocksConfig,
-        2,
         WITHDRAWAL_CREDENTIALS_COUNT,
     > as CircuitWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>>::PublicInputsTarget,
-) {
+){
     let (proof_targets, verifier_circuit_target) = setup_proof_targets(data, builder);
 
     let public_inputs_target = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
-        GoldilocksField,
-        PoseidonGoldilocksConfig,
-        2,
         WITHDRAWAL_CREDENTIALS_COUNT,
     >::read_public_inputs_target(&proof_targets.public_inputs);
 

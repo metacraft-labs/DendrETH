@@ -20,9 +20,7 @@ use super::{
 pub const ETH_SHA256_BIT_SIZE: usize = 256;
 pub const POSEIDON_HASH_SIZE: usize = 4;
 
-pub fn hex_string_from_field_element_bits<F: RichField + Extendable<D>, const D: usize>(
-    bits: &[F],
-) -> String {
+pub fn hex_string_from_field_element_bits<F: RichField>(bits: &[F]) -> String {
     assert!(bits.len() % 4 == 0);
     let bits = bits
         .iter()
@@ -38,9 +36,7 @@ pub fn biguint_from_limbs_target(limbs: &[Target]) -> BigUintTarget {
     }
 }
 
-pub fn biguint_from_field_elements<F: RichField + Extendable<D>, const D: usize>(
-    limbs: &[F],
-) -> BigUint {
+pub fn biguint_from_field_elements<F: RichField>(limbs: &[F]) -> BigUint {
     BigUint::from_slice(
         limbs
             .iter()
