@@ -1,7 +1,4 @@
-use plonky2::{
-    field::goldilocks_field::GoldilocksField, iop::witness::PartialWitness,
-    plonk::config::PoseidonGoldilocksConfig,
-};
+use plonky2::iop::witness::PartialWitness;
 
 use crate::{
     circuit_input_common::{set_boolean_pw_values, SetPWValues, ValidatorBalancesInput},
@@ -10,8 +7,7 @@ use crate::{
     withdrawal_credentials_balance_aggregator::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
 
-impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize>
-    WitnessSetter<GoldilocksField, PoseidonGoldilocksConfig, 2>
+impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> WitnessSetter<Self::F, Self::C, { Self::D }>
     for WithdrawalCredentialsBalanceAggregatorFirstLevel<WITHDRAWAL_CREDENTIALS_COUNT>
 {
     type WitnessInput = ValidatorBalancesInput;
@@ -19,7 +15,7 @@ impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize>
     fn set_witness(
         targets: &Self::Targets,
         source: &Self::WitnessInput,
-    ) -> PartialWitness<GoldilocksField> {
+    ) -> PartialWitness<Self::F> {
         let mut pw = PartialWitness::new();
 
         for i in 0..targets.balances.len() {

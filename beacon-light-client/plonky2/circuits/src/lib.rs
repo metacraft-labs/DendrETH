@@ -1,3 +1,6 @@
+#![feature(associated_type_defaults)]
+#![feature(generic_const_exprs)]
+
 pub mod circuit_input_common;
 pub mod deposits_accumulator_balance_aggregator;
 pub mod deposits_accumulator_commitment_mapper_and_bls_verification;

@@ -1,10 +1,6 @@
 use crate::serialization::targets_serialization::{ReadTargets, WriteTargets};
 use itertools::Itertools;
-use plonky2::{
-    field::goldilocks_field::GoldilocksField,
-    plonk::config::PoseidonGoldilocksConfig,
-    util::serialization::{Buffer, IoResult, Read, Write},
-};
+use plonky2::util::serialization::{Buffer, IoResult, Read, Write};
 
 use crate::{
     traits::SerializableCircuit,
@@ -20,8 +16,7 @@ use crate::{
 // serialize_seperate
 // deserialize_seperate
 
-impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize>
-    SerializableCircuit<GoldilocksField, PoseidonGoldilocksConfig, 2>
+impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> SerializableCircuit
     for WithdrawalCredentialsBalanceAggregatorFirstLevel<WITHDRAWAL_CREDENTIALS_COUNT>
 {
     fn serialize(targets: &Self::Targets) -> IoResult<Vec<u8>> {

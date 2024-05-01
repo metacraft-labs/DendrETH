@@ -10,7 +10,7 @@ use plonky2::{
 };
 
 use crate::{
-    traits::Circuit,
+    traits::{Circuit, CircuitConf},
     utils::{
         biguint::{BigUintTarget, CircuitBuilderBiguint},
         hashing::{
@@ -29,6 +29,9 @@ use crate::{
 
 use super::public_inputs::set_public_inputs;
 
+// TODO: mark which ones are public inputs and generate the
+// CircuitWithPublicInputs trait with a procedural macro (trait funcions and
+// associated types)
 pub struct ValidatorBalanceVerificationTargets<const N: usize> {
     pub range_total_value: BigUintTarget,
     pub range_balances_root: [BoolTarget; ETH_SHA256_BIT_SIZE],
@@ -50,37 +53,35 @@ pub struct WithdrawalCredentialsBalanceAggregatorFirstLevel<
     const WITHDRAWAL_CREDENTIALS_COUNT: usize,
 > {
     // maybe sneak the targets in here as well
-    pub targets: <WithdrawalCredentialsBalanceAggregatorFirstLevel<
-        WITHDRAWAL_CREDENTIALS_COUNT,
-    > as Circuit<GoldilocksField, PoseidonGoldilocksConfig, 2>>::Targets,
-    pub data: CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    pub targets: <Self as Circuit>::Targets,
+    pub data: <Self as CircuitConf>::CircuitData,
 }
 
-impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize>
-    Circuit<GoldilocksField, PoseidonGoldilocksConfig, 2>
+// TODO: generate this trait with a derive macro
+impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> CircuitConf
+    for WithdrawalCredentialsBalanceAggregatorFirstLevel<WITHDRAWAL_CREDENTIALS_COUNT>
+{
+    type F = GoldilocksField;
+    type C = PoseidonGoldilocksConfig;
+}
+
+impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
     for WithdrawalCredentialsBalanceAggregatorFirstLevel<WITHDRAWAL_CREDENTIALS_COUNT>
 {
     type Targets = ValidatorBalanceVerificationTargets<WITHDRAWAL_CREDENTIALS_COUNT>;
     type Params = usize;
 
-    fn build(
-        validators_len: usize,
-    ) -> (
-        Self::Targets,
-        CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    ) {
+    fn build(validators_len: usize) -> (Self::Targets, CircuitData<Self::F, Self::C, { Self::D }>) {
         let mut builder =
-            CircuitBuilder::<GoldilocksField, 2>::new(CircuitConfig::standard_recursion_config());
+            CircuitBuilder::<Self::F, { Self::D }>::new(CircuitConfig::standard_recursion_config());
 
-        let targets = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
-            WITHDRAWAL_CREDENTIALS_COUNT,
-        >::define(&mut builder, validators_len);
+        let targets = Self::define(&mut builder, validators_len);
 
-        (targets, builder.build::<PoseidonGoldilocksConfig>())
+        (targets, builder.build::<Self::C>())
     }
 
     fn define(
-        builder: &mut CircuitBuilder<GoldilocksField, 2>,
+        builder: &mut CircuitBuilder<Self::F, { Self::D }>,
         validators_len: usize,
     ) -> Self::Targets {
         if !validators_len.is_power_of_two() {
