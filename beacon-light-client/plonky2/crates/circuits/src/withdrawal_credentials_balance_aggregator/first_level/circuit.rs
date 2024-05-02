@@ -10,18 +10,21 @@ use plonky2::{
     },
 };
 
-use crate::utils::{
-    biguint::{BigUintTarget, CircuitBuilderBiguint},
-    hashing::{
-        hash_tree_root::hash_tree_root,
-        hash_tree_root_poseidon::hash_tree_root_poseidon,
-        sha256::{bool_arrays_are_equal, connect_bool_arrays},
-        validator_hash_tree_root_poseidon::{
-            hash_tree_root_validator_poseidon, ValidatorPoseidonTargets,
+use crate::{
+    common_targets::Sha256Target,
+    utils::{
+        biguint::{BigUintTarget, CircuitBuilderBiguint},
+        hashing::{
+            hash_tree_root::hash_tree_root,
+            hash_tree_root_poseidon::hash_tree_root_poseidon,
+            sha256::{bool_arrays_are_equal, connect_bool_arrays},
+            validator_hash_tree_root_poseidon::{
+                hash_tree_root_validator_poseidon, ValidatorPoseidonTargets,
+            },
         },
+        is_active_validator::get_validator_status,
+        utils::{create_bool_target_array, select_biguint, ssz_num_from_bits},
     },
-    is_active_validator::get_validator_status,
-    utils::{create_bool_target_array, select_biguint, ssz_num_from_bits},
 };
 
 use super::public_inputs::set_public_inputs;
@@ -29,8 +32,6 @@ use super::public_inputs::set_public_inputs;
 // TODO: mark which ones are public inputs and generate the
 // CircuitWithPublicInputs trait with a procedural macro (trait funcions and
 // associated types)
-
-type Sha256Target = [BoolTarget; 256];
 
 pub struct ValidatorBalanceVerificationTargets<
     const VALIDATORS_COUNT: usize,

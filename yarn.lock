@@ -1583,9 +1583,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@dendreth/plonky2@workspace:beacon-light-client/plonky2":
+"@dendreth/balance-verification@workspace:beacon-light-client/plonky2/input_fetchers":
   version: 0.0.0-use.local
-  resolution: "@dendreth/plonky2@workspace:beacon-light-client/plonky2"
+  resolution: "@dendreth/balance-verification@workspace:beacon-light-client/plonky2/input_fetchers"
   dependencies:
     "@aws-sdk/client-s3": "npm:^3.521.0"
     "@azure/storage-blob": "npm:^12.17.0"

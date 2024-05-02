@@ -30,7 +30,7 @@ pub fn hex_string_from_field_element_bits<F: RichField>(bits: &[F]) -> String {
     hex::encode(bits_to_bytes(&bits))
 }
 
-pub fn biguint_from_limbs_target(limbs: &[Target]) -> BigUintTarget {
+pub fn biguint_target_from_limbs(limbs: &[Target]) -> BigUintTarget {
     BigUintTarget {
         limbs: limbs.iter().cloned().map(|x| U32Target(x)).collect_vec(),
     }

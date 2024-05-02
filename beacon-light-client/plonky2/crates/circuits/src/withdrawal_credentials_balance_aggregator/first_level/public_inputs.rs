@@ -1,10 +1,11 @@
 use crate::{
+    common_targets::Sha256Target,
     utils::{
         biguint::BigUintTarget,
         public_inputs_reader::{PublicInputsReader, PublicInputsTargetReader},
         utils::{
-            biguint_from_field_elements, biguint_from_limbs_target,
-            hex_string_from_field_element_bits, ETH_SHA256_BIT_SIZE, POSEIDON_HASH_SIZE,
+            biguint_from_field_elements, hex_string_from_field_element_bits, ETH_SHA256_BIT_SIZE,
+            POSEIDON_HASH_SIZE,
         },
     },
     withdrawal_credentials_balance_aggregator::WithdrawalCredentialsBalanceAggregatorFirstLevel,
@@ -90,40 +91,22 @@ where
     fn read_public_inputs_target(public_inputs: &[Target]) -> Self::PublicInputsTarget {
         let mut reader = PublicInputsTargetReader::new(public_inputs);
 
-        let range_total_value = reader.read_n(2);
-        let range_balances_root = reader.read_n(256);
-        let withdrawal_credentials = [(); WITHDRAWAL_CREDENTIALS_COUNT].map(|_| reader.read_n(256));
-        let range_validator_commitment = reader.read_n(4);
-        let current_epoch = reader.read_n(2);
+        let range_total_value = reader.read_object::<BigUintTarget>();
+        let range_balances_root = reader.read_object::<Sha256Target>();
+        let withdrawal_credentials =
+            reader.read_object::<[Sha256Target; WITHDRAWAL_CREDENTIALS_COUNT]>();
+        let range_validator_commitment = reader.read_object::<HashOutTarget>();
+        let current_epoch = reader.read_object::<BigUintTarget>();
         let number_of_non_activated_validators = reader.read_object::<Target>();
         let number_of_active_validators = reader.read_object::<Target>();
         let number_of_exited_validators = reader.read_object::<Target>();
 
         Self::PublicInputsTarget {
-            range_total_value: biguint_from_limbs_target(range_total_value),
-            range_balances_root: range_balances_root
-                .iter()
-                .map(|&target| BoolTarget::new_unsafe(target))
-                .collect_vec()
-                .try_into()
-                .unwrap(),
-            withdrawal_credentials: {
-                withdrawal_credentials
-                    .map(|credentials_targets| -> [BoolTarget; ETH_SHA256_BIT_SIZE] {
-                        credentials_targets
-                            .iter()
-                            .map(|&target| BoolTarget::new_unsafe(target))
-                            .collect_vec()
-                            .try_into()
-                            .unwrap()
-                    })
-                    .try_into()
-                    .unwrap()
-            },
-            range_validator_commitment: HashOutTarget::from_vec(
-                range_validator_commitment.to_owned(),
-            ),
-            current_epoch: biguint_from_limbs_target(current_epoch),
+            range_total_value,
+            range_balances_root,
+            withdrawal_credentials,
+            range_validator_commitment,
+            current_epoch,
             number_of_non_activated_validators,
             number_of_active_validators,
             number_of_exited_validators,

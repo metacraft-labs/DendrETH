@@ -1,4 +1,12 @@
-use plonky2::{hash::hash_types::RichField, iop::target::Target};
+use itertools::Itertools;
+use plonky2::{
+    hash::hash_types::{HashOutTarget, RichField, NUM_HASH_OUT_ELTS},
+    iop::target::{BoolTarget, Target},
+};
+
+use crate::utils::utils::biguint_target_from_limbs;
+
+use super::biguint::BigUintTarget;
 
 pub struct PublicInputsReader<'a, F: RichField> {
     offset: usize,
@@ -51,28 +59,78 @@ impl<'a> PublicInputsTargetReader<'a> {
         read_targets
     }
 
-    pub fn read_object<R: PublicInputsTargetReadable>(&mut self) -> R::Result {
+    pub fn read_object<R: PublicInputsTargetReadable>(&mut self) -> R {
         let read_targets = &self.public_inputs[self.offset..self.offset + R::get_size()];
         R::parse(&read_targets)
     }
 }
 
 pub trait PublicInputsTargetReadable {
-    type Result;
-
     fn get_size() -> usize;
-    fn parse(targets: &[Target]) -> Self::Result;
+    fn parse(targets: &[Target]) -> Self;
 }
 
 impl PublicInputsTargetReadable for Target {
-    type Result = Target;
-
     fn get_size() -> usize {
         1
     }
 
-    fn parse(targets: &[Target]) -> Target {
+    fn parse(targets: &[Target]) -> Self {
         assert_eq!(targets.len(), Self::get_size());
         targets[0]
+    }
+}
+
+impl PublicInputsTargetReadable for BoolTarget {
+    fn get_size() -> usize {
+        1
+    }
+
+    fn parse(targets: &[Target]) -> Self {
+        assert_eq!(targets.len(), Self::get_size());
+        BoolTarget::new_unsafe(targets[0])
+    }
+}
+
+impl PublicInputsTargetReadable for BigUintTarget {
+    // TODO: make a Uint64 biguint wrapper
+    fn get_size() -> usize {
+        2
+    }
+
+    fn parse(targets: &[Target]) -> Self {
+        assert_eq!(targets.len(), Self::get_size());
+        biguint_target_from_limbs(targets)
+    }
+}
+
+impl<R: PublicInputsTargetReadable + std::fmt::Debug, const N: usize> PublicInputsTargetReadable
+    for [R; N]
+{
+    fn get_size() -> usize {
+        R::get_size() * N
+    }
+
+    fn parse(targets: &[Target]) -> Self {
+        assert_eq!(targets.len(), Self::get_size());
+        let size = Self::get_size();
+        [(); N]
+            .iter()
+            .enumerate()
+            .map(|(i, _)| R::parse(&targets[i * size..(i + 1) * size]))
+            .collect_vec()
+            .try_into()
+            .unwrap()
+    }
+}
+
+impl PublicInputsTargetReadable for HashOutTarget {
+    fn get_size() -> usize {
+        NUM_HASH_OUT_ELTS
+    }
+
+    fn parse(targets: &[Target]) -> Self {
+        assert_eq!(targets.len(), Self::get_size());
+        HashOutTarget::from_vec(targets.to_owned())
     }
 }
