@@ -71,19 +71,14 @@ impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
     type Targets = ValidatorBalanceVerificationTargets<WITHDRAWAL_CREDENTIALS_COUNT>;
     type Params = usize;
 
-    fn build(validators_len: usize) -> (Self::Targets, CircuitData<Self::F, Self::C, { Self::D }>) {
-        let mut builder =
-            CircuitBuilder::<Self::F, { Self::D }>::new(CircuitConfig::standard_recursion_config());
-
+    fn build(validators_len: usize) -> (Self::Targets, Self::CircuitData) {
+        let mut builder = Self::CircuitBuilder::new(CircuitConfig::standard_recursion_config());
         let targets = Self::define(&mut builder, validators_len);
-
-        (targets, builder.build::<Self::C>())
+        let circuit_data = builder.build::<Self::C>();
+        (targets, circuit_data)
     }
 
-    fn define(
-        builder: &mut CircuitBuilder<Self::F, { Self::D }>,
-        validators_len: usize,
-    ) -> Self::Targets {
+    fn define(builder: &mut Self::CircuitBuilder, validators_len: usize) -> Self::Targets {
         if !validators_len.is_power_of_two() {
             panic!("validators_len must be a power of two");
         }

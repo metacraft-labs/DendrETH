@@ -13,8 +13,8 @@ use crate::{
 
 // serialize
 // deserialize
-// serialize_seperate
-// deserialize_seperate
+// serialize_targets
+// deserialize_targets
 
 impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> SerializableCircuit
     for WithdrawalCredentialsBalanceAggregatorFirstLevel<WITHDRAWAL_CREDENTIALS_COUNT>

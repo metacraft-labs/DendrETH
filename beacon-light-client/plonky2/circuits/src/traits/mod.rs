@@ -15,6 +15,7 @@ pub trait CircuitConf {
     const D: usize = D; // NOTE: Don't override this
 
     type CircuitData = CircuitData<Self::F, Self::C, D>;
+    type CircuitBuilder = CircuitBuilder<Self::F, D>;
 }
 
 pub trait Circuit: CircuitConf {
@@ -38,10 +39,9 @@ pub trait CircuitWithPublicInputs: Circuit {
     fn read_public_inputs_target(public_inputs: &[Target]) -> Self::PublicInputsTarget;
 }
 
-pub trait WitnessSetter<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>:
-    Circuit
-{
+pub trait WitnessSetter: Circuit {
     type WitnessInput;
 
-    fn set_witness(targets: &Self::Targets, source: &Self::WitnessInput) -> PartialWitness<F>;
+    fn set_witness(targets: &Self::Targets, source: &Self::WitnessInput)
+        -> PartialWitness<Self::F>;
 }

@@ -7,7 +7,7 @@ use crate::{
     withdrawal_credentials_balance_aggregator::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
 
-impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> WitnessSetter<Self::F, Self::C, { Self::D }>
+impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> WitnessSetter
     for WithdrawalCredentialsBalanceAggregatorFirstLevel<WITHDRAWAL_CREDENTIALS_COUNT>
 {
     type WitnessInput = ValidatorBalancesInput;
