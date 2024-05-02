@@ -50,15 +50,29 @@ impl<'a> PublicInputsTargetReader<'a> {
         self.offset += n;
         read_targets
     }
-    // pub fn read_object<R: PublicInputsTargetReadable>(&mut self, obj: &R) -> R::Result {
-    //     let read_targets = &self.public_inputs[self.offset..self.offset + obj.get_size()];
-    //     obj.parse(&read_targets)
-    // }
+
+    pub fn read_object<R: PublicInputsTargetReadable>(&mut self) -> R::Result {
+        let read_targets = &self.public_inputs[self.offset..self.offset + R::get_size()];
+        R::parse(&read_targets)
+    }
 }
 
-// trait PublicInputsTargetReadable {
-//     type Result;
-//
-//     fn get_size(&self) -> usize;
-//     fn parse(&self, targets: &[Target]) -> Self::Result;
-// }
+pub trait PublicInputsTargetReadable {
+    type Result;
+
+    fn get_size() -> usize;
+    fn parse(targets: &[Target]) -> Self::Result;
+}
+
+impl PublicInputsTargetReadable for Target {
+    type Result = Target;
+
+    fn get_size() -> usize {
+        1
+    }
+
+    fn parse(targets: &[Target]) -> Target {
+        assert_eq!(targets.len(), Self::get_size());
+        targets[0]
+    }
+}

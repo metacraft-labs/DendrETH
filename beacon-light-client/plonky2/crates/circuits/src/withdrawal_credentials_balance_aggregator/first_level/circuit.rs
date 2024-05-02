@@ -17,12 +17,11 @@ use crate::utils::{
         hash_tree_root_poseidon::hash_tree_root_poseidon,
         sha256::{bool_arrays_are_equal, connect_bool_arrays},
         validator_hash_tree_root_poseidon::{
-            hash_tree_root_validator_poseidon, ValidatorPoseidonHashTreeRootTargets,
-            ValidatorPoseidonTargets,
+            hash_tree_root_validator_poseidon, ValidatorPoseidonTargets,
         },
     },
     is_active_validator::get_validator_status,
-    utils::{create_bool_target_array, select_biguint, ssz_num_from_bits, ETH_SHA256_BIT_SIZE},
+    utils::{create_bool_target_array, select_biguint, ssz_num_from_bits},
 };
 
 use super::public_inputs::set_public_inputs;

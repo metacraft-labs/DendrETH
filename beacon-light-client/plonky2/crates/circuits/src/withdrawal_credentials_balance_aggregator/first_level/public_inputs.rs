@@ -95,9 +95,9 @@ where
         let withdrawal_credentials = [(); WITHDRAWAL_CREDENTIALS_COUNT].map(|_| reader.read_n(256));
         let range_validator_commitment = reader.read_n(4);
         let current_epoch = reader.read_n(2);
-        let number_of_non_activated_validators = reader.read();
-        let number_of_active_validators = reader.read();
-        let number_of_exited_validators = reader.read();
+        let number_of_non_activated_validators = reader.read_object::<Target>();
+        let number_of_active_validators = reader.read_object::<Target>();
+        let number_of_exited_validators = reader.read_object::<Target>();
 
         Self::PublicInputsTarget {
             range_total_value: biguint_from_limbs_target(range_total_value),
