@@ -16,11 +16,23 @@ pub trait Circuit {
     type C: GenericConfig<D, F = Self::F>;
     const D: usize = D; // NOTE: Don't override this
 
-    type Targets;
+    type Targets: ReadPublicInputsTarget;
     type Params;
 
     fn define(builder: &mut CircuitBuilder<Self::F, D>, params: Self::Params) -> Self::Targets;
     fn build(params: Self::Params) -> (Self::Targets, CircuitData<Self::F, Self::C, D>);
+
+    fn read_public_inputs_target_new(
+        public_inputs: &[Target],
+    ) -> <Self::Targets as ReadPublicInputsTarget>::PublicInputsTarget {
+        Self::Targets::read_public_inputs_target(public_inputs)
+    }
+}
+
+pub trait ReadPublicInputsTarget {
+    type PublicInputsTarget;
+
+    fn read_public_inputs_target(public_inputs: &[Target]) -> Self::PublicInputsTarget;
 }
 
 pub trait SerializableCircuit: Circuit {

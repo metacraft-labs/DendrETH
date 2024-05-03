@@ -1,10 +1,16 @@
 use itertools::Itertools;
-use proc_macro::{Delimiter, Group, Span, TokenStream, TokenTree};
-use quote::{format_ident, quote};
+use proc_macro2::{Delimiter, Group, Span, TokenStream, TokenTree};
+use quote::format_ident;
+use quote::quote;
+use syn::parse::Parse;
+use syn::parse::ParseStream;
+use syn::Expr;
+use syn::Token;
+use syn::Type;
 use syn::{parse_macro_input, DeriveInput, Field, Fields, Generics, Ident};
 
 #[proc_macro_derive(PublicInputs, attributes(public_input))]
-pub fn derive_public_inputs(input: TokenStream) -> TokenStream {
+pub fn derive_public_inputs(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input_ast: DeriveInput = parse_macro_input!(input as DeriveInput);
 
     let syn::Data::Struct(ref data) = input_ast.data else {
@@ -17,7 +23,33 @@ pub fn derive_public_inputs(input: TokenStream) -> TokenStream {
         impl_read_public_inputs_target(&input_ast, &public_input_fields),
         define_public_inputs_target_struct(&input_ast, &public_input_fields),
     ])
+    .into()
 }
+
+// struct MacroInput {
+//     typ: Type,
+//     expr: Expr,
+// }
+//
+// impl Parse for MacroInput {
+//     fn parse(input: ParseStream) -> syn::Result<Self> {
+//         let typ = input.parse::<Type>()?;
+//         let _comma = input.parse::<Token![,]>()?;
+//         let expr = input.parse::<Expr>()?;
+//         Ok(MacroInput { typ, expr })
+//     }
+// }
+//
+// #[proc_macro]
+// pub fn read_public_inputs_target(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+//     let input = parse_macro_input!(input as MacroInput);
+//     let typ = input.typ;
+//     let expr = input.expr;
+//     quote! {
+//         <#typ as Circuit>::Targets::read_public_inputs_target(#expr)
+//     }
+//     .into()
+// }
 
 fn define_public_inputs_target_struct(
     input: &DeriveInput,
@@ -28,7 +60,7 @@ fn define_public_inputs_target_struct(
     let public_inputs_target_ident = format_ident!("{targets_struct_ident}PublicInputsTarget");
 
     concat_token_streams(vec![
-        quote!(pub struct #public_inputs_target_ident #impl_generics #where_clause).into(),
+        quote!(pub struct #public_inputs_target_ident #impl_generics #where_clause),
         enclose_in_braces(gen_public_inputs_target_struct_fields(public_input_fields)),
     ])
 }
@@ -41,7 +73,7 @@ fn gen_public_inputs_target_struct_fields(public_input_fields: &[Field]) -> Toke
                 let field_ty = &field.ty;
                 let field_type = quote!(#field_ty);
                 let field_name = &field.ident;
-                quote!(pub #field_name: #field_type,).into()
+                quote!(pub #field_name: #field_type,)
             })
             .collect_vec(),
     )
@@ -59,14 +91,14 @@ fn gen_type_shorthand_initialization(
             .into_iter()
             .map(|field| {
                 let field_ident = &field.ident;
-                quote!(#field_ident,).into()
+                quote!(#field_ident,)
             })
             .collect_vec(),
     );
 
     // TODO: :: should not be there if the generics are empty
     concat_token_streams(vec![
-        quote!(#type_ident :: #type_generics).into(),
+        quote!(#type_ident :: #type_generics),
         enclose_in_braces(comma_separated_field_names),
     ])
 }
@@ -77,18 +109,28 @@ fn impl_read_public_inputs_target(
 ) -> TokenStream {
     let (impl_generics, type_generics, where_clause) = input.generics.split_for_impl();
 
+    let targets_ident = &input.ident;
     let return_ty_ident = format_ident!("{}PublicInputsTarget", input.ident);
 
-    let signature: TokenStream = quote! {
-        pub fn read_public_inputs_target #impl_generics(public_inputs: &[Target])
-            -> #return_ty_ident #type_generics #where_clause
-    }
-    .into();
+    // let signature: TokenStream = quote! {
+    //     pub fn read_public_inputs_target #impl_generics(public_inputs: &[Target])
+    //         -> #return_ty_ident #type_generics #where_clause
+    // };
 
     let body =
         gen_read_public_inputs_target_body(&return_ty_ident, &input.generics, public_input_fields);
 
-    concat_token_streams(vec![signature, enclose_in_braces(body)])
+    let trait_impl = quote! {
+        impl #impl_generics ReadPublicInputsTarget for #targets_ident #type_generics #where_clause {
+            type PublicInputsTarget = #return_ty_ident #type_generics;
+
+            fn read_public_inputs_target(public_inputs: &[Target]) -> Self::PublicInputsTarget {
+                #body
+            }
+        }
+    };
+
+    trait_impl
 }
 
 fn gen_read_public_inputs_target_body(
@@ -118,7 +160,7 @@ fn concat_token_streams(streams: Vec<TokenStream>) -> TokenStream {
 
 fn define_reader(type_name: &str) -> TokenStream {
     let reader_type_ident = Ident::new(type_name, Span::call_site().into());
-    quote!(let mut reader = #reader_type_ident::new(public_inputs);).into()
+    quote!(let mut reader = #reader_type_ident::new(public_inputs);)
 }
 
 fn gen_public_inputs_target_read_for_fields(fields: &[Field]) -> TokenStream {
@@ -137,7 +179,7 @@ fn gen_public_inputs_target_read_for_field(field: &Field) -> TokenStream {
     let field_ty = &field.ty;
     let field_type = quote!(#field_ty);
 
-    quote!(let #field_name = reader.read_object::<#field_type>();).into()
+    quote!(let #field_name = reader.read_object::<#field_type>();)
 }
 
 fn filter_public_input_fields(fields: &Fields) -> Vec<Field> {

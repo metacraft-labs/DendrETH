@@ -58,6 +58,7 @@ version = "0.1.0"
 dependencies = [
  "circuit",
  "itertools 0.10.5",
+ "proc-macro2",
  "quote",
  "syn 2.0.60",
 ]

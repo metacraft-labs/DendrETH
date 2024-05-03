@@ -11,3 +11,4 @@ circuit = { path = "../circuit" }
 syn = "2.0.60"
 quote = "1.0.36"
 itertools = "0.10.5"
+proc-macro2 = "1.0.81"

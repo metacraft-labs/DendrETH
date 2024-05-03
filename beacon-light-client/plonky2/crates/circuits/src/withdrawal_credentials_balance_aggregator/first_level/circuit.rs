@@ -1,5 +1,5 @@
 use crate::utils::public_inputs::target_reader::PublicInputsTargetReader;
-use circuit::Circuit;
+use circuit::{Circuit, ReadPublicInputsTarget};
 use circuit_with_public_inputs_derive::PublicInputs;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
