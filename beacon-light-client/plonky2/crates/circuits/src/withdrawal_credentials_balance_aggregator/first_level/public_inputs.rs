@@ -2,7 +2,9 @@ use crate::{
     common_targets::Sha256Target,
     utils::{
         biguint::BigUintTarget,
-        public_inputs_reader::{PublicInputsReader, PublicInputsTargetReader},
+        public_inputs::{
+            field_reader::PublicInputsFieldReader, target_reader::PublicInputsTargetReader,
+        },
         utils::{
             biguint_from_field_elements, hex_string_from_field_element_bits, ETH_SHA256_BIT_SIZE,
             POSEIDON_HASH_SIZE,
@@ -55,7 +57,7 @@ where
     type PublicInputsTarget = PublicInputsTarget<WITHDRAWAL_CREDENTIALS_COUNT>;
 
     fn read_public_inputs(public_inputs: &[Self::F]) -> Self::PublicInputs {
-        let mut reader = PublicInputsReader::new(public_inputs);
+        let mut reader = PublicInputsFieldReader::new(public_inputs);
 
         let range_total_value = reader.read_n(2);
         let range_balances_root = reader.read_n(256);

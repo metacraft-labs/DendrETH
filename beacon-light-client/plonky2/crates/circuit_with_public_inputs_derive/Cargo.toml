@@ -3,6 +3,11 @@ name = "circuit_with_public_inputs_derive"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
 proc-macro = true
 
 [dependencies]
+circuit = { path = "../circuit" }
+syn = "2.0.60"
+quote = "1.0.36"
+itertools = "0.10.5"

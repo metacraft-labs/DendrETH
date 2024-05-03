@@ -1,4 +1,6 @@
+use crate::utils::public_inputs::target_reader::PublicInputsTargetReader;
 use circuit::Circuit;
+use circuit_with_public_inputs_derive::PublicInputs;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     hash::hash_types::HashOutTarget,
@@ -10,6 +12,7 @@ use plonky2::{
     },
 };
 
+use super::public_inputs::set_public_inputs;
 use crate::{
     common_targets::Sha256Target,
     utils::{
@@ -27,24 +30,26 @@ use crate::{
     },
 };
 
-use super::public_inputs::set_public_inputs;
-
 // TODO: mark which ones are public inputs and generate the
 // CircuitWithPublicInputs trait with a procedural macro (trait funcions and
 // associated types)
 
+#[derive(PublicInputs)]
 pub struct ValidatorBalanceVerificationTargets<
     const VALIDATORS_COUNT: usize,
     const WITHDRAWAL_CREDENTIALS_COUNT: usize,
 > where
     [(); VALIDATORS_COUNT / 4]:,
 {
+    #[public_input]
     pub range_total_value: BigUintTarget,
     pub range_balances_root: Sha256Target,
     pub range_validator_commitment: HashOutTarget,
     pub validators: [ValidatorPoseidonTargets; VALIDATORS_COUNT],
+    #[public_input]
     pub non_zero_validator_leaves_mask: [BoolTarget; VALIDATORS_COUNT],
     pub balances: [Sha256Target; VALIDATORS_COUNT / 4],
+    #[public_input]
     pub withdrawal_credentials: [Sha256Target; WITHDRAWAL_CREDENTIALS_COUNT],
     pub current_epoch: BigUintTarget,
     pub number_of_non_activated_validators: Target,

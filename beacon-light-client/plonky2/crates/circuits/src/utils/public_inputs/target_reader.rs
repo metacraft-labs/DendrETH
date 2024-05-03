@@ -1,38 +1,10 @@
 use itertools::Itertools;
 use plonky2::{
-    hash::hash_types::{HashOutTarget, RichField, NUM_HASH_OUT_ELTS},
+    hash::hash_types::{HashOutTarget, NUM_HASH_OUT_ELTS},
     iop::target::{BoolTarget, Target},
 };
 
-use crate::utils::utils::biguint_target_from_limbs;
-
-use super::biguint::BigUintTarget;
-
-pub struct PublicInputsReader<'a, F: RichField> {
-    offset: usize,
-    public_inputs: &'a [F],
-}
-
-impl<'a, F: RichField> PublicInputsReader<'a, F> {
-    pub fn new(public_inputs: &'a [F]) -> Self {
-        Self {
-            offset: 0,
-            public_inputs,
-        }
-    }
-
-    pub fn read(&mut self) -> F {
-        let element = self.public_inputs[self.offset];
-        self.offset += 1;
-        element
-    }
-
-    pub fn read_n(&mut self, n: usize) -> &'a [F] {
-        let read_elements = &self.public_inputs[self.offset..self.offset + n];
-        self.offset += n;
-        read_elements
-    }
-}
+use crate::utils::{biguint::BigUintTarget, utils::biguint_target_from_limbs};
 
 pub struct PublicInputsTargetReader<'a> {
     offset: usize,
@@ -113,7 +85,7 @@ impl<R: PublicInputsTargetReadable + std::fmt::Debug, const N: usize> PublicInpu
 
     fn parse(targets: &[Target]) -> Self {
         assert_eq!(targets.len(), Self::get_size());
-        let size = Self::get_size();
+        let size = R::get_size();
         [(); N]
             .iter()
             .enumerate()
@@ -133,4 +105,8 @@ impl PublicInputsTargetReadable for HashOutTarget {
         assert_eq!(targets.len(), Self::get_size());
         HashOutTarget::from_vec(targets.to_owned())
     }
+}
+
+trait PrimitivePublicInputsType {
+    type PrimitiveType;
 }
