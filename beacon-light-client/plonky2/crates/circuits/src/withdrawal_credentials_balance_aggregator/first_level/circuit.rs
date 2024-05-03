@@ -43,17 +43,22 @@ pub struct ValidatorBalanceVerificationTargets<
 {
     #[public_input]
     pub range_total_value: BigUintTarget,
+    #[public_input]
     pub range_balances_root: Sha256Target,
+    #[public_input]
     pub range_validator_commitment: HashOutTarget,
     pub validators: [ValidatorPoseidonTargets; VALIDATORS_COUNT],
-    #[public_input]
     pub non_zero_validator_leaves_mask: [BoolTarget; VALIDATORS_COUNT],
     pub balances: [Sha256Target; VALIDATORS_COUNT / 4],
     #[public_input]
     pub withdrawal_credentials: [Sha256Target; WITHDRAWAL_CREDENTIALS_COUNT],
+    #[public_input]
     pub current_epoch: BigUintTarget,
+    #[public_input]
     pub number_of_non_activated_validators: Target,
+    #[public_input]
     pub number_of_active_validators: Target,
+    #[public_input]
     pub number_of_exited_validators: Target,
 }
 

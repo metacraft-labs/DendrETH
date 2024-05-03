@@ -28,10 +28,7 @@ fn define_public_inputs_target_struct(
     let public_inputs_target_ident = format_ident!("{targets_struct_ident}PublicInputsTarget");
 
     concat_token_streams(vec![
-        quote! {
-            struct #public_inputs_target_ident #impl_generics #where_clause
-        }
-        .into(),
+        quote!(pub struct #public_inputs_target_ident #impl_generics #where_clause).into(),
         enclose_in_braces(gen_public_inputs_target_struct_fields(public_input_fields)),
     ])
 }
@@ -44,7 +41,7 @@ fn gen_public_inputs_target_struct_fields(public_input_fields: &[Field]) -> Toke
                 let field_ty = &field.ty;
                 let field_type = quote!(#field_ty);
                 let field_name = &field.ident;
-                quote!(#field_name: #field_type,).into()
+                quote!(pub #field_name: #field_type,).into()
             })
             .collect_vec(),
     )
@@ -140,10 +137,7 @@ fn gen_public_inputs_target_read_for_field(field: &Field) -> TokenStream {
     let field_ty = &field.ty;
     let field_type = quote!(#field_ty);
 
-    quote! {
-        let #field_name = reader.read_object::<#field_type>();
-    }
-    .into()
+    quote!(let #field_name = reader.read_object::<#field_type>();).into()
 }
 
 fn filter_public_input_fields(fields: &Fields) -> Vec<Field> {
