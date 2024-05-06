@@ -35,6 +35,14 @@ pub trait ReadPublicInputsTarget {
     fn read_public_inputs_target(public_inputs: &[Target]) -> Self::PublicInputsTarget;
 }
 
+pub trait ReadPublicInputs {
+    type PublicInputs;
+
+    fn read_public_inputs<F: RichField + Extendable<D>, const D: usize>(
+        public_inputs: &[F],
+    ) -> Self::PublicInputs;
+}
+
 pub trait SerializableCircuit: Circuit {
     fn serialize(targets: &Self::Targets) -> IoResult<Vec<u8>>;
     fn deserialize(data: &mut Buffer) -> IoResult<Self::Targets>;
