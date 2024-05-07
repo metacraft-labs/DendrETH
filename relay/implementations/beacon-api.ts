@@ -521,7 +521,7 @@ export class BeaconApi implements IBeaconApi {
     return BigInt(json.data.finalized.epoch);
   }
 
-  async getBeaconState(slot: bigint) {
+  async getBeaconState(slot: bigint, retry: number = 0) {
     logger.info('Getting Beacon State..');
 
     const beaconStateSZZ = await this.fetchWithFallback(
@@ -536,10 +536,23 @@ export class BeaconApi implements IBeaconApi {
         if (response.status === 404) {
           throw 'Could not fetch beacon state (404 not found)';
         }
+
+        if(response.status !== 200) {
+          logger.info("Got response status different than 200")
+          logger.info(`Response ${JSON.stringify(response)}`);
+        }
+
         return response.arrayBuffer();
       })
       .then(buffer => new Uint8Array(buffer))
-      .catch(console.error);
+      .catch(e => {
+        console.error(e);
+
+        if (retry < 10) {
+          logger.warn(`Retrying to get beacon state ${retry + 1}`);
+          return this.getBeaconState(slot, retry + 1);
+        }
+      });
 
     if (!beaconStateSZZ) {
       return null;
@@ -617,7 +630,6 @@ export class BeaconApi implements IBeaconApi {
       baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl
     }/${urlPath.startsWith('/') ? urlPath.slice(1) : urlPath}`;
 
-    console.log('url href', finalUrl);
     return finalUrl;
   }
 }
