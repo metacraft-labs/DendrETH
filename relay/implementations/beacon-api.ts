@@ -535,38 +535,7 @@ export class BeaconApi implements IBeaconApi {
     return BigInt(json.data.finalized.epoch);
   }
 
-  async getBeaconBlock(slot: bigint) {
-    logger.info('Getting Beacon block..');
-
-    const beaconBlockSSZ = await this.fetchWithFallback(
-      `/eth/v2/debug/beacon/blocks/${slot}`,
-      {
-        headers: {
-          Accept: 'application/octet-stream',
-        },
-      },
-    )
-      .then(response => {
-        if (response.status === 404) {
-          throw 'Could not fetch beacon state (404 not found)';
-        }
-        return response.arrayBuffer();
-      })
-      .then(buffer => new Uint8Array(buffer))
-      .catch(console.error);
-
-    if (!beaconBlockSSZ) {
-      return null;
-    }
-
-    const currentSszFork = await this.getCurrentSSZ(slot);
-    const beaconBlock = currentSszFork.BeaconBlock.deserialize(beaconBlockSSZ);
-
-    logger.info('Got Beacon block');
-    return beaconBlock;
-  }
-
-  async getBeaconState(slot: bigint) {
+  async getBeaconState(slot: bigint, retry: number = 0) {
     logger.info('Getting Beacon State..');
 
     const beaconStateSZZ = await this.fetchWithFallback(
@@ -579,12 +548,28 @@ export class BeaconApi implements IBeaconApi {
     )
       .then(response => {
         if (response.status === 404) {
+          logger.error(
+            `Url ${this.concatUrl(`/eth/v2/debug/beacon/states/${slot}`)}`,
+          );
           throw 'Could not fetch beacon state (404 not found)';
         }
+
+        if (response.status !== 200) {
+          logger.info('Got response status different than 200');
+          logger.info(`Response ${JSON.stringify(response)}`);
+        }
+
         return response.arrayBuffer();
       })
       .then(buffer => new Uint8Array(buffer))
-      .catch(console.error);
+      .catch(e => {
+        console.error(e);
+
+        if (retry < 10) {
+          logger.warn(`Retrying to get beacon state ${retry + 1}`);
+          return this.getBeaconState(slot, retry + 1);
+        }
+      });
 
     if (!beaconStateSZZ) {
       throw new Error('Could not fetch beacon state');
@@ -675,7 +660,6 @@ export class BeaconApi implements IBeaconApi {
       baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl
     }/${urlPath.startsWith('/') ? urlPath.slice(1) : urlPath}`;
 
-    console.log('url href', finalUrl);
     return finalUrl;
   }
 }
