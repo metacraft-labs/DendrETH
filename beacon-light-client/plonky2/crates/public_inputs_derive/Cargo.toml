@@ -1,5 +1,5 @@
 [package]
-name = "circuit_with_public_inputs_derive"
+name = "public_inputs_derive"
 version = "0.1.0"
 edition = "2021"
 

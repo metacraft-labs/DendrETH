@@ -930,24 +930,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "circuit_with_public_inputs_derive"
-version = "0.1.0"
-dependencies = [
- "circuit",
- "itertools 0.10.5",
- "proc-macro2",
- "quote",
- "syn 2.0.60",
-]
-
-[[package]]
 name = "circuits"
 version = "0.1.0"
 dependencies = [
  "ahash",
  "anyhow",
  "circuit",
- "circuit_with_public_inputs_derive",
  "futures-lite 1.13.0",
  "hex",
  "itertools 0.10.5",
@@ -956,6 +944,7 @@ dependencies = [
  "num",
  "plonky2",
  "plonky2_u32",
+ "public_inputs_derive",
  "rand 0.8.5",
  "serde",
  "serde_json",
@@ -2534,6 +2523,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d1597b0c024618f09a9c3b8655b7e430397a36d23fdafec26d6965e9eec3eba"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "public_inputs_derive"
+version = "0.1.0"
+dependencies = [
+ "circuit",
+ "itertools 0.10.5",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.60",
 ]
 
 [[package]]

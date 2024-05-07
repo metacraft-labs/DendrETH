@@ -8,7 +8,6 @@ use circuit::TargetsWithPublicInputs;
 use plonky2::field::extension::Extendable;
 use plonky2::hash::hash_types::RichField;
 
-use circuit_with_public_inputs_derive::PublicInputs;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     hash::hash_types::HashOutTarget,
@@ -19,6 +18,7 @@ use plonky2::{
         config::PoseidonGoldilocksConfig,
     },
 };
+use public_inputs_derive::PublicInputs;
 
 use crate::{
     common_targets::Sha256Target,
