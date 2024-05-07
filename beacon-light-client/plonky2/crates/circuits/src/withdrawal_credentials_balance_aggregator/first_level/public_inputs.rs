@@ -30,7 +30,7 @@ pub struct PublicInputsTarget<const WITHDRAWAL_CREDENTIALS_COUNT: usize> {
     pub current_epoch: BigUintTarget,
     pub number_of_non_activated_validators: Target,
     pub number_of_active_validators: Target,
-    pub number_of_exited_validators: Target,
+    pub number_of_exitted_validators: Target,
 }
 
 pub struct PublicInputs<const WITHDRAWAL_CREDENTIALS_COUNT: usize> {
@@ -41,7 +41,7 @@ pub struct PublicInputs<const WITHDRAWAL_CREDENTIALS_COUNT: usize> {
     pub current_epoch: u64,
     pub number_of_non_activated_validators: u64,
     pub number_of_active_validators: u64,
-    pub number_of_exited_validators: u64,
+    pub number_of_exitted_validators: u64,
 }
 
 impl<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIALS_COUNT: usize>
@@ -68,7 +68,7 @@ where
         let current_epoch = reader.read_n(2);
         let number_of_non_activated_validators = reader.read();
         let number_of_active_validators = reader.read();
-        let number_of_exited_validators = reader.read();
+        let number_of_exitted_validators = reader.read();
 
         Self::PublicInputs {
             range_total_value: biguint_from_field_elements(range_total_value)
@@ -86,7 +86,7 @@ where
             number_of_non_activated_validators: number_of_non_activated_validators
                 .to_canonical_u64(),
             number_of_active_validators: number_of_active_validators.to_canonical_u64(),
-            number_of_exited_validators: number_of_exited_validators.to_canonical_u64(),
+            number_of_exitted_validators: number_of_exitted_validators.to_canonical_u64(),
         }
     }
 
@@ -101,7 +101,7 @@ where
         let current_epoch = reader.read_object::<BigUintTarget>();
         let number_of_non_activated_validators = reader.read_object::<Target>();
         let number_of_active_validators = reader.read_object::<Target>();
-        let number_of_exited_validators = reader.read_object::<Target>();
+        let number_of_exitted_validators = reader.read_object::<Target>();
 
         Self::PublicInputsTarget {
             range_total_value,
@@ -111,7 +111,7 @@ where
             current_epoch,
             number_of_non_activated_validators,
             number_of_active_validators,
-            number_of_exited_validators,
+            number_of_exitted_validators,
         }
     }
 }

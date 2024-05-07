@@ -145,9 +145,9 @@ where
         r_input.number_of_active_validators,
     );
 
-    let number_of_exited_validators = builder.add(
-        l_input.number_of_exited_validators,
-        r_input.number_of_exited_validators,
+    let number_of_exitted_validators = builder.add(
+        l_input.number_of_exitted_validators,
+        r_input.number_of_exitted_validators,
     );
 
     let mut sum = builder.add_biguint(&l_input.range_total_value, &r_input.range_total_value);
@@ -175,7 +175,7 @@ where
     //     &l_input.current_epoch,
     //     number_of_non_activated_validators,
     //     number_of_active_validators,
-    //     number_of_exited_validators,
+    //     number_of_exitted_validators,
     // );
 
     let data = builder.build::<C>();

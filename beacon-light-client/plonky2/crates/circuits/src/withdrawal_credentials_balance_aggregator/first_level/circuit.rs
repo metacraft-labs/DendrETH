@@ -66,7 +66,7 @@ pub struct ValidatorBalanceVerificationTargets<
     #[public_input]
     pub number_of_active_validators: Target,
     #[public_input]
-    pub number_of_exited_validators: Target,
+    pub number_of_exitted_validators: Target,
 }
 
 // maybe implement a SerializableCircuit trait
@@ -167,7 +167,7 @@ where
 
         let mut number_of_active_validators = builder.zero();
 
-        let mut number_of_exited_validators = builder.zero();
+        let mut number_of_exitted_validators = builder.zero();
 
         for i in 0..VALIDATORS_COUNT {
             let mut is_equal = builder._false();
@@ -213,8 +213,8 @@ where
 
             let will_be_counted = builder.and(is_equal, is_exited_validator);
 
-            number_of_exited_validators =
-                builder.add(number_of_exited_validators, will_be_counted.target);
+            number_of_exitted_validators =
+                builder.add(number_of_exitted_validators, will_be_counted.target);
 
             sum.limbs.pop();
         }
@@ -230,7 +230,7 @@ where
             current_epoch,
             number_of_non_activated_validators,
             number_of_active_validators,
-            number_of_exited_validators,
+            number_of_exitted_validators,
         }
     }
 }

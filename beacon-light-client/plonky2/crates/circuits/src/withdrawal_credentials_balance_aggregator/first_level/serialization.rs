@@ -45,7 +45,7 @@ where
 
         data.write_target(targets.number_of_non_activated_validators)?;
         data.write_target(targets.number_of_active_validators)?;
-        data.write_target(targets.number_of_exited_validators)?;
+        data.write_target(targets.number_of_exitted_validators)?;
 
         Ok(data)
     }
@@ -68,7 +68,7 @@ where
             current_epoch: BigUintTarget::read_targets(data)?,
             number_of_non_activated_validators: data.read_target()?,
             number_of_active_validators: data.read_target()?,
-            number_of_exited_validators: data.read_target()?,
+            number_of_exitted_validators: data.read_target()?,
         })
     }
 }

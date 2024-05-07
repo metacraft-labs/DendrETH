@@ -149,8 +149,10 @@ pub fn build_final_circuit<const N: usize>(
     );
     let number_of_active_validators_bits =
         target_to_le_bits(&mut builder, balances_pi_target.number_of_active_validators);
-    let number_of_exited_validators_bits =
-        target_to_le_bits(&mut builder, balances_pi_target.number_of_exited_validators);
+    let number_of_exitted_validators_bits = target_to_le_bits(
+        &mut builder,
+        balances_pi_target.number_of_exitted_validators,
+    );
 
     let mut public_inputs_hash = sha256(
         &mut builder,
@@ -160,7 +162,7 @@ pub fn build_final_circuit<const N: usize>(
             final_sum_bits.as_slice(),
             number_of_non_activated_validators_bits.as_slice(),
             number_of_active_validators_bits.as_slice(),
-            number_of_exited_validators_bits.as_slice(),
+            number_of_exitted_validators_bits.as_slice(),
         ]
         .concat(),
     );

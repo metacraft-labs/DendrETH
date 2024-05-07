@@ -48,7 +48,7 @@ pub struct BalanceProof {
     pub current_epoch: u64,
     pub number_of_non_activated_validators: u64,
     pub number_of_active_validators: u64,
-    pub number_of_exited_validators: u64,
+    pub number_of_exitted_validators: u64,
     pub proof_key: String,
 }
 
@@ -91,7 +91,7 @@ pub struct FinalProof {
     pub balance_sum: u64,
     pub number_of_non_activated_validators: u64,
     pub number_of_active_validators: u64,
-    pub number_of_exited_validators: u64,
+    pub number_of_exitted_validators: u64,
     pub proof: Vec<u8>,
 }
 

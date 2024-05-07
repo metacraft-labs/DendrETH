@@ -146,11 +146,11 @@ pub fn build_inner_level_circuit(
     let number_of_active_validators =
         builder.add(number_of_active_validators1, number_of_active_validators2);
 
-    let number_of_exited_validators1 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofAccumulatorTargetsExt>::get_number_of_exited_validators(&pt1);
-    let number_of_exited_validators2 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofAccumulatorTargetsExt>::get_number_of_exited_validators(&pt2);
+    let number_of_exitted_validators1 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofAccumulatorTargetsExt>::get_number_of_exitted_validators(&pt1);
+    let number_of_exitted_validators2 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofAccumulatorTargetsExt>::get_number_of_exitted_validators(&pt2);
 
-    let number_of_exited_validators =
-        builder.add(number_of_exited_validators1, number_of_exited_validators2);
+    let number_of_exitted_validators =
+        builder.add(number_of_exitted_validators1, number_of_exitted_validators2);
 
     let sum1 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofAccumulatorTargetsExt>::get_range_total_value(&pt1);
 
@@ -195,7 +195,7 @@ pub fn build_inner_level_circuit(
         &current_epoch1,
         number_of_non_activated_validators,
         number_of_active_validators,
-        number_of_exited_validators,
+        number_of_exitted_validators,
     );
 
     let data = builder.build::<C>();

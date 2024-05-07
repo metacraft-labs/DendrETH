@@ -200,7 +200,7 @@ where
         current_epoch: public_inputs.current_epoch,
         number_of_non_activated_validators: public_inputs.number_of_non_activated_validators,
         number_of_active_validators: public_inputs.number_of_active_validators,
-        number_of_exited_validators: public_inputs.number_of_exited_validators,
+        number_of_exitted_validators: public_inputs.number_of_exitted_validators,
         proof_key: proof_key.clone(),
     };
 
@@ -233,7 +233,7 @@ pub async fn save_final_proof(
     balance_sum: u64,
     number_of_non_activated_validators: u64,
     number_of_active_validators: u64,
-    number_of_exited_validators: u64,
+    number_of_exitted_validators: u64,
 ) -> Result<()> {
     let final_proof = FinalProof {
         needs_change: false,
@@ -242,7 +242,7 @@ pub async fn save_final_proof(
         balance_sum,
         number_of_non_activated_validators,
         number_of_active_validators,
-        number_of_exited_validators,
+        number_of_exitted_validators,
         proof: proof.to_bytes(),
     };
 

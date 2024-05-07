@@ -34,7 +34,7 @@ pub const CURRENT_ETH1_DEPOSIT_PUB_INDEX: usize = 269; // size 2
 pub const CURRENT_EPOCH_PUB_INDEX: usize = 271; // size 2
 pub const NUMBER_OF_NON_ACTIVATED_VALIDATORS_INDEX: usize = 273; // size 1
 pub const NUMBER_OF_ACTIVE_VALIDATORS_INDEX: usize = 274; // size 1
-pub const NUMBER_OF_EXITED_VALIDATORS_INDEX: usize = 275; // size 1
+pub const NUMBER_OF_EXITTED_VALIDATORS_INDEX: usize = 275; // size 1
 
 pub type ValidatorBalanceAccumulatorProof =
     ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>;
@@ -62,7 +62,7 @@ pub trait ValidatorBalanceAccumulatorProofExt {
 
     fn get_number_of_active_validators(&self) -> u64;
 
-    fn get_number_of_exited_validators(&self) -> u64;
+    fn get_number_of_exitted_validators(&self) -> u64;
 }
 
 impl ValidatorBalanceAccumulatorProofExt for ValidatorBalanceAccumulatorProof {
@@ -142,8 +142,8 @@ impl ValidatorBalanceAccumulatorProofExt for ValidatorBalanceAccumulatorProof {
         self.public_inputs[NUMBER_OF_ACTIVE_VALIDATORS_INDEX].0 % GoldilocksField::ORDER
     }
 
-    fn get_number_of_exited_validators(&self) -> u64 {
-        self.public_inputs[NUMBER_OF_EXITED_VALIDATORS_INDEX].0 % GoldilocksField::ORDER
+    fn get_number_of_exitted_validators(&self) -> u64 {
+        self.public_inputs[NUMBER_OF_EXITTED_VALIDATORS_INDEX].0 % GoldilocksField::ORDER
     }
 }
 
@@ -172,7 +172,7 @@ pub trait ValidatorBalanceProofAccumulatorTargetsExt {
 
     fn get_number_of_active_validators(&self) -> Target;
 
-    fn get_number_of_exited_validators(&self) -> Target;
+    fn get_number_of_exitted_validators(&self) -> Target;
 }
 
 impl ValidatorBalanceProofAccumulatorTargetsExt for ValidatorBalanceProofAccumulatorTargets {
@@ -223,8 +223,8 @@ impl ValidatorBalanceProofAccumulatorTargetsExt for ValidatorBalanceProofAccumul
         self.public_inputs[NUMBER_OF_ACTIVE_VALIDATORS_INDEX]
     }
 
-    fn get_number_of_exited_validators(&self) -> Target {
-        self.public_inputs[NUMBER_OF_EXITED_VALIDATORS_INDEX]
+    fn get_number_of_exitted_validators(&self) -> Target {
+        self.public_inputs[NUMBER_OF_EXITTED_VALIDATORS_INDEX]
     }
 
     fn get_range_start(&self) -> Target {
@@ -294,7 +294,7 @@ pub fn set_public_variables(
     current_epoch: &BigUintTarget,
     number_of_non_activated_validators: Target,
     number_of_active_validators: Target,
-    number_of_exited_validators: Target,
+    number_of_exitted_validators: Target,
 ) {
     builder.register_public_inputs(&range_total_value.limbs.iter().map(|x| x.0).collect_vec());
 
@@ -324,5 +324,5 @@ pub fn set_public_variables(
 
     builder.register_public_input(number_of_active_validators);
 
-    builder.register_public_input(number_of_exited_validators);
+    builder.register_public_input(number_of_exitted_validators);
 }
