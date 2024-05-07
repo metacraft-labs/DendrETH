@@ -1,5 +1,5 @@
 use crate::verification::{
-    fields::{fp2::Fp2Target, fp::FpTarget},
+    fields::{fp::FpTarget, fp2::Fp2Target},
     utils::native_bls::modulus,
 };
 use itertools::Itertools;
@@ -359,7 +359,7 @@ mod tests {
         let mut biguint_res: Vec<BigUint> = Vec::new();
         for i in 0..4 {
             biguint_res.push(BigUint::new(
-                res_output[(i * 12)..(i * 12) + 12]
+                res_output[(i * 12)..((i * 12) + 12)]
                     .iter()
                     .map(|f| f.0 as u32)
                     .collect_vec(),

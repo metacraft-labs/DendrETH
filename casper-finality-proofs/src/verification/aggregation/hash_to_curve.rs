@@ -27,14 +27,14 @@ use plonky2x::{
 };
 
 use crate::verification::{
+    curves::g2::{g2_add, g2_double, g2_negate, g2_scalar_mul, PointG2Target},
     fields::{
+        fp::{mul_fp, N},
         fp2::{
             add_fp2, div_fp2, frobenius_map, is_zero, mul_fp2, negate_fp2, range_check_fp2,
             sgn0_fp2, Fp2Target,
         },
-        fp::{mul_fp, N},
     },
-    curves::g2::{g2_add, g2_double, g2_negate, g2_scalar_mul, PointG2Target},
     utils::native_bls::{modulus, Fp, Fp2, Pow},
 };
 
@@ -148,6 +148,7 @@ pub fn map_to_curve_simple_swu_9mod16<L: PlonkParameters<D>, const D: usize>(
     let numerator = mul_fp2(builder, &iso_3_b, &ztzt_1);
 
     let cmp = is_zero(builder, &denominator_tmp);
+    // sus ?
     let iso_3_z_iso_3_a = [
         builder.api.constant_biguint(&240.to_biguint().unwrap()),
         builder.api.constant_biguint(&(modulus() - 480u32)),
@@ -200,6 +201,8 @@ pub fn map_to_curve_simple_swu_9mod16<L: PlonkParameters<D>, const D: usize>(
         builder.api.add_virtual_biguint_target_unsafe(N),
         builder.api.add_virtual_biguint_target_unsafe(N),
     ];
+
+    // This is sus
     builder.api.add_simple_generator(SqrtGenerator {
         t: t.clone(),
         x0: gx0.clone(),
@@ -207,6 +210,7 @@ pub fn map_to_curve_simple_swu_9mod16<L: PlonkParameters<D>, const D: usize>(
         is_square,
         sqrt: sqrt.clone(),
     });
+
     builder.api.assert_bool(is_square);
     range_check_fp2(builder, &sqrt);
     let sqrt2 = mul_fp2(builder, &sqrt, &sqrt);
@@ -581,8 +585,11 @@ mod tests {
     use plonky2::field::goldilocks_field::GoldilocksField;
     use plonky2x::frontend::{
         builder::DefaultBuilder,
+        uint::num::biguint::CircuitBuilderBiguint,
         vars::{CircuitVariable, Variable},
     };
+
+    use crate::verification::aggregation::hash_to_curve::map_to_curve_simple_swu_9mod16;
 
     use super::hash_to_curve;
 
@@ -636,7 +643,6 @@ mod tests {
             ));
         }
 
-
         let _expected_biguint_targets = vec![
                     BigUint::from_str("1488500447191166672941560528372304391753380984946436836994188271218534863150867665359953446396361952637518019947793").unwrap(), 
                     BigUint::from_str("1753488088500361592037930400817905775849083730244155560991738322430467341859724570393042632032849437027661169306989").unwrap(), 
@@ -647,6 +653,60 @@ mod tests {
         for i in 0..4 {
             println!("curr: {:?}", biguint_res[i]);
             // assert_eq!(biguint_res[i], expected_biguint_targets[i]);
+        }
+        assert!(false);
+    }
+
+    #[test]
+    fn test_isolate_map_to_curve_simple_swu_9mod16() {
+        let mut builder = DefaultBuilder::new();
+        let x = [builder.api.constant_biguint(&BigUint::from_str("854640723250014092459878280813775079662553495191811665856690616516616508878802309920356564231402437721424091425067").unwrap()), builder.api.constant_biguint(&BigUint::from_str("2237003560261639634598443979323541189434085363382214543002395698683462574637672246628408104686279039153278584173813").unwrap())];
+        let _y = [builder.api.constant_biguint(&BigUint::from_str("1694294209433536606759431236849684172181087494531715444756984659355647441866512912746959707332669387366840278465798").unwrap()), builder.api.constant_biguint(&BigUint::from_str("2004324217974516925171115353648739595566178169751049984497836828645148247251982057973578533159710504000584560806028").unwrap())];
+        let new_point = map_to_curve_simple_swu_9mod16(&mut builder, &x);
+
+        // Define your circuit.
+        let mut res_output: Vec<GoldilocksField> = Vec::new();
+        for i in 0..new_point.len() {
+            for j in 0..new_point[i].len() {
+                for k in 0..new_point[i][j].limbs.len() {
+                    builder.write(Variable(new_point[i][j].limbs[k].target));
+                }
+            }
+        }
+
+        // Build your circuit.
+        let circuit = builder.build();
+
+        // Write to the circuit input.
+        let input = circuit.input();
+
+        // Generate a proof.
+        let (proof, mut output) = circuit.prove(&input);
+        // Verify proof.
+        circuit.verify(&proof, &input, &output);
+
+        // Read output.
+        for i in 0..new_point.len() {
+            for j in 0..new_point[i].len() {
+                for _ in 0..new_point[i][j].limbs.len() {
+                    res_output.push(output.read::<Variable>())
+                }
+            }
+        }
+
+        let mut biguint_res: Vec<BigUint> = Vec::new();
+
+        for i in 0..4 {
+            biguint_res.push(BigUint::new(
+                res_output[(i * 12)..((i * 12) + 12)]
+                    .iter()
+                    .map(|f| (f.0 as u32) - 1)
+                    .collect_vec(),
+            ));
+        }
+
+        for i in 0..4 {
+            println!("curr: {:?}", biguint_res[i]);
         }
         assert!(false);
     }
