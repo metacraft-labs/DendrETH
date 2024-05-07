@@ -4,9 +4,7 @@ use crate::{
         biguint::CircuitBuilderBiguint,
         hashing::sha256::{connect_bool_arrays, sha256_pair},
     },
-    withdrawal_credentials_balance_aggregator::first_level::{
-        circuit::WithdrawalCredentialsBalanceAggregatorFirstLevel, public_inputs::set_public_inputs,
-    },
+    withdrawal_credentials_balance_aggregator::first_level::circuit::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
 use circuit::CircuitWithPublicInputs;
 use plonky2::{
@@ -167,17 +165,18 @@ where
 
     builder.connect_biguint(&l_input.current_epoch, &r_input.current_epoch);
 
-    set_public_inputs(
-        &mut builder,
-        &sum,
-        range_balances_root,
-        &l_input.withdrawal_credentials,
-        range_validator_commitment,
-        &l_input.current_epoch,
-        number_of_non_activated_validators,
-        number_of_active_validators,
-        number_of_exited_validators,
-    );
+    // TODO: fix this later
+    // set_public_inputs(
+    //     &mut builder,
+    //     &sum,
+    //     range_balances_root,
+    //     &l_input.withdrawal_credentials,
+    //     range_validator_commitment,
+    //     &l_input.current_epoch,
+    //     number_of_non_activated_validators,
+    //     number_of_active_validators,
+    //     number_of_exited_validators,
+    // );
 
     let data = builder.build::<C>();
 

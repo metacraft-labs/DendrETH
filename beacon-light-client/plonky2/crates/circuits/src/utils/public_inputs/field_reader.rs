@@ -1,7 +1,5 @@
 use itertools::Itertools;
-use num::BigUint;
 use plonky2::{
-    field::extension::Extendable,
     hash::hash_types::{HashOutTarget, RichField, NUM_HASH_OUT_ELTS},
     iop::target::{BoolTarget, Target},
 };
@@ -34,18 +32,23 @@ impl<'a, F: RichField> PublicInputsFieldReader<'a, F> {
         self.offset += n;
         read_elements
     }
+
+    pub fn read_object<O: PublicInputsReadable>(&mut self) -> O::PrimitiveType {
+        let read_elements = self.read_n(O::get_size());
+        O::from_elements(read_elements)
+    }
 }
 
 pub trait PublicInputsReadable: PublicInputsTargetReadable {
     type PrimitiveType;
 
-    fn parse<F: RichField + Extendable<D>, const D: usize>(elements: &[F]) -> Self::PrimitiveType;
+    fn from_elements<F: RichField>(elements: &[F]) -> Self::PrimitiveType;
 }
 
 impl PublicInputsReadable for Target {
     type PrimitiveType = u64;
 
-    fn parse<F: RichField + Extendable<D>, const D: usize>(elements: &[F]) -> Self::PrimitiveType {
+    fn from_elements<F: RichField>(elements: &[F]) -> Self::PrimitiveType {
         assert_eq!(elements.len(), Self::get_size());
         elements[0].to_canonical_u64()
     }
@@ -54,7 +57,7 @@ impl PublicInputsReadable for Target {
 impl PublicInputsReadable for BoolTarget {
     type PrimitiveType = bool;
 
-    fn parse<F: RichField + Extendable<D>, const D: usize>(elements: &[F]) -> Self::PrimitiveType {
+    fn from_elements<F: RichField>(elements: &[F]) -> Self::PrimitiveType {
         assert_eq!(elements.len(), Self::get_size());
         elements[0].to_canonical_u64() != 0
     }
@@ -64,7 +67,7 @@ impl PublicInputsReadable for BigUintTarget {
     // TODO: make a Uint64 biguint wrapper
     type PrimitiveType = u64;
 
-    fn parse<F: RichField + Extendable<D>, const D: usize>(elements: &[F]) -> Self::PrimitiveType {
+    fn from_elements<F: RichField>(elements: &[F]) -> Self::PrimitiveType {
         assert_eq!(elements.len(), Self::get_size());
         let first_limb = elements[0].to_canonical_u64();
         let second_limb = elements[1].to_canonical_u64();
@@ -72,16 +75,19 @@ impl PublicInputsReadable for BigUintTarget {
     }
 }
 
-impl<R: PublicInputsReadable + std::fmt::Debug, const N: usize> PublicInputsReadable for [R; N] {
+impl<R: PublicInputsReadable + std::fmt::Debug, const N: usize> PublicInputsReadable for [R; N]
+where
+    <R as PublicInputsReadable>::PrimitiveType: std::fmt::Debug,
+{
     type PrimitiveType = [R::PrimitiveType; N];
 
-    fn parse<F: RichField + Extendable<D>, const D: usize>(elements: &[F]) -> Self::PrimitiveType {
+    fn from_elements<F: RichField>(elements: &[F]) -> Self::PrimitiveType {
         assert_eq!(elements.len(), Self::get_size());
         let size = R::get_size();
         [(); N]
             .iter()
             .enumerate()
-            .map(|(i, _)| R::parse(&elements[i * size..(i + 1) * size]))
+            .map(|(i, _)| R::from_elements(&elements[i * size..(i + 1) * size]))
             .collect_vec()
             .try_into()
             .unwrap()
@@ -91,11 +97,13 @@ impl<R: PublicInputsReadable + std::fmt::Debug, const N: usize> PublicInputsRead
 impl PublicInputsReadable for HashOutTarget {
     type PrimitiveType = [u64; NUM_HASH_OUT_ELTS];
 
-    fn parse<F: RichField + Extendable<D>, const D: usize>(elements: &[F]) -> Self::PrimitiveType {
+    fn from_elements<F: RichField>(elements: &[F]) -> Self::PrimitiveType {
         assert_eq!(elements.len(), Self::get_size());
         elements
             .into_iter()
             .map(|elem| elem.to_canonical_u64())
-            .collect()
+            .collect_vec()
+            .try_into()
+            .unwrap()
     }
 }

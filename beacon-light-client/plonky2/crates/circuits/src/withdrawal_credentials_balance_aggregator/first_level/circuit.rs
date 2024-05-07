@@ -1,5 +1,13 @@
-use crate::utils::public_inputs::target_reader::PublicInputsTargetReader;
-use circuit::{Circuit, ReadPublicInputsTarget};
+use crate::utils::public_inputs::field_reader::PublicInputsFieldReader;
+use crate::utils::public_inputs::to_targets::ToTargets;
+use crate::utils::public_inputs::{
+    field_reader::PublicInputsReadable, target_reader::PublicInputsTargetReader,
+};
+use circuit::Circuit;
+use circuit::TargetsWithPublicInputs;
+use plonky2::field::extension::Extendable;
+use plonky2::hash::hash_types::RichField;
+
 use circuit_with_public_inputs_derive::PublicInputs;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
@@ -12,7 +20,6 @@ use plonky2::{
     },
 };
 
-use super::public_inputs::set_public_inputs;
 use crate::{
     common_targets::Sha256Target,
     utils::{
@@ -92,16 +99,11 @@ where
     type C = C;
     const D: usize = D;
 
+    const CIRCUIT_CONFIG: CircuitConfig = CircuitConfig::standard_recursion_config();
+
     type Targets =
         ValidatorBalanceVerificationTargets<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>;
     type Params = ();
-
-    fn build(params: ()) -> (Self::Targets, CircuitData<F, C, D>) {
-        let mut builder = CircuitBuilder::new(CircuitConfig::standard_recursion_config());
-        let targets = Self::define(&mut builder, params);
-        let circuit_data = builder.build::<C>();
-        (targets, circuit_data)
-    }
 
     fn define(builder: &mut CircuitBuilder<F, D>, _params: ()) -> Self::Targets {
         if !VALIDATORS_COUNT.is_power_of_two() {
@@ -217,7 +219,7 @@ where
             sum.limbs.pop();
         }
 
-        let targets = Self::Targets {
+        Self::Targets {
             non_zero_validator_leaves_mask: validator_is_zero,
             range_total_value: sum,
             range_balances_root: balances_hash_tree_root_targets.hash_tree_root,
@@ -229,20 +231,6 @@ where
             number_of_non_activated_validators,
             number_of_active_validators,
             number_of_exited_validators,
-        };
-
-        set_public_inputs(
-            builder,
-            &targets.range_total_value,
-            targets.range_balances_root,
-            &targets.withdrawal_credentials,
-            targets.range_validator_commitment,
-            &targets.current_epoch,
-            targets.number_of_non_activated_validators,
-            targets.number_of_active_validators,
-            targets.number_of_exited_validators,
-        );
-
-        targets
+        }
     }
 }

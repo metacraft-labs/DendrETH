@@ -13,7 +13,7 @@ use crate::{
     validators_commitment_mapper::build_commitment_mapper_first_level_circuit::CommitmentMapperProofTargetExt,
     withdrawal_credentials_balance_aggregator::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
-use circuit::{Circuit, ReadPublicInputsTarget};
+use circuit::{Circuit, TargetsWithPublicInputs};
 use itertools::Itertools;
 use num::{BigUint, FromPrimitive};
 use plonky2::{
@@ -213,7 +213,7 @@ fn setup_balance_targets<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENT
     <<WithdrawalCredentialsBalanceAggregatorFirstLevel<
         VALIDATORS_COUNT,
         WITHDRAWAL_CREDENTIALS_COUNT,
-    > as Circuit>::Targets as ReadPublicInputsTarget>::PublicInputsTarget,
+    > as Circuit>::Targets as TargetsWithPublicInputs>::PublicInputsTarget,
 )
 where
     [(); VALIDATORS_COUNT / 4]:,

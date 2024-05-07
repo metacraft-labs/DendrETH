@@ -4,6 +4,7 @@ use crate::{
         biguint::BigUintTarget,
         public_inputs::{
             field_reader::PublicInputsFieldReader, target_reader::PublicInputsTargetReader,
+            to_targets::ToTargets,
         },
         utils::{
             biguint_from_field_elements, hex_string_from_field_element_bits, ETH_SHA256_BIT_SIZE,
@@ -16,10 +17,9 @@ use circuit::CircuitWithPublicInputs;
 use itertools::Itertools;
 use num::ToPrimitive;
 use plonky2::{
-    field::{extension::Extendable, types::PrimeField64},
-    hash::hash_types::{HashOutTarget, RichField},
+    field::types::PrimeField64,
+    hash::hash_types::HashOutTarget,
     iop::target::{BoolTarget, Target},
-    plonk::circuit_builder::CircuitBuilder,
 };
 
 pub struct PublicInputsTarget<const WITHDRAWAL_CREDENTIALS_COUNT: usize> {
@@ -114,43 +114,4 @@ where
             number_of_exited_validators,
         }
     }
-}
-
-pub fn set_public_inputs<
-    F: RichField + Extendable<D>,
-    const D: usize,
-    const WITHDRAWAL_CREDENTIALS_COUNT: usize,
->(
-    builder: &mut CircuitBuilder<F, D>,
-    range_total_value: &BigUintTarget,
-    range_balances_root: [BoolTarget; ETH_SHA256_BIT_SIZE],
-    withdrawal_credentials: &[[BoolTarget; ETH_SHA256_BIT_SIZE]; WITHDRAWAL_CREDENTIALS_COUNT],
-    range_validator_commitment: HashOutTarget,
-    current_epoch: &BigUintTarget,
-    number_of_non_activated_validators: Target,
-    number_of_active_validators: Target,
-    number_of_exited_validators: Target,
-) {
-    builder.register_public_inputs(&range_total_value.limbs.iter().map(|x| x.0).collect_vec());
-
-    builder.register_public_inputs(&range_balances_root.map(|x| x.target));
-
-    for i in 0..WITHDRAWAL_CREDENTIALS_COUNT {
-        builder.register_public_inputs(
-            &withdrawal_credentials[i]
-                .iter()
-                .map(|x| x.target)
-                .collect_vec(),
-        );
-    }
-
-    builder.register_public_inputs(&range_validator_commitment.elements);
-
-    builder.register_public_inputs(&current_epoch.limbs.iter().map(|x| x.0).collect_vec());
-
-    builder.register_public_input(number_of_non_activated_validators);
-
-    builder.register_public_input(number_of_active_validators);
-
-    builder.register_public_input(number_of_exited_validators);
 }

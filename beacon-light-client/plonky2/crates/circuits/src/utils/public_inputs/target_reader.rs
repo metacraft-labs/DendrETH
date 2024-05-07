@@ -33,13 +33,13 @@ impl<'a> PublicInputsTargetReader<'a> {
 
     pub fn read_object<R: PublicInputsTargetReadable>(&mut self) -> R {
         let read_targets = &self.public_inputs[self.offset..self.offset + R::get_size()];
-        R::parse(&read_targets)
+        R::from_targets(&read_targets)
     }
 }
 
 pub trait PublicInputsTargetReadable {
     fn get_size() -> usize;
-    fn parse(targets: &[Target]) -> Self;
+    fn from_targets(targets: &[Target]) -> Self;
 }
 
 impl PublicInputsTargetReadable for Target {
@@ -47,7 +47,7 @@ impl PublicInputsTargetReadable for Target {
         1
     }
 
-    fn parse(targets: &[Target]) -> Self {
+    fn from_targets(targets: &[Target]) -> Self {
         assert_eq!(targets.len(), Self::get_size());
         targets[0]
     }
@@ -58,7 +58,7 @@ impl PublicInputsTargetReadable for BoolTarget {
         1
     }
 
-    fn parse(targets: &[Target]) -> Self {
+    fn from_targets(targets: &[Target]) -> Self {
         assert_eq!(targets.len(), Self::get_size());
         BoolTarget::new_unsafe(targets[0])
     }
@@ -70,7 +70,7 @@ impl PublicInputsTargetReadable for BigUintTarget {
         2
     }
 
-    fn parse(targets: &[Target]) -> Self {
+    fn from_targets(targets: &[Target]) -> Self {
         assert_eq!(targets.len(), Self::get_size());
         biguint_target_from_limbs(targets)
     }
@@ -83,13 +83,13 @@ impl<R: PublicInputsTargetReadable + std::fmt::Debug, const N: usize> PublicInpu
         R::get_size() * N
     }
 
-    fn parse(targets: &[Target]) -> Self {
+    fn from_targets(targets: &[Target]) -> Self {
         assert_eq!(targets.len(), Self::get_size());
         let size = R::get_size();
         [(); N]
             .iter()
             .enumerate()
-            .map(|(i, _)| R::parse(&targets[i * size..(i + 1) * size]))
+            .map(|(i, _)| R::from_targets(&targets[i * size..(i + 1) * size]))
             .collect_vec()
             .try_into()
             .unwrap()
@@ -101,7 +101,7 @@ impl PublicInputsTargetReadable for HashOutTarget {
         NUM_HASH_OUT_ELTS
     }
 
-    fn parse(targets: &[Target]) -> Self {
+    fn from_targets(targets: &[Target]) -> Self {
         assert_eq!(targets.len(), Self::get_size());
         HashOutTarget::from_vec(targets.to_owned())
     }

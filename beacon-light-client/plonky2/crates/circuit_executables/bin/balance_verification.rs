@@ -1,5 +1,5 @@
 #![feature(generic_const_exprs)]
-use circuit::WitnessSetter;
+use circuit::{Circuit, CircuitWithPublicInputs, WitnessSetter};
 use circuit_executables::{
     crud::{
         common::{
@@ -288,6 +288,13 @@ where
     >::set_witness(targets, &validator_balance_input);
 
     let proof = circuit_data.prove(pw)?;
+
+    let pis = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
+        VALIDATORS_COUNT,
+        WITHDRAWAL_CREDENTIALS_COUNT,
+    >::read_public_inputs_new(&proof.public_inputs);
+
+    println!("pis: {:?}", pis);
 
     match save_balance_proof::<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>(
         con,
