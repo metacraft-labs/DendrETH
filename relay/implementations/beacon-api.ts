@@ -534,6 +534,7 @@ export class BeaconApi implements IBeaconApi {
     )
       .then(response => {
         if (response.status === 404) {
+          logger.error(`Url ${this.concatUrl(`/eth/v2/debug/beacon/states/${slot}`)}`)
           throw 'Could not fetch beacon state (404 not found)';
         }
 
