@@ -20,7 +20,7 @@ use crate::{
 use super::hash_tree_root_poseidon::hash_tree_root_poseidon;
 
 #[derive(Clone, Debug)]
-pub struct ValidatorPoseidonTargets {
+pub struct ValidatorTarget {
     pub pubkey: [BoolTarget; 384],
     pub withdrawal_credentials: [BoolTarget; ETH_SHA256_BIT_SIZE],
     pub effective_balance: BigUintTarget,
@@ -31,9 +31,9 @@ pub struct ValidatorPoseidonTargets {
     pub withdrawable_epoch: BigUintTarget,
 }
 
-impl ReadTargets for ValidatorPoseidonTargets {
-    fn read_targets(data: &mut Buffer) -> IoResult<ValidatorPoseidonTargets> {
-        Ok(ValidatorPoseidonTargets {
+impl ReadTargets for ValidatorTarget {
+    fn read_targets(data: &mut Buffer) -> IoResult<ValidatorTarget> {
+        Ok(ValidatorTarget {
             pubkey: data.read_target_bool_vec()?.try_into().unwrap(),
             withdrawal_credentials: data.read_target_bool_vec()?.try_into().unwrap(),
             effective_balance: BigUintTarget::read_targets(data)?,
@@ -46,7 +46,7 @@ impl ReadTargets for ValidatorPoseidonTargets {
     }
 }
 
-impl WriteTargets for ValidatorPoseidonTargets {
+impl WriteTargets for ValidatorTarget {
     fn write_targets(&self) -> IoResult<Vec<u8>> {
         let mut data = Vec::<u8>::new();
 
@@ -65,17 +65,17 @@ impl WriteTargets for ValidatorPoseidonTargets {
     }
 }
 
-impl ValidatorPoseidonTargets {
+impl ValidatorTarget {
     pub fn new<F: RichField + Extendable<D>, const D: usize>(
         builder: &mut CircuitBuilder<F, D>,
-    ) -> ValidatorPoseidonTargets {
+    ) -> ValidatorTarget {
         let pubkey: [BoolTarget; 384] = (0..384)
             .map(|_| builder.add_virtual_bool_target_safe())
             .collect::<Vec<_>>()
             .try_into()
             .unwrap();
 
-        ValidatorPoseidonTargets {
+        ValidatorTarget {
             pubkey,
             withdrawal_credentials: create_bool_target_array(builder),
             effective_balance: builder.add_virtual_biguint_target(2),
@@ -89,14 +89,14 @@ impl ValidatorPoseidonTargets {
 }
 
 pub struct ValidatorPoseidonHashTreeRootTargets {
-    pub validator: ValidatorPoseidonTargets,
+    pub validator: ValidatorTarget,
     pub hash_tree_root: HashOutTarget,
 }
 
 pub fn hash_tree_root_validator_poseidon_new<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
 ) -> ValidatorPoseidonHashTreeRootTargets {
-    let validator = ValidatorPoseidonTargets::new(builder);
+    let validator = ValidatorTarget::new(builder);
 
     let leaves = vec![
         builder.hash_n_to_hash_no_pad::<PoseidonHash>(
@@ -162,7 +162,7 @@ pub fn hash_tree_root_validator_poseidon_new<F: RichField + Extendable<D>, const
 pub fn hash_tree_root_validator_poseidon<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
 ) -> ValidatorPoseidonHashTreeRootTargets {
-    let validator = ValidatorPoseidonTargets::new(builder);
+    let validator = ValidatorTarget::new(builder);
 
     let leaves = vec![
         builder.hash_n_to_hash_no_pad::<PoseidonHash>(

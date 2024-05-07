@@ -13,7 +13,7 @@ use crate::{
         hashing::{
             validator_hash_tree_root::{hash_tree_root_validator_sha256, ValidatorShaTargets},
             validator_hash_tree_root_poseidon::{
-                hash_tree_root_validator_poseidon, ValidatorPoseidonTargets,
+                hash_tree_root_validator_poseidon, ValidatorTarget,
             },
         },
         utils::{ssz_num_from_bits, ETH_SHA256_BIT_SIZE},
@@ -63,7 +63,7 @@ pub fn validator_commitment_mapper<F: RichField + Extendable<D>, const D: usize>
 
     let validator = hash_tree_root_sha256.validator;
 
-    let validator_poseidon_mapped = ValidatorPoseidonTargets {
+    let validator_poseidon_mapped = ValidatorTarget {
         pubkey: validator.pubkey,
         withdrawal_credentials: validator.withdrawal_credentials,
         activation_eligibility_epoch: ssz_num_from_bits(

@@ -1,9 +1,6 @@
 use crate::serialization::targets_serialization::{ReadTargets, WriteTargets};
 use crate::{
-    utils::{
-        biguint::BigUintTarget,
-        hashing::validator_hash_tree_root_poseidon::ValidatorPoseidonTargets,
-    },
+    utils::{biguint::BigUintTarget, hashing::validator_hash_tree_root_poseidon::ValidatorTarget},
     withdrawal_credentials_balance_aggregator::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
 use circuit::SerializableCircuit;
@@ -31,7 +28,7 @@ where
         data.write_target_hash(&targets.range_validator_commitment)?;
 
         for validator in &targets.validators {
-            data.extend(ValidatorPoseidonTargets::write_targets(validator)?);
+            data.extend(ValidatorTarget::write_targets(validator)?);
         }
 
         data.write_target_bool_vec(&targets.non_zero_validator_leaves_mask)?;
@@ -59,7 +56,7 @@ where
             range_balances_root: data.read_target_bool_vec()?.try_into().unwrap(),
             range_validator_commitment: data.read_target_hash()?,
             validators: [(); VALIDATORS_COUNT]
-                .map(|_| ValidatorPoseidonTargets::read_targets(data).unwrap()),
+                .map(|_| ValidatorTarget::read_targets(data).unwrap()),
             non_zero_validator_leaves_mask: data.read_target_bool_vec()?.try_into().unwrap(),
             balances: [0; VALIDATORS_COUNT / 4]
                 .map(|_| data.read_target_bool_vec().unwrap().try_into().unwrap()),

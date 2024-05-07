@@ -11,7 +11,7 @@ use crate::{
         biguint::WitnessBigUint,
         hashing::{
             validator_hash_tree_root::ValidatorShaTargets,
-            validator_hash_tree_root_poseidon::ValidatorPoseidonTargets,
+            validator_hash_tree_root_poseidon::ValidatorTarget,
         },
         utils::SetBytesArray,
     },
@@ -109,8 +109,8 @@ pub trait SetPWValues<F: RichField, T> {
     fn set_pw_values(&self, pw: &mut PartialWitness<F>, source: &T);
 }
 
-impl<F: RichField> SetPWValues<F, ValidatorPoseidonInput> for ValidatorPoseidonTargets {
-    fn set_pw_values(&self, pw: &mut PartialWitness<F>, source: &ValidatorPoseidonInput) {
+impl<F: RichField> SetPWValues<F, ValidatorInput> for ValidatorTarget {
+    fn set_pw_values(&self, pw: &mut PartialWitness<F>, source: &ValidatorInput) {
         pw.set_bytes_array(&self.pubkey, &hex::decode(&source.pubkey).unwrap());
 
         pw.set_bytes_array(
@@ -334,7 +334,7 @@ where
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct ValidatorPoseidonInput {
+pub struct ValidatorInput {
     pub pubkey: String,
     pub withdrawal_credentials: String,
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
@@ -353,7 +353,7 @@ pub struct ValidatorPoseidonInput {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidatorBalancesInput {
-    pub validators: Vec<ValidatorPoseidonInput>,
+    pub validators: Vec<ValidatorInput>,
     #[serde(with = "bool_vec_as_int_vec_nested")]
     pub balances: Vec<Vec<bool>>,
     #[serde(with = "bool_vec_as_int_vec_nested")]
@@ -373,7 +373,7 @@ pub struct ValidatorBalanceAccumulatorInput {
     // pub validator_deposit_indexes: Vec<u64>,
     pub validator_indices: Vec<u64>,
     // pub validator_commitment_proofs: Vec<Vec<Vec<String>>>,
-    pub validators: Vec<ValidatorPoseidonInput>,
+    pub validators: Vec<ValidatorInput>,
     #[serde(with = "bool_vec_as_int_vec")]
     pub validator_is_not_zero: Vec<bool>,
     // pub validator_commitment_root: Vec<String>,
@@ -400,7 +400,7 @@ mod tests {
     #[test]
     fn test_serialize_deserialize() {
         let input = ValidatorBalancesInput {
-            validators: vec![ValidatorPoseidonInput {
+            validators: vec![ValidatorInput {
                 pubkey: "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000".to_string(),
                 withdrawal_credentials: "0000000000000000000000000000000000000000000000000000000000000000".to_string(),
                 effective_balance: BigUint::from(3u64),

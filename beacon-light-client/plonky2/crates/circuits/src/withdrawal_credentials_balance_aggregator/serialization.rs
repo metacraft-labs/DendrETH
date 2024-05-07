@@ -5,10 +5,7 @@ use plonky2::{
 
 use crate::{
     serialization::targets_serialization::{ReadTargets, WriteTargets},
-    utils::{
-        biguint::BigUintTarget,
-        hashing::validator_hash_tree_root_poseidon::ValidatorPoseidonTargets,
-    },
+    utils::{biguint::BigUintTarget, hashing::validator_hash_tree_root_poseidon::ValidatorTarget},
 };
 
 use super::first_level::circuit::ValidatorBalanceVerificationTargets;
@@ -24,7 +21,7 @@ where
             range_balances_root: data.read_target_bool_vec()?.try_into().unwrap(),
             range_validator_commitment: data.read_target_hash().unwrap(),
             validators: [(); VALIDATORS_COUNT]
-                .map(|_| ValidatorPoseidonTargets::read_targets(data).unwrap()),
+                .map(|_| ValidatorTarget::read_targets(data).unwrap()),
             non_zero_validator_leaves_mask: data
                 .read_target_array::<VALIDATORS_COUNT>()
                 .unwrap()
@@ -55,7 +52,7 @@ where
         data.write_target_hash(&self.range_validator_commitment)?;
 
         for validator in &self.validators {
-            data.extend(ValidatorPoseidonTargets::write_targets(validator)?);
+            data.extend(ValidatorTarget::write_targets(validator)?);
         }
 
         data.write_target_array(&self.non_zero_validator_leaves_mask.map(|bool| bool.target))

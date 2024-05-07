@@ -29,7 +29,7 @@ use crate::{
             hash_tree_root_poseidon::hash_tree_root_poseidon,
             sha256::{bool_arrays_are_equal, connect_bool_arrays},
             validator_hash_tree_root_poseidon::{
-                hash_tree_root_validator_poseidon, ValidatorPoseidonTargets,
+                hash_tree_root_validator_poseidon, ValidatorTarget,
             },
         },
         is_active_validator::get_validator_status,
@@ -54,7 +54,7 @@ pub struct ValidatorBalanceVerificationTargets<
     pub range_balances_root: Sha256Target,
     #[public_input]
     pub range_validator_commitment: HashOutTarget,
-    pub validators: [ValidatorPoseidonTargets; VALIDATORS_COUNT],
+    pub validators: [ValidatorTarget; VALIDATORS_COUNT],
     pub non_zero_validator_leaves_mask: [BoolTarget; VALIDATORS_COUNT],
     pub balances: [Sha256Target; VALIDATORS_COUNT / 4],
     #[public_input]

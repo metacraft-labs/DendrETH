@@ -21,7 +21,7 @@ use crate::{
             is_valid_merkle_branch::{
                 assert_merkle_proof_is_valid, restore_merkle_root, MerkleBranch, Sha256,
             },
-            validator_hash_tree_root_poseidon::ValidatorPoseidonTargets,
+            validator_hash_tree_root_poseidon::ValidatorTarget,
         },
         utils::{biguint_to_le_bits_target, create_bool_target_array, create_sha256_merkle_proof},
     },
@@ -130,7 +130,7 @@ pub struct ValidatorBalanceVerificationAccumulatorTargets {
     // pub current_eth1_deposit_index: BigUintTarget,
     // pub validator_deposit_indexes: Vec<BigUintTarget>,
     pub balances_proofs: Vec<MerkleBranch<22>>,
-    pub validators: Vec<ValidatorPoseidonTargets>,
+    pub validators: Vec<ValidatorTarget>,
     pub validator_indices: Vec<BigUintTarget>, // TODO: make this a Target vec / rename this to validator_gindices
     pub current_epoch: BigUintTarget,
     // pub range_start: Target,
@@ -167,8 +167,8 @@ impl ReadTargets for ValidatorBalanceVerificationAccumulatorTargets {
                 .collect_vec(),
             validators: (0..validators_len)
                 .map(|_| {
-                    ValidatorPoseidonTargets::read_targets(data)
-                        .expect("ValidatorPoseidonTargets::read_targets failes")
+                    ValidatorTarget::read_targets(data)
+                        .expect("ValidatorTarget::read_targets fails")
                 })
                 .collect(),
             validator_indices: (0..validators_len)
@@ -205,7 +205,7 @@ impl WriteTargets for ValidatorBalanceVerificationAccumulatorTargets {
         }
 
         for validator in &self.validators {
-            data.extend(ValidatorPoseidonTargets::write_targets(validator)?);
+            data.extend(ValidatorTarget::write_targets(validator)?);
         }
 
         for gindex in &self.validator_indices {
@@ -240,7 +240,7 @@ struct CircuitInputTargets {
     pub balances_root: Sha256,
     pub non_zero_validator_leaves_mask: Vec<BoolTarget>,
     pub balances_proofs: Vec<MerkleBranch<DEPTH>>,
-    pub validators: Vec<ValidatorPoseidonTargets>,
+    pub validators: Vec<ValidatorTarget>,
     pub validator_indices: Vec<BigUintTarget>,
     pub current_epoch: BigUintTarget,
     pub deposits_data: Vec<DepositDataTarget>,
@@ -265,8 +265,8 @@ fn read_input<F: RichField + Extendable<D>, const D: usize>(
         .map(|_| create_sha256_merkle_proof(builder))
         .collect_vec();
 
-    let validators: Vec<ValidatorPoseidonTargets> = (0..validators_count)
-        .map(|_| ValidatorPoseidonTargets::new(builder))
+    let validators: Vec<ValidatorTarget> = (0..validators_count)
+        .map(|_| ValidatorTarget::new(builder))
         .collect_vec();
 
     let validator_indices: Vec<BigUintTarget> = (0..validators_count)
@@ -296,7 +296,7 @@ fn read_input<F: RichField + Extendable<D>, const D: usize>(
 
 fn hash_poseidon_validator<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    validator: &ValidatorPoseidonTargets,
+    validator: &ValidatorTarget,
 ) -> HashOutTarget {
     let leaves = vec![
         builder.hash_n_to_hash_no_pad::<PoseidonHash>(
@@ -365,7 +365,7 @@ fn hash_poseidon<F: RichField + Extendable<D>, const D: usize>(
 
 fn calc_validators_commitment<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    validators: &[ValidatorPoseidonTargets],
+    validators: &[ValidatorTarget],
     non_zero_validator_leaves_mask: &[BoolTarget],
 ) -> HashOutTarget {
     let validator_hashes_targets = validators
@@ -425,7 +425,7 @@ fn increment_if_true<F: RichField + Extendable<D>, const D: usize>(
 fn accumulate_validator_statuses<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     current_epoch: &BigUintTarget,
-    validators: &[ValidatorPoseidonTargets],
+    validators: &[ValidatorTarget],
     non_zero_validator_leaves_mask: &[BoolTarget],
 ) -> ValidatorStatusCountsTarget {
     let mut counts = ValidatorStatusCountsTarget::new(builder);
