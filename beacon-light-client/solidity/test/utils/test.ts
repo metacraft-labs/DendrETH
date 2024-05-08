@@ -47,7 +47,7 @@ function uint8ArrayToHexString(arr: Uint8Array): string {
 }
 
 (async () => {
-    let msg = new Uint8Array([451231, 123, 678, 56, 123]);
+    let msg = new Uint8Array([9636, 8499, 980, 3289, 2380, 4091, 4494, 7841, 8175, 1645, 9486, 6069, 8507, 739, 4264, 209, 1174, 7352, 1824, 5981, 3557, 8703, 368, 9610, 6902, 3]);
     const DST = stringToBytes(htfDefaults.DST);
 
     let hash_to_field_result = await hash_to_field(msg, 2);
@@ -55,21 +55,20 @@ function uint8ArrayToHexString(arr: Uint8Array): string {
     // let hash_to_curve_test_res: PointG2 = await PointG2.hashToCurve(msg);
     let map_to_curve: PointG2 = map_to_curve_simple_swu_9mod16(hash_to_field_result[0]);
 
-    // let hash_to_curve_test_res: PointG2 = await PointG2.hashToCurve(
-    //     formatHex(uint8ArrayToHexString(msg)),
-    // );
+    let hash_to_curve_test_res: PointG2 = await PointG2.hashToCurve(
+        formatHex(uint8ArrayToHexString(msg)),
+    );
 
     console.log('hash_to_field_result is: ', hash_to_field_result);
     console.log('####################################################');
-    console.log('hash_to_field_result is: ', map_to_curve);
+    console.log('x is: ', hash_to_curve_test_res.x);
+    console.log('y is: ', hash_to_curve_test_res.y);
 
 
-    // let a = 1015072001812290770271495995578254894147382487313523610684315265448920391983183057185266070149383515536696015791412n;
+    // let a = 164432780807461518526223636504241229349588394649409730072519387299403412015098917482545551400313990282635303577913n;
 
     // for (let i = 1n; i <= 12n; i++) {
     //     console.log((a % (2n ** 32n)));
     //     a = a / (2n ** 32n);
     // }
-
-    // console.log('hash_to_curve_test_res is: ', hash_to_curve_test_res);
 })();
