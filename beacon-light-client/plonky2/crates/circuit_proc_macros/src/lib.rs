@@ -2,9 +2,34 @@ use itertools::Itertools;
 use proc_macro2::{Delimiter, Group, Span, TokenStream, TokenTree};
 use quote::format_ident;
 use quote::quote;
+use syn::parse::Parse;
+use syn::parse::ParseStream;
+use syn::Token;
 use syn::{parse_macro_input, DeriveInput, Field, Fields, Generics, Ident};
 
-#[proc_macro_derive(PublicInputs, attributes(public_input))]
+struct MetaListValues {
+    pub values: Vec<String>,
+}
+
+impl Parse for MetaListValues {
+    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+        let mut values = Vec::new();
+
+        let mut is_first_value = true;
+
+        while !input.is_empty() {
+            if !is_first_value {
+                is_first_value = false;
+                let _comma: Token![,] = input.parse()?;
+            }
+            let value: Ident = input.parse()?;
+            values.push(value.to_string());
+        }
+        Ok(MetaListValues { values })
+    }
+}
+
+#[proc_macro_derive(CircuitTarget, attributes(target))]
 pub fn derive_public_inputs(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input_ast: DeriveInput = parse_macro_input!(input as DeriveInput);
 
@@ -243,12 +268,44 @@ fn filter_public_input_fields(fields: &Fields) -> Vec<Field> {
     fields
         .iter()
         .filter(|field| {
-            field.attrs.iter().any(|attr| {
-                attr.path().segments.last().unwrap().ident.to_string() == "public_input"
-            })
+            if field_contains_attr(field, "target") {
+                let meta = get_function_like_attribute_content(field, "target");
+                if let Some(syn::Meta::List(list)) = meta {
+                    let tokens: proc_macro::TokenStream = list.tokens.into();
+                    let str_list: MetaListValues = parse_macro_input!(tokens as MetaListValues);
+
+                    return str_list.values.into_iter().any(|attr| attr == "out");
+                }
+            }
+            false
         })
         .fold(vec![], |mut public_input_fields, field| {
             public_input_fields.push(field.clone());
             public_input_fields
         })
+}
+
+fn field_contains_attr(field: &Field, attribute: &str) -> bool {
+    field.attrs.iter().any(|attr| match_attr(attr, attribute))
+}
+
+fn match_attr(attr: &syn::Attribute, string: &str) -> bool {
+    attr.path().segments.last().unwrap().ident.to_string() == string
+}
+
+fn get_function_like_attribute_content<'a>(
+    field: &'a Field,
+    attribute: &str,
+) -> Option<&'a syn::Meta> {
+    for attr in field.attrs.iter() {
+        if match_attr(&attr, attribute) {
+            return Some(&attr.meta);
+        }
+    }
+    None
+}
+
+fn function_like_attr_contains(meta: &syn::Meta, value: &str) -> bool {
+    if let syn::Meta::List(list) = meta {}
+    false
 }

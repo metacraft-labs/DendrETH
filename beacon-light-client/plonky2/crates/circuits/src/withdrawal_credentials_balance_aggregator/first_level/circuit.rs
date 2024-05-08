@@ -47,26 +47,64 @@ pub struct ValidatorBalanceVerificationTargets<
 > where
     [(); VALIDATORS_COUNT / 4]:,
 {
-    #[public_input]
+    #[out]
     pub range_total_value: BigUintTarget,
-    #[public_input]
+    #[out]
     pub range_balances_root: Sha256Target,
-    #[public_input]
+    #[out]
     pub range_validator_commitment: HashOutTarget,
     pub validators: [ValidatorTarget; VALIDATORS_COUNT],
     pub non_zero_validator_leaves_mask: [BoolTarget; VALIDATORS_COUNT],
     pub balances: [Sha256Target; VALIDATORS_COUNT / 4],
-    #[public_input]
+    #[out]
     pub withdrawal_credentials: [Sha256Target; WITHDRAWAL_CREDENTIALS_COUNT],
-    #[public_input]
+    #[out]
     pub current_epoch: BigUintTarget,
-    #[public_input]
+    #[out]
     pub number_of_non_activated_validators: Target,
-    #[public_input]
+    #[out]
     pub number_of_active_validators: Target,
-    #[public_input]
+    #[out]
     pub number_of_exitted_validators: Target,
 }
+
+// code to generate
+// public inputs reading
+// witness setting
+// input type per target
+// #[derive(CircuitTarget)]
+// #[target(in, out)]
+
+// #[derive(CircuitTarget)]
+// pub struct ValidatorBalanceVerificationTargets<
+//     const VALIDATORS_COUNT: usize,
+//     const WITHDRAWAL_CREDENTIALS_COUNT: usize,
+// > where
+//     [(); VALIDATORS_COUNT / 4]:,
+// {
+//     #[target(in)]
+//     pub validators: [ValidatorTarget; VALIDATORS_COUNT],
+//     #[target(in)]
+//     pub non_zero_validator_leaves_mask: [BoolTarget; VALIDATORS_COUNT],
+//     #[target(in)]
+//     pub balances: [Sha256Target; VALIDATORS_COUNT / 4],
+//     #[target(in, out)]
+//     pub range_total_value: BigUintTarget,
+//     #[target(in, out)]
+//     pub range_balances_root: Sha256Target,
+//     #[target(in, out)]
+//     pub range_validator_commitment: HashOutTarget,
+//     #[target(in, out)]
+//     pub withdrawal_credentials: [Sha256Target; WITHDRAWAL_CREDENTIALS_COUNT],
+//     #[target(in, out)]
+//     pub current_epoch: BigUintTarget,
+//     #[target(in, out)]
+//     pub number_of_non_activated_validators: Target,
+//     #[target(in, out)]
+//     pub number_of_active_validators: Target,
+//     #[target(in, out)]
+//     pub number_of_exitted_validators: Target,
+// }
 
 // maybe implement a SerializableCircuit trait
 // maybe add a function to expose the targets (returns Targets)
