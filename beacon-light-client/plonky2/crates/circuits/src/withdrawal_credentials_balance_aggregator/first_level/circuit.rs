@@ -1,10 +1,10 @@
-use crate::utils::public_inputs::field_reader::PublicInputsFieldReader;
-use crate::utils::public_inputs::to_targets::ToTargets;
-use crate::utils::public_inputs::{
-    field_reader::PublicInputsReadable, target_reader::PublicInputsTargetReader,
-};
+use circuit::public_inputs::field_reader::PublicInputsFieldReader;
+use circuit::public_inputs::field_reader::PublicInputsReadable;
+use circuit::public_inputs::target_reader::PublicInputsTargetReader;
+use circuit::public_inputs::to_targets::ToTargets;
 use circuit::Circuit;
 use circuit::TargetsWithPublicInputs;
+use circuit_proc_macros::PublicInputs;
 use plonky2::field::extension::Extendable;
 use plonky2::hash::hash_types::RichField;
 
@@ -18,7 +18,6 @@ use plonky2::{
         config::PoseidonGoldilocksConfig,
     },
 };
-use public_inputs_derive::PublicInputs;
 
 use crate::{
     common_targets::Sha256Target,

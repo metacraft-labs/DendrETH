@@ -1,5 +1,9 @@
 use core::marker::PhantomData;
 
+use circuit::public_inputs::field_reader::PublicInputsReadable;
+use circuit::public_inputs::target_reader::PublicInputsTargetReadable;
+use circuit::public_inputs::to_targets::ToTargets;
+use itertools::Itertools;
 use num::{BigUint, Integer, Zero};
 use plonky2::field::extension::Extendable;
 use plonky2::field::types::{PrimeField, PrimeField64};
@@ -14,6 +18,8 @@ use plonky2_u32::gadgets::arithmetic_u32::{CircuitBuilderU32, U32Target};
 use plonky2_u32::gadgets::multiple_comparison::list_le_u32_circuit;
 use plonky2_u32::serialization::{ReadU32, WriteU32};
 use plonky2_u32::witness::{GeneratedValuesU32, WitnessU32};
+
+use crate::utils::utils::biguint_target_from_limbs;
 
 #[derive(Clone, Debug, Default)]
 pub struct BigUintTarget {
@@ -309,6 +315,37 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderBiguint<F, D>
     fn rem_biguint(&mut self, a: &BigUintTarget, b: &BigUintTarget) -> BigUintTarget {
         let (_div, rem) = self.div_rem_biguint(a, b);
         rem
+    }
+}
+
+impl ToTargets for BigUintTarget {
+    fn to_targets(&self) -> Vec<Target> {
+        assert_eq!(self.limbs.len(), 2);
+        self.limbs.iter().map(|limb| limb.0).collect_vec()
+    }
+}
+
+impl PublicInputsReadable for BigUintTarget {
+    // TODO: make a Uint64 biguint wrapper
+    type PrimitiveType = u64;
+
+    fn from_elements<F: RichField>(elements: &[F]) -> Self::PrimitiveType {
+        assert_eq!(elements.len(), Self::get_size());
+        let first_limb = elements[0].to_canonical_u64();
+        let second_limb = elements[1].to_canonical_u64();
+        first_limb + (second_limb << 32)
+    }
+}
+
+impl PublicInputsTargetReadable for BigUintTarget {
+    // TODO: make a Uint64 biguint wrapper
+    fn get_size() -> usize {
+        2
+    }
+
+    fn from_targets(targets: &[Target]) -> Self {
+        assert_eq!(targets.len(), Self::get_size());
+        biguint_target_from_limbs(targets)
     }
 }
 

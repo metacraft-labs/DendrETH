@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 plonky2 = { git = "https://github.com/metacraft-labs/plonky2" }
+itertools = "0.10.5"

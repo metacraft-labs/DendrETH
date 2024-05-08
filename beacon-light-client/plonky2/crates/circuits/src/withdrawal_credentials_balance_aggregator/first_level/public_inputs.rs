@@ -2,10 +2,6 @@ use crate::{
     common_targets::Sha256Target,
     utils::{
         biguint::BigUintTarget,
-        public_inputs::{
-            field_reader::PublicInputsFieldReader, target_reader::PublicInputsTargetReader,
-            to_targets::ToTargets,
-        },
         utils::{
             biguint_from_field_elements, hex_string_from_field_element_bits, ETH_SHA256_BIT_SIZE,
             POSEIDON_HASH_SIZE,
@@ -13,7 +9,12 @@ use crate::{
     },
     withdrawal_credentials_balance_aggregator::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
-use circuit::CircuitWithPublicInputs;
+use circuit::{
+    public_inputs::{
+        field_reader::PublicInputsFieldReader, target_reader::PublicInputsTargetReader,
+    },
+    CircuitWithPublicInputs,
+};
 use itertools::Itertools;
 use num::ToPrimitive;
 use plonky2::{

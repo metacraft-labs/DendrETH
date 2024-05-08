@@ -1,5 +1,8 @@
 #![feature(associated_type_defaults)]
 
+pub mod public_inputs;
+pub mod set_witness;
+
 use plonky2::{
     field::extension::Extendable,
     hash::hash_types::RichField,

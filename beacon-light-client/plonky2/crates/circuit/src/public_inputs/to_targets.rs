@@ -1,20 +1,10 @@
-use itertools::Itertools;
 use plonky2::{
     hash::hash_types::HashOutTarget,
     iop::target::{BoolTarget, Target},
 };
 
-use crate::utils::biguint::BigUintTarget;
-
 pub trait ToTargets {
     fn to_targets(&self) -> Vec<Target>;
-}
-
-impl ToTargets for BigUintTarget {
-    fn to_targets(&self) -> Vec<Target> {
-        assert_eq!(self.limbs.len(), 2);
-        self.limbs.iter().map(|limb| limb.0).collect_vec()
-    }
 }
 
 impl ToTargets for Target {

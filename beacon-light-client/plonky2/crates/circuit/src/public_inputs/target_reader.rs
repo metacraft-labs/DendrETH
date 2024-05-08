@@ -4,8 +4,6 @@ use plonky2::{
     iop::target::{BoolTarget, Target},
 };
 
-use crate::utils::{biguint::BigUintTarget, utils::biguint_target_from_limbs};
-
 pub struct PublicInputsTargetReader<'a> {
     offset: usize,
     public_inputs: &'a [Target],
@@ -61,18 +59,6 @@ impl PublicInputsTargetReadable for BoolTarget {
     fn from_targets(targets: &[Target]) -> Self {
         assert_eq!(targets.len(), Self::get_size());
         BoolTarget::new_unsafe(targets[0])
-    }
-}
-
-impl PublicInputsTargetReadable for BigUintTarget {
-    // TODO: make a Uint64 biguint wrapper
-    fn get_size() -> usize {
-        2
-    }
-
-    fn from_targets(targets: &[Target]) -> Self {
-        assert_eq!(targets.len(), Self::get_size());
-        biguint_target_from_limbs(targets)
     }
 }
 

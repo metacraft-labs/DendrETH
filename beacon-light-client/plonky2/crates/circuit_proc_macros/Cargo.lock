@@ -49,11 +49,12 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 name = "circuit"
 version = "0.1.0"
 dependencies = [
+ "itertools 0.10.5",
  "plonky2",
 ]
 
 [[package]]
-name = "circuit_with_public_inputs_derive"
+name = "circuit_proc_macros"
 version = "0.1.0"
 dependencies = [
  "circuit",

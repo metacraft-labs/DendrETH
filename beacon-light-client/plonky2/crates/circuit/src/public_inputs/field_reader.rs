@@ -4,8 +4,6 @@ use plonky2::{
     iop::target::{BoolTarget, Target},
 };
 
-use crate::utils::biguint::BigUintTarget;
-
 use super::target_reader::PublicInputsTargetReadable;
 
 pub struct PublicInputsFieldReader<'a, F: RichField> {
@@ -60,18 +58,6 @@ impl PublicInputsReadable for BoolTarget {
     fn from_elements<F: RichField>(elements: &[F]) -> Self::PrimitiveType {
         assert_eq!(elements.len(), Self::get_size());
         elements[0].to_canonical_u64() != 0
-    }
-}
-
-impl PublicInputsReadable for BigUintTarget {
-    // TODO: make a Uint64 biguint wrapper
-    type PrimitiveType = u64;
-
-    fn from_elements<F: RichField>(elements: &[F]) -> Self::PrimitiveType {
-        assert_eq!(elements.len(), Self::get_size());
-        let first_limb = elements[0].to_canonical_u64();
-        let second_limb = elements[1].to_canonical_u64();
-        first_limb + (second_limb << 32)
     }
 }
 
