@@ -1,5 +1,6 @@
 use circuit::public_inputs::field_reader::PublicInputsFieldReader;
 use circuit::public_inputs::target_reader::PublicInputsTargetReader;
+use circuit::set_witness::SetWitness;
 use circuit::target_primitive::TargetPrimitive;
 use circuit::to_targets::ToTargets;
 use circuit::Circuit;
@@ -7,6 +8,7 @@ use circuit::TargetsWithPublicInputs;
 use circuit_proc_macros::CircuitTarget;
 use plonky2::field::extension::Extendable;
 use plonky2::hash::hash_types::RichField;
+use plonky2::iop::witness::PartialWitness;
 
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
@@ -47,7 +49,7 @@ pub struct ValidatorBalanceVerificationTargets<
 > where
     [(); VALIDATORS_COUNT / 4]:,
 {
-    #[target(out, in)]
+    #[target(out)]
     pub range_total_value: BigUintTarget,
     #[target(out)]
     pub range_balances_root: Sha256Target,

@@ -46,7 +46,7 @@ pub fn derive_public_inputs(input: proc_macro::TokenStream) -> proc_macro::Token
 
     let (impl_generics, type_generics, where_clause) = input_ast.generics.split_for_impl();
     // input_ast.generics.params.push(syn::GenericParam::Type())
-    let type_param_tokens = quote!(<F: RichField>);
+    let type_param_tokens = quote!(F: RichField);
     let type_param = syn::parse::<TypeParam>(type_param_tokens.into()).unwrap();
 
     let mut modified_generics = input_ast.generics.clone();
@@ -54,8 +54,8 @@ pub fn derive_public_inputs(input: proc_macro::TokenStream) -> proc_macro::Token
         .params
         .push(syn::GenericParam::Type(type_param));
 
-    let (impl_generics2, type_generics2, where_clause2) = modified_generics.split_for_impl();
-    println!("{:?}", quote!(#impl_generics2).to_string());
+    let (impl_generics2, _, _) = modified_generics.split_for_impl();
+    // println!("{:?}", quote!(#impl_generics2).to_string());
 
     let syn::Data::Struct(ref data) = input_ast.data else {
         panic!("PublicInputs is implemented only for structs");
@@ -71,6 +71,19 @@ pub fn derive_public_inputs(input: proc_macro::TokenStream) -> proc_macro::Token
     let circuit_input_fields = filter_circuit_input_fields(&data.fields);
 
     let ident = &input_ast.ident;
+    let witness_input_ident = format_ident!("{ident}WitnessInput");
+
+    let set_witness_for_fields = concat_token_streams(
+        circuit_input_fields
+            .iter()
+            .map(|field| {
+                // let field_ty = &field.ty;
+                // let field_type = quote!(#field_ty);
+                let field_name = &field.ident;
+                quote!(self.#field_name.set_witness(witness, &input.#field_name);)
+            })
+            .collect_vec(),
+    );
 
     concat_token_streams(vec![
         // define_public_inputs_struct(&input_ast, &public_input_fields),
@@ -92,15 +105,20 @@ pub fn derive_public_inputs(input: proc_macro::TokenStream) -> proc_macro::Token
             }
         },
         create_struct_with_fields_target_primitive(
-            &format_ident!("{ident}Witness"),
+            &format_ident!("{ident}WitnessInput"),
             &input_ast.generics,
             &circuit_input_fields,
         ),
-        // quote! {
-        //     impl<F: RichField> SetWitness<F> for
-        //
-        // },
-        // impl_set_witness(),
+        quote! {
+            impl #impl_generics2 SetWitness<F> for #ident #type_generics #where_clause {
+                type Input = #witness_input_ident #type_generics;
+
+                fn set_witness(&self, witness: &mut PartialWitness<F>, input: &Self::Input) {
+                    #set_witness_for_fields
+                }
+            }
+
+        },
     ])
     .into()
 }
