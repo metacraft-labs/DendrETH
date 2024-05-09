@@ -2,7 +2,8 @@ use core::marker::PhantomData;
 
 use circuit::public_inputs::field_reader::PublicInputsReadable;
 use circuit::public_inputs::target_reader::PublicInputsTargetReadable;
-use circuit::public_inputs::to_targets::ToTargets;
+use circuit::target_primitive::TargetPrimitive;
+use circuit::to_targets::ToTargets;
 use itertools::Itertools;
 use num::{BigUint, Integer, Zero};
 use plonky2::field::extension::Extendable;
@@ -318,6 +319,11 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderBiguint<F, D>
     }
 }
 
+impl TargetPrimitive for BigUintTarget {
+    // TODO: make a Uint64 biguint wrapper
+    type Primitive = u64;
+}
+
 impl ToTargets for BigUintTarget {
     fn to_targets(&self) -> Vec<Target> {
         assert_eq!(self.limbs.len(), 2);
@@ -326,10 +332,7 @@ impl ToTargets for BigUintTarget {
 }
 
 impl PublicInputsReadable for BigUintTarget {
-    // TODO: make a Uint64 biguint wrapper
-    type PrimitiveType = u64;
-
-    fn from_elements<F: RichField>(elements: &[F]) -> Self::PrimitiveType {
+    fn from_elements<F: RichField>(elements: &[F]) -> Self::Primitive {
         assert_eq!(elements.len(), Self::get_size());
         let first_limb = elements[0].to_canonical_u64();
         let second_limb = elements[1].to_canonical_u64();

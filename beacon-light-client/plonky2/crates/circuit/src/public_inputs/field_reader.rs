@@ -1,8 +1,10 @@
 use itertools::Itertools;
 use plonky2::{
-    hash::hash_types::{HashOutTarget, RichField, NUM_HASH_OUT_ELTS},
+    hash::hash_types::{HashOutTarget, RichField},
     iop::target::{BoolTarget, Target},
 };
+
+use crate::target_primitive::TargetPrimitive;
 
 use super::target_reader::PublicInputsTargetReadable;
 
@@ -31,31 +33,25 @@ impl<'a, F: RichField> PublicInputsFieldReader<'a, F> {
         read_elements
     }
 
-    pub fn read_object<O: PublicInputsReadable>(&mut self) -> O::PrimitiveType {
+    pub fn read_object<O: PublicInputsReadable>(&mut self) -> O::Primitive {
         let read_elements = self.read_n(O::get_size());
         O::from_elements(read_elements)
     }
 }
 
-pub trait PublicInputsReadable: PublicInputsTargetReadable {
-    type PrimitiveType;
-
-    fn from_elements<F: RichField>(elements: &[F]) -> Self::PrimitiveType;
+pub trait PublicInputsReadable: PublicInputsTargetReadable + TargetPrimitive {
+    fn from_elements<F: RichField>(elements: &[F]) -> Self::Primitive;
 }
 
 impl PublicInputsReadable for Target {
-    type PrimitiveType = u64;
-
-    fn from_elements<F: RichField>(elements: &[F]) -> Self::PrimitiveType {
+    fn from_elements<F: RichField>(elements: &[F]) -> Self::Primitive {
         assert_eq!(elements.len(), Self::get_size());
         elements[0].to_canonical_u64()
     }
 }
 
 impl PublicInputsReadable for BoolTarget {
-    type PrimitiveType = bool;
-
-    fn from_elements<F: RichField>(elements: &[F]) -> Self::PrimitiveType {
+    fn from_elements<F: RichField>(elements: &[F]) -> Self::Primitive {
         assert_eq!(elements.len(), Self::get_size());
         elements[0].to_canonical_u64() != 0
     }
@@ -63,11 +59,9 @@ impl PublicInputsReadable for BoolTarget {
 
 impl<R: PublicInputsReadable + std::fmt::Debug, const N: usize> PublicInputsReadable for [R; N]
 where
-    <R as PublicInputsReadable>::PrimitiveType: std::fmt::Debug,
+    <R as TargetPrimitive>::Primitive: std::fmt::Debug,
 {
-    type PrimitiveType = [R::PrimitiveType; N];
-
-    fn from_elements<F: RichField>(elements: &[F]) -> Self::PrimitiveType {
+    fn from_elements<F: RichField>(elements: &[F]) -> Self::Primitive {
         assert_eq!(elements.len(), Self::get_size());
         let size = R::get_size();
         [(); N]
@@ -81,9 +75,7 @@ where
 }
 
 impl PublicInputsReadable for HashOutTarget {
-    type PrimitiveType = [u64; NUM_HASH_OUT_ELTS];
-
-    fn from_elements<F: RichField>(elements: &[F]) -> Self::PrimitiveType {
+    fn from_elements<F: RichField>(elements: &[F]) -> Self::Primitive {
         assert_eq!(elements.len(), Self::get_size());
         elements
             .into_iter()

@@ -20,7 +20,9 @@ use circuits::{
     circuit_input_common::BalanceProof,
     serialization::targets_serialization::ReadTargets,
     withdrawal_credentials_balance_aggregator::{
-        first_level::circuit::ValidatorBalanceVerificationTargets,
+        first_level::circuit::{
+            ValidatorBalanceVerificationTargets, ValidatorBalanceVerificationTargetsWitness,
+        },
         inner_level_circuit::BalanceInnerCircuitTargets,
         WithdrawalCredentialsBalanceAggregatorFirstLevel,
     },
@@ -66,6 +68,7 @@ fn main() -> Result<()> {
 }
 
 async fn async_main() -> Result<()> {
+    let input = ValidatorBalanceVerificationTargetsWitness {};
     let common_config = parse_config_file("../../common_config.json".to_owned()).unwrap();
 
     let matches = CommandLineOptionsBuilder::new("balance_verification")

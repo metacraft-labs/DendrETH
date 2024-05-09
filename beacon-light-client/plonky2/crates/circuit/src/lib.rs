@@ -2,6 +2,8 @@
 
 pub mod public_inputs;
 pub mod set_witness;
+pub mod target_primitive;
+pub mod to_targets;
 
 use plonky2::{
     field::extension::Extendable,

@@ -1,10 +1,10 @@
 use circuit::public_inputs::field_reader::PublicInputsFieldReader;
-use circuit::public_inputs::field_reader::PublicInputsReadable;
 use circuit::public_inputs::target_reader::PublicInputsTargetReader;
-use circuit::public_inputs::to_targets::ToTargets;
+use circuit::target_primitive::TargetPrimitive;
+use circuit::to_targets::ToTargets;
 use circuit::Circuit;
 use circuit::TargetsWithPublicInputs;
-use circuit_proc_macros::PublicInputs;
+use circuit_proc_macros::CircuitTarget;
 use plonky2::field::extension::Extendable;
 use plonky2::hash::hash_types::RichField;
 
@@ -40,31 +40,32 @@ use crate::{
 // CircuitWithPublicInputs trait with a procedural macro (trait funcions and
 // associated types)
 
-#[derive(PublicInputs)]
+#[derive(CircuitTarget)]
 pub struct ValidatorBalanceVerificationTargets<
     const VALIDATORS_COUNT: usize,
     const WITHDRAWAL_CREDENTIALS_COUNT: usize,
 > where
     [(); VALIDATORS_COUNT / 4]:,
 {
-    #[out]
+    #[target(out, in)]
     pub range_total_value: BigUintTarget,
-    #[out]
+    #[target(out)]
     pub range_balances_root: Sha256Target,
-    #[out]
+    #[target(out)]
     pub range_validator_commitment: HashOutTarget,
     pub validators: [ValidatorTarget; VALIDATORS_COUNT],
     pub non_zero_validator_leaves_mask: [BoolTarget; VALIDATORS_COUNT],
+    #[target(in)]
     pub balances: [Sha256Target; VALIDATORS_COUNT / 4],
-    #[out]
+    #[target(out)]
     pub withdrawal_credentials: [Sha256Target; WITHDRAWAL_CREDENTIALS_COUNT],
-    #[out]
+    #[target(out)]
     pub current_epoch: BigUintTarget,
-    #[out]
+    #[target(out)]
     pub number_of_non_activated_validators: Target,
-    #[out]
+    #[target(out)]
     pub number_of_active_validators: Target,
-    #[out]
+    #[target(out)]
     pub number_of_exitted_validators: Target,
 }
 
@@ -74,40 +75,6 @@ pub struct ValidatorBalanceVerificationTargets<
 // input type per target
 // #[derive(CircuitTarget)]
 // #[target(in, out)]
-
-// #[derive(CircuitTarget)]
-// pub struct ValidatorBalanceVerificationTargets<
-//     const VALIDATORS_COUNT: usize,
-//     const WITHDRAWAL_CREDENTIALS_COUNT: usize,
-// > where
-//     [(); VALIDATORS_COUNT / 4]:,
-// {
-//     #[target(in)]
-//     pub validators: [ValidatorTarget; VALIDATORS_COUNT],
-//     #[target(in)]
-//     pub non_zero_validator_leaves_mask: [BoolTarget; VALIDATORS_COUNT],
-//     #[target(in)]
-//     pub balances: [Sha256Target; VALIDATORS_COUNT / 4],
-//     #[target(in, out)]
-//     pub range_total_value: BigUintTarget,
-//     #[target(in, out)]
-//     pub range_balances_root: Sha256Target,
-//     #[target(in, out)]
-//     pub range_validator_commitment: HashOutTarget,
-//     #[target(in, out)]
-//     pub withdrawal_credentials: [Sha256Target; WITHDRAWAL_CREDENTIALS_COUNT],
-//     #[target(in, out)]
-//     pub current_epoch: BigUintTarget,
-//     #[target(in, out)]
-//     pub number_of_non_activated_validators: Target,
-//     #[target(in, out)]
-//     pub number_of_active_validators: Target,
-//     #[target(in, out)]
-//     pub number_of_exitted_validators: Target,
-// }
-
-// maybe implement a SerializableCircuit trait
-// maybe add a function to expose the targets (returns Targets)
 
 type F = GoldilocksField;
 type C = PoseidonGoldilocksConfig;

@@ -2,11 +2,14 @@ use itertools::Itertools;
 use proc_macro2::{Delimiter, Group, Span, TokenStream, TokenTree};
 use quote::format_ident;
 use quote::quote;
+use syn::parse;
 use syn::parse::Parse;
 use syn::parse::ParseStream;
+use syn::Attribute;
 use syn::Token;
 use syn::{parse_macro_input, DeriveInput, Field, Fields, Generics, Ident};
 
+#[derive(Debug)]
 struct MetaListValues {
     pub values: Vec<String>,
 }
@@ -19,11 +22,18 @@ impl Parse for MetaListValues {
 
         while !input.is_empty() {
             if !is_first_value {
-                is_first_value = false;
                 let _comma: Token![,] = input.parse()?;
             }
-            let value: Ident = input.parse()?;
-            values.push(value.to_string());
+            is_first_value = false;
+
+            let string: String = match input.parse::<Ident>() {
+                Ok(ident) => ident.to_string(),
+                Err(_) => match input.parse::<Token![in]>() {
+                    Ok(_) => "in".to_string(),
+                    Err(_) => panic!("Input item to targets() must be ident or in"),
+                },
+            };
+            values.push(string);
         }
         Ok(MetaListValues { values })
     }
@@ -46,12 +56,19 @@ pub fn derive_public_inputs(input: proc_macro::TokenStream) -> proc_macro::Token
         impl_read_public_inputs_target(&input_ast, &public_input_fields);
     let register_public_inputs_impl = impl_register_public_inputs(&public_input_fields);
 
+    let circuit_input_fields = filter_circuit_input_fields(&data.fields);
+
     let ident = &input_ast.ident;
 
     concat_token_streams(vec![
-        define_public_inputs_struct(&input_ast, &public_input_fields),
+        // define_public_inputs_struct(&input_ast, &public_input_fields),
+        create_struct_with_fields_target_primitive(
+            &format_ident!("{ident}PublicInputs"),
+            &input_ast.generics,
+            &public_input_fields,
+        ),
         create_struct_with_fields(
-            &format_ident!("{}PublicInputsTarget", input_ast.ident),
+            &format_ident!("{ident}PublicInputsTarget"),
             &input_ast.generics,
             &public_input_fields,
         ),
@@ -62,6 +79,11 @@ pub fn derive_public_inputs(input: proc_macro::TokenStream) -> proc_macro::Token
                 #register_public_inputs_impl
             }
         },
+        create_struct_with_fields_target_primitive(
+            &format_ident!("{ident}Witness"),
+            &input_ast.generics,
+            &circuit_input_fields,
+        ),
     ])
     .into()
 }
@@ -78,18 +100,20 @@ fn create_struct_with_fields(ident: &Ident, generics: &Generics, fields: &[Field
     }
 }
 
-fn define_public_inputs_struct(input: &DeriveInput, public_input_fields: &[Field]) -> TokenStream {
-    let (impl_generics, _, where_clause) = input.generics.split_for_impl();
-    let targets_struct_ident = &input.ident;
-    let public_inputs_target_ident = format_ident!("{targets_struct_ident}PublicInputs");
+fn create_struct_with_fields_target_primitive(
+    ident: &Ident,
+    generics: &Generics,
+    fields: &[Field],
+) -> TokenStream {
+    let (impl_generics, _, where_clause) = generics.split_for_impl();
 
-    let fields = concat_token_streams(
-        public_input_fields
+    let primitive_fields = concat_token_streams(
+        fields
             .into_iter()
             .map(|field| {
                 let field_name = &field.ident;
                 let target_type = &field.ty;
-                let primitive_type = quote!(<#target_type as PublicInputsReadable>::PrimitiveType);
+                let primitive_type = quote!(<#target_type as TargetPrimitive>::Primitive);
                 quote!(#field_name: #primitive_type,)
             })
             .collect_vec(),
@@ -97,8 +121,8 @@ fn define_public_inputs_struct(input: &DeriveInput, public_input_fields: &[Field
 
     quote! {
         #[derive(Debug)]
-        pub struct #public_inputs_target_ident #impl_generics #where_clause {
-            #fields
+        pub struct #ident #impl_generics #where_clause {
+            #primitive_fields
         }
 
     }
@@ -266,46 +290,42 @@ fn gen_public_inputs_target_read_for_field(field: &Field) -> TokenStream {
 
 fn filter_public_input_fields(fields: &Fields) -> Vec<Field> {
     fields
-        .iter()
-        .filter(|field| {
-            if field_contains_attr(field, "target") {
-                let meta = get_function_like_attribute_content(field, "target");
-                if let Some(syn::Meta::List(list)) = meta {
-                    let tokens: proc_macro::TokenStream = list.tokens.into();
-                    let str_list: MetaListValues = parse_macro_input!(tokens as MetaListValues);
+        .into_iter()
+        .filter(|&field| has_functional_attr_with_arg(&field, "target", "out"))
+        .cloned()
+        .collect_vec()
+}
 
-                    return str_list.values.into_iter().any(|attr| attr == "out");
-                }
+fn filter_circuit_input_fields(fields: &Fields) -> Vec<Field> {
+    fields
+        .into_iter()
+        .filter(|&field| has_functional_attr_with_arg(&field, "target", "in"))
+        .cloned()
+        .collect_vec()
+}
+
+fn has_functional_attr_with_arg(field: &Field, attr: &str, arg: &str) -> bool {
+    if let Some(attr) = find_attr(&field.attrs, attr) {
+        if let syn::Meta::List(list) = &attr.meta {
+            let items = parse::<MetaListValues>(list.tokens.clone().into()).unwrap();
+            if items.values.into_iter().any(|attr| attr == arg) {
+                return true;
             }
-            false
-        })
-        .fold(vec![], |mut public_input_fields, field| {
-            public_input_fields.push(field.clone());
-            public_input_fields
-        })
+        }
+    }
+    false
 }
 
-fn field_contains_attr(field: &Field, attribute: &str) -> bool {
-    field.attrs.iter().any(|attr| match_attr(attr, attribute))
-}
+// fn attrs_contain(attrs: &[Attribute], attribute: &str) -> bool {
+//     attrs.into_iter().any(|attr| match_attr(attr, attribute))
+// }
 
-fn match_attr(attr: &syn::Attribute, string: &str) -> bool {
+fn match_attr(attr: &Attribute, string: &str) -> bool {
     attr.path().segments.last().unwrap().ident.to_string() == string
 }
 
-fn get_function_like_attribute_content<'a>(
-    field: &'a Field,
-    attribute: &str,
-) -> Option<&'a syn::Meta> {
-    for attr in field.attrs.iter() {
-        if match_attr(&attr, attribute) {
-            return Some(&attr.meta);
-        }
-    }
-    None
-}
-
-fn function_like_attr_contains(meta: &syn::Meta, value: &str) -> bool {
-    if let syn::Meta::List(list) = meta {}
-    false
+fn find_attr<'a>(attrs: &'a [Attribute], attr: &str) -> Option<&'a Attribute> {
+    attrs
+        .into_iter()
+        .find(|&attribute| match_attr(attribute, attr))
 }
