@@ -7,6 +7,7 @@ use syn::parse::Parse;
 use syn::parse::ParseStream;
 use syn::Attribute;
 use syn::Token;
+use syn::TypeParam;
 use syn::{parse_macro_input, DeriveInput, Field, Fields, Generics, Ident};
 
 #[derive(Debug)]
@@ -44,6 +45,17 @@ pub fn derive_public_inputs(input: proc_macro::TokenStream) -> proc_macro::Token
     let input_ast: DeriveInput = parse_macro_input!(input as DeriveInput);
 
     let (impl_generics, type_generics, where_clause) = input_ast.generics.split_for_impl();
+    // input_ast.generics.params.push(syn::GenericParam::Type())
+    let type_param_tokens = quote!(<F: RichField>);
+    let type_param = syn::parse::<TypeParam>(type_param_tokens.into()).unwrap();
+
+    let mut modified_generics = input_ast.generics.clone();
+    modified_generics
+        .params
+        .push(syn::GenericParam::Type(type_param));
+
+    let (impl_generics2, type_generics2, where_clause2) = modified_generics.split_for_impl();
+    println!("{:?}", quote!(#impl_generics2).to_string());
 
     let syn::Data::Struct(ref data) = input_ast.data else {
         panic!("PublicInputs is implemented only for structs");
@@ -84,8 +96,17 @@ pub fn derive_public_inputs(input: proc_macro::TokenStream) -> proc_macro::Token
             &input_ast.generics,
             &circuit_input_fields,
         ),
+        // quote! {
+        //     impl<F: RichField> SetWitness<F> for
+        //
+        // },
+        // impl_set_witness(),
     ])
     .into()
+}
+
+fn impl_set_witness() -> TokenStream {
+    todo!()
 }
 
 fn create_struct_with_fields(ident: &Ident, generics: &Generics, fields: &[Field]) -> TokenStream {
