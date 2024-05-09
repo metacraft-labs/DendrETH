@@ -1,3 +1,7 @@
+use circuit::set_witness::SetWitness;
+use circuit::target_primitive::TargetPrimitive;
+use circuit_proc_macros::{SetWitness, TargetPrimitive};
+use plonky2::iop::witness::PartialWitness;
 use plonky2::{
     field::extension::Extendable,
     hash::{
@@ -8,6 +12,8 @@ use plonky2::{
     plonk::circuit_builder::CircuitBuilder,
     util::serialization::{Buffer, IoResult, Read, Write},
 };
+use serde::Deserialize;
+use serde::Serialize;
 
 use crate::{
     serialization::targets_serialization::{ReadTargets, WriteTargets},
@@ -19,7 +25,7 @@ use crate::{
 
 use super::hash_tree_root_poseidon::hash_tree_root_poseidon;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, TargetPrimitive, SetWitness)]
 pub struct ValidatorTarget {
     pub pubkey: [BoolTarget; 384],
     pub withdrawal_credentials: [BoolTarget; ETH_SHA256_BIT_SIZE],

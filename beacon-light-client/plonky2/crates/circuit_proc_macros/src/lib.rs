@@ -40,6 +40,101 @@ impl Parse for MetaListValues {
     }
 }
 
+#[proc_macro_derive(TargetPrimitive)]
+pub fn derive_target_primitive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input_ast: DeriveInput = parse_macro_input!(input as DeriveInput);
+
+    let syn::Data::Struct(ref data) = input_ast.data else {
+        panic!("PublicInputs is implemented only for structs");
+    };
+
+    let (impl_generics, type_generics, where_clause) = input_ast.generics.split_for_impl();
+
+    let ident = &input_ast.ident;
+
+    let primitive_type_ident = format_ident!("{ident}Primitive");
+
+    concat_token_streams(vec![
+        create_struct_with_fields_target_primitive(
+            &primitive_type_ident,
+            &input_ast.generics,
+            data.fields.iter().cloned().collect_vec().as_slice(),
+        ),
+        quote! {
+            impl #impl_generics TargetPrimitive for #ident #type_generics #where_clause {
+                type Primitive = #primitive_type_ident;
+            }
+        }, // quote! {
+           //     impl #modified_impl_generics SetWitness<F> for #ident #type_generics #where_clause {
+           //         type Input = #witness_input_ident #type_generics;
+           //
+           //         fn set_witness(&self, witness: &mut PartialWitness<F>, input: &Self::Input) {
+           //             #set_witness_for_fields
+           //         }
+           //     }
+           // },
+    ])
+    .into()
+}
+
+#[proc_macro_derive(SetWitness)]
+pub fn derive_set_witness(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input_ast: DeriveInput = parse_macro_input!(input as DeriveInput);
+
+    let syn::Data::Struct(ref data) = input_ast.data else {
+        panic!("PublicInputs is implemented only for structs");
+    };
+
+    // let circuit_input_fields = filter_circuit_input_fields(&data.fields);
+    let fields = data.fields.iter().cloned().collect_vec();
+
+    let (_, type_generics, where_clause) = input_ast.generics.split_for_impl();
+    let type_param_tokens = quote!(F: RichField);
+    let type_param = syn::parse::<TypeParam>(type_param_tokens.into()).unwrap();
+
+    let mut modified_generics = input_ast.generics.clone();
+    modified_generics
+        .params
+        .push(syn::GenericParam::Type(type_param));
+
+    let (modified_impl_generics, _, _) = modified_generics.split_for_impl();
+
+    let ident = &input_ast.ident;
+
+    let witness_input_ident = format_ident!("{ident}WitnessInput");
+
+    let set_witness_for_fields = concat_token_streams(
+        fields
+            .iter()
+            .map(|field| {
+                // let field_ty = &field.ty;
+                // let field_type = quote!(#field_ty);
+                let field_name = &field.ident;
+                quote!(self.#field_name.set_witness(witness, &input.#field_name);)
+            })
+            .collect_vec(),
+    );
+
+    //type Input = #witness_input_ident #type_generics;
+    concat_token_streams(vec![
+        create_struct_with_fields_target_primitive(
+            &witness_input_ident,
+            &input_ast.generics,
+            &fields,
+        ),
+        quote! {
+            impl #modified_impl_generics SetWitness<F> for #ident #type_generics #where_clause {
+                type Input = <#ident #type_generics as TargetPrimitive>::Primitive;
+
+                fn set_witness(&self, witness: &mut PartialWitness<F>, input: &Self::Input) {
+                    #set_witness_for_fields
+                }
+            }
+        },
+    ])
+    .into()
+}
+
 #[proc_macro_derive(CircuitTarget, attributes(target))]
 pub fn derive_public_inputs(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input_ast: DeriveInput = parse_macro_input!(input as DeriveInput);
@@ -54,7 +149,7 @@ pub fn derive_public_inputs(input: proc_macro::TokenStream) -> proc_macro::Token
         .params
         .push(syn::GenericParam::Type(type_param));
 
-    let (impl_generics2, _, _) = modified_generics.split_for_impl();
+    let (modified_impl_generics, _, _) = modified_generics.split_for_impl();
     // println!("{:?}", quote!(#impl_generics2).to_string());
 
     let syn::Data::Struct(ref data) = input_ast.data else {
@@ -77,8 +172,6 @@ pub fn derive_public_inputs(input: proc_macro::TokenStream) -> proc_macro::Token
         circuit_input_fields
             .iter()
             .map(|field| {
-                // let field_ty = &field.ty;
-                // let field_type = quote!(#field_ty);
                 let field_name = &field.ident;
                 quote!(self.#field_name.set_witness(witness, &input.#field_name);)
             })
@@ -105,26 +198,21 @@ pub fn derive_public_inputs(input: proc_macro::TokenStream) -> proc_macro::Token
             }
         },
         create_struct_with_fields_target_primitive(
-            &format_ident!("{ident}WitnessInput"),
+            &witness_input_ident,
             &input_ast.generics,
             &circuit_input_fields,
         ),
         quote! {
-            impl #impl_generics2 SetWitness<F> for #ident #type_generics #where_clause {
+            impl #modified_impl_generics SetWitness<F> for #ident #type_generics #where_clause {
                 type Input = #witness_input_ident #type_generics;
 
                 fn set_witness(&self, witness: &mut PartialWitness<F>, input: &Self::Input) {
                     #set_witness_for_fields
                 }
             }
-
         },
     ])
     .into()
-}
-
-fn impl_set_witness() -> TokenStream {
-    todo!()
 }
 
 fn create_struct_with_fields(ident: &Ident, generics: &Generics, fields: &[Field]) -> TokenStream {
@@ -153,13 +241,13 @@ fn create_struct_with_fields_target_primitive(
                 let field_name = &field.ident;
                 let target_type = &field.ty;
                 let primitive_type = quote!(<#target_type as TargetPrimitive>::Primitive);
-                quote!(#field_name: #primitive_type,)
+                quote!(pub #field_name: #primitive_type,)
             })
             .collect_vec(),
     );
 
     quote! {
-        #[derive(Debug)]
+        #[derive(Debug, Clone, Serialize, Deserialize)]
         pub struct #ident #impl_generics #where_clause {
             #primitive_fields
         }

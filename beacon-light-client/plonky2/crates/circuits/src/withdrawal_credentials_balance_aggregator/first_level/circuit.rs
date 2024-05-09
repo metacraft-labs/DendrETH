@@ -1,3 +1,4 @@
+use circuit::array::Array;
 use circuit::public_inputs::field_reader::PublicInputsFieldReader;
 use circuit::public_inputs::target_reader::PublicInputsTargetReader;
 use circuit::set_witness::SetWitness;
@@ -9,6 +10,7 @@ use circuit_proc_macros::CircuitTarget;
 use plonky2::field::extension::Extendable;
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::witness::PartialWitness;
+use serde::{Deserialize, Serialize};
 
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
@@ -49,18 +51,19 @@ pub struct ValidatorBalanceVerificationTargets<
 > where
     [(); VALIDATORS_COUNT / 4]:,
 {
-    #[target(out)]
+    #[target(out, in)]
     pub range_total_value: BigUintTarget,
     #[target(out)]
     pub range_balances_root: Sha256Target,
     #[target(out)]
     pub range_validator_commitment: HashOutTarget,
-    pub validators: [ValidatorTarget; VALIDATORS_COUNT],
-    pub non_zero_validator_leaves_mask: [BoolTarget; VALIDATORS_COUNT],
     #[target(in)]
-    pub balances: [Sha256Target; VALIDATORS_COUNT / 4],
+    pub validators: Array<ValidatorTarget, VALIDATORS_COUNT>,
+    pub non_zero_validator_leaves_mask: Array<BoolTarget, VALIDATORS_COUNT>,
+    #[target(in)]
+    pub balances: Array<Sha256Target, { VALIDATORS_COUNT / 4 }>,
     #[target(out)]
-    pub withdrawal_credentials: [Sha256Target; WITHDRAWAL_CREDENTIALS_COUNT],
+    pub withdrawal_credentials: Array<Sha256Target, WITHDRAWAL_CREDENTIALS_COUNT>,
     #[target(out)]
     pub current_epoch: BigUintTarget,
     #[target(out)]

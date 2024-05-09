@@ -2,6 +2,9 @@ use plonky2::{
     hash::hash_types::{HashOutTarget, NUM_HASH_OUT_ELTS},
     iop::target::{BoolTarget, Target},
 };
+use serde::{de::DeserializeOwned, Serialize};
+
+use crate::array::Array;
 
 pub trait TargetPrimitive {
     type Primitive;
@@ -15,10 +18,14 @@ impl TargetPrimitive for BoolTarget {
     type Primitive = bool;
 }
 
-impl<T: TargetPrimitive, const N: usize> TargetPrimitive for [T; N] {
-    type Primitive = [T::Primitive; N];
+impl<T: TargetPrimitive + Serialize + DeserializeOwned, const N: usize> TargetPrimitive
+    for Array<T, N>
+where
+    T::Primitive: Serialize + DeserializeOwned,
+{
+    type Primitive = Array<T::Primitive, N>;
 }
 
 impl TargetPrimitive for HashOutTarget {
-    type Primitive = [u64; NUM_HASH_OUT_ELTS];
+    type Primitive = Array<u64, NUM_HASH_OUT_ELTS>;
 }

@@ -5,6 +5,9 @@ use plonky2::{
         witness::{PartialWitness, WitnessWrite},
     },
 };
+use serde::{de::DeserializeOwned, Serialize};
+
+use crate::array::Array;
 
 // TODO: new trait TargetPrimitiveType
 
@@ -30,11 +33,13 @@ impl<F: RichField> SetWitness<F> for BoolTarget {
     }
 }
 
-impl<F: RichField, T: SetWitness<F>, const N: usize> SetWitness<F> for [T; N] {
+impl<F: RichField, T: SetWitness<F> + DeserializeOwned + Serialize, const N: usize> SetWitness<F>
+    for Array<T, N>
+{
     type Input = [T::Input; N];
 
     fn set_witness(&self, witness: &mut PartialWitness<F>, input: &Self::Input) {
-        for (target, pw_input) in self.into_iter().zip(input) {
+        for (target, pw_input) in self.iter().zip(input) {
             target.set_witness(witness, pw_input);
         }
     }

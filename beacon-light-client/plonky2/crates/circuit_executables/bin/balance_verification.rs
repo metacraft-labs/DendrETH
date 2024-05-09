@@ -1,5 +1,7 @@
 #![feature(generic_const_exprs)]
-use circuit::{Circuit, CircuitWithPublicInputs, WitnessSetter};
+use circuit::{
+    set_witness::SetWitness, Circuit, CircuitInput, CircuitWithPublicInputs, WitnessSetter,
+};
 use circuit_executables::{
     crud::{
         common::{
@@ -20,9 +22,7 @@ use circuits::{
     circuit_input_common::BalanceProof,
     serialization::targets_serialization::ReadTargets,
     withdrawal_credentials_balance_aggregator::{
-        first_level::circuit::{
-            ValidatorBalanceVerificationTargets, ValidatorBalanceVerificationTargetsWitness,
-        },
+        first_level::circuit::ValidatorBalanceVerificationTargets,
         inner_level_circuit::BalanceInnerCircuitTargets,
         WithdrawalCredentialsBalanceAggregatorFirstLevel,
     },
@@ -38,6 +38,7 @@ use anyhow::Result;
 use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
+    iop::witness::PartialWitness,
     plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig},
     util::serialization::Buffer,
 };
@@ -68,7 +69,6 @@ fn main() -> Result<()> {
 }
 
 async fn async_main() -> Result<()> {
-    let input = ValidatorBalanceVerificationTargetsWitness {};
     let common_config = parse_config_file("../../common_config.json".to_owned()).unwrap();
 
     let matches = CommandLineOptionsBuilder::new("balance_verification")
@@ -285,10 +285,25 @@ where
 
     println!("Fetching validator balance input took: {:?}", elapsed);
 
-    let pw = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
-        VALIDATORS_COUNT,
-        WITHDRAWAL_CREDENTIALS_COUNT,
-    >::set_witness(targets, &validator_balance_input);
+    // let pw = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
+    //     VALIDATORS_COUNT,
+    //     WITHDRAWAL_CREDENTIALS_COUNT,
+    // >::set_witness(targets, &validator_balance_input);
+    let mut pw = PartialWitness::new();
+    targets.set_witness(&mut pw, &validator_balance_input);
+
+    // let input = <ValidatorBalanceVerificationTargets<
+    //     VALIDATORS_COUNT,
+    //     WITHDRAWAL_CREDENTIALS_COUNT,
+    // > as SetWitness<GoldilocksField>>::Input {};
+    // targets.set_witness(&mut pw, &input);
+
+    // let input = CircuitInput::<
+    //     WithdrawalCredentialsBalanceAggregatorFirstLevel<
+    //         VALIDATORS_COUNT,
+    //         WITHDRAWAL_CREDENTIALS_COUNT,
+    //     >,
+    // > {};
 
     let proof = circuit_data.prove(pw)?;
 

@@ -1,10 +1,11 @@
 use itertools::Itertools;
 use plonky2::{
-    hash::hash_types::{HashOutTarget, RichField},
+    hash::hash_types::{HashOutTarget, RichField, NUM_HASH_OUT_ELTS},
     iop::target::{BoolTarget, Target},
 };
+use serde::{de::DeserializeOwned, Serialize};
 
-use crate::target_primitive::TargetPrimitive;
+use crate::{array::Array, target_primitive::TargetPrimitive};
 
 use super::target_reader::PublicInputsTargetReadable;
 
@@ -57,31 +58,36 @@ impl PublicInputsReadable for BoolTarget {
     }
 }
 
-impl<R: PublicInputsReadable + std::fmt::Debug, const N: usize> PublicInputsReadable for [R; N]
+impl<R: PublicInputsReadable + Serialize + DeserializeOwned + std::fmt::Debug, const N: usize>
+    PublicInputsReadable for Array<R, N>
 where
-    <R as TargetPrimitive>::Primitive: std::fmt::Debug,
+    <R as TargetPrimitive>::Primitive: std::fmt::Debug + Serialize + DeserializeOwned,
 {
     fn from_elements<F: RichField>(elements: &[F]) -> Self::Primitive {
         assert_eq!(elements.len(), Self::get_size());
         let size = R::get_size();
-        [(); N]
-            .iter()
-            .enumerate()
-            .map(|(i, _)| R::from_elements(&elements[i * size..(i + 1) * size]))
-            .collect_vec()
-            .try_into()
-            .unwrap()
+        Array::<R::Primitive, N>(
+            [(); N]
+                .iter()
+                .enumerate()
+                .map(|(i, _)| R::from_elements(&elements[i * size..(i + 1) * size]))
+                .collect_vec()
+                .try_into()
+                .unwrap(),
+        )
     }
 }
 
 impl PublicInputsReadable for HashOutTarget {
     fn from_elements<F: RichField>(elements: &[F]) -> Self::Primitive {
         assert_eq!(elements.len(), Self::get_size());
-        elements
-            .into_iter()
-            .map(|elem| elem.to_canonical_u64())
-            .collect_vec()
-            .try_into()
-            .unwrap()
+        Array::<u64, NUM_HASH_OUT_ELTS>(
+            elements
+                .into_iter()
+                .map(|elem| elem.to_canonical_u64())
+                .collect_vec()
+                .try_into()
+                .unwrap(),
+        )
     }
 }

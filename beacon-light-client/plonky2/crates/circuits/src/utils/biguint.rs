@@ -2,6 +2,7 @@ use core::marker::PhantomData;
 
 use circuit::public_inputs::field_reader::PublicInputsReadable;
 use circuit::public_inputs::target_reader::PublicInputsTargetReadable;
+use circuit::set_witness::SetWitness;
 use circuit::target_primitive::TargetPrimitive;
 use circuit::to_targets::ToTargets;
 use itertools::Itertools;
@@ -11,7 +12,7 @@ use plonky2::field::types::{PrimeField, PrimeField64};
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::generator::{GeneratedValues, SimpleGenerator};
 use plonky2::iop::target::{BoolTarget, Target};
-use plonky2::iop::witness::{PartitionWitness, Witness};
+use plonky2::iop::witness::{PartialWitness, PartitionWitness, Witness};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 use plonky2::plonk::circuit_data::CommonCircuitData;
 use plonky2::util::serialization::{Read, Write};
@@ -86,6 +87,14 @@ pub trait CircuitBuilderBiguint<F: RichField + Extendable<D>, const D: usize> {
     fn div_biguint(&mut self, a: &BigUintTarget, b: &BigUintTarget) -> BigUintTarget;
 
     fn rem_biguint(&mut self, a: &BigUintTarget, b: &BigUintTarget) -> BigUintTarget;
+}
+
+impl<F: RichField> SetWitness<F> for BigUintTarget {
+    type Input = u64;
+
+    fn set_witness(&self, witness: &mut PartialWitness<F>, input: &Self::Input) {
+        witness.set_biguint_target(self, &BigUint::from(*input));
+    }
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderBiguint<F, D>

@@ -1,5 +1,6 @@
 #![feature(associated_type_defaults)]
 
+pub mod array;
 pub mod public_inputs;
 pub mod set_witness;
 pub mod target_primitive;
@@ -16,6 +17,7 @@ use plonky2::{
     },
     util::serialization::{Buffer, IoResult},
 };
+use set_witness::SetWitness;
 
 // TODO: stick this in CircuitConf when it's possible
 const D: usize = 2;
@@ -95,3 +97,18 @@ pub trait WitnessSetter: Circuit {
     fn set_witness(targets: &Self::Targets, source: &Self::WitnessInput)
         -> PartialWitness<Self::F>;
 }
+
+pub type CircuitInput<T> = <<T as Circuit>::Targets as SetWitness<<T as Circuit>::F>>::Input;
+
+// pub trait CircuitTarget {
+// type PublicInputs;
+// type PublicInputsTarget;
+//
+// fn read_public_inputs(public_inputs: &[Self::F]) -> Self::PublicInputs;
+// fn read_public_inputs_target(public_inputs: &[Target]) -> Self::PublicInputsTarget;
+//
+// type WitnessInput;
+//
+// fn set_witness(targets: &Self::Targets, source: &Self::WitnessInput)
+//     -> PartialWitness<Self::F>;
+// }

@@ -5,7 +5,7 @@ use crate::{
 };
 use anyhow::{ensure, Result};
 use async_trait::async_trait;
-use circuit::CircuitWithPublicInputs;
+use circuit::{CircuitInput, CircuitWithPublicInputs};
 use circuits::{
     circuit_input_common::{
         BalanceAccumulatorProof, BalanceProof, FinalCircuitInput, FinalProof,
@@ -86,12 +86,25 @@ impl ProofProvider for BalanceProof {
     }
 }
 
-pub async fn fetch_validator_balance_input(
+pub async fn fetch_validator_balance_input<
+    const VALIDATORS_COUNT: usize,
+    const WITHDRAWAL_CREDENTIALS_COUNT: usize,
+>(
     con: &mut Connection,
     protocol: String,
     index: u64,
-) -> Result<ValidatorBalancesInput> {
-    Ok(fetch_redis_json_object::<ValidatorBalancesInput>(
+) -> Result<
+    CircuitInput<
+        WithdrawalCredentialsBalanceAggregatorFirstLevel<
+            VALIDATORS_COUNT,
+            WITHDRAWAL_CREDENTIALS_COUNT,
+        >,
+    >,
+>
+where
+    [(); VALIDATORS_COUNT / 4]:,
+{
+    Ok(fetch_redis_json_object(
         con,
         format!(
             "{}:{}:{}",

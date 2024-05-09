@@ -3,6 +3,9 @@ use plonky2::{
     hash::hash_types::{HashOutTarget, NUM_HASH_OUT_ELTS},
     iop::target::{BoolTarget, Target},
 };
+use serde::{de::DeserializeOwned, Serialize};
+
+use crate::array::Array;
 
 pub struct PublicInputsTargetReader<'a> {
     offset: usize,
@@ -62,8 +65,10 @@ impl PublicInputsTargetReadable for BoolTarget {
     }
 }
 
-impl<R: PublicInputsTargetReadable + std::fmt::Debug, const N: usize> PublicInputsTargetReadable
-    for [R; N]
+impl<
+        R: PublicInputsTargetReadable + Serialize + DeserializeOwned + std::fmt::Debug,
+        const N: usize,
+    > PublicInputsTargetReadable for Array<R, N>
 {
     fn get_size() -> usize {
         R::get_size() * N
@@ -72,13 +77,15 @@ impl<R: PublicInputsTargetReadable + std::fmt::Debug, const N: usize> PublicInpu
     fn from_targets(targets: &[Target]) -> Self {
         assert_eq!(targets.len(), Self::get_size());
         let size = R::get_size();
-        [(); N]
-            .iter()
-            .enumerate()
-            .map(|(i, _)| R::from_targets(&targets[i * size..(i + 1) * size]))
-            .collect_vec()
-            .try_into()
-            .unwrap()
+        Array::<R, N>(
+            [(); N]
+                .iter()
+                .enumerate()
+                .map(|(i, _)| R::from_targets(&targets[i * size..(i + 1) * size]))
+                .collect_vec()
+                .try_into()
+                .unwrap(),
+        )
     }
 }
 
@@ -91,8 +98,4 @@ impl PublicInputsTargetReadable for HashOutTarget {
         assert_eq!(targets.len(), Self::get_size());
         HashOutTarget::from_vec(targets.to_owned())
     }
-}
-
-trait PrimitivePublicInputsType {
-    type PrimitiveType;
 }
