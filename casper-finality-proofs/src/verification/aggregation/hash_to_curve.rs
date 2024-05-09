@@ -414,12 +414,32 @@ pub fn clear_cofactor_g2<L: PlonkParameters<D>, const D: usize>(
             .constant_biguint(&BigUint::from_str("4").unwrap()),
     ];
     let fals = builder._false();
-    let x_p = g2_scalar_mul(builder, inp, &b);
-    let psi_p = endomorphism_psi(builder, inp);
-    let neg_p = g2_negate(builder, &inp);
-    let neg_psi_p = g2_negate(builder, &psi_p);
-    let double_p = g2_double(builder, &inp, &a, &b);
-    let psi2_2p = endomorphism_psi2(builder, &double_p);
+    let x_p = g2_scalar_mul(builder, inp, &b); // Pb where b = (x₁, x₂+i) = 4, (y₁, y₂+i) = 4
+    let clear_cofactor_x0 = builder
+        .api
+        .constant_biguint(&BigUint::from_str("1").unwrap());
+    // let clear_cofactor_x1 = builder
+    //         .api
+    //         .constant_biguint(&BigUint::from_str("1907381618300654678833809042530528045219202973036460400592647259752361578155388048783374146362885595712785322935889").unwrap());
+    // let clear_cofactor_y0 = builder
+    //         .api
+    //         .constant_biguint(&BigUint::from_str("2533497754358129344573819271980775177420433434576664259373048380327090716743523684037647313977831493346790338697416").unwrap());
+    // let clear_cofactor_y1 = builder
+    //         .api
+    //         .constant_biguint(&BigUint::from_str("2476458800839415772166412841480638992289141020062264369481606378598402067179861075321658473879343813706964824257238").unwrap());
+    let r = builder.api.is_equal_biguint(&clear_cofactor_x0, &inp[0][0]);
+    //builder.api.assert_one(r.target);
+    // let r = builder.api.is_equal_biguint(&clear_cofactor_x1, &x_p[0][1]);
+    // builder.api.assert_one(r.target);
+    // let r = builder.api.is_equal_biguint(&clear_cofactor_y0, &x_p[1][0]);
+    // builder.api.assert_one(r.target);
+    // let r = builder.api.is_equal_biguint(&clear_cofactor_y1, &x_p[1][1]);
+    // builder.api.assert_one(r.target);
+    let psi_p = endomorphism_psi(builder, inp); // Ψ(P)
+    let neg_p = g2_negate(builder, &inp); // -P
+    let neg_psi_p = g2_negate(builder, &psi_p); // -Ψ(P)
+    let double_p = g2_double(builder, &inp, &a, &b); // 2P
+    let psi2_2p = endomorphism_psi2(builder, &double_p); // Ψ²(2P)
 
     let add0 = g2_add(builder, &x_p, fals.into(), &inp, fals.into(), &a, &b);
     let add1 = g2_add(builder, &add0, fals.into(), &neg_psi_p, fals.into(), &a, &b);
@@ -427,6 +447,9 @@ pub fn clear_cofactor_g2<L: PlonkParameters<D>, const D: usize>(
     let add2 = g2_add(builder, &x_add1, fals.into(), &neg_p, fals.into(), &a, &b);
     let add3 = g2_add(builder, &add2, fals.into(), &neg_psi_p, fals.into(), &a, &b);
     let add4 = g2_add(builder, &add3, fals.into(), &psi2_2p, fals.into(), &a, &b);
+
+    println!("tuka minava");
+
     add4
 }
 
@@ -590,7 +613,7 @@ mod tests {
 
     use crate::verification::aggregation::hash_to_curve::map_to_curve_simple_swu_9mod16;
 
-    use super::hash_to_curve;
+    use super::{clear_cofactor_g2, hash_to_curve, isogeny_map};
 
     #[test]
     fn test_hash_to_curve() {
@@ -711,7 +734,7 @@ mod tests {
     }
 
     #[test]
-    fn test_isolate_map_to_curve_simple_swu_9mod16() {
+    fn test_map_to_curve_simple_swu_9mod16() {
         let mut builder = DefaultBuilder::new();
         let x = [builder.api.constant_biguint(&BigUint::from_str("474682481268733588266168000983897038833463740369371343293271315606510847229825856506681723856424762498931536081381").unwrap()), builder.api.constant_biguint(&BigUint::from_str("1366297191634768530389324840135632614622170346303255080801396974208665528754948924260000453159829725659141010218083").unwrap())];
         let new_point = map_to_curve_simple_swu_9mod16(&mut builder, &x);
@@ -767,5 +790,186 @@ mod tests {
         for i in 0..4 {
             assert_eq!(biguint_res[i], expected_biguint_targets[i]);
         }
+    }
+
+    #[test]
+    fn test_isogeny_map() {
+        let mut builder = DefaultBuilder::new();
+        let x = [builder.api.constant_biguint(&BigUint::from_str("474682481268733588266168000983897038833463740369371343293271315606510847229825856506681723856424762498931536081381").unwrap()), builder.api.constant_biguint(&BigUint::from_str("1366297191634768530389324840135632614622170346303255080801396974208665528754948924260000453159829725659141010218083").unwrap())];
+        let new_point = map_to_curve_simple_swu_9mod16(&mut builder, &x);
+        let iso_map_r = isogeny_map(&mut builder, &new_point);
+
+        let iso_map_r_x0 = builder.api.constant_biguint(&BigUint::from_str("3020098988166152265957458699713409264776064412968511868273334310978607420463777702053743668373252848938048859569472").unwrap());
+        let iso_map_r_x1 = builder.api.constant_biguint(&BigUint::from_str("1458981974613365650201781947361855472098362440235925030682710979747620221343697516696212172566912716109989777361662").unwrap());
+        let iso_map_r_y0 = builder.api.constant_biguint(&BigUint::from_str("1834291692231285600047846672091248684005847013394827595644756391313325861691761060706376473203409023894171500990751").unwrap());
+        let iso_map_r_y1 = builder.api.constant_biguint(&BigUint::from_str("2613278682710607327768853275311538731542148746765923401506548661907721927393566272464025106984186092820519334410455").unwrap());
+        let r = builder
+            .api
+            .is_equal_biguint(&iso_map_r_x0, &iso_map_r[0][0]);
+        builder.api.assert_one(r.target);
+        let r = builder
+            .api
+            .is_equal_biguint(&iso_map_r_x1, &iso_map_r[0][1]);
+        builder.api.assert_one(r.target);
+        let r = builder
+            .api
+            .is_equal_biguint(&iso_map_r_y0, &iso_map_r[1][0]);
+        builder.api.assert_one(r.target);
+        let r = builder
+            .api
+            .is_equal_biguint(&iso_map_r_y1, &iso_map_r[1][1]);
+        builder.api.assert_one(r.target);
+
+        // Define your circuit.
+        let mut res_output: Vec<GoldilocksField> = Vec::new();
+        for i in 0..iso_map_r.len() {
+            for j in 0..iso_map_r[i].len() {
+                for k in 0..iso_map_r[i][j].limbs.len() {
+                    builder.write(Variable(iso_map_r[i][j].limbs[k].target));
+                }
+            }
+        }
+
+        // Build your circuit.
+        let circuit = builder.build();
+
+        // Write to the circuit input.
+        let input = circuit.input();
+
+        // Generate a proof.
+        let (proof, mut output) = circuit.prove(&input);
+        // Verify proof.
+        circuit.verify(&proof, &input, &output);
+
+        // Read output.
+        for i in 0..iso_map_r.len() {
+            for j in 0..iso_map_r[i].len() {
+                for _ in 0..iso_map_r[i][j].limbs.len() {
+                    res_output.push(output.read::<Variable>())
+                }
+            }
+        }
+
+        let mut biguint_res: Vec<BigUint> = Vec::new();
+
+        for i in 0..4 {
+            biguint_res.push(BigUint::new(
+                res_output[(i * 12)..((i * 12) + 12)]
+                    .iter()
+                    .map(|f| ((f.0 % GoldilocksField::ORDER) as u32))
+                    .collect_vec(),
+            ));
+        }
+
+        let expected_biguint_targets = vec![
+            BigUint::from_str("3020098988166152265957458699713409264776064412968511868273334310978607420463777702053743668373252848938048859569472").unwrap(),
+            BigUint::from_str("1458981974613365650201781947361855472098362440235925030682710979747620221343697516696212172566912716109989777361662").unwrap(),
+            BigUint::from_str("1834291692231285600047846672091248684005847013394827595644756391313325861691761060706376473203409023894171500990751").unwrap(),
+            BigUint::from_str("2613278682710607327768853275311538731542148746765923401506548661907721927393566272464025106984186092820519334410455").unwrap()
+        ];
+
+        for i in 0..4 {
+            println!("biguint_res[i] is: {:?}", biguint_res[i]);
+        }
+
+        for i in 0..4 {
+            assert_eq!(biguint_res[i], expected_biguint_targets[i]);
+        }
+    }
+
+    #[test]
+    fn test_clear_cofactor() {
+        let mut builder = DefaultBuilder::new();
+        let x = [builder.api.constant_biguint(&BigUint::from_str("474682481268733588266168000983897038833463740369371343293271315606510847229825856506681723856424762498931536081381").unwrap()), builder.api.constant_biguint(&BigUint::from_str("1366297191634768530389324840135632614622170346303255080801396974208665528754948924260000453159829725659141010218083").unwrap())];
+        let new_point = map_to_curve_simple_swu_9mod16(&mut builder, &x);
+        let iso_map_r = isogeny_map(&mut builder, &new_point);
+        let clear_cofactor = clear_cofactor_g2(&mut builder, &iso_map_r);
+
+        // let clear_cofactor_x0 = builder
+        //     .api
+        //     .constant_biguint(&BigUint::from_str("3898314311143498598232928636302843201147417323239224718360789834030193898102380674004641739485821762063383300863223").unwrap());
+        // let clear_cofactor_x1 = builder
+        //     .api
+        //     .constant_biguint(&BigUint::from_str("1907381618300654678833809042530528045219202973036460400592647259752361578155388048783374146362885595712785322935889").unwrap());
+        // let clear_cofactor_y0 = builder
+        //     .api
+        //     .constant_biguint(&BigUint::from_str("2533497754358129344573819271980775177420433434576664259373048380327090716743523684037647313977831493346790338697416").unwrap());
+        // let clear_cofactor_y1 = builder
+        //     .api
+        //     .constant_biguint(&BigUint::from_str("2476458800839415772166412841480638992289141020062264369481606378598402067179861075321658473879343813706964824257238").unwrap());
+        // let r = builder
+        //     .api
+        //     .is_equal_biguint(&clear_cofactor_x0, &clear_cofactor[0][0]);
+        // builder.api.assert_one(r.target);
+        // let r = builder
+        //     .api
+        //     .is_equal_biguint(&clear_cofactor_x1, &clear_cofactor[0][1]);
+        // builder.api.assert_one(r.target);
+        // let r = builder
+        //     .api
+        //     .is_equal_biguint(&clear_cofactor_y0, &clear_cofactor[1][0]);
+        // builder.api.assert_one(r.target);
+        // let r = builder
+        //     .api
+        //     .is_equal_biguint(&clear_cofactor_y1, &clear_cofactor[1][1]);
+        // builder.api.assert_one(r.target);
+
+        // Define your circuit.
+        let mut res_output: Vec<GoldilocksField> = Vec::new();
+        for i in 0..clear_cofactor.len() {
+            for j in 0..clear_cofactor[i].len() {
+                for k in 0..clear_cofactor[i][j].limbs.len() {
+                    builder.write(Variable(clear_cofactor[i][j].limbs[k].target));
+                }
+            }
+        }
+
+        // Build your circuit.
+        let circuit = builder.build();
+
+        // Write to the circuit input.
+        let input = circuit.input();
+
+        // Generate a proof.
+        let (proof, mut output) = circuit.prove(&input);
+
+        // // Verify proof.
+        // circuit.verify(&proof, &input, &output);
+
+        // // Read output.
+        // for i in 0..clear_cofactor.len() {
+        //     for j in 0..clear_cofactor[i].len() {
+        //         for _ in 0..clear_cofactor[i][j].limbs.len() {
+        //             res_output.push(output.read::<Variable>())
+        //         }
+        //     }
+        // }
+
+        // let mut biguint_res: Vec<BigUint> = Vec::new();
+
+        // for i in 0..4 {
+        //     biguint_res.push(BigUint::new(
+        //         res_output[(i * 12)..((i * 12) + 12)]
+        //             .iter()
+        //             .map(|f| ((f.0 % GoldilocksField::ORDER) as u32))
+        //             .collect_vec(),
+        //     ));
+        // }
+
+        // let expected_biguint_targets = vec![
+        //     BigUint::from_str("3020098988166152265957458699713409264776064412968511868273334310978607420463777702053743668373252848938048859569472").unwrap(),
+        //     BigUint::from_str("1458981974613365650201781947361855472098362440235925030682710979747620221343697516696212172566912716109989777361662").unwrap(),
+        //     BigUint::from_str("1834291692231285600047846672091248684005847013394827595644756391313325861691761060706376473203409023894171500990751").unwrap(),
+        //     BigUint::from_str("2613278682710607327768853275311538731542148746765923401506548661907721927393566272464025106984186092820519334410455").unwrap()
+        // ];
+
+        // for i in 0..4 {
+        //     println!("biguint_res[i] is: {:?}", biguint_res[i]);
+        // }
+
+        // for i in 0..4 {
+        //     assert_eq!(biguint_res[i], expected_biguint_targets[i]);
+        // }
+        // //clear_cofactor_g2(builder, inp)
     }
 }
