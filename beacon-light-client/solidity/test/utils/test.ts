@@ -1,7 +1,7 @@
 import { expand_message_xmd, stringToBytes, htfDefaults, hash_to_field } from "./bls";
 import { Fp2, isogenyMapG2, map_to_curve_simple_swu_9mod16 } from "../../../../vendor/circom-pairing/test/math"
 import { PointG2 } from "../../../../vendor/circom-pairing/test/index"
-import { PointG2 } from '@noble/bls12-381';
+import { Field } from '@noble/bls12-381';
 import { formatHex } from '@dendreth/utils/ts-utils/bls';
 
 function bigintToBytes(value: bigint): Uint8Array {
@@ -135,16 +135,16 @@ function hexToBytes(hex: string): Uint8Array {
 }
 
 
-// // 3-isogeny map from E' to E
-// // https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-hash-to-curve-11#appendix-E.3
-// function nobleIsogenyMap<T extends Field<T>>(COEFF: [T[], T[], T[], T[]], x: T, y: T): [T, T] {
-//     const [xNum, xDen, yNum, yDen] = COEFF.map((val) =>
-//         val.reduce((acc, i) => acc.multiply(x).add(i))
-//     );
-//     x = xNum.div(xDen); // xNum / xDen
-//     y = y.multiply(yNum.div(yDen)); // y * (yNum / yDev)
-//     return [x, y];
-// }
+// 3-isogeny map from E' to E
+// https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-hash-to-curve-11#appendix-E.3
+function nobleIsogenyMap<T extends Field<T>>(COEFF: [T[], T[], T[], T[]], x: T, y: T): [T, T] {
+    const [xNum, xDen, yNum, yDen] = COEFF.map((val) =>
+        val.reduce((acc, i) => acc.multiply(x).add(i))
+    );
+    x = xNum.div(xDen); // xNum / xDen
+    y = y.multiply(yNum.div(yDen)); // y * (yNum / yDev)
+    return [x, y];
+}
 
 function ensureBytes(hex: string | Uint8Array): Uint8Array {
     // Uint8Array.from() instead of hash.slice() because node.js Buffer
@@ -172,7 +172,7 @@ type Hex = Uint8Array | string;
 // }
 
 (async () => {
-    let msg = new Uint8Array([9636, 8499, 980, 3289, 2380, 4091, 4494, 7841, 8175, 1645, 9486, 6069, 8507, 739, 4264, 209, 1174, 7352, 1824, 5981, 3557, 8703, 368, 9610, 6902, 3]);
+    let msg = new Uint8Array([96, 84, 98]);
     const DST = stringToBytes(htfDefaults.DST);
 
     let hash_to_field_result = await hash_to_field(msg, 2);
@@ -187,8 +187,7 @@ type Hex = Uint8Array | string;
     // let without_cofactor_hash2curve = await testHashToCurve(msg);
 
     // console.log('hash_to_field_result is: ', hash_to_field_result);
-    console.log('hash_to_curve_test_res.x is: ', hash_to_curve_test_res.x);
-    console.log('hash_to_curve_test_res.y is: ', hash_to_curve_test_res.y);
+    console.log('hash_to_curve_test_res', hash_to_curve_test_res.toAffine());
     console.log('####################################################');
     // console.log('without_cofactor_hash2curve is: ', without_cofactor_hash2curve);
 
