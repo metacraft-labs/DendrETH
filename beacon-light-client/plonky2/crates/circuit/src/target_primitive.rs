@@ -2,7 +2,6 @@ use plonky2::{
     hash::hash_types::{HashOutTarget, NUM_HASH_OUT_ELTS},
     iop::target::{BoolTarget, Target},
 };
-use serde::{de::DeserializeOwned, Serialize};
 
 use crate::array::Array;
 
@@ -18,11 +17,7 @@ impl TargetPrimitive for BoolTarget {
     type Primitive = bool;
 }
 
-impl<T: TargetPrimitive + Serialize + DeserializeOwned, const N: usize> TargetPrimitive
-    for Array<T, N>
-where
-    T::Primitive: Serialize + DeserializeOwned,
-{
+impl<T: TargetPrimitive, const N: usize> TargetPrimitive for [T; N] {
     type Primitive = Array<T::Primitive, N>;
 }
 

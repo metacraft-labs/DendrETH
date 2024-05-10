@@ -3,9 +3,14 @@ name = "circuit"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "test"
+path = "bin/test.rs"
+
 [dependencies]
 plonky2 = { git = "https://github.com/metacraft-labs/plonky2" }
 itertools = "0.10.5"
 deriving_via = "1.6.1"
 serde = "1.0.164"
 serde-big-array = "0.5.1"
+derive-where = "1.2.7"

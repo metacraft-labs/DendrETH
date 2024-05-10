@@ -77,7 +77,7 @@ pub fn derive_target_primitive(input: proc_macro::TokenStream) -> proc_macro::To
     .into()
 }
 
-#[proc_macro_derive(SetWitness)]
+#[proc_macro_derive(SetWitness, attributes(serde))]
 pub fn derive_set_witness(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input_ast: DeriveInput = parse_macro_input!(input as DeriveInput);
 
@@ -85,7 +85,6 @@ pub fn derive_set_witness(input: proc_macro::TokenStream) -> proc_macro::TokenSt
         panic!("PublicInputs is implemented only for structs");
     };
 
-    // let circuit_input_fields = filter_circuit_input_fields(&data.fields);
     let fields = data.fields.iter().cloned().collect_vec();
 
     let (_, type_generics, where_clause) = input_ast.generics.split_for_impl();
@@ -107,20 +106,18 @@ pub fn derive_set_witness(input: proc_macro::TokenStream) -> proc_macro::TokenSt
         fields
             .iter()
             .map(|field| {
-                // let field_ty = &field.ty;
-                // let field_type = quote!(#field_ty);
                 let field_name = &field.ident;
                 quote!(self.#field_name.set_witness(witness, &input.#field_name);)
             })
             .collect_vec(),
     );
 
-    //type Input = #witness_input_ident #type_generics;
     concat_token_streams(vec![
-        create_struct_with_fields_target_primitive(
+        create_struct_with_fields_and_inherited_attrs_target_primitive(
             &witness_input_ident,
             &input_ast.generics,
             &fields,
+            &["serde"],
         ),
         quote! {
             impl #modified_impl_generics SetWitness<F> for #ident #type_generics #where_clause {
@@ -150,7 +147,6 @@ pub fn derive_public_inputs(input: proc_macro::TokenStream) -> proc_macro::Token
         .push(syn::GenericParam::Type(type_param));
 
     let (modified_impl_generics, _, _) = modified_generics.split_for_impl();
-    // println!("{:?}", quote!(#impl_generics2).to_string());
 
     let syn::Data::Struct(ref data) = input_ast.data else {
         panic!("PublicInputs is implemented only for structs");
@@ -179,7 +175,6 @@ pub fn derive_public_inputs(input: proc_macro::TokenStream) -> proc_macro::Token
     );
 
     concat_token_streams(vec![
-        // define_public_inputs_struct(&input_ast, &public_input_fields),
         create_struct_with_fields_target_primitive(
             &format_ident!("{ident}PublicInputs"),
             &input_ast.generics,
@@ -197,10 +192,11 @@ pub fn derive_public_inputs(input: proc_macro::TokenStream) -> proc_macro::Token
                 #register_public_inputs_impl
             }
         },
-        create_struct_with_fields_target_primitive(
+        create_struct_with_fields_and_inherited_attrs_target_primitive(
             &witness_input_ident,
             &input_ast.generics,
             &circuit_input_fields,
+            &["serde"],
         ),
         quote! {
             impl #modified_impl_generics SetWitness<F> for #ident #type_generics #where_clause {
@@ -227,10 +223,11 @@ fn create_struct_with_fields(ident: &Ident, generics: &Generics, fields: &[Field
     }
 }
 
-fn create_struct_with_fields_target_primitive(
+fn create_struct_with_fields_and_inherited_attrs_target_primitive(
     ident: &Ident,
     generics: &Generics,
     fields: &[Field],
+    inherited_attrs: &[&str],
 ) -> TokenStream {
     let (impl_generics, _, where_clause) = generics.split_for_impl();
 
@@ -238,10 +235,27 @@ fn create_struct_with_fields_target_primitive(
         fields
             .into_iter()
             .map(|field| {
+                let filtered_attrs = field
+                    .attrs
+                    .iter()
+                    .filter(|attr| {
+                        inherited_attrs
+                            .iter()
+                            .any(|inherited_attr| match_attr(attr, inherited_attr))
+                    })
+                    .collect_vec();
+
+                let filtered_attrs_quoted = concat_token_streams(
+                    filtered_attrs
+                        .iter()
+                        .map(|attr| quote!(#attr))
+                        .collect_vec(),
+                );
+
                 let field_name = &field.ident;
                 let target_type = &field.ty;
                 let primitive_type = quote!(<#target_type as TargetPrimitive>::Primitive);
-                quote!(pub #field_name: #primitive_type,)
+                quote!(#filtered_attrs_quoted pub #field_name: #primitive_type,)
             })
             .collect_vec(),
     );
@@ -253,6 +267,14 @@ fn create_struct_with_fields_target_primitive(
         }
 
     }
+}
+
+fn create_struct_with_fields_target_primitive(
+    ident: &Ident,
+    generics: &Generics,
+    fields: &[Field],
+) -> TokenStream {
+    create_struct_with_fields_and_inherited_attrs_target_primitive(ident, generics, fields, &[])
 }
 
 fn tokenize_struct_fields(fields: &[Field]) -> TokenStream {

@@ -330,7 +330,7 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderBiguint<F, D>
 
 impl TargetPrimitive for BigUintTarget {
     // TODO: make a Uint64 biguint wrapper
-    type Primitive = u64;
+    type Primitive = BigUint;
 }
 
 impl ToTargets for BigUintTarget {
@@ -345,7 +345,11 @@ impl PublicInputsReadable for BigUintTarget {
         assert_eq!(elements.len(), Self::get_size());
         let first_limb = elements[0].to_canonical_u64();
         let second_limb = elements[1].to_canonical_u64();
-        first_limb + (second_limb << 32)
+
+        assert!(first_limb < (2 << 32));
+        assert!(second_limb < (2 << 32));
+
+        BigUint::from(first_limb + (second_limb << 32))
     }
 }
 

@@ -2,9 +2,6 @@ use plonky2::{
     hash::hash_types::HashOutTarget,
     iop::target::{BoolTarget, Target},
 };
-use serde::{de::DeserializeOwned, Serialize};
-
-use crate::array::Array;
 
 pub trait ToTargets {
     fn to_targets(&self) -> Vec<Target>;
@@ -22,7 +19,7 @@ impl ToTargets for BoolTarget {
     }
 }
 
-impl<T: ToTargets + Serialize + DeserializeOwned, const N: usize> ToTargets for Array<T, N> {
+impl<T: ToTargets, const N: usize> ToTargets for [T; N] {
     fn to_targets(&self) -> Vec<Target> {
         self.iter().fold(vec![], |mut acc, elem| {
             acc.extend(elem.to_targets());

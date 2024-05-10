@@ -17,6 +17,7 @@ use serde::Serialize;
 
 use crate::{
     serialization::targets_serialization::{ReadTargets, WriteTargets},
+    serializers::{biguint_to_str, parse_biguint},
     utils::{
         biguint::{BigUintTarget, CircuitBuilderBiguint},
         utils::{create_bool_target_array, ETH_SHA256_BIT_SIZE},
@@ -29,11 +30,16 @@ use super::hash_tree_root_poseidon::hash_tree_root_poseidon;
 pub struct ValidatorTarget {
     pub pubkey: [BoolTarget; 384],
     pub withdrawal_credentials: [BoolTarget; ETH_SHA256_BIT_SIZE],
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub effective_balance: BigUintTarget,
     pub slashed: BoolTarget,
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub activation_eligibility_epoch: BigUintTarget,
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub activation_epoch: BigUintTarget,
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub exit_epoch: BigUintTarget,
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub withdrawable_epoch: BigUintTarget,
 }
 

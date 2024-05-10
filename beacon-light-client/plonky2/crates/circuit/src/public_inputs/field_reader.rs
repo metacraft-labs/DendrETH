@@ -3,7 +3,6 @@ use plonky2::{
     hash::hash_types::{HashOutTarget, RichField, NUM_HASH_OUT_ELTS},
     iop::target::{BoolTarget, Target},
 };
-use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{array::Array, target_primitive::TargetPrimitive};
 
@@ -58,10 +57,9 @@ impl PublicInputsReadable for BoolTarget {
     }
 }
 
-impl<R: PublicInputsReadable + Serialize + DeserializeOwned + std::fmt::Debug, const N: usize>
-    PublicInputsReadable for Array<R, N>
+impl<R: PublicInputsReadable + std::fmt::Debug, const N: usize> PublicInputsReadable for [R; N]
 where
-    <R as TargetPrimitive>::Primitive: std::fmt::Debug + Serialize + DeserializeOwned,
+    R::Primitive: std::fmt::Debug,
 {
     fn from_elements<F: RichField>(elements: &[F]) -> Self::Primitive {
         assert_eq!(elements.len(), Self::get_size());

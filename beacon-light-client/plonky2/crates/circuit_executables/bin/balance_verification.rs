@@ -1,6 +1,7 @@
 #![feature(generic_const_exprs)]
 use circuit::{
-    set_witness::SetWitness, Circuit, CircuitInput, CircuitWithPublicInputs, WitnessSetter,
+    array::Array, set_witness::SetWitness, Circuit, CircuitInput, CircuitWithPublicInputs,
+    WitnessSetter,
 };
 use circuit_executables::{
     crud::{
@@ -21,6 +22,7 @@ use circuit_executables::{
 use circuits::{
     circuit_input_common::BalanceProof,
     serialization::targets_serialization::ReadTargets,
+    utils::hashing::validator_hash_tree_root_poseidon::ValidatorTargetWitnessInput,
     withdrawal_credentials_balance_aggregator::{
         first_level::circuit::ValidatorBalanceVerificationTargets,
         inner_level_circuit::BalanceInnerCircuitTargets,
@@ -126,6 +128,13 @@ async fn async_main() -> Result<()> {
             protocol, DB_CONSTANTS.balance_verification_queue, config.circuit_level
         )
     );
+
+    let validator_balance_input: CircuitInput<
+        WithdrawalCredentialsBalanceAggregatorFirstLevel<8, 1>,
+    > = unsafe { std::mem::uninitialized() };
+
+    let string = serde_json::to_string(&validator_balance_input)?;
+    println!("{string}");
 
     let start: Instant = Instant::now();
     process_queue(
@@ -291,6 +300,8 @@ where
     // >::set_witness(targets, &validator_balance_input);
     let mut pw = PartialWitness::new();
     targets.set_witness(&mut pw, &validator_balance_input);
+    let arr = Array([1, 2, 3]);
+    let asd = arr.len();
 
     // let input = <ValidatorBalanceVerificationTargets<
     //     VALIDATORS_COUNT,
