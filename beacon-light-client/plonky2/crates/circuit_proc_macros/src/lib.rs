@@ -55,10 +55,11 @@ pub fn derive_target_primitive(input: proc_macro::TokenStream) -> proc_macro::To
     let primitive_type_ident = format_ident!("{ident}Primitive");
 
     concat_token_streams(vec![
-        create_struct_with_fields_target_primitive(
+        create_struct_with_fields_and_inherited_attrs_target_primitive(
             &primitive_type_ident,
             &input_ast.generics,
             data.fields.iter().cloned().collect_vec().as_slice(),
+            &["serde"],
         ),
         quote! {
             impl #impl_generics TargetPrimitive for #ident #type_generics #where_clause {
@@ -132,7 +133,7 @@ pub fn derive_set_witness(input: proc_macro::TokenStream) -> proc_macro::TokenSt
     .into()
 }
 
-#[proc_macro_derive(CircuitTarget, attributes(target))]
+#[proc_macro_derive(CircuitTarget, attributes(target, serde))]
 pub fn derive_public_inputs(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input_ast: DeriveInput = parse_macro_input!(input as DeriveInput);
 
@@ -175,10 +176,11 @@ pub fn derive_public_inputs(input: proc_macro::TokenStream) -> proc_macro::Token
     );
 
     concat_token_streams(vec![
-        create_struct_with_fields_target_primitive(
+        create_struct_with_fields_and_inherited_attrs_target_primitive(
             &format_ident!("{ident}PublicInputs"),
             &input_ast.generics,
             &public_input_fields,
+            &["serde"],
         ),
         create_struct_with_fields(
             &format_ident!("{ident}PublicInputsTarget"),

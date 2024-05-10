@@ -24,6 +24,7 @@ use plonky2::{
 
 use crate::{
     common_targets::Sha256Target,
+    serializers::{biguint_to_str, parse_biguint},
     utils::{
         biguint::{BigUintTarget, CircuitBuilderBiguint},
         hashing::{
@@ -63,9 +64,11 @@ pub struct ValidatorBalanceVerificationTargets<
     pub withdrawal_credentials: [Sha256Target; WITHDRAWAL_CREDENTIALS_COUNT],
 
     #[target(in, out)]
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub current_epoch: BigUintTarget,
 
     #[target(out)]
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub range_total_value: BigUintTarget,
 
     #[target(out)]

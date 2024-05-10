@@ -6,7 +6,7 @@ use plonky2::{
     },
 };
 
-use crate::array::Array;
+use crate::target_primitive::TargetPrimitive;
 
 // TODO: new trait TargetPrimitiveType
 
@@ -17,7 +17,7 @@ pub trait SetWitness<F: RichField> {
 }
 
 impl<F: RichField> SetWitness<F> for Target {
-    type Input = u64;
+    type Input = <Self as TargetPrimitive>::Primitive;
 
     fn set_witness(&self, witness: &mut PartialWitness<F>, input: &Self::Input) {
         witness.set_target(*self, F::from_canonical_u64(*input));
@@ -25,15 +25,20 @@ impl<F: RichField> SetWitness<F> for Target {
 }
 
 impl<F: RichField> SetWitness<F> for BoolTarget {
-    type Input = bool;
+    type Input = <Self as TargetPrimitive>::Primitive;
 
     fn set_witness(&self, witness: &mut PartialWitness<F>, input: &Self::Input) {
         witness.set_bool_target(*self, *input);
     }
 }
 
-impl<F: RichField, T: SetWitness<F>, const N: usize> SetWitness<F> for [T; N] {
-    type Input = Array<T::Input, N>;
+impl<
+        F: RichField,
+        T: SetWitness<F> + TargetPrimitive<Primitive = <T as SetWitness<F>>::Input>,
+        const N: usize,
+    > SetWitness<F> for [T; N]
+{
+    type Input = <Self as TargetPrimitive>::Primitive;
 
     fn set_witness(&self, witness: &mut PartialWitness<F>, input: &Self::Input) {
         for (target, pw_input) in self.iter().zip(input.iter()) {

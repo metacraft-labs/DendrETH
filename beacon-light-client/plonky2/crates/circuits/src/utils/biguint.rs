@@ -90,10 +90,10 @@ pub trait CircuitBuilderBiguint<F: RichField + Extendable<D>, const D: usize> {
 }
 
 impl<F: RichField> SetWitness<F> for BigUintTarget {
-    type Input = u64;
+    type Input = <Self as TargetPrimitive>::Primitive;
 
     fn set_witness(&self, witness: &mut PartialWitness<F>, input: &Self::Input) {
-        witness.set_biguint_target(self, &BigUint::from(*input));
+        witness.set_biguint_target(self, input);
     }
 }
 
@@ -329,7 +329,6 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderBiguint<F, D>
 }
 
 impl TargetPrimitive for BigUintTarget {
-    // TODO: make a Uint64 biguint wrapper
     type Primitive = BigUint;
 }
 
