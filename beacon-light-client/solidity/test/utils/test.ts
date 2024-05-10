@@ -1,7 +1,7 @@
 import { expand_message_xmd, stringToBytes, htfDefaults, hash_to_field } from "./bls";
 import { Fp2, isogenyMapG2, map_to_curve_simple_swu_9mod16 } from "../../../../vendor/circom-pairing/test/math"
 import { PointG2 } from "../../../../vendor/circom-pairing/test/index"
-import { Field } from '@noble/bls12-381';
+import { PointG2 } from '@noble/bls12-381';
 import { formatHex } from '@dendreth/utils/ts-utils/bls';
 
 function bigintToBytes(value: bigint): Uint8Array {
@@ -135,16 +135,16 @@ function hexToBytes(hex: string): Uint8Array {
 }
 
 
-// 3-isogeny map from E' to E
-// https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-hash-to-curve-11#appendix-E.3
-function nobleIsogenyMap<T extends Field<T>>(COEFF: [T[], T[], T[], T[]], x: T, y: T): [T, T] {
-    const [xNum, xDen, yNum, yDen] = COEFF.map((val) =>
-        val.reduce((acc, i) => acc.multiply(x).add(i))
-    );
-    x = xNum.div(xDen); // xNum / xDen
-    y = y.multiply(yNum.div(yDen)); // y * (yNum / yDev)
-    return [x, y];
-}
+// // 3-isogeny map from E' to E
+// // https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-hash-to-curve-11#appendix-E.3
+// function nobleIsogenyMap<T extends Field<T>>(COEFF: [T[], T[], T[], T[]], x: T, y: T): [T, T] {
+//     const [xNum, xDen, yNum, yDen] = COEFF.map((val) =>
+//         val.reduce((acc, i) => acc.multiply(x).add(i))
+//     );
+//     x = xNum.div(xDen); // xNum / xDen
+//     y = y.multiply(yNum.div(yDen)); // y * (yNum / yDev)
+//     return [x, y];
+// }
 
 function ensureBytes(hex: string | Uint8Array): Uint8Array {
     // Uint8Array.from() instead of hash.slice() because node.js Buffer

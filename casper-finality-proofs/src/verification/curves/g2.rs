@@ -23,17 +23,42 @@ use plonky2x::{
 
 pub const SIG_LEN: usize = 96;
 
+use crate::verification::fields::fp2::inv_fp2;
 use crate::verification::{
     fields::{
+        fp::{fp_is_zero, N},
         fp2::{
             add_fp2, is_equal, is_zero, mul_fp2, negate_fp2, range_check_fp2, sub_fp2, Fp2Target,
         },
-        fp::{fp_is_zero, N},
     },
     utils::native_bls::{get_bls_12_381_parameter, modulus, Fp, Fp2},
 };
 
 pub type PointG2Target = [Fp2Target; 2];
+
+pub fn g2_add_without_generator<L: PlonkParameters<D>, const D: usize>(
+    builder: &mut CircuitBuilder<L, D>,
+    a: &PointG2Target,
+    b: &PointG2Target,
+) -> PointG2Target {
+    let x1 = &a[0];
+    let y1 = &a[1];
+    let x2 = &b[0];
+    let y2 = &b[1];
+
+    let u = sub_fp2(builder, &y2, &y1);
+    let v = sub_fp2(builder, &x2, &x1);
+    let v_inv = inv_fp2(builder, &v);
+    let s = mul_fp2(builder, &u, &v_inv);
+    let s_squared = mul_fp2(builder, &s, &s);
+    let x_sum = add_fp2(builder, &x2, &x1);
+    let x3 = sub_fp2(builder, &s_squared, &x_sum);
+    let x_diff = sub_fp2(builder, &x1, &x3);
+    let prod = mul_fp2(builder, &s, &x_diff);
+    let y3 = sub_fp2(builder, &prod, &y1);
+
+    [x3, y3]
+}
 
 pub fn g2_add_unequal<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,

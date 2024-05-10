@@ -27,7 +27,9 @@ use plonky2x::{
 };
 
 use crate::verification::{
-    curves::g2::{g2_add, g2_double, g2_negate, g2_scalar_mul, PointG2Target},
+    curves::g2::{
+        g2_add, g2_add_without_generator, g2_double, g2_negate, g2_scalar_mul, PointG2Target,
+    },
     fields::{
         fp::{mul_fp, N},
         fp2::{
@@ -39,6 +41,8 @@ use crate::verification::{
 };
 
 use super::hash_to_field::hash_to_field;
+
+pub const BLS_X: u64 = 0xd201000000010000;
 
 pub const ISOGENY_COEFFICIENTS_G2: [[[&str; 2]; 4]; 4] = [
     [
@@ -393,6 +397,47 @@ pub fn endomorphism_psi2<L: PlonkParameters<D>, const D: usize>(
     ]
 }
 
+fn mul_curve_x<L: PlonkParameters<D>, const D: usize>(
+    builder: &mut CircuitBuilder<L, D>,
+    point: &PointG2Target,
+) -> PointG2Target {
+    let mut temp_x = BLS_X;
+    let mut temp_point_d = point.clone();
+    let mut point_r = point.clone();
+    while temp_x > 0 {
+        if temp_x & 1 == 1 {
+            point_r = g2_add_without_generator(builder, &point_r, &temp_point_d);
+        }
+        temp_point_d = g2_add_without_generator(builder, &temp_point_d, &temp_point_d);
+        temp_x >>= 1;
+    }
+
+    point_r
+}
+
+pub fn my_clear_cofactor_g2<L: PlonkParameters<D>, const D: usize>(
+    builder: &mut CircuitBuilder<L, D>,
+    point: &PointG2Target,
+) -> PointG2Target {
+    let t1 = mul_curve_x(builder, &point); // [-x]P
+                                           // Is the endomorphism fine?
+    let mut t2 = endomorphism_psi(builder, &point); // Ψ(P)
+    let mut t3 = g2_add_without_generator(builder, &point, &point); // 2P
+                                                                    // is the squared endomorphism fine?
+    t3 = endomorphism_psi2(builder, &t3); // Ψ²(2P)
+    let t2_neg = g2_negate(builder, &t2); // - Ψ(P)
+    t3 = g2_add_without_generator(builder, &t3, &t2_neg); // Ψ²(2P) - Ψ(P)
+    t2 = g2_add_without_generator(builder, &t1, &t2); // [-x]P + Ψ(P)
+    t2 = mul_curve_x(builder, &t2); // [x²]P - [x]Ψ(P)
+    t3 = g2_add_without_generator(builder, &t3, &t2); // Ψ²(2P) - Ψ(P) + [x²]P - [x]Ψ(P)
+    let t1_neg = g2_negate(builder, &t1); // - [-x]P
+    t3 = g2_add_without_generator(builder, &t3, &t1_neg); // Ψ²(2P) - Ψ(P) + [x²]P - [x]Ψ(P) + [x]P
+    let point_neg = g2_negate(builder, &point); // - (P)
+    let q = g2_add_without_generator(builder, &t3, &point_neg); // Ψ²(2P) - Ψ(P) + [x²]P - [x]Ψ(P) + [x]P - 1P =>
+
+    q // [x²-x-1]P + [x-1]Ψ(P) + Ψ²(2P)
+}
+
 pub fn clear_cofactor_g2<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
     inp: &PointG2Target,
@@ -413,42 +458,35 @@ pub fn clear_cofactor_g2<L: PlonkParameters<D>, const D: usize>(
             .api
             .constant_biguint(&BigUint::from_str("4").unwrap()),
     ];
+
+    //
+    let clear_cofactor_y1 = builder
+        .api
+        .constant_biguint(&BigUint::from_str("4").unwrap());
+    let r = builder.api.is_equal_biguint(&clear_cofactor_y1, &b[0]);
+    builder.api.assert_one(r.target);
+    let r = builder.api.is_equal_biguint(&clear_cofactor_y1, &b[1]);
+    builder.api.assert_one(r.target);
+
+    //
+
     let fals = builder._false();
     let x_p = g2_scalar_mul(builder, inp, &b); // Pb where b = (x₁, x₂+i) = 4, (y₁, y₂+i) = 4
-    let clear_cofactor_x0 = builder
-        .api
-        .constant_biguint(&BigUint::from_str("1").unwrap());
-    // let clear_cofactor_x1 = builder
-    //         .api
-    //         .constant_biguint(&BigUint::from_str("1907381618300654678833809042530528045219202973036460400592647259752361578155388048783374146362885595712785322935889").unwrap());
-    // let clear_cofactor_y0 = builder
-    //         .api
-    //         .constant_biguint(&BigUint::from_str("2533497754358129344573819271980775177420433434576664259373048380327090716743523684037647313977831493346790338697416").unwrap());
-    // let clear_cofactor_y1 = builder
-    //         .api
-    //         .constant_biguint(&BigUint::from_str("2476458800839415772166412841480638992289141020062264369481606378598402067179861075321658473879343813706964824257238").unwrap());
-    let r = builder.api.is_equal_biguint(&clear_cofactor_x0, &inp[0][0]);
-    //builder.api.assert_one(r.target);
-    // let r = builder.api.is_equal_biguint(&clear_cofactor_x1, &x_p[0][1]);
-    // builder.api.assert_one(r.target);
-    // let r = builder.api.is_equal_biguint(&clear_cofactor_y0, &x_p[1][0]);
-    // builder.api.assert_one(r.target);
-    // let r = builder.api.is_equal_biguint(&clear_cofactor_y1, &x_p[1][1]);
-    // builder.api.assert_one(r.target);
     let psi_p = endomorphism_psi(builder, inp); // Ψ(P)
     let neg_p = g2_negate(builder, &inp); // -P
     let neg_psi_p = g2_negate(builder, &psi_p); // -Ψ(P)
     let double_p = g2_double(builder, &inp, &a, &b); // 2P
     let psi2_2p = endomorphism_psi2(builder, &double_p); // Ψ²(2P)
 
+    // Pb + P + a + b
     let add0 = g2_add(builder, &x_p, fals.into(), &inp, fals.into(), &a, &b);
+    // Pb + P + a + b + -Ψ(P) + a + b
     let add1 = g2_add(builder, &add0, fals.into(), &neg_psi_p, fals.into(), &a, &b);
+    // (Pb + P + a + b + -Ψ(P) + a + b)b
     let x_add1 = g2_scalar_mul(builder, &add1, &b);
     let add2 = g2_add(builder, &x_add1, fals.into(), &neg_p, fals.into(), &a, &b);
     let add3 = g2_add(builder, &add2, fals.into(), &neg_psi_p, fals.into(), &a, &b);
     let add4 = g2_add(builder, &add3, fals.into(), &psi2_2p, fals.into(), &a, &b);
-
-    println!("tuka minava");
 
     add4
 }
@@ -613,7 +651,7 @@ mod tests {
 
     use crate::verification::aggregation::hash_to_curve::map_to_curve_simple_swu_9mod16;
 
-    use super::{clear_cofactor_g2, hash_to_curve, isogeny_map};
+    use super::{hash_to_curve, isogeny_map, my_clear_cofactor_g2};
 
     #[test]
     fn test_hash_to_curve() {
@@ -718,7 +756,7 @@ mod tests {
             ));
         }
 
-        let expected_biguint_targets = vec![
+        let _expected_biguint_targets = vec![
                     BigUint::from_str("3898314311143498598232928636302843201147417323239224718360789834030193898102380674004641739485821762063383300863223").unwrap(), 
                     BigUint::from_str("1907381618300654678833809042530528045219202973036460400592647259752361578155388048783374146362885595712785322935889").unwrap(), 
                     BigUint::from_str("2533497754358129344573819271980775177420433434576664259373048380327090716743523684037647313977831493346790338697416").unwrap(), 
@@ -883,7 +921,7 @@ mod tests {
         let x = [builder.api.constant_biguint(&BigUint::from_str("474682481268733588266168000983897038833463740369371343293271315606510847229825856506681723856424762498931536081381").unwrap()), builder.api.constant_biguint(&BigUint::from_str("1366297191634768530389324840135632614622170346303255080801396974208665528754948924260000453159829725659141010218083").unwrap())];
         let new_point = map_to_curve_simple_swu_9mod16(&mut builder, &x);
         let iso_map_r = isogeny_map(&mut builder, &new_point);
-        let clear_cofactor = clear_cofactor_g2(&mut builder, &iso_map_r);
+        let clear_cofactor = my_clear_cofactor_g2(&mut builder, &iso_map_r);
 
         // let clear_cofactor_x0 = builder
         //     .api
@@ -933,43 +971,42 @@ mod tests {
         // Generate a proof.
         let (proof, mut output) = circuit.prove(&input);
 
-        // // Verify proof.
-        // circuit.verify(&proof, &input, &output);
+        // Verify proof.
+        circuit.verify(&proof, &input, &output);
 
-        // // Read output.
-        // for i in 0..clear_cofactor.len() {
-        //     for j in 0..clear_cofactor[i].len() {
-        //         for _ in 0..clear_cofactor[i][j].limbs.len() {
-        //             res_output.push(output.read::<Variable>())
-        //         }
-        //     }
-        // }
+        // Read output.
+        for i in 0..clear_cofactor.len() {
+            for j in 0..clear_cofactor[i].len() {
+                for _ in 0..clear_cofactor[i][j].limbs.len() {
+                    res_output.push(output.read::<Variable>())
+                }
+            }
+        }
 
-        // let mut biguint_res: Vec<BigUint> = Vec::new();
+        let mut biguint_res: Vec<BigUint> = Vec::new();
 
-        // for i in 0..4 {
-        //     biguint_res.push(BigUint::new(
-        //         res_output[(i * 12)..((i * 12) + 12)]
-        //             .iter()
-        //             .map(|f| ((f.0 % GoldilocksField::ORDER) as u32))
-        //             .collect_vec(),
-        //     ));
-        // }
+        for i in 0..4 {
+            biguint_res.push(BigUint::new(
+                res_output[(i * 12)..((i * 12) + 12)]
+                    .iter()
+                    .map(|f| ((f.0 % GoldilocksField::ORDER) as u32))
+                    .collect_vec(),
+            ));
+        }
 
-        // let expected_biguint_targets = vec![
-        //     BigUint::from_str("3020098988166152265957458699713409264776064412968511868273334310978607420463777702053743668373252848938048859569472").unwrap(),
-        //     BigUint::from_str("1458981974613365650201781947361855472098362440235925030682710979747620221343697516696212172566912716109989777361662").unwrap(),
-        //     BigUint::from_str("1834291692231285600047846672091248684005847013394827595644756391313325861691761060706376473203409023894171500990751").unwrap(),
-        //     BigUint::from_str("2613278682710607327768853275311538731542148746765923401506548661907721927393566272464025106984186092820519334410455").unwrap()
-        // ];
+        let expected_biguint_targets = vec![
+            BigUint::from_str("3898314311143498598232928636302843201147417323239224718360789834030193898102380674004641739485821762063383300863223").unwrap(),
+            BigUint::from_str("1907381618300654678833809042530528045219202973036460400592647259752361578155388048783374146362885595712785322935889").unwrap(),
+            BigUint::from_str("2533497754358129344573819271980775177420433434576664259373048380327090716743523684037647313977831493346790338697416").unwrap(),
+            BigUint::from_str("2476458800839415772166412841480638992289141020062264369481606378598402067179861075321658473879343813706964824257238").unwrap()
+        ];
 
-        // for i in 0..4 {
-        //     println!("biguint_res[i] is: {:?}", biguint_res[i]);
-        // }
+        for i in 0..4 {
+            println!("biguint_res[i] is: {:?}", biguint_res[i]);
+        }
 
-        // for i in 0..4 {
-        //     assert_eq!(biguint_res[i], expected_biguint_targets[i]);
-        // }
-        // //clear_cofactor_g2(builder, inp)
+        for i in 0..4 {
+            assert_eq!(biguint_res[i], expected_biguint_targets[i]);
+        }
     }
 }
