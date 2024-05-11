@@ -135,7 +135,6 @@ pub mod serde_bool_array_to_hex_string {
 
     use crate::utils::utils::{bits_to_bytes, bytes_to_bits};
 
-    // Nested versions of the functions
     pub fn serialize<S, const N: usize>(x: &Array<bool, N>, s: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -144,30 +143,93 @@ pub mod serde_bool_array_to_hex_string {
         s.serialize_str(&hex_string)
     }
 
+    pub struct HexStringVisitor<const N: usize>;
+
+    impl<'de, const N: usize> Visitor<'de> for HexStringVisitor<N> {
+        type Value = Array<bool, N>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a hex string")
+        }
+
+        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(Array(
+                bytes_to_bits(&hex::decode(v).unwrap()).try_into().unwrap(),
+            ))
+        }
+    }
+
     pub fn deserialize<'de, D, const N: usize>(deserializer: D) -> Result<Array<bool, N>, D::Error>
     where
         D: Deserializer<'de>,
     {
-        struct HexStringVisitor<const N: usize>;
+        deserializer.deserialize_str(HexStringVisitor)
+    }
+}
 
-        impl<'de, const N: usize> Visitor<'de> for HexStringVisitor<N> {
-            type Value = Array<bool, N>;
+pub mod serde_bool_array_to_hex_string_nested {
+    use core::fmt;
+
+    use circuit::array::Array;
+    use serde::{
+        de::{SeqAccess, Visitor},
+        ser::SerializeTuple,
+        Deserializer, Serializer,
+    };
+
+    use crate::utils::utils::{bits_to_bytes, bytes_to_bits};
+
+    pub fn serialize<S, const N: usize, const M: usize>(
+        x: &Array<Array<bool, M>, N>,
+        s: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut tup = s.serialize_tuple(N)?;
+        for bits_array in x.iter() {
+            let hex_string = hex::encode(bits_to_bytes(bits_array.as_slice()));
+            tup.serialize_element(&hex_string)?;
+        }
+        tup.end()
+    }
+
+    pub fn deserialize<'de, D, const N: usize, const M: usize>(
+        deserializer: D,
+    ) -> Result<Array<Array<bool, M>, N>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct MultipleHexStringsVisitor<const N: usize, const M: usize>;
+
+        impl<'de, const N: usize, const M: usize> Visitor<'de> for MultipleHexStringsVisitor<N, M> {
+            type Value = Array<Array<bool, M>, N>;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("a hex string")
+                formatter.write_str("a sequence of sequences of 0s or 1s")
             }
 
-            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
             where
-                E: de::Error,
+                A: SeqAccess<'de>,
             {
-                Ok(Array(
-                    bytes_to_bits(&hex::decode(v).unwrap()).try_into().unwrap(),
-                ))
+                Ok(Array([(); N].map(|_| {
+                    let Some(hex_string) = seq.next_element::<&str>().unwrap() else {
+                        panic!("Could not deserialize hex string: not enough elements");
+                    };
+                    Array(
+                        bytes_to_bits(&hex::decode(hex_string).unwrap())
+                            .try_into()
+                            .unwrap(),
+                    )
+                })))
             }
         }
 
-        deserializer.deserialize_str(HexStringVisitor)
+        deserializer.deserialize_seq(MultipleHexStringsVisitor)
     }
 }
 

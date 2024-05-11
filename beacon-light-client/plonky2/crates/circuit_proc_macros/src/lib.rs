@@ -101,7 +101,7 @@ pub fn derive_set_witness(input: proc_macro::TokenStream) -> proc_macro::TokenSt
 
     let ident = &input_ast.ident;
 
-    let witness_input_ident = format_ident!("{ident}WitnessInput");
+    // let witness_input_ident = format_ident!("{ident}WitnessInput");
 
     let set_witness_for_fields = concat_token_streams(
         fields
@@ -114,12 +114,12 @@ pub fn derive_set_witness(input: proc_macro::TokenStream) -> proc_macro::TokenSt
     );
 
     concat_token_streams(vec![
-        create_struct_with_fields_and_inherited_attrs_target_primitive(
-            &witness_input_ident,
-            &input_ast.generics,
-            &fields,
-            &["serde"],
-        ),
+        // create_struct_with_fields_and_inherited_attrs_target_primitive(
+        //     &witness_input_ident,
+        //     &input_ast.generics,
+        //     &fields,
+        //     &["serde"],
+        // ),
         quote! {
             impl #modified_impl_generics SetWitness<F> for #ident #type_generics #where_clause {
                 type Input = <#ident #type_generics as TargetPrimitive>::Primitive;

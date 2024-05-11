@@ -1,3 +1,4 @@
+use crate::serializers::serde_bool_array_to_hex_string;
 use circuit::set_witness::SetWitness;
 use circuit::target_primitive::TargetPrimitive;
 use circuit_proc_macros::{SetWitness, TargetPrimitive};
@@ -28,7 +29,10 @@ use super::hash_tree_root_poseidon::hash_tree_root_poseidon;
 
 #[derive(Clone, Debug, TargetPrimitive, SetWitness)]
 pub struct ValidatorTarget {
+    #[serde(with = "serde_bool_array_to_hex_string")]
     pub pubkey: [BoolTarget; 384],
+
+    #[serde(with = "serde_bool_array_to_hex_string")]
     pub withdrawal_credentials: [BoolTarget; ETH_SHA256_BIT_SIZE],
 
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]

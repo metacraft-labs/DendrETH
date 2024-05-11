@@ -1,8 +1,5 @@
 #![feature(generic_const_exprs)]
-use circuit::{
-    array::Array, set_witness::SetWitness, Circuit, CircuitInput, CircuitWithPublicInputs,
-    WitnessSetter,
-};
+use circuit::{array::Array, set_witness::SetWitness, Circuit, CircuitInput};
 use circuit_executables::{
     crud::{
         common::{
@@ -22,7 +19,7 @@ use circuit_executables::{
 use circuits::{
     circuit_input_common::BalanceProof,
     serialization::targets_serialization::ReadTargets,
-    utils::hashing::validator_hash_tree_root_poseidon::ValidatorTargetWitnessInput,
+    utils::hashing::validator_hash_tree_root_poseidon::ValidatorTargetPrimitive,
     withdrawal_credentials_balance_aggregator::{
         first_level::circuit::ValidatorBalanceVerificationTargets,
         inner_level_circuit::BalanceInnerCircuitTargets,
@@ -134,21 +131,31 @@ async fn async_main() -> Result<()> {
     //     WithdrawalCredentialsBalanceAggregatorFirstLevel<8, 1>,
     // > = unsafe { std::mem::uninitialized() };
 
-    let mut validator_balance_input: CircuitInput<
-        WithdrawalCredentialsBalanceAggregatorFirstLevel<8, 1>,
-    > = CircuitInput::<WithdrawalCredentialsBalanceAggregatorFirstLevel<8, 1>> {
-        non_zero_validator_leaves_mask: Array([true, false, true, true, true, true, true, true]),
+    let withdrawal_credentials_input: Array<bool, 256> =
+        Array(vec![false; 256].try_into().unwrap());
+
+    let balance_input: Array<bool, 256> = Array(vec![true; 256].try_into().unwrap());
+
+    let validator_target_input = ValidatorTargetPrimitive {
+        pubkey: Array(vec![false; 384].try_into().unwrap()),
+        withdrawal_credentials: withdrawal_credentials_input.clone(),
+        effective_balance: BigUint::from(1u64),
+        slashed: true,
+        activation_epoch: BigUint::from(2u64),
+        withdrawable_epoch: BigUint::from(3u64),
+        activation_eligibility_epoch: BigUint::from(4u64),
+        exit_epoch: BigUint::from(5u64),
     };
 
-    // validator_balance_input.current_epoch = BigUint::from(2u64);
-    // for i in 0..validator_balance_input.validators.len() {
-    //     validator_balance_input.validators[i].effective_balance = BigUint::from(3u64);
-    //     validator_balance_input.validators[i].activation_eligibility_epoch = BigUint::from(3u64);
-    //     validator_balance_input.validators[i].activation_epoch = BigUint::from(3u64);
-    //     validator_balance_input.validators[i].exit_epoch = BigUint::from(3u64);
-    //     validator_balance_input.validators[i].withdrawable_epoch = BigUint::from(3u64);
-    // }
-    //
+    let validator_balance_input: CircuitInput<
+        WithdrawalCredentialsBalanceAggregatorFirstLevel<8, 1>,
+    > = CircuitInput::<WithdrawalCredentialsBalanceAggregatorFirstLevel<8, 1>> {
+        withdrawal_credentials: Array([withdrawal_credentials_input.clone()]),
+        non_zero_validator_leaves_mask: Array([true, false, true, true, true, true, true, true]),
+        validators: Array([(); 8].map(|_| validator_target_input.clone())),
+        balances: Array([(); 2].map(|_| balance_input.clone())),
+    };
+
     let string = serde_json::to_string(&validator_balance_input)?;
     println!("{string}");
 

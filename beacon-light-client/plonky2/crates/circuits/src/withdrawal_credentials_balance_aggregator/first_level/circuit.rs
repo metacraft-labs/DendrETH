@@ -1,4 +1,4 @@
-use crate::serializers::serde_bool_array_to_hex_string;
+use crate::serializers::serde_bool_array_to_hex_string_nested;
 use circuit::public_inputs::field_reader::PublicInputsFieldReader;
 use circuit::public_inputs::target_reader::PublicInputsTargetReader;
 use circuit::set_witness::SetWitness;
@@ -41,10 +41,6 @@ use crate::{
     },
 };
 
-// TODO: mark which ones are public inputs and generate the
-// CircuitWithPublicInputs trait with a procedural macro (trait funcions and
-// associated types)
-
 #[derive(CircuitTarget)]
 pub struct ValidatorBalanceVerificationTargets<
     const VALIDATORS_COUNT: usize,
@@ -52,17 +48,18 @@ pub struct ValidatorBalanceVerificationTargets<
 > where
     [(); VALIDATORS_COUNT / 4]:,
 {
-    #[target()]
+    #[target(in)]
     pub validators: [ValidatorTarget; VALIDATORS_COUNT],
 
     #[target(in)]
-    #[serde(with = "serde_bool_array_to_hex_string")]
     pub non_zero_validator_leaves_mask: [BoolTarget; VALIDATORS_COUNT],
 
-    #[target()]
+    #[target(in)]
+    #[serde(with = "serde_bool_array_to_hex_string_nested")]
     pub balances: [Sha256Target; VALIDATORS_COUNT / 4],
 
-    #[target(out)]
+    #[target(in, out)]
+    #[serde(with = "serde_bool_array_to_hex_string_nested")]
     pub withdrawal_credentials: [Sha256Target; WITHDRAWAL_CREDENTIALS_COUNT],
 
     #[target(out)]
@@ -88,13 +85,6 @@ pub struct ValidatorBalanceVerificationTargets<
     #[target(out)]
     pub number_of_exitted_validators: Target,
 }
-
-// code to generate
-// public inputs reading
-// witness setting
-// input type per target
-// #[derive(CircuitTarget)]
-// #[target(in, out)]
 
 type F = GoldilocksField;
 type C = PoseidonGoldilocksConfig;
