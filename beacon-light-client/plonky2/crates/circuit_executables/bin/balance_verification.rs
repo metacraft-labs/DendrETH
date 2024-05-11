@@ -30,6 +30,7 @@ use circuits::{
     },
 };
 use colored::Colorize;
+use num::BigUint;
 use std::{
     println, thread,
     time::{Duration, Instant},
@@ -129,12 +130,32 @@ async fn async_main() -> Result<()> {
         )
     );
 
-    let validator_balance_input: CircuitInput<
-        WithdrawalCredentialsBalanceAggregatorFirstLevel<8, 1>,
-    > = unsafe { std::mem::uninitialized() };
+    // let mut validator_balance_input: CircuitInput<
+    //     WithdrawalCredentialsBalanceAggregatorFirstLevel<8, 1>,
+    // > = unsafe { std::mem::uninitialized() };
 
+    let mut validator_balance_input: CircuitInput<
+        WithdrawalCredentialsBalanceAggregatorFirstLevel<8, 1>,
+    > = CircuitInput::<WithdrawalCredentialsBalanceAggregatorFirstLevel<8, 1>> {
+        non_zero_validator_leaves_mask: Array([true, false, true, true, true, true, true, true]),
+    };
+
+    // validator_balance_input.current_epoch = BigUint::from(2u64);
+    // for i in 0..validator_balance_input.validators.len() {
+    //     validator_balance_input.validators[i].effective_balance = BigUint::from(3u64);
+    //     validator_balance_input.validators[i].activation_eligibility_epoch = BigUint::from(3u64);
+    //     validator_balance_input.validators[i].activation_epoch = BigUint::from(3u64);
+    //     validator_balance_input.validators[i].exit_epoch = BigUint::from(3u64);
+    //     validator_balance_input.validators[i].withdrawable_epoch = BigUint::from(3u64);
+    // }
+    //
     let string = serde_json::to_string(&validator_balance_input)?;
     println!("{string}");
+
+    let de: CircuitInput<WithdrawalCredentialsBalanceAggregatorFirstLevel<8, 1>> =
+        serde_json::from_str(&string)?;
+
+    println!("{de:?}");
 
     let start: Instant = Instant::now();
     process_queue(

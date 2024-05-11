@@ -1,3 +1,4 @@
+use crate::serializers::serde_bool_array_to_hex_string;
 use circuit::public_inputs::field_reader::PublicInputsFieldReader;
 use circuit::public_inputs::target_reader::PublicInputsTargetReader;
 use circuit::set_witness::SetWitness;
@@ -51,19 +52,20 @@ pub struct ValidatorBalanceVerificationTargets<
 > where
     [(); VALIDATORS_COUNT / 4]:,
 {
-    #[target(in)]
+    #[target()]
     pub validators: [ValidatorTarget; VALIDATORS_COUNT],
 
     #[target(in)]
+    #[serde(with = "serde_bool_array_to_hex_string")]
     pub non_zero_validator_leaves_mask: [BoolTarget; VALIDATORS_COUNT],
 
-    #[target(in)]
+    #[target()]
     pub balances: [Sha256Target; VALIDATORS_COUNT / 4],
 
-    #[target(in, out)]
+    #[target(out)]
     pub withdrawal_credentials: [Sha256Target; WITHDRAWAL_CREDENTIALS_COUNT],
 
-    #[target(in, out)]
+    #[target(out)]
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub current_epoch: BigUintTarget,
 

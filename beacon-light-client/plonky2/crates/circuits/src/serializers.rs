@@ -124,6 +124,54 @@ pub mod bool_vec_as_int_vec_nested {
     }
 }
 
+pub mod serde_bool_array_to_hex_string {
+    use core::fmt;
+
+    use circuit::array::Array;
+    use serde::{
+        de::{self, Visitor},
+        Deserializer, Serializer,
+    };
+
+    use crate::utils::utils::{bits_to_bytes, bytes_to_bits};
+
+    // Nested versions of the functions
+    pub fn serialize<S, const N: usize>(x: &Array<bool, N>, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let hex_string = hex::encode(bits_to_bytes(x.as_slice()));
+        s.serialize_str(&hex_string)
+    }
+
+    pub fn deserialize<'de, D, const N: usize>(deserializer: D) -> Result<Array<bool, N>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct HexStringVisitor<const N: usize>;
+
+        impl<'de, const N: usize> Visitor<'de> for HexStringVisitor<N> {
+            type Value = Array<bool, N>;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a hex string")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                Ok(Array(
+                    bytes_to_bits(&hex::decode(v).unwrap()).try_into().unwrap(),
+                ))
+            }
+        }
+
+        deserializer.deserialize_str(HexStringVisitor)
+    }
+}
+
+// TODO: These need to be moved
 pub const VALIDATOR_REGISTRY_LIMIT: usize = 1099511627776;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
