@@ -5,7 +5,7 @@ use crate::{
 };
 use anyhow::{ensure, Result};
 use async_trait::async_trait;
-use circuit::{CircuitInput, CircuitWithPublicInputs};
+use circuit::{Circuit, CircuitInput};
 use circuits::{
     circuit_input_common::{
         BalanceAccumulatorProof, BalanceProof, FinalCircuitInput, FinalProof,
@@ -17,7 +17,6 @@ use circuits::{
     validators_commitment_mapper::build_commitment_mapper_first_level_circuit::CommitmentMapperProofExt,
     withdrawal_credentials_balance_aggregator::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
-use itertools::Itertools;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     plonk::{
@@ -54,13 +53,21 @@ impl KeyProvider for ValidatorProof {
     }
 }
 
-impl NeedsChange for BalanceProof {
+impl<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIALS_COUNT: usize> NeedsChange
+    for BalanceProof<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>
+where
+    [(); VALIDATORS_COUNT / 4]:,
+{
     fn needs_change(&self) -> bool {
         self.needs_change
     }
 }
 
-impl KeyProvider for BalanceProof {
+impl<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIALS_COUNT: usize> KeyProvider
+    for BalanceProof<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>
+where
+    [(); VALIDATORS_COUNT / 4]:,
+{
     fn get_key() -> String {
         DB_CONSTANTS.balance_verification_proof_key.to_owned()
     }
@@ -77,7 +84,11 @@ impl ProofProvider for ValidatorProof {
 }
 
 #[async_trait(?Send)]
-impl ProofProvider for BalanceProof {
+impl<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIALS_COUNT: usize> ProofProvider
+    for BalanceProof<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>
+where
+    [(); VALIDATORS_COUNT / 4]:,
+{
     async fn get_proof(&self, proof_storage: &mut dyn ProofStorage) -> Vec<u8> {
         proof_storage
             .get_proof(self.proof_key.clone())
@@ -201,20 +212,8 @@ where
 
     let balance_proof = BalanceProof {
         needs_change: false,
-        range_total_value: public_inputs.range_total_value,
-        balances_hash: public_inputs.range_balances_root,
-        withdrawal_credentials: public_inputs.withdrawal_credentials.to_vec(),
-        validators_commitment: public_inputs
-            .range_validator_commitment
-            .to_vec()
-            .iter()
-            .map(|x| x.to_string())
-            .collect_vec(),
-        current_epoch: public_inputs.current_epoch,
-        number_of_non_activated_validators: public_inputs.number_of_non_activated_validators,
-        number_of_active_validators: public_inputs.number_of_active_validators,
-        number_of_exitted_validators: public_inputs.number_of_exitted_validators,
         proof_key: proof_key.clone(),
+        public_inputs,
     };
 
     proof_storage

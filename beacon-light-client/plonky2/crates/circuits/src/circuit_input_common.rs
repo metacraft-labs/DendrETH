@@ -15,8 +15,12 @@ use crate::{
         },
         utils::SetBytesArray,
     },
-    withdrawal_credentials_balance_aggregator::first_level::circuit::ValidatorBalanceVerificationTargets,
+    withdrawal_credentials_balance_aggregator::{
+        first_level::circuit::ValidatorBalanceVerificationTargets,
+        WithdrawalCredentialsBalanceAggregatorFirstLevel,
+    },
 };
+use circuit::CircuitPublicInputs;
 use itertools::Itertools;
 use num::BigUint;
 use plonky2::{
@@ -39,17 +43,18 @@ pub struct ValidatorProof {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct BalanceProof {
+pub struct BalanceProof<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIALS_COUNT: usize>
+where
+    [(); VALIDATORS_COUNT / 4]:,
+{
     pub needs_change: bool,
-    pub range_total_value: u64,
-    pub validators_commitment: Vec<String>,
-    pub balances_hash: String,
-    pub withdrawal_credentials: Vec<String>,
-    pub current_epoch: u64,
-    pub number_of_non_activated_validators: u64,
-    pub number_of_active_validators: u64,
-    pub number_of_exitted_validators: u64,
     pub proof_key: String,
+    pub public_inputs: CircuitPublicInputs<
+        WithdrawalCredentialsBalanceAggregatorFirstLevel<
+            VALIDATORS_COUNT,
+            WITHDRAWAL_CREDENTIALS_COUNT,
+        >,
+    >,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

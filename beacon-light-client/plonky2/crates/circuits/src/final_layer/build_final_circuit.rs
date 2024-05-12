@@ -225,7 +225,7 @@ where
     let public_inputs_target = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
         VALIDATORS_COUNT,
         WITHDRAWAL_CREDENTIALS_COUNT,
-    >::read_public_inputs_target_new(&proof_targets.public_inputs);
+    >::read_public_inputs_target(&proof_targets.public_inputs);
 
     (proof_targets, verifier_circuit_target, public_inputs_target)
 }

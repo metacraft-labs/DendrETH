@@ -1,9 +1,6 @@
 use circuit_executables::{
     crud::{
-        common::{
-            fetch_final_layer_input, fetch_proof, fetch_proof_balances, load_circuit_data,
-            save_final_proof,
-        },
+        common::{fetch_final_layer_input, fetch_proof, fetch_proof_balances, load_circuit_data},
         proof_storage::proof_storage::create_proof_storage,
     },
     utils::{parse_config_file, CommandLineOptionsBuilder},
@@ -13,7 +10,6 @@ use circuits::{
     circuit_input_common::{BalanceProof, SetPWValues, ValidatorProof},
     final_layer::build_final_circuit::build_final_circuit,
     serialization::generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
-    utils::utils::bits_to_bytes,
 };
 use colored::Colorize;
 use std::{fs, marker::PhantomData, println, time::Instant};
@@ -72,7 +68,8 @@ async fn async_main() -> Result<()> {
 
     circuit_targets.set_pw_values(&mut pw, &final_input_data);
 
-    let balance_proof: BalanceProof = fetch_proof_balances(&mut con, protocol, 37, 0).await?;
+    // TODO: don't hard code the generics
+    let balance_proof: BalanceProof<8, 1> = fetch_proof_balances(&mut con, protocol, 37, 0).await?;
     let balance_proof_bytes = proof_storage.get_proof(balance_proof.proof_key).await?;
 
     let balance_final_proof =
@@ -136,18 +133,24 @@ async fn async_main() -> Result<()> {
 
     let proof = circuit_data.prove(pw)?;
 
-    save_final_proof(
-        &mut con,
-        protocol.to_string(),
-        &proof,
-        hex::encode(bits_to_bytes(&final_input_data.block_root)),
-        balance_proof.withdrawal_credentials,
-        balance_proof.range_total_value,
-        balance_proof.number_of_non_activated_validators,
-        balance_proof.number_of_active_validators,
-        balance_proof.number_of_non_activated_validators,
-    )
-    .await?;
+    // TODO: fix this
+    // save_final_proof(
+    //     &mut con,
+    //     protocol.to_string(),
+    //     &proof,
+    //     hex::encode(bits_to_bytes(&final_input_data.block_root)),
+    //     // TODO: read these off the public inputs, not the redis data
+    //     balance_proof.public_inputs.withdrawal_credentials,
+    //     balance_proof.public_inputs.range_total_value,
+    //     balance_proof
+    //         .public_inputs
+    //         .number_of_non_activated_validators,
+    //     balance_proof.public_inputs.number_of_active_validators,
+    //     balance_proof
+    //         .public_inputs
+    //         .number_of_non_activated_validators,
+    // )
+    // .await?;
 
     println!(
         "{}",

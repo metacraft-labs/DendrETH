@@ -349,7 +349,7 @@ where
     let pis = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
         VALIDATORS_COUNT,
         WITHDRAWAL_CREDENTIALS_COUNT,
-    >::read_public_inputs_new(&proof.public_inputs);
+    >::read_public_inputs(&proof.public_inputs);
 
     println!("pis: {:?}", pis);
 
@@ -415,7 +415,7 @@ where
         println!("{}", "Processing task for zero proof...".blue().bold());
     }
 
-    match fetch_proofs_balances::<BalanceProof>(
+    match fetch_proofs_balances::<BalanceProof<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>>(
         con,
         proof_storage,
         protocol.to_owned(),

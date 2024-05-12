@@ -6,7 +6,7 @@ use crate::{
     },
     withdrawal_credentials_balance_aggregator::first_level::circuit::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
-use circuit::CircuitWithPublicInputs;
+use circuit::Circuit;
 use plonky2::{
     field::extension::Extendable,
     hash::{

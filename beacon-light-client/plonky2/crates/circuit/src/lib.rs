@@ -9,7 +9,7 @@ pub mod to_targets;
 use plonky2::{
     field::extension::Extendable,
     hash::hash_types::RichField,
-    iop::{target::Target, witness::PartialWitness},
+    iop::target::Target,
     plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::{CircuitConfig, CircuitData},
@@ -41,13 +41,13 @@ pub trait Circuit {
         (targets, circuit_data)
     }
 
-    fn read_public_inputs_target_new(
+    fn read_public_inputs_target(
         public_inputs: &[Target],
     ) -> <Self::Targets as TargetsWithPublicInputs>::PublicInputsTarget {
         Self::Targets::read_public_inputs_target(public_inputs)
     }
 
-    fn read_public_inputs_new(
+    fn read_public_inputs(
         public_inputs: &[Self::F],
     ) -> <Self::Targets as TargetsWithPublicInputs>::PublicInputs {
         Self::Targets::read_public_inputs(public_inputs)
@@ -66,49 +66,11 @@ pub trait TargetsWithPublicInputs {
     );
 }
 
-// pub trait ReadPublicInputsTarget {
-//     type PublicInputsTarget;
-//
-//     fn read_public_inputs_target(public_inputs: &[Target]) -> Self::PublicInputsTarget;
-// }
-//
-// pub trait ReadPublicInputs {
-//     type PublicInputs;
-//
-//     fn read_public_inputs<F: RichField>(public_inputs: &[F]) -> Self::PublicInputs;
-// }
-
 pub trait SerializableCircuit: Circuit {
     fn serialize(targets: &Self::Targets) -> IoResult<Vec<u8>>;
     fn deserialize(data: &mut Buffer) -> IoResult<Self::Targets>;
 }
 
-pub trait CircuitWithPublicInputs: Circuit {
-    type PublicInputs;
-    type PublicInputsTarget;
-
-    fn read_public_inputs(public_inputs: &[Self::F]) -> Self::PublicInputs;
-    fn read_public_inputs_target(public_inputs: &[Target]) -> Self::PublicInputsTarget;
-}
-
-pub trait WitnessSetter: Circuit {
-    type WitnessInput;
-
-    fn set_witness(targets: &Self::Targets, source: &Self::WitnessInput)
-        -> PartialWitness<Self::F>;
-}
-
 pub type CircuitInput<T> = <<T as Circuit>::Targets as SetWitness<<T as Circuit>::F>>::Input;
-
-// pub trait CircuitTarget {
-// type PublicInputs;
-// type PublicInputsTarget;
-//
-// fn read_public_inputs(public_inputs: &[Self::F]) -> Self::PublicInputs;
-// fn read_public_inputs_target(public_inputs: &[Target]) -> Self::PublicInputsTarget;
-//
-// type WitnessInput;
-//
-// fn set_witness(targets: &Self::Targets, source: &Self::WitnessInput)
-//     -> PartialWitness<Self::F>;
-// }
+pub type CircuitPublicInputs<T> =
+    <<T as Circuit>::Targets as TargetsWithPublicInputs>::PublicInputs;
