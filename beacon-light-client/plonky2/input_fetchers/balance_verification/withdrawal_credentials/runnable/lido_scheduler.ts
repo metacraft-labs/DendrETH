@@ -45,7 +45,7 @@ import hashConsensusAbi from '../../abi/hash_consensus_abi.json';
     if (headSlot >= nextRefSlot) {
       await getBalancesInput({
         protocol: 'lido',
-        withdrawCredentials: LIDO_WITHDRAWAL_CREDENTIALS,
+        withdrawalCredentials: LIDO_WITHDRAWAL_CREDENTIALS,
         slot: nextRefSlot,
         beaconNodeUrls: options['beacon-node'],
       });

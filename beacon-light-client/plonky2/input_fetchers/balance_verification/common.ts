@@ -6,7 +6,7 @@ export function getZeroValidatorPoseidonInput(): ValidatorPoseidonInput {
     pubkey: ''.padStart(96, '0'),
     withdrawalCredentials: ''.padStart(64, '0'),
     effectiveBalance: '0',
-    slashed: 0,
+    slashed: false,
     activationEligibilityEpoch: '0',
     activationEpoch: '0',
     exitEpoch: '0',
@@ -21,7 +21,7 @@ export function convertValidatorToValidatorPoseidonInput(
     pubkey: bytesToHex(validator.pubkey),
     withdrawalCredentials: bytesToHex(validator.withdrawalCredentials),
     effectiveBalance: validator.effectiveBalance.toString(),
-    slashed: Number(validator.slashed),
+    slashed: validator.slashed,
     activationEligibilityEpoch: validator.activationEligibilityEpoch.toString(),
     activationEpoch: validator.activationEpoch.toString(),
     exitEpoch:

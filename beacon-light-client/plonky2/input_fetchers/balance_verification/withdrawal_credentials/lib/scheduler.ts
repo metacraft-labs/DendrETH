@@ -16,7 +16,7 @@ import commonConfig from '../../../../common_config.json';
 
 const commonConfigChecked = commonConfig satisfies CommonConfig;
 
-const CIRCUIT_SIZE = 8;
+const VALIDATORS_COUNT = 8;
 
 export type GetBalancesInputConfigRequiredFields = {
   withdrawalCredentials: string;
@@ -55,7 +55,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
   const { ssz } = await import('@lodestar/types');
   const redis = new RedisLocal(config.redisHost, config.redisPort);
 
-  const withdrawalCredentials = config.withdrawalCredentials;
+  const withdrawalCredentials = config.withdrawalCredentials.padEnd(256, '0');
   const protocol = config.protocol;
 
   const queues: any[] = [];
@@ -99,31 +99,29 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
   const balanceZeroIndex =
     currentSSZFork.BeaconState.fields.balances.getPathInfo([0]).gindex;
 
-  const balances: number[][] = [];
+  const balances: string[] = [];
 
   for (let i = 0; i < take / 4; i++) {
     balances.push(
-      hexToBits(
-        bytesToHex(balancesTree.getNode(balanceZeroIndex + BigInt(i)).root),
-      ),
+      bytesToHex(balancesTree.getNode(balanceZeroIndex + BigInt(i)).root),
     );
   }
 
-  if (balances.length % (CIRCUIT_SIZE / 4) !== 0) {
-    balances.push(''.padStart(256, '0').split('').map(Number));
+  if (balances.length % (VALIDATORS_COUNT / 4) !== 0) {
+    balances.push(''.padStart(256, '0'));
   }
 
   await redis.saveValidatorBalancesInput(protocol, [
     {
       index: Number(CONSTANTS.validatorRegistryLimit),
       input: {
-        balances: Array(CIRCUIT_SIZE / 4)
+        balances: Array(VALIDATORS_COUNT / 4)
           .fill('')
-          .map(() => ''.padStart(256, '0').split('').map(Number)),
-        validators: Array(CIRCUIT_SIZE).fill(getZeroValidatorPoseidonInput()),
-        withdrawalCredentials: [hexToBits(withdrawalCredentials)],
+          .map(() => ''.padStart(256, '0')),
+        validators: Array(VALIDATORS_COUNT).fill(getZeroValidatorPoseidonInput()),
+        withdrawalCredentials: [withdrawalCredentials],
         currentEpoch: computeEpochAt(beaconState.slot).toString(),
-        validatorIsZero: Array(CIRCUIT_SIZE).fill(1),
+        validatorIsZero: Array(VALIDATORS_COUNT).fill(true), // TODO: change this to false after renaming to nonZeroValidatorsMask
       },
     },
   ]);
@@ -156,39 +154,39 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
 
   console.log(chalk.bold.blue('Saving validator balance input...'));
   const batchSize = 100;
-  for (let i = 0; i <= take / CIRCUIT_SIZE / batchSize; i++) {
+  for (let i = 0; i <= take / VALIDATORS_COUNT / batchSize; i++) {
     let batch: any[] = [];
     for (
       let j = i * batchSize;
-      j < i * batchSize + batchSize && j < take / CIRCUIT_SIZE;
+      j < i * batchSize + batchSize && j < take / VALIDATORS_COUNT;
       j++
     ) {
       let size =
-        (j + 1) * CIRCUIT_SIZE <= validators.length
-          ? CIRCUIT_SIZE
-          : validators.length - j * CIRCUIT_SIZE;
+        (j + 1) * VALIDATORS_COUNT <= validators.length
+          ? VALIDATORS_COUNT
+          : validators.length - j * VALIDATORS_COUNT;
 
-      let array = new Array(size).fill(0);
+      let array = new Array(size).fill(false);
 
       batch.push({
         index: j,
         input: {
           balances: balances.slice(
-            j * (CIRCUIT_SIZE / 4),
-            (j + 1) * (CIRCUIT_SIZE / 4),
+            j * (VALIDATORS_COUNT / 4),
+            (j + 1) * (VALIDATORS_COUNT / 4),
           ),
           validators: [
             ...validators
-              .slice(j * CIRCUIT_SIZE, (j + 1) * CIRCUIT_SIZE)
+              .slice(j * VALIDATORS_COUNT, (j + 1) * VALIDATORS_COUNT)
               .map(v => convertValidatorToValidatorPoseidonInput(v)),
             ...Array(
-              (j + 1) * CIRCUIT_SIZE -
-              Math.min((j + 1) * CIRCUIT_SIZE, validators.length),
+              (j + 1) * VALIDATORS_COUNT -
+              Math.min((j + 1) * VALIDATORS_COUNT, validators.length),
             ).fill(getZeroValidatorPoseidonInput()),
           ],
-          withdrawalCredentials: [hexToBits(withdrawalCredentials)],
+          withdrawalCredentials: [withdrawalCredentials],
           currentEpoch: computeEpochAt(beaconState.slot).toString(),
-          validatorIsZero: array.concat(new Array(CIRCUIT_SIZE - size).fill(1)),
+          validatorIsZero: array.concat(new Array(VALIDATORS_COUNT - size).fill(true)), // TODO: change this to false after renaming to nonZeroValidatorsMask
         },
       });
     }
@@ -202,7 +200,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
     BigInt(CONSTANTS.validatorRegistryLimit),
   );
 
-  for (let i = 0; i < take / CIRCUIT_SIZE; i++) {
+  for (let i = 0; i < take / VALIDATORS_COUNT; i++) {
     const buffer = new ArrayBuffer(8);
     const view = new DataView(buffer);
     view.setBigUint64(0, BigInt(i), false);
@@ -221,7 +219,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
     );
 
     const range = [
-      ...new Array(Math.ceil(take / CIRCUIT_SIZE / 2 ** level)).keys(),
+      ...new Array(Math.ceil(take / VALIDATORS_COUNT / 2 ** level)).keys(),
     ];
     for (const key of range) {
       const buffer = new ArrayBuffer(8);

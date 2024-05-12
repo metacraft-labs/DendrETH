@@ -188,7 +188,7 @@ export interface ValidatorPoseidonInput {
   pubkey: string;
   withdrawalCredentials: string;
   effectiveBalance: string;
-  slashed: number;
+  slashed: boolean;
   activationEligibilityEpoch: string;
   activationEpoch: string;
   exitEpoch: string;

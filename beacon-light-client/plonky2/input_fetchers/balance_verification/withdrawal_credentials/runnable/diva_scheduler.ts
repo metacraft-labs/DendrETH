@@ -40,11 +40,11 @@ const validatorManager = new ethers.Contract(
 );
 
 snapshot.on('SnapshotTaken', async (_: number, currentSlot: number) => {
-  const withdrawCredentials = await validatorManager.getWithdrawalCredentials();
+  const withdrawalCredentials = await validatorManager.getWithdrawalCredentials();
 
   await getBalancesInput({
     protocol: 'diva',
-    withdrawCredentials,
+    withdrawalCredentials,
     slot: currentSlot,
     beaconNodeUrls: options['beacon-node'],
     redisHost: options['redis-host'],
