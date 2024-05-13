@@ -181,108 +181,160 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D> for FpI
         Ok(Self { input, input_inv })
     }
 }
-// #[cfg(test)]
-// mod tests {
-//     use std::str::FromStr;
 
-//     use num_bigint::BigUint;
-//     use plonky2::{
-//         iop::witness::PartialWitness,
-//         plonk::{
-//             circuit_data::CircuitConfig,
-//             config::{GenericConfig, PoseidonGoldilocksConfig},
-//         },
-//     };
-//     use plonky2x::{
-//         backend::circuit::{Circuit, CircuitBuild, DefaultParameters, PlonkParameters},
-//         frontend::{
-//             builder::CircuitBuilder,
-//             uint::num::biguint::{BigUintTarget, CircuitBuilderBiguint, WitnessBigUint},
-//         },
-//     };
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
 
-//     use crate::verification::native::Fp;
+    use num_bigint::BigUint;
+    use plonky2::field::{goldilocks_field::GoldilocksField, types::Field64};
+    use plonky2x::frontend::{
+        builder::{CircuitBuilder, DefaultBuilder},
+        uint::num::biguint::{BigUintTarget, CircuitBuilderBiguint},
+        vars::{BoolVariable, Variable},
+    };
 
-//     use super::{div_fp, range_check_fp, sub_fp, N};
+    use crate::verification::utils::native_bls::{modulus, Fp};
+    use itertools::Itertools;
 
-//     const D: usize = 2;
-//     type C = PoseidonGoldilocksConfig;
-//     type F = <C as GenericConfig<D>>::F;
+    use super::{div_fp, range_check_fp, sub_fp, N};
 
-//     #[test]
-//     fn test_subtraction_circuit() {
-//         type L = DefaultParameters;
-//         const D: usize = 2;
-//         let mut builder: CircuitBuilder<DefaultParameters, 2> =
-//             CircuitBuilder::<DefaultParameters, 2>::new();
-//         let circuit = builder.build();
-//         let mut input = circuit.input();
+    #[test]
+    fn test_subtraction_circuit() {
+        let mut builder = DefaultBuilder::new();
+        let a_bigu = BigUint::from_str(
+            "1216495682195235861952885506871698490232894470117269383940381148575524314493849307811227440691167647909822763414941"
+        ).unwrap();
+        let b_bigu = BigUint::from_str(
+            "2153848155426317245700560287567131132765685008362732985860101000686875894603366983854567186180519945327668975076337"
+        ).unwrap();
 
-//         let a = builder.add_virtual_biguint_target(N);
-//         let b = builder.add_virtual_biguint_target(N);
-//         let res = sub_fp(&mut builder, &a, &b);
+        let a_fp = Fp::get_fp_from_biguint(a_bigu.clone());
+        let b_fp = Fp::get_fp_from_biguint(b_bigu.clone());
+        let expected_res_fp = a_fp - b_fp;
 
-//         let mut pw = PartialWitness::<F>::new();
+        let a_bigu_t = builder.api.constant_biguint(&a_bigu);
+        let b_bigu_t = builder.api.constant_biguint(&b_bigu);
 
-//         let a_fp = Fp::get_fp_from_biguint(BigUint::from_str(
-//             "1216495682195235861952885506871698490232894470117269383940381148575524314493849307811227440691167647909822763414941"
-//         ).unwrap());
-//         let b_fp = Fp::get_fp_from_biguint(BigUint::from_str(
-//             "2153848155426317245700560287567131132765685008362732985860101000686875894603366983854567186180519945327668975076337"
-//         ).unwrap());
-//         let res_fp = a_fp - b_fp;
-//         input.write::<BigUintTarget>(a);
-//         pw.set_biguint_target(&a, &a_fp.to_biguint());
-//         pw.set_biguint_target(&b, &b_fp.to_biguint());
-//         pw.set_biguint_target(&res, &res_fp.to_biguint());
+        let res = sub_fp(&mut builder, &a_bigu_t, &b_bigu_t);
 
-//         let proof = data.prove(pw).unwrap();
-//         data.verify(proof).unwrap();
-//     }
+        // Define your circuit.
+        let mut res_output: Vec<GoldilocksField> = Vec::new();
+        for k in 0..N {
+            builder.write(Variable(res.limbs[k].target));
+        }
 
-//     #[test]
-//     fn test_division_circuit() {
-//         let config = CircuitConfig::standard_recursion_config();
+        // Build your circuit.
+        let circuit = builder.build();
 
-//         let mut builder = CircuitBuilder::<F, D>::new(config);
-//         let a = builder.add_virtual_biguint_target(N);
-//         let b = builder.add_virtual_biguint_target(N);
-//         let res = div_fp(&mut builder, &a, &b);
+        // Write to the circuit input.
+        let input = circuit.input();
 
-//         let data = builder.build::<C>();
-//         let mut pw = PartialWitness::<F>::new();
+        // Generate a proof.
+        let (proof, mut output) = circuit.prove(&input);
 
-//         let a_fp = Fp::get_fp_from_biguint(BigUint::from_str(
-//             "2153848155426317245700560287567131132765685008362732985860101000686875894603366983854567186180519945327668975076337"
-//         ).unwrap());
-//         let b_fp = Fp::get_fp_from_biguint(BigUint::from_str(
-//             "1216495682195235861952885506871698490232894470117269383940381148575524314493849307811227440691167647909822763414941"
-//         ).unwrap());
-//         let res_fp = a_fp / b_fp;
-//         pw.set_biguint_target(&a, &a_fp.to_biguint());
-//         pw.set_biguint_target(&b, &b_fp.to_biguint());
-//         pw.set_biguint_target(&res, &res_fp.to_biguint());
+        // Verify proof.
+        circuit.verify(&proof, &input, &output);
 
-//         let proof = data.prove(pw).unwrap();
-//         data.verify(proof).unwrap();
-//     }
+        // Read output.
+        for _ in 0..N {
+            res_output.push(output.read::<Variable>())
+        }
 
-//     #[test]
-//     fn test_range_check_fp() {
-//         env_logger::init();
-//         let config = CircuitConfig::standard_recursion_config();
+        let biguint_res: BigUint = BigUint::new(
+            res_output
+                .iter()
+                .map(|f| (f.0 % GoldilocksField::ORDER) as u32)
+                .collect_vec(),
+        );
 
-//         let mut builder = CircuitBuilder::<F, D>::new(config);
-//         let input = builder.add_virtual_biguint_target(N);
+        assert_eq!(biguint_res, expected_res_fp.to_biguint());
+    }
 
-//         range_check_fp(&mut builder, &input);
+    #[test]
+    fn test_division_circuit() {
+        let mut builder = DefaultBuilder::new();
+        let a_bigu = BigUint::from_str(
+            "2153848155426317245700560287567131132765685008362732985860101000686875894603366983854567186180519945327668975076337"
+        ).unwrap();
+        let b_bigu = BigUint::from_str(
+            "1216495682195235861952885506871698490232894470117269383940381148575524314493849307811227440691167647909822763414941"
+        ).unwrap();
 
-//         builder.print_gate_counts(0);
-//         let data = builder.build::<C>();
-//         let mut pw = PartialWitness::<F>::new();
+        let a_fp = Fp::get_fp_from_biguint(a_bigu.clone());
+        let b_fp = Fp::get_fp_from_biguint(b_bigu.clone());
+        let expected_res_fp = a_fp / b_fp;
 
-//         pw.set_biguint_target(&input, &BigUint::from_str("234").unwrap());
-//         let proof = data.prove(pw).unwrap();
-//         data.verify(proof).unwrap();
-//     }
-// }
+        let a_bigu_t = builder.api.constant_biguint(&a_bigu);
+        let b_bigu_t = builder.api.constant_biguint(&b_bigu);
+
+        let res = div_fp(&mut builder, &a_bigu_t, &b_bigu_t);
+
+        // Define your circuit.
+        let mut res_output: Vec<GoldilocksField> = Vec::new();
+        for k in 0..N {
+            builder.write(Variable(res.limbs[k].target));
+        }
+
+        // Build your circuit.
+        let circuit = builder.build();
+
+        // Write to the circuit input.
+        let input = circuit.input();
+
+        // Generate a proof.
+        let (proof, mut output) = circuit.prove(&input);
+
+        // Verify proof.
+        circuit.verify(&proof, &input, &output);
+
+        // Read output.
+        for _ in 0..N {
+            res_output.push(output.read::<Variable>())
+        }
+
+        let biguint_res: BigUint = BigUint::new(
+            res_output
+                .iter()
+                .map(|f| (f.0 % GoldilocksField::ORDER) as u32)
+                .collect_vec(),
+        );
+
+        assert_eq!(biguint_res, expected_res_fp.to_biguint());
+    }
+
+    #[test]
+    fn test_range_check_fp() {
+        let mut builder = DefaultBuilder::new();
+        let input_to_check = BigUint::from_str("234").unwrap();
+
+        let input_to_check_t = builder.api.constant_biguint(&input_to_check);
+
+        let p = builder.api.constant_biguint(&modulus());
+        let check = builder.api.cmp_biguint(&p, &input_to_check_t);
+        range_check_fp(&mut builder, &input_to_check_t);
+
+        // Define your circuit.
+        let mut res_output: Vec<GoldilocksField> = Vec::new();
+        builder.write(BoolVariable::from(check).variable);
+
+        // Build your circuit.
+        let circuit = builder.build();
+
+        // Write to the circuit input.
+        let input = circuit.input();
+
+        // Generate a proof.
+        let (proof, mut output) = circuit.prove(&input);
+
+        // Verify proof.
+        circuit.verify(&proof, &input, &output);
+
+        // Read output.
+        res_output.push(output.read::<Variable>());
+
+        let res = res_output[0].0 % GoldilocksField::ORDER;
+
+        assert_eq!(res, 0);
+    }
+}
