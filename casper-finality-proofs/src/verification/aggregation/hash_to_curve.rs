@@ -413,7 +413,7 @@ pub fn clear_cofactor_g2<L: PlonkParameters<D>, const D: usize>(
             .api
             .constant_biguint(&BigUint::from_str("4").unwrap()),
     ];
-    let fals = builder.api._false();
+    let fals = builder._false();
     let x_p = g2_scalar_mul(builder, inp, &b);
     let psi_p = endomorphism_psi(builder, inp);
     let neg_p = g2_negate(builder, &inp);
