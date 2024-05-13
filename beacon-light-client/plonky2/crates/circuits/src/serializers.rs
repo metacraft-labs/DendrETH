@@ -223,7 +223,7 @@ pub mod serde_bool_array_to_hex_string_nested {
                     Array(
                         bytes_to_bits(&hex::decode(hex_string).unwrap())
                             .try_into()
-                            .unwrap(),
+                            .unwrap(), // BUG: trashes ( I know why :( )
                     )
                 })))
             }

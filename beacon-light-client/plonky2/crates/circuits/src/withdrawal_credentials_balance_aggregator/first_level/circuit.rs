@@ -1,3 +1,4 @@
+use crate::serializers::serde_bool_array_to_hex_string;
 use crate::serializers::serde_bool_array_to_hex_string_nested;
 use circuit::public_inputs::field_reader::PublicInputsFieldReader;
 use circuit::public_inputs::target_reader::PublicInputsTargetReader;
@@ -42,6 +43,7 @@ use crate::{
 };
 
 #[derive(CircuitTarget)]
+#[serde(rename_all = "camelCase")]
 pub struct ValidatorBalanceVerificationTargets<
     const VALIDATORS_COUNT: usize,
     const WITHDRAWAL_CREDENTIALS_COUNT: usize,
@@ -62,7 +64,7 @@ pub struct ValidatorBalanceVerificationTargets<
     #[serde(with = "serde_bool_array_to_hex_string_nested")]
     pub withdrawal_credentials: [Sha256Target; WITHDRAWAL_CREDENTIALS_COUNT],
 
-    #[target(out)]
+    #[target(in, out)]
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub current_epoch: BigUintTarget,
 
@@ -71,6 +73,7 @@ pub struct ValidatorBalanceVerificationTargets<
     pub range_total_value: BigUintTarget,
 
     #[target(out)]
+    #[serde(with = "serde_bool_array_to_hex_string")]
     pub range_balances_root: Sha256Target,
 
     #[target(out)]
@@ -126,7 +129,18 @@ where
 
         let balances_len = VALIDATORS_COUNT / 4;
 
+        let validators_leaves =
+            [(); VALIDATORS_COUNT].map(|_| hash_tree_root_validator_poseidon(builder));
+
+        let non_zero_validator_leaves_mask =
+            [(); VALIDATORS_COUNT].map(|_| builder.add_virtual_bool_target_safe());
+
         let balances_leaves = [(); VALIDATORS_COUNT / 4].map(|_| create_bool_target_array(builder));
+
+        let withdrawal_credentials =
+            [(); WITHDRAWAL_CREDENTIALS_COUNT].map(|_| create_bool_target_array(builder));
+
+        let current_epoch = builder.add_virtual_biguint_target(2);
 
         let balances_hash_tree_root_targets = hash_tree_root(builder, balances_len);
 
@@ -138,13 +152,7 @@ where
             );
         }
 
-        let validators_leaves =
-            [(); VALIDATORS_COUNT].map(|_| hash_tree_root_validator_poseidon(builder));
-
         let hash_tree_root_poseidon_targets = hash_tree_root_poseidon(builder, VALIDATORS_COUNT);
-
-        let validator_is_zero =
-            [(); VALIDATORS_COUNT].map(|_| builder.add_virtual_bool_target_safe());
 
         let zero_hash = builder.zero();
 
@@ -157,10 +165,11 @@ where
                 .iter()
                 .enumerate()
             {
+                // TODO: use multiplication
                 elements[j] = builder._if(
-                    validator_is_zero[i],
-                    zero_hash,
+                    non_zero_validator_leaves_mask[i],
                     validators_leaves[i].hash_tree_root.elements[j],
+                    zero_hash,
                 );
             }
 
@@ -169,11 +178,6 @@ where
                 HashOutTarget { elements },
             );
         }
-
-        let withdrawal_credentials =
-            [(); WITHDRAWAL_CREDENTIALS_COUNT].map(|_| create_bool_target_array(builder));
-
-        let current_epoch = builder.add_virtual_biguint_target(2);
 
         let mut sum = builder.zero_biguint();
 
@@ -234,7 +238,7 @@ where
         }
 
         Self::Targets {
-            non_zero_validator_leaves_mask: validator_is_zero,
+            non_zero_validator_leaves_mask,
             range_total_value: sum,
             range_balances_root: balances_hash_tree_root_targets.hash_tree_root,
             range_validator_commitment: hash_tree_root_poseidon_targets.hash_tree_root,

@@ -55,7 +55,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
   const { ssz } = await import('@lodestar/types');
   const redis = new RedisLocal(config.redisHost, config.redisPort);
 
-  const withdrawalCredentials = config.withdrawalCredentials.padEnd(256, '0');
+  const withdrawalCredentials = config.withdrawalCredentials.padEnd(64, '0');
   const protocol = config.protocol;
 
   const queues: any[] = [];
@@ -108,7 +108,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
   }
 
   if (balances.length % (VALIDATORS_COUNT / 4) !== 0) {
-    balances.push(''.padStart(256, '0'));
+    balances.push(''.padStart(64, '0'));
   }
 
   await redis.saveValidatorBalancesInput(protocol, [
@@ -117,11 +117,11 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
       input: {
         balances: Array(VALIDATORS_COUNT / 4)
           .fill('')
-          .map(() => ''.padStart(256, '0')),
+          .map(() => ''.padStart(64, '0')),
         validators: Array(VALIDATORS_COUNT).fill(getZeroValidatorPoseidonInput()),
         withdrawalCredentials: [withdrawalCredentials],
         currentEpoch: computeEpochAt(beaconState.slot).toString(),
-        validatorIsZero: Array(VALIDATORS_COUNT).fill(true), // TODO: change this to false after renaming to nonZeroValidatorsMask
+        nonZeroValidatorLeavesMask: Array(VALIDATORS_COUNT).fill(false), // TODO: change this to false after renaming to nonZeroValidatorsMask
       },
     },
   ]);
@@ -166,7 +166,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
           ? VALIDATORS_COUNT
           : validators.length - j * VALIDATORS_COUNT;
 
-      let array = new Array(size).fill(false);
+      let array = new Array(size).fill(true);
 
       batch.push({
         index: j,
@@ -186,7 +186,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
           ],
           withdrawalCredentials: [withdrawalCredentials],
           currentEpoch: computeEpochAt(beaconState.slot).toString(),
-          validatorIsZero: array.concat(new Array(VALIDATORS_COUNT - size).fill(true)), // TODO: change this to false after renaming to nonZeroValidatorsMask
+          nonZeroValidatorLeavesMask: array.concat(new Array(VALIDATORS_COUNT - size).fill(false)),
         },
       });
     }

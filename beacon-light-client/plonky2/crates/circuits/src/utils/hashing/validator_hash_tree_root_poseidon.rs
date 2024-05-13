@@ -28,6 +28,7 @@ use crate::{
 use super::hash_tree_root_poseidon::hash_tree_root_poseidon;
 
 #[derive(Clone, Debug, TargetPrimitive, SetWitness)]
+#[serde(rename_all = "camelCase")]
 pub struct ValidatorTarget {
     #[serde(with = "serde_bool_array_to_hex_string")]
     pub pubkey: [BoolTarget; 384],

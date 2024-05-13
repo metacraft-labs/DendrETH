@@ -20,6 +20,7 @@ use plonky2::{
 use set_witness::SetWitness;
 
 // TODO: stick this in CircuitConf when it's possible
+// same as GoldilocksPoseidonConfig's D
 const D: usize = 2;
 
 pub trait Circuit {
@@ -32,6 +33,7 @@ pub trait Circuit {
     type Params;
 
     fn define(builder: &mut CircuitBuilder<Self::F, D>, params: Self::Params) -> Self::Targets;
+
     fn build(params: Self::Params) -> (Self::Targets, CircuitData<Self::F, Self::C, D>) {
         let mut builder = CircuitBuilder::new(Self::CIRCUIT_CONFIG);
         let targets = Self::define(&mut builder, params);
@@ -59,18 +61,22 @@ pub trait TargetsWithPublicInputs {
     type PublicInputs;
 
     fn read_public_inputs_target(public_inputs: &[Target]) -> Self::PublicInputsTarget;
+
     fn read_public_inputs<F: RichField>(public_inputs: &[F]) -> Self::PublicInputs;
+
     fn register_public_inputs<F: RichField + Extendable<D>, const D: usize>(
         &self,
         builder: &mut CircuitBuilder<F, D>,
     );
 }
 
+// TODO: delete this
 pub trait SerializableCircuit: Circuit {
     fn serialize(targets: &Self::Targets) -> IoResult<Vec<u8>>;
     fn deserialize(data: &mut Buffer) -> IoResult<Self::Targets>;
 }
 
 pub type CircuitInput<T> = <<T as Circuit>::Targets as SetWitness<<T as Circuit>::F>>::Input;
+
 pub type CircuitPublicInputs<T> =
     <<T as Circuit>::Targets as TargetsWithPublicInputs>::PublicInputs;

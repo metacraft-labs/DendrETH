@@ -1,5 +1,5 @@
 #![feature(generic_const_exprs)]
-use circuit::{array::Array, set_witness::SetWitness, Circuit, CircuitInput};
+use circuit::{set_witness::SetWitness, to_targets::ToTargets, Circuit, CircuitInput};
 use circuit_executables::{
     crud::{
         common::{
@@ -127,42 +127,38 @@ async fn async_main() -> Result<()> {
         )
     );
 
-    // let mut validator_balance_input: CircuitInput<
+    // let withdrawal_credentials_input: Array<bool, 256> =
+    //     Array(vec![false; 256].try_into().unwrap());
+
+    // let balance_input: Array<bool, 256> = Array(vec![true; 256].try_into().unwrap());
+    //
+    // let validator_target_input = ValidatorTargetPrimitive {
+    //     pubkey: Array(vec![false; 384].try_into().unwrap()),
+    //     withdrawal_credentials: withdrawal_credentials_input.clone(),
+    //     effective_balance: BigUint::from(1u64),
+    //     slashed: true,
+    //     activation_epoch: BigUint::from(2u64),
+    //     withdrawable_epoch: BigUint::from(3u64),
+    //     activation_eligibility_epoch: BigUint::from(4u64),
+    //     exit_epoch: BigUint::from(5u64),
+    // };
+
+    // let validator_balance_input: CircuitInput<
     //     WithdrawalCredentialsBalanceAggregatorFirstLevel<8, 1>,
-    // > = unsafe { std::mem::uninitialized() };
-
-    let withdrawal_credentials_input: Array<bool, 256> =
-        Array(vec![false; 256].try_into().unwrap());
-
-    let balance_input: Array<bool, 256> = Array(vec![true; 256].try_into().unwrap());
-
-    let validator_target_input = ValidatorTargetPrimitive {
-        pubkey: Array(vec![false; 384].try_into().unwrap()),
-        withdrawal_credentials: withdrawal_credentials_input.clone(),
-        effective_balance: BigUint::from(1u64),
-        slashed: true,
-        activation_epoch: BigUint::from(2u64),
-        withdrawable_epoch: BigUint::from(3u64),
-        activation_eligibility_epoch: BigUint::from(4u64),
-        exit_epoch: BigUint::from(5u64),
-    };
-
-    let validator_balance_input: CircuitInput<
-        WithdrawalCredentialsBalanceAggregatorFirstLevel<8, 1>,
-    > = CircuitInput::<WithdrawalCredentialsBalanceAggregatorFirstLevel<8, 1>> {
-        withdrawal_credentials: Array([withdrawal_credentials_input.clone()]),
-        non_zero_validator_leaves_mask: Array([true, false, true, true, true, true, true, true]),
-        validators: Array([(); 8].map(|_| validator_target_input.clone())),
-        balances: Array([(); 2].map(|_| balance_input.clone())),
-    };
-
-    let string = serde_json::to_string(&validator_balance_input)?;
-    println!("{string}");
-
-    let de: CircuitInput<WithdrawalCredentialsBalanceAggregatorFirstLevel<8, 1>> =
-        serde_json::from_str(&string)?;
-
-    println!("{de:?}");
+    // > = CircuitInput::<WithdrawalCredentialsBalanceAggregatorFirstLevel<8, 1>> {
+    //     withdrawal_credentials: Array([withdrawal_credentials_input.clone()]),
+    //     non_zero_validator_leaves_mask: Array([true, false, true, true, true, true, true, true]),
+    //     validators: Array([(); 8].map(|_| validator_target_input.clone())),
+    //     balances: Array([(); 2].map(|_| balance_input.clone())),
+    // };
+    //
+    // let string = serde_json::to_string(&validator_balance_input)?;
+    // println!("{string}");
+    //
+    // let de: CircuitInput<WithdrawalCredentialsBalanceAggregatorFirstLevel<8, 1>> =
+    //     serde_json::from_str(&string)?;
+    //
+    // println!("{de:?}");
 
     let start: Instant = Instant::now();
     process_queue(
@@ -322,27 +318,13 @@ where
 
     println!("Fetching validator balance input took: {:?}", elapsed);
 
-    // let pw = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
-    //     VALIDATORS_COUNT,
-    //     WITHDRAWAL_CREDENTIALS_COUNT,
-    // >::set_witness(targets, &validator_balance_input);
+    println!(
+        "witness input: {}\n",
+        serde_json::to_string(&validator_balance_input).unwrap()
+    );
+
     let mut pw = PartialWitness::new();
     targets.set_witness(&mut pw, &validator_balance_input);
-    let arr = Array([1, 2, 3]);
-    let asd = arr.len();
-
-    // let input = <ValidatorBalanceVerificationTargets<
-    //     VALIDATORS_COUNT,
-    //     WITHDRAWAL_CREDENTIALS_COUNT,
-    // > as SetWitness<GoldilocksField>>::Input {};
-    // targets.set_witness(&mut pw, &input);
-
-    // let input = CircuitInput::<
-    //     WithdrawalCredentialsBalanceAggregatorFirstLevel<
-    //         VALIDATORS_COUNT,
-    //         WITHDRAWAL_CREDENTIALS_COUNT,
-    //     >,
-    // > {};
 
     let proof = circuit_data.prove(pw)?;
 
@@ -351,7 +333,7 @@ where
         WITHDRAWAL_CREDENTIALS_COUNT,
     >::read_public_inputs(&proof.public_inputs);
 
-    println!("pis: {:?}", pis);
+    println!("pis: {}", serde_json::to_string(&pis).unwrap());
 
     match save_balance_proof::<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>(
         con,
