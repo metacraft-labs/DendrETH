@@ -189,8 +189,8 @@ mod tests {
     use num_bigint::BigUint;
     use plonky2::field::{goldilocks_field::GoldilocksField, types::Field64};
     use plonky2x::frontend::{
-        builder::{CircuitBuilder, DefaultBuilder},
-        uint::num::biguint::{BigUintTarget, CircuitBuilderBiguint},
+        builder::DefaultBuilder,
+        uint::num::biguint::CircuitBuilderBiguint,
         vars::{BoolVariable, Variable},
     };
 

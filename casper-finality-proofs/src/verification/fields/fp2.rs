@@ -21,7 +21,10 @@ use plonky2x::{
 
 use crate::verification::utils::native_bls::{Fp, Fp2};
 
-use super::fp::{deserialize, fp_is_zero, serialize, FpTarget, add_fp, fp_is_equal, mul_fp, negate_fp, range_check_fp, sub_fp, N,};
+use super::fp::{
+    add_fp, deserialize, fp_is_equal, fp_is_zero, mul_fp, negate_fp, range_check_fp, serialize,
+    sub_fp, FpTarget, N,
+};
 
 const E: usize = 2;
 pub type Fp2Target = [FpTarget; E];
@@ -214,122 +217,182 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D> for Fp2
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use plonky2::{
-//         iop::witness::PartialWitness,
-//         plonk::{
-//             circuit_builder::CircuitBuilder,
-//             circuit_data::CircuitConfig,
-//             config::{GenericConfig, PoseidonGoldilocksConfig},
-//         },
-//     };
-//     use plonky2_crypto::biguint::{CircuitBuilderBiguint, WitnessBigUint};
+#[cfg(test)]
+mod tests {
 
-//     use crate::{
-//         fp_plonky2::N,
-//         native::{Fp, Fp2},
-//     };
+    use itertools::Itertools;
+    use num_bigint::BigUint;
+    use plonky2::field::{goldilocks_field::GoldilocksField, types::Field64};
+    use plonky2x::frontend::{
+        builder::DefaultBuilder, uint::num::biguint::CircuitBuilderBiguint, vars::Variable,
+    };
 
-//     use super::{div_fp2, sub_fp2};
+    use crate::verification::{
+        fields::fp::N,
+        utils::native_bls::{Fp, Fp2},
+    };
 
-//     const D: usize = 2;
-//     type C = PoseidonGoldilocksConfig;
-//     type F = <C as GenericConfig<D>>::F;
+    use super::{div_fp2, sub_fp2, E};
 
-//     #[test]
-//     fn test_subtraction_circuit() {
-//         env_logger::init();
-//         let config = CircuitConfig::standard_recursion_config();
+    #[test]
+    fn test_subtraction_circuit() {
+        let mut builder = DefaultBuilder::new();
+        let c0_fp = Fp([
+            1115400077, 734036635, 2658976793, 3446373348, 3797461211, 2799729988, 1086715089,
+            1766116042, 3720719530, 4214563288, 2211874409, 287824937,
+        ]);
+        let c1_fp = Fp([
+            4070035387, 3598430679, 2371795623, 2598602036, 314293284, 3104159902, 3828298491,
+            1770882328, 1026148559, 2003704675, 804131021, 382850433,
+        ]);
+        let r0_fp = Fp([
+            3944640261, 440162500, 3767697757, 767512216, 3185360355, 1355179671, 2310853452,
+            2890628660, 2539693039, 3306767406, 473197245, 198293246,
+        ]);
+        let r1_fp = Fp([
+            920955909, 775806582, 2117093864, 286632291, 2248224021, 4208799968, 2272086148,
+            4009382258, 291945614, 2017047933, 1541154483, 220533456,
+        ]);
+        let a_fp2 = Fp2([c0_fp, c1_fp]);
+        let b_fp2 = Fp2([r0_fp, r1_fp]);
+        let expected_res = a_fp2 - b_fp2;
 
-//         let mut builder = CircuitBuilder::<F, D>::new(config);
-//         let c0 = builder.add_virtual_biguint_target(N);
-//         let c1 = builder.add_virtual_biguint_target(N);
-//         let r0 = builder.add_virtual_biguint_target(N);
-//         let r1 = builder.add_virtual_biguint_target(N);
-//         let a = [c0, c1];
-//         let b = [r0, r1];
-//         let res = sub_fp2(&mut builder, &a, &b);
+        let a_fp2_bigu = a_fp2.to_biguint();
+        let b_fp2_bigu = b_fp2.to_biguint();
 
-//         builder.print_gate_counts(0);
-//         let data = builder.build::<C>();
-//         let mut pw = PartialWitness::<F>::new();
+        let a_fp2_bigu_t = [
+            builder.api.constant_biguint(&a_fp2_bigu[0]),
+            builder.api.constant_biguint(&a_fp2_bigu[1]),
+        ];
+        let b_fp2_bigu_t = [
+            builder.api.constant_biguint(&b_fp2_bigu[0]),
+            builder.api.constant_biguint(&b_fp2_bigu[1]),
+        ];
 
-//         let c0_fp = Fp([
-//             1115400077, 734036635, 2658976793, 3446373348, 3797461211, 2799729988, 1086715089,
-//             1766116042, 3720719530, 4214563288, 2211874409, 287824937,
-//         ]);
-//         let c1_fp = Fp([
-//             4070035387, 3598430679, 2371795623, 2598602036, 314293284, 3104159902, 3828298491,
-//             1770882328, 1026148559, 2003704675, 804131021, 382850433,
-//         ]);
-//         let r0_fp = Fp([
-//             3944640261, 440162500, 3767697757, 767512216, 3185360355, 1355179671, 2310853452,
-//             2890628660, 2539693039, 3306767406, 473197245, 198293246,
-//         ]);
-//         let r1_fp = Fp([
-//             920955909, 775806582, 2117093864, 286632291, 2248224021, 4208799968, 2272086148,
-//             4009382258, 291945614, 2017047933, 1541154483, 220533456,
-//         ]);
-//         let a_fp2 = Fp2([c0_fp, c1_fp]);
-//         let b_fp2 = Fp2([r0_fp, r1_fp]);
-//         let res_fp2 = a_fp2 - b_fp2;
-//         pw.set_biguint_target(&a[0], &a_fp2.0[0].to_biguint());
-//         pw.set_biguint_target(&a[1], &a_fp2.0[1].to_biguint());
-//         pw.set_biguint_target(&b[0], &b_fp2.0[0].to_biguint());
-//         pw.set_biguint_target(&b[1], &b_fp2.0[1].to_biguint());
-//         pw.set_biguint_target(&res[0], &res_fp2.0[0].to_biguint());
-//         pw.set_biguint_target(&res[1], &res_fp2.0[1].to_biguint());
+        let res = sub_fp2(&mut builder, &a_fp2_bigu_t, &b_fp2_bigu_t);
 
-//         let proof = data.prove(pw).unwrap();
-//         data.verify(proof).unwrap();
-//     }
+        // Define your circuit.
+        let mut res_output: Vec<GoldilocksField> = Vec::new();
+        for i in 0..res.len() {
+            for j in 0..N {
+                builder.write(Variable(res[i].limbs[j].target));
+            }
+        }
 
-//     #[test]
-//     fn test_division_circuit() {
-//         env_logger::init();
-//         let config = CircuitConfig::standard_recursion_config();
+        // Build your circuit.
+        let circuit = builder.build();
 
-//         let mut builder = CircuitBuilder::<F, D>::new(config);
-//         let c0 = builder.add_virtual_biguint_target(N);
-//         let c1 = builder.add_virtual_biguint_target(N);
-//         let r0 = builder.add_virtual_biguint_target(N);
-//         let r1 = builder.add_virtual_biguint_target(N);
-//         let a = [c0, c1];
-//         let b = [r0, r1];
-//         let res = div_fp2(&mut builder, &a, &b);
-//         builder.print_gate_counts(0);
+        // Write to the circuit input.
+        let input = circuit.input();
 
-//         let data = builder.build::<C>();
-//         let mut pw = PartialWitness::<F>::new();
+        // Generate a proof.
+        let (proof, mut output) = circuit.prove(&input);
 
-//         let c0_fp = Fp([
-//             1115400077, 734036635, 2658976793, 3446373348, 3797461211, 2799729988, 1086715089,
-//             1766116042, 3720719530, 4214563288, 2211874409, 287824937,
-//         ]);
-//         let c1_fp = Fp([
-//             4070035387, 3598430679, 2371795623, 2598602036, 314293284, 3104159902, 3828298491,
-//             1770882328, 1026148559, 2003704675, 804131021, 382850433,
-//         ]);
-//         let r0_fp = Fp([
-//             3944640261, 440162500, 3767697757, 767512216, 3185360355, 1355179671, 2310853452,
-//             2890628660, 2539693039, 3306767406, 473197245, 198293246,
-//         ]);
-//         let r1_fp = Fp([
-//             920955909, 775806582, 2117093864, 286632291, 2248224021, 4208799968, 2272086148,
-//             4009382258, 291945614, 2017047933, 1541154483, 220533456,
-//         ]);
-//         let a_fp2 = Fp2([c0_fp, c1_fp]);
-//         let b_fp2 = Fp2([r0_fp, r1_fp]);
-//         let res_fp2 = a_fp2 / b_fp2;
-//         pw.set_biguint_target(&a[0], &a_fp2.0[0].to_biguint());
-//         pw.set_biguint_target(&a[1], &a_fp2.0[1].to_biguint());
-//         pw.set_biguint_target(&b[0], &b_fp2.0[0].to_biguint());
-//         pw.set_biguint_target(&b[1], &b_fp2.0[1].to_biguint());
-//         pw.set_biguint_target(&res[0], &res_fp2.0[0].to_biguint());
-//         pw.set_biguint_target(&res[1], &res_fp2.0[1].to_biguint());
+        // Verify proof.
+        circuit.verify(&proof, &input, &output);
 
-//         let proof = data.prove(pw).unwrap();
-//         data.verify(proof).unwrap();
-//     }
-// }
+        // Read output.
+        for _ in 0..res.len() {
+            for _ in 0..N {
+                res_output.push(output.read::<Variable>())
+            }
+        }
+
+        let mut biguint_res: Vec<BigUint> = Vec::new();
+        for i in 0..E {
+            biguint_res.push(BigUint::new(
+                res_output[(i * 12)..(i * 12) + 12]
+                    .iter()
+                    .map(|f| (f.0 % GoldilocksField::ORDER) as u32)
+                    .collect_vec(),
+            ));
+        }
+
+        let expected_res = expected_res.to_biguint();
+
+        for i in 0..E {
+            assert_eq!(expected_res[i], biguint_res[i]);
+        }
+    }
+
+    #[test]
+    fn test_division_circuit() {
+        let mut builder = DefaultBuilder::new();
+        let c0_fp = Fp([
+            1115400077, 734036635, 2658976793, 3446373348, 3797461211, 2799729988, 1086715089,
+            1766116042, 3720719530, 4214563288, 2211874409, 287824937,
+        ]);
+        let c1_fp = Fp([
+            4070035387, 3598430679, 2371795623, 2598602036, 314293284, 3104159902, 3828298491,
+            1770882328, 1026148559, 2003704675, 804131021, 382850433,
+        ]);
+        let r0_fp = Fp([
+            3944640261, 440162500, 3767697757, 767512216, 3185360355, 1355179671, 2310853452,
+            2890628660, 2539693039, 3306767406, 473197245, 198293246,
+        ]);
+        let r1_fp = Fp([
+            920955909, 775806582, 2117093864, 286632291, 2248224021, 4208799968, 2272086148,
+            4009382258, 291945614, 2017047933, 1541154483, 220533456,
+        ]);
+        let a_fp2 = Fp2([c0_fp, c1_fp]);
+        let b_fp2 = Fp2([r0_fp, r1_fp]);
+        let expected_res = a_fp2 / b_fp2;
+
+        let a_fp2_bigu = a_fp2.to_biguint();
+        let b_fp2_bigu = b_fp2.to_biguint();
+
+        let a_fp2_bigu_t = [
+            builder.api.constant_biguint(&a_fp2_bigu[0]),
+            builder.api.constant_biguint(&a_fp2_bigu[1]),
+        ];
+        let b_fp2_bigu_t = [
+            builder.api.constant_biguint(&b_fp2_bigu[0]),
+            builder.api.constant_biguint(&b_fp2_bigu[1]),
+        ];
+
+        let res = div_fp2(&mut builder, &a_fp2_bigu_t, &b_fp2_bigu_t);
+
+        // Define your circuit.
+        let mut res_output: Vec<GoldilocksField> = Vec::new();
+        for i in 0..res.len() {
+            for j in 0..N {
+                builder.write(Variable(res[i].limbs[j].target));
+            }
+        }
+
+        // Build your circuit.
+        let circuit = builder.build();
+
+        // Write to the circuit input.
+        let input = circuit.input();
+
+        // Generate a proof.
+        let (proof, mut output) = circuit.prove(&input);
+
+        // Verify proof.
+        circuit.verify(&proof, &input, &output);
+
+        // Read output.
+        for _ in 0..res.len() {
+            for _ in 0..N {
+                res_output.push(output.read::<Variable>())
+            }
+        }
+
+        let mut biguint_res: Vec<BigUint> = Vec::new();
+        for i in 0..E {
+            biguint_res.push(BigUint::new(
+                res_output[(i * 12)..(i * 12) + 12]
+                    .iter()
+                    .map(|f| (f.0 % GoldilocksField::ORDER) as u32)
+                    .collect_vec(),
+            ));
+        }
+
+        let expected_res = expected_res.to_biguint();
+
+        for i in 0..E {
+            assert_eq!(expected_res[i], biguint_res[i]);
+        }
+    }
+}
