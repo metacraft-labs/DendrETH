@@ -190,6 +190,19 @@ pub fn hash_tree_root_validator_poseidon_new<F: RichField + Extendable<D>, const
     }
 }
 
+pub fn hash_validator_poseidon_or_zeroes<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    validator: &ValidatorTarget,
+    condition: BoolTarget,
+) -> HashOutTarget {
+    let validator_hash = hash_validator_poseidon(builder, validator);
+    HashOutTarget {
+        elements: validator_hash
+            .elements
+            .map(|element| builder.mul(condition.target, element)),
+    }
+}
+
 pub fn hash_validator_poseidon<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     validator: &ValidatorTarget,

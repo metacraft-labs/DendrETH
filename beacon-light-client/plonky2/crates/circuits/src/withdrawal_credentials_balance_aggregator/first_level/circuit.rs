@@ -4,6 +4,7 @@ use crate::utils::hashing::hash_tree_root::hash_tree_root_new;
 use crate::utils::hashing::hash_tree_root_poseidon::hash_tree_root_poseidon_new;
 use crate::utils::hashing::validator_hash_tree_root_poseidon::hash_poseidon;
 use crate::utils::hashing::validator_hash_tree_root_poseidon::hash_validator_poseidon;
+use crate::utils::hashing::validator_hash_tree_root_poseidon::hash_validator_poseidon_or_zeroes;
 use circuit::add_virtual_target::AddVirtualTarget;
 use circuit::public_inputs::field_reader::PublicInputsFieldReader;
 use circuit::public_inputs::target_reader::PublicInputsTargetReader;
@@ -151,12 +152,7 @@ where
             .iter()
             .zip(non_zero_validator_leaves_mask)
             .map(|(validator, is_not_zero)| {
-                let hash = hash_validator_poseidon(builder, &validator);
-                let elements = hash
-                    .elements
-                    .map(|element| builder.mul(is_not_zero.target, element));
-
-                HashOutTarget { elements }
+                hash_validator_poseidon_or_zeroes(builder, &validator, is_not_zero)
             })
             .collect_vec();
 
