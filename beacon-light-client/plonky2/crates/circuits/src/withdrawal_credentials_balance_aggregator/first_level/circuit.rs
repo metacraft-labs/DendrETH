@@ -1,5 +1,6 @@
 use crate::serializers::serde_bool_array_to_hex_string;
 use crate::serializers::serde_bool_array_to_hex_string_nested;
+use crate::utils::hashing::hash_tree_root::hash_tree_root_new;
 use crate::utils::hashing::hash_tree_root_poseidon::hash_tree_root_poseidon_new;
 use crate::utils::hashing::validator_hash_tree_root_poseidon::hash_poseidon;
 use crate::utils::hashing::validator_hash_tree_root_poseidon::hash_validator_poseidon;
@@ -132,30 +133,19 @@ where
             panic!("validators_len must be a power of two");
         }
 
-        let balances_len = VALIDATORS_COUNT / 4;
-
         let validators =
             <[ValidatorTarget; VALIDATORS_COUNT] as AddVirtualTarget>::add_virtual_target(builder);
-
         let non_zero_validator_leaves_mask =
-            [(); VALIDATORS_COUNT].map(|_| builder.add_virtual_bool_target_safe());
-
-        let balances_leaves = [(); VALIDATORS_COUNT / 4].map(|_| create_bool_target_array(builder));
-
+            <[BoolTarget; VALIDATORS_COUNT] as AddVirtualTarget>::add_virtual_target(builder);
+        let balances_leaves =
+            <[Sha256Target; VALIDATORS_COUNT / 4] as AddVirtualTarget>::add_virtual_target(builder);
         let withdrawal_credentials =
-            [(); WITHDRAWAL_CREDENTIALS_COUNT].map(|_| create_bool_target_array(builder));
-
-        let current_epoch = builder.add_virtual_biguint_target(2);
-
-        let balances_hash_tree_root_targets = hash_tree_root(builder, balances_len);
-
-        for i in 0..balances_len {
-            connect_bool_arrays(
+            <[Sha256Target; WITHDRAWAL_CREDENTIALS_COUNT] as AddVirtualTarget>::add_virtual_target(
                 builder,
-                &balances_hash_tree_root_targets.leaves[i],
-                &balances_leaves[i],
             );
-        }
+        let current_epoch = <BigUintTarget as AddVirtualTarget>::add_virtual_target(builder);
+
+        let balances_hash_tree_root_poseidon = hash_tree_root_new(builder, &balances_leaves);
 
         let validators_leaves = validators
             .iter()
@@ -174,11 +164,8 @@ where
             hash_tree_root_poseidon_new(builder, &validators_leaves);
 
         let mut sum = builder.zero_biguint();
-
         let mut number_of_non_activated_validators = builder.zero();
-
         let mut number_of_active_validators = builder.zero();
-
         let mut number_of_exitted_validators = builder.zero();
 
         for i in 0..VALIDATORS_COUNT {
@@ -234,7 +221,7 @@ where
         Self::Targets {
             non_zero_validator_leaves_mask,
             range_total_value: sum,
-            range_balances_root: balances_hash_tree_root_targets.hash_tree_root,
+            range_balances_root: balances_hash_tree_root_poseidon,
             range_validator_commitment: validators_hash_tree_root_poseidon,
             validators,
             balances: balances_leaves.try_into().unwrap(),

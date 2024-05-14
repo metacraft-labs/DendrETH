@@ -3,13 +3,57 @@ use plonky2::{
     plonk::circuit_builder::CircuitBuilder,
 };
 
-use crate::utils::utils::{create_bool_target_array, ETH_SHA256_BIT_SIZE};
+use crate::{
+    common_targets::Sha256Target,
+    utils::utils::{create_bool_target_array, ETH_SHA256_BIT_SIZE},
+};
 
 use super::sha256::{make_circuits, Sha256Targets};
 
 pub struct HashTreeRootTargets {
     pub leaves: Vec<[BoolTarget; ETH_SHA256_BIT_SIZE]>,
     pub hash_tree_root: [BoolTarget; ETH_SHA256_BIT_SIZE],
+}
+
+pub fn hash_tree_root_new<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    leaves: &[Sha256Target],
+) -> Sha256Target {
+    assert!(leaves.len().is_power_of_two());
+
+    let mut hashers: Vec<Sha256Targets> = Vec::new();
+
+    for i in 0..(leaves.len() / 2) {
+        hashers.push(make_circuits(builder, 2 * ETH_SHA256_BIT_SIZE as u64));
+
+        for j in 0..ETH_SHA256_BIT_SIZE {
+            builder.connect(hashers[i].message[j].target, leaves[i * 2][j].target);
+            builder.connect(
+                hashers[i].message[j + 256].target,
+                leaves[i * 2 + 1][j].target,
+            );
+        }
+    }
+
+    let mut k = 0;
+    for i in leaves.len() / 2..leaves.len() - 1 {
+        hashers.push(make_circuits(builder, 2 * ETH_SHA256_BIT_SIZE as u64));
+
+        for j in 0..ETH_SHA256_BIT_SIZE {
+            builder.connect(
+                hashers[i].message[j].target,
+                hashers[k * 2].digest[j].target,
+            );
+            builder.connect(
+                hashers[i].message[j + ETH_SHA256_BIT_SIZE].target,
+                hashers[k * 2 + 1].digest[j].target,
+            );
+        }
+
+        k += 1;
+    }
+
+    hashers[leaves.len() - 2].digest.clone().try_into().unwrap()
 }
 
 pub fn hash_tree_root<F: RichField + Extendable<D>, const D: usize>(
