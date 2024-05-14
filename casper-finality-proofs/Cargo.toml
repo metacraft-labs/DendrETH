@@ -55,3 +55,14 @@ lighthouse_cached_tree_hash = { git = "https://github.com/sigp/lighthouse", tag 
 snap = "1.1.0"
 num-bigint = "0.4.4"
 num-iter = "0.1.45"
+
+[dev-dependencies]
+criterion = "0.5.1"
+
+[[bench]]
+name = "g1_ecp_aggregation_benchmark"
+harness = false
+
+[[bench]]
+name = "g1_ecp_aggregation_starky_benchmark"
+harness = false

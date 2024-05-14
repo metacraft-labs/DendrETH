@@ -31,7 +31,7 @@ type MlStark = MillerLoopStark<F, D>;
 type FeStark = FinalExponentiateStark<F, D>;
 type ECAggStark = ECCAggStark<F, D>;
 
-pub fn vreify_pubkeys_aggregation(
+pub fn verify_pubkeys_aggregation(
     points: Vec<[Fp; 2]>,
     res: [Fp; 2],
     bits: Vec<bool>,
@@ -254,6 +254,21 @@ pub fn verify_proofs(
     }
 }
 
+fn hex_string_to_bits(hex_string: &str) -> Option<Vec<bool>> {
+    let mut result = Vec::new();
+    for hex_char in hex_string.chars() {
+        let nibble = match hex_char.to_digit(16) {
+            Some(nibble) => nibble as u8,
+            None => return None, // Invalid hexadecimal character
+        };
+        for i in (0..4).rev() {
+            let bit = (nibble >> i) & 1 == 1;
+            result.push(bit);
+        }
+    }
+    Some(result)
+}
+
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
@@ -268,9 +283,14 @@ mod tests {
     };
     use plonky2x::frontend::uint::num::biguint::CircuitBuilderBiguint;
 
-    use super::calc_ell_coeffs_and_generate_g2_point;
+    use super::{
+        calc_ell_coeffs_and_generate_g2_point, hex_string_to_bits, verify_pubkeys_aggregation,
+    };
     use crate::verification::{
-        curves::{g1::PointG1Target, g2::PointG2Target},
+        curves::{
+            g1::{g1_ecc_aggregate, PointG1Target},
+            g2::PointG2Target,
+        },
         proofs::miller_loop::MillerLoopStark,
         utils::native_bls::{Fp, Fp2},
     };
@@ -367,5 +387,55 @@ mod tests {
     }
 
     #[test]
-    fn test_pubkeys_aggregation() {}
+    fn test_pubkeys_aggregation() {
+        let circuit_config =
+            plonky2::plonk::circuit_data::CircuitConfig::standard_recursion_config();
+        let mut builder =
+            plonky2::plonk::circuit_builder::CircuitBuilder::<F, D>::new(circuit_config);
+
+        let a_bigu = BigUint::from_str(
+                "1216495682195235861952885506871698490232894470117269383940381148575524314493849307811227440691167647909822763414941"
+            ).unwrap();
+        let b_bigu = BigUint::from_str(
+                "2153848155426317245700560287567131132765685008362732985860101000686875894603366983854567186180519945327668975076337"
+            ).unwrap();
+
+        let a_fp = Fp::get_fp_from_biguint(a_bigu.clone());
+        let b_fp = Fp::get_fp_from_biguint(b_bigu.clone());
+
+        let a_bigu_t = builder.constant_biguint(&a_bigu);
+        let b_bigu_t = builder.constant_biguint(&b_bigu);
+
+        // 0xfffffffffffffffffffffffffffffbfffffffffffffffffffffffffffffffffffffff7feffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+        // let mut bits = Vec::new();
+        // for num in hex_string_to_bits("0xfffffffffffffffffffffffffffffbfffffffffffffffffffffffffffffffffffffff7feffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap() {
+        //     for j in 0..8 {
+        //         bits.push((num >> j & 1) == 1);
+        //     }
+        // }
+        let ec_proof = verify_pubkeys_aggregation(
+            vec![[a_fp, b_fp], [a_fp, b_fp]],
+            [a_fp, b_fp],
+            vec![true, false],
+        );
+        let point = [a_bigu_t, b_bigu_t];
+        g1_ecc_aggregate(&mut builder, point.clone(), point);
+
+        // If we are going to check the pubkey ec point
+        // let ec_proof_pub_inputs = ec_proof.0.public_inputs;
+
+        // //
+        // let g1_pk_point_x_input = builder.constant_biguint(&BigUint::new(
+        //     ec_proof_pub_inputs[0..12]
+        //         .iter()
+        //         .map(|x| x.0 as u32)
+        //         .collect(),
+        // ));
+        // let g1_pk_point_y_input = builder.constant_biguint(&BigUint::new(
+        //     ec_proof_pub_inputs[12..24]
+        //         .iter()
+        //         .map(|x| x.0 as u32)
+        //         .collect(),
+        // ));
+    }
 }
