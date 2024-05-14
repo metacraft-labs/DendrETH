@@ -1,5 +1,6 @@
 #![feature(associated_type_defaults)]
 
+pub mod add_virtual_target;
 pub mod array;
 pub mod public_inputs;
 pub mod set_witness;

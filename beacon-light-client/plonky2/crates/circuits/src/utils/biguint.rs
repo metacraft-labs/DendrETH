@@ -1,5 +1,6 @@
 use core::marker::PhantomData;
 
+use circuit::add_virtual_target::AddVirtualTarget;
 use circuit::public_inputs::field_reader::PublicInputsReadable;
 use circuit::public_inputs::target_reader::PublicInputsTargetReadable;
 use circuit::set_witness::SetWitness;
@@ -361,6 +362,14 @@ impl PublicInputsTargetReadable for BigUintTarget {
     fn from_targets(targets: &[Target]) -> Self {
         assert_eq!(targets.len(), Self::get_size());
         biguint_target_from_limbs(targets)
+    }
+}
+
+impl AddVirtualTarget for BigUintTarget {
+    fn add_virtual_target<F: RichField + Extendable<D>, const D: usize>(
+        builder: &mut CircuitBuilder<F, D>,
+    ) -> Self {
+        builder.add_virtual_biguint_target(2)
     }
 }
 

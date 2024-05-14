@@ -12,6 +12,44 @@ pub struct HashTreeRootPoseidonTargets {
     pub hash_tree_root: HashOutTarget,
 }
 
+pub fn hash_tree_root_poseidon_new<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    leaves: &[HashOutTarget],
+) -> HashOutTarget {
+    assert!(leaves.len().is_power_of_two());
+
+    let mut hashers: Vec<HashOutTarget> = Vec::new();
+    for i in 0..(leaves.len() / 2) {
+        let hash_target = builder.hash_n_to_hash_no_pad::<PoseidonHash>(
+            leaves[i * 2]
+                .elements
+                .iter()
+                .copied()
+                .chain(leaves[i * 2 + 1].elements.iter().copied())
+                .collect(),
+        );
+        hashers.push(hash_target);
+    }
+
+    let mut k = 0;
+    for _ in leaves.len() / 2..leaves.len() - 1 {
+        hashers.push(
+            builder.hash_n_to_hash_no_pad::<PoseidonHash>(
+                hashers[k * 2]
+                    .elements
+                    .iter()
+                    .copied()
+                    .chain(hashers[k * 2 + 1].elements.iter().copied())
+                    .collect(),
+            ),
+        );
+
+        k += 1;
+    }
+
+    hashers[leaves.len() - 2]
+}
+
 pub fn hash_tree_root_poseidon<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     leaves_len: usize,

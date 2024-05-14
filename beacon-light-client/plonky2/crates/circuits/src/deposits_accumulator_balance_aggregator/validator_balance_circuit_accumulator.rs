@@ -21,7 +21,9 @@ use crate::{
             is_valid_merkle_branch::{
                 assert_merkle_proof_is_valid, restore_merkle_root, MerkleBranch, Sha256,
             },
-            validator_hash_tree_root_poseidon::ValidatorTarget,
+            validator_hash_tree_root_poseidon::{
+                hash_poseidon, hash_validator_poseidon, ValidatorTarget,
+            },
         },
         utils::{biguint_to_le_bits_target, create_bool_target_array, create_sha256_merkle_proof},
     },
@@ -294,75 +296,6 @@ fn read_input<F: RichField + Extendable<D>, const D: usize>(
     }
 }
 
-fn hash_poseidon_validator<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    validator: &ValidatorTarget,
-) -> HashOutTarget {
-    let leaves = vec![
-        builder.hash_n_to_hash_no_pad::<PoseidonHash>(
-            validator.pubkey.iter().map(|x| x.target).collect(),
-        ),
-        builder.hash_n_to_hash_no_pad::<PoseidonHash>(
-            validator
-                .withdrawal_credentials
-                .iter()
-                .map(|x| x.target)
-                .collect(),
-        ),
-        builder.hash_n_to_hash_no_pad::<PoseidonHash>(
-            validator
-                .effective_balance
-                .limbs
-                .iter()
-                .map(|x| x.0)
-                .collect(),
-        ),
-        builder.hash_n_to_hash_no_pad::<PoseidonHash>(vec![validator.slashed.target]),
-        builder.hash_n_to_hash_no_pad::<PoseidonHash>(
-            validator
-                .activation_eligibility_epoch
-                .limbs
-                .iter()
-                .map(|x| x.0)
-                .collect(),
-        ),
-        builder.hash_n_to_hash_no_pad::<PoseidonHash>(
-            validator
-                .activation_epoch
-                .limbs
-                .iter()
-                .map(|x| x.0)
-                .collect(),
-        ),
-        builder.hash_n_to_hash_no_pad::<PoseidonHash>(
-            validator.exit_epoch.limbs.iter().map(|x| x.0).collect(),
-        ),
-        builder.hash_n_to_hash_no_pad::<PoseidonHash>(
-            validator
-                .withdrawable_epoch
-                .limbs
-                .iter()
-                .map(|x| x.0)
-                .collect(),
-        ),
-    ];
-
-    let hash_tree_root_poseidon = hash_tree_root_poseidon(builder, leaves.len());
-
-    for i in 0..leaves.len() {
-        builder.connect_hashes(leaves[i], hash_tree_root_poseidon.leaves[i]);
-    }
-
-    hash_tree_root_poseidon.hash_tree_root
-}
-
-fn hash_poseidon<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    targets: Vec<Target>,
-) -> HashOutTarget {
-    builder.hash_n_to_hash_no_pad::<PoseidonHash>(targets)
-}
-
 fn calc_validators_commitment<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     validators: &[ValidatorTarget],
@@ -373,7 +306,7 @@ fn calc_validators_commitment<F: RichField + Extendable<D>, const D: usize>(
         .zip(non_zero_validator_leaves_mask)
         .map(|(validator, is_non_zero_leaf)| {
             HashOutTarget::from_vec(
-                hash_poseidon_validator(builder, validator)
+                hash_validator_poseidon(builder, validator)
                     .elements
                     .iter()
                     .map(|&element| builder.mul(element, is_non_zero_leaf.target))

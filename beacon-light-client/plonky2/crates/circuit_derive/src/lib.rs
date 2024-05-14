@@ -79,6 +79,41 @@ pub fn derive_target_primitive(input: proc_macro::TokenStream) -> proc_macro::To
     .into()
 }
 
+#[proc_macro_derive(AddVirtualTarget)]
+pub fn derive_add_virtual_target(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input_ast: DeriveInput = parse_macro_input!(input as DeriveInput);
+
+    let syn::Data::Struct(ref data) = input_ast.data else {
+        panic!("PublicInputsReadable is implemented only for structs");
+    };
+
+    let fields = data.fields.iter().cloned().collect_vec();
+
+    let (impl_generics, type_generics, where_clause) = input_ast.generics.split_for_impl();
+
+    let ident = &input_ast.ident;
+
+    let add_virtual_targets = fields.iter().map(|field| {
+        let field_name = &field.ident;
+        let field_type = &field.ty;
+        quote!(let #field_name = <#field_type as AddVirtualTarget>::add_virtual_target(builder);)
+    });
+
+    let return_result = gen_shorthand_struct_initialization(&ident, &input_ast.generics, &fields);
+
+    quote! {
+        impl #impl_generics AddVirtualTarget for #ident #type_generics #where_clause {
+            fn add_virtual_target<F: RichField + Extendable<D>, const D: usize>(
+                builder: &mut CircuitBuilder<F, D>,
+            ) -> Self {
+                #(#add_virtual_targets)*
+                #return_result
+            }
+        }
+    }
+    .into()
+}
+
 #[proc_macro_derive(PublicInputsReadable, attributes(serde))]
 pub fn derive_public_inputs_readable(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input_ast: DeriveInput = parse_macro_input!(input as DeriveInput);
@@ -241,9 +276,8 @@ pub fn derive_circuit_target(input: proc_macro::TokenStream) -> proc_macro::Toke
     let input_ast: DeriveInput = parse_macro_input!(input as DeriveInput);
 
     let (impl_generics, type_generics, where_clause) = input_ast.generics.split_for_impl();
-    // input_ast.generics.params.push(syn::GenericParam::Type())
-    let type_param_tokens = quote!(F: RichField);
-    let type_param = syn::parse::<TypeParam>(type_param_tokens.into()).unwrap();
+
+    let type_param = syn::parse::<TypeParam>(quote!(F: RichField).into()).unwrap();
 
     let mut modified_generics = input_ast.generics.clone();
     modified_generics

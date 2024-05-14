@@ -1,5 +1,9 @@
 use crate::serializers::serde_bool_array_to_hex_string;
 use crate::serializers::serde_bool_array_to_hex_string_nested;
+use crate::utils::hashing::hash_tree_root_poseidon::hash_tree_root_poseidon_new;
+use crate::utils::hashing::validator_hash_tree_root_poseidon::hash_poseidon;
+use crate::utils::hashing::validator_hash_tree_root_poseidon::hash_validator_poseidon;
+use circuit::add_virtual_target::AddVirtualTarget;
 use circuit::public_inputs::field_reader::PublicInputsFieldReader;
 use circuit::public_inputs::target_reader::PublicInputsTargetReader;
 use circuit::set_witness::SetWitness;
@@ -8,6 +12,7 @@ use circuit::to_targets::ToTargets;
 use circuit::Circuit;
 use circuit::TargetsWithPublicInputs;
 use circuit_derive::CircuitTarget;
+use itertools::Itertools;
 use plonky2::field::extension::Extendable;
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::witness::PartialWitness;
@@ -50,7 +55,7 @@ pub struct ValidatorBalanceVerificationTargets<
 > where
     [(); VALIDATORS_COUNT / 4]:,
 {
-    #[target(in, out)]
+    #[target(in)]
     pub validators: [ValidatorTarget; VALIDATORS_COUNT],
 
     #[target(in)]
@@ -129,8 +134,8 @@ where
 
         let balances_len = VALIDATORS_COUNT / 4;
 
-        let validators_leaves =
-            [(); VALIDATORS_COUNT].map(|_| hash_tree_root_validator_poseidon(builder));
+        let validators =
+            <[ValidatorTarget; VALIDATORS_COUNT] as AddVirtualTarget>::add_virtual_target(builder);
 
         let non_zero_validator_leaves_mask =
             [(); VALIDATORS_COUNT].map(|_| builder.add_virtual_bool_target_safe());
@@ -152,32 +157,21 @@ where
             );
         }
 
-        let hash_tree_root_poseidon_targets = hash_tree_root_poseidon(builder, VALIDATORS_COUNT);
+        let validators_leaves = validators
+            .iter()
+            .zip(non_zero_validator_leaves_mask)
+            .map(|(validator, is_not_zero)| {
+                let hash = hash_validator_poseidon(builder, &validator);
+                let elements = hash
+                    .elements
+                    .map(|element| builder.mul(is_not_zero.target, element));
 
-        let zero_hash = builder.zero();
+                HashOutTarget { elements }
+            })
+            .collect_vec();
 
-        for i in 0..VALIDATORS_COUNT {
-            let mut elements = [zero_hash; 4];
-
-            for (j, _) in validators_leaves[i]
-                .hash_tree_root
-                .elements
-                .iter()
-                .enumerate()
-            {
-                // TODO: use multiplication
-                elements[j] = builder._if(
-                    non_zero_validator_leaves_mask[i],
-                    validators_leaves[i].hash_tree_root.elements[j],
-                    zero_hash,
-                );
-            }
-
-            builder.connect_hashes(
-                hash_tree_root_poseidon_targets.leaves[i],
-                HashOutTarget { elements },
-            );
-        }
+        let validators_hash_tree_root_poseidon =
+            hash_tree_root_poseidon_new(builder, &validators_leaves);
 
         let mut sum = builder.zero_biguint();
 
@@ -193,7 +187,7 @@ where
             for j in 0..WITHDRAWAL_CREDENTIALS_COUNT {
                 let is_equal_inner = bool_arrays_are_equal(
                     builder,
-                    &validators_leaves[i].validator.withdrawal_credentials,
+                    &validators[i].withdrawal_credentials,
                     &withdrawal_credentials[j],
                 );
 
@@ -210,9 +204,9 @@ where
             let (is_non_activated_validator, is_valid_validator, is_exited_validator) =
                 get_validator_status(
                     builder,
-                    &validators_leaves[i].validator.activation_epoch,
+                    &validators[i].activation_epoch,
                     &current_epoch,
-                    &validators_leaves[i].validator.exit_epoch,
+                    &validators[i].exit_epoch,
                 );
 
             let will_be_counted = builder.and(is_equal, is_valid_validator);
@@ -241,8 +235,8 @@ where
             non_zero_validator_leaves_mask,
             range_total_value: sum,
             range_balances_root: balances_hash_tree_root_targets.hash_tree_root,
-            range_validator_commitment: hash_tree_root_poseidon_targets.hash_tree_root,
-            validators: validators_leaves.map(|v| v.validator.clone()),
+            range_validator_commitment: validators_hash_tree_root_poseidon,
+            validators,
             balances: balances_leaves.try_into().unwrap(),
             withdrawal_credentials,
             current_epoch,
