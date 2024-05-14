@@ -7,7 +7,7 @@ use circuit::target_primitive::TargetPrimitive;
 use circuit::to_targets::ToTargets;
 use circuit::Circuit;
 use circuit::TargetsWithPublicInputs;
-use circuit_proc_macros::CircuitTarget;
+use circuit_derive::CircuitTarget;
 use plonky2::field::extension::Extendable;
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::witness::PartialWitness;
@@ -50,7 +50,7 @@ pub struct ValidatorBalanceVerificationTargets<
 > where
     [(); VALIDATORS_COUNT / 4]:,
 {
-    #[target(in)]
+    #[target(in, out)]
     pub validators: [ValidatorTarget; VALIDATORS_COUNT],
 
     #[target(in)]

@@ -73,7 +73,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "circuit_proc_macros"
+name = "circuit_derive"
 version = "0.1.0"
 dependencies = [
  "circuit",
@@ -90,7 +90,7 @@ dependencies = [
  "ahash",
  "anyhow",
  "circuit",
- "circuit_proc_macros",
+ "circuit_derive",
  "futures-lite",
  "hex",
  "itertools 0.10.5",

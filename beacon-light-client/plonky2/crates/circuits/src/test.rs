@@ -5,7 +5,7 @@ use circuit::target_primitive::TargetPrimitive;
 use circuit::to_targets::ToTargets;
 use circuit::Circuit;
 use circuit::TargetsWithPublicInputs;
-use circuit_proc_macros::CircuitTarget;
+use circuit_derive::CircuitTarget;
 use itertools::Itertools;
 use plonky2::field::extension::Extendable;
 use plonky2::field::goldilocks_field::GoldilocksField;

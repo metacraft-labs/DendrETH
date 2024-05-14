@@ -891,6 +891,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "circuit_derive"
+version = "0.1.0"
+dependencies = [
+ "circuit",
+ "itertools 0.10.5",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.60",
+]
+
+[[package]]
 name = "circuit_executables"
 version = "0.1.0"
 dependencies = [
@@ -935,24 +946,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "circuit_proc_macros"
-version = "0.1.0"
-dependencies = [
- "circuit",
- "itertools 0.10.5",
- "proc-macro2",
- "quote",
- "syn 2.0.60",
-]
-
-[[package]]
 name = "circuits"
 version = "0.1.0"
 dependencies = [
  "ahash",
  "anyhow",
  "circuit",
- "circuit_proc_macros",
+ "circuit_derive",
  "futures-lite 1.13.0",
  "hex",
  "itertools 0.10.5",

@@ -1,7 +1,13 @@
 use crate::serializers::serde_bool_array_to_hex_string;
+use circuit::public_inputs::field_reader::PublicInputsFieldReader;
+use circuit::public_inputs::field_reader::PublicInputsReadable;
+use circuit::public_inputs::target_reader::PublicInputsTargetReadable;
+use circuit::public_inputs::target_reader::PublicInputsTargetReader;
 use circuit::set_witness::SetWitness;
 use circuit::target_primitive::TargetPrimitive;
-use circuit_proc_macros::{SetWitness, TargetPrimitive};
+use circuit::to_targets::ToTargets;
+use circuit_derive::{PublicInputsReadable, SetWitness, TargetPrimitive};
+use plonky2::iop::target::Target;
 use plonky2::iop::witness::PartialWitness;
 use plonky2::{
     field::extension::Extendable,
@@ -27,7 +33,7 @@ use crate::{
 
 use super::hash_tree_root_poseidon::hash_tree_root_poseidon;
 
-#[derive(Clone, Debug, TargetPrimitive, SetWitness)]
+#[derive(Clone, Debug, TargetPrimitive, SetWitness, PublicInputsReadable)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidatorTarget {
     #[serde(with = "serde_bool_array_to_hex_string")]

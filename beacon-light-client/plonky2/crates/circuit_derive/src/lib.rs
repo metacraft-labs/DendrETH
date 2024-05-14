@@ -79,87 +79,107 @@ pub fn derive_target_primitive(input: proc_macro::TokenStream) -> proc_macro::To
     .into()
 }
 
-// #[proc_macro_derive(PublicInputsReadable, attributes(serde))]
-// pub fn derive_set_public_inputs_readable(
-//     input: proc_macro::TokenStream,
-// ) -> proc_macro::TokenStream {
-//     let input_ast: DeriveInput = parse_macro_input!(input as DeriveInput);
-//
-//     let syn::Data::Struct(ref data) = input_ast.data else {
-//         panic!("PublicInputsReadable is implemented only for structs");
-//     };
-//
-//     let fields = data.fields.iter().cloned().collect_vec();
-//
-//     let (impl_generics, type_generics, where_clause) = input_ast.generics.split_for_impl();
-//     let type_param_tokens = quote!(F: RichField);
-//     let type_param = syn::parse::<TypeParam>(type_param_tokens.into()).unwrap();
-//
-//     let mut modified_generics = input_ast.generics.clone();
-//     modified_generics
-//         .params
-//         .push(syn::GenericParam::Type(type_param));
-//
-//     let ident = &input_ast.ident;
-//
-//     let add_size = fields.iter().map(|field| {
-//         let field_name = &field.ident;
-//         quote!(size += #field_name.get_size();)
-//     });
-//
-//     let read_targets = fields.iter().map(|field| {
-//         let field_name = &field.ident;
-//         let field_type = &field.ty;
-//         quote!(reader.read_object::<#field_type>)
-//     });
-//
-//     let list_fields = fields.iter().map(|field| {
-//
-//
-//     });
-//
-//     let return_from_targets_result =
-//
-//     concat_token_streams(vec![
-//         create_struct_with_fields(
-//             &format_ident!("{ident}PublicInputsTarget"),
-//             &input_ast.generics,
-//             &fields,
-//         ),
-//         create_struct_with_fields_and_inherited_attrs_target_primitive(
-//             &format_ident!("{ident}PublicInputs"),
-//             &input_ast.generics,
-//             &input_ast.attrs,
-//             &fields,
-//             &["serde"],
-//         ),
-//         // impl PublicInputsTargetReadable
-//         // impl PublicInputsReadable
-//         // impl ToTargets
-//         quote! {
-//             impl #impl_generics PublicInputsTargetReadable for #ident #type_generics #where_clause {
-//                 fn get_size() -> usize {
-//                     let mut size = 0;
-//                     #(#add_size)*
-//                     size
-//                 }
-//
-//                 fn from_targets(targets: &[Target]) -> Self {
-//                     assert_eq!(targets.len(), Self::get_size());
-//                     let mut reader = PublicInputsTargetReader::new(public_inputs);
-//                     #return_from_targets_result
-//                 }
-//             }
-//
-//             impl #impl_generics PublicInputsReadable for #ident #type_generics #where_clause {
-//                 fn from_elements<F: RichField>(elements: &[F]) -> Self::Primitive {
-//                     assert_eq!(elements.len(), Self::get_size());
-//                 }
-//             }
-//         },
-//     ])
-//     .into()
-// }
+#[proc_macro_derive(PublicInputsReadable, attributes(serde))]
+pub fn derive_public_inputs_readable(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input_ast: DeriveInput = parse_macro_input!(input as DeriveInput);
+
+    let syn::Data::Struct(ref data) = input_ast.data else {
+        panic!("PublicInputsReadable is implemented only for structs");
+    };
+
+    let fields = data.fields.iter().cloned().collect_vec();
+
+    let (impl_generics, type_generics, where_clause) = input_ast.generics.split_for_impl();
+    let type_param_tokens = quote!(F: RichField);
+    let type_param = syn::parse::<TypeParam>(type_param_tokens.into()).unwrap();
+
+    let mut modified_generics = input_ast.generics.clone();
+    modified_generics
+        .params
+        .push(syn::GenericParam::Type(type_param));
+
+    let ident = &input_ast.ident;
+
+    let add_size = fields.iter().map(|field| {
+        let field_type = &field.ty;
+        quote!(size += <#field_type as PublicInputsTargetReadable>::get_size();)
+    });
+
+    let read_targets = fields.iter().map(|field| {
+        let field_name = &field.ident;
+        let field_type = &field.ty;
+        // TODO: account for generics (turbofish)
+        quote!(let #field_name = reader.read_object::<#field_type>();)
+    });
+
+    let read_field_elements = read_targets.clone();
+
+    let return_from_targets_result =
+        gen_shorthand_struct_initialization(&ident, &input_ast.generics, &fields);
+
+    let return_from_elements_result = gen_shorthand_struct_initialization(
+        &format_ident!("{ident}Primitive"),
+        &input_ast.generics,
+        &fields,
+    );
+
+    let push_targets = fields.iter().map(|field| {
+        let field_ident = &field.ident;
+        quote!(targets.extend(self.#field_ident.to_targets());)
+    });
+
+    let public_inputs_target_struct_def = create_struct_with_fields(
+        &format_ident!("{ident}PublicInputsTarget"),
+        &input_ast.generics,
+        &fields,
+    );
+
+    let public_inputs_struct_def = create_struct_with_fields_and_inherited_attrs_target_primitive(
+        &format_ident!("{ident}PublicInputs"),
+        &input_ast.generics,
+        &input_ast.attrs,
+        &fields,
+        &["serde"],
+    );
+
+    quote! {
+        #public_inputs_target_struct_def
+        #public_inputs_struct_def
+
+        impl #impl_generics PublicInputsTargetReadable for #ident #type_generics #where_clause {
+            fn get_size() -> usize {
+                let mut size = 0;
+                #(#add_size)*
+                size
+            }
+
+            fn from_targets(targets: &[Target]) -> Self {
+                assert_eq!(targets.len(), Self::get_size());
+                let mut reader = PublicInputsTargetReader::new(targets);
+                #(#read_targets)*
+                #return_from_targets_result
+            }
+        }
+
+        impl #impl_generics PublicInputsReadable for #ident #type_generics #where_clause {
+            fn from_elements<F: RichField>(elements: &[F]) -> Self::Primitive {
+                assert_eq!(elements.len(), Self::get_size());
+                let mut reader = PublicInputsFieldReader::new(elements);
+                #(#read_field_elements)*
+                #return_from_elements_result
+            }
+        }
+
+        impl #impl_generics ToTargets for #ident #type_generics #where_clause {
+            fn to_targets(&self) -> Vec<Target> {
+                let mut targets = Vec::new();
+                #(#push_targets)*
+                targets
+            }
+        }
+    }
+    .into()
+}
 
 #[proc_macro_derive(SetWitness, attributes(serde))]
 pub fn derive_set_witness(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -217,7 +237,7 @@ pub fn derive_set_witness(input: proc_macro::TokenStream) -> proc_macro::TokenSt
 }
 
 #[proc_macro_derive(CircuitTarget, attributes(target, serde))]
-pub fn derive_public_inputs(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn derive_circuit_target(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input_ast: DeriveInput = parse_macro_input!(input as DeriveInput);
 
     let (impl_generics, type_generics, where_clause) = input_ast.generics.split_for_impl();
@@ -233,7 +253,7 @@ pub fn derive_public_inputs(input: proc_macro::TokenStream) -> proc_macro::Token
     let (modified_impl_generics, _, _) = modified_generics.split_for_impl();
 
     let syn::Data::Struct(ref data) = input_ast.data else {
-        panic!("PublicInputs is implemented only for structs");
+        panic!("CircuitTarget is implemented only for structs");
     };
 
     let public_input_fields = filter_public_input_fields(&data.fields);
