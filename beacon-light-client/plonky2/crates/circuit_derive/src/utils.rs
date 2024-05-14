@@ -3,7 +3,7 @@ use proc_macro2::{Delimiter, Group, Ident, TokenStream, TokenTree};
 use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
-    Attribute, Field, Generics, Token,
+    Attribute, Field, Generics, Token, TypeParam,
 };
 
 #[derive(Debug)]
@@ -185,4 +185,18 @@ pub fn concat_token_streams(streams: Vec<TokenStream>) -> TokenStream {
             concatenated_stream.extend(stream);
             concatenated_stream
         })
+}
+
+pub fn extend_generics_with_type_param(
+    generics: &Generics,
+    generic_bound: TokenStream,
+) -> Generics {
+    let type_param = syn::parse::<TypeParam>(generic_bound.into()).unwrap();
+
+    let mut extended_generics = generics.clone();
+    extended_generics
+        .params
+        .push(syn::GenericParam::Type(type_param));
+
+    extended_generics
 }
