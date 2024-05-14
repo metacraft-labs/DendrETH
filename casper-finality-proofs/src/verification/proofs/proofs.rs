@@ -8,7 +8,7 @@ use plonky2::{
         config::GenericConfig,
         proof::ProofWithPublicInputs,
     },
-    util::timing::TimingTree,
+    util::{log2_ceil, timing::TimingTree},
 };
 use starky::{
     config::StarkConfig, prover::prove, util::trace_rows_to_poly_values,
@@ -17,11 +17,14 @@ use starky::{
 
 use crate::verification::{
     proofs::{
+        ecc_aggregate,
         final_exponentiate::{self, FinalExponentiateStark},
         miller_loop::{self, MillerLoopStark},
     },
     utils::native_bls::{self, Fp, Fp12, Fp2},
 };
+
+use super::ecc_aggregate::ECCAggStark;
 
 pub fn miller_loop_main<
     F: RichField + Extendable<D>,
@@ -117,6 +120,58 @@ pub fn final_exponentiate_main<
         "Time taken for final_exponentiate stark proof {:?}",
         s.elapsed()
     );
+    verify_stark_proof(stark, proof.clone(), &config).unwrap();
+    (stark, proof, config)
+}
+
+pub fn ec_aggregate_main<
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    const D: usize,
+>(
+    points: Vec<[Fp; 2]>,
+    res: [Fp; 2],
+    bits: Vec<bool>,
+) -> (
+    ECCAggStark<F, D>,
+    starky::proof::StarkProofWithPublicInputs<F, C, D>,
+    StarkConfig,
+) {
+    let mut config = StarkConfig::standard_fast_config();
+    config.fri_config.rate_bits = 2;
+    let num_rows = 1 << log2_ceil((points.len() - 1) * 12);
+    let stark = ECCAggStark::<F, D>::new(num_rows);
+    let s = Instant::now();
+    let mut public_inputs = Vec::<F>::new();
+    for pt in &points {
+        for x in &pt[0].0 {
+            public_inputs.push(F::from_canonical_u32(*x));
+        }
+        for y in &pt[1].0 {
+            public_inputs.push(F::from_canonical_u32(*y));
+        }
+    }
+    for b in bits.iter() {
+        public_inputs.push(F::from_bool(*b));
+    }
+    for x in res[0].0 {
+        public_inputs.push(F::from_canonical_u32(x));
+    }
+    for y in res[1].0 {
+        public_inputs.push(F::from_canonical_u32(y));
+    }
+    assert_eq!(public_inputs.len(), ecc_aggregate::PUBLIC_INPUTS);
+    let trace = stark.generate_trace(&points, &bits);
+    let trace_poly_values = trace_rows_to_poly_values(trace);
+    let proof = prove::<F, C, ECCAggStark<F, D>, D>(
+        stark,
+        &config,
+        trace_poly_values,
+        &public_inputs,
+        &mut TimingTree::default(),
+    )
+    .unwrap();
+    println!("Time taken for acc_agg stark proof {:?}", s.elapsed());
     verify_stark_proof(stark, proof.clone(), &config).unwrap();
     (stark, proof, config)
 }

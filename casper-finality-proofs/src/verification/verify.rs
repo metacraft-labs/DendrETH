@@ -9,22 +9,19 @@ use plonky2::plonk::{
 use plonky2x::frontend::uint::num::biguint::{BigUintTarget, CircuitBuilderBiguint};
 
 use crate::verification::{
+    curves::{g1::PointG1Target, g2::PointG2Target},
     proofs::{
         final_exponentiate::FinalExponentiateStark,
         miller_loop::MillerLoopStark,
         proofs::{
-            final_exponentiate_main,
-            miller_loop_main,
-            recursive_proof,
+            ec_aggregate_main, final_exponentiate_main, miller_loop_main, recursive_proof,
             ProofTuple,
         },
     },
-    curves::{
-        g1::PointG1Target,
-        g2::PointG2Target,
-    },
     utils::native_bls::{calc_pairing_precomp, Fp, Fp12, Fp2},
 };
+
+use super::proofs::ecc_aggregate::ECCAggStark;
 
 const D: usize = 2;
 type C = PoseidonGoldilocksConfig;
@@ -32,6 +29,19 @@ type F = <C as GenericConfig<D>>::F;
 
 type MlStark = MillerLoopStark<F, D>;
 type FeStark = FinalExponentiateStark<F, D>;
+type ECAggStark = ECCAggStark<F, D>;
+
+pub fn vreify_pubkeys_aggregation(
+    points: Vec<[Fp; 2]>,
+    res: [Fp; 2],
+    bits: Vec<bool>,
+) -> ProofTuple<F, C, D> {
+    let (stark_ec, proof_ec, config_ec) = ec_aggregate_main::<F, C, D>(points, res, bits.clone());
+    let recursive_ec =
+        recursive_proof::<F, C, ECCAggStark<F, D>, C, D>(stark_ec, proof_ec, &config_ec, true);
+
+    recursive_ec
+}
 
 pub fn verify_miller_loop(x: Fp, y: Fp, q_x: Fp2, q_y: Fp2, q_z: Fp2) -> ProofTuple<F, C, D> {
     let (stark_ml, proof_ml, config_ml) = miller_loop_main::<F, C, D>(x, y, q_x, q_y, q_z);
@@ -260,14 +270,10 @@ mod tests {
 
     use super::calc_ell_coeffs_and_generate_g2_point;
     use crate::verification::{
+        curves::{g1::PointG1Target, g2::PointG2Target},
         proofs::miller_loop::MillerLoopStark,
-        curves::{
-            g1::PointG1Target,
-            g2::PointG2Target,
-        },
         utils::native_bls::{Fp, Fp2},
     };
-    
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
@@ -359,4 +365,7 @@ mod tests {
         let data = builder.build::<C>();
         let _proof = data.prove(pw);
     }
+
+    #[test]
+    fn test_pubkeys_aggregation() {}
 }

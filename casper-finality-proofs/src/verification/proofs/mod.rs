@@ -1,3 +1,4 @@
-pub mod miller_loop;
+pub mod ecc_aggregate;
 pub mod final_exponentiate;
+pub mod miller_loop;
 pub mod proofs;
