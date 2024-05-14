@@ -37,53 +37,53 @@ pub fn impl_derive_circuit_target(input_ast: DeriveInput) -> TokenStream {
     let ident = &input_ast.ident;
     let witness_input_ident = format_ident!("{ident}WitnessInput");
 
-    let set_witness_for_fields = concat_token_streams(
-        circuit_input_fields
-            .iter()
-            .map(|field| {
-                let field_name = &field.ident;
-                quote!(self.#field_name.set_witness(witness, &input.#field_name);)
-            })
-            .collect_vec(),
+    let set_witness_for_fields = circuit_input_fields.iter().map(|field| {
+        let field_name = &field.ident;
+        quote!(self.#field_name.set_witness(witness, &input.#field_name);)
+    });
+
+    let public_inputs_struct_def = create_struct_with_fields_and_inherited_attrs_target_primitive(
+        &format_ident!("{ident}PublicInputs"),
+        &input_ast.generics,
+        &input_ast.attrs,
+        &public_input_fields,
+        &["serde"],
     );
 
-    concat_token_streams(vec![
-        create_struct_with_fields_and_inherited_attrs_target_primitive(
-            &format_ident!("{ident}PublicInputs"),
-            &input_ast.generics,
-            &input_ast.attrs,
-            &public_input_fields,
-            &["serde"],
-        ),
-        create_struct_with_fields(
-            &format_ident!("{ident}PublicInputsTarget"),
-            &input_ast.generics,
-            &public_input_fields,
-        ),
-        quote! {
-            impl #impl_generics TargetsWithPublicInputs for #ident #type_generics #where_clause {
-                #read_public_inputs_impl
-                #read_public_inputs_target_impl
-                #register_public_inputs_impl
-            }
-        },
-        create_struct_with_fields_and_inherited_attrs_target_primitive(
-            &witness_input_ident,
-            &input_ast.generics,
-            &input_ast.attrs,
-            &circuit_input_fields,
-            &["serde"],
-        ),
-        quote! {
-            impl #modified_impl_generics SetWitness<F> for #ident #type_generics #where_clause {
-                type Input = #witness_input_ident #type_generics;
+    let public_inputs_target_struct_def = create_struct_with_fields(
+        &format_ident!("{ident}PublicInputsTarget"),
+        &input_ast.generics,
+        &public_input_fields,
+    );
 
-                fn set_witness(&self, witness: &mut PartialWitness<F>, input: &Self::Input) {
-                    #set_witness_for_fields
-                }
+    let witness_input_struct_def = create_struct_with_fields_and_inherited_attrs_target_primitive(
+        &witness_input_ident,
+        &input_ast.generics,
+        &input_ast.attrs,
+        &circuit_input_fields,
+        &["serde"],
+    );
+
+    quote! {
+        #public_inputs_struct_def
+        #public_inputs_target_struct_def
+
+        impl #impl_generics TargetsWithPublicInputs for #ident #type_generics #where_clause {
+            #read_public_inputs_impl
+            #read_public_inputs_target_impl
+            #register_public_inputs_impl
+        }
+
+        #witness_input_struct_def
+
+        impl #modified_impl_generics SetWitness<F> for #ident #type_generics #where_clause {
+            type Input = #witness_input_ident #type_generics;
+
+            fn set_witness(&self, witness: &mut PartialWitness<F>, input: &Self::Input) {
+                #(#set_witness_for_fields)*
             }
-        },
-    ])
+        }
+    }
 }
 
 fn impl_read_public_inputs(input: &DeriveInput, public_input_fields: &[syn::Field]) -> TokenStream {
