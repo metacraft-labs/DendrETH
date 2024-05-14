@@ -24,15 +24,15 @@ pub const SIG_LEN: usize = 96;
 use crate::verification::fields::fp2::inv_fp2;
 use crate::verification::{
     fields::{
-        fp::{fp_is_zero, N},
+        fp::{fp_is_zero, LIMBS},
         fp2::{
             add_fp2, is_equal, is_zero, mul_fp2, negate_fp2, range_check_fp2, sub_fp2, Fp2Target,
         },
     },
     utils::native_bls::{get_bls_12_381_parameter, modulus, Fp, Fp2},
 };
-const E: usize = 2;
-pub type PointG2Target = [Fp2Target; E];
+const TWO: usize = 2;
+pub type PointG2Target = [Fp2Target; TWO];
 
 pub fn g2_add_without_generator<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
@@ -65,10 +65,10 @@ pub fn g2_add_unequal<L: PlonkParameters<D>, const D: usize>(
 ) -> PointG2Target {
     let dy = sub_fp2(builder, &b[1], &a[1]);
     let dx = sub_fp2(builder, &b[0], &a[0]);
-    let outx_c0 = builder.api.add_virtual_biguint_target_unsafe(N);
-    let outx_c1 = builder.api.add_virtual_biguint_target_unsafe(N);
-    let outy_c0 = builder.api.add_virtual_biguint_target_unsafe(N);
-    let outy_c1 = builder.api.add_virtual_biguint_target_unsafe(N);
+    let outx_c0 = builder.api.add_virtual_biguint_target_unsafe(LIMBS);
+    let outx_c1 = builder.api.add_virtual_biguint_target_unsafe(LIMBS);
+    let outy_c0 = builder.api.add_virtual_biguint_target_unsafe(LIMBS);
+    let outy_c1 = builder.api.add_virtual_biguint_target_unsafe(LIMBS);
     let out = [[outx_c0, outx_c1], [outy_c0, outy_c1]];
     builder.api.add_simple_generator(G2AdditionGenerator {
         a: a.clone(),
@@ -108,10 +108,10 @@ pub fn g2_double<L: PlonkParameters<D>, const D: usize>(
     iso_3_a: &Fp2Target,
     iso_3_b: &Fp2Target,
 ) -> PointG2Target {
-    let outx_c0 = builder.api.add_virtual_biguint_target_unsafe(N);
-    let outx_c1 = builder.api.add_virtual_biguint_target_unsafe(N);
-    let outy_c0 = builder.api.add_virtual_biguint_target_unsafe(N);
-    let outy_c1 = builder.api.add_virtual_biguint_target_unsafe(N);
+    let outx_c0 = builder.api.add_virtual_biguint_target_unsafe(LIMBS);
+    let outx_c1 = builder.api.add_virtual_biguint_target_unsafe(LIMBS);
+    let outy_c0 = builder.api.add_virtual_biguint_target_unsafe(LIMBS);
+    let outy_c1 = builder.api.add_virtual_biguint_target_unsafe(LIMBS);
     let out = [[outx_c0, outx_c1], [outy_c0, outy_c1]];
     builder.api.add_simple_generator(G2DoublingGenerator {
         a: a.clone(),
@@ -168,12 +168,12 @@ pub fn g2_add<L: PlonkParameters<D>, const D: usize>(
     let do_double = builder.and(x_equal, y_equal);
     let add_input_b = [
         [
-            builder.api.add_virtual_biguint_target_unsafe(N),
-            builder.api.add_virtual_biguint_target_unsafe(N),
+            builder.api.add_virtual_biguint_target_unsafe(LIMBS),
+            builder.api.add_virtual_biguint_target_unsafe(LIMBS),
         ],
         [
-            builder.api.add_virtual_biguint_target_unsafe(N),
-            builder.api.add_virtual_biguint_target_unsafe(N),
+            builder.api.add_virtual_biguint_target_unsafe(LIMBS),
+            builder.api.add_virtual_biguint_target_unsafe(LIMBS),
         ],
     ];
     for i in 0..12 {
@@ -209,17 +209,17 @@ pub fn g2_add<L: PlonkParameters<D>, const D: usize>(
     builder.api.assert_zero(out_inf.target);
     let add_or_double_select = [
         [
-            builder.api.add_virtual_biguint_target_unsafe(N),
-            builder.api.add_virtual_biguint_target_unsafe(N),
+            builder.api.add_virtual_biguint_target_unsafe(LIMBS),
+            builder.api.add_virtual_biguint_target_unsafe(LIMBS),
         ],
         [
-            builder.api.add_virtual_biguint_target_unsafe(N),
-            builder.api.add_virtual_biguint_target_unsafe(N),
+            builder.api.add_virtual_biguint_target_unsafe(LIMBS),
+            builder.api.add_virtual_biguint_target_unsafe(LIMBS),
         ],
     ];
     for i in 0..2 {
         for j in 0..2 {
-            for k in 0..N {
+            for k in 0..LIMBS {
                 let s = builder.api.select(
                     do_double.into(),
                     doubling[i][j].limbs[k].target,
@@ -233,17 +233,17 @@ pub fn g2_add<L: PlonkParameters<D>, const D: usize>(
     }
     let a_inf_select = [
         [
-            builder.api.add_virtual_biguint_target_unsafe(N),
-            builder.api.add_virtual_biguint_target_unsafe(N),
+            builder.api.add_virtual_biguint_target_unsafe(LIMBS),
+            builder.api.add_virtual_biguint_target_unsafe(LIMBS),
         ],
         [
-            builder.api.add_virtual_biguint_target_unsafe(N),
-            builder.api.add_virtual_biguint_target_unsafe(N),
+            builder.api.add_virtual_biguint_target_unsafe(LIMBS),
+            builder.api.add_virtual_biguint_target_unsafe(LIMBS),
         ],
     ];
     for i in 0..2 {
         for j in 0..2 {
-            for k in 0..N {
+            for k in 0..LIMBS {
                 let s = builder.api.select(
                     is_infinity_a.into(),
                     b[i][j].limbs[k].target,
@@ -255,17 +255,17 @@ pub fn g2_add<L: PlonkParameters<D>, const D: usize>(
     }
     let b_inf_select = [
         [
-            builder.api.add_virtual_biguint_target_unsafe(N),
-            builder.api.add_virtual_biguint_target_unsafe(N),
+            builder.api.add_virtual_biguint_target_unsafe(LIMBS),
+            builder.api.add_virtual_biguint_target_unsafe(LIMBS),
         ],
         [
-            builder.api.add_virtual_biguint_target_unsafe(N),
-            builder.api.add_virtual_biguint_target_unsafe(N),
+            builder.api.add_virtual_biguint_target_unsafe(LIMBS),
+            builder.api.add_virtual_biguint_target_unsafe(LIMBS),
         ],
     ];
     for i in 0..2 {
         for j in 0..2 {
-            for k in 0..N {
+            for k in 0..LIMBS {
                 let s = builder.api.select(
                     is_infinity_b.into(),
                     a[i][j].limbs[k].target,
@@ -297,12 +297,12 @@ pub fn g2_scalar_mul<L: PlonkParameters<D>, const D: usize>(
     ];
     let mut r = [
         [
-            builder.api.add_virtual_biguint_target_unsafe(N),
-            builder.api.add_virtual_biguint_target_unsafe(N),
+            builder.api.add_virtual_biguint_target_unsafe(LIMBS),
+            builder.api.add_virtual_biguint_target_unsafe(LIMBS),
         ],
         [
-            builder.api.add_virtual_biguint_target_unsafe(N),
-            builder.api.add_virtual_biguint_target_unsafe(N),
+            builder.api.add_virtual_biguint_target_unsafe(LIMBS),
+            builder.api.add_virtual_biguint_target_unsafe(LIMBS),
         ],
     ];
     let fals = builder._false();
@@ -347,7 +347,7 @@ pub fn signature_point_check<L: PlonkParameters<D>, const D: usize>(
     let (x0, x1, y0, y1) = (&point[0][0], &point[0][1], &point[1][0], &point[1][1]);
     let y1_zero = fp_is_zero(builder, &y1);
     let zero = builder.api.zero_u32();
-    let y_select_limbs: Vec<U32Target> = (0..N)
+    let y_select_limbs: Vec<U32Target> = (0..LIMBS)
         .into_iter()
         .map(|i| {
             U32Target::from_target_unsafe(builder.api.select(
@@ -415,7 +415,7 @@ pub fn signature_point_check<L: PlonkParameters<D>, const D: usize>(
         .api
         .constant_biguint(&(BigUint::from(1u32) << 381u32));
     let pow_2_381_or_zero = BigUintTarget {
-        limbs: (0..N)
+        limbs: (0..LIMBS)
             .into_iter()
             .map(|i| {
                 U32Target::from_target_unsafe(builder.api.select(
@@ -686,11 +686,11 @@ mod tests {
     };
 
     use crate::verification::{
-        fields::fp::N,
+        fields::fp::LIMBS,
         utils::native_bls::{Fp, Fp2},
     };
 
-    use super::{g2_add, g2_add_unequal, g2_double, g2_scalar_mul, signature_point_check, E};
+    use super::{g2_add, g2_add_unequal, g2_double, g2_scalar_mul, signature_point_check, TWO};
 
     #[test]
     fn test_g2_add_unequal() {
@@ -770,9 +770,9 @@ mod tests {
 
         // Define your circuit.
         let mut res_output: Vec<GoldilocksField> = Vec::new();
-        for i in 0..E {
+        for i in 0..TWO {
             for j in 0..out[i].len() {
-                for k in 0..N {
+                for k in 0..LIMBS {
                     builder.write(Variable(out[i][j].limbs[k].target));
                 }
             }
@@ -791,16 +791,16 @@ mod tests {
         circuit.verify(&proof, &input, &output);
 
         // Read output.
-        for i in 0..E {
+        for i in 0..TWO {
             for _ in 0..out[i].len() {
-                for _ in 0..N {
+                for _ in 0..LIMBS {
                     res_output.push(output.read::<Variable>())
                 }
             }
         }
 
         let mut biguint_res: Vec<BigUint> = Vec::new();
-        for i in 0..2 * E {
+        for i in 0..2 * TWO {
             biguint_res.push(BigUint::new(
                 res_output[(i * 12)..(i * 12) + 12]
                     .iter()
@@ -811,11 +811,11 @@ mod tests {
 
         let outx = outx.to_biguint();
         let outy = outy.to_biguint();
-        for i in 0..E {
+        for i in 0..TWO {
             assert_eq!(biguint_res[i], outx[i]);
         }
-        for i in 0..E {
-            assert_eq!(biguint_res[i + E], outy[i]);
+        for i in 0..TWO {
+            assert_eq!(biguint_res[i + TWO], outy[i]);
         }
     }
 
@@ -879,9 +879,9 @@ mod tests {
 
         // Define your circuit.
         let mut res_output: Vec<GoldilocksField> = Vec::new();
-        for i in 0..E {
+        for i in 0..TWO {
             for j in 0..out[i].len() {
-                for k in 0..N {
+                for k in 0..LIMBS {
                     builder.write(Variable(out[i][j].limbs[k].target));
                 }
             }
@@ -900,16 +900,16 @@ mod tests {
         circuit.verify(&proof, &input, &output);
 
         // Read output.
-        for i in 0..E {
+        for i in 0..TWO {
             for _ in 0..out[i].len() {
-                for _ in 0..N {
+                for _ in 0..LIMBS {
                     res_output.push(output.read::<Variable>())
                 }
             }
         }
 
         let mut biguint_res: Vec<BigUint> = Vec::new();
-        for i in 0..2 * E {
+        for i in 0..2 * TWO {
             biguint_res.push(BigUint::new(
                 res_output[(i * 12)..(i * 12) + 12]
                     .iter()
@@ -920,11 +920,11 @@ mod tests {
 
         let outx = outx.to_biguint();
         let outy = outy.to_biguint();
-        for i in 0..E {
+        for i in 0..TWO {
             assert_eq!(biguint_res[i], outx[i]);
         }
-        for i in 0..E {
-            assert_eq!(biguint_res[i + E], outy[i]);
+        for i in 0..TWO {
+            assert_eq!(biguint_res[i + TWO], outy[i]);
         }
     }
 
@@ -1017,9 +1017,9 @@ mod tests {
 
         // Define your circuit.
         let mut res_output: Vec<GoldilocksField> = Vec::new();
-        for i in 0..E {
+        for i in 0..TWO {
             for j in 0..out[i].len() {
-                for k in 0..N {
+                for k in 0..LIMBS {
                     builder.write(Variable(out[i][j].limbs[k].target));
                 }
             }
@@ -1038,16 +1038,16 @@ mod tests {
         circuit.verify(&proof, &input, &output);
 
         // Read output.
-        for i in 0..E {
+        for i in 0..TWO {
             for _ in 0..out[i].len() {
-                for _ in 0..N {
+                for _ in 0..LIMBS {
                     res_output.push(output.read::<Variable>())
                 }
             }
         }
 
         let mut biguint_res: Vec<BigUint> = Vec::new();
-        for i in 0..2 * E {
+        for i in 0..2 * TWO {
             biguint_res.push(BigUint::new(
                 res_output[(i * 12)..(i * 12) + 12]
                     .iter()
@@ -1058,11 +1058,11 @@ mod tests {
 
         let outx = outx.to_biguint();
         let outy = outy.to_biguint();
-        for i in 0..E {
+        for i in 0..TWO {
             assert_eq!(biguint_res[i], outx[i]);
         }
-        for i in 0..E {
-            assert_eq!(biguint_res[i + E], outy[i]);
+        for i in 0..TWO {
+            assert_eq!(biguint_res[i + TWO], outy[i]);
         }
     }
 
@@ -1122,9 +1122,9 @@ mod tests {
 
         // Define your circuit.
         let mut res_output: Vec<GoldilocksField> = Vec::new();
-        for i in 0..E {
+        for i in 0..TWO {
             for j in 0..out[i].len() {
-                for k in 0..N {
+                for k in 0..LIMBS {
                     builder.write(Variable(out[i][j].limbs[k].target));
                 }
             }
@@ -1143,15 +1143,15 @@ mod tests {
         circuit.verify(&proof, &input, &output);
 
         // Read output.
-        for i in 0..E {
+        for i in 0..TWO {
             for _ in 0..out[i].len() {
-                for _ in 0..N {
+                for _ in 0..LIMBS {
                     res_output.push(output.read::<Variable>())
                 }
             }
         }
         let mut biguint_res: Vec<BigUint> = Vec::new();
-        for i in 0..2 * E {
+        for i in 0..2 * TWO {
             biguint_res.push(BigUint::new(
                 res_output[(i * 12)..(i * 12) + 12]
                     .iter()
@@ -1162,11 +1162,11 @@ mod tests {
 
         let outx = outx.to_biguint();
         let outy = outy.to_biguint();
-        for i in 0..E {
+        for i in 0..TWO {
             assert_eq!(biguint_res[i], outx[i]);
         }
-        for i in 0..E {
-            assert_eq!(biguint_res[i + E], outy[i]);
+        for i in 0..TWO {
+            assert_eq!(biguint_res[i + TWO], outy[i]);
         }
     }
 

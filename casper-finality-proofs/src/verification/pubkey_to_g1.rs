@@ -14,7 +14,7 @@ use plonky2x::{
 
 use crate::utils::plonky2x_extensions::{assert_zero, variable_to_le_bits};
 
-use super::{curves::g1::PointG1Target, fields::fp::N, utils::native_bls::modulus};
+use super::{curves::g1::PointG1Target, fields::fp::LIMBS, utils::native_bls::modulus};
 
 pub const PUB_KEY_LEN: usize = 48;
 
@@ -66,7 +66,7 @@ pub fn pubkey_to_g1_verification<L: PlonkParameters<D>, const D: usize>(
         .api
         .constant_biguint(&(BigUint::from(1u32) << 381u32));
     let pow_2_381_or_zero = BigUintTarget {
-        limbs: (0..N)
+        limbs: (0..LIMBS)
             .into_iter()
             .map(|i| {
                 U32Target::from_target_unsafe(builder.api.select(

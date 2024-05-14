@@ -29,7 +29,7 @@ use plonky2x::{
 use crate::verification::{
     curves::g2::{g2_add, g2_double, g2_negate, g2_scalar_mul, PointG2Target},
     fields::{
-        fp::{mul_fp, N},
+        fp::{mul_fp, LIMBS},
         fp2::{
             add_fp2, div_fp2, frobenius_map, is_zero, mul_fp2, negate_fp2, range_check_fp2,
             sgn0_fp2, Fp2Target,
@@ -154,7 +154,7 @@ pub fn map_to_curve_simple_swu_9mod16<L: PlonkParameters<D>, const D: usize>(
     ];
     let denominator = [
         BigUintTarget {
-            limbs: (0..N)
+            limbs: (0..LIMBS)
                 .into_iter()
                 .map(|i| {
                     U32Target::from_target_unsafe(if i < iso_3_z_iso_3_a[0].num_limbs() {
@@ -172,7 +172,7 @@ pub fn map_to_curve_simple_swu_9mod16<L: PlonkParameters<D>, const D: usize>(
                 .collect::<Vec<U32Target>>(),
         },
         BigUintTarget {
-            limbs: (0..N)
+            limbs: (0..LIMBS)
                 .into_iter()
                 .map(|i| {
                     U32Target::from_target_unsafe(builder.api.select(
@@ -197,8 +197,8 @@ pub fn map_to_curve_simple_swu_9mod16<L: PlonkParameters<D>, const D: usize>(
 
     let is_square = builder.api.add_virtual_bool_target_unsafe();
     let sqrt = [
-        builder.api.add_virtual_biguint_target_unsafe(N),
-        builder.api.add_virtual_biguint_target_unsafe(N),
+        builder.api.add_virtual_biguint_target_unsafe(LIMBS),
+        builder.api.add_virtual_biguint_target_unsafe(LIMBS),
     ];
 
     builder.api.add_simple_generator(SqrtGenerator {
@@ -214,7 +214,7 @@ pub fn map_to_curve_simple_swu_9mod16<L: PlonkParameters<D>, const D: usize>(
     let sqrt2 = mul_fp2(builder, &sqrt, &sqrt);
     let gx0_gx1_select = [
         BigUintTarget {
-            limbs: (0..N)
+            limbs: (0..LIMBS)
                 .into_iter()
                 .map(|i| {
                     U32Target::from_target_unsafe(builder.api.select(
@@ -226,7 +226,7 @@ pub fn map_to_curve_simple_swu_9mod16<L: PlonkParameters<D>, const D: usize>(
                 .collect::<Vec<U32Target>>(),
         },
         BigUintTarget {
-            limbs: (0..N)
+            limbs: (0..LIMBS)
                 .into_iter()
                 .map(|i| {
                     U32Target::from_target_unsafe(builder.api.select(
@@ -247,7 +247,7 @@ pub fn map_to_curve_simple_swu_9mod16<L: PlonkParameters<D>, const D: usize>(
     let sqrt_negate = negate_fp2(builder, &sqrt);
     let y = [
         BigUintTarget {
-            limbs: (0..N)
+            limbs: (0..LIMBS)
                 .into_iter()
                 .map(|i| {
                     U32Target::from_target_unsafe(builder.api.select(
@@ -259,7 +259,7 @@ pub fn map_to_curve_simple_swu_9mod16<L: PlonkParameters<D>, const D: usize>(
                 .collect::<Vec<U32Target>>(),
         },
         BigUintTarget {
-            limbs: (0..N)
+            limbs: (0..LIMBS)
                 .into_iter()
                 .map(|i| {
                     U32Target::from_target_unsafe(builder.api.select(
@@ -273,7 +273,7 @@ pub fn map_to_curve_simple_swu_9mod16<L: PlonkParameters<D>, const D: usize>(
     ];
     let x0_x1_select = [
         BigUintTarget {
-            limbs: (0..N)
+            limbs: (0..LIMBS)
                 .into_iter()
                 .map(|i| {
                     U32Target::from_target_unsafe(builder.api.select(
@@ -285,7 +285,7 @@ pub fn map_to_curve_simple_swu_9mod16<L: PlonkParameters<D>, const D: usize>(
                 .collect::<Vec<U32Target>>(),
         },
         BigUintTarget {
-            limbs: (0..N)
+            limbs: (0..LIMBS)
                 .into_iter()
                 .map(|i| {
                     U32Target::from_target_unsafe(builder.api.select(

@@ -26,7 +26,7 @@ use plonky2x::{
 
 use crate::verification::utils::native_bls::{mod_inverse, modulus};
 
-pub const N: usize = 12;
+pub const LIMBS: usize = 12;
 pub type FpTarget = BigUintTarget;
 
 pub fn serialize(fp: FpTarget, dst: &mut Vec<u8>) -> plonky2::util::serialization::IoResult<()> {
@@ -122,7 +122,7 @@ pub fn inv_fp<L: PlonkParameters<D>, const D: usize>(
     input: &FpTarget,
 ) -> FpTarget {
     let one = builder.api.constant_biguint(&1u32.to_biguint().unwrap());
-    let input_inv = builder.api.add_virtual_biguint_target_unsafe(N);
+    let input_inv = builder.api.add_virtual_biguint_target_unsafe(LIMBS);
     builder.api.add_simple_generator(FpInverseGenerator {
         input: input.clone(),
         input_inv: input_inv.clone(),
@@ -197,7 +197,7 @@ mod tests {
     use crate::verification::utils::native_bls::{modulus, Fp};
     use itertools::Itertools;
 
-    use super::{div_fp, range_check_fp, sub_fp, N};
+    use super::{div_fp, range_check_fp, sub_fp, LIMBS};
 
     #[test]
     fn test_subtraction_circuit() {
@@ -220,7 +220,7 @@ mod tests {
 
         // Define your circuit.
         let mut res_output: Vec<GoldilocksField> = Vec::new();
-        for k in 0..N {
+        for k in 0..LIMBS {
             builder.write(Variable(res.limbs[k].target));
         }
 
@@ -237,7 +237,7 @@ mod tests {
         circuit.verify(&proof, &input, &output);
 
         // Read output.
-        for _ in 0..N {
+        for _ in 0..LIMBS {
             res_output.push(output.read::<Variable>())
         }
 
@@ -272,7 +272,7 @@ mod tests {
 
         // Define your circuit.
         let mut res_output: Vec<GoldilocksField> = Vec::new();
-        for k in 0..N {
+        for k in 0..LIMBS {
             builder.write(Variable(res.limbs[k].target));
         }
 
@@ -289,7 +289,7 @@ mod tests {
         circuit.verify(&proof, &input, &output);
 
         // Read output.
-        for _ in 0..N {
+        for _ in 0..LIMBS {
             res_output.push(output.read::<Variable>())
         }
 

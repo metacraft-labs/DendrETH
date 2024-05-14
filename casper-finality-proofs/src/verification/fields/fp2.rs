@@ -23,11 +23,11 @@ use crate::verification::utils::native_bls::{Fp, Fp2};
 
 use super::fp::{
     add_fp, deserialize, fp_is_equal, fp_is_zero, mul_fp, negate_fp, range_check_fp, serialize,
-    sub_fp, FpTarget, N,
+    sub_fp, FpTarget, LIMBS,
 };
 
-const E: usize = 2;
-pub type Fp2Target = [FpTarget; E];
+const TWO: usize = 2;
+pub type Fp2Target = [FpTarget; TWO];
 
 pub fn is_zero<L: PlonkParameters<D>, const D: usize>(
     builder: &mut CircuitBuilder<L, D>,
@@ -82,7 +82,7 @@ pub fn add_fp2<L: PlonkParameters<D>, const D: usize>(
     b: &Fp2Target,
 ) -> Fp2Target {
     let mut res = vec![];
-    for i in 0..E {
+    for i in 0..TWO {
         res.push(add_fp(builder, &a[i], &b[i]));
     }
     res.try_into().unwrap()
@@ -93,7 +93,7 @@ pub fn negate_fp2<L: PlonkParameters<D>, const D: usize>(
     input: &Fp2Target,
 ) -> Fp2Target {
     let mut res = vec![];
-    for i in 0..E {
+    for i in 0..TWO {
         res.push(negate_fp(builder, &input[i]));
     }
     res.try_into().unwrap()
@@ -133,8 +133,8 @@ pub fn inv_fp2<L: PlonkParameters<D>, const D: usize>(
 ) -> Fp2Target {
     let one = builder.api.constant_biguint(&1u32.to_biguint().unwrap());
     let zero = builder.api.constant_biguint(&0u32.to_biguint().unwrap());
-    let inv_c0 = builder.api.add_virtual_biguint_target_unsafe(N);
-    let inv_c1 = builder.api.add_virtual_biguint_target_unsafe(N);
+    let inv_c0 = builder.api.add_virtual_biguint_target_unsafe(LIMBS);
+    let inv_c1 = builder.api.add_virtual_biguint_target_unsafe(LIMBS);
     let input_inv = [inv_c0, inv_c1];
     builder.api.add_simple_generator(Fp2InverseGenerator {
         input: input.clone(),
@@ -228,11 +228,11 @@ mod tests {
     };
 
     use crate::verification::{
-        fields::fp::N,
+        fields::fp::LIMBS,
         utils::native_bls::{Fp, Fp2},
     };
 
-    use super::{div_fp2, sub_fp2, E};
+    use super::{div_fp2, sub_fp2, TWO};
 
     #[test]
     fn test_subtraction_circuit() {
@@ -274,7 +274,7 @@ mod tests {
         // Define your circuit.
         let mut res_output: Vec<GoldilocksField> = Vec::new();
         for i in 0..res.len() {
-            for j in 0..N {
+            for j in 0..LIMBS {
                 builder.write(Variable(res[i].limbs[j].target));
             }
         }
@@ -293,13 +293,13 @@ mod tests {
 
         // Read output.
         for _ in 0..res.len() {
-            for _ in 0..N {
+            for _ in 0..LIMBS {
                 res_output.push(output.read::<Variable>())
             }
         }
 
         let mut biguint_res: Vec<BigUint> = Vec::new();
-        for i in 0..E {
+        for i in 0..TWO {
             biguint_res.push(BigUint::new(
                 res_output[(i * 12)..(i * 12) + 12]
                     .iter()
@@ -310,7 +310,7 @@ mod tests {
 
         let expected_res = expected_res.to_biguint();
 
-        for i in 0..E {
+        for i in 0..TWO {
             assert_eq!(expected_res[i], biguint_res[i]);
         }
     }
@@ -355,7 +355,7 @@ mod tests {
         // Define your circuit.
         let mut res_output: Vec<GoldilocksField> = Vec::new();
         for i in 0..res.len() {
-            for j in 0..N {
+            for j in 0..LIMBS {
                 builder.write(Variable(res[i].limbs[j].target));
             }
         }
@@ -374,13 +374,13 @@ mod tests {
 
         // Read output.
         for _ in 0..res.len() {
-            for _ in 0..N {
+            for _ in 0..LIMBS {
                 res_output.push(output.read::<Variable>())
             }
         }
 
         let mut biguint_res: Vec<BigUint> = Vec::new();
-        for i in 0..E {
+        for i in 0..TWO {
             biguint_res.push(BigUint::new(
                 res_output[(i * 12)..(i * 12) + 12]
                     .iter()
@@ -391,7 +391,7 @@ mod tests {
 
         let expected_res = expected_res.to_biguint();
 
-        for i in 0..E {
+        for i in 0..TWO {
             assert_eq!(expected_res[i], biguint_res[i]);
         }
     }
