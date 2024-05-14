@@ -1,19 +1,21 @@
 use itertools::Itertools;
-use proc_macro2::{Ident, Span, TokenStream};
+use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{DeriveInput, Field, Fields, Generics, TypeParam};
+use syn::{DeriveInput, Field, Fields, TypeParam};
 
 use crate::utils::{
-    concat_token_streams, create_struct_with_fields,
-    create_struct_with_fields_and_inherited_attrs_target_primitive,
+    create_struct_with_fields, create_struct_with_fields_and_inherited_attrs_target_primitive,
     gen_shorthand_struct_initialization, has_functional_attr_with_arg,
 };
 
 pub fn impl_derive_circuit_target(input_ast: DeriveInput) -> TokenStream {
+    let syn::Data::Struct(ref data) = input_ast.data else {
+        panic!("CircuitTarget is implemented only for structs");
+    };
+
     let (impl_generics, type_generics, where_clause) = input_ast.generics.split_for_impl();
 
     let type_param = syn::parse::<TypeParam>(quote!(F: RichField).into()).unwrap();
-
     let mut modified_generics = input_ast.generics.clone();
     modified_generics
         .params
@@ -21,37 +23,16 @@ pub fn impl_derive_circuit_target(input_ast: DeriveInput) -> TokenStream {
 
     let (modified_impl_generics, _, _) = modified_generics.split_for_impl();
 
-    let syn::Data::Struct(ref data) = input_ast.data else {
-        panic!("CircuitTarget is implemented only for structs");
-    };
-
     let public_input_fields = filter_public_input_fields(&data.fields);
-
-    let read_public_inputs_impl = impl_read_public_inputs(&input_ast, &public_input_fields);
-    let read_public_inputs_target_impl =
-        impl_read_public_inputs_target(&input_ast, &public_input_fields);
-    let register_public_inputs_impl = impl_register_public_inputs(&public_input_fields);
-
     let circuit_input_fields = filter_circuit_input_fields(&data.fields);
 
     let ident = &input_ast.ident;
+    let public_inputs_ident = format_ident!("{ident}PublicInputs");
+    let public_inputs_target_ident = format_ident!("{ident}PublicInputsTarget");
     let witness_input_ident = format_ident!("{ident}WitnessInput");
 
-    let set_witness_for_fields = circuit_input_fields.iter().map(|field| {
-        let field_name = &field.ident;
-        quote!(self.#field_name.set_witness(witness, &input.#field_name);)
-    });
-
-    let public_inputs_struct_def = create_struct_with_fields_and_inherited_attrs_target_primitive(
-        &format_ident!("{ident}PublicInputs"),
-        &input_ast.generics,
-        &input_ast.attrs,
-        &public_input_fields,
-        &["serde"],
-    );
-
     let public_inputs_target_struct_def = create_struct_with_fields(
-        &format_ident!("{ident}PublicInputsTarget"),
+        &public_inputs_target_ident,
         &input_ast.generics,
         &public_input_fields,
     );
@@ -64,14 +45,75 @@ pub fn impl_derive_circuit_target(input_ast: DeriveInput) -> TokenStream {
         &["serde"],
     );
 
+    let set_witness_for_fields = circuit_input_fields.iter().map(|field| {
+        let field_name = &field.ident;
+        quote!(self.#field_name.set_witness(witness, &input.#field_name);)
+    });
+
+    let public_inputs_struct_def = create_struct_with_fields_and_inherited_attrs_target_primitive(
+        &public_inputs_ident,
+        &input_ast.generics,
+        &input_ast.attrs,
+        &public_input_fields,
+        &["serde"],
+    );
+
+    let register_public_inputs = public_input_fields.iter().map(|field| {
+        let field_ident = &field.ident;
+        quote!(builder.register_public_inputs(&self.#field_ident.to_targets());)
+    });
+
+    let read_public_inputs_targets = public_input_fields.iter().map(|field| {
+        let field_name = &field.ident;
+        let field_type = &field.ty;
+        quote!(let #field_name = reader.read_object::<#field_type>();)
+    });
+
+    let return_public_inputs_target = gen_shorthand_struct_initialization(
+        &public_inputs_target_ident,
+        &input_ast.generics,
+        &public_input_fields,
+    );
+
+    let read_public_inputs = public_input_fields.iter().map(|field| {
+        let field_name = &field.ident;
+        let field_type = &field.ty;
+        quote!(let #field_name = reader.read_object::<#field_type>();)
+    });
+
+    let return_public_inputs = gen_shorthand_struct_initialization(
+        &public_inputs_ident,
+        &input_ast.generics,
+        &public_input_fields,
+    );
+
     quote! {
         #public_inputs_struct_def
         #public_inputs_target_struct_def
 
         impl #impl_generics TargetsWithPublicInputs for #ident #type_generics #where_clause {
-            #read_public_inputs_impl
-            #read_public_inputs_target_impl
-            #register_public_inputs_impl
+            type PublicInputs = #public_inputs_ident #type_generics;
+
+            fn read_public_inputs<F: RichField>(public_inputs: &[F]) -> Self::PublicInputs {
+                let mut reader = PublicInputsFieldReader::new(public_inputs);
+                #(#read_public_inputs)*
+                #return_public_inputs
+            }
+
+            type PublicInputsTarget = #public_inputs_target_ident #type_generics;
+
+            fn read_public_inputs_target(public_inputs: &[Target]) -> Self::PublicInputsTarget {
+                let mut reader = PublicInputsTargetReader::new(public_inputs);
+                #(#read_public_inputs_targets)*
+                #return_public_inputs_target
+            }
+
+            fn register_public_inputs<F: RichField + Extendable<D>, const D: usize>(
+                &self,
+                builder: &mut CircuitBuilder<F, D>,
+            ) {
+                #(#register_public_inputs)*
+            }
         }
 
         #witness_input_struct_def
@@ -84,115 +126,6 @@ pub fn impl_derive_circuit_target(input_ast: DeriveInput) -> TokenStream {
             }
         }
     }
-}
-
-fn impl_read_public_inputs(input: &DeriveInput, public_input_fields: &[syn::Field]) -> TokenStream {
-    let (_, type_generics, _) = input.generics.split_for_impl();
-
-    let targets_ident = &input.ident;
-    let return_ty_ident = format_ident!("{targets_ident}PublicInputs");
-
-    let field_readings = concat_token_streams(
-        public_input_fields
-            .into_iter()
-            .map(|field| {
-                let field_name = &field.ident;
-                let target_type = &field.ty;
-                quote!(let #field_name = reader.read_object::<#target_type>();)
-            })
-            .collect_vec(),
-    );
-
-    let return_result =
-        gen_shorthand_struct_initialization(&return_ty_ident, &input.generics, public_input_fields);
-
-    quote! {
-        type PublicInputs = #return_ty_ident #type_generics;
-
-        fn read_public_inputs<F: RichField>(public_inputs: &[F]) -> Self::PublicInputs {
-            let mut reader = PublicInputsFieldReader::new(public_inputs);
-            #field_readings
-            #return_result
-        }
-    }
-}
-
-fn impl_read_public_inputs_target(
-    input: &DeriveInput,
-    public_input_fields: &[Field],
-) -> TokenStream {
-    let (_, type_generics, _) = input.generics.split_for_impl();
-
-    let targets_ident = &input.ident;
-    let return_ty_ident = format_ident!("{targets_ident}PublicInputsTarget");
-
-    let body =
-        gen_read_public_inputs_target_body(&return_ty_ident, &input.generics, public_input_fields);
-
-    quote! {
-        type PublicInputsTarget = #return_ty_ident #type_generics;
-
-        fn read_public_inputs_target(public_inputs: &[Target]) -> Self::PublicInputsTarget {
-            #body
-        }
-    }
-}
-
-fn impl_register_public_inputs(public_input_fields: &[Field]) -> TokenStream {
-    let register_public_inputs_tokens = concat_token_streams(
-        public_input_fields
-            .into_iter()
-            .map(|field| {
-                let field_ident = &field.ident;
-                quote!(builder.register_public_inputs(&self.#field_ident.to_targets());)
-            })
-            .collect_vec(),
-    );
-
-    quote! {
-        fn register_public_inputs<F: RichField + Extendable<D>, const D: usize>(
-            &self,
-            builder: &mut CircuitBuilder<F, D>,
-        ) {
-            #register_public_inputs_tokens
-        }
-    }
-}
-
-fn gen_read_public_inputs_target_body(
-    return_ty_ident: &Ident,
-    generics: &Generics,
-    public_input_fields: &[Field],
-) -> TokenStream {
-    concat_token_streams(vec![
-        define_reader("PublicInputsTargetReader"),
-        gen_public_inputs_target_read_for_fields(public_input_fields),
-        gen_shorthand_struct_initialization(return_ty_ident, generics, public_input_fields),
-    ])
-}
-
-fn define_reader(type_name: &str) -> TokenStream {
-    let reader_type_ident = Ident::new(type_name, Span::call_site().into());
-    quote!(let mut reader = #reader_type_ident::new(public_inputs);)
-}
-
-fn gen_public_inputs_target_read_for_fields(fields: &[Field]) -> TokenStream {
-    fields.iter().fold(TokenStream::new(), |mut stream, field| {
-        stream.extend(gen_public_inputs_target_read_for_field(field));
-        stream
-    })
-}
-
-fn gen_public_inputs_target_read_for_field(field: &Field) -> TokenStream {
-    let field_name = field
-        .ident
-        .clone()
-        .expect("public_input field must be named");
-
-    let field_ty = &field.ty;
-    let field_type = quote!(#field_ty);
-
-    quote!(let #field_name = reader.read_object::<#field_type>();)
 }
 
 fn filter_public_input_fields(fields: &Fields) -> Vec<Field> {
