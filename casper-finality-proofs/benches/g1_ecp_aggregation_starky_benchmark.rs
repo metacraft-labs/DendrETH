@@ -29,7 +29,7 @@ fn g1_ecp_aggregation_starky_benchmark(c: &mut Criterion) {
     let a_fp = black_box(Fp::get_fp_from_biguint(a_bigu.clone()));
     let b_fp = black_box(Fp::get_fp_from_biguint(b_bigu.clone()));
 
-    let ec_proof = verify_pubkeys_aggregation(vec![[a_fp, b_fp]], [a_fp, b_fp], vec![true, false]);
+    let ec_proof = verify_pubkeys_aggregation(vec![[a_fp, b_fp]], [a_fp, b_fp], vec![true]);
 
     let ec_proof_pub_inputs = ec_proof.0.public_inputs;
     for i in 0..12 {
@@ -37,13 +37,13 @@ fn g1_ecp_aggregation_starky_benchmark(c: &mut Criterion) {
     }
 
     let g1_x_input = builder.constant_biguint(&BigUint::new(
-        ec_proof_pub_inputs[12800..12812]
+        ec_proof_pub_inputs[0..12]
             .iter()
             .map(|x| x.0 as u32)
             .collect(),
     ));
     let g1_y_input = builder.constant_biguint(&BigUint::new(
-        ec_proof_pub_inputs[12812..12824]
+        ec_proof_pub_inputs[12..24]
             .iter()
             .map(|x| x.0 as u32)
             .collect(),

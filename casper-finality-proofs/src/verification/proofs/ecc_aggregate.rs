@@ -22,7 +22,7 @@ use crate::verification::{
     utils::native_bls::Fp,
 };
 
-pub const NUM_POINTS: usize = 512;
+pub const NUM_POINTS: usize = 1;
 
 pub const ROW_NUM: usize = 0;
 pub const PIS_IDX: usize = ROW_NUM + 12;
