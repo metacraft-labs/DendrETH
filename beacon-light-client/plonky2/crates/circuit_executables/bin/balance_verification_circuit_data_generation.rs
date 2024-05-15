@@ -1,6 +1,6 @@
 #![feature(generic_const_exprs)]
 use anyhow::{bail, Result};
-use circuit::Circuit;
+use circuit::{Circuit, SerdeCircuitTarget};
 use circuits::{
     deposits_accumulator_balance_aggregator::{
         build_balance_accumulator_inner_level,
@@ -252,7 +252,8 @@ fn write_first_level_circuit<
     let validator_balance_verification_targets_bytes = match validators_balance_verification_targets
     {
         ValidatorBalanceTargets::ValidatorBalanceFirstLevel(targets) => {
-            targets.write_targets().unwrap()
+            targets.serialize().unwrap()
+            // targets.write_targets().unwrap()
         }
         ValidatorBalanceTargets::ValidatorBalanceAccumulatorFirstLevel(targets) => {
             targets.write_targets().unwrap()

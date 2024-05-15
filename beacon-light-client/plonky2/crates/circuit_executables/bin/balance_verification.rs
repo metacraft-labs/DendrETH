@@ -1,5 +1,7 @@
 #![feature(generic_const_exprs)]
-use circuit::{set_witness::SetWitness, to_targets::ToTargets, Circuit, CircuitInput};
+use circuit::{
+    set_witness::SetWitness, to_targets::ToTargets, Circuit, CircuitInput, SerdeCircuitTarget,
+};
 use circuit_executables::{
     crud::{
         common::{
@@ -478,7 +480,10 @@ where
     let mut target_buffer = Buffer::new(&target_bytes);
 
     Ok(Targets::FirstLevel(Some(
-        ValidatorBalanceVerificationTargets::read_targets(&mut target_buffer).unwrap(),
+        <ValidatorBalanceVerificationTargets<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT> as SerdeCircuitTarget>::deserialize(
+            &mut target_buffer,
+        )
+        .unwrap(),
     )))
 }
 

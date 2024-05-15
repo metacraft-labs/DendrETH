@@ -140,6 +140,7 @@ fn impl_targets_with_public_inputs(
         quote!(builder.register_public_inputs(&self.#field_ident.to_targets());)
     });
 
+    // TODO: reuse the PublicInputsReadable macro in some way
     quote! {
         #public_inputs_struct_def
         #public_inputs_target_struct_def

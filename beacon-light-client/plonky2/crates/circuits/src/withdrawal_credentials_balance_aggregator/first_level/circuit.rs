@@ -11,9 +11,11 @@ use circuit::target_primitive::TargetPrimitive;
 use circuit::to_targets::ToTargets;
 use circuit::AddVirtualTarget;
 use circuit::Circuit;
+use circuit::SerdeCircuitTarget;
 use circuit::TargetsWithPublicInputs;
 use circuit_derive::AddVirtualTarget;
 use circuit_derive::CircuitTarget;
+use circuit_derive::SerdeCircuitTarget;
 use itertools::Itertools;
 use plonky2::field::extension::Extendable;
 use plonky2::hash::hash_types::RichField;
@@ -44,7 +46,7 @@ use crate::{
     },
 };
 
-#[derive(CircuitTarget)]
+#[derive(CircuitTarget, SerdeCircuitTarget)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidatorBalanceVerificationTargets<
     const VALIDATORS_COUNT: usize,

@@ -6,6 +6,7 @@ use circuit::public_inputs::target_reader::PublicInputsTargetReadable;
 use circuit::set_witness::SetWitness;
 use circuit::target_primitive::TargetPrimitive;
 use circuit::to_targets::ToTargets;
+use circuit::SerdeCircuitTarget;
 use itertools::Itertools;
 use num::{BigUint, Integer, Zero};
 use plonky2::field::extension::Extendable;
@@ -376,6 +377,28 @@ impl AddVirtualTarget for BigUintTarget {
 pub trait WitnessBigUint<F: PrimeField64>: Witness<F> {
     fn get_biguint_target(&self, target: BigUintTarget) -> BigUint;
     fn set_biguint_target(&mut self, target: &BigUintTarget, value: &BigUint);
+}
+
+impl SerdeCircuitTarget for BigUintTarget {
+    fn serialize(&self) -> plonky2::util::serialization::IoResult<Vec<u8>> {
+        assert_eq!(self.num_limbs(), 2);
+
+        let mut buffer: Vec<u8> = Vec::new();
+        buffer.write_target(self.limbs[0].0)?;
+        buffer.write_target(self.limbs[0].0)?;
+        Ok(buffer)
+    }
+
+    fn deserialize(
+        buffer: &mut plonky2::util::serialization::Buffer,
+    ) -> plonky2::util::serialization::IoResult<Self>
+    where
+        Self: Sized,
+    {
+        let first_limb = buffer.read_target()?;
+        let second_limb = buffer.read_target()?;
+        Ok(BigUintTarget::from_targets(&[first_limb, second_limb]))
+    }
 }
 
 impl<T: Witness<F>, F: PrimeField64> WitnessBigUint<F> for T {

@@ -7,7 +7,9 @@ use circuit::public_inputs::target_reader::PublicInputsTargetReader;
 use circuit::set_witness::SetWitness;
 use circuit::target_primitive::TargetPrimitive;
 use circuit::to_targets::ToTargets;
+use circuit::SerdeCircuitTarget;
 use circuit_derive::AddVirtualTarget;
+use circuit_derive::SerdeCircuitTarget;
 use circuit_derive::{PublicInputsReadable, SetWitness, TargetPrimitive};
 use plonky2::iop::target::Target;
 use plonky2::iop::witness::PartialWitness;
@@ -35,7 +37,15 @@ use crate::{
 
 use super::hash_tree_root_poseidon::hash_tree_root_poseidon;
 
-#[derive(Clone, Debug, TargetPrimitive, SetWitness, PublicInputsReadable, AddVirtualTarget)]
+#[derive(
+    Clone,
+    Debug,
+    TargetPrimitive,
+    SetWitness,
+    PublicInputsReadable,
+    AddVirtualTarget,
+    SerdeCircuitTarget,
+)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidatorTarget {
     #[serde(with = "serde_bool_array_to_hex_string")]

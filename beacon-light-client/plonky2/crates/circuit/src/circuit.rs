@@ -20,7 +20,6 @@ pub trait Circuit {
     const D: usize = D; // NOTE: Don't override this
     const CIRCUIT_CONFIG: CircuitConfig;
 
-    // TODO: Rename this to CircuitTarget
     type Target: TargetsWithPublicInputs + ReadableCircuitInputTarget;
     type Params;
 
