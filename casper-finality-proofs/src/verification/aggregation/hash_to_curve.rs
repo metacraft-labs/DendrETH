@@ -588,7 +588,9 @@ mod tests {
         vars::{CircuitVariable, Variable},
     };
 
-    use crate::verification::aggregation::hash_to_curve::map_to_curve_simple_swu_9mod16;
+    use crate::verification::{
+        aggregation::hash_to_curve::map_to_curve_simple_swu_9mod16, fields::fp::LIMBS,
+    };
 
     use super::{clear_cofactor_g2, hash_to_curve, isogeny_map};
 
@@ -596,9 +598,261 @@ mod tests {
     fn test_hash_to_curve() {
         let mut builder = DefaultBuilder::new();
         let msg = vec![
+            Variable::constant(&mut builder, GoldilocksField(103)),
+            Variable::constant(&mut builder, GoldilocksField(140)),
+            Variable::constant(&mut builder, GoldilocksField(163)),
+            Variable::constant(&mut builder, GoldilocksField(210)),
+            Variable::constant(&mut builder, GoldilocksField(238)),
+            Variable::constant(&mut builder, GoldilocksField(252)),
+            Variable::constant(&mut builder, GoldilocksField(75)),
+            Variable::constant(&mut builder, GoldilocksField(8)),
+            Variable::constant(&mut builder, GoldilocksField(227)),
+            Variable::constant(&mut builder, GoldilocksField(27)),
+            Variable::constant(&mut builder, GoldilocksField(60)),
+            Variable::constant(&mut builder, GoldilocksField(229)),
+            Variable::constant(&mut builder, GoldilocksField(125)),
+            Variable::constant(&mut builder, GoldilocksField(150)),
+            Variable::constant(&mut builder, GoldilocksField(241)),
+            Variable::constant(&mut builder, GoldilocksField(222)),
+            Variable::constant(&mut builder, GoldilocksField(217)),
+            Variable::constant(&mut builder, GoldilocksField(156)),
+            Variable::constant(&mut builder, GoldilocksField(178)),
+            Variable::constant(&mut builder, GoldilocksField(17)),
+            Variable::constant(&mut builder, GoldilocksField(14)),
+            Variable::constant(&mut builder, GoldilocksField(199)),
+            Variable::constant(&mut builder, GoldilocksField(15)),
+            Variable::constant(&mut builder, GoldilocksField(172)),
+            Variable::constant(&mut builder, GoldilocksField(94)),
+            Variable::constant(&mut builder, GoldilocksField(179)),
+            Variable::constant(&mut builder, GoldilocksField(249)),
+            Variable::constant(&mut builder, GoldilocksField(0)),
+            Variable::constant(&mut builder, GoldilocksField(197)),
+            Variable::constant(&mut builder, GoldilocksField(206)),
+            Variable::constant(&mut builder, GoldilocksField(104)),
+            Variable::constant(&mut builder, GoldilocksField(200)),
+            Variable::constant(&mut builder, GoldilocksField(165)),
+            Variable::constant(&mut builder, GoldilocksField(253)),
+            Variable::constant(&mut builder, GoldilocksField(55)),
+            Variable::constant(&mut builder, GoldilocksField(147)),
+            Variable::constant(&mut builder, GoldilocksField(171)),
+            Variable::constant(&mut builder, GoldilocksField(191)),
+            Variable::constant(&mut builder, GoldilocksField(118)),
+            Variable::constant(&mut builder, GoldilocksField(189)),
+            Variable::constant(&mut builder, GoldilocksField(133)),
+            Variable::constant(&mut builder, GoldilocksField(138)),
+            Variable::constant(&mut builder, GoldilocksField(2)),
+            Variable::constant(&mut builder, GoldilocksField(22)),
+            Variable::constant(&mut builder, GoldilocksField(237)),
+            Variable::constant(&mut builder, GoldilocksField(6)),
+            Variable::constant(&mut builder, GoldilocksField(62)),
+            Variable::constant(&mut builder, GoldilocksField(10)),
+            Variable::constant(&mut builder, GoldilocksField(68)),
+            Variable::constant(&mut builder, GoldilocksField(105)),
+            Variable::constant(&mut builder, GoldilocksField(208)),
+            Variable::constant(&mut builder, GoldilocksField(102)),
+            Variable::constant(&mut builder, GoldilocksField(66)),
+            Variable::constant(&mut builder, GoldilocksField(70)),
+            Variable::constant(&mut builder, GoldilocksField(170)),
+            Variable::constant(&mut builder, GoldilocksField(114)),
+            Variable::constant(&mut builder, GoldilocksField(194)),
+            Variable::constant(&mut builder, GoldilocksField(80)),
+            Variable::constant(&mut builder, GoldilocksField(215)),
+            Variable::constant(&mut builder, GoldilocksField(5)),
+            Variable::constant(&mut builder, GoldilocksField(63)),
+            Variable::constant(&mut builder, GoldilocksField(95)),
+            Variable::constant(&mut builder, GoldilocksField(202)),
+            Variable::constant(&mut builder, GoldilocksField(1)),
+            Variable::constant(&mut builder, GoldilocksField(99)),
+            Variable::constant(&mut builder, GoldilocksField(153)),
+            Variable::constant(&mut builder, GoldilocksField(67)),
+            Variable::constant(&mut builder, GoldilocksField(115)),
+            Variable::constant(&mut builder, GoldilocksField(7)),
+            Variable::constant(&mut builder, GoldilocksField(122)),
+            Variable::constant(&mut builder, GoldilocksField(235)),
+            Variable::constant(&mut builder, GoldilocksField(255)),
+            Variable::constant(&mut builder, GoldilocksField(142)),
+            Variable::constant(&mut builder, GoldilocksField(44)),
+            Variable::constant(&mut builder, GoldilocksField(3)),
+            Variable::constant(&mut builder, GoldilocksField(65)),
+            Variable::constant(&mut builder, GoldilocksField(190)),
+            Variable::constant(&mut builder, GoldilocksField(166)),
+            Variable::constant(&mut builder, GoldilocksField(218)),
+            Variable::constant(&mut builder, GoldilocksField(72)),
+            Variable::constant(&mut builder, GoldilocksField(230)),
+            Variable::constant(&mut builder, GoldilocksField(196)),
+            Variable::constant(&mut builder, GoldilocksField(24)),
+            Variable::constant(&mut builder, GoldilocksField(88)),
+            Variable::constant(&mut builder, GoldilocksField(146)),
+            Variable::constant(&mut builder, GoldilocksField(193)),
+            Variable::constant(&mut builder, GoldilocksField(211)),
+            Variable::constant(&mut builder, GoldilocksField(90)),
+            Variable::constant(&mut builder, GoldilocksField(37)),
+            Variable::constant(&mut builder, GoldilocksField(173)),
+            Variable::constant(&mut builder, GoldilocksField(71)),
+            Variable::constant(&mut builder, GoldilocksField(152)),
+            Variable::constant(&mut builder, GoldilocksField(21)),
+            Variable::constant(&mut builder, GoldilocksField(226)),
+            Variable::constant(&mut builder, GoldilocksField(89)),
+            Variable::constant(&mut builder, GoldilocksField(79)),
+            Variable::constant(&mut builder, GoldilocksField(239)),
+            Variable::constant(&mut builder, GoldilocksField(81)),
+            Variable::constant(&mut builder, GoldilocksField(149)),
+            Variable::constant(&mut builder, GoldilocksField(135)),
+            Variable::constant(&mut builder, GoldilocksField(188)),
+            Variable::constant(&mut builder, GoldilocksField(51)),
+            Variable::constant(&mut builder, GoldilocksField(52)),
+            Variable::constant(&mut builder, GoldilocksField(116)),
+            Variable::constant(&mut builder, GoldilocksField(26)),
+            Variable::constant(&mut builder, GoldilocksField(30)),
+            Variable::constant(&mut builder, GoldilocksField(126)),
+            Variable::constant(&mut builder, GoldilocksField(31)),
+            Variable::constant(&mut builder, GoldilocksField(35)),
+            Variable::constant(&mut builder, GoldilocksField(240)),
+            Variable::constant(&mut builder, GoldilocksField(201)),
+            Variable::constant(&mut builder, GoldilocksField(101)),
+            Variable::constant(&mut builder, GoldilocksField(33)),
+            Variable::constant(&mut builder, GoldilocksField(61)),
+            Variable::constant(&mut builder, GoldilocksField(220)),
+            Variable::constant(&mut builder, GoldilocksField(192)),
+            Variable::constant(&mut builder, GoldilocksField(86)),
+            Variable::constant(&mut builder, GoldilocksField(47)),
+            Variable::constant(&mut builder, GoldilocksField(214)),
+            Variable::constant(&mut builder, GoldilocksField(243)),
+            Variable::constant(&mut builder, GoldilocksField(224)),
+            Variable::constant(&mut builder, GoldilocksField(136)),
+            Variable::constant(&mut builder, GoldilocksField(50)),
+            Variable::constant(&mut builder, GoldilocksField(56)),
+            Variable::constant(&mut builder, GoldilocksField(42)),
+            Variable::constant(&mut builder, GoldilocksField(233)),
+            Variable::constant(&mut builder, GoldilocksField(148)),
+            Variable::constant(&mut builder, GoldilocksField(244)),
+            Variable::constant(&mut builder, GoldilocksField(203)),
+            Variable::constant(&mut builder, GoldilocksField(198)),
+            Variable::constant(&mut builder, GoldilocksField(195)),
+            Variable::constant(&mut builder, GoldilocksField(120)),
+            Variable::constant(&mut builder, GoldilocksField(36)),
+            Variable::constant(&mut builder, GoldilocksField(221)),
+            Variable::constant(&mut builder, GoldilocksField(181)),
+            Variable::constant(&mut builder, GoldilocksField(53)),
+            Variable::constant(&mut builder, GoldilocksField(160)),
+            Variable::constant(&mut builder, GoldilocksField(58)),
+            Variable::constant(&mut builder, GoldilocksField(167)),
+            Variable::constant(&mut builder, GoldilocksField(131)),
+            Variable::constant(&mut builder, GoldilocksField(216)),
+            Variable::constant(&mut builder, GoldilocksField(183)),
+            Variable::constant(&mut builder, GoldilocksField(83)),
+            Variable::constant(&mut builder, GoldilocksField(232)),
+            Variable::constant(&mut builder, GoldilocksField(151)),
+            Variable::constant(&mut builder, GoldilocksField(87)),
+            Variable::constant(&mut builder, GoldilocksField(46)),
+            Variable::constant(&mut builder, GoldilocksField(54)),
+            Variable::constant(&mut builder, GoldilocksField(128)),
+            Variable::constant(&mut builder, GoldilocksField(123)),
+            Variable::constant(&mut builder, GoldilocksField(231)),
+            Variable::constant(&mut builder, GoldilocksField(212)),
+            Variable::constant(&mut builder, GoldilocksField(130)),
+            Variable::constant(&mut builder, GoldilocksField(19)),
+            Variable::constant(&mut builder, GoldilocksField(28)),
             Variable::constant(&mut builder, GoldilocksField(96)),
-            Variable::constant(&mut builder, GoldilocksField(84)),
+            Variable::constant(&mut builder, GoldilocksField(108)),
+            Variable::constant(&mut builder, GoldilocksField(111)),
+            Variable::constant(&mut builder, GoldilocksField(137)),
+            Variable::constant(&mut builder, GoldilocksField(154)),
+            Variable::constant(&mut builder, GoldilocksField(40)),
+            Variable::constant(&mut builder, GoldilocksField(184)),
+            Variable::constant(&mut builder, GoldilocksField(74)),
+            Variable::constant(&mut builder, GoldilocksField(69)),
+            Variable::constant(&mut builder, GoldilocksField(100)),
+            Variable::constant(&mut builder, GoldilocksField(64)),
+            Variable::constant(&mut builder, GoldilocksField(177)),
             Variable::constant(&mut builder, GoldilocksField(98)),
+            Variable::constant(&mut builder, GoldilocksField(248)),
+            Variable::constant(&mut builder, GoldilocksField(32)),
+            Variable::constant(&mut builder, GoldilocksField(12)),
+            Variable::constant(&mut builder, GoldilocksField(97)),
+            Variable::constant(&mut builder, GoldilocksField(49)),
+            Variable::constant(&mut builder, GoldilocksField(187)),
+            Variable::constant(&mut builder, GoldilocksField(39)),
+            Variable::constant(&mut builder, GoldilocksField(159)),
+            Variable::constant(&mut builder, GoldilocksField(168)),
+            Variable::constant(&mut builder, GoldilocksField(247)),
+            Variable::constant(&mut builder, GoldilocksField(29)),
+            Variable::constant(&mut builder, GoldilocksField(246)),
+            Variable::constant(&mut builder, GoldilocksField(209)),
+            Variable::constant(&mut builder, GoldilocksField(110)),
+            Variable::constant(&mut builder, GoldilocksField(77)),
+            Variable::constant(&mut builder, GoldilocksField(73)),
+            Variable::constant(&mut builder, GoldilocksField(20)),
+            Variable::constant(&mut builder, GoldilocksField(23)),
+            Variable::constant(&mut builder, GoldilocksField(174)),
+            Variable::constant(&mut builder, GoldilocksField(143)),
+            Variable::constant(&mut builder, GoldilocksField(93)),
+            Variable::constant(&mut builder, GoldilocksField(92)),
+            Variable::constant(&mut builder, GoldilocksField(162)),
+            Variable::constant(&mut builder, GoldilocksField(48)),
+            Variable::constant(&mut builder, GoldilocksField(134)),
+            Variable::constant(&mut builder, GoldilocksField(119)),
+            Variable::constant(&mut builder, GoldilocksField(213)),
+            Variable::constant(&mut builder, GoldilocksField(139)),
+            Variable::constant(&mut builder, GoldilocksField(234)),
+            Variable::constant(&mut builder, GoldilocksField(205)),
+            Variable::constant(&mut builder, GoldilocksField(91)),
+            Variable::constant(&mut builder, GoldilocksField(113)),
+            Variable::constant(&mut builder, GoldilocksField(204)),
+            Variable::constant(&mut builder, GoldilocksField(121)),
+            Variable::constant(&mut builder, GoldilocksField(57)),
+            Variable::constant(&mut builder, GoldilocksField(4)),
+            Variable::constant(&mut builder, GoldilocksField(41)),
+            Variable::constant(&mut builder, GoldilocksField(180)),
+            Variable::constant(&mut builder, GoldilocksField(144)),
+            Variable::constant(&mut builder, GoldilocksField(76)),
+            Variable::constant(&mut builder, GoldilocksField(107)),
+            Variable::constant(&mut builder, GoldilocksField(59)),
+            Variable::constant(&mut builder, GoldilocksField(176)),
+            Variable::constant(&mut builder, GoldilocksField(43)),
+            Variable::constant(&mut builder, GoldilocksField(11)),
+            Variable::constant(&mut builder, GoldilocksField(127)),
+            Variable::constant(&mut builder, GoldilocksField(34)),
+            Variable::constant(&mut builder, GoldilocksField(38)),
+            Variable::constant(&mut builder, GoldilocksField(164)),
+            Variable::constant(&mut builder, GoldilocksField(9)),
+            Variable::constant(&mut builder, GoldilocksField(141)),
+            Variable::constant(&mut builder, GoldilocksField(78)),
+            Variable::constant(&mut builder, GoldilocksField(245)),
+            Variable::constant(&mut builder, GoldilocksField(175)),
+            Variable::constant(&mut builder, GoldilocksField(145)),
+            Variable::constant(&mut builder, GoldilocksField(112)),
+            Variable::constant(&mut builder, GoldilocksField(129)),
+            Variable::constant(&mut builder, GoldilocksField(109)),
+            Variable::constant(&mut builder, GoldilocksField(18)),
+            Variable::constant(&mut builder, GoldilocksField(250)),
+            Variable::constant(&mut builder, GoldilocksField(85)),
+            Variable::constant(&mut builder, GoldilocksField(16)),
+            Variable::constant(&mut builder, GoldilocksField(124)),
+            Variable::constant(&mut builder, GoldilocksField(182)),
+            Variable::constant(&mut builder, GoldilocksField(242)),
+            Variable::constant(&mut builder, GoldilocksField(158)),
+            Variable::constant(&mut builder, GoldilocksField(84)),
+            Variable::constant(&mut builder, GoldilocksField(219)),
+            Variable::constant(&mut builder, GoldilocksField(13)),
+            Variable::constant(&mut builder, GoldilocksField(207)),
+            Variable::constant(&mut builder, GoldilocksField(186)),
+            Variable::constant(&mut builder, GoldilocksField(82)),
+            Variable::constant(&mut builder, GoldilocksField(157)),
+            Variable::constant(&mut builder, GoldilocksField(132)),
+            Variable::constant(&mut builder, GoldilocksField(225)),
+            Variable::constant(&mut builder, GoldilocksField(236)),
+            Variable::constant(&mut builder, GoldilocksField(45)),
+            Variable::constant(&mut builder, GoldilocksField(185)),
+            Variable::constant(&mut builder, GoldilocksField(228)),
+            Variable::constant(&mut builder, GoldilocksField(161)),
+            Variable::constant(&mut builder, GoldilocksField(169)),
+            Variable::constant(&mut builder, GoldilocksField(106)),
+            Variable::constant(&mut builder, GoldilocksField(25)),
+            Variable::constant(&mut builder, GoldilocksField(155)),
+            Variable::constant(&mut builder, GoldilocksField(251)),
+            Variable::constant(&mut builder, GoldilocksField(254)),
+            Variable::constant(&mut builder, GoldilocksField(223)),
         ];
         let hash_to_curve_res = hash_to_curve(&mut builder, &msg);
 
@@ -606,7 +860,7 @@ mod tests {
         let mut res_output: Vec<GoldilocksField> = Vec::new();
         for i in 0..hash_to_curve_res.len() {
             for j in 0..hash_to_curve_res[i].len() {
-                for k in 0..12 {
+                for k in 0..LIMBS {
                     builder.write(Variable(hash_to_curve_res[i][j].limbs[k].target));
                 }
             }
@@ -627,7 +881,7 @@ mod tests {
         // Read output.
         for i in 0..hash_to_curve_res.len() {
             for _ in 0..hash_to_curve_res[i].len() {
-                for _ in 0..12 {
+                for _ in 0..LIMBS {
                     res_output.push(output.read::<Variable>())
                 }
             }
@@ -644,16 +898,13 @@ mod tests {
         }
 
         let expected_biguint_targets = vec![
-                    BigUint::from_str("3898314311143498598232928636302843201147417323239224718360789834030193898102380674004641739485821762063383300863223").unwrap(), 
-                    BigUint::from_str("1907381618300654678833809042530528045219202973036460400592647259752361578155388048783374146362885595712785322935889").unwrap(), 
-                    BigUint::from_str("2533497754358129344573819271980775177420433434576664259373048380327090716743523684037647313977831493346790338697416").unwrap(), 
-                    BigUint::from_str("2476458800839415772166412841480638992289141020062264369481606378598402067179861075321658473879343813706964824257238").unwrap()
+                    BigUint::from_str("263045359310876400672266134102422923142170786488971463144260837991310793708919904974750654695723771449817953534932").unwrap(), 
+                    BigUint::from_str("705085714867347375204839501082774976133427291820427587421388912165231801117635419620551803041968063138400265133663").unwrap(), 
+                    BigUint::from_str("3303090097836311338780356548102458653001297014651905027382930947462021925827856111160646227318455068671696298599273").unwrap(), 
+                    BigUint::from_str("2746000687320669913100540339419677393886381993350402195421358168305846473266968075760380449244083602094512053359154").unwrap()
                 ];
 
-        println!("dali stiga do tuk 3?");
-
         for i in 0..4 {
-            println!("curr: {:?}", biguint_res[i]);
             assert_eq!(biguint_res[i], expected_biguint_targets[i]);
         }
     }
@@ -724,32 +975,11 @@ mod tests {
         let new_point = map_to_curve_simple_swu_9mod16(&mut builder, &x);
         let iso_map_r = isogeny_map(&mut builder, &new_point);
 
-        let iso_map_r_x0 = builder.api.constant_biguint(&BigUint::from_str("3020098988166152265957458699713409264776064412968511868273334310978607420463777702053743668373252848938048859569472").unwrap());
-        let iso_map_r_x1 = builder.api.constant_biguint(&BigUint::from_str("1458981974613365650201781947361855472098362440235925030682710979747620221343697516696212172566912716109989777361662").unwrap());
-        let iso_map_r_y0 = builder.api.constant_biguint(&BigUint::from_str("1834291692231285600047846672091248684005847013394827595644756391313325861691761060706376473203409023894171500990751").unwrap());
-        let iso_map_r_y1 = builder.api.constant_biguint(&BigUint::from_str("2613278682710607327768853275311538731542148746765923401506548661907721927393566272464025106984186092820519334410455").unwrap());
-        let r = builder
-            .api
-            .is_equal_biguint(&iso_map_r_x0, &iso_map_r[0][0]);
-        builder.api.assert_one(r.target);
-        let r = builder
-            .api
-            .is_equal_biguint(&iso_map_r_x1, &iso_map_r[0][1]);
-        builder.api.assert_one(r.target);
-        let r = builder
-            .api
-            .is_equal_biguint(&iso_map_r_y0, &iso_map_r[1][0]);
-        builder.api.assert_one(r.target);
-        let r = builder
-            .api
-            .is_equal_biguint(&iso_map_r_y1, &iso_map_r[1][1]);
-        builder.api.assert_one(r.target);
-
         // Define your circuit.
         let mut res_output: Vec<GoldilocksField> = Vec::new();
         for i in 0..iso_map_r.len() {
             for j in 0..iso_map_r[i].len() {
-                for k in 0..iso_map_r[i][j].limbs.len() {
+                for k in 0..LIMBS {
                     builder.write(Variable(iso_map_r[i][j].limbs[k].target));
                 }
             }
@@ -768,8 +998,8 @@ mod tests {
 
         // Read output.
         for i in 0..iso_map_r.len() {
-            for j in 0..iso_map_r[i].len() {
-                for _ in 0..iso_map_r[i][j].limbs.len() {
+            for _ in 0..iso_map_r[i].len() {
+                for _ in 0..LIMBS {
                     res_output.push(output.read::<Variable>())
                 }
             }
@@ -794,10 +1024,6 @@ mod tests {
         ];
 
         for i in 0..4 {
-            println!("biguint_res[i] is: {:?}", biguint_res[i]);
-        }
-
-        for i in 0..4 {
             assert_eq!(biguint_res[i], expected_biguint_targets[i]);
         }
     }
@@ -814,7 +1040,7 @@ mod tests {
         let mut res_output: Vec<GoldilocksField> = Vec::new();
         for i in 0..clear_cofactor.len() {
             for j in 0..clear_cofactor[i].len() {
-                for k in 0..12 {
+                for k in 0..LIMBS {
                     builder.write(Variable(clear_cofactor[i][j].limbs[k].target));
                 }
             }
@@ -835,7 +1061,7 @@ mod tests {
         // Read output.
         for i in 0..clear_cofactor.len() {
             for _ in 0..clear_cofactor[i].len() {
-                for _ in 0..12 {
+                for _ in 0..LIMBS {
                     res_output.push(output.read::<Variable>())
                 }
             }
@@ -853,15 +1079,11 @@ mod tests {
         }
 
         let expected_biguint_targets = vec![
-            BigUint::from_str("3898314311143498598232928636302843201147417323239224718360789834030193898102380674004641739485821762063383300863223").unwrap(),
-            BigUint::from_str("1907381618300654678833809042530528045219202973036460400592647259752361578155388048783374146362885595712785322935889").unwrap(),
-            BigUint::from_str("2533497754358129344573819271980775177420433434576664259373048380327090716743523684037647313977831493346790338697416").unwrap(),
-            BigUint::from_str("2476458800839415772166412841480638992289141020062264369481606378598402067179861075321658473879343813706964824257238").unwrap()
+            BigUint::from_str("1333544920615259474714661371327518954416732544068349411293275363187401395459274109080234631197310432595159920946891").unwrap(),
+            BigUint::from_str("3534898797471258007317464582418403172692698020727006028871480408936368621561281829419543100267410234420500056142147").unwrap(),
+            BigUint::from_str("3937050676002649672972543005965063406357492217339476444626945930452046333693534966501454095684077919472794301839550").unwrap(),
+            BigUint::from_str("2505850057307810573716759564908795048162371887702901637040931176762748544745723014444120460791457110594458168503549").unwrap()
         ];
-
-        for i in 0..4 {
-            println!("biguint_res[i] is: {:?}", biguint_res[i]);
-        }
 
         for i in 0..4 {
             assert_eq!(biguint_res[i], expected_biguint_targets[i]);
