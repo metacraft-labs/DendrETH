@@ -56,9 +56,9 @@ snapshot.on('SnapshotTaken', async (_: number, currentSlot: number) => {
     redisPort: options['redis-port'],
   });
 
-  let r = await promisified_exec(
+  let run_everywhere_output = await promisified_exec(
     './circuits_executables/run_everywhere.sh diva',
   );
 
-  console.log(r);
+  console.log(run_everywhere_output);
 });
