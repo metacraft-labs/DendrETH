@@ -3,10 +3,13 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{DataStruct, DeriveInput, Field, Fields};
 
-use crate::utils::{
-    create_struct_with_fields, create_struct_with_fields_and_inherited_attrs_target_primitive,
-    extend_generics_with_type_param, gen_shorthand_struct_initialization,
-    has_functional_attr_with_arg,
+use crate::{
+    derive_public_inputs_readable::gen_reader_read,
+    utils::{
+        create_struct_with_fields, create_struct_with_fields_and_inherited_attrs_target_primitive,
+        extend_generics_with_type_param, gen_shorthand_struct_initialization,
+        has_functional_attr_with_arg,
+    },
 };
 
 pub fn impl_derive_circuit_target(input_ast: DeriveInput) -> TokenStream {
@@ -119,12 +122,7 @@ fn impl_targets_with_public_inputs(
         &["serde"],
     );
 
-    let read_public_inputs_targets = public_input_fields.iter().map(|field| {
-        let field_name = &field.ident;
-        let field_type = &field.ty;
-        quote!(let #field_name = reader.read_object::<#field_type>();)
-    });
-    let read_public_inputs = read_public_inputs_targets.clone();
+    let read_public_inputs = gen_reader_read(&public_input_fields);
 
     let return_public_inputs_target = gen_shorthand_struct_initialization(
         &public_inputs_target_ident,
@@ -151,7 +149,7 @@ fn impl_targets_with_public_inputs(
 
             fn read_public_inputs<F: RichField>(public_inputs: &[F]) -> Self::PublicInputs {
                 let mut reader = PublicInputsFieldReader::new(public_inputs);
-                #(#read_public_inputs)*
+                #read_public_inputs
                 #return_public_inputs
             }
 
@@ -159,7 +157,7 @@ fn impl_targets_with_public_inputs(
 
             fn read_public_inputs_target(public_inputs: &[Target]) -> Self::PublicInputsTarget {
                 let mut reader = PublicInputsTargetReader::new(public_inputs);
-                #(#read_public_inputs_targets)*
+                #read_public_inputs
                 #return_public_inputs_target
             }
 

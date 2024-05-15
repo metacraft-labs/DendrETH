@@ -126,7 +126,7 @@ fn impl_to_targets(input_ast: &DeriveInput, struct_data: &DataStruct) -> TokenSt
     }
 }
 
-fn gen_reader_read(fields: &[Field]) -> TokenStream {
+pub fn gen_reader_read(fields: &[Field]) -> TokenStream {
     concat_token_streams(
         fields
             .iter()
