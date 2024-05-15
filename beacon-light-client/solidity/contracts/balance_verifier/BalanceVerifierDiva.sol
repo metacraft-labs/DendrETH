@@ -48,7 +48,7 @@ contract BalanceVerifier is PlonkVerifier, IZKOracle {
 
   /// @notice Verifies the proof and writes the data for given slot if valid
   /// @param proof the zk proof for total value locked
-  /// @param refSlot the slot for which the proof is ran
+  /// @param slot the slot for which the proof is ran
   /// @param balanceSum the sum of the balances of all validators with withdrawal credentials equal to WITHDRAWAL_CREDENTIALS
   /// @param _numberOfNonActivatedValidators number of validators yet to be activated
   /// @param _numberOfActiveValidators number of active validators
@@ -112,7 +112,7 @@ contract BalanceVerifier is PlonkVerifier, IZKOracle {
       slashedValidators: _numberOfSlashedValidators
     });
 
-    emit Report(
+    emit Reported(
       slot,
       balanceSum,
       numValidators,
@@ -131,7 +131,8 @@ contract BalanceVerifier is PlonkVerifier, IZKOracle {
       bool success,
       uint256 clBalanceGwei,
       uint256 numValidators,
-      uint256 exitedValidators
+      uint256 exitedValidators,
+      uint256 slashedValidators
     )
   {
     Report memory report = reports[slot];
@@ -140,7 +141,8 @@ contract BalanceVerifier is PlonkVerifier, IZKOracle {
       report.present,
       report.cBalanceGwei,
       report.numValidators,
-      report.exitedValidators
+      report.exitedValidators,
+      report.slashedValidators
     );
   }
 

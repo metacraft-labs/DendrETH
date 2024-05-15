@@ -19,14 +19,12 @@ use circuits_executables::{
     wrap_final_layer_in_poseidon_bn128::wrap_final_layer_in_poseidon_bn_128,
 };
 use futures_lite::future;
-use num::BigUint;
 use num_traits::ToPrimitive;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     iop::witness::{PartialWitness, WitnessWrite},
     plonk::{config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs},
 };
-use std::ops::Div;
 
 const CIRCUIT_DIR: &str = "circuits";
 

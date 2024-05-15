@@ -27,7 +27,6 @@ use plonky2::{
 };
 use redis::{aio::Connection, AsyncCommands, RedisError};
 use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize, Serializer};
-use serde_json::Number;
 
 use super::proof_storage::proof_storage::ProofStorage;
 
