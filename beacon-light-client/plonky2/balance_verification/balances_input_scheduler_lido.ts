@@ -45,15 +45,15 @@ const promisified_exec = promisify(exec);
     options['network'],
   );
 
-  let startedCalculation = {};
+  let processedSlots = new Set<number>();
 
   console.log(nextRefSlot);
 
   eventSource.addEventListener('head', async (event: any) => {
     const headSlot = JSON.parse(event.data).slot;
 
-    if (headSlot >= nextRefSlot && !startedCalculation[nextRefSlot]) {
-      startedCalculation[nextRefSlot] = true;
+    if (headSlot >= nextRefSlot && !processedSlots.has(nextRefSlot)) {
+      processedSlots.add(nextRefSlot);
 
       await getBalancesInput({
         protocol: 'lido',
