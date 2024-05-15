@@ -10,11 +10,9 @@ pub fn impl_derive_add_virtual_target(input_ast: DeriveInput) -> TokenStream {
         panic!("AddVirtualTarget is implemented only for structs");
     };
 
-    let fields = data.fields.iter().cloned().collect_vec();
-
     let (impl_generics, type_generics, where_clause) = input_ast.generics.split_for_impl();
-
     let ident = &input_ast.ident;
+    let fields = data.fields.iter().cloned().collect_vec();
 
     let add_virtual_targets = fields.iter().map(|field| {
         let field_name = &field.ident;

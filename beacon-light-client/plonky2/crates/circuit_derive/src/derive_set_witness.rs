@@ -1,55 +1,35 @@
 use itertools::Itertools;
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{DeriveInput, TypeParam};
+use syn::DeriveInput;
 
-use crate::utils::concat_token_streams;
+use crate::utils::extend_generics_with_type_param;
 
 pub fn impl_derive_set_witness(input_ast: DeriveInput) -> TokenStream {
     let syn::Data::Struct(ref data) = input_ast.data else {
         panic!("SetWitness is implemented only for structs");
     };
 
+    let (_, type_generics, where_clause) = input_ast.generics.split_for_impl();
+    let ident = &input_ast.ident;
     let fields = data.fields.iter().cloned().collect_vec();
 
-    let (_, type_generics, where_clause) = input_ast.generics.split_for_impl();
-    let type_param_tokens = quote!(F: RichField);
-    let type_param = syn::parse::<TypeParam>(type_param_tokens.into()).unwrap();
+    let extended_generics =
+        extend_generics_with_type_param(&input_ast.generics, quote!(F: RichField));
+    let (extended_impl_generics, _, _) = extended_generics.split_for_impl();
 
-    let mut modified_generics = input_ast.generics.clone();
-    modified_generics
-        .params
-        .push(syn::GenericParam::Type(type_param));
+    let set_witness_for_fields = fields.iter().map(|field| {
+        let field_name = &field.ident;
+        quote!(self.#field_name.set_witness(witness, &input.#field_name);)
+    });
 
-    let (modified_impl_generics, _, _) = modified_generics.split_for_impl();
+    quote! {
+        impl #extended_impl_generics SetWitness<F> for #ident #type_generics #where_clause {
+            type Input = <#ident #type_generics as TargetPrimitive>::Primitive;
 
-    let ident = &input_ast.ident;
-
-    let set_witness_for_fields = concat_token_streams(
-        fields
-            .iter()
-            .map(|field| {
-                let field_name = &field.ident;
-                quote!(self.#field_name.set_witness(witness, &input.#field_name);)
-            })
-            .collect_vec(),
-    );
-
-    concat_token_streams(vec![
-        // create_struct_with_fields_and_inherited_attrs_target_primitive(
-        //     &witness_input_ident,
-        //     &input_ast.generics,
-        //     &fields,
-        //     &["serde"],
-        // ),
-        quote! {
-            impl #modified_impl_generics SetWitness<F> for #ident #type_generics #where_clause {
-                type Input = <#ident #type_generics as TargetPrimitive>::Primitive;
-
-                fn set_witness(&self, witness: &mut PartialWitness<F>, input: &Self::Input) {
-                    #set_witness_for_fields
-                }
+            fn set_witness(&self, witness: &mut PartialWitness<F>, input: &Self::Input) {
+                #(#set_witness_for_fields)*
             }
-        },
-    ])
+        }
+    }
 }

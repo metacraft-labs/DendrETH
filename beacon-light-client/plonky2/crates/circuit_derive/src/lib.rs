@@ -5,7 +5,6 @@ use derive_set_witness::impl_derive_set_witness;
 use derive_target_primitive::impl_derive_target_primitive;
 use syn::parse_macro_input;
 use syn::DeriveInput;
-use utils::concat_token_streams;
 use utils::create_struct_with_fields;
 use utils::create_struct_with_fields_and_inherited_attrs_target_primitive;
 use utils::gen_shorthand_struct_initialization;
