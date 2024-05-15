@@ -13,6 +13,7 @@ import Web3 from 'web3';
 import assert from 'assert';
 import http from 'http';
 import { RequestOptions } from 'https';
+import { bytesToHex } from '@noble/bls12-381/math';
 
 const logger = getGenericLogger();
 
@@ -86,7 +87,7 @@ task('balance-verifier-publisher', 'Run relayer')
     logger.info(`Contract address ${args.balanceverifier}`);
 
     const balanceVerifierContract = await ethers.getContractAt(
-      'BalanceVerifier',
+      'contracts/balance_verifier/BalanceVerifierDiva.sol:BalanceVerifier',
       args.balanceverifier,
       publisher,
     );
@@ -166,6 +167,8 @@ task('balance-verifier-publisher', 'Run relayer')
             final_layer_proof.numberOfActiveValidators;
           let numberOfExitedValidators =
             final_layer_proof.numberOfExitedValidators;
+          let numberOfSlashedValidators =
+            final_layer_proof_input.numberOfSlashedValidators;
 
           await publishTransaction(
             balanceVerifierContract,
@@ -177,6 +180,7 @@ task('balance-verifier-publisher', 'Run relayer')
               numberOfNonActivatedValidators,
               numberOfActiveValidators,
               numberOfExitedValidators,
+              numberOfSlashedValidators,
             ],
             web3,
             args.transactionspeed,

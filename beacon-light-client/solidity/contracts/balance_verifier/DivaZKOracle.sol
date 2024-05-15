@@ -1,20 +1,8 @@
-interface IZKOracle is IZKOracleEvents, IZKOracleStructs {
-  function getReport(
-    uint256 slot
-  )
-    external
-    view
-    returns (
-      bool success,
-      uint256 clBalanceGwei,
-      uint256 numValidators,
-      uint256 exitedValidators,
-      uint256 slashedValidators
-    );
-}
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity ^0.8.19;
 
 interface IZKOracleEvents {
-  event Report(
+  event Reported(
     uint256 indexed slot,
     uint256 clBalanceGwei,
     uint256 numValidators,
@@ -31,4 +19,19 @@ interface IZKOracleStructs {
     uint64 exitedValidators;
     uint64 slashedValidators;
   }
+}
+
+interface IZKOracle is IZKOracleEvents, IZKOracleStructs {
+  function getReport(
+    uint256 slot
+  )
+    external
+    view
+    returns (
+      bool success,
+      uint256 clBalanceGwei,
+      uint256 numValidators,
+      uint256 exitedValidators,
+      uint256 slashedValidators
+    );
 }

@@ -19,83 +19,54 @@
 pragma solidity ^0.8.19;
 
 contract PlonkVerifier {
-  uint256 private constant R_MOD =
-    21888242871839275222246405745257275088548364400416034343698204186575808495617;
-  uint256 private constant P_MOD =
-    21888242871839275222246405745257275088696311157297823662689037894645226208583;
 
-  uint256 private constant G2_SRS_0_X_0 =
-    11559732032986387107991004021392285783925812861821192530917403151452391805634;
-  uint256 private constant G2_SRS_0_X_1 =
-    10857046999023057135944570762232829481370756359578518086990519993285655852781;
-  uint256 private constant G2_SRS_0_Y_0 =
-    4082367875863433681332203403145435568316851327593401208105741076214120093531;
-  uint256 private constant G2_SRS_0_Y_1 =
-    8495653923123431417604973247489272438418190587263600148770280649306958101930;
+  uint256 private constant R_MOD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+  uint256 private constant P_MOD = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
 
-  uint256 private constant G2_SRS_1_X_0 =
-    15805639136721018565402881920352193254830339253282065586954346329754995870280;
-  uint256 private constant G2_SRS_1_X_1 =
-    19089565590083334368588890253123139704298730990782503769911324779715431555531;
-  uint256 private constant G2_SRS_1_Y_0 =
-    9779648407879205346559610309258181044130619080926897934572699915909528404984;
-  uint256 private constant G2_SRS_1_Y_1 =
-    6779728121489434657638426458390319301070371227460768374343986326751507916979;
+  uint256 private constant G2_SRS_0_X_0 = 11559732032986387107991004021392285783925812861821192530917403151452391805634;
+  uint256 private constant G2_SRS_0_X_1 = 10857046999023057135944570762232829481370756359578518086990519993285655852781;
+  uint256 private constant G2_SRS_0_Y_0 = 4082367875863433681332203403145435568316851327593401208105741076214120093531;
+  uint256 private constant G2_SRS_0_Y_1 = 8495653923123431417604973247489272438418190587263600148770280649306958101930;
 
-  uint256 private constant G1_SRS_X =
-    14312776538779914388377568895031746459131577658076416373430523308756343304251;
-  uint256 private constant G1_SRS_Y =
-    11763105256161367503191792604679297387056316997144156930871823008787082098465;
+  uint256 private constant G2_SRS_1_X_0 = 15805639136721018565402881920352193254830339253282065586954346329754995870280;
+  uint256 private constant G2_SRS_1_X_1 = 19089565590083334368588890253123139704298730990782503769911324779715431555531;
+  uint256 private constant G2_SRS_1_Y_0 = 9779648407879205346559610309258181044130619080926897934572699915909528404984;
+  uint256 private constant G2_SRS_1_Y_1 = 6779728121489434657638426458390319301070371227460768374343986326751507916979;
+
+  uint256 private constant G1_SRS_X = 14312776538779914388377568895031746459131577658076416373430523308756343304251;
+  uint256 private constant G1_SRS_Y = 11763105256161367503191792604679297387056316997144156930871823008787082098465;
 
   // ----------------------- vk ---------------------
   uint256 private constant VK_NB_PUBLIC_INPUTS = 2;
   uint256 private constant VK_DOMAIN_SIZE = 16777216;
-  uint256 private constant VK_INV_DOMAIN_SIZE =
-    21888241567198334088790460357988866238279339518792980768180410072331574733841;
-  uint256 private constant VK_OMEGA =
-    5709868443893258075976348696661355716898495876243883251619397131511003808859;
-  uint256 private constant VK_QL_COM_X =
-    7023110886245352283943045339847663198286543006145043515829500219197580383688;
-  uint256 private constant VK_QL_COM_Y =
-    11999050906773445069933577202605474270280908513065322379515025027945931240200;
-  uint256 private constant VK_QR_COM_X =
-    17765592657670783025255791463964011373317688663439055172683593024981693282923;
-  uint256 private constant VK_QR_COM_Y =
-    4403283371073393148976768052312688537318978519462887169924152024883503939848;
-  uint256 private constant VK_QM_COM_X =
-    7133400408190073265680121886496004982581107927938990476518094377247823933315;
-  uint256 private constant VK_QM_COM_Y =
-    21830078826172610656606651948746543693555805122401498040432320985411708749986;
-  uint256 private constant VK_QO_COM_X =
-    18796845392105032759516420878829552644441022982868117200708973548176698932037;
-  uint256 private constant VK_QO_COM_Y =
-    5170567984162039213286058732631175070230963917145021235638960059910350870895;
-  uint256 private constant VK_QK_COM_X =
-    9804502274897861830195827392924194591090248643279701671334872899001309464889;
-  uint256 private constant VK_QK_COM_Y =
-    1270636000415319222874822802715355861254584498976693621012309903687485297469;
+  uint256 private constant VK_INV_DOMAIN_SIZE = 21888241567198334088790460357988866238279339518792980768180410072331574733841;
+  uint256 private constant VK_OMEGA = 5709868443893258075976348696661355716898495876243883251619397131511003808859;
+  uint256 private constant VK_QL_COM_X = 7023110886245352283943045339847663198286543006145043515829500219197580383688;
+  uint256 private constant VK_QL_COM_Y = 11999050906773445069933577202605474270280908513065322379515025027945931240200;
+  uint256 private constant VK_QR_COM_X = 17765592657670783025255791463964011373317688663439055172683593024981693282923;
+  uint256 private constant VK_QR_COM_Y = 4403283371073393148976768052312688537318978519462887169924152024883503939848;
+  uint256 private constant VK_QM_COM_X = 7133400408190073265680121886496004982581107927938990476518094377247823933315;
+  uint256 private constant VK_QM_COM_Y = 21830078826172610656606651948746543693555805122401498040432320985411708749986;
+  uint256 private constant VK_QO_COM_X = 18796845392105032759516420878829552644441022982868117200708973548176698932037;
+  uint256 private constant VK_QO_COM_Y = 5170567984162039213286058732631175070230963917145021235638960059910350870895;
+  uint256 private constant VK_QK_COM_X = 9804502274897861830195827392924194591090248643279701671334872899001309464889;
+  uint256 private constant VK_QK_COM_Y = 1270636000415319222874822802715355861254584498976693621012309903687485297469;
 
-  uint256 private constant VK_S1_COM_X =
-    13297389521992293349166671458035134628725319406402312075343877704589141189361;
-  uint256 private constant VK_S1_COM_Y =
-    2321098606590669432375056107199867348758575990092665051395120002265320019105;
+  uint256 private constant VK_S1_COM_X = 13297389521992293349166671458035134628725319406402312075343877704589141189361;
+  uint256 private constant VK_S1_COM_Y = 2321098606590669432375056107199867348758575990092665051395120002265320019105;
 
-  uint256 private constant VK_S2_COM_X =
-    11481938275029091744351071966575435205606633452785919083194488466801061535283;
-  uint256 private constant VK_S2_COM_Y =
-    14560989888318229352146493595803804228210691932770780886671599965013193765213;
+  uint256 private constant VK_S2_COM_X = 11481938275029091744351071966575435205606633452785919083194488466801061535283;
+  uint256 private constant VK_S2_COM_Y = 14560989888318229352146493595803804228210691932770780886671599965013193765213;
 
-  uint256 private constant VK_S3_COM_X =
-    4590439675908830691063375558213584768912097448496544040413100270174284153293;
-  uint256 private constant VK_S3_COM_Y =
-    3597339983461509826734362785865011919194163920574841594644180342923265593745;
+  uint256 private constant VK_S3_COM_X = 4590439675908830691063375558213584768912097448496544040413100270174284153293;
+  uint256 private constant VK_S3_COM_Y = 3597339983461509826734362785865011919194163920574841594644180342923265593745;
 
   uint256 private constant VK_COSET_SHIFT = 5;
 
-  uint256 private constant VK_QCP_0_X =
-    2020891928811832089423863368086720623994399558787891163066539966809817267185;
-  uint256 private constant VK_QCP_0_Y =
-    20597184802329040011650554816944043703432370578898199784956618319165304103121;
+
+  uint256 private constant VK_QCP_0_X = 2020891928811832089423863368086720623994399558787891163066539966809817267185;
+  uint256 private constant VK_QCP_0_Y = 20597184802329040011650554816944043703432370578898199784956618319165304103121;
+
 
   uint256 private constant VK_INDEX_COMMIT_API0 = 7572676;
   uint256 private constant VK_NB_CUSTOM_GATES = 1;
@@ -186,28 +157,29 @@ contract PlonkVerifier {
   uint256 private constant STATE_LAST_MEM = 0x220;
 
   // -------- errors
-  uint256 private constant ERROR_STRING_ID =
-    0x08c379a000000000000000000000000000000000000000000000000000000000; // selector for function Error(string)
+  uint256 private constant ERROR_STRING_ID = 0x08c379a000000000000000000000000000000000000000000000000000000000; // selector for function Error(string)
+
 
   // -------- utils (for hash_fr)
-  uint256 private constant HASH_FR_BB = 340282366920938463463374607431768211456; // 2**128
-  uint256 private constant HASH_FR_ZERO_UINT256 = 0;
+	uint256 private constant HASH_FR_BB = 340282366920938463463374607431768211456; // 2**128
+	uint256 private constant HASH_FR_ZERO_UINT256 = 0;
 
-  uint8 private constant HASH_FR_LEN_IN_BYTES = 48;
-  uint8 private constant HASH_FR_SIZE_DOMAIN = 11;
-  uint8 private constant HASH_FR_ONE = 1;
-  uint8 private constant HASH_FR_TWO = 2;
+	uint8 private constant HASH_FR_LEN_IN_BYTES = 48;
+	uint8 private constant HASH_FR_SIZE_DOMAIN = 11;
+	uint8 private constant HASH_FR_ONE = 1;
+	uint8 private constant HASH_FR_TWO = 2;
+
 
   /// Verify a Plonk proof.
   /// Reverts if the proof or the public inputs are malformed.
   /// @param proof serialised plonk proof (using gnark's MarshalSolidity)
   /// @param public_inputs (must be reduced)
   /// @return success true if the proof passes false otherwise
-  function Verify(
-    bytes calldata proof,
-    uint256[] calldata public_inputs
-  ) public view returns (bool success) {
+  function Verify(bytes calldata proof, uint256[] calldata public_inputs)
+  public view returns(bool success) {
+
     assembly {
+
       let mem := mload(0x40)
       let freeMem := add(mem, STATE_LAST_MEM)
 
@@ -219,38 +191,19 @@ contract PlonkVerifier {
 
       // compute the challenges
       let prev_challenge_non_reduced
-      prev_challenge_non_reduced := derive_gamma(
-        proof.offset,
-        public_inputs.length,
-        public_inputs.offset
-      )
+      prev_challenge_non_reduced := derive_gamma(proof.offset, public_inputs.length, public_inputs.offset)
       prev_challenge_non_reduced := derive_beta(prev_challenge_non_reduced)
-      prev_challenge_non_reduced := derive_alpha(
-        proof.offset,
-        prev_challenge_non_reduced
-      )
+      prev_challenge_non_reduced := derive_alpha(proof.offset, prev_challenge_non_reduced)
       derive_zeta(proof.offset, prev_challenge_non_reduced)
 
       // evaluation of Z=Xⁿ-1 at ζ, we save this value
       let zeta := mload(add(mem, STATE_ZETA))
-      let zeta_power_n_minus_one := addmod(
-        pow(zeta, VK_DOMAIN_SIZE, freeMem),
-        sub(R_MOD, 1),
-        R_MOD
-      )
+      let zeta_power_n_minus_one := addmod(pow(zeta, VK_DOMAIN_SIZE, freeMem), sub(R_MOD, 1), R_MOD)
       mstore(add(mem, STATE_ZETA_POWER_N_MINUS_ONE), zeta_power_n_minus_one)
 
       // public inputs contribution
-      let l_pi := sum_pi_wo_api_commit(
-        public_inputs.offset,
-        public_inputs.length,
-        freeMem
-      )
-      let l_wocommit := sum_pi_commit(
-        proof.offset,
-        public_inputs.length,
-        freeMem
-      )
+      let l_pi := sum_pi_wo_api_commit(public_inputs.offset, public_inputs.length, freeMem)
+      let l_wocommit := sum_pi_commit(proof.offset, public_inputs.length, freeMem)
       l_pi := addmod(l_wocommit, l_pi, R_MOD)
       mstore(add(mem, STATE_PI), l_pi)
 
@@ -271,7 +224,7 @@ contract PlonkVerifier {
         mstore(ptError, ERROR_STRING_ID) // selector for function Error(string)
         mstore(add(ptError, 0x4), 0x20)
         mstore(add(ptError, 0x24), 0x1d)
-        mstore(add(ptError, 0x44), 'wrong number of public inputs')
+        mstore(add(ptError, 0x44), "wrong number of public inputs")
         revert(ptError, 0x64)
       }
 
@@ -282,7 +235,7 @@ contract PlonkVerifier {
         mstore(ptError, ERROR_STRING_ID) // selector for function Error(string)
         mstore(add(ptError, 0x4), 0x20)
         mstore(add(ptError, 0x24), 0x12)
-        mstore(add(ptError, 0x44), 'error ec operation')
+        mstore(add(ptError, 0x44), "error ec operation")
         revert(ptError, 0x64)
       }
 
@@ -292,7 +245,7 @@ contract PlonkVerifier {
         mstore(ptError, ERROR_STRING_ID) // selector for function Error(string)
         mstore(add(ptError, 0x4), 0x20)
         mstore(add(ptError, 0x24), 0x18)
-        mstore(add(ptError, 0x44), 'inputs are bigger than r')
+        mstore(add(ptError, 0x44), "inputs are bigger than r")
         revert(ptError, 0x64)
       }
 
@@ -303,7 +256,7 @@ contract PlonkVerifier {
         mstore(ptError, ERROR_STRING_ID) // selector for function Error(string)
         mstore(add(ptError, 0x4), 0x20)
         mstore(add(ptError, 0x24), 0x10)
-        mstore(add(ptError, 0x44), 'wrong proof size')
+        mstore(add(ptError, 0x44), "wrong proof size")
         revert(ptError, 0x64)
       }
 
@@ -315,7 +268,7 @@ contract PlonkVerifier {
         mstore(ptError, ERROR_STRING_ID) // selector for function Error(string)
         mstore(add(ptError, 0x4), 0x20)
         mstore(add(ptError, 0x24), 0x16)
-        mstore(add(ptError, 0x44), 'openings bigger than r')
+        mstore(add(ptError, 0x44), "openings bigger than r")
         revert(ptError, 0x64)
       }
 
@@ -324,7 +277,7 @@ contract PlonkVerifier {
         mstore(ptError, ERROR_STRING_ID) // selector for function Error(string)
         mstore(add(ptError, 0x4), 0x20)
         mstore(add(ptError, 0x24), 0xc)
-        mstore(add(ptError, 0x44), 'error verify')
+        mstore(add(ptError, 0x44), "error verify")
         revert(ptError, 0x64)
       }
 
@@ -333,7 +286,7 @@ contract PlonkVerifier {
         mstore(ptError, ERROR_STRING_ID) // selector for function Error(string)
         mstore(add(ptError, 0x4), 0x20)
         mstore(add(ptError, 0x24), 0x14)
-        mstore(add(ptError, 0x44), 'error random gen kzg')
+        mstore(add(ptError, 0x44), "error random gen kzg")
         revert(ptError, 0x64)
       }
       // end errors -------------------------------------------------
@@ -352,12 +305,9 @@ contract PlonkVerifier {
       /// @param p pointer to the public inputs array
       function check_inputs_size(s, p) {
         let input_checks := 1
-        for {
-          let i
-        } lt(i, s) {
-          i := add(i, 1)
-        } {
-          input_checks := and(input_checks, lt(calldataload(p), R_MOD))
+        for {let i} lt(i, s) {i:=add(i,1)}
+        {
+          input_checks := and(input_checks,lt(calldataload(p), R_MOD))
           p := add(p, 0x20)
         }
         if iszero(input_checks) {
@@ -368,9 +318,9 @@ contract PlonkVerifier {
       /// Checks if the proof is of the correct size
       /// @param actual_proof_size size of the proof (not the expected size)
       function check_proof_size(actual_proof_size) {
-        let expected_proof_size := add(0x340, mul(VK_NB_CUSTOM_GATES, 0x60))
+        let expected_proof_size := add(0x340, mul(VK_NB_CUSTOM_GATES,0x60))
         if iszero(eq(actual_proof_size, expected_proof_size)) {
-          error_proof_size()
+         error_proof_size()
         }
       }
 
@@ -378,6 +328,7 @@ contract PlonkVerifier {
       /// @param aproof pointer to the beginning of the proof
       /// @dev the 'a' prepending proof is to have a local name
       function check_proof_openings_size(aproof) {
+
         let openings_check := 1
 
         // linearised polynomial at zeta
@@ -415,11 +366,8 @@ contract PlonkVerifier {
         // PROOF_OPENING_QCP_AT_ZETA
 
         p := add(aproof, PROOF_OPENING_QCP_AT_ZETA)
-        for {
-          let i := 0
-        } lt(i, VK_NB_CUSTOM_GATES) {
-          i := add(i, 1)
-        } {
+        for {let i:=0} lt(i, VK_NB_CUSTOM_GATES) {i:=add(i,1)}
+        {
           openings_check := and(openings_check, lt(calldataload(p), R_MOD))
           p := add(p, 0x20)
         }
@@ -427,6 +375,7 @@ contract PlonkVerifier {
         if iszero(openings_check) {
           error_proof_openings_size()
         }
+
       }
       // end checks -------------------------------------------------
 
@@ -448,7 +397,8 @@ contract PlonkVerifier {
       /// and is encoded as a uint256 number n. In basis b = 256, the number looks like this
       /// [0 0 0 .. 0x67 0x61 0x6d, 0x6d, 0x61]. The first non zero entry is at position 27=0x1b
       /// Gamma reduced (the actual challenge) is stored at add(state, state_gamma)
-      function derive_gamma(aproof, nb_pi, pi) -> gamma_not_reduced {
+      function derive_gamma(aproof, nb_pi, pi)->gamma_not_reduced {
+
         let state := mload(0x40)
         let mPtr := add(state, STATE_LAST_MEM)
 
@@ -495,14 +445,7 @@ contract PlonkVerifier {
         let size := add(0x2c5, size_pi_in_bytes)
 
         size := add(size, mul(VK_NB_CUSTOM_GATES, 0x40))
-        let l_success := staticcall(
-          gas(),
-          0x2,
-          add(mPtr, 0x1b),
-          size,
-          mPtr,
-          0x20
-        ) //0x1b -> 000.."gamma"
+        let l_success := staticcall(gas(), 0x2, add(mPtr, 0x1b), size, mPtr, 0x20) //0x1b -> 000.."gamma"
         if iszero(l_success) {
           error_verify()
         }
@@ -515,21 +458,15 @@ contract PlonkVerifier {
       /// @return beta_not_reduced the next challenge, beta, not reduced
       /// @notice the transcript consists of the previous challenge only.
       /// The reduced version of beta is stored at add(state, state_beta)
-      function derive_beta(gamma_not_reduced) -> beta_not_reduced {
+      function derive_beta(gamma_not_reduced)->beta_not_reduced{
+
         let state := mload(0x40)
         let mPtr := add(mload(0x40), STATE_LAST_MEM)
 
         // beta
         mstore(mPtr, 0x62657461) // "beta"
         mstore(add(mPtr, 0x20), gamma_not_reduced)
-        let l_success := staticcall(
-          gas(),
-          0x2,
-          add(mPtr, 0x1c),
-          0x24,
-          mPtr,
-          0x20
-        ) //0x1b -> 000.."gamma"
+        let l_success := staticcall(gas(), 0x2, add(mPtr, 0x1c), 0x24, mPtr, 0x20) //0x1b -> 000.."gamma"
         if iszero(l_success) {
           error_verify()
         }
@@ -544,7 +481,8 @@ contract PlonkVerifier {
       /// @notice the transcript consists of the previous challenge (beta)
       /// not reduced, the commitments to the wires associated to the QCP_i,
       /// and the commitment to the grand product polynomial
-      function derive_alpha(aproof, beta_not_reduced) -> alpha_not_reduced {
+      function derive_alpha(aproof, beta_not_reduced)->alpha_not_reduced {
+
         let state := mload(0x40)
         let mPtr := add(mload(0x40), STATE_LAST_MEM)
         let full_size := 0x65 // size("alpha") + 0x20 (previous challenge)
@@ -556,10 +494,7 @@ contract PlonkVerifier {
         _mPtr := add(_mPtr, 0x20)
 
         // Bsb22Commitments
-        let proof_bsb_commitments := add(
-          aproof,
-          PROOF_COMMITMENTS_WIRES_CUSTOM_GATES
-        )
+        let proof_bsb_commitments := add(aproof, PROOF_COMMITMENTS_WIRES_CUSTOM_GATES)
         let size_bsb_commitments := mul(0x40, VK_NB_CUSTOM_GATES)
         calldatacopy(_mPtr, proof_bsb_commitments, size_bsb_commitments)
         _mPtr := add(_mPtr, size_bsb_commitments)
@@ -567,14 +502,7 @@ contract PlonkVerifier {
 
         // [Z], the commitment to the grand product polynomial
         calldatacopy(_mPtr, add(aproof, PROOF_GRAND_PRODUCT_COMMITMENT_X), 0x40)
-        let l_success := staticcall(
-          gas(),
-          0x2,
-          add(mPtr, 0x1b),
-          full_size,
-          mPtr,
-          0x20
-        )
+        let l_success := staticcall(gas(), 0x2, add(mPtr, 0x1b), full_size, mPtr, 0x20)
         if iszero(l_success) {
           error_verify()
         }
@@ -589,6 +517,7 @@ contract PlonkVerifier {
       /// The transcript consists of the previous challenge and the commitment to
       /// the quotient polynomial h.
       function derive_zeta(aproof, alpha_not_reduced) {
+
         let state := mload(0x40)
         let mPtr := add(mload(0x40), STATE_LAST_MEM)
 
@@ -596,14 +525,7 @@ contract PlonkVerifier {
         mstore(mPtr, 0x7a657461) // "zeta"
         mstore(add(mPtr, 0x20), alpha_not_reduced)
         calldatacopy(add(mPtr, 0x40), add(aproof, PROOF_H_0_X), 0xc0)
-        let l_success := staticcall(
-          gas(),
-          0x2,
-          add(mPtr, 0x1c),
-          0xe4,
-          mPtr,
-          0x20
-        )
+        let l_success := staticcall(gas(), 0x2, add(mPtr, 0x1c), 0xe4, mPtr, 0x20)
         if iszero(l_success) {
           error_verify()
         }
@@ -620,7 +542,8 @@ contract PlonkVerifier {
       /// @param n number of public inputs
       /// @param mPtr free memory
       /// @return pi_wo_commit public inputs contribution (except the public inputs coming from the custom gate)
-      function sum_pi_wo_api_commit(ins, n, mPtr) -> pi_wo_commit {
+      function sum_pi_wo_api_commit(ins, n, mPtr)->pi_wo_commit {
+
         let state := mload(0x40)
         let z := mload(add(state, STATE_ZETA))
         let zpnmo := mload(add(state, STATE_ZETA_POWER_N_MINUS_ONE))
@@ -629,16 +552,14 @@ contract PlonkVerifier {
         batch_compute_lagranges_at_z(z, zpnmo, n, li)
 
         let tmp := 0
-        for {
-          let i := 0
-        } lt(i, n) {
-          i := add(i, 1)
-        } {
+        for {let i:=0} lt(i,n) {i:=add(i,1)}
+        {
           tmp := mulmod(mload(li), calldataload(ins), R_MOD)
           pi_wo_commit := addmod(pi_wo_commit, tmp, R_MOD)
           li := add(li, 0x20)
           ins := add(ins, 0x20)
         }
+
       }
 
       /// batch_compute_lagranges_at_z computes [L_0(z), .., L_{n-1}(z)]
@@ -647,28 +568,23 @@ contract PlonkVerifier {
       /// @param n number of public inputs (number of Lagranges to compute)
       /// @param mPtr pointer to which the results are stored
       function batch_compute_lagranges_at_z(z, zpnmo, n, mPtr) {
+
         let zn := mulmod(zpnmo, VK_INV_DOMAIN_SIZE, R_MOD) // 1/n * (ζⁿ - 1)
 
         let _w := 1
         let _mPtr := mPtr
-        for {
-          let i := 0
-        } lt(i, n) {
-          i := add(i, 1)
-        } {
-          mstore(_mPtr, addmod(z, sub(R_MOD, _w), R_MOD))
+        for {let i:=0} lt(i,n) {i:=add(i,1)}
+        {
+          mstore(_mPtr, addmod(z,sub(R_MOD, _w), R_MOD))
           _w := mulmod(_w, VK_OMEGA, R_MOD)
           _mPtr := add(_mPtr, 0x20)
         }
         batch_invert(mPtr, n, _mPtr)
         _mPtr := mPtr
         _w := 1
-        for {
-          let i := 0
-        } lt(i, n) {
-          i := add(i, 1)
-        } {
-          mstore(_mPtr, mulmod(mulmod(mload(_mPtr), zn, R_MOD), _w, R_MOD))
+        for {let i:=0} lt(i,n) {i:=add(i,1)}
+        {
+          mstore(_mPtr, mulmod(mulmod(mload(_mPtr), zn , R_MOD), _w, R_MOD))
           _mPtr := add(_mPtr, 0x20)
           _w := mulmod(_w, VK_OMEGA, R_MOD)
         }
@@ -681,11 +597,8 @@ contract PlonkVerifier {
       function batch_invert(ins, nb_ins, mPtr) {
         mstore(mPtr, 1)
         let offset := 0
-        for {
-          let i := 0
-        } lt(i, nb_ins) {
-          i := add(i, 1)
-        } {
+        for {let i:=0} lt(i, nb_ins) {i:=add(i,1)}
+        {
           let prev := mload(add(mPtr, offset))
           let cur := mload(add(ins, offset))
           cur := mulmod(prev, cur, R_MOD)
@@ -694,12 +607,9 @@ contract PlonkVerifier {
         }
         ins := add(ins, sub(offset, 0x20))
         mPtr := add(mPtr, offset)
-        let inv := pow(mload(mPtr), sub(R_MOD, 2), add(mPtr, 0x20))
-        for {
-          let i := 0
-        } lt(i, nb_ins) {
-          i := add(i, 1)
-        } {
+        let inv := pow(mload(mPtr), sub(R_MOD,2), add(mPtr, 0x20))
+        for {let i:=0} lt(i, nb_ins) {i:=add(i,1)}
+        {
           mPtr := sub(mPtr, 0x20)
           let tmp := mload(ins)
           let cur := mulmod(inv, mload(mPtr), R_MOD)
@@ -709,12 +619,14 @@ contract PlonkVerifier {
         }
       }
 
+
       /// Public inputs (the ones coming from the custom gate) contribution
       /// @param aproof pointer to the proof
       /// @param nb_public_inputs number of public inputs
       /// @param mPtr pointer to free memory
       /// @return pi_commit custom gate public inputs contribution
-      function sum_pi_commit(aproof, nb_public_inputs, mPtr) -> pi_commit {
+      function sum_pi_commit(aproof, nb_public_inputs, mPtr)->pi_commit {
+
         let state := mload(0x40)
         let z := mload(add(state, STATE_ZETA))
         let zpnmo := mload(add(state, STATE_ZETA_POWER_N_MINUS_ONE))
@@ -723,15 +635,13 @@ contract PlonkVerifier {
 
         let h_fr, ith_lagrange
 
+
         h_fr := hash_fr(calldataload(p), calldataload(add(p, 0x20)), mPtr)
-        ith_lagrange := compute_ith_lagrange_at_z(
-          z,
-          zpnmo,
-          add(nb_public_inputs, VK_INDEX_COMMIT_API0),
-          mPtr
-        )
+        ith_lagrange := compute_ith_lagrange_at_z(z, zpnmo, add(nb_public_inputs, VK_INDEX_COMMIT_API0), mPtr)
         pi_commit := addmod(pi_commit, mulmod(h_fr, ith_lagrange, R_MOD), R_MOD)
         p := add(p, 0x40)
+
+
       }
 
       /// Computes L_i(zeta) =  ωⁱ/n * (ζⁿ-1)/(ζ-ωⁱ) where:
@@ -740,13 +650,15 @@ contract PlonkVerifier {
       /// @param i i-th lagrange
       /// @param mPtr free memory
       /// @return res = ωⁱ/n * (ζⁿ-1)/(ζ-ωⁱ)
-      function compute_ith_lagrange_at_z(z, zpnmo, i, mPtr) -> res {
+      function compute_ith_lagrange_at_z(z, zpnmo, i, mPtr)->res {
+
         let w := pow(VK_OMEGA, i, mPtr) // w**i
         i := addmod(z, sub(R_MOD, w), R_MOD) // z-w**i
         w := mulmod(w, VK_INV_DOMAIN_SIZE, R_MOD) // w**i/n
-        i := pow(i, sub(R_MOD, 2), mPtr) // (z-w**i)**-1
+        i := pow(i, sub(R_MOD,2), mPtr) // (z-w**i)**-1
         w := mulmod(w, i, R_MOD) // w**i/n*(z-w)**-1
         res := mulmod(w, zpnmo, R_MOD)
+
       }
 
       /// @dev https://tools.ietf.org/html/draft-irtf-cfrg-hash-to-curve-06#section-5.2
@@ -754,7 +666,8 @@ contract PlonkVerifier {
       /// @param y y coordinate of a point on Bn254(𝔽_p)
       /// @param mPtr free memory
       /// @return res an element mod R_MOD
-      function hash_fr(x, y, mPtr) -> res {
+      function hash_fr(x, y, mPtr)->res {
+
         // [0x00, .. , 0x00 || x, y, || 0, 48, 0, dst, HASH_FR_SIZE_DOMAIN]
         // <-  64 bytes  ->  <-64b -> <-       1 bytes each     ->
 
@@ -849,6 +762,7 @@ contract PlonkVerifier {
         res := mulmod(mload(mPtr), HASH_FR_BB, R_MOD) // <- res = 2**128 * mPtr[:32]
         let b1 := shr(128, mload(add(mPtr, 0x20))) // b1 <- [0, 0, .., 0 ||  b2[:16] ]
         res := addmod(res, b1, R_MOD)
+
       }
 
       // END compute_pi -------------------------------------------------
@@ -889,83 +803,38 @@ contract PlonkVerifier {
         // Note: adding the other point ζω is not needed, as ω is known beforehand.
         mstore(mPtr, mload(add(state, STATE_FOLDED_DIGESTS_X)))
         mstore(add(mPtr, 0x20), mload(add(state, STATE_FOLDED_DIGESTS_Y)))
-        mstore(
-          add(mPtr, 0x40),
-          calldataload(add(aproof, PROOF_BATCH_OPENING_AT_ZETA_X))
-        )
-        mstore(
-          add(mPtr, 0x60),
-          calldataload(add(aproof, PROOF_BATCH_OPENING_AT_ZETA_Y))
-        )
-        mstore(
-          add(mPtr, 0x80),
-          calldataload(add(aproof, PROOF_GRAND_PRODUCT_COMMITMENT_X))
-        )
-        mstore(
-          add(mPtr, 0xa0),
-          calldataload(add(aproof, PROOF_GRAND_PRODUCT_COMMITMENT_Y))
-        )
-        mstore(
-          add(mPtr, 0xc0),
-          calldataload(add(aproof, PROOF_OPENING_AT_ZETA_OMEGA_X))
-        )
-        mstore(
-          add(mPtr, 0xe0),
-          calldataload(add(aproof, PROOF_OPENING_AT_ZETA_OMEGA_Y))
-        )
+        mstore(add(mPtr, 0x40), calldataload(add(aproof, PROOF_BATCH_OPENING_AT_ZETA_X)))
+        mstore(add(mPtr, 0x60), calldataload(add(aproof, PROOF_BATCH_OPENING_AT_ZETA_Y)))
+        mstore(add(mPtr, 0x80), calldataload(add(aproof, PROOF_GRAND_PRODUCT_COMMITMENT_X)))
+        mstore(add(mPtr, 0xa0), calldataload(add(aproof, PROOF_GRAND_PRODUCT_COMMITMENT_Y)))
+        mstore(add(mPtr, 0xc0), calldataload(add(aproof, PROOF_OPENING_AT_ZETA_OMEGA_X)))
+        mstore(add(mPtr, 0xe0), calldataload(add(aproof, PROOF_OPENING_AT_ZETA_OMEGA_Y)))
         mstore(add(mPtr, 0x100), mload(add(state, STATE_ZETA)))
         mstore(add(mPtr, 0x120), mload(add(state, STATE_GAMMA_KZG)))
         let random := staticcall(gas(), 0x2, mPtr, 0x140, mPtr, 0x20)
-        if iszero(random) {
+        if iszero(random){
           error_random_generation()
         }
         random := mod(mload(mPtr), R_MOD) // use the same variable as we are one variable away from getting stack-too-deep error...
 
         let folded_quotients := mPtr
         mPtr := add(folded_quotients, 0x40)
-        mstore(
-          folded_quotients,
-          calldataload(add(aproof, PROOF_BATCH_OPENING_AT_ZETA_X))
-        )
-        mstore(
-          add(folded_quotients, 0x20),
-          calldataload(add(aproof, PROOF_BATCH_OPENING_AT_ZETA_Y))
-        )
-        point_acc_mul_calldata(
-          folded_quotients,
-          add(aproof, PROOF_OPENING_AT_ZETA_OMEGA_X),
-          random,
-          mPtr
-        )
+        mstore(folded_quotients, calldataload(add(aproof, PROOF_BATCH_OPENING_AT_ZETA_X)))
+        mstore(add(folded_quotients, 0x20), calldataload(add(aproof, PROOF_BATCH_OPENING_AT_ZETA_Y)))
+        point_acc_mul_calldata(folded_quotients, add(aproof, PROOF_OPENING_AT_ZETA_OMEGA_X), random, mPtr)
 
         let folded_digests := add(state, STATE_FOLDED_DIGESTS_X)
-        point_acc_mul_calldata(
-          folded_digests,
-          add(aproof, PROOF_GRAND_PRODUCT_COMMITMENT_X),
-          random,
-          mPtr
-        )
+        point_acc_mul_calldata(folded_digests, add(aproof, PROOF_GRAND_PRODUCT_COMMITMENT_X), random, mPtr)
 
         let folded_evals := add(state, STATE_FOLDED_CLAIMED_VALUES)
-        fr_acc_mul_calldata(
-          folded_evals,
-          add(aproof, PROOF_GRAND_PRODUCT_AT_ZETA_OMEGA),
-          random
-        )
+        fr_acc_mul_calldata(folded_evals, add(aproof, PROOF_GRAND_PRODUCT_AT_ZETA_OMEGA), random)
 
         let folded_evals_commit := mPtr
         mPtr := add(folded_evals_commit, 0x40)
         mstore(folded_evals_commit, G1_SRS_X)
         mstore(add(folded_evals_commit, 0x20), G1_SRS_Y)
         mstore(add(folded_evals_commit, 0x40), mload(folded_evals))
-        let check_staticcall := staticcall(
-          gas(),
-          7,
-          folded_evals_commit,
-          0x60,
-          folded_evals_commit,
-          0x40
-        )
+        let check_staticcall := staticcall(gas(), 7, folded_evals_commit, 0x60, folded_evals_commit, 0x40)
         if iszero(check_staticcall) {
           error_verify()
         }
@@ -984,12 +853,7 @@ contract PlonkVerifier {
         )
         let zeta_omega := mulmod(mload(add(state, STATE_ZETA)), VK_OMEGA, R_MOD)
         random := mulmod(random, zeta_omega, R_MOD)
-        point_acc_mul_calldata(
-          folded_points_quotients,
-          add(aproof, PROOF_OPENING_AT_ZETA_OMEGA_X),
-          random,
-          mPtr
-        )
+        point_acc_mul_calldata(folded_points_quotients, add(aproof, PROOF_OPENING_AT_ZETA_OMEGA_X), random, mPtr)
 
         point_add(folded_digests, folded_digests, folded_points_quotients, mPtr)
 
@@ -1032,6 +896,7 @@ contract PlonkVerifier {
       /// @param aproof pointer to the proof
       /// acc_gamma stores the γⁱ
       function fold_state(aproof) {
+
         let state := mload(0x40)
         let mPtr := add(mload(0x40), STATE_LAST_MEM)
         let mPtr20 := add(mPtr, 0x20)
@@ -1041,101 +906,46 @@ contract PlonkVerifier {
         let acc_gamma := l_gamma_kzg
         let state_folded_digests := add(state, STATE_FOLDED_DIGESTS_X)
 
-        mstore(
-          add(state, STATE_FOLDED_DIGESTS_X),
-          mload(add(state, STATE_FOLDED_H_X))
-        )
-        mstore(
-          add(state, STATE_FOLDED_DIGESTS_Y),
-          mload(add(state, STATE_FOLDED_H_Y))
-        )
-        mstore(
-          add(state, STATE_FOLDED_CLAIMED_VALUES),
-          calldataload(add(aproof, PROOF_QUOTIENT_POLYNOMIAL_AT_ZETA))
-        )
+        mstore(add(state, STATE_FOLDED_DIGESTS_X), mload(add(state, STATE_FOLDED_H_X)))
+        mstore(add(state, STATE_FOLDED_DIGESTS_Y), mload(add(state, STATE_FOLDED_H_Y)))
+        mstore(add(state, STATE_FOLDED_CLAIMED_VALUES), calldataload(add(aproof, PROOF_QUOTIENT_POLYNOMIAL_AT_ZETA)))
 
-        point_acc_mul(
-          state_folded_digests,
-          add(state, STATE_LINEARISED_POLYNOMIAL_X),
-          acc_gamma,
-          mPtr
-        )
-        fr_acc_mul_calldata(
-          add(state, STATE_FOLDED_CLAIMED_VALUES),
-          add(aproof, PROOF_LINEARISED_POLYNOMIAL_AT_ZETA),
-          acc_gamma
-        )
+        point_acc_mul(state_folded_digests, add(state, STATE_LINEARISED_POLYNOMIAL_X), acc_gamma, mPtr)
+        fr_acc_mul_calldata(add(state, STATE_FOLDED_CLAIMED_VALUES), add(aproof, PROOF_LINEARISED_POLYNOMIAL_AT_ZETA), acc_gamma)
 
         acc_gamma := mulmod(acc_gamma, l_gamma_kzg, R_MOD)
-        point_acc_mul_calldata(
-          add(state, STATE_FOLDED_DIGESTS_X),
-          add(aproof, PROOF_L_COM_X),
-          acc_gamma,
-          mPtr
-        )
-        fr_acc_mul_calldata(
-          add(state, STATE_FOLDED_CLAIMED_VALUES),
-          add(aproof, PROOF_L_AT_ZETA),
-          acc_gamma
-        )
+        point_acc_mul_calldata(add(state, STATE_FOLDED_DIGESTS_X), add(aproof, PROOF_L_COM_X), acc_gamma, mPtr)
+        fr_acc_mul_calldata(add(state, STATE_FOLDED_CLAIMED_VALUES), add(aproof, PROOF_L_AT_ZETA), acc_gamma)
 
         acc_gamma := mulmod(acc_gamma, l_gamma_kzg, R_MOD)
-        point_acc_mul_calldata(
-          state_folded_digests,
-          add(aproof, PROOF_R_COM_X),
-          acc_gamma,
-          mPtr
-        )
-        fr_acc_mul_calldata(
-          add(state, STATE_FOLDED_CLAIMED_VALUES),
-          add(aproof, PROOF_R_AT_ZETA),
-          acc_gamma
-        )
+        point_acc_mul_calldata(state_folded_digests, add(aproof, PROOF_R_COM_X), acc_gamma, mPtr)
+        fr_acc_mul_calldata(add(state, STATE_FOLDED_CLAIMED_VALUES), add(aproof, PROOF_R_AT_ZETA), acc_gamma)
 
         acc_gamma := mulmod(acc_gamma, l_gamma_kzg, R_MOD)
-        point_acc_mul_calldata(
-          state_folded_digests,
-          add(aproof, PROOF_O_COM_X),
-          acc_gamma,
-          mPtr
-        )
-        fr_acc_mul_calldata(
-          add(state, STATE_FOLDED_CLAIMED_VALUES),
-          add(aproof, PROOF_O_AT_ZETA),
-          acc_gamma
-        )
+        point_acc_mul_calldata(state_folded_digests, add(aproof, PROOF_O_COM_X), acc_gamma, mPtr)
+        fr_acc_mul_calldata(add(state, STATE_FOLDED_CLAIMED_VALUES), add(aproof, PROOF_O_AT_ZETA), acc_gamma)
 
         acc_gamma := mulmod(acc_gamma, l_gamma_kzg, R_MOD)
         mstore(mPtr, VK_S1_COM_X)
         mstore(mPtr20, VK_S1_COM_Y)
         point_acc_mul(state_folded_digests, mPtr, acc_gamma, mPtr40)
-        fr_acc_mul_calldata(
-          add(state, STATE_FOLDED_CLAIMED_VALUES),
-          add(aproof, PROOF_S1_AT_ZETA),
-          acc_gamma
-        )
+        fr_acc_mul_calldata(add(state, STATE_FOLDED_CLAIMED_VALUES), add(aproof, PROOF_S1_AT_ZETA), acc_gamma)
 
         acc_gamma := mulmod(acc_gamma, l_gamma_kzg, R_MOD)
         mstore(mPtr, VK_S2_COM_X)
         mstore(mPtr20, VK_S2_COM_Y)
         point_acc_mul(state_folded_digests, mPtr, acc_gamma, mPtr40)
-        fr_acc_mul_calldata(
-          add(state, STATE_FOLDED_CLAIMED_VALUES),
-          add(aproof, PROOF_S2_AT_ZETA),
-          acc_gamma
-        )
+        fr_acc_mul_calldata(add(state, STATE_FOLDED_CLAIMED_VALUES), add(aproof, PROOF_S2_AT_ZETA), acc_gamma)
         let poscaz := add(aproof, PROOF_OPENING_QCP_AT_ZETA)
 
         acc_gamma := mulmod(acc_gamma, l_gamma_kzg, R_MOD)
         mstore(mPtr, VK_QCP_0_X)
         mstore(mPtr20, VK_QCP_0_Y)
         point_acc_mul(state_folded_digests, mPtr, acc_gamma, mPtr40)
-        fr_acc_mul_calldata(
-          add(state, STATE_FOLDED_CLAIMED_VALUES),
-          poscaz,
-          acc_gamma
-        )
+        fr_acc_mul_calldata(add(state, STATE_FOLDED_CLAIMED_VALUES), poscaz, acc_gamma)
         poscaz := add(poscaz, 0x20)
+
+
       }
 
       /// @notice generate the challenge (using Fiat Shamir) to fold the opening proofs
@@ -1156,97 +966,57 @@ contract PlonkVerifier {
       /// * Z(ζω)
       /// @param aproof pointer to the proof
       function compute_gamma_kzg(aproof) {
+
         let state := mload(0x40)
         let mPtr := add(mload(0x40), STATE_LAST_MEM)
         mstore(mPtr, 0x67616d6d61) // "gamma"
         mstore(add(mPtr, 0x20), mload(add(state, STATE_ZETA)))
-        mstore(add(mPtr, 0x40), mload(add(state, STATE_FOLDED_H_X)))
-        mstore(add(mPtr, 0x60), mload(add(state, STATE_FOLDED_H_Y)))
-        mstore(
-          add(mPtr, 0x80),
-          mload(add(state, STATE_LINEARISED_POLYNOMIAL_X))
-        )
-        mstore(
-          add(mPtr, 0xa0),
-          mload(add(state, STATE_LINEARISED_POLYNOMIAL_Y))
-        )
+        mstore(add(mPtr,0x40), mload(add(state, STATE_FOLDED_H_X)))
+        mstore(add(mPtr,0x60), mload(add(state, STATE_FOLDED_H_Y)))
+        mstore(add(mPtr,0x80), mload(add(state, STATE_LINEARISED_POLYNOMIAL_X)))
+        mstore(add(mPtr,0xa0), mload(add(state, STATE_LINEARISED_POLYNOMIAL_Y)))
         calldatacopy(add(mPtr, 0xc0), add(aproof, PROOF_L_COM_X), 0xc0)
-        mstore(add(mPtr, 0x180), VK_S1_COM_X)
-        mstore(add(mPtr, 0x1a0), VK_S1_COM_Y)
-        mstore(add(mPtr, 0x1c0), VK_S2_COM_X)
-        mstore(add(mPtr, 0x1e0), VK_S2_COM_Y)
+        mstore(add(mPtr,0x180), VK_S1_COM_X)
+        mstore(add(mPtr,0x1a0), VK_S1_COM_Y)
+        mstore(add(mPtr,0x1c0), VK_S2_COM_X)
+        mstore(add(mPtr,0x1e0), VK_S2_COM_Y)
 
         let offset := 0x200
 
-        mstore(add(mPtr, offset), VK_QCP_0_X)
-        mstore(add(mPtr, add(offset, 0x20)), VK_QCP_0_Y)
+        mstore(add(mPtr,offset), VK_QCP_0_X)
+        mstore(add(mPtr,add(offset, 0x20)), VK_QCP_0_Y)
         offset := add(offset, 0x40)
 
-        mstore(
-          add(mPtr, offset),
-          calldataload(add(aproof, PROOF_QUOTIENT_POLYNOMIAL_AT_ZETA))
-        )
-        mstore(
-          add(mPtr, add(offset, 0x20)),
-          calldataload(add(aproof, PROOF_LINEARISED_POLYNOMIAL_AT_ZETA))
-        )
-        mstore(
-          add(mPtr, add(offset, 0x40)),
-          calldataload(add(aproof, PROOF_L_AT_ZETA))
-        )
-        mstore(
-          add(mPtr, add(offset, 0x60)),
-          calldataload(add(aproof, PROOF_R_AT_ZETA))
-        )
-        mstore(
-          add(mPtr, add(offset, 0x80)),
-          calldataload(add(aproof, PROOF_O_AT_ZETA))
-        )
-        mstore(
-          add(mPtr, add(offset, 0xa0)),
-          calldataload(add(aproof, PROOF_S1_AT_ZETA))
-        )
-        mstore(
-          add(mPtr, add(offset, 0xc0)),
-          calldataload(add(aproof, PROOF_S2_AT_ZETA))
-        )
+
+        mstore(add(mPtr, offset), calldataload(add(aproof, PROOF_QUOTIENT_POLYNOMIAL_AT_ZETA)))
+        mstore(add(mPtr, add(offset, 0x20)), calldataload(add(aproof, PROOF_LINEARISED_POLYNOMIAL_AT_ZETA)))
+        mstore(add(mPtr, add(offset, 0x40)), calldataload(add(aproof, PROOF_L_AT_ZETA)))
+        mstore(add(mPtr, add(offset, 0x60)), calldataload(add(aproof, PROOF_R_AT_ZETA)))
+        mstore(add(mPtr, add(offset, 0x80)), calldataload(add(aproof, PROOF_O_AT_ZETA)))
+        mstore(add(mPtr, add(offset, 0xa0)), calldataload(add(aproof, PROOF_S1_AT_ZETA)))
+        mstore(add(mPtr, add(offset, 0xc0)), calldataload(add(aproof, PROOF_S2_AT_ZETA)))
 
         let _mPtr := add(mPtr, add(offset, 0xe0))
 
         let _poscaz := add(aproof, PROOF_OPENING_QCP_AT_ZETA)
-        for {
-          let i := 0
-        } lt(i, VK_NB_CUSTOM_GATES) {
-          i := add(i, 1)
-        } {
+        for {let i:=0} lt(i, VK_NB_CUSTOM_GATES) {i:=add(i,1)}
+        {
           mstore(_mPtr, calldataload(_poscaz))
           _poscaz := add(_poscaz, 0x20)
           _mPtr := add(_mPtr, 0x20)
         }
 
-        mstore(
-          _mPtr,
-          calldataload(add(aproof, PROOF_GRAND_PRODUCT_AT_ZETA_OMEGA))
-        )
+
+        mstore(_mPtr, calldataload(add(aproof, PROOF_GRAND_PRODUCT_AT_ZETA_OMEGA)))
 
         let start_input := 0x1b // 00.."gamma"
-        let size_input := add(0x17, mul(VK_NB_CUSTOM_GATES, 3)) // number of 32bytes elmts = 0x17 (zeta+2*7+7 for the digests+openings) + 2*VK_NB_CUSTOM_GATES (for the commitments of the selectors) + VK_NB_CUSTOM_GATES (for the openings of the selectors)
+        let size_input := add(0x17, mul(VK_NB_CUSTOM_GATES,3)) // number of 32bytes elmts = 0x17 (zeta+2*7+7 for the digests+openings) + 2*VK_NB_CUSTOM_GATES (for the commitments of the selectors) + VK_NB_CUSTOM_GATES (for the openings of the selectors)
         size_input := add(0x5, mul(size_input, 0x20)) // size in bytes: 15*32 bytes + 5 bytes for gamma
-        let check_staticcall := staticcall(
-          gas(),
-          0x2,
-          add(mPtr, start_input),
-          size_input,
-          add(state, STATE_GAMMA_KZG),
-          0x20
-        )
+        let check_staticcall := staticcall(gas(), 0x2, add(mPtr,start_input), size_input, add(state, STATE_GAMMA_KZG), 0x20)
         if iszero(check_staticcall) {
           error_verify()
         }
-        mstore(
-          add(state, STATE_GAMMA_KZG),
-          mod(mload(add(state, STATE_GAMMA_KZG)), R_MOD)
-        )
+        mstore(add(state, STATE_GAMMA_KZG), mod(mload(add(state, STATE_GAMMA_KZG)), R_MOD))
       }
 
       function compute_commitment_linearised_polynomial_ec(aproof, s1, s2) {
@@ -1271,19 +1041,10 @@ contract PlonkVerifier {
           add(mPtr, 0x40)
         )
 
-        let rl := mulmod(
-          calldataload(add(aproof, PROOF_L_AT_ZETA)),
-          calldataload(add(aproof, PROOF_R_AT_ZETA)),
-          R_MOD
-        )
+        let rl := mulmod(calldataload(add(aproof, PROOF_L_AT_ZETA)), calldataload(add(aproof, PROOF_R_AT_ZETA)), R_MOD)
         mstore(mPtr, VK_QM_COM_X)
         mstore(add(mPtr, 0x20), VK_QM_COM_Y)
-        point_acc_mul(
-          add(state, STATE_LINEARISED_POLYNOMIAL_X),
-          mPtr,
-          rl,
-          add(mPtr, 0x40)
-        )
+        point_acc_mul(add(state, STATE_LINEARISED_POLYNOMIAL_X), mPtr, rl, add(mPtr, 0x40))
 
         mstore(mPtr, VK_QO_COM_X)
         mstore(add(mPtr, 0x20), VK_QO_COM_Y)
@@ -1324,27 +1085,11 @@ contract PlonkVerifier {
 
         mstore(mPtr, VK_S3_COM_X)
         mstore(add(mPtr, 0x20), VK_S3_COM_Y)
-        point_acc_mul(
-          add(state, STATE_LINEARISED_POLYNOMIAL_X),
-          mPtr,
-          s1,
-          add(mPtr, 0x40)
-        )
+        point_acc_mul(add(state, STATE_LINEARISED_POLYNOMIAL_X), mPtr, s1, add(mPtr, 0x40))
 
-        mstore(
-          mPtr,
-          calldataload(add(aproof, PROOF_GRAND_PRODUCT_COMMITMENT_X))
-        )
-        mstore(
-          add(mPtr, 0x20),
-          calldataload(add(aproof, PROOF_GRAND_PRODUCT_COMMITMENT_Y))
-        )
-        point_acc_mul(
-          add(state, STATE_LINEARISED_POLYNOMIAL_X),
-          mPtr,
-          s2,
-          add(mPtr, 0x40)
-        )
+        mstore(mPtr, calldataload(add(aproof, PROOF_GRAND_PRODUCT_COMMITMENT_X)))
+        mstore(add(mPtr, 0x20), calldataload(add(aproof, PROOF_GRAND_PRODUCT_COMMITMENT_Y)))
+        point_acc_mul(add(state, STATE_LINEARISED_POLYNOMIAL_X), mPtr, s2, add(mPtr, 0x40))
       }
 
       /// @notice Compute the commitment to the linearized polynomial equal to
@@ -1362,24 +1107,12 @@ contract PlonkVerifier {
         let l_zeta := mload(add(state, STATE_ZETA))
         let l_alpha := mload(add(state, STATE_ALPHA))
 
-        let u := mulmod(
-          calldataload(add(aproof, PROOF_GRAND_PRODUCT_AT_ZETA_OMEGA)),
-          l_beta,
-          R_MOD
-        )
-        let v := mulmod(
-          l_beta,
-          calldataload(add(aproof, PROOF_S1_AT_ZETA)),
-          R_MOD
-        )
+        let u := mulmod(calldataload(add(aproof, PROOF_GRAND_PRODUCT_AT_ZETA_OMEGA)), l_beta, R_MOD)
+        let v := mulmod(l_beta, calldataload(add(aproof, PROOF_S1_AT_ZETA)), R_MOD)
         v := addmod(v, calldataload(add(aproof, PROOF_L_AT_ZETA)), R_MOD)
         v := addmod(v, l_gamma, R_MOD)
 
-        let w := mulmod(
-          l_beta,
-          calldataload(add(aproof, PROOF_S2_AT_ZETA)),
-          R_MOD
-        )
+        let w := mulmod(l_beta, calldataload(add(aproof, PROOF_S2_AT_ZETA)), R_MOD)
         w := addmod(w, calldataload(add(aproof, PROOF_R_AT_ZETA)), R_MOD)
         w := addmod(w, l_gamma, R_MOD)
 
@@ -1404,11 +1137,7 @@ contract PlonkVerifier {
         s2 := mulmod(s2, w, R_MOD)
         s2 := sub(R_MOD, s2)
         s2 := mulmod(s2, l_alpha, R_MOD)
-        s2 := addmod(
-          s2,
-          mload(add(state, STATE_ALPHA_SQUARE_LAGRANGE_0)),
-          R_MOD
-        )
+        s2 := addmod(s2, mload(add(state, STATE_ALPHA_SQUARE_LAGRANGE_0)), R_MOD)
 
         // at this stage:
         // * s₁ = α*Z(μζ)(l(ζ)+β*s₁(ζ)+γ)*(r(ζ)+β*s₂(ζ)+γ)*β
@@ -1424,35 +1153,11 @@ contract PlonkVerifier {
         let state := mload(0x40)
         let n_plus_two := add(VK_DOMAIN_SIZE, 2)
         let mPtr := add(mload(0x40), STATE_LAST_MEM)
-        let zeta_power_n_plus_two := pow(
-          mload(add(state, STATE_ZETA)),
-          n_plus_two,
-          mPtr
-        )
-        point_mul_calldata(
-          add(state, STATE_FOLDED_H_X),
-          add(aproof, PROOF_H_2_X),
-          zeta_power_n_plus_two,
-          mPtr
-        )
-        point_add_calldata(
-          add(state, STATE_FOLDED_H_X),
-          add(state, STATE_FOLDED_H_X),
-          add(aproof, PROOF_H_1_X),
-          mPtr
-        )
-        point_mul(
-          add(state, STATE_FOLDED_H_X),
-          add(state, STATE_FOLDED_H_X),
-          zeta_power_n_plus_two,
-          mPtr
-        )
-        point_add_calldata(
-          add(state, STATE_FOLDED_H_X),
-          add(state, STATE_FOLDED_H_X),
-          add(aproof, PROOF_H_0_X),
-          mPtr
-        )
+        let zeta_power_n_plus_two := pow(mload(add(state, STATE_ZETA)), n_plus_two, mPtr)
+        point_mul_calldata(add(state, STATE_FOLDED_H_X), add(aproof, PROOF_H_2_X), zeta_power_n_plus_two, mPtr)
+        point_add_calldata(add(state, STATE_FOLDED_H_X), add(state, STATE_FOLDED_H_X), add(aproof, PROOF_H_1_X), mPtr)
+        point_mul(add(state, STATE_FOLDED_H_X), add(state, STATE_FOLDED_H_X), zeta_power_n_plus_two, mPtr)
+        point_add_calldata(add(state, STATE_FOLDED_H_X), add(state, STATE_FOLDED_H_X), add(aproof, PROOF_H_0_X), mPtr)
       }
 
       /// @notice check that
@@ -1466,97 +1171,36 @@ contract PlonkVerifier {
 
         // (l(ζ)+β*s1(ζ)+γ)
         let s1 := add(mload(0x40), STATE_LAST_MEM)
-        mstore(
-          s1,
-          mulmod(
-            calldataload(add(aproof, PROOF_S1_AT_ZETA)),
-            mload(add(state, STATE_BETA)),
-            R_MOD
-          )
-        )
+        mstore(s1, mulmod(calldataload(add(aproof, PROOF_S1_AT_ZETA)), mload(add(state, STATE_BETA)), R_MOD))
         mstore(s1, addmod(mload(s1), mload(add(state, STATE_GAMMA)), R_MOD))
-        mstore(
-          s1,
-          addmod(mload(s1), calldataload(add(aproof, PROOF_L_AT_ZETA)), R_MOD)
-        )
+        mstore(s1, addmod(mload(s1), calldataload(add(aproof, PROOF_L_AT_ZETA)), R_MOD))
 
         // (r(ζ)+β*s2(ζ)+γ)
         let s2 := add(s1, 0x20)
-        mstore(
-          s2,
-          mulmod(
-            calldataload(add(aproof, PROOF_S2_AT_ZETA)),
-            mload(add(state, STATE_BETA)),
-            R_MOD
-          )
-        )
+        mstore(s2, mulmod(calldataload(add(aproof, PROOF_S2_AT_ZETA)), mload(add(state, STATE_BETA)), R_MOD))
         mstore(s2, addmod(mload(s2), mload(add(state, STATE_GAMMA)), R_MOD))
-        mstore(
-          s2,
-          addmod(mload(s2), calldataload(add(aproof, PROOF_R_AT_ZETA)), R_MOD)
-        )
+        mstore(s2, addmod(mload(s2), calldataload(add(aproof, PROOF_R_AT_ZETA)), R_MOD))
         // _s2 := mload(s2)
 
         // (o(ζ)+γ)
         let o := add(s1, 0x40)
-        mstore(
-          o,
-          addmod(
-            calldataload(add(aproof, PROOF_O_AT_ZETA)),
-            mload(add(state, STATE_GAMMA)),
-            R_MOD
-          )
-        )
+        mstore(o, addmod(calldataload(add(aproof, PROOF_O_AT_ZETA)), mload(add(state, STATE_GAMMA)), R_MOD))
 
         //  α*(Z(μζ))*(l(ζ)+β*s1(ζ)+γ)*(r(ζ)+β*s2(ζ)+γ)*(o(ζ)+γ)
         mstore(s1, mulmod(mload(s1), mload(s2), R_MOD))
         mstore(s1, mulmod(mload(s1), mload(o), R_MOD))
         mstore(s1, mulmod(mload(s1), mload(add(state, STATE_ALPHA)), R_MOD))
-        mstore(
-          s1,
-          mulmod(
-            mload(s1),
-            calldataload(add(aproof, PROOF_GRAND_PRODUCT_AT_ZETA_OMEGA)),
-            R_MOD
-          )
-        )
+        mstore(s1, mulmod(mload(s1), calldataload(add(aproof, PROOF_GRAND_PRODUCT_AT_ZETA_OMEGA)), R_MOD))
 
         let computed_quotient := add(s1, 0x60)
 
         // linearizedpolynomial + pi(zeta)
-        mstore(
-          computed_quotient,
-          addmod(
-            calldataload(add(aproof, PROOF_LINEARISED_POLYNOMIAL_AT_ZETA)),
-            mload(add(state, STATE_PI)),
-            R_MOD
-          )
-        )
-        mstore(
-          computed_quotient,
-          addmod(mload(computed_quotient), mload(s1), R_MOD)
-        )
-        mstore(
-          computed_quotient,
-          addmod(
-            mload(computed_quotient),
-            sub(R_MOD, mload(add(state, STATE_ALPHA_SQUARE_LAGRANGE_0))),
-            R_MOD
-          )
-        )
-        mstore(
-          s2,
-          mulmod(
-            calldataload(add(aproof, PROOF_QUOTIENT_POLYNOMIAL_AT_ZETA)),
-            mload(add(state, STATE_ZETA_POWER_N_MINUS_ONE)),
-            R_MOD
-          )
-        )
+        mstore(computed_quotient,addmod(calldataload(add(aproof, PROOF_LINEARISED_POLYNOMIAL_AT_ZETA)), mload(add(state, STATE_PI)), R_MOD))
+        mstore(computed_quotient, addmod(mload(computed_quotient), mload(s1), R_MOD))
+        mstore(computed_quotient,addmod(mload(computed_quotient), sub(R_MOD, mload(add(state, STATE_ALPHA_SQUARE_LAGRANGE_0))), R_MOD))
+        mstore(s2,mulmod(calldataload(add(aproof, PROOF_QUOTIENT_POLYNOMIAL_AT_ZETA)),mload(add(state, STATE_ZETA_POWER_N_MINUS_ONE)),R_MOD))
 
-        mstore(
-          add(state, STATE_SUCCESS),
-          eq(mload(computed_quotient), mload(s2))
-        )
+        mstore(add(state, STATE_SUCCESS), eq(mload(computed_quotient), mload(s2)))
       }
 
       // BEGINNING utils math functions -------------------------------------------------
@@ -1571,7 +1215,7 @@ contract PlonkVerifier {
         mstore(add(mPtr, 0x20), mload(add(p, 0x20)))
         mstore(add(mPtr, 0x40), mload(q))
         mstore(add(mPtr, 0x60), mload(add(q, 0x20)))
-        let l_success := staticcall(gas(), 6, mPtr, 0x80, dst, 0x40)
+        let l_success := staticcall(gas(),6,mPtr,0x80,dst,0x40)
         if iszero(l_success) {
           error_ec_op()
         }
@@ -1597,12 +1241,12 @@ contract PlonkVerifier {
       /// @param src pointer to a point on Bn254(𝔽_p)
       /// @param s scalar
       /// @param mPtr free memory
-      function point_mul(dst, src, s, mPtr) {
+      function point_mul(dst,src,s, mPtr) {
         let state := mload(0x40)
-        mstore(mPtr, mload(src))
-        mstore(add(mPtr, 0x20), mload(add(src, 0x20)))
-        mstore(add(mPtr, 0x40), s)
-        let l_success := staticcall(gas(), 7, mPtr, 0x60, dst, 0x40)
+        mstore(mPtr,mload(src))
+        mstore(add(mPtr,0x20),mload(add(src,0x20)))
+        mstore(add(mPtr,0x40),s)
+        let l_success := staticcall(gas(),7,mPtr,0x60,dst,0x40)
         if iszero(l_success) {
           error_ec_op()
         }
@@ -1628,15 +1272,15 @@ contract PlonkVerifier {
       /// @param src pointer to the point to multiply and add
       /// @param s scalar
       /// @param mPtr free memory
-      function point_acc_mul(dst, src, s, mPtr) {
+      function point_acc_mul(dst,src,s, mPtr) {
         let state := mload(0x40)
-        mstore(mPtr, mload(src))
-        mstore(add(mPtr, 0x20), mload(add(src, 0x20)))
-        mstore(add(mPtr, 0x40), s)
-        let l_success := staticcall(gas(), 7, mPtr, 0x60, mPtr, 0x40)
-        mstore(add(mPtr, 0x40), mload(dst))
-        mstore(add(mPtr, 0x60), mload(add(dst, 0x20)))
-        l_success := and(l_success, staticcall(gas(), 6, mPtr, 0x80, dst, 0x40))
+        mstore(mPtr,mload(src))
+        mstore(add(mPtr,0x20),mload(add(src,0x20)))
+        mstore(add(mPtr,0x40),s)
+        let l_success := staticcall(gas(),7,mPtr,0x60,mPtr,0x40)
+        mstore(add(mPtr,0x40),mload(dst))
+        mstore(add(mPtr,0x60),mload(add(dst,0x20)))
+        l_success := and(l_success, staticcall(gas(),6,mPtr,0x80,dst, 0x40))
         if iszero(l_success) {
           error_ec_op()
         }
@@ -1666,7 +1310,7 @@ contract PlonkVerifier {
       /// @param src pointer to the scalar to multiply and add (on calldata)
       /// @param s scalar
       function fr_acc_mul_calldata(dst, src, s) {
-        let tmp := mulmod(calldataload(src), s, R_MOD)
+        let tmp :=  mulmod(calldataload(src), s, R_MOD)
         mstore(dst, addmod(mload(dst), tmp, R_MOD))
       }
 
@@ -1674,14 +1318,14 @@ contract PlonkVerifier {
       /// @param e exponent
       /// @param mPtr free memory
       /// @return res x ** e mod r
-      function pow(x, e, mPtr) -> res {
+      function pow(x, e, mPtr)->res {
         mstore(mPtr, 0x20)
         mstore(add(mPtr, 0x20), 0x20)
         mstore(add(mPtr, 0x40), 0x20)
         mstore(add(mPtr, 0x60), x)
         mstore(add(mPtr, 0x80), e)
         mstore(add(mPtr, 0xa0), R_MOD)
-        let check_staticcall := staticcall(gas(), 0x05, mPtr, 0xc0, mPtr, 0x20)
+        let check_staticcall := staticcall(gas(),0x05,mPtr,0xc0,mPtr,0x20)
         if eq(check_staticcall, 0) {
           error_verify()
         }

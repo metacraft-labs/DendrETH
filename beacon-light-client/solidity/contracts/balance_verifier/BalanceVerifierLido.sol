@@ -66,7 +66,8 @@ contract BalanceVerifier is PlonkVerifier, LidoZKOracle {
     uint64 balanceSum,
     uint64 _numberOfNonActivatedValidators,
     uint64 _numberOfActiveValidators,
-    uint64 _numberOfExitedValidators
+    uint64 _numberOfExitedValidators,
+    uint64 _numberOfSlashedValidators
   ) public {
     bytes32 blockRoot = findBlockRoot(refSlot);
 
@@ -76,7 +77,8 @@ contract BalanceVerifier is PlonkVerifier, LidoZKOracle {
       balanceSum,
       _numberOfNonActivatedValidators,
       _numberOfActiveValidators,
-      _numberOfExitedValidators
+      _numberOfExitedValidators,
+      _numberOfSlashedValidators
     );
 
     bytes32 commitment = sha256(concataneted);
