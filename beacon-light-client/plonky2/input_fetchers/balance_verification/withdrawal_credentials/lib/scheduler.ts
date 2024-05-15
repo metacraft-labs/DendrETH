@@ -99,29 +99,29 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
   const balanceZeroIndex =
     currentSSZFork.BeaconState.fields.balances.getPathInfo([0]).gindex;
 
-  const balances: string[] = [];
+  const balancesLeaves: string[] = [];
 
   for (let i = 0; i < take / 4; i++) {
-    balances.push(
+    balancesLeaves.push(
       bytesToHex(balancesTree.getNode(balanceZeroIndex + BigInt(i)).root),
     );
   }
 
-  if (balances.length % (VALIDATORS_COUNT / 4) !== 0) {
-    balances.push(''.padStart(64, '0'));
+  if (balancesLeaves.length % (VALIDATORS_COUNT / 4) !== 0) {
+    balancesLeaves.push(''.padStart(64, '0'));
   }
 
   await redis.saveValidatorBalancesInput(protocol, [
     {
       index: Number(CONSTANTS.validatorRegistryLimit),
       input: {
-        balances: Array(VALIDATORS_COUNT / 4)
+        balancesLeaves: Array(VALIDATORS_COUNT / 4)
           .fill('')
           .map(() => ''.padStart(64, '0')),
         validators: Array(VALIDATORS_COUNT).fill(getZeroValidatorPoseidonInput()),
         withdrawalCredentials: [withdrawalCredentials],
         currentEpoch: computeEpochAt(beaconState.slot).toString(),
-        nonZeroValidatorLeavesMask: Array(VALIDATORS_COUNT).fill(false), // TODO: change this to false after renaming to nonZeroValidatorsMask
+        nonZeroValidatorLeavesMask: Array(VALIDATORS_COUNT).fill(false),
       },
     },
   ]);
@@ -171,7 +171,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
       batch.push({
         index: j,
         input: {
-          balances: balances.slice(
+          balancesLeaves: balancesLeaves.slice(
             j * (VALIDATORS_COUNT / 4),
             (j + 1) * (VALIDATORS_COUNT / 4),
           ),

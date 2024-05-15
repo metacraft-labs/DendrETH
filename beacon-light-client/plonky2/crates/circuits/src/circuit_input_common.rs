@@ -20,7 +20,7 @@ use crate::{
         WithdrawalCredentialsBalanceAggregatorFirstLevel,
     },
 };
-use circuit::CircuitPublicInputs;
+use circuit::CircuitOutput;
 use itertools::Itertools;
 use num::BigUint;
 use plonky2::{
@@ -49,7 +49,7 @@ where
 {
     pub needs_change: bool,
     pub proof_key: String,
-    pub public_inputs: CircuitPublicInputs<
+    pub public_inputs: CircuitOutput<
         WithdrawalCredentialsBalanceAggregatorFirstLevel<
             VALIDATORS_COUNT,
             WITHDRAWAL_CREDENTIALS_COUNT,
@@ -148,7 +148,7 @@ where
 {
     fn set_pw_values(&self, pw: &mut PartialWitness<F>, source: &ValidatorBalancesInput) {
         for i in 0..VALIDATORS_COUNT / 4 {
-            set_boolean_pw_values(pw, &self.balances[i], &source.balances[i]);
+            set_boolean_pw_values(pw, &self.balances_leaves[i], &source.balances[i]);
         }
 
         for i in 0..VALIDATORS_COUNT {

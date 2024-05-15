@@ -2,12 +2,10 @@ use plonky2::{
     field::extension::Extendable,
     hash::hash_types::{HashOutTarget, RichField},
     iop::target::{BoolTarget, Target},
-    plonk::circuit_builder::CircuitBuilder,
+    plonk::{circuit_builder::CircuitBuilder, proof::ProofWithPublicInputsTarget},
 };
 
-use crate::public_inputs::target_reader::PublicInputsTargetReadable;
-
-pub trait AddVirtualTarget: PublicInputsTargetReadable {
+pub trait AddVirtualTarget {
     fn add_virtual_target<F: RichField + Extendable<D>, const D: usize>(
         builder: &mut CircuitBuilder<F, D>,
     ) -> Self;
@@ -42,5 +40,13 @@ impl AddVirtualTarget for HashOutTarget {
         builder: &mut CircuitBuilder<F, D>,
     ) -> Self {
         builder.add_virtual_hash()
+    }
+}
+
+impl<const N: usize> AddVirtualTarget for ProofWithPublicInputsTarget<N> {
+    fn add_virtual_target<F: RichField + Extendable<D>, const D: usize>(
+        _builder: &mut CircuitBuilder<F, D>,
+    ) -> Self {
+        panic!("Recursive proofs are not supported by AddVirtualTarget")
     }
 }

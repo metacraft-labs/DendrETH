@@ -47,10 +47,6 @@ pub fn has_functional_attr_with_arg(field: &Field, attr: &str, arg: &str) -> boo
     false
 }
 
-// fn attrs_contain(attrs: &[Attribute], attribute: &str) -> bool {
-//     attrs.into_iter().any(|attr| match_attr(attr, attribute))
-// }
-
 pub fn match_attr(attr: &Attribute, string: &str) -> bool {
     attr.path().segments.last().unwrap().ident.to_string() == string
 }
@@ -61,6 +57,7 @@ pub fn find_attr<'a>(attrs: &'a [Attribute], attr: &str) -> Option<&'a Attribute
         .find(|&attribute| match_attr(attribute, attr))
 }
 
+#[allow(dead_code)]
 pub fn create_struct_with_fields_target_primitive(
     ident: &Ident,
     generics: &Generics,

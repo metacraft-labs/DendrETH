@@ -26,7 +26,7 @@ where
                 .read_target_array::<VALIDATORS_COUNT>()
                 .unwrap()
                 .map(|target| BoolTarget::new_unsafe(target)),
-            balances: [(); VALIDATORS_COUNT / 4]
+            balances_leaves: [(); VALIDATORS_COUNT / 4]
                 .map(|_| data.read_target_bool_vec().unwrap().try_into().unwrap()),
             withdrawal_credentials: [(); WITHDRAWAL_CREDENTIALS]
                 .map(|_| data.read_target_bool_vec().unwrap().try_into().unwrap()),
@@ -58,7 +58,7 @@ where
         data.write_target_array(&self.non_zero_validator_leaves_mask.map(|bool| bool.target))
             .unwrap();
 
-        for balance in &self.balances {
+        for balance in &self.balances_leaves {
             data.write_target_bool_vec(balance)?;
         }
 

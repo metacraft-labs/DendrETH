@@ -16,17 +16,50 @@ pub fn impl_derive_circuit_target(input_ast: DeriveInput) -> TokenStream {
 
     let set_witness_impl = impl_set_witness(&input_ast, &data);
     let targets_with_public_inputs_impl = impl_targets_with_public_inputs(&input_ast, &data);
+    let readable_circuit_input_target_impl = impl_readable_circuit_input_target(&input_ast, &data);
 
     quote! {
         #targets_with_public_inputs_impl
         #set_witness_impl
+        #readable_circuit_input_target_impl
+    }
+}
+
+fn impl_readable_circuit_input_target(
+    input_ast: &DeriveInput,
+    struct_data: &DataStruct,
+) -> TokenStream {
+    let (impl_generics, type_generics, where_clause) = input_ast.generics.split_for_impl();
+    let ident = &input_ast.ident;
+
+    let circuit_input_target_ident = format_ident!("{ident}CircuitInputTarget");
+
+    let circuit_input_target_struct_def = create_struct_with_fields(
+        &circuit_input_target_ident,
+        &input_ast.generics,
+        &filter_circuit_input_fields(&struct_data.fields),
+    );
+
+    quote! {
+        #[derive(AddVirtualTarget)]
+        #circuit_input_target_struct_def
+
+        impl #impl_generics ReadableCircuitInputTarget for #ident #type_generics #where_clause {
+            type CircuitInputTarget = #circuit_input_target_ident #type_generics;
+
+            fn read_circuit_input_target<F: RichField + Extendable<D>, const D: usize>(
+                builder: &mut CircuitBuilder<F, D>,
+            ) -> Self::CircuitInputTarget {
+                <Self::CircuitInputTarget as AddVirtualTarget>::add_virtual_target(builder)
+            }
+        }
     }
 }
 
 fn impl_set_witness(input_ast: &DeriveInput, struct_data: &DataStruct) -> TokenStream {
     let (_, type_generics, where_clause) = input_ast.generics.split_for_impl();
-
     let ident = &input_ast.ident;
+
     let witness_input_ident = format_ident!("{ident}WitnessInput");
 
     let extended_generics =

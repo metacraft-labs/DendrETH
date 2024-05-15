@@ -20,7 +20,7 @@ impl<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIALS_COUNT: usize> S
 where
     [(); VALIDATORS_COUNT / 4]:,
 {
-    fn serialize(targets: &Self::Targets) -> IoResult<Vec<u8>> {
+    fn serialize(targets: &Self::Target) -> IoResult<Vec<u8>> {
         let mut data = Vec::<u8>::new();
 
         data.extend(BigUintTarget::write_targets(&targets.range_total_value)?);
@@ -33,7 +33,7 @@ where
 
         data.write_target_bool_vec(&targets.non_zero_validator_leaves_mask)?;
 
-        for balance in &targets.balances {
+        for balance in &targets.balances_leaves {
             data.write_target_bool_vec(balance)?;
         }
 
@@ -50,15 +50,15 @@ where
         Ok(data)
     }
 
-    fn deserialize(data: &mut Buffer) -> IoResult<Self::Targets> {
-        Ok(Self::Targets {
+    fn deserialize(data: &mut Buffer) -> IoResult<Self::Target> {
+        Ok(Self::Target {
             range_total_value: BigUintTarget::read_targets(data)?,
             range_balances_root: data.read_target_bool_vec()?.try_into().unwrap(),
             range_validator_commitment: data.read_target_hash()?,
             validators: [(); VALIDATORS_COUNT]
                 .map(|_| ValidatorTarget::read_targets(data).unwrap()),
             non_zero_validator_leaves_mask: data.read_target_bool_vec()?.try_into().unwrap(),
-            balances: [0; VALIDATORS_COUNT / 4]
+            balances_leaves: [0; VALIDATORS_COUNT / 4]
                 .map(|_| data.read_target_bool_vec().unwrap().try_into().unwrap()),
             withdrawal_credentials: (0..WITHDRAWAL_CREDENTIALS_COUNT)
                 .map(|_| data.read_target_bool_vec().unwrap().try_into().unwrap())
