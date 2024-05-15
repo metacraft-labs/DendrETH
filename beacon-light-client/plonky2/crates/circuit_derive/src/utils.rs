@@ -115,7 +115,7 @@ pub fn create_struct_with_fields_and_inherited_attrs_target_primitive(
     let primitive_fields = fields.into_iter().map(|field| {
         let field_name = &field.ident;
         let target_type = &field.ty;
-        let primitive_type = quote!(<#target_type as TargetPrimitive>::Primitive);
+        let primitive_type = quote!(<#target_type as circuit::TargetPrimitive>::Primitive);
 
         let inherited_attrs = filter_attrs(&field.attrs, inherited_attrs);
         let attr_tokens = inherited_attrs.iter().map(|attr| quote!(#attr));
@@ -124,7 +124,7 @@ pub fn create_struct_with_fields_and_inherited_attrs_target_primitive(
     });
 
     quote! {
-        #[derive(Debug, Clone, Serialize, Deserialize)]
+        #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
         #(#inherited_struct_attrs_tokens)*
         pub struct #ident #impl_generics #where_clause {
             #(#primitive_fields)*

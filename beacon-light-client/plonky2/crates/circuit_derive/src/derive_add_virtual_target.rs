@@ -17,15 +17,15 @@ pub fn impl_derive_add_virtual_target(input_ast: DeriveInput) -> TokenStream {
     let add_virtual_targets = fields.iter().map(|field| {
         let field_name = &field.ident;
         let field_type = &field.ty;
-        quote!(let #field_name = <#field_type as AddVirtualTarget>::add_virtual_target(builder);)
+        quote!(let #field_name = <#field_type as circuit::AddVirtualTarget>::add_virtual_target(builder);)
     });
 
     let return_result = gen_shorthand_struct_initialization(&ident, &input_ast.generics, &fields);
 
     quote! {
-        impl #impl_generics AddVirtualTarget for #ident #type_generics #where_clause {
-            fn add_virtual_target<F: RichField + Extendable<D>, const D: usize>(
-                builder: &mut CircuitBuilder<F, D>,
+        impl #impl_generics circuit::AddVirtualTarget for #ident #type_generics #where_clause {
+            fn add_virtual_target<F: plonky2::hash::hash_types::RichField + plonky2::field::extension::Extendable<D>, const D: usize>(
+                builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
             ) -> Self {
                 #(#add_virtual_targets)*
                 #return_result

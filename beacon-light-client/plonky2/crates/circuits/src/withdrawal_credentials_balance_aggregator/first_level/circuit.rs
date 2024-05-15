@@ -3,24 +3,10 @@ use crate::serializers::serde_bool_array_to_hex_string_nested;
 use crate::utils::hashing::hash_tree_root::hash_tree_root_new;
 use crate::utils::hashing::hash_tree_root_poseidon::hash_tree_root_poseidon_new;
 use crate::utils::hashing::validator_hash_tree_root_poseidon::hash_validator_poseidon_or_zeroes;
-use circuit::circuit::ReadableCircuitInputTarget;
-use circuit::public_inputs::field_reader::PublicInputsFieldReader;
-use circuit::public_inputs::target_reader::PublicInputsTargetReader;
-use circuit::set_witness::SetWitness;
-use circuit::target_primitive::TargetPrimitive;
-use circuit::to_targets::ToTargets;
-use circuit::AddVirtualTarget;
 use circuit::Circuit;
-use circuit::SerdeCircuitTarget;
-use circuit::TargetsWithPublicInputs;
-use circuit_derive::AddVirtualTarget;
 use circuit_derive::CircuitTarget;
 use circuit_derive::SerdeCircuitTarget;
 use itertools::Itertools;
-use plonky2::field::extension::Extendable;
-use plonky2::hash::hash_types::RichField;
-use plonky2::iop::witness::PartialWitness;
-use serde::{Deserialize, Serialize};
 
 use plonky2::{
     field::goldilocks_field::GoldilocksField,

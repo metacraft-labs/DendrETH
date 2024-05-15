@@ -20,14 +20,15 @@ pub fn impl_derive_set_witness(input_ast: DeriveInput) -> TokenStream {
 
     let set_witness_for_fields = fields.iter().map(|field| {
         let field_name = &field.ident;
-        quote!(self.#field_name.set_witness(witness, &input.#field_name);)
+        let field_type = &field.ty;
+        quote!(<#field_type as circuit::SetWitness<F>>::set_witness(&self.#field_name, witness, &input.#field_name);)
     });
 
     quote! {
-        impl #extended_impl_generics SetWitness<F> for #ident #type_generics #where_clause {
-            type Input = <#ident #type_generics as TargetPrimitive>::Primitive;
+        impl #extended_impl_generics circuit::SetWitness<F> for #ident #type_generics #where_clause {
+            type Input = <#ident #type_generics as circuit::TargetPrimitive>::Primitive;
 
-            fn set_witness(&self, witness: &mut PartialWitness<F>, input: &Self::Input) {
+            fn set_witness(&self, witness: &mut plonky2::iop::witness::PartialWitness<F>, input: &Self::Input) {
                 #(#set_witness_for_fields)*
             }
         }

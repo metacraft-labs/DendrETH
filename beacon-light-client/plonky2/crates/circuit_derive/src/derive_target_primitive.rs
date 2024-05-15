@@ -27,7 +27,7 @@ pub fn impl_derive_target_primitive(input_ast: DeriveInput) -> TokenStream {
     quote! {
         #primitive_type_struct_def
 
-        impl #impl_generics TargetPrimitive for #ident #type_generics #where_clause {
+        impl #impl_generics circuit::TargetPrimitive for #ident #type_generics #where_clause {
             type Primitive = #primitive_type_ident;
         }
     }

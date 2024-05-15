@@ -1,18 +1,8 @@
 use crate::serializers::serde_bool_array_to_hex_string;
-use circuit::add_virtual_target::AddVirtualTarget;
-use circuit::public_inputs::field_reader::PublicInputsFieldReader;
-use circuit::public_inputs::field_reader::PublicInputsReadable;
-use circuit::public_inputs::target_reader::PublicInputsTargetReadable;
-use circuit::public_inputs::target_reader::PublicInputsTargetReader;
-use circuit::set_witness::SetWitness;
-use circuit::target_primitive::TargetPrimitive;
-use circuit::to_targets::ToTargets;
-use circuit::SerdeCircuitTarget;
 use circuit_derive::AddVirtualTarget;
 use circuit_derive::SerdeCircuitTarget;
 use circuit_derive::{PublicInputsReadable, SetWitness, TargetPrimitive};
 use plonky2::iop::target::Target;
-use plonky2::iop::witness::PartialWitness;
 use plonky2::{
     field::extension::Extendable,
     hash::{
@@ -23,8 +13,6 @@ use plonky2::{
     plonk::circuit_builder::CircuitBuilder,
     util::serialization::{Buffer, IoResult, Read, Write},
 };
-use serde::Deserialize;
-use serde::Serialize;
 
 use crate::{
     serialization::targets_serialization::{ReadTargets, WriteTargets},

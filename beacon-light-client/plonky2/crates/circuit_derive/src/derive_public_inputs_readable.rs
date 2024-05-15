@@ -34,7 +34,7 @@ fn impl_public_inputs_target_readable(
 
     let add_size = struct_data.fields.iter().map(|field| {
         let field_type = &field.ty;
-        quote!(size += <#field_type as PublicInputsTargetReadable>::get_size();)
+        quote!(size += <#field_type as circuit::PublicInputsTargetReadable>::get_size();)
     });
 
     let public_inputs_target_struct_def = create_struct_with_fields(
@@ -51,16 +51,16 @@ fn impl_public_inputs_target_readable(
     quote! {
         #public_inputs_target_struct_def
 
-        impl #impl_generics PublicInputsTargetReadable for #ident #type_generics #where_clause {
+        impl #impl_generics circuit::PublicInputsTargetReadable for #ident #type_generics #where_clause {
             fn get_size() -> usize {
                 let mut size = 0;
                 #(#add_size)*
                 size
             }
 
-            fn from_targets(targets: &[Target]) -> Self {
-                assert_eq!(targets.len(), Self::get_size());
-                let mut reader = PublicInputsTargetReader::new(targets);
+            fn from_targets(targets: &[plonky2::iop::target::Target]) -> Self {
+                assert_eq!(targets.len(), <Self as circuit::PublicInputsTargetReadable>::get_size());
+                let mut reader = circuit::PublicInputsTargetReader::new(targets);
                 #read_targets
                 #return_from_targets_result
             }
@@ -92,10 +92,10 @@ fn impl_public_inputs_readable(input_ast: &DeriveInput, struct_data: &DataStruct
     quote! {
         #public_inputs_struct_def
 
-        impl #impl_generics PublicInputsReadable for #ident #type_generics #where_clause {
-            fn from_elements<F: RichField>(elements: &[F]) -> Self::Primitive {
-                assert_eq!(elements.len(), Self::get_size());
-                let mut reader = PublicInputsFieldReader::new(elements);
+        impl #impl_generics circuit::PublicInputsReadable for #ident #type_generics #where_clause {
+            fn from_elements<F: plonky2::hash::hash_types::RichField>(elements: &[F]) -> Self::Primitive {
+                assert_eq!(elements.len(), <Self as circuit::PublicInputsTargetReadable>::get_size());
+                let mut reader = circuit::PublicInputsFieldReader::new(elements);
                 #read_field_elements
                 #return_from_elements_result
             }
@@ -111,12 +111,13 @@ fn impl_to_targets(input_ast: &DeriveInput, struct_data: &DataStruct) -> TokenSt
 
     let push_targets = fields.iter().map(|field| {
         let field_ident = &field.ident;
-        quote!(targets.extend(self.#field_ident.to_targets());)
+        let field_type = &field.ty;
+        quote!(targets.extend(<#field_type as circuit::ToTargets>::to_targets(&self.#field_ident));)
     });
 
     quote! {
-        impl #impl_generics ToTargets for #ident #type_generics #where_clause {
-            fn to_targets(&self) -> Vec<Target> {
+        impl #impl_generics circuit::ToTargets for #ident #type_generics #where_clause {
+            fn to_targets(&self) -> Vec<plonky2::iop::target::Target> {
                 let mut targets = Vec::new();
                 #(#push_targets)*
                 targets
