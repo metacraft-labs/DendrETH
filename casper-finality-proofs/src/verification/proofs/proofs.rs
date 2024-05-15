@@ -10,6 +10,11 @@ use plonky2::{
     },
     util::{log2_ceil, timing::TimingTree},
 };
+use plonky2x::prelude::Field;
+use plonky2x::{
+    backend::circuit::{DefaultParameters, PlonkParameters},
+    utils::proof::ProofWithPublicInputsTargetUtils,
+};
 use starky::{
     config::StarkConfig, prover::prove, util::trace_rows_to_poly_values,
     verifier::verify_stark_proof,
@@ -225,6 +230,7 @@ where
     (proof, data.verifier_only, data.common)
 }
 
+// <DefaultParameters as PlonkParameters<D>>::Field
 pub type ProofTuple<F, C, const D: usize> = (
     ProofWithPublicInputs<F, C, D>,
     VerifierOnlyCircuitData<C, D>,
