@@ -256,7 +256,7 @@ pub fn verify_proofs(
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
+    use std::{str::FromStr, time::Instant};
 
     use ark_bls12_381::{Fr, G1Affine, G2Affine};
     use ark_ec::AffineRepr;
@@ -281,6 +281,11 @@ mod tests {
     type _MlStark = MillerLoopStark<F, D>;
 
     use super::{verify_miller_loop, verify_proofs};
+
+    use jemallocator::Jemalloc;
+
+    #[global_allocator]
+    static GLOBAL: Jemalloc = Jemalloc;
 
     #[test]
     fn test_verify_proofs() {
@@ -362,8 +367,16 @@ mod tests {
         );
 
         let pw = PartialWitness::new();
+
+        let timer = Instant::now();
+
         let data = builder.build::<C>();
+
+        let timer = Instant::now();
+
         let _proof = data.prove(pw);
+
+        println!("Time to prove: {:?}", timer.elapsed());
     }
 
     #[test]
