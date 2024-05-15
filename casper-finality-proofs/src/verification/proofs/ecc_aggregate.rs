@@ -71,9 +71,13 @@ impl<F: RichField + Extendable<D>, const D: usize> ECCAggStark<F, D> {
         let mut row = 0;
         for i in 0..NUM_POINTS {
             if i < 2 {
-                (row..row + 12)
-                    .into_iter()
-                    .for_each(|rw| trace[rw][PIS_IDX + i] = F::ONE);
+                println!("enters");
+                let dali_shte_se_printira = (row..row + 12).into_iter().for_each(|rw| {
+                    trace[rw][PIS_IDX + i] = F::ONE;
+                    println!("trace[rw][PIS_IDX + i] is: {:?}", trace[rw][PIS_IDX + i]);
+                    println!("trace[rw][PIS_IDX + i] is: {:?}", rw);
+                });
+                println!("dali_shte_se_printira is: {:?}", dali_shte_se_printira);
             } else {
                 row += 12;
                 (row..row + 12)

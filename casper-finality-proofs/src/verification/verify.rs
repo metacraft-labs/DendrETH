@@ -129,7 +129,7 @@ pub fn calc_ell_coeffs_and_generate_g2_point(
     ]
 }
 
-pub fn verify_proofs(
+pub fn verify_bls_signatures(
     builder: &mut CircuitBuilder<F, D>,
     first_ml_proof: ProofTuple<F, C, D>,
     second_ml_proof: ProofTuple<F, C, D>,
@@ -254,21 +254,6 @@ pub fn verify_proofs(
     }
 }
 
-fn hex_string_to_bits(hex_string: &str) -> Option<Vec<bool>> {
-    let mut result = Vec::new();
-    for hex_char in hex_string.chars() {
-        let nibble = match hex_char.to_digit(16) {
-            Some(nibble) => nibble as u8,
-            None => return None, // Invalid hexadecimal character
-        };
-        for i in (0..4).rev() {
-            let bit = (nibble >> i) & 1 == 1;
-            result.push(bit);
-        }
-    }
-    Some(result)
-}
-
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
@@ -283,9 +268,7 @@ mod tests {
     };
     use plonky2x::frontend::uint::num::biguint::CircuitBuilderBiguint;
 
-    use super::{
-        calc_ell_coeffs_and_generate_g2_point, hex_string_to_bits, verify_pubkeys_aggregation,
-    };
+    use super::{calc_ell_coeffs_and_generate_g2_point, verify_pubkeys_aggregation};
     use crate::verification::{
         curves::{
             g1::{g1_ecc_aggregate, PointG1Target},
@@ -293,6 +276,7 @@ mod tests {
         },
         proofs::miller_loop::MillerLoopStark,
         utils::native_bls::{Fp, Fp2},
+        verify::verify_bls_signatures,
     };
 
     const D: usize = 2;
@@ -300,10 +284,14 @@ mod tests {
     type F = <C as GenericConfig<D>>::F;
     type _MlStark = MillerLoopStark<F, D>;
 
-    use super::{verify_miller_loop, verify_proofs};
+    use super::verify_miller_loop;
 
     #[test]
     fn test_verify_proofs() {
+        use jemallocator::Jemalloc;
+
+        #[global_allocator]
+        static GLOBAL: Jemalloc = Jemalloc;
         let circuit_config =
             plonky2::plonk::circuit_data::CircuitConfig::standard_recursion_config();
         let mut builder =
@@ -370,8 +358,7 @@ mod tests {
         // MESSAGE
         let message: PointG2Target = calc_ell_coeffs_and_generate_g2_point(&mut builder, message);
 
-        verify_proofs(
-            // verify or verify_bls_signature
+        verify_bls_signatures(
             &mut builder,
             first_ml_proof,
             second_ml_proof,
@@ -406,13 +393,6 @@ mod tests {
         let a_bigu_t = builder.constant_biguint(&a_bigu);
         let b_bigu_t = builder.constant_biguint(&b_bigu);
 
-        // 0xfffffffffffffffffffffffffffffbfffffffffffffffffffffffffffffffffffffff7feffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-        // let mut bits = Vec::new();
-        // for num in hex_string_to_bits("0xfffffffffffffffffffffffffffffbfffffffffffffffffffffffffffffffffffffff7feffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap() {
-        //     for j in 0..8 {
-        //         bits.push((num >> j & 1) == 1);
-        //     }
-        // }
         let ec_proof = verify_pubkeys_aggregation(
             vec![[a_fp, b_fp], [a_fp, b_fp]],
             [a_fp, b_fp],
