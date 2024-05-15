@@ -29,6 +29,7 @@ pub const CURRENT_EPOCH_PUB_INDEX: usize = 518;
 pub const NUMBER_OF_NON_ACTIVATED_VALIDATORS_INDEX: usize = 520;
 pub const NUMBER_OF_ACTIVE_VALIDATORS_INDEX: usize = 521;
 pub const NUMBER_OF_EXITED_VALIDATORS_INDEX: usize = 522;
+pub const NUMBER_OF_SLASHED_VALIDATORS_INDEX: usize = 523;
 
 pub type ValidatorBalanceProof<const N: usize> =
     ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>;
@@ -49,6 +50,8 @@ pub trait ValidatorBalanceProofExt<const N: usize> {
     fn get_number_of_active_validators(&self) -> u64;
 
     fn get_number_of_exited_validators(&self) -> u64;
+
+    fn get_number_of_slashed_validators(&self) -> u64;
 }
 
 impl<const N: usize> ValidatorBalanceProofExt<N> for ValidatorBalanceProof<N> {
@@ -116,6 +119,10 @@ impl<const N: usize> ValidatorBalanceProofExt<N> for ValidatorBalanceProof<N> {
     fn get_number_of_exited_validators(&self) -> u64 {
         self.public_inputs[NUMBER_OF_EXITED_VALIDATORS_INDEX].0 % GoldilocksField::ORDER
     }
+
+    fn get_number_of_slashed_validators(&self) -> u64 {
+        self.public_inputs[NUMBER_OF_SLASHED_VALIDATORS_INDEX].0 % GoldilocksField::ORDER
+    }
 }
 
 pub type ValidatorBalanceProofTargets<const N: usize> = ProofWithPublicInputsTarget<2>;
@@ -136,6 +143,8 @@ pub trait ValidatorBalanceProofTargetsExt<const N: usize> {
     fn get_number_of_active_validators(&self) -> Target;
 
     fn get_number_of_exited_validators(&self) -> Target;
+
+    fn get_number_of_slashed_validators(&self) -> Target;
 }
 
 impl<const N: usize> ValidatorBalanceProofTargetsExt<N> for ValidatorBalanceProofTargets<N> {
@@ -207,6 +216,10 @@ impl<const N: usize> ValidatorBalanceProofTargetsExt<N> for ValidatorBalanceProo
     fn get_number_of_exited_validators(&self) -> Target {
         self.public_inputs[NUMBER_OF_EXITED_VALIDATORS_INDEX]
     }
+
+    fn get_number_of_slashed_validators(&self) -> Target {
+        self.public_inputs[NUMBER_OF_SLASHED_VALIDATORS_INDEX]
+    }
 }
 
 pub fn build_validator_balance_circuit<const N: usize>(
@@ -240,6 +253,7 @@ pub fn build_validator_balance_circuit<const N: usize>(
         validator_balance_verification_targets.number_of_non_activated_validators,
         validator_balance_verification_targets.number_of_active_validators,
         validator_balance_verification_targets.number_of_exited_validators,
+        validator_balance_verification_targets.number_of_slashed_validators,
     );
 
     let data = builder.build::<C>();
@@ -257,6 +271,7 @@ pub fn set_public_variables<const N: usize>(
     number_of_non_activated_validators: Target,
     number_of_active_validators: Target,
     number_of_exited_validators: Target,
+    number_of_slashed_validators: Target,
 ) {
     builder.register_public_inputs(&range_total_value.limbs.iter().map(|x| x.0).collect_vec());
 
@@ -280,4 +295,6 @@ pub fn set_public_variables<const N: usize>(
     builder.register_public_input(number_of_active_validators);
 
     builder.register_public_input(number_of_exited_validators);
+
+    builder.register_public_input(number_of_slashed_validators);
 }

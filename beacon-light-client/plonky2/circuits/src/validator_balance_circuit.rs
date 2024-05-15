@@ -35,6 +35,7 @@ pub struct ValidatorBalanceVerificationTargets<const N: usize> {
     pub number_of_non_activated_validators: Target,
     pub number_of_active_validators: Target,
     pub number_of_exited_validators: Target,
+    pub number_of_slashed_validators: Target,
 }
 
 impl<const N: usize> ReadTargets for ValidatorBalanceVerificationTargets<N> {
@@ -61,6 +62,7 @@ impl<const N: usize> ReadTargets for ValidatorBalanceVerificationTargets<N> {
             number_of_non_activated_validators: data.read_target()?,
             number_of_active_validators: data.read_target()?,
             number_of_exited_validators: data.read_target()?,
+            number_of_slashed_validators: data.read_target()?,
         })
     }
 }
@@ -93,6 +95,8 @@ impl<const N: usize> WriteTargets for ValidatorBalanceVerificationTargets<N> {
         data.write_target(self.number_of_non_activated_validators)?;
         data.write_target(self.number_of_active_validators)?;
         data.write_target(self.number_of_exited_validators)?;
+
+        data.write_target(self.number_of_slashed_validators)?;
 
         Ok(data)
     }
@@ -176,6 +180,8 @@ pub fn validator_balance_verification<
 
     let mut number_of_exited_validators = builder.zero();
 
+    let mut number_of_slashed_validators = builder.zero();
+
     for i in 0..validators_len {
         let mut is_equal = builder._false();
 
@@ -223,6 +229,11 @@ pub fn validator_balance_verification<
         number_of_exited_validators =
             builder.add(number_of_exited_validators, will_be_counted.target);
 
+        number_of_slashed_validators = builder.add(
+            number_of_slashed_validators,
+            validators_leaves[i].validator.slashed.target,
+        );
+
         sum.limbs.pop();
     }
 
@@ -241,5 +252,6 @@ pub fn validator_balance_verification<
         number_of_non_activated_validators,
         number_of_active_validators,
         number_of_exited_validators,
+        number_of_slashed_validators,
     }
 }

@@ -151,6 +151,7 @@ async fn async_main() -> Result<()> {
         balance_proof.number_of_non_activated_validators,
         balance_proof.number_of_active_validators,
         balance_proof.number_of_non_activated_validators,
+        balance_proof.number_of_slashed_validators,
     )
     .await?;
 
