@@ -1,11 +1,11 @@
 use itertools::Itertools;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{DeriveInput, TypeParam};
+use syn::{DataStruct, DeriveInput, Field};
 
 use crate::{
     create_struct_with_fields, create_struct_with_fields_and_inherited_attrs_target_primitive,
-    gen_shorthand_struct_initialization,
+    gen_shorthand_struct_initialization, utils::concat_token_streams,
 };
 
 pub fn impl_derive_public_inputs_readable(input_ast: DeriveInput) -> TokenStream {
@@ -13,45 +13,28 @@ pub fn impl_derive_public_inputs_readable(input_ast: DeriveInput) -> TokenStream
         panic!("PublicInputsReadable is implemented only for structs");
     };
 
-    let fields = data.fields.iter().cloned().collect_vec();
+    let public_inputs_target_readable_impl = impl_public_inputs_target_readable(&input_ast, &data);
+    let public_inputs_readable_impl = impl_public_inputs_readable(&input_ast, &data);
+    let to_targets_impl = impl_to_targets(&input_ast, &data);
 
+    quote! {
+        #public_inputs_target_readable_impl
+        #public_inputs_readable_impl
+        #to_targets_impl-
+    }
+}
+
+fn impl_public_inputs_target_readable(
+    input_ast: &DeriveInput,
+    struct_data: &DataStruct,
+) -> TokenStream {
     let (impl_generics, type_generics, where_clause) = input_ast.generics.split_for_impl();
-    let type_param_tokens = quote!(F: RichField);
-    let type_param = syn::parse::<TypeParam>(type_param_tokens.into()).unwrap();
-
-    let mut modified_generics = input_ast.generics.clone();
-    modified_generics
-        .params
-        .push(syn::GenericParam::Type(type_param));
-
     let ident = &input_ast.ident;
+    let fields = struct_data.fields.iter().cloned().collect_vec();
 
-    let add_size = fields.iter().map(|field| {
+    let add_size = struct_data.fields.iter().map(|field| {
         let field_type = &field.ty;
         quote!(size += <#field_type as PublicInputsTargetReadable>::get_size();)
-    });
-
-    let read_targets = fields.iter().map(|field| {
-        let field_name = &field.ident;
-        let field_type = &field.ty;
-        // TODO: account for generics (turbofish)
-        quote!(let #field_name = reader.read_object::<#field_type>();)
-    });
-
-    let read_field_elements = read_targets.clone();
-
-    let return_from_targets_result =
-        gen_shorthand_struct_initialization(&ident, &input_ast.generics, &fields);
-
-    let return_from_elements_result = gen_shorthand_struct_initialization(
-        &format_ident!("{ident}Primitive"),
-        &input_ast.generics,
-        &fields,
-    );
-
-    let push_targets = fields.iter().map(|field| {
-        let field_ident = &field.ident;
-        quote!(targets.extend(self.#field_ident.to_targets());)
     });
 
     let public_inputs_target_struct_def = create_struct_with_fields(
@@ -60,17 +43,13 @@ pub fn impl_derive_public_inputs_readable(input_ast: DeriveInput) -> TokenStream
         &fields,
     );
 
-    let public_inputs_struct_def = create_struct_with_fields_and_inherited_attrs_target_primitive(
-        &format_ident!("{ident}PublicInputs"),
-        &input_ast.generics,
-        &input_ast.attrs,
-        &fields,
-        &["serde"],
-    );
+    let read_targets = gen_reader_read(&fields);
+
+    let return_from_targets_result =
+        gen_shorthand_struct_initialization(&ident, &input_ast.generics, &fields);
 
     quote! {
         #public_inputs_target_struct_def
-        #public_inputs_struct_def
 
         impl #impl_generics PublicInputsTargetReadable for #ident #type_generics #where_clause {
             fn get_size() -> usize {
@@ -82,20 +61,60 @@ pub fn impl_derive_public_inputs_readable(input_ast: DeriveInput) -> TokenStream
             fn from_targets(targets: &[Target]) -> Self {
                 assert_eq!(targets.len(), Self::get_size());
                 let mut reader = PublicInputsTargetReader::new(targets);
-                #(#read_targets)*
+                #read_targets
                 #return_from_targets_result
             }
         }
+    }
+}
+
+fn impl_public_inputs_readable(input_ast: &DeriveInput, struct_data: &DataStruct) -> TokenStream {
+    let (impl_generics, type_generics, where_clause) = input_ast.generics.split_for_impl();
+    let ident = &input_ast.ident;
+    let fields = struct_data.fields.iter().cloned().collect_vec();
+
+    let public_inputs_struct_def = create_struct_with_fields_and_inherited_attrs_target_primitive(
+        &format_ident!("{ident}PublicInputs"),
+        &input_ast.generics,
+        &input_ast.attrs,
+        &fields,
+        &["serde"],
+    );
+
+    let read_field_elements = gen_reader_read(&fields);
+
+    let return_from_elements_result = gen_shorthand_struct_initialization(
+        &format_ident!("{ident}Primitive"),
+        &input_ast.generics,
+        &fields,
+    );
+
+    quote! {
+        #public_inputs_struct_def
 
         impl #impl_generics PublicInputsReadable for #ident #type_generics #where_clause {
             fn from_elements<F: RichField>(elements: &[F]) -> Self::Primitive {
                 assert_eq!(elements.len(), Self::get_size());
                 let mut reader = PublicInputsFieldReader::new(elements);
-                #(#read_field_elements)*
+                #read_field_elements
                 #return_from_elements_result
             }
         }
 
+    }
+}
+
+fn impl_to_targets(input_ast: &DeriveInput, struct_data: &DataStruct) -> TokenStream {
+    let (impl_generics, type_generics, where_clause) = input_ast.generics.split_for_impl();
+    let ident = &input_ast.ident;
+    let fields = struct_data.fields.iter().cloned().collect_vec();
+
+    let push_targets = fields.iter().map(|field| {
+        let field_ident = &field.ident;
+        quote!(targets.extend(self.#field_ident.to_targets());)
+    });
+
+    quote! {
         impl #impl_generics ToTargets for #ident #type_generics #where_clause {
             fn to_targets(&self) -> Vec<Target> {
                 let mut targets = Vec::new();
@@ -103,5 +122,20 @@ pub fn impl_derive_public_inputs_readable(input_ast: DeriveInput) -> TokenStream
                 targets
             }
         }
+
     }
+}
+
+fn gen_reader_read(fields: &[Field]) -> TokenStream {
+    concat_token_streams(
+        fields
+            .iter()
+            .map(|field| {
+                let field_name = &field.ident;
+                let field_type = &field.ty;
+                // TODO: account for generics (turbofish?)
+                quote!(let #field_name = reader.read_object::<#field_type>();)
+            })
+            .collect_vec(),
+    )
 }

@@ -23,7 +23,7 @@ pub fn impl_derive_circuit_target(input_ast: DeriveInput) -> TokenStream {
     }
 }
 
-fn impl_set_witness(input_ast: &DeriveInput, data: &DataStruct) -> TokenStream {
+fn impl_set_witness(input_ast: &DeriveInput, struct_data: &DataStruct) -> TokenStream {
     let (_, type_generics, where_clause) = input_ast.generics.split_for_impl();
 
     let ident = &input_ast.ident;
@@ -33,7 +33,7 @@ fn impl_set_witness(input_ast: &DeriveInput, data: &DataStruct) -> TokenStream {
         extend_generics_with_type_param(&input_ast.generics, quote!(F: RichField));
     let (extended_impl_generics, _, _) = extended_generics.split_for_impl();
 
-    let circuit_input_fields = filter_circuit_input_fields(&data.fields);
+    let circuit_input_fields = filter_circuit_input_fields(&struct_data.fields);
 
     let witness_input_struct_def = create_struct_with_fields_and_inherited_attrs_target_primitive(
         &witness_input_ident,
@@ -61,10 +61,13 @@ fn impl_set_witness(input_ast: &DeriveInput, data: &DataStruct) -> TokenStream {
     }
 }
 
-fn impl_targets_with_public_inputs(input_ast: &DeriveInput, data: &DataStruct) -> TokenStream {
+fn impl_targets_with_public_inputs(
+    input_ast: &DeriveInput,
+    struct_data: &DataStruct,
+) -> TokenStream {
     let (impl_generics, type_generics, where_clause) = input_ast.generics.split_for_impl();
 
-    let public_input_fields = filter_public_input_fields(&data.fields);
+    let public_input_fields = filter_public_input_fields(&struct_data.fields);
 
     let ident = &input_ast.ident;
     let public_inputs_ident = format_ident!("{ident}PublicInputs");

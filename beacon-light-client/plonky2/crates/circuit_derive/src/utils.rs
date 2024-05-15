@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use proc_macro2::{Delimiter, Group, Ident, TokenStream, TokenTree};
+use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
@@ -156,26 +156,14 @@ pub fn gen_shorthand_struct_initialization(
 ) -> TokenStream {
     let (_, type_generics, _) = generics.split_for_impl();
 
-    let comma_separated_field_names = concat_token_streams(
-        fields
-            .into_iter()
-            .map(|field| {
-                let field_ident = &field.ident;
-                quote!(#field_ident,)
-            })
-            .collect_vec(),
-    );
-
+    let comma_separated_field_names = list_struct_fields(fields);
     let turbofish_type_generics = type_generics.as_turbofish();
-    // TODO: :: should not be there if the generics are empty
-    concat_token_streams(vec![
-        quote!(#type_ident #turbofish_type_generics),
-        enclose_in_braces(comma_separated_field_names),
-    ])
-}
 
-pub fn enclose_in_braces(tokens: TokenStream) -> TokenStream {
-    TokenStream::from(TokenTree::Group(Group::new(Delimiter::Brace, tokens)))
+    quote! {
+        #type_ident #turbofish_type_generics {
+            #(#comma_separated_field_names)*
+        }
+    }
 }
 
 pub fn concat_token_streams(streams: Vec<TokenStream>) -> TokenStream {
@@ -199,4 +187,14 @@ pub fn extend_generics_with_type_param(
         .push(syn::GenericParam::Type(type_param));
 
     extended_generics
+}
+
+pub fn list_struct_fields(fields: &[Field]) -> Vec<TokenStream> {
+    fields
+        .into_iter()
+        .map(|field| {
+            let field_ident = &field.ident;
+            quote!(#field_ident,)
+        })
+        .collect_vec()
 }
