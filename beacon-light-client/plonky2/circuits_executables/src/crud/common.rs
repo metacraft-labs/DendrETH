@@ -27,6 +27,7 @@ use plonky2::{
 };
 use redis::{aio::Connection, AsyncCommands, RedisError};
 use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize, Serializer};
+use serde_json::Number;
 
 use super::proof_storage::proof_storage::ProofStorage;
 
@@ -53,6 +54,7 @@ pub struct BalanceProof {
     pub number_of_non_activated_validators: u64,
     pub number_of_active_validators: u64,
     pub number_of_exited_validators: u64,
+    pub number_of_slashed_validators: u64,
     pub proof_key: String,
 }
 
@@ -108,6 +110,7 @@ pub struct FinalProof {
     pub number_of_non_activated_validators: u64,
     pub number_of_active_validators: u64,
     pub number_of_exited_validators: u64,
+    pub number_of_slashed_validators: u64,
     pub proof: Vec<u8>,
 }
 
@@ -231,6 +234,7 @@ pub async fn save_balance_proof<const N: usize>(
         number_of_non_activated_validators: <ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> as ValidatorBalanceProofExt<N>>::get_number_of_non_activated_validators(&proof),
         number_of_active_validators: <ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> as ValidatorBalanceProofExt<N>>::get_number_of_active_validators(&proof),
         number_of_exited_validators: <ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> as ValidatorBalanceProofExt<N>>::get_number_of_exited_validators(&proof),
+        number_of_slashed_validators: <ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> as ValidatorBalanceProofExt<N>>::get_number_of_slashed_validators(&proof),
         proof_key: proof_key.clone(),
     };
 
@@ -266,6 +270,7 @@ pub async fn save_final_proof(
     number_of_non_activated_validators: u64,
     number_of_active_validators: u64,
     number_of_exited_validators: u64,
+    number_of_slashed_validators: u64,
 ) -> Result<()> {
     let final_proof = FinalProof {
         needs_change: false,
@@ -275,6 +280,7 @@ pub async fn save_final_proof(
         number_of_non_activated_validators,
         number_of_active_validators,
         number_of_exited_validators,
+        number_of_slashed_validators,
         proof: proof.to_bytes(),
     };
 

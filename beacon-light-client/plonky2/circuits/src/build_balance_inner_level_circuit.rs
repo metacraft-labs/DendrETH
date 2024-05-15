@@ -1,5 +1,5 @@
 use plonky2::{
-    hash::{poseidon::PoseidonHash},
+    hash::poseidon::PoseidonHash,
     iop::target::BoolTarget,
     plonk::{
         circuit_builder::CircuitBuilder,
@@ -12,9 +12,7 @@ use plonky2::{
 
 use crate::{
     biguint::CircuitBuilderBiguint,
-    build_validator_balance_circuit::{
-        set_public_variables, ValidatorBalanceProofTargetsExt,
-    },
+    build_validator_balance_circuit::{set_public_variables, ValidatorBalanceProofTargetsExt},
     sha256::make_circuits,
     targets_serialization::{ReadTargets, WriteTargets},
     utils::ETH_SHA256_BIT_SIZE,
@@ -130,6 +128,12 @@ pub fn build_inner_level_circuit<const N: usize>(
     let number_of_exited_validators =
         builder.add(number_of_exited_validators1, number_of_exited_validators2);
 
+    let number_of_slashed_validators1 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_number_of_slashed_validators(&pt1);
+    let number_of_slashed_validators2 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_number_of_slashed_validators(&pt2);
+
+    let number_of_slashed_validators =
+        builder.add(number_of_slashed_validators1, number_of_slashed_validators2);
+
     let sum1 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_range_total_value(&pt1);
 
     let sum2 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_range_total_value(&pt2);
@@ -151,8 +155,14 @@ pub fn build_inner_level_circuit<const N: usize>(
         }
     }
 
-    let current_epoch1 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_current_epoch(&pt1);
-    let current_epoch2 = <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_current_epoch(&pt2);
+    let current_epoch1 =
+        <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_current_epoch(
+            &pt1,
+        );
+    let current_epoch2 =
+        <ProofWithPublicInputsTarget<2> as ValidatorBalanceProofTargetsExt<N>>::get_current_epoch(
+            &pt2,
+        );
 
     builder.connect_biguint(&current_epoch1, &current_epoch2);
 
@@ -166,6 +176,7 @@ pub fn build_inner_level_circuit<const N: usize>(
         number_of_non_activated_validators,
         number_of_active_validators,
         number_of_exited_validators,
+        number_of_slashed_validators,
     );
 
     let data = builder.build::<C>();

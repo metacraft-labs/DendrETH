@@ -19,7 +19,9 @@ use crate::{
     build_validator_balance_circuit::ValidatorBalanceProofTargetsExt,
     is_valid_merkle_branch::{is_valid_merkle_branch_sha256, IsValidMerkleBranchTargets},
     sha256::make_circuits,
-    utils::{create_bool_target_array, ssz_num_to_bits, ETH_SHA256_BIT_SIZE, biguint_to_bits_target},
+    utils::{
+        biguint_to_bits_target, create_bool_target_array, ssz_num_to_bits, ETH_SHA256_BIT_SIZE,
+    },
 };
 
 pub struct BalanceFinalLayerTargets {
@@ -85,6 +87,7 @@ pub fn build_final_circuit<const N: usize>(
         number_of_non_activated_validators,
         number_of_active_validators,
         number_of_exited_validators,
+        number_of_slashed_validators,
     ) = setup_balance_targets(&mut builder, balance_data);
 
     let (
@@ -154,10 +157,8 @@ pub fn build_final_circuit<const N: usize>(
     let slot_merkle_branch =
         create_and_connect_merkle_branch(&mut builder, 34, &slot_bits, &state_root, 5);
 
-    let public_inputs_hasher = make_circuits(
-        &mut builder,
-        ((N + 2) * ETH_SHA256_BIT_SIZE) as u64,
-    );
+    let public_inputs_hasher =
+        make_circuits(&mut builder, ((N + 2) * ETH_SHA256_BIT_SIZE + 64) as u64);
 
     let final_sum_bits = biguint_to_bits_target::<F, D, 2>(&mut builder, &balance_sum);
 
@@ -195,6 +196,11 @@ pub fn build_final_circuit<const N: usize>(
         .rev()
         .collect_vec();
 
+    let number_of_slashed_validators_bits = builder
+        .split_le(number_of_slashed_validators, 64)
+        .into_iter()
+        .rev()
+        .collect_vec();
 
     for i in 0..64 {
         builder.connect(
@@ -212,6 +218,10 @@ pub fn build_final_circuit<const N: usize>(
         builder.connect(
             public_inputs_hasher.message[(N + 1) * ETH_SHA256_BIT_SIZE + 192 + i].target,
             number_of_exited_validators_bits[i].target,
+        );
+        builder.connect(
+            public_inputs_hasher.message[(N + 1) * ETH_SHA256_BIT_SIZE + 256 + i].target,
+            number_of_slashed_validators_bits[i].target,
         );
     }
 
@@ -270,6 +280,7 @@ fn setup_balance_targets<const N: usize>(
     Target,
     Target,
     Target,
+    Target,
 ) {
     let (proof_targets, verifier_circuit_target) = setup_proof_targets(data, builder);
 
@@ -287,6 +298,8 @@ fn setup_balance_targets<const N: usize>(
         ValidatorBalanceProofTargetsExt::<N>::get_number_of_active_validators(&proof_targets);
     let number_of_exited_validators =
         ValidatorBalanceProofTargetsExt::<N>::get_number_of_exited_validators(&proof_targets);
+    let number_of_slashed_validators =
+        ValidatorBalanceProofTargetsExt::<N>::get_number_of_slashed_validators(&proof_targets);
 
     (
         proof_targets,
@@ -299,6 +312,7 @@ fn setup_balance_targets<const N: usize>(
         number_of_non_activated_validators,
         number_of_active_validators,
         number_of_exited_validators,
+        number_of_slashed_validators,
     )
 }
 
