@@ -22,7 +22,12 @@ const options = new CommandLineOptionsBuilder()
   .option('validator-manager-contract-address', {
     describe: 'The validator manager contract address',
     type: 'string',
-    demandOption: true,
+    demandOption: false,
+  })
+  .option('withdrawal-credentials', {
+    describe: 'The withdrawal credentials',
+    type: 'string',
+    demandOption: false,
   })
   .withBeaconNodeOpts()
   .build();
@@ -36,15 +41,14 @@ const snapshot = new ethers.Contract(
   provider,
 );
 
-const validatorManager = new ethers.Contract(
+const validatorManager = options['validator-manager-contract-address'] ? new ethers.Contract(
   options['validator-manager-contract-address'],
   validatorManagerAbi,
   provider,
-);
+) : undefined;
 
 snapshot.on('SnapshotTaken', async (_: number, currentSlot: number) => {
-  const withdrawalCredentials =
-    await validatorManager.getWithdrawalCredentials();
+  const withdrawalCredentials = validatorManager ? (await validatorManager.getWithdrawalCredentials()) : options['withdrawal-credentials'];
 
   await getBalancesInput({
     protocol: 'diva',
