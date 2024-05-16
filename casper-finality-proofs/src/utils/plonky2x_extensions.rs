@@ -78,3 +78,25 @@ pub fn shift_right<L: PlonkParameters<D>, const D: usize>(
 
     new_bits
 }
+
+/// Split the given integer into a list of wires, where each one represents a
+/// bit of the integer, with little-endian ordering.
+pub fn variable_to_le_bits<L: PlonkParameters<D>, const D: usize>(
+    builder: &mut CircuitBuilder<L, D>,
+    variable: Variable,
+    num_bits: usize,
+) -> Vec<BoolVariable> {
+    builder
+        .api
+        .split_le(variable.0, num_bits)
+        .into_iter()
+        .map(|v| BoolVariable::from(v))
+        .collect()
+}
+
+pub fn assert_zero<L: PlonkParameters<D>, const D: usize>(
+    builder: &mut CircuitBuilder<L, D>,
+    variable: Variable,
+) {
+    builder.api.assert_zero(variable.0)
+}

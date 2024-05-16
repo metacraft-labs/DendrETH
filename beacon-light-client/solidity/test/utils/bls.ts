@@ -24,46 +24,46 @@ import * as nodeCrypto from 'crypto';
 // Fp₂(v) / (v³ - ξ) where ξ = u + 1
 // Fp₆(w) / (w² - γ) where γ = v
 export const CURVE = {
-    // G1 is the order-q subgroup of E1(Fp) : y² = x³ + 4, #E1(Fp) = h1q, where
-    // characteristic; z + (z⁴ - z² + 1)(z - 1)²/3
-    P: 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaabn,
-    // order; z⁴ − z² + 1
-    r: 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001n,
-    // cofactor; (z - 1)²/3
-    h: 0x396c8c005555e1568c00aaab0000aaabn,
-    // generator's coordinates
-    // x = 3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507
-    // y = 1339506544944476473020471379941921221584933875938349620426543736416511423956333506472724655353366534992391756441569
-    Gx: 0x17f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bbn,
-    Gy: 0x08b3f481e3aaa0f1a09e30ed741d8ae4fcf5e095d5d00af600db18cb2c04b3edd03cc744a2888ae40caa232946c5e7e1n,
-    b: 4n,
+  // G1 is the order-q subgroup of E1(Fp) : y² = x³ + 4, #E1(Fp) = h1q, where
+  // characteristic; z + (z⁴ - z² + 1)(z - 1)²/3
+  P: 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaabn,
+  // order; z⁴ − z² + 1
+  r: 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001n,
+  // cofactor; (z - 1)²/3
+  h: 0x396c8c005555e1568c00aaab0000aaabn,
+  // generator's coordinates
+  // x = 3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507
+  // y = 1339506544944476473020471379941921221584933875938349620426543736416511423956333506472724655353366534992391756441569
+  Gx: 0x17f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bbn,
+  Gy: 0x08b3f481e3aaa0f1a09e30ed741d8ae4fcf5e095d5d00af600db18cb2c04b3edd03cc744a2888ae40caa232946c5e7e1n,
+  b: 4n,
 
-    // G2 is the order-q subgroup of E2(Fp²) : y² = x³+4(1+√−1),
-    // where Fp2 is Fp[√−1]/(x2+1). #E2(Fp2 ) = h2q, where
-    // G² - 1
-    // h2q
-    P2:
-        0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaabn *
-        0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaabn -
-        1n,
-    // cofactor
-    h2: 0x5d543a95414e7f1091d50792876a202cd91de4547085abaa68a205b2e5a7ddfa628f1cb4d9e82ef21537e293a6691ae1616ec6e786f0c70cf1c38e31c7238e5n,
-    G2x: [
-        0x024aa2b2f08f0a91260805272dc51051c6e47ad4fa403b02b4510b647ae3d1770bac0326a805bbefd48056c8c121bdb8n,
-        0x13e02b6052719f607dacd3a088274f65596bd0d09920b61ab5da61bbdc7f5049334cf11213945d57e5ac7d055d042b7en,
-    ],
-    // y =
-    // 927553665492332455747201965776037880757740193453592970025027978793976877002675564980949289727957565575433344219582,
-    // 1985150602287291935568054521177171638300868978215655730859378665066344726373823718423869104263333984641494340347905
-    G2y: [
-        0x0ce5d527727d6e118cc9cdc6da2e351aadfd9baa8cbdd3a76d429a695160d12c923ac9cc3baca289e193548608b82801n,
-        0x0606c4a02ea734cc32acd2b02bc28b99cb3e287e85a763af267492ab572e99ab3f370d275cec1da1aaa9075ff05f79ben,
-    ],
-    b2: [4n, 4n],
-    // The BLS parameter x for BLS12-381
-    x: 0xd201000000010000n,
-    h2Eff:
-        0xbc69f08f2ee75b3584c6a0ea91b352888e2a8e9145ad7689986ff031508ffe1329c2f178731db956d82bf015d1212b02ec0ec69d7477c1ae954cbc06689f6a359894c0adebbf6b4e8020005aaa95551n,
+  // G2 is the order-q subgroup of E2(Fp²) : y² = x³+4(1+√−1),
+  // where Fp2 is Fp[√−1]/(x2+1). #E2(Fp2 ) = h2q, where
+  // G² - 1
+  // h2q
+  P2:
+    0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaabn *
+    0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaabn -
+    1n,
+  // cofactor
+  h2: 0x5d543a95414e7f1091d50792876a202cd91de4547085abaa68a205b2e5a7ddfa628f1cb4d9e82ef21537e293a6691ae1616ec6e786f0c70cf1c38e31c7238e5n,
+  G2x: [
+    0x024aa2b2f08f0a91260805272dc51051c6e47ad4fa403b02b4510b647ae3d1770bac0326a805bbefd48056c8c121bdb8n,
+    0x13e02b6052719f607dacd3a088274f65596bd0d09920b61ab5da61bbdc7f5049334cf11213945d57e5ac7d055d042b7en,
+  ],
+  // y =
+  // 927553665492332455747201965776037880757740193453592970025027978793976877002675564980949289727957565575433344219582,
+  // 1985150602287291935568054521177171638300868978215655730859378665066344726373823718423869104263333984641494340347905
+  G2y: [
+    0x0ce5d527727d6e118cc9cdc6da2e351aadfd9baa8cbdd3a76d429a695160d12c923ac9cc3baca289e193548608b82801n,
+    0x0606c4a02ea734cc32acd2b02bc28b99cb3e287e85a763af267492ab572e99ab3f370d275cec1da1aaa9075ff05f79ben,
+  ],
+  b2: [4n, 4n],
+  // The BLS parameter x for BLS12-381
+  x: 0xd201000000010000n,
+  h2Eff:
+    0xbc69f08f2ee75b3584c6a0ea91b352888e2a8e9145ad7689986ff031508ffe1329c2f178731db956d82bf015d1212b02ec0ec69d7477c1ae954cbc06689f6a359894c0adebbf6b4e8020005aaa95551n,
 };
 
 export function mod(a: bigint, b: bigint) {
@@ -83,7 +83,7 @@ const SHA256_DIGEST_SIZE = 32;
 // p = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab
 // m = 2 (or 1 for G1 see section 8.8.1)
 // k = 128
-const htfDefaults = {
+export const htfDefaults = {
   // DST: a domain separation tag
   // defined in section 2.2.5
   DST: 'BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_', // to comply with https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#bls-signatures
@@ -184,7 +184,7 @@ function concatBytes(...arrays: Uint8Array[]): Uint8Array {
 }
 
 // UTF8 to ui8a
-function stringToBytes(str: string) {
+export function stringToBytes(str: string) {
   const bytes = new Uint8Array(str.length);
   for (let i = 0; i < str.length; i++) {
     bytes[i] = str.charCodeAt(i);
@@ -225,7 +225,7 @@ function strxor(a: Uint8Array, b: Uint8Array): Uint8Array {
 
 // Produces a uniformly random byte string using a cryptographic hash function H that outputs b bits
 // https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-hash-to-curve-11#section-5.4.1
-async function expand_message_xmd(
+export async function expand_message_xmd(
   msg: Uint8Array,
   DST: Uint8Array,
   lenInBytes: number,
@@ -259,7 +259,7 @@ async function expand_message_xmd(
 // count - the number of elements of F to output.
 // Outputs:
 // [u_0, ..., u_(count - 1)], a list of field elements.
-async function hash_to_field(
+export async function hash_to_field(
   msg: Uint8Array,
   count: number,
   options = {},
