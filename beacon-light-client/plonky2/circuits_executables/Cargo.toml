@@ -6,10 +6,17 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-redis = { version = "0.23", features = ["aio", "async-std-comp", "connection-manager", "json"] }
+redis = { version = "0.23", features = [
+  "aio",
+  "async-std-comp",
+  "connection-manager",
+  "json",
+] }
 circuits = { path = "../circuits" }
 num = { version = "0.4.0", features = ["serde"] }
 plonky2 = { git = "https://github.com/metacraft-labs/plonky2" }
+# plonky2_electron = { path = "/home/dimo/code/repos/metacraft-labs/Electron-labs-plonky2/plonky2", package = "plonky2" }
+starky_bls12_381 = { path = "/home/dimo/code/repos/metacraft-labs/starky_bls12_381" }
 serde = "1.0.164"
 serde_json = "1.0.96"
 anyhow = "1.0.71"
@@ -42,6 +49,10 @@ glob = "0.3.1"
 sha256 = "1.5.0"
 lazy_static = "1.4.0"
 ff = { package = "ff", version = "0.13", features = ["derive"] }
+
+[patch]
+[patch.crates-io]
+parity-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1.git" }
 
 [[bin]]
 name = "balance_verification"
