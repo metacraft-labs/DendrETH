@@ -577,7 +577,7 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D> for Sqr
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
+    use std::{str::FromStr, time::Instant};
 
     use itertools::Itertools;
     use num_bigint::BigUint;
@@ -641,7 +641,9 @@ mod tests {
         let input = circuit.input();
 
         // Generate a proof.
+        let s = Instant::now();
         let (proof, mut output) = circuit.prove(&input);
+        println!("Time to generate a proof {:?}", s.elapsed());
 
         // Verify proof.
         circuit.verify(&proof, &input, &output);
@@ -760,9 +762,13 @@ mod tests {
         let input = circuit.input();
 
         // Generate a proof.
+        let s = Instant::now();
         let (proof, mut output) = circuit.prove(&input);
+        println!("Time to generate a proof {:?}", s.elapsed());
         // Verify proof.
+        let s = Instant::now();
         circuit.verify(&proof, &input, &output);
+        println!("Time to verify a proof {:?}", s.elapsed());
 
         // Read output.
         for i in 0..iso_map_r.len() {

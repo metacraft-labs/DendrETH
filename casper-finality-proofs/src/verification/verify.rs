@@ -282,7 +282,7 @@ pub fn verify_bls_signatures(
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
+    use std::{str::FromStr, time::Instant};
 
     use ark_bls12_381::{Fr, G1Affine, G2Affine};
     use ark_ec::AffineRepr;
@@ -390,7 +390,7 @@ mod tests {
         ];
 
         // MESSAGE
-        // let message: PointG2Target = calc_ell_coeffs_and_generate_g2_point(&mut builder, message);
+        let message: PointG2Target = calc_ell_coeffs_and_generate_g2_point(&mut builder, message);
 
         // MESSAGE in bytes
         let message = [
@@ -432,10 +432,14 @@ mod tests {
         // Write to the circuit input.
         let input = circuit.input();
 
+        let s = Instant::now();
         // Generate a proof.
         let (proof, output) = circuit.prove(&input);
+        println!("Time to generate a proof {:?}", s.elapsed());
         // Verify proof.
+        let s = Instant::now();
         circuit.verify(&proof, &input, &output);
+        println!("Time to verify proof {:?}", s.elapsed());
     }
 
     #[test]
