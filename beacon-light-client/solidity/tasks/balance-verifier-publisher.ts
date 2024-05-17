@@ -13,21 +13,20 @@ import Web3 from 'web3';
 import assert from 'assert';
 import http from 'http';
 import { RequestOptions } from 'https';
-import { bytesToHex } from '@noble/bls12-381/math';
 
 const logger = getGenericLogger();
 
 task('balance-verifier-publisher', 'Run relayer')
-  .addParam('balanceverifier', 'The address of the BalanceVerifier contract')
+.addParam('balanceVerifier', 'The address of the BalanceVerifier contract')
   .addParam(
-    'privatekey',
+    'privateKey',
     'The private key that will be used to publish',
     undefined,
     undefined,
     true,
   )
   .addParam(
-    'gnarkserverurl',
+    'gnarkServerUrl',
     'The url of the gnark server',
     'http://localhost:3333',
     undefined,
@@ -35,14 +34,14 @@ task('balance-verifier-publisher', 'Run relayer')
   )
   .addParam('protocol', 'The protocol used')
   .addParam(
-    'transactionspeed',
+    'transactionSpeed',
     'The speed you want the transactions to be included in a block',
     'avg',
     undefined,
     true,
   )
   .addParam(
-    'prometheusport',
+    'prometheusPort',
     'Port No. (3000-3005) for Node Express server where Prometheus is listening.',
     '',
     undefined,
@@ -56,8 +55,8 @@ task('balance-verifier-publisher', 'Run relayer')
 
     checkConfig(config);
 
-    if (args.prometheusport) {
-      console.log(`Initializing Prometheus on port ${args.prometheusport}`);
+    if (args.prometheusPort) {
+      console.log(`Initializing Prometheus on port ${args.prometheusPort}`);
 
       let networkName: string = '';
       for (let i = 0; i < process.argv.length; i++) {
@@ -68,15 +67,15 @@ task('balance-verifier-publisher', 'Run relayer')
         }
       }
 
-      initPrometheusSetup(args.prometheusport, networkName);
+      initPrometheusSetup(args.prometheusPort, networkName);
     }
 
     let publisher;
 
-    if (!args.privatekey) {
+    if (!args.privateKey) {
       [publisher] = await ethers.getSigners();
     } else {
-      publisher = new ethers.Wallet(args.privatekey, ethers.provider);
+      publisher = new ethers.Wallet(args.privateKey, ethers.provider);
     }
 
     logger.info(`Publishing updates with the account: ${publisher.address}`);
@@ -84,11 +83,11 @@ task('balance-verifier-publisher', 'Run relayer')
       `Account balance: ${(await publisher.getBalance()).toString()}`,
     );
 
-    logger.info(`Contract address ${args.balanceverifier}`);
+    logger.info(`Contract address ${args.balanceVerifier}`);
 
     const balanceVerifierContract = await ethers.getContractAt(
-      'contracts/balance_verifier/BalanceVerifierDiva.sol:BalanceVerifier',
-      args.balanceverifier,
+      'contracts/balance_verifier/BalanceVerifierDiva.sol:BalanceVerifierDiva',
+      args.balanceVerifier,
       publisher,
     );
 
@@ -97,8 +96,8 @@ task('balance-verifier-publisher', 'Run relayer')
     console.log('url', (network.config as any).url);
 
     if (
-      args.transactionspeed &&
-      !['slow', 'avg', 'fast'].includes(args.transactionspeed)
+      args.transactionSpeed &&
+      !['slow', 'avg', 'fast'].includes(args.transactionSpeed)
     ) {
       throw new Error('Invalid transaction speed');
     }
@@ -135,7 +134,7 @@ task('balance-verifier-publisher', 'Run relayer')
         ),
       };
 
-      const { hostname, port } = extractHostnameAndPort(args.gnarkserverurl);
+      const { hostname, port } = extractHostnameAndPort(args.gnarkServerUrl);
 
       const options: RequestOptions = {
         hostname: hostname,
@@ -180,7 +179,7 @@ task('balance-verifier-publisher', 'Run relayer')
               numberOfSlashedValidators,
             ],
             web3,
-            args.transactionspeed,
+            args.transactionSpeed,
             true,
           );
         });

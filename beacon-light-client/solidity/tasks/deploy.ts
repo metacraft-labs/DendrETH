@@ -8,14 +8,14 @@ const logger = getGenericLogger();
 
 task('deploy', 'Deploy the beacon light client contract')
   .addParam('slot', 'The slot ')
-  .addParam('follownetwork', 'The network to follow')
+  .addParam('followNetwork', 'The network to follow')
   .setAction(async (args, { run, ethers }) => {
-    if (args.follownetwork !== 'pratter' && args.follownetwork !== 'mainnet') {
-      logger.warn('This follownetwork is not specified in networkconfig');
+    if (args.followNetwork !== 'pratter' && args.followNetwork !== 'mainnet') {
+      logger.warn('This followNetwork is not specified in networkconfig');
       return;
     }
 
-    const currentConfig = getNetworkConfig(args.follownetwork);
+    const currentConfig = getNetworkConfig(args.followNetwork);
 
     await run('compile');
     const [deployer] = await ethers.getSigners();

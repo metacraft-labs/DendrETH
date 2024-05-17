@@ -8,7 +8,7 @@ import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 const logger = getGenericLogger();
 
 task('remove-repeat-job', 'Run update recuring task')
-  .addParam('jobkey', 'The job key')
+  .addParam('jobKey', 'The job key')
   .setAction(async args => {
     const config = {
       REDIS_HOST: process.env.REDIS_HOST,
@@ -26,5 +26,5 @@ task('remove-repeat-job', 'Run update recuring task')
 
     logger.info(await updateQueue.getRepeatableJobs());
 
-    await updateQueue.removeRepeatableByKey(args.jobkey);
+    await updateQueue.removeRepeatableByKey(args.jobKey);
   });
