@@ -112,7 +112,7 @@ where
         ValidatorBalanceVerificationTargets<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>;
     type Params = ();
 
-    fn define(builder: &mut CircuitBuilder<F, D>, _params: ()) -> Self::Target {
+    fn define(builder: &mut CircuitBuilder<F, D>, _params: &()) -> Self::Target {
         if !VALIDATORS_COUNT.is_power_of_two() {
             panic!("validators_len must be a power of two");
         }

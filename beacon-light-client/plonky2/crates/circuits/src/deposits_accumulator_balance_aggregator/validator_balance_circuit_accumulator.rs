@@ -21,9 +21,8 @@ use crate::{
             is_valid_merkle_branch::{
                 assert_merkle_proof_is_valid, restore_merkle_root, MerkleBranch, Sha256,
             },
-            validator_hash_tree_root_poseidon::{
-                hash_poseidon, hash_validator_poseidon, ValidatorTarget,
-            },
+            poseidon::hash_poseidon,
+            validator_hash_tree_root_poseidon::{hash_validator_poseidon, ValidatorTarget},
         },
         utils::{biguint_to_le_bits_target, create_bool_target_array, create_sha256_merkle_proof},
     },

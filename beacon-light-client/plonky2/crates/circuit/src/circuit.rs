@@ -23,9 +23,9 @@ pub trait Circuit {
     type Target: TargetsWithPublicInputs + ReadableCircuitInputTarget;
     type Params;
 
-    fn define(builder: &mut CircuitBuilder<Self::F, D>, params: Self::Params) -> Self::Target;
+    fn define(builder: &mut CircuitBuilder<Self::F, D>, params: &Self::Params) -> Self::Target;
 
-    fn build(params: Self::Params) -> (Self::Target, CircuitData<Self::F, Self::C, D>) {
+    fn build(params: &Self::Params) -> (Self::Target, CircuitData<Self::F, Self::C, D>) {
         let mut builder = CircuitBuilder::new(Self::CIRCUIT_CONFIG);
         let targets = Self::define(&mut builder, params);
         targets.register_public_inputs(&mut builder);

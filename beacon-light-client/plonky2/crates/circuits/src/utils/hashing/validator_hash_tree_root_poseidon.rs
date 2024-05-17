@@ -2,7 +2,6 @@ use crate::serializers::serde_bool_array_to_hex_string;
 use circuit_derive::AddVirtualTarget;
 use circuit_derive::SerdeCircuitTarget;
 use circuit_derive::{PublicInputsReadable, SetWitness, TargetPrimitive};
-use plonky2::iop::target::Target;
 use plonky2::{
     field::extension::Extendable,
     hash::{
@@ -261,13 +260,6 @@ pub fn hash_validator_poseidon<F: RichField + Extendable<D>, const D: usize>(
     }
 
     hash_tree_root_poseidon.hash_tree_root
-}
-
-pub fn hash_poseidon<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    targets: Vec<Target>,
-) -> HashOutTarget {
-    builder.hash_n_to_hash_no_pad::<PoseidonHash>(targets)
 }
 
 pub fn hash_tree_root_validator_poseidon<F: RichField + Extendable<D>, const D: usize>(

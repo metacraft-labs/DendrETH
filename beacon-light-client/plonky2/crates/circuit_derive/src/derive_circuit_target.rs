@@ -6,9 +6,10 @@ use syn::{DataStruct, DeriveInput, Field, Fields};
 use crate::{
     derive_public_inputs_readable::gen_reader_read,
     utils::{
-        create_struct_with_fields, create_struct_with_fields_and_inherited_attrs_target_primitive,
+        concat_token_streams, create_struct_with_fields,
+        create_struct_with_fields_and_inherited_attrs_target_primitive,
         extend_generics_with_type_param, gen_shorthand_struct_initialization,
-        has_functional_attr_with_arg,
+        has_functional_attr_with_arg, list_struct_fields,
     },
 };
 
@@ -145,11 +146,37 @@ fn impl_targets_with_public_inputs(
         let field_type = &field.ty;
         quote!(builder.register_public_inputs(&<#field_type as circuit::ToTargets>::to_targets(&self.#field_name));)
     });
+    let register_public_inputs2 = register_public_inputs.clone();
+
+    let turbofish_type_generics = type_generics.as_turbofish();
+    // let list_public_input_fields = concat_token_streams(list_struct_fields(&public_input_fields));
+
+    let assign_public_input_fields_in_struct_init = public_input_fields.iter().map(|field| {
+        let field_name = &field.ident;
+        quote!(#field_name: value.#field_name,)
+    });
 
     // TODO: reuse the PublicInputsReadable macro in some way
     quote! {
         #public_inputs_struct_def
         #public_inputs_target_struct_def
+
+        impl #impl_generics #public_inputs_target_ident #type_generics #where_clause {
+            pub fn register_public_inputs<F: plonky2::hash::hash_types::RichField + plonky2::field::extension::Extendable<D>, const D: usize>(
+                &self,
+                builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
+            ) {
+                #(#register_public_inputs)*
+            }
+        }
+
+        impl #impl_generics std::convert::From<#ident #type_generics> for #public_inputs_target_ident #type_generics #where_clause {
+            fn from(value: #ident #type_generics) -> #public_inputs_target_ident #type_generics {
+                #public_inputs_target_ident #turbofish_type_generics {
+                    #(#assign_public_input_fields_in_struct_init)*
+                }
+            }
+        }
 
         impl #impl_generics circuit::TargetsWithPublicInputs for #ident #type_generics #where_clause {
             type PublicInputs = #public_inputs_ident #type_generics;
@@ -175,7 +202,7 @@ fn impl_targets_with_public_inputs(
                 &self,
                 builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<F, D>,
             ) {
-                #(#register_public_inputs)*
+                #(#register_public_inputs2)*
             }
         }
     }
