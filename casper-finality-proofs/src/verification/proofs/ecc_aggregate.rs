@@ -22,7 +22,7 @@ use crate::verification::{
     utils::native_bls::Fp,
 };
 
-pub const NUM_POINTS: usize = 1;
+pub const NUM_POINTS: usize = 512;
 
 pub const ROW_NUM: usize = 0;
 pub const PIS_IDX: usize = ROW_NUM + 12;
@@ -71,13 +71,9 @@ impl<F: RichField + Extendable<D>, const D: usize> ECCAggStark<F, D> {
         let mut row = 0;
         for i in 0..NUM_POINTS {
             if i < 2 {
-                println!("enters");
-                let dali_shte_se_printira = (row..row + 12).into_iter().for_each(|rw| {
-                    trace[rw][PIS_IDX + i] = F::ONE;
-                    println!("trace[rw][PIS_IDX + i] is: {:?}", trace[rw][PIS_IDX + i]);
-                    println!("trace[rw][PIS_IDX + i] is: {:?}", rw);
-                });
-                println!("dali_shte_se_printira is: {:?}", dali_shte_se_printira);
+                (row..row + 12)
+                    .into_iter()
+                    .for_each(|rw| trace[rw][PIS_IDX + i] = F::ONE);
             } else {
                 row += 12;
                 (row..row + 12)
@@ -593,10 +589,9 @@ mod tests {
         util::trace_rows_to_poly_values, verifier::verify_stark_proof,
     };
 
-    use crate::verification::{
-        proofs::ecc_aggregate::{ECCAggStark, PUBLIC_INPUTS},
-        utils::native_bls::Fp,
-    };
+    use crate::verification::{proofs::ecc_aggregate::PUBLIC_INPUTS, utils::native_bls::Fp};
+
+    use super::ECCAggStark;
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;

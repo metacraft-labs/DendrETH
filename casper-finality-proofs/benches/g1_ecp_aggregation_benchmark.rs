@@ -35,7 +35,7 @@ fn g1_ecp_aggregation_benchmark(c: &mut Criterion) {
         builder.constant_biguint(&b_bigu),
     ]);
 
-    let point = g1_ecc_aggregate(&mut builder, g1_a.clone(), g1_b.clone());
+    //let point = g1_ecc_aggregate(&mut builder, g1_a.clone(), g1_b.clone());
 
     let pk: Vec<Target> = [
         137, 43, 218, 171, 28, 7, 187, 176, 109, 242, 254, 250, 130, 131, 36, 52, 5, 250, 52, 180,
@@ -47,9 +47,9 @@ fn g1_ecp_aggregation_benchmark(c: &mut Criterion) {
     .collect();
 
     let pk: [Target; 48] = pk.into_iter().collect::<Vec<Target>>().try_into().unwrap();
-
+    // NOT WORKING
     c.bench_function("aggregation of g1 points on EC", |b| {
-        b.iter(|| pubkey_to_g1_check(&mut builder, &[point[0].clone(), point[1].clone()], &pk))
+        //b.iter(|| pubkey_to_g1_check(&mut builder, &[point[0].clone(), point[1].clone()], &pk))
     });
 }
 

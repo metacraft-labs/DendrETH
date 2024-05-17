@@ -22,14 +22,70 @@ use starky::{
 
 use crate::verification::{
     proofs::{
-        ecc_aggregate,
+        calc_pairing_precomp, ecc_aggregate,
         final_exponentiate::{self, FinalExponentiateStark},
         miller_loop::{self, MillerLoopStark},
     },
     utils::native_bls::{self, Fp, Fp12, Fp2},
 };
 
-use super::ecc_aggregate::ECCAggStark;
+use super::{calc_pairing_precomp::PairingPrecompStark, ecc_aggregate::ECCAggStark};
+
+pub fn calc_pairing_precomp_proof<
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    const D: usize,
+>(
+    x: Fp2,
+    y: Fp2,
+    z: Fp2,
+) -> (
+    PairingPrecompStark<F, D>,
+    starky::proof::StarkProofWithPublicInputs<F, C, D>,
+    StarkConfig,
+) {
+    let mut config = StarkConfig::standard_fast_config();
+    config.fri_config.rate_bits = 2;
+    let stark = PairingPrecompStark::<F, D>::new(1024);
+    let trace = stark.generate_trace(x.get_u32_slice(), y.get_u32_slice(), z.get_u32_slice());
+    let ell_coeffs = native_bls::calc_pairing_precomp(x, y, z);
+    let mut public_inputs = Vec::new();
+    for e in x.get_u32_slice().concat().iter() {
+        public_inputs.push(F::from_canonical_u32(e.clone()));
+    }
+    for e in y.get_u32_slice().concat().iter() {
+        public_inputs.push(F::from_canonical_u32(e.clone()));
+    }
+    for e in z.get_u32_slice().concat().iter() {
+        public_inputs.push(F::from_canonical_u32(e.clone()));
+    }
+    for cs in ell_coeffs.iter() {
+        for fp2 in cs.iter() {
+            for fp in fp2.0.iter() {
+                for e in fp.0.iter() {
+                    public_inputs.push(F::from_canonical_u32(*e));
+                }
+            }
+        }
+    }
+    assert_eq!(public_inputs.len(), calc_pairing_precomp::PUBLIC_INPUTS);
+    let trace_poly_values = trace_rows_to_poly_values(trace);
+    let t = Instant::now();
+    let proof = prove::<F, C, PairingPrecompStark<F, D>, D>(
+        stark,
+        &config,
+        trace_poly_values,
+        &public_inputs,
+        &mut TimingTree::default(),
+    )
+    .unwrap();
+    println!(
+        "Time taken for calc_pairing_precomp stark proof {:?}",
+        t.elapsed()
+    );
+    verify_stark_proof(stark, proof.clone(), &config).unwrap();
+    (stark, proof, config)
+}
 
 pub fn miller_loop_main<
     F: RichField + Extendable<D>,
@@ -230,7 +286,16 @@ where
     (proof, data.verifier_only, data.common)
 }
 
-// <DefaultParameters as PlonkParameters<D>>::Field
+pub fn get_proof_public_inputs<
+    F: plonky2::hash::hash_types::RichField + plonky2::field::extension::Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    const D: usize,
+>(
+    proof: ProofTuple<F, C, D>,
+) -> Vec<F> {
+    proof.0.public_inputs
+}
+
 pub type ProofTuple<F, C, const D: usize> = (
     ProofWithPublicInputs<F, C, D>,
     VerifierOnlyCircuitData<C, D>,
