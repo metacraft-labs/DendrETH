@@ -1,7 +1,5 @@
 #![feature(generic_const_exprs)]
-use circuit::{
-    set_witness::SetWitness, to_targets::ToTargets, Circuit, CircuitInput, SerdeCircuitTarget,
-};
+use circuit::{set_witness::SetWitness, Circuit, CircuitTargetType, SerdeCircuitTarget};
 use circuit_executables::{
     crud::{
         common::{
@@ -11,7 +9,7 @@ use circuit_executables::{
         proof_storage::proof_storage::{create_proof_storage, ProofStorage},
     },
     db_constants::DB_CONSTANTS,
-    provers::handle_balance_inner_level_proof,
+    provers::prove_inner_level,
     utils::{
         parse_balance_verification_command_line_options, parse_config_file,
         CommandLineOptionsBuilder,
@@ -20,16 +18,13 @@ use circuit_executables::{
 };
 use circuits::{
     circuit_input_common::BalanceProof,
-    serialization::targets_serialization::ReadTargets,
-    utils::hashing::validator_hash_tree_root_poseidon::ValidatorTargetPrimitive,
+    common_targets::BasicRecursiveInnerCircuitTarget,
     withdrawal_credentials_balance_aggregator::{
-        first_level::circuit::ValidatorBalanceVerificationTargets,
-        inner_level_circuit::BalanceInnerCircuitTargets,
-        WithdrawalCredentialsBalanceAggregatorFirstLevel,
+        first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
+        inner_level::WithdrawalCredentialsBalanceAggregatorInnerLevel,
     },
 };
 use colored::Colorize;
-use num::BigUint;
 use std::{
     println, thread,
     time::{Duration, Instant},
@@ -61,9 +56,16 @@ where
     [(); VALIDATORS_COUNT / 4]:,
 {
     FirstLevel(
-        Option<ValidatorBalanceVerificationTargets<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>>,
+        Option<
+            CircuitTargetType<
+                WithdrawalCredentialsBalanceAggregatorFirstLevel<
+                    VALIDATORS_COUNT,
+                    WITHDRAWAL_CREDENTIALS_COUNT,
+                >,
+            >,
+        >,
     ),
-    InnerLevel(Option<BalanceInnerCircuitTargets>),
+    InnerLevel(Option<BasicRecursiveInnerCircuitTarget>),
 }
 
 fn main() -> Result<()> {
@@ -128,39 +130,6 @@ async fn async_main() -> Result<()> {
             protocol, DB_CONSTANTS.balance_verification_queue, config.circuit_level
         )
     );
-
-    // let withdrawal_credentials_input: Array<bool, 256> =
-    //     Array(vec![false; 256].try_into().unwrap());
-
-    // let balance_input: Array<bool, 256> = Array(vec![true; 256].try_into().unwrap());
-    //
-    // let validator_target_input = ValidatorTargetPrimitive {
-    //     pubkey: Array(vec![false; 384].try_into().unwrap()),
-    //     withdrawal_credentials: withdrawal_credentials_input.clone(),
-    //     effective_balance: BigUint::from(1u64),
-    //     slashed: true,
-    //     activation_epoch: BigUint::from(2u64),
-    //     withdrawable_epoch: BigUint::from(3u64),
-    //     activation_eligibility_epoch: BigUint::from(4u64),
-    //     exit_epoch: BigUint::from(5u64),
-    // };
-
-    // let validator_balance_input: CircuitInput<
-    //     WithdrawalCredentialsBalanceAggregatorFirstLevel<8, 1>,
-    // > = CircuitInput::<WithdrawalCredentialsBalanceAggregatorFirstLevel<8, 1>> {
-    //     withdrawal_credentials: Array([withdrawal_credentials_input.clone()]),
-    //     non_zero_validator_leaves_mask: Array([true, false, true, true, true, true, true, true]),
-    //     validators: Array([(); 8].map(|_| validator_target_input.clone())),
-    //     balances: Array([(); 2].map(|_| balance_input.clone())),
-    // };
-    //
-    // let string = serde_json::to_string(&validator_balance_input)?;
-    // println!("{string}");
-    //
-    // let de: CircuitInput<WithdrawalCredentialsBalanceAggregatorFirstLevel<8, 1>> =
-    //     serde_json::from_str(&string)?;
-    //
-    // println!("{de:?}");
 
     let start: Instant = Instant::now();
     process_queue(
@@ -290,7 +259,12 @@ async fn process_first_level_task<
     queue: &WorkQueue,
     queue_item: Item,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    targets: &ValidatorBalanceVerificationTargets<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>,
+    targets: &CircuitTargetType<
+        WithdrawalCredentialsBalanceAggregatorFirstLevel<
+            VALIDATORS_COUNT,
+            WITHDRAWAL_CREDENTIALS_COUNT,
+        >,
+    >,
     protocol: &str,
 ) -> Result<()>
 where
@@ -375,7 +349,7 @@ async fn process_inner_level_job<
     queue_item: Item,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     inner_circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    inner_circuit_targets: &Option<BalanceInnerCircuitTargets>,
+    inner_circuit_target: &Option<BasicRecursiveInnerCircuitTarget>,
     level: u64,
     preserve_intermediary_proofs: bool,
     protocol: &str,
@@ -418,11 +392,11 @@ where
             return Err(err);
         }
         Ok(proofs) => {
-            let proof = handle_balance_inner_level_proof(
+            let proof = prove_inner_level(
                 proofs.0,
                 proofs.1,
                 &inner_circuit_data,
-                &inner_circuit_targets.as_ref().unwrap(),
+                &inner_circuit_target.as_ref().unwrap(),
                 &circuit_data,
             )?;
 
@@ -480,9 +454,12 @@ where
     let mut target_buffer = Buffer::new(&target_bytes);
 
     Ok(Targets::FirstLevel(Some(
-        <ValidatorBalanceVerificationTargets<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT> as SerdeCircuitTarget>::deserialize(
-            &mut target_buffer,
-        )
+        <CircuitTargetType<
+            WithdrawalCredentialsBalanceAggregatorFirstLevel<
+                VALIDATORS_COUNT,
+                WITHDRAWAL_CREDENTIALS_COUNT,
+            >,
+        > as SerdeCircuitTarget>::deserialize(&mut target_buffer)
         .unwrap(),
     )))
 }
@@ -504,7 +481,13 @@ where
 
     Ok(
         Targets::<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>::InnerLevel(Some(
-            BalanceInnerCircuitTargets::read_targets(&mut target_buffer).unwrap(),
+            CircuitTargetType::<
+                WithdrawalCredentialsBalanceAggregatorInnerLevel<
+                    VALIDATORS_COUNT,
+                    WITHDRAWAL_CREDENTIALS_COUNT,
+                >,
+            >::deserialize(&mut target_buffer)
+            .unwrap(),
         )),
     )
 }

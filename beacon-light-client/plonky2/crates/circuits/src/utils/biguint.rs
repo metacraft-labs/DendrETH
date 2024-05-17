@@ -385,7 +385,7 @@ impl SerdeCircuitTarget for BigUintTarget {
 
         let mut buffer: Vec<u8> = Vec::new();
         buffer.write_target(self.limbs[0].0)?;
-        buffer.write_target(self.limbs[0].0)?;
+        buffer.write_target(self.limbs[1].0)?;
         Ok(buffer)
     }
 

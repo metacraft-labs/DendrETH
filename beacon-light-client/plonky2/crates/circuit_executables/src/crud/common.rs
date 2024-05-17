@@ -15,7 +15,7 @@ use circuits::{
     serializers::ValidatorShaInput,
     utils::utils::hash_bytes,
     validators_commitment_mapper::build_commitment_mapper_first_level_circuit::CommitmentMapperProofExt,
-    withdrawal_credentials_balance_aggregator::WithdrawalCredentialsBalanceAggregatorFirstLevel,
+    withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
 use plonky2::{
     field::goldilocks_field::GoldilocksField,

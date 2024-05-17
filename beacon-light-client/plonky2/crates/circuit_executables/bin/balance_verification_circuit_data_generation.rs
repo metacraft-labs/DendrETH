@@ -1,6 +1,6 @@
 #![feature(generic_const_exprs)]
 use anyhow::{bail, Result};
-use circuit::{Circuit, SerdeCircuitTarget};
+use circuit::{Circuit, CircuitTargetType, SerdeCircuitTarget};
 use circuits::{
     deposits_accumulator_balance_aggregator::{
         build_balance_accumulator_inner_level,
@@ -12,11 +12,8 @@ use circuits::{
         targets_serialization::WriteTargets,
     },
     withdrawal_credentials_balance_aggregator::{
-        first_level::circuit::ValidatorBalanceVerificationTargets,
-        inner_level_circuit::{
-            BalanceInnerCircuitTargets, WithdrawalCredentialsBalanceAggregatorInnerLevel,
-        },
-        WithdrawalCredentialsBalanceAggregatorFirstLevel,
+        first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
+        inner_level::WithdrawalCredentialsBalanceAggregatorInnerLevel,
     },
 };
 use num::clamp;
@@ -26,29 +23,41 @@ use clap::{App, Arg};
 use futures_lite::future;
 
 use jemallocator::Jemalloc;
-use plonky2::plonk::{circuit_data::CircuitConfig, config::PoseidonGoldilocksConfig};
+use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
+// TODO: this needs to be moved to some central place
 const CIRCUIT_DIR: &str = "circuits";
+
+// NOTE: config for the withdrawal credentials circuit
+const VALIDATORS_COUNT: usize = 8;
+const WITHDRAWAL_CREDENTIALS_COUNT: usize = 1;
 
 fn write_to_file(file_path: &str, data: &[u8]) -> Result<()> {
     fs::write(file_path, data)?;
     Ok(())
 }
 
-enum ValidatorBalanceTargets<
-    const VALIDATORS_COUNT: usize,
-    const WITHDRAWAL_CREDENTIALS_COUNT: usize,
-> where
-    [(); VALIDATORS_COUNT / 4]:,
-{
+enum ValidatorBalanceTargets {
     ValidatorBalanceFirstLevel(
-        ValidatorBalanceVerificationTargets<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>,
+        CircuitTargetType<
+            WithdrawalCredentialsBalanceAggregatorFirstLevel<
+                VALIDATORS_COUNT,
+                WITHDRAWAL_CREDENTIALS_COUNT,
+            >,
+        >,
     ),
     ValidatorBalanceAccumulatorFirstLevel(ValidatorBalanceVerificationAccumulatorTargets),
-    ValidatorBalanceInnerLevel(BalanceInnerCircuitTargets),
+    ValidatorBalanceInnerLevel(
+        CircuitTargetType<
+            WithdrawalCredentialsBalanceAggregatorInnerLevel<
+                VALIDATORS_COUNT,
+                WITHDRAWAL_CREDENTIALS_COUNT,
+            >,
+        >,
+    ),
     ValidatorBalanceAccumulatorInnerLevel(
         build_balance_accumulator_inner_level::BalanceInnerCircuitTargets,
     ),
@@ -77,14 +86,6 @@ pub async fn async_main() -> Result<()> {
                 }),
         )
         .arg(
-            Arg::with_name("number_of_validators")
-                .long("number_of_validators")
-                .value_name("number")
-                .help("Sets the number of validators")
-                .takes_value(true)
-                .default_value("2"),
-        )
-        .arg(
             Arg::with_name("circuit_name")
                 .long("circuit_name")
                 .value_name("name")
@@ -111,22 +112,24 @@ pub async fn async_main() -> Result<()> {
         8
     };
 
-    let (validators_balance_verification_targets, first_level_data) = if circuit_name
-        == "balance_accumulator"
-    {
-        println!("building accumulator");
-        let (targets, data) = build_validator_balance_accumulator_circuit(validators_len);
-        (
-            ValidatorBalanceTargets::<8, 1>::ValidatorBalanceAccumulatorFirstLevel(targets),
-            data,
-        )
-    } else {
-        let (targets, data) = WithdrawalCredentialsBalanceAggregatorFirstLevel::<8, 1>::build(&());
-        (
-            ValidatorBalanceTargets::ValidatorBalanceFirstLevel(targets),
-            data,
-        )
-    };
+    let (validators_balance_verification_targets, first_level_data) =
+        if circuit_name == "balance_accumulator" {
+            println!("building accumulator");
+            let (targets, data) = build_validator_balance_accumulator_circuit(validators_len);
+            (
+                ValidatorBalanceTargets::ValidatorBalanceAccumulatorFirstLevel(targets),
+                data,
+            )
+        } else {
+            let (targets, data) = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
+                VALIDATORS_COUNT,
+                WITHDRAWAL_CREDENTIALS_COUNT,
+            >::build(&());
+            (
+                ValidatorBalanceTargets::ValidatorBalanceFirstLevel(targets),
+                data,
+            )
+        };
 
     let gate_serializer = DendrETHGateSerializer;
 
@@ -172,13 +175,15 @@ pub async fn async_main() -> Result<()> {
             );
 
             (
-                ValidatorBalanceTargets::<8, 1>::ValidatorBalanceAccumulatorInnerLevel(targets),
+                ValidatorBalanceTargets::ValidatorBalanceAccumulatorInnerLevel(targets),
                 data,
             )
         } else {
             // let (targets, data) = build_inner_level_circuit::<8, 1>(&prev_circuit_data);
-            let (targets, data) =
-                WithdrawalCredentialsBalanceAggregatorInnerLevel::build(&prev_circuit_data);
+            let (targets, data) = WithdrawalCredentialsBalanceAggregatorInnerLevel::<
+                VALIDATORS_COUNT,
+                WITHDRAWAL_CREDENTIALS_COUNT,
+            >::build(&prev_circuit_data);
 
             (
                 ValidatorBalanceTargets::ValidatorBalanceInnerLevel(targets),
@@ -199,7 +204,7 @@ pub async fn async_main() -> Result<()> {
 
             let inner_level_targets = match targets {
                 ValidatorBalanceTargets::ValidatorBalanceInnerLevel(targets) => {
-                    targets.write_targets().unwrap()
+                    targets.serialize().unwrap()
                 }
                 ValidatorBalanceTargets::ValidatorBalanceAccumulatorInnerLevel(targets) => {
                     targets.write_targets().unwrap()
@@ -224,10 +229,7 @@ pub async fn async_main() -> Result<()> {
     Ok(())
 }
 
-fn write_first_level_circuit<
-    const VALIDATORS_COUNT: usize,
-    const WITHDRAWAL_CREDENTIALS_COUNT: usize,
->(
+fn write_first_level_circuit(
     first_level_data: &plonky2::plonk::circuit_data::CircuitData<
         plonky2::field::goldilocks_field::GoldilocksField,
         PoseidonGoldilocksConfig,
@@ -235,14 +237,9 @@ fn write_first_level_circuit<
     >,
     gate_serializer: &DendrETHGateSerializer,
     generator_serializer: &DendrETHGeneratorSerializer<PoseidonGoldilocksConfig, 2>,
-    validators_balance_verification_targets: ValidatorBalanceTargets<
-        VALIDATORS_COUNT,
-        WITHDRAWAL_CREDENTIALS_COUNT,
-    >,
+    validators_balance_verification_targets: ValidatorBalanceTargets,
     circuit_name: &str,
-) where
-    [(); VALIDATORS_COUNT / 4]:,
-{
+) {
     let circuit_bytes = first_level_data
         .to_bytes(gate_serializer, generator_serializer)
         .unwrap();
@@ -257,7 +254,6 @@ fn write_first_level_circuit<
     {
         ValidatorBalanceTargets::ValidatorBalanceFirstLevel(targets) => {
             targets.serialize().unwrap()
-            // targets.write_targets().unwrap()
         }
         ValidatorBalanceTargets::ValidatorBalanceAccumulatorFirstLevel(targets) => {
             targets.write_targets().unwrap()

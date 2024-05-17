@@ -25,3 +25,4 @@ pub type CircuitInput<T> = <<T as Circuit>::Target as SetWitness<<T as Circuit>:
 pub type CircuitOutput<T> = <<T as Circuit>::Target as TargetsWithPublicInputs>::PublicInputs;
 pub type CircuitOutputTarget<T> =
     <<T as Circuit>::Target as TargetsWithPublicInputs>::PublicInputsTarget;
+pub type CircuitTargetType<T> = <T as Circuit>::Target;

@@ -15,9 +15,8 @@ use crate::{
         },
         utils::SetBytesArray,
     },
-    withdrawal_credentials_balance_aggregator::{
-        first_level::circuit::ValidatorBalanceVerificationTargets,
-        WithdrawalCredentialsBalanceAggregatorFirstLevel,
+    withdrawal_credentials_balance_aggregator::first_level::{
+        ValidatorBalanceVerificationTargets, WithdrawalCredentialsBalanceAggregatorFirstLevel,
     },
 };
 use circuit::CircuitOutput;

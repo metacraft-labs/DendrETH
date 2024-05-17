@@ -11,7 +11,7 @@ use crate::{
         },
     },
     validators_commitment_mapper::build_commitment_mapper_first_level_circuit::CommitmentMapperProofTargetExt,
-    withdrawal_credentials_balance_aggregator::WithdrawalCredentialsBalanceAggregatorFirstLevel,
+    withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
 use circuit::{Circuit, CircuitOutputTarget, TargetsWithPublicInputs};
 use itertools::Itertools;

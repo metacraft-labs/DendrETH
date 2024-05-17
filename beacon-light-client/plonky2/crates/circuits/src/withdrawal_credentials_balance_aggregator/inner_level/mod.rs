@@ -1,100 +1,56 @@
 use crate::{
-    serialization::targets_serialization::{ReadTargets, WriteTargets},
+    common_targets::BasicRecursiveInnerCircuitTarget,
     utils::{
         biguint::CircuitBuilderBiguint,
-        hashing::sha256::{connect_bool_arrays, sha256_pair},
+        hashing::{
+            poseidon::poseidon_pair,
+            sha256::{connect_bool_arrays, sha256_pair},
+        },
     },
-    withdrawal_credentials_balance_aggregator::first_level::circuit::WithdrawalCredentialsBalanceAggregatorFirstLevel,
+    withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
 use circuit::{Circuit, CircuitOutputTarget};
-use circuit_derive::CircuitTarget;
 use plonky2::{
-    field::{extension::Extendable, goldilocks_field::GoldilocksField},
-    hash::{
-        hash_types::{HashOutTarget, RichField},
-        poseidon::PoseidonHash,
-    },
+    field::goldilocks_field::GoldilocksField,
     plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::{CircuitConfig, CircuitData, VerifierCircuitTarget},
-        config::{GenericConfig, PoseidonGoldilocksConfig},
-        proof::ProofWithPublicInputsTarget,
+        config::PoseidonGoldilocksConfig,
     },
-    util::serialization::{Buffer, IoResult, Read, Write},
 };
 
-// TODO: move this to a different file
-fn poseidon_pair<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    left: HashOutTarget,
-    right: HashOutTarget,
-) -> HashOutTarget {
-    builder.hash_n_to_hash_no_pad::<PoseidonHash>(
-        left.elements
-            .iter()
-            .chain(right.elements.iter())
-            .cloned()
-            .collect(),
-    )
-}
-
-#[derive(CircuitTarget)]
-pub struct BalanceInnerCircuitTargets {
-    pub proof1: ProofWithPublicInputsTarget<2>,
-    pub proof2: ProofWithPublicInputsTarget<2>,
-    pub verifier_circuit_target: VerifierCircuitTarget,
-}
-
-impl ReadTargets for BalanceInnerCircuitTargets {
-    fn read_targets(data: &mut Buffer) -> IoResult<Self> {
-        Ok(BalanceInnerCircuitTargets {
-            proof1: data.read_target_proof_with_public_inputs()?,
-            proof2: data.read_target_proof_with_public_inputs()?,
-            verifier_circuit_target: data.read_target_verifier_circuit()?,
-        })
-    }
-}
-
-impl WriteTargets for BalanceInnerCircuitTargets {
-    fn write_targets(&self) -> IoResult<Vec<u8>> {
-        let mut data = Vec::<u8>::new();
-
-        data.write_target_proof_with_public_inputs(&self.proof1)?;
-        data.write_target_proof_with_public_inputs(&self.proof2)?;
-        data.write_target_verifier_circuit(&self.verifier_circuit_target)?;
-
-        Ok(data)
-    }
-}
-
-pub struct WithdrawalCredentialsBalanceAggregatorInnerLevel {}
+pub struct WithdrawalCredentialsBalanceAggregatorInnerLevel<
+    const VALIDATORS_COUNT: usize,
+    const WITHDRAWAL_CREDENTIALS_COUNT: usize,
+> where
+    [(); VALIDATORS_COUNT / 4]:, {}
 
 type F = GoldilocksField;
 type C = PoseidonGoldilocksConfig;
 const D: usize = 2;
 
-impl Circuit for WithdrawalCredentialsBalanceAggregatorInnerLevel {
+impl<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
+    for WithdrawalCredentialsBalanceAggregatorInnerLevel<
+        VALIDATORS_COUNT,
+        WITHDRAWAL_CREDENTIALS_COUNT,
+    >
+where
+    [(); VALIDATORS_COUNT / 4]:,
+{
     type F = F;
     type C = C;
     const D: usize = D;
 
     const CIRCUIT_CONFIG: CircuitConfig = CircuitConfig::standard_recursion_config();
 
-    type Target = BalanceInnerCircuitTargets;
+    type Target = BasicRecursiveInnerCircuitTarget;
 
     type Params = CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>;
 
     fn define(
         builder: &mut CircuitBuilder<Self::F, D>,
         inner_circuit_data: &Self::Params,
-    ) -> Self::Target {
-        const VALIDATORS_COUNT: usize = 8;
-        const WITHDRAWAL_CREDENTIALS_COUNT: usize = 1;
-
-        const D: usize = 2;
-        type C = PoseidonGoldilocksConfig;
-        type F = <C as GenericConfig<D>>::F;
-
+    ) -> Self::Target where {
         let verifier_circuit_target = VerifierCircuitTarget {
             constants_sigmas_cap: builder
                 .constant_merkle_cap(&inner_circuit_data.verifier_only.constants_sigmas_cap),
@@ -104,12 +60,12 @@ impl Circuit for WithdrawalCredentialsBalanceAggregatorInnerLevel {
         let proof1 = builder.add_virtual_proof_with_pis(&inner_circuit_data.common);
         let proof2 = builder.add_virtual_proof_with_pis(&inner_circuit_data.common);
 
-        builder.verify_proof::<C>(
+        builder.verify_proof::<Self::C>(
             &proof1,
             &verifier_circuit_target,
             &inner_circuit_data.common,
         );
-        builder.verify_proof::<C>(
+        builder.verify_proof::<Self::C>(
             &proof2,
             &verifier_circuit_target,
             &inner_circuit_data.common,
@@ -182,8 +138,6 @@ impl Circuit for WithdrawalCredentialsBalanceAggregatorInnerLevel {
             number_of_active_validators,
             number_of_exitted_validators,
         };
-        let zero = builder.zero();
-        builder.register_public_input(zero);
 
         output_target.register_public_inputs(builder);
 

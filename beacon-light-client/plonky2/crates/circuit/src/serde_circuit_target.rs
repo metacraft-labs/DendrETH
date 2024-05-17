@@ -1,7 +1,7 @@
 use plonky2::{
     hash::hash_types::HashOutTarget,
     iop::target::{BoolTarget, Target},
-    plonk::proof::ProofWithPublicInputsTarget,
+    plonk::{circuit_data::VerifierCircuitTarget, proof::ProofWithPublicInputsTarget},
     util::serialization::{Buffer, IoResult, Read, Write},
 };
 
@@ -60,14 +60,31 @@ impl SerdeCircuitTarget for HashOutTarget {
 
 impl<const D: usize> SerdeCircuitTarget for ProofWithPublicInputsTarget<D> {
     fn serialize(&self) -> IoResult<Vec<u8>> {
-        panic!("Recursive proofs are not supported by SerdeCircuitTarget")
+        let mut buffer: Vec<u8> = Vec::new();
+        buffer.write_target_proof_with_public_inputs(&self)?;
+        Ok(buffer)
     }
 
-    fn deserialize(_buffer: &mut Buffer) -> IoResult<Self>
+    fn deserialize(buffer: &mut Buffer) -> IoResult<Self>
     where
         Self: Sized,
     {
-        panic!("Recursive proofs are not supported by SerdeCircuitTarget")
+        Ok(buffer.read_target_proof_with_public_inputs()?)
+    }
+}
+
+impl SerdeCircuitTarget for VerifierCircuitTarget {
+    fn serialize(&self) -> IoResult<Vec<u8>> {
+        let mut buffer: Vec<u8> = Vec::new();
+        buffer.write_target_verifier_circuit(&self)?;
+        Ok(buffer)
+    }
+
+    fn deserialize(buffer: &mut Buffer) -> IoResult<Self>
+    where
+        Self: Sized,
+    {
+        Ok(buffer.read_target_verifier_circuit()?)
     }
 }
 
