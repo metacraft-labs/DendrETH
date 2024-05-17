@@ -13,23 +13,23 @@ import { initPrometheusSetup } from '@dendreth/utils/ts-utils/prometheus-utils';
 const logger = getGenericLogger();
 
 task('start-publishing', 'Run relayer')
-  .addParam('lightclient', 'The address of the BeaconLightClient contract')
-  .addParam('follownetwork', 'The network the contract follows')
+  .addParam('lightClient', 'The address of the BeaconLightClient contract')
+  .addParam('followNetwork', 'The network the contract follows')
   .addParam(
-    'privatekey',
+    'privateKey',
     'The private key that will be used to publish',
     undefined,
     undefined,
     true,
   )
   .addParam(
-    'transactionspeed',
+    'transactionSpeed',
     'The speed you want the transactions to be included in a block',
     'avg',
     undefined,
     true,
   )
-  .addParam('slotsjump', 'The number of slots to jump')
+  .addParam('slotsJump', 'The number of slots to jump')
   .addParam(
     'hashi',
     'The address of the Hashi adapter contract',
@@ -38,7 +38,7 @@ task('start-publishing', 'Run relayer')
     true,
   )
   .addParam(
-    'prometheusport',
+    'prometheusPort',
     'Port No. (3000-3005) for Node Express server where Prometheus is listening.',
     '',
     undefined,
@@ -52,13 +52,13 @@ task('start-publishing', 'Run relayer')
 
     checkConfig(config);
 
-    if (args.follownetwork !== 'pratter' && args.follownetwork !== 'mainnet') {
-      logger.warn('This follownetwork is not specified in networkconfig');
+    if (args.followNetwork !== 'pratter' && args.followNetwork !== 'mainnet') {
+      logger.warn('This followNetwork is not specified in networkconfig');
       return;
     }
 
-    if (args.prometheusport) {
-      console.log(`Initializing Prometheus on port ${args.prometheusport}`);
+    if (args.prometheusPort) {
+      console.log(`Initializing Prometheus on port ${args.prometheusPort}`);
 
       let networkName: string = '';
       for (let i = 0; i < process.argv.length; i++) {
@@ -69,17 +69,17 @@ task('start-publishing', 'Run relayer')
         }
       }
 
-      initPrometheusSetup(args.prometheusport, networkName);
+      initPrometheusSetup(args.prometheusPort, networkName);
     }
 
-    const currentConfig = getNetworkConfig(args.follownetwork);
+    const currentConfig = getNetworkConfig(args.followNetwork);
 
     let publisher;
 
-    if (!args.privatekey) {
+    if (!args.privateKey) {
       [publisher] = await ethers.getSigners();
     } else {
-      publisher = new ethers.Wallet(args.privatekey, ethers.provider);
+      publisher = new ethers.Wallet(args.privateKey, ethers.provider);
     }
 
     logger.info(`Publishing updates with the account: ${publisher.address}`);
@@ -87,17 +87,17 @@ task('start-publishing', 'Run relayer')
       `Account balance: ${(await publisher.getBalance()).toString()}`,
     );
 
-    logger.info(`Contract address ${args.lightclient}`);
+    logger.info(`Contract address ${args.lightClient}`);
 
     const lightClientContract = await ethers.getContractAt(
       'BeaconLightClient',
-      args.lightclient,
+      args.lightClient,
       publisher,
     );
 
     if (
-      args.transactionspeed &&
-      !['slow', 'avg', 'fast'].includes(args.transactionspeed)
+      args.transactionSpeed &&
+      !['slow', 'avg', 'fast'].includes(args.transactionSpeed)
     ) {
       throw new Error('Invalid transaction speed');
     }
@@ -114,7 +114,7 @@ task('start-publishing', 'Run relayer')
     const contract = new SolidityContract(
       lightClientContract,
       (network.config as any).url,
-      args.transactionspeed,
+      args.transactionSpeed,
     );
 
     publishProofs(
@@ -122,10 +122,10 @@ task('start-publishing', 'Run relayer')
       beaconApi,
       contract,
       currentConfig,
-      Number(args.slotsjump),
+      Number(args.slotsJump),
       hashiAdapterContract,
       (network.config as any).url,
-      args.transactionspeed,
+      args.transactionSpeed,
     );
 
     // never resolving promise to block the task

@@ -7,21 +7,21 @@ import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 const logger = getGenericLogger();
 
 task('verify-contracts', 'Verify')
-  .addParam('lightclient', 'The address of the BeaconLightClient contract')
+  .addParam('lightClient', 'The address of the BeaconLightClient contract')
   .addParam('slot', 'The slot ')
-  .addParam('follownetwork', 'The network to follow')
+  .addParam('followNetwork', 'The network to follow')
   .setAction(async (args, { run }) => {
-    if (args.follownetwork !== 'pratter' && args.follownetwork !== 'mainnet') {
-      logger.warn('This follownetwork is not specified in networkconfig');
+    if (args.followNetwork !== 'pratter' && args.followNetwork !== 'mainnet') {
+      logger.warn('This followNetwork is not specified in networkconfig');
       return;
     }
 
-    const currentConfig = getNetworkConfig(args.follownetwork);
+    const currentConfig = getNetworkConfig(args.followNetwork);
 
     const beaconApi = await getBeaconApi(currentConfig.BEACON_REST_API!);
 
     await run('verify:verify', {
-      address: args.lightclient,
+      address: args.lightClient,
       constructorArguments: await getConstructorArgs(
         beaconApi,
         args.slot,

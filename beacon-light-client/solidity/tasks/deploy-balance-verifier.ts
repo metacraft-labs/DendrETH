@@ -5,19 +5,20 @@ import { Redis } from '@dendreth/relay/implementations/redis';
 import {
   getLidoWithdrawCredentials,
   getGenesisBlockTimestamp,
-  isNetwork,
   assertSupportedNetwork,
 } from '@dendreth/utils/balance-verification-utils/utils';
 
 const logger = getGenericLogger();
 
 task('deploy-balance-verifier', 'Deploy the beacon light client contract')
-  .addParam(
-    'withdrawcredentials',
+  .addParam('protocol', 'The protocol used. Should be "lido" or "diva"')
+  .addOptionalParam(
+    'withdrawCredentials',
     'The withdraw credentials for the Diva contract',
-    undefined,
-    undefined,
-    true,
+  )
+  .addOptionalParam(
+    'verifierDigest',
+    'The verifier digest for the plonky2 circuit to initialize the BalanceVerifier contract',
   )
   .setAction(async (args, { run, ethers, network }) => {
     await run('compile');
@@ -28,42 +29,56 @@ task('deploy-balance-verifier', 'Deploy the beacon light client contract')
 
     const networkName = assertSupportedNetwork(network.name);
 
-    let WITHDRAWAL_CREDENTIALS = !args.withdrawcredentials
+    let WITHDRAWAL_CREDENTIALS = !args.withdrawCredentials
       ? getLidoWithdrawCredentials(networkName)
-      : args.withdrawcredentials;
-    let GENESIS_BLOCK_TIMESTAMP = getGenesisBlockTimestamp(networkName);
+      : args.withdrawCredentials;
+      let GENESIS_BLOCK_TIMESTAMP = getGenesisBlockTimestamp(networkName);
 
-    const config = {
-      REDIS_HOST: process.env.REDIS_HOST,
-      REDIS_PORT: Number(process.env.REDIS_PORT),
-    };
+    let VERIFIER_DIGEST = args.verifierDigest;
+    if (!VERIFIER_DIGEST) {
 
-    checkConfig(config);
+      const config = {
+        REDIS_HOST: process.env.REDIS_HOST,
+        REDIS_PORT: Number(process.env.REDIS_PORT),
+      };
 
-    const redis = new Redis(config.REDIS_HOST!, config.REDIS_PORT);
+      checkConfig(config);
 
-    let balance_wrapper_verifier_only = await redis.get(
-      'balance_wrapper_verifier_only',
-    );
+      const redis = new Redis(config.REDIS_HOST!, config.REDIS_PORT);
 
-    if (balance_wrapper_verifier_only === null) {
-      logger.error('No wrapper in redis');
-      return;
+      let balance_wrapper_verifier_only =  await redis.get(
+        'balance_wrapper_verifier_only',
+      );
+
+      if (balance_wrapper_verifier_only === null) {
+        logger.error('No wrapper in redis');
+        return;
+      }
+
+      VERIFIER_DIGEST = JSON.parse(
+        balance_wrapper_verifier_only,
+      ).circuit_digest;
     }
-
-    let VERIFIER_DIGEST = JSON.parse(
-      balance_wrapper_verifier_only,
-    ).circuit_digest;
 
     logger.info(
       `Constructor args ${VERIFIER_DIGEST} ${WITHDRAWAL_CREDENTIALS} ${GENESIS_BLOCK_TIMESTAMP}`,
     );
 
+    let protocol = args.protocol;
+    let CONTRACT = 'BalanceVerifierLido';
+    if (protocol !== 'lido' && protocol !== 'diva') {
+      logger.error('Invalid protocol');
+      return;
+    }
+    if (protocol === 'diva') {
+      CONTRACT = 'BalanceVerifierDiva';
+    }
+
     const beaconLightClient = await (
-      await ethers.getContractFactory('BalanceVerifier')
+      await ethers.getContractFactory(CONTRACT)
     ).deploy(VERIFIER_DIGEST, WITHDRAWAL_CREDENTIALS, GENESIS_BLOCK_TIMESTAMP);
 
-    logger.info('>>> Waiting for BalanceVerifier deployment...');
+    logger.info(`>>> Waiting for ${CONTRACT} deployment...`);
 
     logger.info(
       `Deploying transaction hash.. ${beaconLightClient.deployTransaction.hash}`,
