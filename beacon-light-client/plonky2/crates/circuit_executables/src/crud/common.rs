@@ -9,7 +9,7 @@ use circuit::{Circuit, CircuitInput};
 use circuits::{
     circuit_input_common::{
         BalanceAccumulatorProof, BalanceProof, FinalCircuitInput, FinalProof,
-        ValidatorBalanceAccumulatorInput, ValidatorBalancesInput, ValidatorProof,
+        ValidatorBalanceAccumulatorInput, ValidatorProof,
     },
     serialization::generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
     serializers::ValidatorShaInput,
