@@ -110,8 +110,14 @@ task('balance-verifier-publisher', 'Run relayer')
 
     redis.subscribeForGnarkProofs(protocol, async () => {
       console.log('Received new proof');
-      let final_layer_proof = JSON.parse(
-        (await redis.get(`${protocol}:final_layer_proof`))!,
+      let final_layer_proof_string = (await redis.get(
+        `${protocol}:final_layer_proof`,
+      ))!;
+
+      const final_layer_proof_json = JSON.parse(final_layer_proof_string);
+
+      const final_layer_proof = S.decodeUnknownSync(FinalProof)(
+        final_layer_proof_json,
       );
 
       let final_layer_proof_input = JSON.parse(

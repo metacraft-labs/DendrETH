@@ -1622,7 +1622,7 @@ __metadata:
     "@cosmjs/stargate": "npm:0.30.1"
     "@dendreth/solidity": "workspace:^"
     "@dendreth/utils": "workspace:^"
-    "@effect/schema": "npm:^0.33.0"
+    "@effect/schema": "npm:^0.67.5"
     "@lodestar/types": "npm:^1.17.0"
     "@noble/bls12-381": "npm:^1.4.0"
     "@types/eventsource": "npm:^1.1.15"
@@ -1658,6 +1658,7 @@ __metadata:
     "@chainsafe/ssz": "npm:0.14.3"
     "@dendreth/relay": "workspace:^"
     "@dendreth/utils": "workspace:^"
+    "@effect/schema": "npm:^0.67.5"
     "@iden3/binfileutils": "npm:^0.0.11"
     "@lodestar/types": "npm:^1.17.0"
     "@noble/bls12-381": "npm:^1.3.0"
@@ -1676,6 +1677,7 @@ __metadata:
     circom_tester: "npm:^0.0.14"
     crypto-js: "npm:^4.1.1"
     dotenv: "npm:^16.4.4"
+    effect: "npm:^3.1.5"
     env-paths: "npm:^3.0.0"
     ethers: "npm:^5.7.0"
     hardhat: "npm:^2.22.0"
@@ -1795,15 +1797,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@effect/schema@npm:^0.33.0":
-  version: 0.33.2
-  resolution: "@effect/schema@npm:0.33.2"
+"@effect/schema@npm:^0.67.5":
+  version: 0.67.5
+  resolution: "@effect/schema@npm:0.67.5"
   dependencies:
-    fast-check: "npm:^3.12.0"
+    fast-check: "npm:^3.17.2"
   peerDependencies:
-    "@effect/data": ^0.17.1
-    "@effect/io": ^0.38.0
-  checksum: 10/196a242650ce8d1e1e549d2bf3645aa9ce0b256d436b8dd4319d50fdda13772a92bbdfb5cd3e049cbd5ba685c46de4382b81feadcfb90adca4c4362a58f0c1cb
+    effect: ^3.1.5
+  checksum: 10/240a3f00ad873dd375867dc7f34aa1c16700fc7bfa008af5615a6a0172c68c4a43470e03b2f304f2db78f684eadc19a9136dc83fb6faf4594141a07f40444f3d
   languageName: node
   linkType: hard
 
@@ -7701,6 +7702,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"effect@npm:^3.1.5":
+  version: 3.1.5
+  resolution: "effect@npm:3.1.5"
+  checksum: 10/71c66d42d80c869f824dd32283f0cf6fe185ea50d3a87bd24506eb1878a64fea10197173eff34a9b2a5ab20a2d167070a70b6cae95c69827ac8077476bf59eb2
+  languageName: node
+  linkType: hard
+
 "ejs@npm:3.1.7":
   version: 3.1.7
   resolution: "ejs@npm:3.1.7"
@@ -8592,12 +8600,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fast-check@npm:^3.12.0":
-  version: 3.17.1
-  resolution: "fast-check@npm:3.17.1"
+"fast-check@npm:^3.17.2":
+  version: 3.18.0
+  resolution: "fast-check@npm:3.18.0"
   dependencies:
     pure-rand: "npm:^6.1.0"
-  checksum: 10/fe5bdf68733036b946fbb72f1d282d5ca0ab967d09ae442dbba4a46da439fcb429f32ac605e73276fe3ea5fbd87853a7be86eb9e8425e7326a92d83c0c85ffcf
+  checksum: 10/7160fc064ae5b63b05f3f851932933cfa9ee0933c7f60f459ad5d1a57aaf7a9a557746066ef580c64902f2d1ec35b786c6e77cf7b321a9284456c24602f52a54
   languageName: node
   linkType: hard
 
