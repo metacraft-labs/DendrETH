@@ -90,3 +90,11 @@ path = "bin/final_exponentiate.rs"
 [[bin]]
 name = "final_exponentiate_circuit_data_generation"
 path = "bin/final_exponentiate_circuit_data_generation.rs"
+
+[[bin]]
+name = "miller_loop_circuit_data_generation"
+path = "bin/miller_loop_circuit_data_generation.rs"
+
+[[bin]]
+name = "miller_loop"
+path = "bin/miller_loop.rs"
