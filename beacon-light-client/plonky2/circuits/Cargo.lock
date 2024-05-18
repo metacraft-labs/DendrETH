@@ -411,6 +411,7 @@ dependencies = [
  "num-bigint 0.4.5",
  "plonky2",
  "plonky2-circuit-serializer",
+ "plonky2_crypto",
  "plonky2_u32",
  "rand 0.8.5",
  "serde",

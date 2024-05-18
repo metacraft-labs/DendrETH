@@ -26,6 +26,7 @@ futures-lite = "1"
 typenum = "1.16.0"
 starky = { git = "https://github.com/metacraft-labs/plonky2" }
 plonky2-circuit-serializer = { git = "https://github.com/metacraft-labs/plonky2-circuit-serializer" }
+plonky2_crypto = { git = "https://github.com/metacraft-labs/plonky2-crypto" }
 starky_bls12_381 = { git = "https://github.com/metacraft-labs/starky_bls12_381" }
 ark-bls12-381 = "0.4.0"
 ark-std = "0.4.0"

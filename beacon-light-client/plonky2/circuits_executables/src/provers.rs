@@ -247,3 +247,13 @@ impl<const N: usize> SetPWValues<FinalCircuitInput> for FinalCircuitTargets<N> {
         set_boolean_pw_values(pw, &self.validator_size_bits, &source.validators_size_bits);
     }
 }
+
+// impl SetPWValues<BlsInput> for BlsCircuitTargets {
+//     fn set_pw_values(&self, pw: &mut PartialWitness<GoldilocksField>, source: &BlsInput) {
+//         pw.set_bytes_array(&self.pubkey, &hex::decode(&source.pubkey).unwrap());
+
+//         pw.set_bytes_array(&self.signature, &hex::decode(&source.signature).unwrap());
+
+//         pw.set_bytes_array(&self.message, &hex::decode(&source.message).unwrap());
+//     }
+// }

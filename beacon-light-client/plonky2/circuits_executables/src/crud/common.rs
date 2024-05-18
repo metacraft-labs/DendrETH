@@ -99,6 +99,12 @@ pub struct FinalCircuitInput {
     pub validators_size_bits: Vec<bool>,
 }
 
+pub struct BlsInput {
+    pub pubkey: Vec<u8>,
+    pub signature: Vec<u8>,
+    pub message: Vec<u8>,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct FinalProof {
