@@ -24,4 +24,15 @@ num = { version = "0.4.0", default-features = false }
 log = "0.4.14"
 futures-lite = "1"
 typenum = "1.16.0"
+starky = { git = "https://github.com/metacraft-labs/plonky2" }
+plonky2-circuit-serializer = { git = "https://github.com/metacraft-labs/plonky2-circuit-serializer" }
+starky_bls12_381 = { git = "https://github.com/metacraft-labs/starky_bls12_381" }
+ark-bls12-381 = "0.4.0"
+ark-std = "0.4.0"
+ark-ec = "0.4.2"
+num-bigint = "0.4.4"
+
+[patch]
+[patch.crates-io]
+parity-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1.git" }
 
