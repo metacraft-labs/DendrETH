@@ -106,3 +106,11 @@ path = "bin/fp12_mul_circuit_data_generation.rs"
 [[bin]]
 name = "fp12_mul"
 path = "bin/fp12_mul.rs"
+
+[[bin]]
+name = "calc_pairing_precomp"
+path = "bin/calc_pairing_precomp.rs"
+
+[[bin]]
+name = "calc_pairing_precomp_circuit_data_generation"
+path = "bin/calc_pairing_precomp_circuit_data_generation.rs"

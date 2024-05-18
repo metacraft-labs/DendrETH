@@ -201,7 +201,7 @@ async fn process_queue<const N: usize>(
                     inner_circuit_targets,
                     level,
                     preserve_intermediary_proofs,
-                    protocol.clone(),
+                    protocol,
                 )
                 .await
                 {

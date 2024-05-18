@@ -1,6 +1,6 @@
 use std::{marker::PhantomData, str::FromStr, time::Instant};
 
-use ark_bls12_381::{G1Affine, G2Affine};
+use ark_bls12_381::G2Affine;
 use ark_std::UniformRand;
 use circuits::{
     build_stark_proof_verifier::RecursiveStarkTargets, targets_serialization::ReadTargets,
@@ -18,7 +18,7 @@ use plonky2::{
 };
 use plonky2_circuit_serializer::serializer::{CustomGateSerializer, CustomGeneratorSerializer};
 use starky_bls12_381::{
-    aggregate_proof::miller_loop_main,
+    aggregate_proof::calc_pairing_precomp,
     native::{Fp, Fp2},
 };
 
@@ -27,7 +27,7 @@ type C = PoseidonGoldilocksConfig;
 type F = <C as GenericConfig<D>>::F;
 
 const CIRCUIT_DIR: &str = "circuits";
-const CIRCUIT_NAME: &str = "miller_loop";
+const CIRCUIT_NAME: &str = "pairing_precomp";
 
 fn main_thread() {
     println!("Starting to deserialize circuit");
@@ -47,18 +47,14 @@ fn main_thread() {
     let targets = get_targets().unwrap();
 
     println!("Deserialized circuit");
-
     let rng = &mut ark_std::rand::thread_rng();
-    let g1 = G1Affine::rand(rng);
     let g2 = G2Affine::rand(rng);
 
-    println!("Starting Miller Loop Proving");
+    println!("Starting Pairing precomp Proving");
 
     let s = Instant::now();
 
-    let (_, proof_ml, _) = miller_loop_main::<F, C, D>(
-        Fp::get_fp_from_biguint(g1.x.to_string().parse::<BigUint>().unwrap()),
-        Fp::get_fp_from_biguint(g1.y.to_string().parse::<BigUint>().unwrap()),
+    let (_, proof_pp, _) = calc_pairing_precomp::<F, C, D>(
         Fp2([
             Fp::get_fp_from_biguint(g2.x.c0.to_string().parse::<BigUint>().unwrap()),
             Fp::get_fp_from_biguint(g2.x.c1.to_string().parse::<BigUint>().unwrap()),
@@ -73,13 +69,13 @@ fn main_thread() {
         ]),
     );
 
-    println!("Miller Loop Proving Done {:?}", s.elapsed());
+    println!("Pairing precomp Done {:?}", s.elapsed());
 
     let mut pw = PartialWitness::new();
     starky::recursive_verifier::set_stark_proof_with_pis_target(
         &mut pw,
         &targets.proof,
-        &proof_ml,
+        &proof_pp,
         targets.zero,
     );
 
