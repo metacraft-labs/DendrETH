@@ -17,3 +17,4 @@ pub mod validator_balance_circuit;
 pub mod validator_commitment_mapper;
 pub mod validator_hash_tree_root;
 pub mod validator_hash_tree_root_poseidon;
+pub mod build_stark_proof_verifier;
