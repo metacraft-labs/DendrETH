@@ -114,3 +114,7 @@ path = "bin/calc_pairing_precomp.rs"
 [[bin]]
 name = "calc_pairing_precomp_circuit_data_generation"
 path = "bin/calc_pairing_precomp_circuit_data_generation.rs"
+
+[[bin]]
+name = "bls12_381_circuit_data_generation"
+path = "bin/bls12_381_circuit_data_generation.rs"

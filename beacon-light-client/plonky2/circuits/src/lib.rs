@@ -18,3 +18,4 @@ pub mod validator_commitment_mapper;
 pub mod validator_hash_tree_root;
 pub mod validator_hash_tree_root_poseidon;
 pub mod build_stark_proof_verifier;
+pub mod bls12_381_circuit;
