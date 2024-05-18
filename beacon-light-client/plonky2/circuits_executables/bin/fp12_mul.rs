@@ -1,4 +1,4 @@
-use std::{fs, marker::PhantomData, time::Instant};
+use std::{marker::PhantomData, time::Instant};
 
 use ark_std::UniformRand;
 use circuits::{
