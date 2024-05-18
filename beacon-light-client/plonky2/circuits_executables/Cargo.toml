@@ -98,3 +98,11 @@ path = "bin/miller_loop_circuit_data_generation.rs"
 [[bin]]
 name = "miller_loop"
 path = "bin/miller_loop.rs"
+
+[[bin]]
+name = "fp12_mul_circuit_data_generation"
+path = "bin/fp12_mul_circuit_data_generation.rs"
+
+[[bin]]
+name = "fp12_mul"
+path = "bin/fp12_mul.rs"
