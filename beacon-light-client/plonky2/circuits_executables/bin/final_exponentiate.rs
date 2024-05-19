@@ -88,8 +88,6 @@ fn main_thread() {
     println!("time taken for plonky2 recursive proof {:?}", s.elapsed());
 
     let _ = circuit_data.verify(proof.clone());
-
-    fs::write("final_exponentiate_proof", proof.to_bytes()).unwrap();
 }
 
 fn main() {

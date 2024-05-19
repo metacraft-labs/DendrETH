@@ -9,8 +9,8 @@ edition = "2021"
 ahash = { version = "0.8.3", default-features = false, features = [
     "compile-time-rng",
 ] } # NOTE: Be sure to keep this version the same as the dependency in `hashbrown`.
-plonky2 = { git = "https://github.com/metacraft-labs/plonky2" }
-plonky2_u32 = { git = "https://github.com/metacraft-labs/plonky2-u32" }
+plonky2 = { path = "/home/dimo/code/repos/metacraft-labs/Electron-labs-plonky2/plonky2" }
+plonky2_u32 = { path = "/home/dimo/code/repos/metacraft-labs/plonky2-u32" }
 sha2 = "0.9"
 serde = "1.0.164"
 serde_json = "1.0.96"
@@ -24,10 +24,10 @@ num = { version = "0.4.0", default-features = false }
 log = "0.4.14"
 futures-lite = "1"
 typenum = "1.16.0"
-starky = { git = "https://github.com/metacraft-labs/plonky2" }
-plonky2-circuit-serializer = { git = "https://github.com/metacraft-labs/plonky2-circuit-serializer" }
-plonky2_crypto = { git = "https://github.com/metacraft-labs/plonky2-crypto" }
-starky_bls12_381 = { git = "https://github.com/metacraft-labs/starky_bls12_381" }
+starky = { path = "/home/dimo/code/repos/metacraft-labs/Electron-labs-plonky2/starky" }
+plonky2-circuit-serializer = { path = "/home/dimo/code/repos/metacraft-labs/plonky2-circuit-serializer" }
+plonky2_crypto = { path = "/home/dimo/code/repos/metacraft-labs/plonky2-crypto" }
+starky_bls12_381 = { path = "/home/dimo/code/repos/metacraft-labs/starky_bls12_381" }
 ark-bls12-381 = "0.4.0"
 ark-std = "0.4.0"
 ark-ec = "0.4.2"

@@ -1210,6 +1210,8 @@ dependencies = [
  "anyhow",
  "ark-bls12-381",
  "ark-ec",
+ "ark-ff",
+ "ark-serialize",
  "ark-std",
  "async-trait",
  "aws-config",
@@ -1246,6 +1248,7 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "sha256",
+ "snowbridge-amcl",
  "ssz_rs",
  "starky",
  "starky_bls12_381",
@@ -3393,7 +3396,6 @@ checksum = "db23d408679286588f4d4644f965003d056e3dd5abcaaa938116871d7ce2fee7"
 [[package]]
 name = "plonky2"
 version = "0.2.0"
-source = "git+https://github.com/metacraft-labs/plonky2#3ae50655f371184023815f50a42555c1cd9d7023"
 dependencies = [
  "ahash 0.8.11",
  "anyhow",
@@ -3417,7 +3419,6 @@ dependencies = [
 [[package]]
 name = "plonky2-circuit-serializer"
 version = "0.1.0"
-source = "git+https://github.com/metacraft-labs/plonky2-circuit-serializer#c6986b7d963ebbb09a207905901d5f4b3d9cbf52"
 dependencies = [
  "log",
  "multithreaded-fs",
@@ -3426,12 +3427,12 @@ dependencies = [
  "plonky2_ed25519",
  "serde",
  "serde_json",
+ "starky_bls12_381",
 ]
 
 [[package]]
 name = "plonky2_crypto"
 version = "0.1.0"
-source = "git+https://github.com/metacraft-labs/plonky2-crypto#b069bb3f0ea133e6348df0a8644660ca65f18403"
 dependencies = [
  "anyhow",
  "hex",
@@ -3448,7 +3449,6 @@ dependencies = [
 [[package]]
 name = "plonky2_ed25519"
 version = "0.1.0"
-source = "git+https://github.com/metacraft-labs/plonky2_ed25519#895bbf54e626be0b2d9e7bebc5ff4948d1f40298"
 dependencies = [
  "anyhow",
  "curve25519-dalek 4.0.0",
@@ -3468,7 +3468,6 @@ dependencies = [
 [[package]]
 name = "plonky2_field"
 version = "0.2.0"
-source = "git+https://github.com/metacraft-labs/plonky2#3ae50655f371184023815f50a42555c1cd9d7023"
 dependencies = [
  "anyhow",
  "itertools 0.11.0",
@@ -3489,7 +3488,6 @@ checksum = "194db0cbdd974e92d897cd92b74adb3968dc1b967315eb280357c49a7637994e"
 [[package]]
 name = "plonky2_maybe_rayon"
 version = "0.2.0"
-source = "git+https://github.com/metacraft-labs/plonky2#3ae50655f371184023815f50a42555c1cd9d7023"
 dependencies = [
  "rayon",
 ]
@@ -3497,7 +3495,6 @@ dependencies = [
 [[package]]
 name = "plonky2_sha512"
 version = "0.1.0"
-source = "git+https://github.com/metacraft-labs/plonky2_sha512#82360002bcf81323edf1e4d58ff1902f9435fcb1"
 dependencies = [
  "anyhow",
  "plonky2",
@@ -3509,7 +3506,6 @@ dependencies = [
 [[package]]
 name = "plonky2_u32"
 version = "0.1.0"
-source = "git+https://github.com/metacraft-labs/plonky2-u32#2f460df88dc85b90815d2c895caab85a16b796a1"
 dependencies = [
  "anyhow",
  "itertools 0.10.5",
@@ -3520,7 +3516,6 @@ dependencies = [
 [[package]]
 name = "plonky2_util"
 version = "0.2.0"
-source = "git+https://github.com/metacraft-labs/plonky2#3ae50655f371184023815f50a42555c1cd9d7023"
 
 [[package]]
 name = "polling"
@@ -4514,7 +4509,6 @@ dependencies = [
 [[package]]
 name = "starky"
 version = "0.2.1"
-source = "git+https://github.com/metacraft-labs/plonky2#3ae50655f371184023815f50a42555c1cd9d7023"
 dependencies = [
  "ahash 0.8.11",
  "anyhow",
@@ -4530,7 +4524,6 @@ dependencies = [
 [[package]]
 name = "starky_bls12_381"
 version = "0.1.0"
-source = "git+https://github.com/metacraft-labs/starky_bls12_381#74837e0f3006183a23b4caf918cb9b88b1e0959f"
 dependencies = [
  "anyhow",
  "ark-bls12-381",
@@ -4543,7 +4536,6 @@ dependencies = [
  "log",
  "num-bigint 0.4.5",
  "plonky2",
- "plonky2-circuit-serializer",
  "plonky2_crypto",
  "serde_json",
  "snowbridge-milagro-bls",

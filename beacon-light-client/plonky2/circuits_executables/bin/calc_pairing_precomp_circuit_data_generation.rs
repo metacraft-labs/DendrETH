@@ -72,6 +72,14 @@ fn main_thread() {
         )
         .unwrap();
 
+    let common_circuit_bytes = data.common.to_bytes(&CustomGateSerializer).unwrap();
+
+    fs::write(
+        "circuits/pairing_precomp.plonky2_common_data",
+        &common_circuit_bytes,
+    )
+    .unwrap();
+
     fs::write("circuits/pairing_precomp.plonky2_circuit", &circuit_bytes).unwrap();
 
     let targets = recursive_stark_targets.write_targets().unwrap();
