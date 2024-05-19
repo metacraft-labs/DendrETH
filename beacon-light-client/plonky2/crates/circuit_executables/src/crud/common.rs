@@ -14,7 +14,7 @@ use circuits::{
     serialization::generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
     serializers::ValidatorShaInput,
     utils::utils::hash_bytes,
-    validators_commitment_mapper::build_commitment_mapper_first_level_circuit::CommitmentMapperProofExt,
+    validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
     withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
 use plonky2::{
@@ -336,7 +336,7 @@ pub async fn fetch_validator(
     con: &mut Connection,
     validator_index: u64,
     slot: u64,
-) -> Result<ValidatorShaInput> {
+) -> Result<CircuitInput<ValidatorsCommitmentMapperFirstLevel>> {
     let key = format!(
         "{}:{}",
         DB_CONSTANTS.validator_key.to_owned(),
@@ -344,13 +344,7 @@ pub async fn fetch_validator(
     );
 
     let latest_change_slot = get_slot_with_latest_change(con, &key, slot).await?;
-    Ok(
-        fetch_redis_json_object::<ValidatorShaInput>(
-            con,
-            format!("{}:{}", key, latest_change_slot),
-        )
-        .await?,
-    )
+    Ok(fetch_redis_json_object(con, format!("{}:{}", key, latest_change_slot)).await?)
 }
 
 pub async fn save_zero_validator_proof(
@@ -362,12 +356,11 @@ pub async fn save_zero_validator_proof(
     let proof_key = format!("{}:zeroes:{}", DB_CONSTANTS.validator_proof_storage, depth);
 
     let validator_proof = ValidatorProof {
-        poseidon_hash: proof
-            .get_commitment_mapper_poseidon_hash_tree_root()
-            .to_vec(),
-        sha256_hash: proof.get_commitment_mapper_sha256_hash_tree_root().to_vec(),
         needs_change: false,
         proof_key: proof_key.clone(),
+        public_inputs: ValidatorsCommitmentMapperFirstLevel::read_public_inputs(
+            &proof.public_inputs,
+        ),
     };
 
     proof_storage
@@ -405,9 +398,13 @@ pub fn u64_to_ssz_leaf(value: u64) -> [u8; 32] {
 }
 
 // TODO: This must go in utils
-fn bits_to_bytes(bits: &[u64]) -> Vec<u8> {
+fn bits_to_bytes(bits: &[bool]) -> Vec<u8> {
     bits.chunks(8)
-        .map(|bits| (0..8usize).fold(0u8, |byte, pos| byte | ((bits[pos]) << (7 - pos)) as u8))
+        .map(|bits| {
+            (0..8usize).fold(0u8, |byte, pos| {
+                byte | ((bits[pos] as usize) << (7 - pos)) as u8
+            })
+        })
         .collect::<Vec<_>>()
 }
 
@@ -423,12 +420,11 @@ pub async fn save_validator_proof(
         DB_CONSTANTS.validator_proof_storage, gindex, slot
     );
     let validator_proof = ValidatorProof {
-        poseidon_hash: proof
-            .get_commitment_mapper_poseidon_hash_tree_root()
-            .to_vec(),
-        sha256_hash: proof.get_commitment_mapper_sha256_hash_tree_root().to_vec(),
         proof_key: proof_key.clone(),
         needs_change: false,
+        public_inputs: ValidatorsCommitmentMapperFirstLevel::read_public_inputs(
+            &proof.public_inputs,
+        ),
     };
 
     proof_storage
@@ -442,7 +438,7 @@ pub async fn save_validator_proof(
             .await?;
 
         let validators_root_bytes: Vec<u8> = [
-            &bits_to_bytes(&validator_proof.sha256_hash)[..],
+            &bits_to_bytes(&validator_proof.public_inputs.sha256_hash_tree_root[..])[..],
             &u64_to_ssz_leaf(length)[..],
         ]
         .concat()

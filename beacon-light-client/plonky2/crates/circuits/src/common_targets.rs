@@ -5,6 +5,7 @@ use plonky2::{
 };
 
 pub type Sha256Target = [BoolTarget; 256];
+pub type SSZLeafTarget = [BoolTarget; 256];
 
 #[derive(CircuitTarget, SerdeCircuitTarget)]
 pub struct BasicRecursiveInnerCircuitTarget {

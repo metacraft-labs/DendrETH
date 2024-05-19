@@ -286,7 +286,7 @@ export class Redis implements IRedis {
   }
 
   async saveValidators(
-    validatorsWithIndices: { index: number; data: ValidatorShaInput }[],
+    validatorsWithIndices: { index: number; data: ValidatorInput }[],
     slot: bigint,
   ) {
     await this.waitForConnection();

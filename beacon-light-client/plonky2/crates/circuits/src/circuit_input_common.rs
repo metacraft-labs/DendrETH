@@ -15,6 +15,7 @@ use crate::{
         },
         utils::SetBytesArray,
     },
+    validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
     withdrawal_credentials_balance_aggregator::first_level::{
         ValidatorBalanceVerificationTargets, WithdrawalCredentialsBalanceAggregatorFirstLevel,
     },
@@ -35,9 +36,8 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 #[serde(rename_all = "camelCase")]
 pub struct ValidatorProof {
     pub needs_change: bool,
-    pub poseidon_hash: Vec<String>,
-    pub sha256_hash: Vec<u64>,
     pub proof_key: String,
+    pub public_inputs: CircuitOutput<ValidatorsCommitmentMapperFirstLevel>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

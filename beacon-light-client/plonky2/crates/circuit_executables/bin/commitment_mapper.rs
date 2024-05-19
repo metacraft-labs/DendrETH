@@ -20,7 +20,7 @@ fn main() -> Result<()> {
 }
 
 async fn async_main() -> Result<()> {
-    let config = parse_config_file("../common_config.json".to_owned())?;
+    let config = parse_config_file("../../common_config.json".to_owned())?;
 
     let matches = CommandLineOptionsBuilder::new("commitment_mapper")
         .with_redis_options(&config.redis_host, config.redis_port)
@@ -52,7 +52,8 @@ async fn async_main() -> Result<()> {
         CommitmentMapperContext::new(redis_connection, work_queue_cfg, proof_storage).await?;
 
     loop {
-        let Some(queue_item) = ctx.work_queue
+        let Some(queue_item) = ctx
+            .work_queue
             .lease(
                 &mut ctx.redis_con,
                 Some(Duration::from_secs(ctx.work_queue_cfg.stop_after)),
@@ -67,7 +68,9 @@ async fn async_main() -> Result<()> {
         let Some(task) = CommitmentMapperTask::deserialize(&queue_item.data) else {
             println!("{}", "Invalid task data".red().bold());
             println!("{}", format!("Got bytes: {:?}", queue_item.data).red());
-            ctx.work_queue.complete(&mut ctx.redis_con, &queue_item).await?;
+            ctx.work_queue
+                .complete(&mut ctx.redis_con, &queue_item)
+                .await?;
             continue;
         };
 

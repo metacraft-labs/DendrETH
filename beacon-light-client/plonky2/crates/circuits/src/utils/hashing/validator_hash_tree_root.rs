@@ -7,11 +7,16 @@ use plonky2::{
 };
 
 use crate::{
+    common_targets::{SSZLeafTarget, Sha256Target},
     serialization::targets_serialization::{ReadTargets, WriteTargets},
     utils::utils::{create_bool_target_array, ETH_SHA256_BIT_SIZE},
+    validators_commitment_mapper::first_level::MerklelizedValidatorTarget,
 };
 
-use super::{hash_tree_root::hash_tree_root, sha256::make_circuits};
+use super::{
+    hash_tree_root::{hash_tree_root, hash_tree_root_new},
+    sha256::make_circuits,
+};
 
 pub struct ValidatorShaTargets {
     pub pubkey: [BoolTarget; 384],
@@ -63,80 +68,48 @@ pub struct ValidatorHashTreeRootTargets {
 
 pub fn hash_tree_root_validator_sha256<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-) -> ValidatorHashTreeRootTargets {
-    let hash_tree_root = hash_tree_root(builder, 8);
+    validator: &MerklelizedValidatorTarget,
+) -> Sha256Target {
+    hash_tree_root_new(
+        builder,
+        &[
+            validator.pubkey[0],
+            validator.pubkey[1],
+            validator.withdrawal_credentials,
+            validator.effective_balance,
+            validator.slashed,
+            validator.activation_eligibility_epoch,
+            validator.activation_epoch,
+            validator.exit_epoch,
+            validator.withdrawable_epoch,
+        ],
+    )
+}
 
-    let pubkey: [BoolTarget; 384] = (0..384)
-        .map(|_| builder.add_virtual_bool_target_safe())
-        .collect::<Vec<_>>()
-        .try_into()
-        .unwrap();
+pub fn hash_tree_root_validator_sha256_or_zeroes<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    validator: &MerklelizedValidatorTarget,
+    condition: BoolTarget,
+) -> Sha256Target {
+    let zero_leaf: SSZLeafTarget = [builder._false(); 256];
+    let zero_leaves = [zero_leaf; 7];
 
-    let hasher = make_circuits(builder, 512);
+    let mut leaves = vec![
+        validator.pubkey[0],
+        validator.pubkey[1],
+        validator.withdrawal_credentials,
+        validator.effective_balance,
+        validator.slashed,
+        validator.activation_eligibility_epoch,
+        validator.activation_epoch,
+        validator.exit_epoch,
+        validator.withdrawable_epoch,
+    ];
 
-    for i in 0..384 {
-        builder.connect(hasher.message[i].target, pubkey[i].target);
-    }
+    leaves.extend(zero_leaves);
 
-    for i in 384..512 {
-        let zero = builder._false();
-        builder.connect(hasher.message[i].target, zero.target);
-    }
-
-    let withdrawal_credentials = create_bool_target_array(builder);
-    let effective_balance = create_bool_target_array(builder);
-    let slashed = create_bool_target_array(builder);
-    let activation_eligibility_epoch = create_bool_target_array(builder);
-    let activation_epoch = create_bool_target_array(builder);
-    let exit_epoch = create_bool_target_array(builder);
-    let withdrawable_epoch = create_bool_target_array(builder);
-
-    for i in 0..ETH_SHA256_BIT_SIZE {
-        builder.connect(hash_tree_root.leaves[0][i].target, hasher.digest[i].target);
-
-        builder.connect(
-            hash_tree_root.leaves[1][i].target,
-            withdrawal_credentials[i].target,
-        );
-
-        builder.connect(
-            hash_tree_root.leaves[2][i].target,
-            effective_balance[i].target,
-        );
-
-        builder.connect(hash_tree_root.leaves[3][i].target, slashed[i].target);
-
-        builder.connect(
-            hash_tree_root.leaves[4][i].target,
-            activation_eligibility_epoch[i].target,
-        );
-
-        builder.connect(
-            hash_tree_root.leaves[5][i].target,
-            activation_epoch[i].target,
-        );
-
-        builder.connect(hash_tree_root.leaves[6][i].target, exit_epoch[i].target);
-
-        builder.connect(
-            hash_tree_root.leaves[7][i].target,
-            withdrawable_epoch[i].target,
-        );
-    }
-
-    ValidatorHashTreeRootTargets {
-        validator: ValidatorShaTargets {
-            pubkey,
-            withdrawal_credentials,
-            effective_balance,
-            slashed,
-            activation_eligibility_epoch,
-            activation_epoch,
-            exit_epoch,
-            withdrawable_epoch,
-        },
-        hash_tree_root: hash_tree_root.hash_tree_root,
-    }
+    let validator_hash = hash_tree_root_new(builder, &leaves);
+    validator_hash.map(|bit| builder.and(condition, bit))
 }
 
 #[cfg(test)]

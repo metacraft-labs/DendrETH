@@ -1,4 +1,5 @@
 use crate::{
+    common_targets::Sha256Target,
     utils::{
         biguint::{BigUintTarget, CircuitBuilderBiguint},
         hashing::{
@@ -10,7 +11,7 @@ use crate::{
             ETH_SHA256_BIT_SIZE,
         },
     },
-    validators_commitment_mapper::build_commitment_mapper_first_level_circuit::CommitmentMapperProofTargetExt,
+    validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
     withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
 use circuit::{Circuit, CircuitOutputTarget, TargetsWithPublicInputs};
@@ -239,18 +240,19 @@ fn setup_commitment_mapper_targets(
     ProofWithPublicInputsTarget<D>,
     VerifierCircuitTarget,
     HashOutTarget,
-    [BoolTarget; ETH_SHA256_BIT_SIZE],
+    Sha256Target,
 ) {
     let (proof_targets, verifier_circuit_target) = setup_proof_targets(data, builder);
-    let sha256_root = proof_targets.get_commitment_mapper_sha256_hash_tree_root();
 
-    let poseidon_root = proof_targets.get_commitment_mapper_poseidon_hash_tree_root();
+    let output = ValidatorsCommitmentMapperFirstLevel::read_public_inputs_target(
+        &proof_targets.public_inputs,
+    );
 
     (
         proof_targets,
         verifier_circuit_target,
-        poseidon_root,
-        sha256_root,
+        output.poseidon_hash_tree_root,
+        output.sha256_hash_tree_root,
     )
 }
 

@@ -1,4 +1,5 @@
 use anyhow::{bail, Result};
+use circuit::SetWitness;
 use circuits::circuit_input_common::{SetPWValues, ValidatorProof};
 use colored::Colorize;
 
@@ -12,7 +13,7 @@ use crate::{
         fetch_proofs, fetch_validator, fetch_zero_proof, save_validator_proof,
         save_zero_validator_proof, ProofProvider,
     },
-    provers::handle_commitment_mapper_inner_level_proof,
+    provers::prove_inner_level,
     utils::{get_depth_for_gindex, gindex_from_validator_index},
     validator::VALIDATOR_REGISTRY_LIMIT,
 };
@@ -151,10 +152,11 @@ async fn handle_update_validator_proof_task(
         Ok(validator) => {
             let mut pw = PartialWitness::new();
 
+            // TODO: fix this in the input fetcher
+            // use input.validator_is_zero instead of VALIDATOR_REGISTRY_LIMIT
             ctx.first_level_circuit
                 .targets
-                .validator
-                .set_pw_values(&mut pw, &validator);
+                .set_witness(&mut pw, &validator);
 
             pw.set_bool_target(
                 ctx.first_level_circuit.targets.validator_is_zero,
@@ -218,7 +220,7 @@ async fn handle_update_proof_node_task(
                 &ctx.first_level_circuit.data
             };
 
-            let proof = handle_commitment_mapper_inner_level_proof(
+            let proof = prove_inner_level(
                 proofs.0,
                 proofs.1,
                 inner_circuit_data,
@@ -261,7 +263,7 @@ async fn handle_prove_zero_for_depth_task(
 
             let lower_proof_bytes = lower_proof.get_proof(ctx.proof_storage.as_mut()).await;
 
-            let proof = handle_commitment_mapper_inner_level_proof(
+            let proof = prove_inner_level(
                 lower_proof_bytes.clone(),
                 lower_proof_bytes,
                 inner_circuit_data,
@@ -297,10 +299,10 @@ async fn handle_zero_out_validator_task(
         Ok(validator) => {
             let mut pw = PartialWitness::new();
 
+            // TODO: fix this in the input fetcher
             ctx.first_level_circuit
                 .targets
-                .validator
-                .set_pw_values(&mut pw, &validator);
+                .set_witness(&mut pw, &validator);
 
             pw.set_bool_target(ctx.first_level_circuit.targets.validator_is_zero, true);
 

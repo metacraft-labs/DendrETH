@@ -223,7 +223,7 @@ export class CommitmentMapperScheduler {
       await this.redis.saveValidators(
         batch.map((indexedValidator: IndexedValidator) => ({
           index: indexedValidator.index,
-          data: convertValidatorToProof(indexedValidator.validator, this.ssz),
+          data: convertValidatorToProof(indexedValidator.validator),
         })),
         slot,
       );

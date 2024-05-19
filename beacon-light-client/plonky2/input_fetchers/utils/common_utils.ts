@@ -1,6 +1,6 @@
 import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
-import { Validator, ValidatorShaInput } from '@dendreth/relay/types/types';
+import { Validator, ValidatorInput, ValidatorShaInput } from '@dendreth/relay/types/types';
 import { bitsToHex } from '@dendreth/utils/ts-utils/hex-utils';
 
 export function gindexFromIndex(index: bigint, depth: bigint): bigint {
@@ -90,37 +90,16 @@ export async function getCommitmentMapperProof<T extends 'sha256' | 'poseidon'>(
 
 export function convertValidatorToProof(
   validator: Validator,
-  ssz: any,
-): ValidatorShaInput {
+): ValidatorInput {
   return {
     pubkey: bytesToHex(validator.pubkey),
     withdrawalCredentials: bytesToHex(validator.withdrawalCredentials),
-    effectiveBalance: bytesToHex(
-      ssz.phase0.Validator.fields.effectiveBalance.hashTreeRoot(
-        validator.effectiveBalance,
-      ),
-    ),
-    slashed: bytesToHex(
-      ssz.phase0.Validator.fields.slashed.hashTreeRoot(validator.slashed),
-    ),
-    activationEligibilityEpoch: bytesToHex(
-      ssz.phase0.Validator.fields.activationEligibilityEpoch.hashTreeRoot(
-        validator.activationEligibilityEpoch,
-      ),
-    ),
-    activationEpoch: bytesToHex(
-      ssz.phase0.Validator.fields.activationEpoch.hashTreeRoot(
-        validator.activationEpoch,
-      ),
-    ),
-    exitEpoch: bytesToHex(
-      ssz.phase0.Validator.fields.exitEpoch.hashTreeRoot(validator.exitEpoch),
-    ),
-    withdrawableEpoch: bytesToHex(
-      ssz.phase0.Validator.fields.withdrawableEpoch.hashTreeRoot(
-        validator.withdrawableEpoch,
-      ),
-    ),
+    effectiveBalance: validator.effectiveBalance.toString(),
+    slashed: validator.slashed,
+    activationEligibilityEpoch: validator.activationEligibilityEpoch.toString(),
+    activationEpoch: validator.activationEpoch.toString(),
+    exitEpoch: validator.exitEpoch.toString(),
+    withdrawableEpoch: validator.withdrawableEpoch.toString(),
   };
 }
 
@@ -128,11 +107,11 @@ export function getZeroValidatorInput() {
   return {
     pubkey: ''.padEnd(96, '0'),
     withdrawalCredentials: ''.padEnd(64, '0'),
-    effectiveBalance: ''.padEnd(64, '0'),
-    slashed: ''.padEnd(64, '0'),
-    activationEligibilityEpoch: ''.padEnd(64, '0'),
-    activationEpoch: ''.padEnd(64, '0'),
-    exitEpoch: ''.padEnd(64, '0'),
-    withdrawableEpoch: ''.padEnd(64, '0'),
+    effectiveBalance: '0',
+    slashed: false,
+    activationEligibilityEpoch: '0',
+    activationEpoch: '0',
+    exitEpoch: '0',
+    withdrawableEpoch: '0',
   };
 }

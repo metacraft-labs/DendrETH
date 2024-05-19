@@ -4,7 +4,7 @@ use plonky2::{
 };
 
 use crate::{
-    common_targets::Sha256Target,
+    common_targets::{SSZLeafTarget, Sha256Target},
     utils::utils::{create_bool_target_array, ETH_SHA256_BIT_SIZE},
 };
 
@@ -17,7 +17,7 @@ pub struct HashTreeRootTargets {
 
 pub fn hash_tree_root_new<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    leaves: &[Sha256Target],
+    leaves: &[SSZLeafTarget],
 ) -> Sha256Target {
     assert!(leaves.len().is_power_of_two());
 

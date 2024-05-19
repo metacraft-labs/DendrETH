@@ -2,15 +2,12 @@ use std::{fs, marker::PhantomData};
 
 use anyhow::Result;
 
+use circuit::{Circuit, CircuitTargetType, SerdeCircuitTarget};
 use circuits::{
-    serialization::{
-        generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
-        targets_serialization::WriteTargets,
-    },
+    serialization::generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
     validators_commitment_mapper::{
-        build_commitment_mapper_first_level_circuit::build_commitment_mapper_first_level_circuit,
-        build_commitment_mapper_inner_level_circuit::build_commitment_mapper_inner_circuit,
-        validator_commitment_mapper::ValidatorCommitmentTargets,
+        build_commitment_mapper_inner_level_circuit::ValidatorsCommitmentMapperInnerLevel,
+        first_level::ValidatorsCommitmentMapperFirstLevel,
     },
 };
 use clap::{App, Arg};
@@ -60,7 +57,7 @@ pub async fn async_main() -> Result<()> {
     };
 
     let (validators_balance_verification_targets, first_level_data) =
-        build_commitment_mapper_first_level_circuit();
+        ValidatorsCommitmentMapperFirstLevel::build(&());
 
     let gate_serializer = DendrETHGateSerializer;
 
@@ -86,7 +83,7 @@ pub async fn async_main() -> Result<()> {
     let mut prev_circuit_data = first_level_data;
 
     for i in 1..41 {
-        let (targets, data) = build_commitment_mapper_inner_circuit(&prev_circuit_data);
+        let (targets, data) = ValidatorsCommitmentMapperInnerLevel::build(&prev_circuit_data);
 
         if level == Some(i) || level == None {
             let circuit_bytes = data
@@ -99,7 +96,7 @@ pub async fn async_main() -> Result<()> {
             )
             .unwrap();
 
-            let inner_level_targets = targets.write_targets().unwrap();
+            let inner_level_targets = targets.serialize().unwrap();
 
             write_to_file(
                 &format!("{}/{}_{}.plonky2_targets", CIRCUIT_DIR, CIRCUIT_NAME, i),
@@ -126,7 +123,7 @@ fn write_first_level_circuit(
     >,
     gate_serializer: &DendrETHGateSerializer,
     generator_serializer: &DendrETHGeneratorSerializer<PoseidonGoldilocksConfig, 2>,
-    validator_commitment_targets: ValidatorCommitmentTargets,
+    validator_commitment_targets: CircuitTargetType<ValidatorsCommitmentMapperFirstLevel>,
 ) {
     let circuit_bytes = first_level_data
         .to_bytes(gate_serializer, generator_serializer)
@@ -138,7 +135,7 @@ fn write_first_level_circuit(
     )
     .unwrap();
 
-    let validator_commitment_targets_bytes = validator_commitment_targets.write_targets().unwrap();
+    let validator_commitment_targets_bytes = validator_commitment_targets.serialize().unwrap();
 
     write_to_file(
         &format!("{}/{}_{}.plonky2_targets", CIRCUIT_DIR, CIRCUIT_NAME, 0),

@@ -195,6 +195,18 @@ export interface ValidatorPoseidonInput {
   withdrawableEpoch: string;
 }
 
+export interface ValidatorInput {
+  pubkey: string;
+  withdrawalCredentials: string;
+  effectiveBalance: string;
+  slashed: boolean;
+  activationEligibilityEpoch: string;
+  activationEpoch: string;
+  exitEpoch: string;
+  withdrawableEpoch: string;
+}
+
+
 export interface DepositData {
   pubkey: string,
   withdrawalCredentials: string,

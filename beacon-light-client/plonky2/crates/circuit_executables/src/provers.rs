@@ -1,7 +1,4 @@
-use circuits::{
-    common_targets::BasicRecursiveInnerCircuitTarget,
-    validators_commitment_mapper::build_commitment_mapper_inner_level_circuit::CommitmentMapperInnerCircuitTargets,
-};
+use circuits::common_targets::BasicRecursiveInnerCircuitTarget;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     iop::witness::{PartialWitness, WitnessWrite},
@@ -51,24 +48,6 @@ pub fn handle_generic_inner_level_proof(
     );
 
     Ok(circuit_data.prove(pw)?)
-}
-
-pub fn handle_commitment_mapper_inner_level_proof(
-    proof1_bytes: Vec<u8>,
-    proof2_bytes: Vec<u8>,
-    inner_circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    inner_circuit_targets: &CommitmentMapperInnerCircuitTargets,
-    circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-) -> Result<ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>> {
-    handle_generic_inner_level_proof(
-        proof1_bytes,
-        proof2_bytes,
-        inner_circuit_data,
-        &inner_circuit_targets.proof1,
-        &inner_circuit_targets.proof2,
-        &inner_circuit_targets.verifier_circuit_target,
-        circuit_data,
-    )
 }
 
 pub fn prove_inner_level(

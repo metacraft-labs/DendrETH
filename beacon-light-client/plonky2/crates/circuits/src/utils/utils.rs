@@ -12,6 +12,8 @@ use plonky2::{
 use plonky2_u32::gadgets::arithmetic_u32::U32Target;
 use sha2::{Digest, Sha256};
 
+use crate::common_targets::SSZLeafTarget;
+
 use super::{
     biguint::{BigUintTarget, CircuitBuilderBiguint},
     hashing::is_valid_merkle_branch::MerkleBranch,
@@ -205,17 +207,26 @@ fn reverse_endianness(bits: &[BoolTarget]) -> Vec<BoolTarget> {
     bits.chunks(8).rev().flatten().cloned().collect()
 }
 
+pub fn ssz_merklelize_bool<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    bool_target: BoolTarget,
+) -> SSZLeafTarget {
+    let mut ssz_leaf = [BoolTarget::new_unsafe(builder.zero()); 256];
+    ssz_leaf[7] = bool_target;
+    ssz_leaf
+}
+
 pub fn ssz_num_to_bits<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     num: &BigUintTarget,
     bit_len: usize,
-) -> Vec<BoolTarget> {
+) -> SSZLeafTarget {
     assert!(bit_len <= ETH_SHA256_BIT_SIZE);
 
     let mut bits = reverse_endianness(&biguint_to_bits_target::<F, D, 2>(builder, num));
     bits.extend((bit_len..ETH_SHA256_BIT_SIZE).map(|_| builder._false()));
 
-    bits
+    bits.try_into().unwrap()
 }
 
 pub fn ssz_num_from_bits<F: RichField + Extendable<D>, const D: usize>(

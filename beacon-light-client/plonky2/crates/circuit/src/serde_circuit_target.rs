@@ -5,12 +5,23 @@ use plonky2::{
     util::serialization::{Buffer, IoResult, Read, Write},
 };
 
+use crate::Circuit;
+
 pub trait SerdeCircuitTarget {
     fn serialize(&self) -> IoResult<Vec<u8>>;
 
     fn deserialize(buffer: &mut Buffer) -> IoResult<Self>
     where
         Self: Sized;
+}
+
+pub fn deserialize_circuit_target<T: Circuit>(
+    buffer: &mut Buffer,
+) -> IoResult<<T as Circuit>::Target>
+where
+    <T as Circuit>::Target: SerdeCircuitTarget,
+{
+    <<T as Circuit>::Target as SerdeCircuitTarget>::deserialize(buffer)
 }
 
 impl SerdeCircuitTarget for Target {

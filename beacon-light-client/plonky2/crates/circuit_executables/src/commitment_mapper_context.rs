@@ -1,10 +1,8 @@
 use anyhow::Result;
-use circuits::{
-    serialization::targets_serialization::ReadTargets,
-    validators_commitment_mapper::{
-        build_commitment_mapper_inner_level_circuit::CommitmentMapperInnerCircuitTargets,
-        validator_commitment_mapper::ValidatorCommitmentTargets,
-    },
+use circuit::{serde_circuit_target::deserialize_circuit_target, CircuitTargetType};
+use circuits::validators_commitment_mapper::{
+    build_commitment_mapper_inner_level_circuit::ValidatorsCommitmentMapperInnerLevel,
+    first_level::ValidatorsCommitmentMapperFirstLevel,
 };
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
@@ -81,31 +79,37 @@ pub struct WorkQueueConfig {
 
 // TODO: use the new circuit trait
 pub struct FirstLevelCircuit {
-    pub targets: ValidatorCommitmentTargets,
+    pub targets: CircuitTargetType<ValidatorsCommitmentMapperFirstLevel>,
     pub data: CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
 }
 
 pub struct InnerLevelCircuit {
-    pub targets: CommitmentMapperInnerCircuitTargets,
+    pub targets: CircuitTargetType<ValidatorsCommitmentMapperInnerLevel>,
     pub data: CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
 }
 
-fn get_inner_targets(i: usize) -> Result<CommitmentMapperInnerCircuitTargets> {
+fn get_inner_targets(i: usize) -> Result<CircuitTargetType<ValidatorsCommitmentMapperInnerLevel>> {
     let target_bytes = read_from_file(&format!(
         "{}/{}_{}.plonky2_targets",
         CIRCUIT_DIR, CIRCUIT_NAME, i
     ))?;
     let mut target_buffer = Buffer::new(&target_bytes);
 
-    Ok(CommitmentMapperInnerCircuitTargets::read_targets(&mut target_buffer).unwrap())
+    Ok(
+        deserialize_circuit_target::<ValidatorsCommitmentMapperInnerLevel>(&mut target_buffer)
+            .unwrap(),
+    )
 }
 
-fn get_first_level_targets() -> Result<ValidatorCommitmentTargets> {
+fn get_first_level_targets() -> Result<CircuitTargetType<ValidatorsCommitmentMapperFirstLevel>> {
     let target_bytes = read_from_file(&format!(
         "{}/{}_0.plonky2_targets",
         CIRCUIT_DIR, CIRCUIT_NAME
     ))?;
     let mut target_buffer = Buffer::new(&target_bytes);
 
-    Ok(ValidatorCommitmentTargets::read_targets(&mut target_buffer).unwrap())
+    Ok(
+        deserialize_circuit_target::<ValidatorsCommitmentMapperFirstLevel>(&mut target_buffer)
+            .unwrap(),
+    )
 }

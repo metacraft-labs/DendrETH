@@ -1,5 +1,8 @@
 #![feature(generic_const_exprs)]
-use circuit::{set_witness::SetWitness, Circuit, CircuitTargetType, SerdeCircuitTarget};
+use circuit::{
+    serde_circuit_target::deserialize_circuit_target, set_witness::SetWitness, Circuit,
+    CircuitTargetType, SerdeCircuitTarget,
+};
 use circuit_executables::{
     crud::{
         common::{
@@ -454,12 +457,12 @@ where
     let mut target_buffer = Buffer::new(&target_bytes);
 
     Ok(Targets::FirstLevel(Some(
-        <CircuitTargetType<
+        deserialize_circuit_target::<
             WithdrawalCredentialsBalanceAggregatorFirstLevel<
                 VALIDATORS_COUNT,
                 WITHDRAWAL_CREDENTIALS_COUNT,
             >,
-        > as SerdeCircuitTarget>::deserialize(&mut target_buffer)
+        >(&mut target_buffer)
         .unwrap(),
     )))
 }

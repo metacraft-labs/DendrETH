@@ -19,15 +19,13 @@ use plonky2::{
     },
 };
 
+const D: usize = 2;
+
 pub struct WithdrawalCredentialsBalanceAggregatorInnerLevel<
     const VALIDATORS_COUNT: usize,
     const WITHDRAWAL_CREDENTIALS_COUNT: usize,
 > where
     [(); VALIDATORS_COUNT / 4]:, {}
-
-type F = GoldilocksField;
-type C = PoseidonGoldilocksConfig;
-const D: usize = 2;
 
 impl<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
     for WithdrawalCredentialsBalanceAggregatorInnerLevel<
@@ -37,39 +35,31 @@ impl<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIALS_COUNT: usize> C
 where
     [(); VALIDATORS_COUNT / 4]:,
 {
-    type F = F;
-    type C = C;
+    type F = GoldilocksField;
+    type C = PoseidonGoldilocksConfig;
     const D: usize = D;
 
     const CIRCUIT_CONFIG: CircuitConfig = CircuitConfig::standard_recursion_config();
 
     type Target = BasicRecursiveInnerCircuitTarget;
 
-    type Params = CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>;
+    type Params = CircuitData<Self::F, Self::C, D>;
 
     fn define(
         builder: &mut CircuitBuilder<Self::F, D>,
-        inner_circuit_data: &Self::Params,
+        circuit_data: &Self::Params,
     ) -> Self::Target where {
         let verifier_circuit_target = VerifierCircuitTarget {
             constants_sigmas_cap: builder
-                .constant_merkle_cap(&inner_circuit_data.verifier_only.constants_sigmas_cap),
-            circuit_digest: builder.constant_hash(inner_circuit_data.verifier_only.circuit_digest),
+                .constant_merkle_cap(&circuit_data.verifier_only.constants_sigmas_cap),
+            circuit_digest: builder.constant_hash(circuit_data.verifier_only.circuit_digest),
         };
 
-        let proof1 = builder.add_virtual_proof_with_pis(&inner_circuit_data.common);
-        let proof2 = builder.add_virtual_proof_with_pis(&inner_circuit_data.common);
+        let proof1 = builder.add_virtual_proof_with_pis(&circuit_data.common);
+        let proof2 = builder.add_virtual_proof_with_pis(&circuit_data.common);
 
-        builder.verify_proof::<Self::C>(
-            &proof1,
-            &verifier_circuit_target,
-            &inner_circuit_data.common,
-        );
-        builder.verify_proof::<Self::C>(
-            &proof2,
-            &verifier_circuit_target,
-            &inner_circuit_data.common,
-        );
+        builder.verify_proof::<Self::C>(&proof1, &verifier_circuit_target, &circuit_data.common);
+        builder.verify_proof::<Self::C>(&proof2, &verifier_circuit_target, &circuit_data.common);
 
         let l_input = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
             VALIDATORS_COUNT,
@@ -108,10 +98,11 @@ where
             r_input.number_of_exitted_validators,
         );
 
-        let mut sum = builder.add_biguint(&l_input.range_total_value, &r_input.range_total_value);
+        let mut range_total_value =
+            builder.add_biguint(&l_input.range_total_value, &r_input.range_total_value);
 
         // pop carry
-        sum.limbs.pop();
+        range_total_value.limbs.pop();
 
         for i in 0..WITHDRAWAL_CREDENTIALS_COUNT {
             connect_bool_arrays(
@@ -130,7 +121,7 @@ where
             >,
         > {
             current_epoch: l_input.current_epoch,
-            range_total_value: sum,
+            range_total_value,
             range_balances_root,
             withdrawal_credentials: l_input.withdrawal_credentials,
             range_validator_commitment,
