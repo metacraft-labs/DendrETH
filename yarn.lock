@@ -1595,6 +1595,7 @@ __metadata:
     "@dendreth/utils": "workspace:^"
     "@lodestar/types": "npm:^1.17.0"
     "@mevitae/redis-work-queue": "npm:^0.1.5"
+    "@noble/bls12-381": "npm:^1.4.0"
     "@types/circomlibjs": "npm:^0"
     "@types/yargs": "npm:^17.0.32"
     chalk: "npm:^4.1.2"

@@ -77,6 +77,14 @@ fn main_thread() {
 
     fs::write("circuits/miller_loop.plonky2_circuit", &circuit_bytes).unwrap();
 
+    let common_circuit_bytes = data.common.to_bytes(&CustomGateSerializer).unwrap();
+
+    fs::write(
+        "circuits/miller_loop.plonky2_common_data",
+        &common_circuit_bytes,
+    )
+    .unwrap();
+
     let targets = recursive_stark_targets.write_targets().unwrap();
 
     fs::write("circuits/miller_loop.plonky2_targets", &targets).unwrap();

@@ -92,6 +92,10 @@ fn main_thread() {
 
     fs::write("circuits/fp12_mul.plonky2_circuit", &circuit_bytes).unwrap();
 
+    let common_data_bytes = data.common.to_bytes(&CustomGateSerializer).unwrap();
+
+    fs::write("circuits/fp12_mul.plonky2_common_data", &common_data_bytes).unwrap();
+
     let targets = recursive_stark_targets.write_targets().unwrap();
 
     fs::write("circuits/fp12_mul.plonky2_targets", &targets).unwrap();

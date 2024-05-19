@@ -14,17 +14,23 @@ use async_trait::async_trait;
 
 use circuits::{
     build_commitment_mapper_first_level_circuit::CommitmentMapperProofExt,
+    build_stark_proof_verifier::RecursiveStarkTargets,
     build_validator_balance_circuit::ValidatorBalanceProofExt,
     generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
+    targets_serialization::ReadTargets,
     utils::hash_bytes,
 };
 use num::BigUint;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     plonk::{
-        circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs,
+        circuit_data::{CircuitData, CommonCircuitData},
+        config::PoseidonGoldilocksConfig,
+        proof::ProofWithPublicInputs,
     },
+    util::serialization::Buffer,
 };
+use plonky2_circuit_serializer::serializer::{CustomGateSerializer, CustomGeneratorSerializer};
 use redis::{aio::Connection, AsyncCommands, RedisError};
 use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize, Serializer};
 
@@ -763,4 +769,37 @@ pub fn load_circuit_data(
         )
         .unwrap(),
     )
+}
+
+pub fn load_circuit_data_starky(
+    file_name: &str,
+) -> CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2> {
+    let circuit_data_bytes = read_from_file(&format!("{file_name}.plonky2_circuit")).unwrap();
+
+    CircuitData::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
+        &circuit_data_bytes,
+        &CustomGateSerializer,
+        &CustomGeneratorSerializer {
+            _phantom: PhantomData::<PoseidonGoldilocksConfig>,
+        },
+    )
+    .unwrap()
+}
+
+pub fn load_common_circuit_data_starky(file_name: &str) -> CommonCircuitData<GoldilocksField, 2> {
+    let circuit_data_bytes =
+        read_from_file(&format!("{file_name}.plonky2_common_data")).unwrap();
+
+    CommonCircuitData::<GoldilocksField, 2>::from_bytes(circuit_data_bytes, &CustomGateSerializer)
+        .unwrap()
+}
+
+pub fn get_recursive_stark_targets(
+    file_name: &str,
+) -> Result<RecursiveStarkTargets, anyhow::Error> {
+    let target_bytes = read_from_file(&format!("{file_name}.plonky2_targets"))?;
+
+    let mut target_buffer = Buffer::new(&target_bytes);
+
+    Ok(RecursiveStarkTargets::read_targets(&mut target_buffer).unwrap())
 }
