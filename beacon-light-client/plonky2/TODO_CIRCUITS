@@ -1,3 +1,0 @@
-- Circuit for ComputeSigningRoot should compute hash of object_root and domain (yes it is just sha of two values) https://github.com/ethereum/consensus-specs/blob/v1.0.0/specs/phase0/beacon-chain.md#compute_signing_root
-as we will have the object hashed
-
