@@ -25,6 +25,7 @@ typenum = "1.16.0"
 starky = { git = "https://github.com/metacraft-labs/plonky2" }
 starky_bls12_381 = { git = "https://github.com/metacraft-labs/starky_bls12_381" }
 plonky2_crypto = { git = "https://github.com/metacraft-labs/plonky2-crypto" }
+plonky2-circuit-serializer = { git = "https://github.com/metacraft-labs/plonky2-circuit-serializer" }
 num-bigint = "0.4.4"
 
 [dev-dependencies]

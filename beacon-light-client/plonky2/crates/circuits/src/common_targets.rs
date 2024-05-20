@@ -6,12 +6,18 @@ use circuit_derive::{
     AddVirtualTarget, CircuitTarget, PublicInputsReadable, SerdeCircuitTarget, SetWitness,
     TargetPrimitive,
 };
-use plonky2::{iop::target::BoolTarget, plonk::proof::ProofWithPublicInputsTarget};
+use plonky2::{
+    hash::hash_types::HashOutTarget, iop::target::BoolTarget,
+    plonk::proof::ProofWithPublicInputsTarget,
+};
 use plonky2_crypto::biguint::BigUintTarget;
 
 pub type Sha256Target = [BoolTarget; 256];
 pub type SSZTarget = [BoolTarget; 256];
 pub type Sha256MerkleBranchTarget<const DEPTH: usize> = [Sha256Target; DEPTH];
+pub type PoseidonMerkleBranchTarget<const DEPTH: usize> = [HashOutTarget; DEPTH];
+pub type PubkeyTarget = [BoolTarget; 384];
+pub type SignatureTarget = [BoolTarget; 768];
 
 #[derive(CircuitTarget, SerdeCircuitTarget)]
 pub struct BasicRecursiveInnerCircuitTarget {
@@ -31,7 +37,7 @@ pub struct BasicRecursiveInnerCircuitTarget {
 #[serde(rename_all = "camelCase")]
 pub struct ValidatorTarget {
     #[serde(with = "serde_bool_array_to_hex_string")]
-    pub pubkey: [BoolTarget; 384],
+    pub pubkey: PubkeyTarget,
 
     #[serde(with = "serde_bool_array_to_hex_string")]
     pub withdrawal_credentials: Sha256Target,
@@ -79,4 +85,25 @@ pub struct MerklelizedValidatorTarget {
 
     #[serde(with = "serde_bool_array_to_hex_string")]
     pub withdrawable_epoch: SSZTarget,
+}
+
+#[derive(
+    Clone,
+    Debug,
+    TargetPrimitive,
+    SetWitness,
+    PublicInputsReadable,
+    AddVirtualTarget,
+    SerdeCircuitTarget,
+)]
+#[serde(rename_all = "camelCase")]
+pub struct DepositTargets {
+    #[serde(with = "serde_bool_array_to_hex_string")]
+    pub pubkey: PubkeyTarget,
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
+    pub deposit_index: BigUintTarget,
+    #[serde(with = "serde_bool_array_to_hex_string")]
+    pub signature: SignatureTarget,
+    #[serde(with = "serde_bool_array_to_hex_string")]
+    pub deposit_message_root: Sha256Target,
 }

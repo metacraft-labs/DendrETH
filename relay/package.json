@@ -28,6 +28,7 @@
     "ethers": "^5.7.0",
     "eventsource": "^2.0.2",
     "ioredis": "^5.3.2",
+    "json-bigint": "^1.0.0",
     "redis": "^4.6.10",
     "snarkjs": "https://github.com/metacraft-labs/snarkjs.git#commit=091ee9c3744c660b0ecd961f9197a8249a8f7d3b",
     "ts-node": "^10.9.1",
@@ -39,6 +40,7 @@
   "devDependencies": {
     "@types/eventsource": "^1.1.15",
     "@types/ioredis": "^4.27.6",
+    "@types/json-bigint": "^1",
     "@types/node": "^20.11.19",
     "@types/snarkjs": "^0.7.8",
     "typescript": "5.2.2"
