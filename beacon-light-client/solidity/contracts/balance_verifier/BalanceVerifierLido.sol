@@ -8,14 +8,14 @@ contract BalanceVerifierLido is BalanceVerifier, IBalanceVerifierLido {
   mapping(uint256 => Report) reports;
 
   constructor(
-    uint256 verifier_digest,
-    bytes32 withdrawal_credentials,
-    uint256 genesis_block_timestamp
+    uint256 verifierDigest,
+    bytes32 withdrawalCredentials,
+    uint256 genesisBlockTimestamp
   )
     BalanceVerifier(
-      verifier_digest,
-      withdrawal_credentials,
-      genesis_block_timestamp
+      verifierDigest,
+      withdrawalCredentials,
+      genesisBlockTimestamp
     )
   {}
 

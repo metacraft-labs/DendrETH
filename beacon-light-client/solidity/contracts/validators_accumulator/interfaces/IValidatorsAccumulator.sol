@@ -6,7 +6,7 @@ interface IValidatorsAccumulator {
     bytes pubkey,
     bytes withdrawalCredentials,
     bytes signature,
-    bytes32 deposit_message_root,
+    bytes32 depositMessageRoot,
     bytes32 depositDataRoot
   );
 

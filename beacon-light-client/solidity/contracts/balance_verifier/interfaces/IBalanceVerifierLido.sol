@@ -12,7 +12,7 @@ interface IBalanceVerifierLido is IBalanceVerifier {
   }
 
   event ReportAdded(
-    uint256 refSlot,
+    uint256 slot,
     uint64 balanceSum,
     uint64 numValidators,
     uint64 exitedValidators
