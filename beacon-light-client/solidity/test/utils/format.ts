@@ -1,6 +1,5 @@
 import { PointG2 } from '@noble/bls12-381';
 import { BitVectorType } from '@chainsafe/ssz';
-import { ssz } from '@lodestar/types';
 import { hexToBytes, formatHex, bigint_to_array } from './bls';
 import { Proof } from './index';
 
@@ -30,7 +29,8 @@ export interface FormatedJsonUpdate {
   signature_slot: string;
 }
 
-export function formatJSONBlockHeader(header: JSONHeader) {
+export async function formatJSONBlockHeader(header: JSONHeader) {
+  const { ssz } = await import('@lodestar/types');
   const block_header = ssz.phase0.BeaconBlockHeader.defaultValue();
   block_header.slot = parseInt(header.slot);
   block_header.proposerIndex = parseInt(header.proposer_index);
