@@ -53,7 +53,7 @@ pub fn bool_target_equal<F: RichField + Extendable<D>, const D: usize>(
     all_equal
 }
 
-pub fn create_bool_target_array<F: RichField + Extendable<D>, const D: usize>(
+pub fn create_bool_target_array<F: RichField + Extendable<D>, const D: usize>( //Stefan TODO: size of slice should be function parameter
     builder: &mut CircuitBuilder<F, D>,
 ) -> [BoolTarget; ETH_SHA256_BIT_SIZE] {
     (0..ETH_SHA256_BIT_SIZE)
