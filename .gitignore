@@ -173,6 +173,10 @@ target
 
 redis-server/
 
+*.plonky2_targets
+*.plonky2_circuit
+*.plonky2_common_data
+
 .DS_Store
 
 # Solidity remappings

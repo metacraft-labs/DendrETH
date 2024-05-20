@@ -1,4 +1,4 @@
-mod is_active_validator;
+pub mod is_active_validator;
 
 use crate::{
     common_targets::ValidatorTarget,

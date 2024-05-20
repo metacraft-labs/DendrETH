@@ -1597,6 +1597,7 @@ __metadata:
     "@mevitae/redis-work-queue": "npm:^0.1.5"
     "@noble/bls12-381": "npm:^1.4.0"
     "@types/circomlibjs": "npm:^0"
+    "@types/json-bigint": "npm:^1"
     "@types/yargs": "npm:^17.0.32"
     chalk: "npm:^4.1.2"
     circom-pairing: "link:../../../vendor/circom-pairing/"
@@ -1604,6 +1605,7 @@ __metadata:
     colors: "npm:^1.4.0"
     ethers: "npm:^5.7.0"
     ioredis: "npm:^5.3.2"
+    json-bigint: "npm:^1.0.0"
     tsx: "npm:^4.7.1"
     yargs: "npm:^17.7.2"
   languageName: unknown
@@ -1625,6 +1627,7 @@ __metadata:
     "@noble/bls12-381": "npm:^1.4.0"
     "@types/eventsource": "npm:^1.1.15"
     "@types/ioredis": "npm:^4.27.6"
+    "@types/json-bigint": "npm:^1"
     "@types/node": "npm:^20.11.19"
     "@types/snarkjs": "npm:^0.7.8"
     bullmq: "npm:^5.3.1"
@@ -1633,6 +1636,7 @@ __metadata:
     ethers: "npm:^5.7.0"
     eventsource: "npm:^2.0.2"
     ioredis: "npm:^5.3.2"
+    json-bigint: "npm:^1.0.0"
     redis: "npm:^4.6.10"
     snarkjs: "https://github.com/metacraft-labs/snarkjs.git#commit=091ee9c3744c660b0ecd961f9197a8249a8f7d3b"
     ts-node: "npm:^10.9.1"
@@ -4822,6 +4826,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/json-bigint@npm:^1":
+  version: 1.0.4
+  resolution: "@types/json-bigint@npm:1.0.4"
+  checksum: 10/7aee137b3796121cec755247ea56577611c8e5df89224c567fa71999764d01e12199c4089c6be8a9e4e6a6a8f5c6f309eee2965cc3dd8d576f4c4ba432566041
+  languageName: node
+  linkType: hard
+
 "@types/keyv@npm:^3.1.4":
   version: 3.1.4
   resolution: "@types/keyv@npm:3.1.4"
@@ -5137,6 +5148,7 @@ __metadata:
     "@types/ejs": "npm:^3"
     "@types/glob": "npm:^7.2.0"
     "@types/jest": "npm:^29.5.12"
+    "@types/json-bigint": "npm:^1"
     "@types/mocha": "npm:^10.0.6"
     "@types/node": "npm:^18.0.0"
     aws-sdk: "npm:^2.1566.0"
@@ -5155,6 +5167,7 @@ __metadata:
     ioredis: "npm:^5.3.2"
     ioredis-rejson: "npm:^1.0.10"
     jest: "npm:^29.7.0"
+    json-bigint: "npm:^1.0.0"
     node-html-parser: "npm:^6.1.12"
     prettier: "npm:^2.6.2"
     prom-client: "npm:^14.2.0"

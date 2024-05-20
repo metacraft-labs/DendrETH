@@ -578,7 +578,7 @@ export class BeaconApi implements IBeaconApi {
       .catch(console.error);
 
     if (!beaconStateSZZ) {
-      return null;
+      throw new Error('Could not fetch beacon state');
     }
 
     const currentSszFork = await this.getCurrentSSZ(slot);
