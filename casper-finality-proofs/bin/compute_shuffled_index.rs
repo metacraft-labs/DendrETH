@@ -14,6 +14,7 @@ fn main() {
 
     const SHUFFLE_ROUND_COUNT: u8 = 90;
     let mut builder = CircuitBuilder::<DefaultParameters, 2>::new();
+
     define(&mut builder, SHUFFLE_ROUND_COUNT);
 
     let circuit = builder.mock_build();

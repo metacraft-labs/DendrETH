@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use plonky2::util::serialization::{Buffer, IoResult, Read, Write};
+use plonky2::{hash::hash_types::HashOutTarget, util::serialization::{Buffer, IoResult, Read, Write}};
 use plonky2_u32::gadgets::arithmetic_u32::U32Target;
 
 use crate::biguint::BigUintTarget;
@@ -36,5 +36,21 @@ impl WriteTargets for BigUintTarget {
         data.write_target_vec(&self.limbs.iter().map(|x| x.0).collect_vec())?;
 
         Ok(data)
+    }
+}
+
+impl ReadTargets for HashOutTarget {
+    fn read_targets(data: &mut Buffer) -> IoResult<Self>
+        where
+            Self: Sized {
+        
+        Ok(HashOutTarget {
+            elements: data
+                .read_target_vec()
+                .unwrap()
+                .try_into()
+                .unwrap()
+
+        })
     }
 }

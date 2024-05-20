@@ -11,10 +11,7 @@ use plonky2::{
     },
 };
 
-use crate::{
-    utils::{ETH_SHA256_BIT_SIZE, POSEIDON_HASH_SIZE},
-    validator_commitment_mapper::{validator_commitment_mapper, ValidatorCommitmentTargets},
-};
+use crate::{deposit_accumulator::deposit_tree_commitment_mapper::{deposit_commitment_mapper, DepositCommitmentTargets}, utils::{ETH_SHA256_BIT_SIZE, POSEIDON_HASH_SIZE}, validator_commitment_mapper::{validator_commitment_mapper, ValidatorCommitmentTargets}};
 
 pub const POSEIDON_HASH_PUB_INDEX: usize = 0;
 pub const SHA256_HASH_PUB_INDEX: usize = 4;
@@ -91,6 +88,16 @@ impl CommitmentMapperTargets for ValidatorCommitmentTargets {
     }
 }
 
+impl CommitmentMapperTargets for DepositCommitmentTargets {
+    fn get_commitment_mapper_poseidon_hash_tree_root(&self) -> HashOutTarget {
+        self.poseidon_hash_tree_root
+    }
+
+    fn get_commitment_mapper_sha256_hash_tree_root(&self) -> [BoolTarget; ETH_SHA256_BIT_SIZE] {
+        self.sha256_hash_tree_root
+    }
+}
+
 fn build_commitment_mapper_first_level_circuit_generic<F, T>(
     mapper_function: F,
 ) -> (
@@ -127,7 +134,7 @@ where
     (validator_commitment_result, data)
 }
 
-pub fn build_commitment_mapper_first_level_circuit() -> (
+pub fn build_commitment_mapper_first_level_circuit() -> ( 
     ValidatorCommitmentTargets,
     plonky2::plonk::circuit_data::CircuitData<
         plonky2::field::goldilocks_field::GoldilocksField,
@@ -137,6 +144,18 @@ pub fn build_commitment_mapper_first_level_circuit() -> (
 ) {
     build_commitment_mapper_first_level_circuit_generic(validator_commitment_mapper)
 }
+
+pub fn build_deposit_commitment_mapper_first_level_circuit() -> ( // Stefan TODO: Better generics and attribute for traits?
+    DepositCommitmentTargets,
+    plonky2::plonk::circuit_data::CircuitData<
+        plonky2::field::goldilocks_field::GoldilocksField,
+        PoseidonGoldilocksConfig,
+        2,
+    >,
+) {
+    build_commitment_mapper_first_level_circuit_generic(deposit_commitment_mapper)
+}
+
 
 #[cfg(test)]
 mod test {

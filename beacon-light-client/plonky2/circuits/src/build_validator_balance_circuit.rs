@@ -14,11 +14,9 @@ use plonky2::{
 use plonky2_u32::gadgets::arithmetic_u32::U32Target;
 
 use crate::{
-    biguint::BigUintTarget,
-    utils::{ETH_SHA256_BIT_SIZE, POSEIDON_HASH_SIZE},
-    validator_balance_circuit::{
+    biguint::BigUintTarget, types::ValidatorBalanceProofTargets, utils::{ETH_SHA256_BIT_SIZE, POSEIDON_HASH_SIZE}, validator_balance_circuit::{
         validator_balance_verification, ValidatorBalanceVerificationTargets,
-    },
+    }
 };
 
 pub const RANGE_TOTAL_VALUE_PUB_INDEX: usize = 0;
@@ -124,8 +122,6 @@ impl<const N: usize> ValidatorBalanceProofExt<N> for ValidatorBalanceProof<N> {
         self.public_inputs[NUMBER_OF_SLASHED_VALIDATORS_INDEX].0 % GoldilocksField::ORDER
     }
 }
-
-pub type ValidatorBalanceProofTargets<const N: usize> = ProofWithPublicInputsTarget<2>;
 
 pub trait ValidatorBalanceProofTargetsExt<const N: usize> {
     fn get_range_total_value(&self) -> BigUintTarget;

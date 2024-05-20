@@ -15,6 +15,9 @@ pub struct IsValidMerkleBranchTargets {
     pub root: [BoolTarget; ETH_SHA256_BIT_SIZE],
 }
 
+pub type Sha256 = [BoolTarget; ETH_SHA256_BIT_SIZE];
+pub type MerkleBranch<const DEPTH: usize> = [Sha256; DEPTH];
+
 pub struct IsValidMerkleBranchTargetsResult {
     pub leaf: [BoolTarget; ETH_SHA256_BIT_SIZE],
     pub branch: Vec<[BoolTarget; ETH_SHA256_BIT_SIZE]>,
@@ -78,11 +81,15 @@ pub fn is_valid_merkle_branch_sha256<F: RichField + Extendable<D>, const D: usiz
     builder: &mut CircuitBuilder<F, D>,
     depth: usize,
 ) -> IsValidMerkleBranchTargets {
-    let is_valid_merkle_branch_result_targets = is_valid_merkle_branch_sha256_result(builder, depth);
+    let is_valid_merkle_branch_result_targets =
+        is_valid_merkle_branch_sha256_result(builder, depth);
 
     let _true = builder._true();
 
-    builder.connect(is_valid_merkle_branch_result_targets.is_valid.target, _true.target);
+    builder.connect(
+        is_valid_merkle_branch_result_targets.is_valid.target,
+        _true.target,
+    );
 
     IsValidMerkleBranchTargets {
         leaf: is_valid_merkle_branch_result_targets.leaf,

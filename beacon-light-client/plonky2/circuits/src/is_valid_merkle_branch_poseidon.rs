@@ -66,7 +66,7 @@ pub fn is_valid_merkle_branch_poseidon_result<F: RichField + Extendable<D>, cons
     }
 }
 
-pub fn is_valid_merkle_branch_sha256<F: RichField + Extendable<D>, const D: usize>(
+pub fn is_valid_merkle_branch_poseidon<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     depth: usize,
 ) -> IsValidMerkleBranchTargetsPoseidon {
