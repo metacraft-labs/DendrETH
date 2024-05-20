@@ -108,6 +108,7 @@ impl WriteTargets for StarkProofWithPublicInputsTarget<D> {
     }
 }
 
+// NIKO: Perhaps no need to be pub, not used outside this .rs file
 pub struct RecursiveStarkTargets {
     pub proof: StarkProofWithPublicInputsTarget<D>,
     pub zero: Target,
@@ -134,6 +135,7 @@ impl WriteTargets for RecursiveStarkTargets {
     }
 }
 
+// NIKO: Where this function is actually used, perhaps it just implement some necessary trait from starky's repo?
 pub fn build_stark_proof_verifier<
     F: RichField + Extendable<D>,
     C: GenericConfig<D, F = F>,
