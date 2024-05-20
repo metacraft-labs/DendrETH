@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
 import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
-import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
+import { bytesToHex, formatHex } from '@dendreth/utils/ts-utils/bls';
 import { hexToBits } from '@dendreth/utils/ts-utils/hex-utils';
 import { KeyPrefix, WorkQueue, Item } from '@mevitae/redis-work-queue';
 import CONSTANTS from '../../../../kv_db_constants.json';
@@ -55,7 +55,9 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
   const { ssz } = await import('@lodestar/types');
   const redis = new RedisLocal(config.redisHost, config.redisPort);
 
-  const withdrawalCredentials = config.withdrawalCredentials.padEnd(64, '0');
+  const withdrawalCredentials = formatHex(
+    config.withdrawalCredentials.padEnd(64, '0'),
+  );
   const protocol = config.protocol;
 
   const queues: any[] = [];
@@ -63,9 +65,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
   for (let i = 0; i < 38; i++) {
     queues.push(
       new WorkQueue(
-        new KeyPrefix(
-          `${protocol}:${CONSTANTS.balanceVerificationQueue}:${i}`,
-        ),
+        new KeyPrefix(`${protocol}:${CONSTANTS.balanceVerificationQueue}:${i}`),
       ),
     );
   }
@@ -118,7 +118,9 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
         balancesLeaves: Array(VALIDATORS_COUNT / 4)
           .fill('')
           .map(() => ''.padStart(64, '0')),
-        validators: Array(VALIDATORS_COUNT).fill(getZeroValidatorPoseidonInput()),
+        validators: Array(VALIDATORS_COUNT).fill(
+          getZeroValidatorPoseidonInput(),
+        ),
         withdrawalCredentials: [withdrawalCredentials],
         currentEpoch: computeEpochAt(beaconState.slot).toString(),
         nonZeroValidatorLeavesMask: Array(VALIDATORS_COUNT).fill(false),
@@ -131,11 +133,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
   const buffer = new ArrayBuffer(8);
   const dataView = new DataView(buffer);
 
-  dataView.setBigUint64(
-    0,
-    BigInt(CONSTANTS.validatorRegistryLimit),
-    false,
-  );
+  dataView.setBigUint64(0, BigInt(CONSTANTS.validatorRegistryLimit), false);
 
   await queues[0].addItem(redis.client, new Item(Buffer.from(buffer)));
 
@@ -143,11 +141,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
     const buffer = new ArrayBuffer(24);
     const dataView = new DataView(buffer);
 
-    dataView.setBigUint64(
-      0,
-      BigInt(CONSTANTS.validatorRegistryLimit),
-      false,
-    );
+    dataView.setBigUint64(0, BigInt(CONSTANTS.validatorRegistryLimit), false);
 
     await queues[i + 1].addItem(redis.client, new Item(Buffer.from(buffer)));
   }
@@ -181,12 +175,14 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
               .map(v => convertValidatorToValidatorPoseidonInput(v)),
             ...Array(
               (j + 1) * VALIDATORS_COUNT -
-              Math.min((j + 1) * VALIDATORS_COUNT, validators.length),
+                Math.min((j + 1) * VALIDATORS_COUNT, validators.length),
             ).fill(getZeroValidatorPoseidonInput()),
           ],
           withdrawalCredentials: [withdrawalCredentials],
           currentEpoch: computeEpochAt(beaconState.slot).toString(),
-          nonZeroValidatorLeavesMask: array.concat(new Array(VALIDATORS_COUNT - size).fill(false)),
+          nonZeroValidatorLeavesMask: array.concat(
+            new Array(VALIDATORS_COUNT - size).fill(false),
+          ),
         },
       });
     }

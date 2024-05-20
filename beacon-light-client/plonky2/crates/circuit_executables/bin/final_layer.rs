@@ -1,3 +1,4 @@
+#![feature(generic_const_exprs)]
 use circuit_executables::{
     crud::{
         common::{fetch_final_layer_input, fetch_proof, fetch_proof_balances, load_circuit_data},
@@ -30,7 +31,7 @@ fn main() -> Result<()> {
 }
 
 async fn async_main() -> Result<()> {
-    let common_config = parse_config_file("../common_config.json".to_owned()).unwrap();
+    let common_config = parse_config_file("../../common_config.json".to_owned()).unwrap();
 
     let matches = CommandLineOptionsBuilder::new("final_layer")
         .with_redis_options(&common_config.redis_host, common_config.redis_port)

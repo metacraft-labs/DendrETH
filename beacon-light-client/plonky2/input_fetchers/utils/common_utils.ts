@@ -1,6 +1,10 @@
 import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
-import { Validator, ValidatorInput, ValidatorShaInput } from '@dendreth/relay/types/types';
+import {
+  Validator,
+  ValidatorInput,
+  ValidatorShaInput,
+} from '@dendreth/relay/types/types';
 import { bitsToHex } from '@dendreth/utils/ts-utils/hex-utils';
 
 export function gindexFromIndex(index: bigint, depth: bigint): bigint {
@@ -88,19 +92,23 @@ export async function getCommitmentMapperProof<T extends 'sha256' | 'poseidon'>(
   return path;
 }
 
-export function convertValidatorToProof(
-  validator: Validator,
-): ValidatorInput {
+export function convertValidatorToProof(validator: Validator): ValidatorInput {
   return {
     pubkey: bytesToHex(validator.pubkey),
     withdrawalCredentials: bytesToHex(validator.withdrawalCredentials),
     effectiveBalance: validator.effectiveBalance.toString(),
     slashed: validator.slashed,
-    activationEligibilityEpoch: validator.activationEligibilityEpoch.toString(),
-    activationEpoch: validator.activationEpoch.toString(),
-    exitEpoch: validator.exitEpoch.toString(),
-    withdrawableEpoch: validator.withdrawableEpoch.toString(),
+    activationEligibilityEpoch: infinityToMaxOrValue(
+      validator.activationEligibilityEpoch,
+    ),
+    activationEpoch: infinityToMaxOrValue(validator.activationEpoch),
+    exitEpoch: infinityToMaxOrValue(validator.exitEpoch),
+    withdrawableEpoch: infinityToMaxOrValue(validator.withdrawableEpoch),
   };
+}
+
+function infinityToMaxOrValue(value: number) {
+  return value === Infinity ? '18446744073709551615' : value.toString();
 }
 
 export function getZeroValidatorInput() {

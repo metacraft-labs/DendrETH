@@ -141,7 +141,7 @@ export class CommitmentMapperScheduler {
       [
         {
           index: Number(CONSTANTS.validatorRegistryLimit),
-          data: getZeroValidatorInput(),
+          data: { validator: getZeroValidatorInput() },
         },
       ],
       this.currentSlot,
@@ -167,11 +167,12 @@ export class CommitmentMapperScheduler {
 
       console.log(
         chalk.bold.blue(
-          `Syncing ${this.currentSlot === this.headSlot
-            ? chalk.cyan(this.currentSlot)
-            : `${chalk.cyanBright(this.currentSlot)}/${chalk.cyan(
-              this.headSlot,
-            )}`
+          `Syncing ${
+            this.currentSlot === this.headSlot
+              ? chalk.cyan(this.currentSlot)
+              : `${chalk.cyanBright(this.currentSlot)}/${chalk.cyan(
+                  this.headSlot,
+                )}`
           }...`,
         ),
       );
@@ -223,7 +224,12 @@ export class CommitmentMapperScheduler {
       await this.redis.saveValidators(
         batch.map((indexedValidator: IndexedValidator) => ({
           index: indexedValidator.index,
-          data: convertValidatorToProof(indexedValidator.validator),
+          data: {
+            validator: convertValidatorToProof(
+              indexedValidator.validator,
+              this.ssz,
+            ),
+          },
         })),
         slot,
       );
@@ -324,7 +330,7 @@ function hasValidatorChanged(prevValidators: Validator[]) {
     validator.effectiveBalance !== prevValidators[index].effectiveBalance ||
     validator.slashed !== prevValidators[index].slashed ||
     validator.activationEligibilityEpoch !==
-    prevValidators[index].activationEligibilityEpoch ||
+      prevValidators[index].activationEligibilityEpoch ||
     validator.activationEpoch !== prevValidators[index].activationEpoch ||
     validator.exitEpoch !== prevValidators[index].exitEpoch ||
     validator.withdrawableEpoch !== prevValidators[index].withdrawableEpoch;

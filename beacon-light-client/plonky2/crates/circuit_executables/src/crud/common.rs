@@ -367,6 +367,15 @@ pub async fn save_zero_validator_proof(
         .set_proof(proof_key, &proof.to_bytes())
         .await?;
 
+    println!("But why isn't it saved");
+    println!(
+        "{}:zeroes:{}",
+        DB_CONSTANTS.validator_proof_key.to_owned(),
+        depth
+    );
+
+    println!("{:?}", validator_proof);
+
     save_json_object(
         con,
         &format!(

@@ -175,7 +175,10 @@ export class Redis implements IRedis {
 
   async getValidatorsCommitmentRoot(slot: bigint): Promise<string[] | null> {
     const prefix = `${CONSTANTS.validatorProofKey}:1`;
-    const latestRootChangeSlot = await this.getSlotWithLatestChange(prefix, slot);
+    const latestRootChangeSlot = await this.getSlotWithLatestChange(
+      prefix,
+      slot,
+    );
 
     if (latestRootChangeSlot == null) return null;
 
@@ -256,9 +259,7 @@ export class Redis implements IRedis {
       console.log(
         `Loaded batch ${chalk.bold.yellowBright(
           keyBatchIndex + 1,
-        )
-        } /${chalk.bold.yellow(Math.ceil(keys.length / batchSize))
-        }`,
+        )} /${chalk.bold.yellow(Math.ceil(keys.length / batchSize))}`,
       );
     }
 
@@ -286,7 +287,10 @@ export class Redis implements IRedis {
   }
 
   async saveValidators(
-    validatorsWithIndices: { index: number; data: ValidatorInput }[],
+    validatorsWithIndices: {
+      index: number;
+      data: { validator: ValidatorInput };
+    }[],
     slot: bigint,
   ) {
     await this.waitForConnection();
@@ -330,7 +334,7 @@ export class Redis implements IRedis {
 
     await this.client.set(
       `${CONSTANTS.balanceVerificationAccumulatorProofKey}:${protocol}:${level}:${index}`,
-      JSON.stringify(proof)
+      JSON.stringify(proof),
     );
   }
 
@@ -340,12 +344,14 @@ export class Redis implements IRedis {
   ) {
     await this.waitForConnection();
 
-    const args = balancesInputs.map((input, index) => {
-      return [
-        `${CONSTANTS.balanceVerificationAccumulatorKey}:${protocol}:${index}`,
-        JSON.stringify(input),
-      ];
-    }).flat();
+    const args = balancesInputs
+      .map((input, index) => {
+        return [
+          `${CONSTANTS.balanceVerificationAccumulatorKey}:${protocol}:${index}`,
+          JSON.stringify(input),
+        ];
+      })
+      .flat();
 
     await this.client.mset(...args);
   }
@@ -418,7 +424,7 @@ export class Redis implements IRedis {
   ): Promise<void> {
     await this.waitForConnection();
     await this.client.set(
-      `${CONSTANTS.validatorProofKey}: zeroes:${depth}`,
+      `${CONSTANTS.validatorProofKey}:zeroes:${depth}`,
       JSON.stringify(proof),
     );
   }

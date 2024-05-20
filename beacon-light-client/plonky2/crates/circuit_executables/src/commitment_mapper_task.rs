@@ -1,11 +1,14 @@
 use anyhow::{bail, Result};
 use circuit::SetWitness;
-use circuits::circuit_input_common::{SetPWValues, ValidatorProof};
+use circuits::{
+    circuit_input_common::{SetPWValues, ValidatorProof},
+    utils::biguint::WitnessBigUint,
+};
 use colored::Colorize;
 
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
-use plonky2::iop::witness::{PartialWitness, WitnessWrite};
+use plonky2::iop::witness::{PartialWitness, Witness, WitnessWrite};
 
 use crate::{
     commitment_mapper_context::CommitmentMapperContext,
@@ -160,7 +163,7 @@ async fn handle_update_validator_proof_task(
 
             pw.set_bool_target(
                 ctx.first_level_circuit.targets.validator_is_zero,
-                validator_index == VALIDATOR_REGISTRY_LIMIT as u64,
+                validator_index != VALIDATOR_REGISTRY_LIMIT as u64,
             );
 
             let proof = ctx.first_level_circuit.data.prove(pw)?;
