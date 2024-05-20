@@ -22,3 +22,4 @@ pub mod bls12_381_circuit;
 pub mod deposit_tree_commitment_mapper;
 pub mod deposit_hash_tree_root;
 pub mod deposit_hash_tree_root_poseidon;
+pub mod deposits_accumulator_leaf_circuit;

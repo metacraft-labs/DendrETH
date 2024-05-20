@@ -61,7 +61,7 @@ pub struct DepositHashTreeRootTargets {
 pub fn hash_tree_root_deposit_sha256<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
 ) -> DepositHashTreeRootTargets {
-    let hash_tree_root = hash_tree_root(builder, 4); 
+    let hash_tree_root = hash_tree_root(builder, 4);
 
     let pubkey: [BoolTarget; 384] = (0..384)
         .map(|_| builder.add_virtual_bool_target_safe())
