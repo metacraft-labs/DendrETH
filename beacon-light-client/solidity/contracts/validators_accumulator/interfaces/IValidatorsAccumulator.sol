@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.18;
+pragma solidity ^0.8.18;
 
 interface IValidatorsAccumulator {
   event Deposited(
     bytes pubkey,
-    bytes withdrawal_credentials,
+    bytes withdrawalCredentials,
     bytes signature,
-    bytes32 deposit_data_root
+    bytes32 deposit_message_root,
+    bytes32 depositDataRoot
   );
 
   function get_validators_accumulator() external view returns (bytes32 node);
 
   function deposit(
     bytes calldata pubkey,
-    bytes calldata withdrawal_credentials,
+    bytes calldata withdrawalCredentials,
     bytes calldata signature,
-    bytes32 deposit_data_root
+    bytes32 depositDataRoot
   ) external payable;
 }

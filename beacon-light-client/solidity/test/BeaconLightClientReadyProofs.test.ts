@@ -7,7 +7,7 @@ import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 
 const logger = getGenericLogger();
 
-describe.only('BeaconLightClientReadyProofs', async function () {
+describe('BeaconLightClientReadyProofs', async function () {
   let proofs: Proof[];
   let publics: any[];
   let updates: any[];
