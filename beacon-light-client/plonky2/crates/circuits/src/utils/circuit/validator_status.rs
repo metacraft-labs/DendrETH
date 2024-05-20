@@ -90,6 +90,31 @@ mod test {
         data.verify(proof)
     }
 
+    use super::get_validator_relevance;
+
+    #[test]
+    fn test_get_validator_relevance() -> Result<()> {
+        let mut builder =
+            CircuitBuilder::<GoldilocksField, 2>::new(CircuitConfig::standard_recursion_config());
+        let activation_epoch = builder.constant_biguint(&BigUint::from(28551 as u32));
+        let current_epoch = builder.constant_biguint(&BigUint::from(285512 as u32));
+        let withdrawable_epoch = builder.constant_biguint(&BigUint::from(2855125512 as u32));
+        let is_validator_relevant = get_validator_relevance(
+            &mut builder,
+            &activation_epoch,
+            &current_epoch,
+            &withdrawable_epoch,
+        );
+
+        builder.assert_one(is_validator_relevant.target);
+
+        let pw = PartialWitness::new();
+        let data = builder.build::<PoseidonGoldilocksConfig>();
+        let proof = data.prove(pw).unwrap();
+
+        data.verify(proof)
+    }
+
     fn test_helper(
         activation_epoch_value: u64,
         current_epoch_value: u64,
