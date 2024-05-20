@@ -1,7 +1,9 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-ZKEY_B3SUM_SUM='b36a78df185bc2da310ac6cd9451f143fd13461d059369184d93191972850746'
-DAT_B3SUM_SUM='dc18f6de3f7905964f467e3626773e6960199273706c2df63bf5991091a74032'
+ZKEY_B3SUM_SUM='7bd1baf6e4aa1bb97933df06f68b26f8aa034e6743ff52c4dd7f6097d6e7d104'
+DAT_B3SUM_SUM='c94eb86af7c0451a4277a7bdfc90232a9db75c192d6852ad18baa9a46e1e52e5'
+source .env
+(cd beacon-light-client/solidity/ && yarn hardhat compile)
 
 calculate_checksum() {
   local FILE_PATH=$1
@@ -9,16 +11,16 @@ calculate_checksum() {
 }
 
 download_zkey_file() {
-  echo "Downloading zkey file from http://dendreth.metacraft-labs.com/capella_94.zkey ..."
+  echo "Downloading zkey file from http://dendreth.metacraft-labs.com/deneb_284.zkey ..."
 
-  curl http://dendreth.metacraft-labs.com/capella_94.zkey > "data/light_client.zkey"
+  curl http://dendreth.metacraft-labs.com/deneb_284.zkey >"data/light_client.zkey"
 
   CALCULATED_ZKEY_SUM=$(calculate_checksum data/light_client.zkey)
 
   if [ "$ZKEY_B3SUM_SUM" = "$CALCULATED_ZKEY_SUM" ]; then
     echo "Zkey file downloaded successfully to data/light_client.zkey"
   else
-    echo "Failed to download zkey file from http://dendreth.metacraft-labs.com/capella_94.zkey"
+    echo "Failed to download zkey file from http://dendreth.metacraft-labs.com/deneb_284.zkey"
     exit 1
   fi
 }
@@ -26,7 +28,7 @@ download_zkey_file() {
 download_dat_file() {
   echo "Downloading .dat file from https://media.githubusercontent.com/media/metacraft-labs/DendrETH-build-artifacts/master/light_client_cpp/light_client.dat ..."
 
-  curl -k https://media.githubusercontent.com/media/metacraft-labs/DendrETH-build-artifacts/master/light_client_cpp/light_client.dat > "data/light_client.dat"
+  curl -k https://media.githubusercontent.com/media/metacraft-labs/DendrETH-build-artifacts/master/light_client_cpp/light_client.dat >"data/light_client.dat"
 
   CALCULATED_DAT_SUM=$(calculate_checksum data/light_client.dat)
 
@@ -77,7 +79,6 @@ else
   echo "Using Redis settings from environment variables"
 fi
 
-
 if [[ -z "$PROVER_SERVER_HOST" ]] && [[ -z "$PROVER_SERVER_PORT" ]]; then
   echo "PROVER_SERVER_HOST and PROVER_SERVER_PORT environment variables are not set. Using default values."
   PROVER_SERVER_HOST="http://127.0.0.1"
@@ -101,7 +102,7 @@ if [[ "$PROVER_SERVER_HOST" == "http://127.0.0.1" ]]; then
 
   echo "Waiting for server to start..."
 
-  for ((i=1; i<=$max_attempts; i++)); do
+  for ((i = 1; i <= $max_attempts; i++)); do
     response=$(curl -s -o /dev/null -w "%{http_code}" "$PROVER_SERVER_HOST":"$PROVER_SERVER_PORT"/status)
 
     if [ $response -eq 200 ]; then
