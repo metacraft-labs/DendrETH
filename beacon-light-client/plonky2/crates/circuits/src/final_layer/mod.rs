@@ -237,7 +237,8 @@ fn validate_input_against_block_root<
     );
 }
 
-fn verify_slot_is_in_range<
+// TODO: Rename this function
+pub fn verify_slot_is_in_range<
     F: RichField + Extendable<D>,
     C: GenericConfig<D, F = F>,
     const D: usize,

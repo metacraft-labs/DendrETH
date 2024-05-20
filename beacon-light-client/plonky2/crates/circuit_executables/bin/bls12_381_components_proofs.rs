@@ -34,9 +34,9 @@ async fn async_main() -> Result<()> {
         .with_proof_storage_options()
         .get_matches();
     const DST: &str = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
-    let pubkey = "8fd1defb5dc823f93ba4e42046e52c61c3b46cdd473a8ae0d743bad8aebf85134f20b794d41125778485eb576d9a5b7a";
-    let signature = "8b8d80e8f19b8e6d40687e8a99d9f1135efa2deedf49d7268e8b424d4075b85806d3a664873360d494ce6040bba3f4ca0fe8a89e1d9d67c5ba61f028ddce14453fc183c0960bd0497084235ef008790aa5b5d75f020616cf64418deb15b7ad42";
-    let msg = "8d3b1d429f58176bc4397267df0bf274f90e68c344e1fa3ef34a4608876f21ff";
+    let pubkey = "b781956110d24e4510a8b5500b71529f8635aa419a009d314898e8c572a4f923ba643ae94bdfdf9224509177aa8e6b73";
+    let signature = "b735d0d0b03f51fcf3e5bc510b5a2cb266075322f5761a6954778714f5ab8831bc99454380d330f5c19d93436f0c4339041bfeecd2161a122c1ce8428033db8dda142768a48e582f5f9bde7d40768ac5a3b6a80492b73719f1523c5da35de275";
+    let msg = "5bb03392c9c8a8b92c840338f619bb060b109b254c9ab75d4dddc6d00932bce3";
 
     let message_g2 = hash_to_curve_g2(&hex::decode(msg).unwrap(), DST.as_bytes());
     let message_g2 = convert_ecp2_to_g2affine(message_g2);

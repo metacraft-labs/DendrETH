@@ -18,6 +18,7 @@ import {
   splitIntoBatches,
 } from '@dendreth/utils/ts-utils/common-utils';
 import { validatorFromValidatorJSON } from '../utils/converters';
+import JSONbig from 'json-bigint';
 
 export class Redis implements IRedis {
   public readonly client: RedisClient;
@@ -157,7 +158,7 @@ export class Redis implements IRedis {
         return null;
       }
 
-      return JSON.parse(result).publicInputs[hashKey];
+      return JSONbig.parse(result).publicInputs[hashKey];
     }
 
     const key = `${CONSTANTS.validatorProofKey}:${gindex}:${latestSlot}`;
@@ -165,7 +166,8 @@ export class Redis implements IRedis {
     if (result == null) {
       return null;
     }
-    return JSON.parse(result)[hashKey];
+
+    return JSONbig.parse(result).publicInputs[hashKey];
   }
 
   async getValidatorsRoot(slot: bigint): Promise<String | null> {

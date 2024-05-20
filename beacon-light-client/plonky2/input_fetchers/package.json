@@ -12,6 +12,7 @@
   "type": "commonjs",
   "devDependencies": {
     "@types/circomlibjs": "^0",
+    "@types/json-bigint": "^1",
     "@types/yargs": "^17.0.32",
     "tsx": "^4.7.1"
   },
@@ -31,6 +32,7 @@
     "colors": "^1.4.0",
     "ethers": "^5.7.0",
     "ioredis": "^5.3.2",
+    "json-bigint": "^1.0.0",
     "yargs": "^17.7.2"
   }
 }

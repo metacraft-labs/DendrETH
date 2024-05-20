@@ -52,7 +52,7 @@ let
       rm $out/.gitignore
     '';
     outputHashMode = "recursive";
-    outputHash = "sha512-3I48ScVB4oyjf/7NG/bquQ+GUoT+esAFkHg6En8nPe6R0GEAlyrhioJ7ly0PiObEBPyZde8YqMTLsHL5auLI0Q==";
+    outputHash = "sha512-8jmYm01fpJ6mAmJjdI4q8rXx/jNlyNjRj62R2X28yw+HgxXs/QdhMnFaFYvzbkYQicMHEEJvXUkEvIgf6trkRQ==";
   };
 
   # Create a derivation that builds a module in isolation.
