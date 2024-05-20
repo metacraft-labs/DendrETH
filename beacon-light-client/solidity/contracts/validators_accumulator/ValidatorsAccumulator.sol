@@ -64,7 +64,6 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
     bytes32 depositDataRoot
   ) external payable override {
     // Perform the deposit using the DepositContract
-
     IDeposit(depositAddress).deposit{value: msg.value}(
       pubkey,
       withdrawalCredentials,
@@ -89,6 +88,14 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
           )
         )
       )
+    );
+
+    emit Deposited(
+      pubkey,
+      withdrawalCredentials,
+      signature,
+      depositMessageRoot,
+      depositDataRoot
     );
 
     validatorsCount += 1;
@@ -117,14 +124,6 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
       node = sha256(abi.encodePacked(branch[height], node));
       size /= 2;
     }
-
-    emit Deposited(
-      pubkey,
-      withdrawalCredentials,
-      signature,
-      depositMessageRoot,
-      depositDataRoot
-    );
   }
 
   function toLe64(uint64 value) internal pure returns (bytes memory ret) {
