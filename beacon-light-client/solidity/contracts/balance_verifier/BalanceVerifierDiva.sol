@@ -8,14 +8,14 @@ contract BalanceVerifierDiva is BalanceVerifier, IBalanceVerifierDiva {
   mapping(uint256 => Report) reports;
 
   constructor(
-    uint256 verifier_digest,
-    bytes32 withdrawal_credentials,
-    uint256 genesis_block_timestamp
+    uint256 verifierDigest,
+    bytes32 withdrawalcredentials,
+    uint256 genesisBlockTimestamp
   )
     BalanceVerifier(
-      verifier_digest,
-      withdrawal_credentials,
-      genesis_block_timestamp
+      verifierDigest,
+      withdrawalcredentials,
+      genesisBlockTimestamp
     )
   {}
 

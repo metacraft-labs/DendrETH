@@ -5,7 +5,7 @@ import {PlonkVerifier} from './verifier.sol';
 import {IBalanceVerifier} from './interfaces/IBalanceVerifierDiva.sol';
 
 abstract contract BalanceVerifier is PlonkVerifier, IBalanceVerifier {
-  /// @notice the verifier_digest of the plonky2 circuit
+  /// @notice the verifierDigest of the plonky2 circuit
   uint256 public immutable VERIFIER_DIGEST;
 
   /// @notice lido validators withdrawal credentials
@@ -23,13 +23,13 @@ abstract contract BalanceVerifier is PlonkVerifier, IBalanceVerifier {
     0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02;
 
   constructor(
-    uint256 verifier_digest,
-    bytes32 withdrawal_credentials,
-    uint256 genesis_block_timestamp
+    uint256 verifierDigest,
+    bytes32 withdrawalCredentials,
+    uint256 genesisBlockTimestamp
   ) {
-    VERIFIER_DIGEST = verifier_digest;
-    WITHDRAWAL_CREDENTIALS = withdrawal_credentials;
-    GENESIS_BLOCK_TIMESTAMP = genesis_block_timestamp;
+    VERIFIER_DIGEST = verifierDigest;
+    WITHDRAWAL_CREDENTIALS = withdrawalCredentials;
+    GENESIS_BLOCK_TIMESTAMP = genesisBlockTimestamp;
   }
 
   /// @notice Verifies the proof and writes the data for given slot if valid
