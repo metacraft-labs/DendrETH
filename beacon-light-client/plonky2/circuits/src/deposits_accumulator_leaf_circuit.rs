@@ -1,18 +1,22 @@
-use std::str::FromStr;
+use std::{marker::PhantomData, str::FromStr};
 
 use num::BigUint;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     hash::hash_types::HashOutTarget,
-    iop::target::{BoolTarget, Target},
+    iop::{
+        target::{BoolTarget, Target},
+        witness::PartialWitness,
+    },
     plonk::{
         circuit_builder::CircuitBuilder,
-        circuit_data::{CommonCircuitData, VerifierOnlyCircuitData},
+        circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
         config::PoseidonGoldilocksConfig,
         proof::ProofWithPublicInputsTarget,
     },
     util::serialization::{Buffer, IoResult, Write},
 };
+use plonky2_circuit_serializer::serializer::{CustomGateSerializer, CustomGeneratorSerializer};
 use plonky2_u32::gadgets::arithmetic_u32::U32Target;
 
 use crate::{
@@ -476,6 +480,37 @@ fn verify_bls_signature(
         let byte = builder.le_sum(message[i..(i + 8)].iter().copied());
         builder.connect(byte, bls_signature_proof.public_inputs[i + 384 + 768]);
     }
+}
+
+#[test]
+pub fn test_deposit_accumulator_leaf_circuit() {
+    let config = CircuitConfig::standard_recursion_config();
+    let mut builder = CircuitBuilder::<GoldilocksField, 2>::new(config);
+
+    // let bls_common_data = plonky2::circuit_data::CommonCircuitData::<GoldilocksField, 2>::new();
+    // let bls_verifier_data =
+    //     VerifierOnlyCircuitData::<PoseidonGoldilocksConfig, 2>;
+    let bls_data = CircuitData::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
+        &[],
+        &CustomGateSerializer,
+        &CustomGeneratorSerializer {
+            _phantom: PhantomData::<PoseidonGoldilocksConfig>,
+        },
+    )
+    .unwrap();
+
+    let deposit_accumulator_leaf_targets =
+        deposit_accumulator_leaf_circuit(&mut builder, &bls_data.common, &bls_data.verifier_only);
+
+    let start = std::time::Instant::now();
+    let data = builder.build::<PoseidonGoldilocksConfig>();
+    let duration = start.elapsed();
+
+    println!("Duration {:?}", duration);
+
+    let json = "";
+
+    let mut pw = PartialWitness::<GoldilocksField>::new();
 }
 
 // pub fn validator_balance_verification<
