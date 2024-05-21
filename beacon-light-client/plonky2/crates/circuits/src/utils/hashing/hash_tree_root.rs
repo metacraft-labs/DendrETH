@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use plonky2::{
     field::extension::Extendable, hash::hash_types::RichField, iop::target::BoolTarget,
     plonk::circuit_builder::CircuitBuilder,
@@ -5,7 +6,10 @@ use plonky2::{
 
 use crate::{
     common_targets::{SSZLeafTarget, Sha256Target},
-    utils::utils::{create_bool_target_array, ETH_SHA256_BIT_SIZE},
+    utils::{
+        hashing::sha256::{sha256, sha256_pair},
+        utils::{create_bool_target_array, ETH_SHA256_BIT_SIZE},
+    },
 };
 
 use super::sha256::{make_circuits, Sha256Targets};
@@ -21,39 +25,17 @@ pub fn hash_tree_root_new<F: RichField + Extendable<D>, const D: usize>(
 ) -> Sha256Target {
     assert!(leaves.len().is_power_of_two());
 
-    let mut hashers: Vec<Sha256Targets> = Vec::new();
+    let mut level = leaves.to_owned();
 
-    for i in 0..(leaves.len() / 2) {
-        hashers.push(make_circuits(builder, 2 * ETH_SHA256_BIT_SIZE as u64));
-
-        for j in 0..ETH_SHA256_BIT_SIZE {
-            builder.connect(hashers[i].message[j].target, leaves[i * 2][j].target);
-            builder.connect(
-                hashers[i].message[j + 256].target,
-                leaves[i * 2 + 1][j].target,
-            );
-        }
+    while level.len() != 1 {
+        level = level
+            .iter()
+            .tuples()
+            .map(|(left, right)| sha256_pair(builder, left, right))
+            .collect_vec();
     }
 
-    let mut k = 0;
-    for i in leaves.len() / 2..leaves.len() - 1 {
-        hashers.push(make_circuits(builder, 2 * ETH_SHA256_BIT_SIZE as u64));
-
-        for j in 0..ETH_SHA256_BIT_SIZE {
-            builder.connect(
-                hashers[i].message[j].target,
-                hashers[k * 2].digest[j].target,
-            );
-            builder.connect(
-                hashers[i].message[j + ETH_SHA256_BIT_SIZE].target,
-                hashers[k * 2 + 1].digest[j].target,
-            );
-        }
-
-        k += 1;
-    }
-
-    hashers[leaves.len() - 2].digest.clone().try_into().unwrap()
+    level[0]
 }
 
 pub fn hash_tree_root<F: RichField + Extendable<D>, const D: usize>(

@@ -149,23 +149,12 @@ async fn handle_update_validator_proof_task(
     slot: u64,
 ) -> Result<()> {
     match fetch_validator(&mut ctx.redis_con, validator_index, slot).await {
-        Ok(validator) => {
+        Ok(input) => {
             let mut pw = PartialWitness::new();
-
-            // TODO: fix this in the input fetcher
-            // use input.validator_is_zero instead of VALIDATOR_REGISTRY_LIMIT
-            ctx.first_level_circuit
-                .targets
-                .set_witness(&mut pw, &validator);
-
-            pw.set_bool_target(
-                ctx.first_level_circuit.targets.validator_is_zero,
-                validator_index == VALIDATOR_REGISTRY_LIMIT as u64,
-            );
-
+            ctx.first_level_circuit.targets.set_witness(&mut pw, &input);
             let proof = ctx.first_level_circuit.data.prove(pw)?;
 
-            if validator_index as usize != VALIDATOR_REGISTRY_LIMIT {
+            if input.is_real {
                 let save_result = save_validator_proof(
                     &mut ctx.redis_con,
                     ctx.proof_storage.as_mut(),
@@ -296,16 +285,9 @@ async fn handle_zero_out_validator_task(
     slot: u64,
 ) -> Result<()> {
     match fetch_validator(&mut ctx.redis_con, VALIDATOR_REGISTRY_LIMIT as u64, slot).await {
-        Ok(validator) => {
+        Ok(input) => {
             let mut pw = PartialWitness::new();
-
-            // TODO: fix this in the input fetcher
-            ctx.first_level_circuit
-                .targets
-                .set_witness(&mut pw, &validator);
-
-            pw.set_bool_target(ctx.first_level_circuit.targets.validator_is_zero, true);
-
+            ctx.first_level_circuit.targets.set_witness(&mut pw, &input);
             let proof = ctx.first_level_circuit.data.prove(pw)?;
 
             let save_result = save_validator_proof(

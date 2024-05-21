@@ -1,6 +1,6 @@
 import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
-import { Validator, ValidatorInput, ValidatorShaInput } from '@dendreth/relay/types/types';
+import { CommitmentMapperInput, Validator, ValidatorInput, ValidatorShaInput } from '@dendreth/relay/types/types';
 import { bitsToHex } from '@dendreth/utils/ts-utils/hex-utils';
 
 export function gindexFromIndex(index: bigint, depth: bigint): bigint {
@@ -88,30 +88,42 @@ export async function getCommitmentMapperProof<T extends 'sha256' | 'poseidon'>(
   return path;
 }
 
-export function convertValidatorToProof(
+function numberToString(num: number): string {
+  return num == Infinity
+    ? BigInt(2n ** 64n - 1n).toString()
+    : num.toString();
+}
+
+export function commitmentMapperInputFromValidator(
   validator: Validator,
-): ValidatorInput {
+): CommitmentMapperInput {
   return {
-    pubkey: bytesToHex(validator.pubkey),
-    withdrawalCredentials: bytesToHex(validator.withdrawalCredentials),
-    effectiveBalance: validator.effectiveBalance.toString(),
-    slashed: validator.slashed,
-    activationEligibilityEpoch: validator.activationEligibilityEpoch.toString(),
-    activationEpoch: validator.activationEpoch.toString(),
-    exitEpoch: validator.exitEpoch.toString(),
-    withdrawableEpoch: validator.withdrawableEpoch.toString(),
+    validator: {
+      pubkey: bytesToHex(validator.pubkey),
+      withdrawalCredentials: bytesToHex(validator.withdrawalCredentials),
+      effectiveBalance: numberToString(validator.effectiveBalance),
+      slashed: validator.slashed,
+      activationEligibilityEpoch: numberToString(validator.activationEligibilityEpoch),
+      activationEpoch: numberToString(validator.activationEpoch),
+      exitEpoch: numberToString(validator.exitEpoch),
+      withdrawableEpoch: numberToString(validator.withdrawableEpoch),
+    },
+    isReal: true,
   };
 }
 
-export function getZeroValidatorInput() {
+export function getDummyCommitmentMapperInput(): CommitmentMapperInput {
   return {
-    pubkey: ''.padEnd(96, '0'),
-    withdrawalCredentials: ''.padEnd(64, '0'),
-    effectiveBalance: '0',
-    slashed: false,
-    activationEligibilityEpoch: '0',
-    activationEpoch: '0',
-    exitEpoch: '0',
-    withdrawableEpoch: '0',
+    validator: {
+      pubkey: ''.padEnd(96, '0'),
+      withdrawalCredentials: ''.padEnd(64, '0'),
+      effectiveBalance: '0',
+      slashed: false,
+      activationEligibilityEpoch: '0',
+      activationEpoch: '0',
+      exitEpoch: '0',
+      withdrawableEpoch: '0',
+    },
+    isReal: false,
   };
 }

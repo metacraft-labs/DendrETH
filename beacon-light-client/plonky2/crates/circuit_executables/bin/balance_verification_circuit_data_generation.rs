@@ -161,7 +161,7 @@ pub async fn async_main() -> Result<()> {
     }
 
     let max_level = if level == None {
-        3 // 37
+        37
     } else {
         clamp(level.unwrap(), 1, 37)
     };

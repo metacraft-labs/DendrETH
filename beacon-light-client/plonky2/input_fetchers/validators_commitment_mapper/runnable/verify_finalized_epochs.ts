@@ -14,7 +14,7 @@ import CONSTANTS from '../../../kv_db_constants.json';
 import { panic, range, sleep } from '@dendreth/utils/ts-utils/common-utils';
 import {
   getDepthByGindex,
-  getZeroValidatorInput,
+  getDummyCommitmentMapperInput,
   indexFromGindex,
 } from '../../utils/common_utils';
 import { CommandLineOptionsBuilder } from '../../utils/cmdline';
@@ -237,8 +237,7 @@ async function verifySlot(
         const zeroValidators = validatorsToBeZeroesIndices.map(index => ({
           index,
           validator: validatorFromValidatorJSON(
-            getZeroValidatorInput(),
-            api.ssz,
+            getDummyCommitmentMapperInput().validator,
           ),
         }));
         changedValidators = changedValidators.concat(zeroValidators);

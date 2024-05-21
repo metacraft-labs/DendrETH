@@ -9,12 +9,12 @@ import chalk from 'chalk';
 import { KeyPrefix, WorkQueue, Item } from '@mevitae/redis-work-queue';
 import CONSTANTS from '../../../kv_db_constants.json';
 import {
-  convertValidatorToProof,
-  getZeroValidatorInput,
   gindexFromIndex,
   makeBranchIterator,
   getLastSlotInEpoch,
   getFirstSlotInEpoch,
+  commitmentMapperInputFromValidator,
+  getDummyCommitmentMapperInput,
 } from '../../utils/common_utils';
 
 enum TaskTag {
@@ -34,7 +34,6 @@ export class CommitmentMapperScheduler {
   private take: number | undefined = undefined;
   private offset: number | undefined = undefined;
   private validators: Validator[] = [];
-  private ssz: any;
   // This is used to prevent spawning multiple async jobs on head event
   private isSyncing = false;
   // This is used to allow rerunning the script if it dies or is intentionally
@@ -80,9 +79,6 @@ export class CommitmentMapperScheduler {
     } else {
       this.currentSlot = BigInt(lastProcessedSlot) + 1n;
     }
-
-    const mod = await import('@lodestar/types');
-    this.ssz = mod.ssz;
   }
 
   async dispose() {
@@ -92,7 +88,6 @@ export class CommitmentMapperScheduler {
   async start(runOnce: boolean = false) {
     console.log(chalk.bold.blue('Fetching validators from database...'));
     this.validators = await this.redis.getValidatorsBatched(
-      this.ssz,
       this.currentSlot,
     );
     console.log(
@@ -141,7 +136,7 @@ export class CommitmentMapperScheduler {
       [
         {
           index: Number(CONSTANTS.validatorRegistryLimit),
-          data: getZeroValidatorInput(),
+          data: getDummyCommitmentMapperInput(),
         },
       ],
       this.currentSlot,
@@ -223,7 +218,7 @@ export class CommitmentMapperScheduler {
       await this.redis.saveValidators(
         batch.map((indexedValidator: IndexedValidator) => ({
           index: indexedValidator.index,
-          data: convertValidatorToProof(indexedValidator.validator),
+          data: commitmentMapperInputFromValidator(indexedValidator.validator),
         })),
         slot,
       );

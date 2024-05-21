@@ -1,34 +1,23 @@
 import { hexToBytes } from '@dendreth/utils/ts-utils/bls';
-import { Validator, ValidatorShaInput } from '../types/types';
+import { Validator } from '../types/types';
+
+function stringToNumber(str: string): number {
+  return str == BigInt(2n ** 64n - 1n).toString()
+    ? Infinity
+    : Number(str);
+}
 
 export function validatorFromValidatorJSON(
-  json: ValidatorShaInput,
-  ssz: any,
+  json: any,
 ): Validator {
-  const validator: Validator = {
+  return {
     pubkey: hexToBytes(json.pubkey),
     withdrawalCredentials: hexToBytes(json.withdrawalCredentials),
-    effectiveBalance: ssz.phase0.Validator.fields.effectiveBalance.deserialize(
-      hexToBytes(json.effectiveBalance).slice(0, 8),
-    ),
-    slashed: ssz.phase0.Validator.fields.slashed.deserialize(
-      hexToBytes(json.slashed).slice(0, 1),
-    ),
-    activationEligibilityEpoch:
-      ssz.phase0.Validator.fields.activationEligibilityEpoch.deserialize(
-        hexToBytes(json.activationEligibilityEpoch).slice(0, 8),
-      ),
-    activationEpoch: ssz.phase0.Validator.fields.activationEpoch.deserialize(
-      hexToBytes(json.activationEpoch).slice(0, 8),
-    ),
-    exitEpoch: ssz.phase0.Validator.fields.exitEpoch.deserialize(
-      hexToBytes(json.exitEpoch).slice(0, 8),
-    ),
-    withdrawableEpoch:
-      ssz.phase0.Validator.fields.withdrawableEpoch.deserialize(
-        hexToBytes(json.withdrawableEpoch).slice(0, 8),
-      ),
+    exitEpoch: stringToNumber(json.exitEpoch),
+    activationEpoch: stringToNumber(json.activationEpoch),
+    effectiveBalance: stringToNumber(json.effectiveBalance),
+    withdrawableEpoch: stringToNumber(json.withdrawableEpoch),
+    activationEligibilityEpoch: stringToNumber(json.activationEligibilityEpoch),
+    slashed: json.slashed,
   };
-
-  return validator;
 }

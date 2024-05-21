@@ -6,6 +6,8 @@ import {
   ValidatorShaInput,
   ValidatorProof,
   BalancesAccumulatorInput,
+  ValidatorInput,
+  CommitmentMapperInput,
 } from '../types/types';
 import { RedisClientType, createClient } from 'redis';
 import CONSTANTS from '../../beacon-light-client/plonky2/kv_db_constants.json';
@@ -222,7 +224,6 @@ export class Redis implements IRedis {
   }
 
   async getValidatorsBatched(
-    ssz: any,
     slot: bigint,
     batchSize = 1000,
   ): Promise<Validator[]> {
@@ -240,12 +241,12 @@ export class Redis implements IRedis {
         continue;
       }
       const batchValidators = (res.filter(v => v !== null) as string[]).map(
-        (json: any) => JSON.parse(json),
+        (json: any) => JSON.parse(json).validator,
       );
 
       for (const [index, redisValidator] of batchValidators.entries()) {
         try {
-          const validator = validatorFromValidatorJSON(redisValidator, ssz);
+          const validator = validatorFromValidatorJSON(redisValidator);
           const validatorIndex = Number(batchKeys[index].split(':')[1]);
           allValidators[validatorIndex] = validator;
         } catch (e) {
@@ -286,7 +287,7 @@ export class Redis implements IRedis {
   }
 
   async saveValidators(
-    validatorsWithIndices: { index: number; data: ValidatorInput }[],
+    validatorsWithIndices: { index: number; data: CommitmentMapperInput }[],
     slot: bigint,
   ) {
     await this.waitForConnection();

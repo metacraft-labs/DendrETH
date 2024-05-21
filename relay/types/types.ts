@@ -206,6 +206,10 @@ export interface ValidatorInput {
   withdrawableEpoch: string;
 }
 
+export interface CommitmentMapperInput {
+  validator: ValidatorInput;
+  isReal: boolean;
+}
 
 export interface DepositData {
   pubkey: string,

@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use plonky2::{
     field::extension::Extendable,
     hash::{
@@ -6,6 +7,8 @@ use plonky2::{
     },
     plonk::circuit_builder::CircuitBuilder,
 };
+
+use crate::utils::hashing::poseidon::poseidon_pair;
 
 pub struct HashTreeRootPoseidonTargets {
     pub leaves: Vec<HashOutTarget>,
@@ -18,36 +21,17 @@ pub fn hash_tree_root_poseidon_new<F: RichField + Extendable<D>, const D: usize>
 ) -> HashOutTarget {
     assert!(leaves.len().is_power_of_two());
 
-    let mut hashers: Vec<HashOutTarget> = Vec::new();
-    for i in 0..(leaves.len() / 2) {
-        let hash_target = builder.hash_n_to_hash_no_pad::<PoseidonHash>(
-            leaves[i * 2]
-                .elements
-                .iter()
-                .copied()
-                .chain(leaves[i * 2 + 1].elements.iter().copied())
-                .collect(),
-        );
-        hashers.push(hash_target);
+    let mut level = leaves.to_owned();
+
+    while level.len() != 1 {
+        level = level
+            .iter()
+            .tuples()
+            .map(|(&left, &right)| poseidon_pair(builder, left, right))
+            .collect_vec();
     }
 
-    let mut k = 0;
-    for _ in leaves.len() / 2..leaves.len() - 1 {
-        hashers.push(
-            builder.hash_n_to_hash_no_pad::<PoseidonHash>(
-                hashers[k * 2]
-                    .elements
-                    .iter()
-                    .copied()
-                    .chain(hashers[k * 2 + 1].elements.iter().copied())
-                    .collect(),
-            ),
-        );
-
-        k += 1;
-    }
-
-    hashers[leaves.len() - 2]
+    level[0]
 }
 
 pub fn hash_tree_root_poseidon<F: RichField + Extendable<D>, const D: usize>(

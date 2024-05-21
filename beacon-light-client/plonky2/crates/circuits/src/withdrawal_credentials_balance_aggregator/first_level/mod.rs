@@ -13,8 +13,7 @@ use plonky2::{
     hash::hash_types::HashOutTarget,
     iop::target::{BoolTarget, Target},
     plonk::{
-        circuit_builder::CircuitBuilder,
-        circuit_data::{CircuitConfig, CircuitData},
+        circuit_builder::CircuitBuilder, circuit_data::CircuitConfig,
         config::PoseidonGoldilocksConfig,
     },
 };
@@ -87,8 +86,7 @@ pub struct WithdrawalCredentialsBalanceAggregatorFirstLevel<
     const VALIDATORS_COUNT: usize,
     const WITHDRAWAL_CREDENTIALS_COUNT: usize,
 > where
-    [(); VALIDATORS_COUNT / 4]:,
-{}
+    [(); VALIDATORS_COUNT / 4]:, {}
 
 impl<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
     for WithdrawalCredentialsBalanceAggregatorFirstLevel<
@@ -110,7 +108,7 @@ where
 
     fn define(builder: &mut CircuitBuilder<F, D>, _params: &()) -> Self::Target {
         if !VALIDATORS_COUNT.is_power_of_two() {
-            panic!("validators_len must be a power of two");
+            panic!("VALIDATORS_COUNT must be a power of two");
         }
 
         let input = Self::read_circuit_input_target(builder);
@@ -129,7 +127,7 @@ where
         let validators_hash_tree_root_poseidon =
             hash_tree_root_poseidon_new(builder, &validators_leaves);
 
-        let mut sum = builder.zero_biguint();
+        let mut range_total_value = builder.zero_biguint();
         let mut number_of_non_activated_validators = builder.zero();
         let mut number_of_active_validators = builder.zero();
         let mut number_of_exitted_validators = builder.zero();
@@ -166,7 +164,7 @@ where
 
             let current = select_biguint(builder, will_be_counted, &balance, &zero);
 
-            sum = builder.add_biguint(&sum, &current);
+            range_total_value = builder.add_biguint(&range_total_value, &current);
 
             number_of_active_validators =
                 builder.add(number_of_active_validators, will_be_counted.target);
@@ -181,12 +179,12 @@ where
             number_of_exitted_validators =
                 builder.add(number_of_exitted_validators, will_be_counted.target);
 
-            sum.limbs.pop();
+            range_total_value.limbs.pop();
         }
 
         Self::Target {
             non_zero_validator_leaves_mask: input.non_zero_validator_leaves_mask,
-            range_total_value: sum,
+            range_total_value,
             range_balances_root: balances_hash_tree_root_poseidon,
             range_validator_commitment: validators_hash_tree_root_poseidon,
             validators: input.validators,
