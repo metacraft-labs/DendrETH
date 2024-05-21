@@ -26,6 +26,7 @@
     "@mevitae/redis-work-queue": "^0.1.5",
     "@noble/bls12-381": "^1.4.0",
     "chalk": "^4.1.2",
+    "circom-pairing": "link:../../vendor/circom-pairing/",
     "circomlibjs": "^0.1.7",
     "colors": "^1.4.0",
     "ethers": "^5.7.0",

@@ -1599,6 +1599,7 @@ __metadata:
     "@types/circomlibjs": "npm:^0"
     "@types/yargs": "npm:^17.0.32"
     chalk: "npm:^4.1.2"
+    circom-pairing: "link:../../vendor/circom-pairing/"
     circomlibjs: "npm:^0.1.7"
     colors: "npm:^1.4.0"
     ethers: "npm:^5.7.0"
@@ -6624,6 +6625,12 @@ __metadata:
   checksum: 10/3d5d6652ca499c3f7c5d7fdc2932a357ec1e5aa84f2ad766d850efd42e89753c97b795c3a104a8e7ae35b4e293f5363926913de3bf8181af37067d9d541ca0db
   languageName: node
   linkType: hard
+
+"circom-pairing@link:../../vendor/circom-pairing/::locator=%40dendreth%2Fplonky2%40workspace%3Abeacon-light-client%2Fplonky2":
+  version: 0.0.0-use.local
+  resolution: "circom-pairing@link:../../vendor/circom-pairing/::locator=%40dendreth%2Fplonky2%40workspace%3Abeacon-light-client%2Fplonky2"
+  languageName: node
+  linkType: soft
 
 "circom@workspace:beacon-light-client/circom":
   version: 0.0.0-use.local
