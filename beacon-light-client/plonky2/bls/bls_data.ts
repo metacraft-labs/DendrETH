@@ -4,7 +4,7 @@ import {
   formatHex,
   hexToBytes,
 } from '@dendreth/utils/ts-utils/bls';
-import { verify } from '../../../vendor/circom-pairing/test/index';
+import { verify } from 'circom-pairing/test/index';
 
 (async () => {
   const { ssz } = await import('@lodestar/types');
@@ -39,6 +39,8 @@ import { verify } from '../../../vendor/circom-pairing/test/index';
 
   let domain =
     formatHex(DOMAIN_DEPOSIT) + formatHex(fork_data_root.slice(0, 56));
+
+  console.log(domain);
 
   let signing_root = ssz.phase0.SigningData.hashTreeRoot({
     objectRoot: deposit_message_hash_tree_root,
