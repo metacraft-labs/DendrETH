@@ -1,42 +1,31 @@
-use std::ops::Range;
+use std::str::FromStr;
 
-use itertools::Itertools;
+use num::BigUint;
 use plonky2::{
-    field::{extension::Extendable, goldilocks_field::GoldilocksField},
-    hash::hash_types::{HashOutTarget, RichField},
+    field::goldilocks_field::GoldilocksField,
+    hash::hash_types::HashOutTarget,
     iop::target::{BoolTarget, Target},
     plonk::{
         circuit_builder::CircuitBuilder,
-        circuit_data::{
-            CommonCircuitData, VerifierCircuitData, VerifierCircuitTarget, VerifierOnlyCircuitData,
-        },
+        circuit_data::{CommonCircuitData, VerifierOnlyCircuitData},
         config::PoseidonGoldilocksConfig,
-        proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
+        proof::ProofWithPublicInputsTarget,
     },
-    util::serialization::{Buffer, IoResult, Read, Write},
+    util::serialization::{Buffer, IoResult, Write},
 };
+use plonky2_u32::gadgets::arithmetic_u32::U32Target;
 
 use crate::{
     biguint::{BigUintTarget, CircuitBuilderBiguint},
-    deposit_hash_tree_root_poseidon::{
-        self, hash_tree_root_deposit_poseidon, DepositPoseidonTargets,
-    },
-    hash_tree_root::hash_tree_root,
-    hash_tree_root_poseidon::hash_tree_root_poseidon,
-    is_active_validator::get_validator_status,
-    is_valid_merkle_branch::{self, is_valid_merkle_branch_sha256, MerkleBranch, Sha256},
+    deposit_hash_tree_root_poseidon::{hash_tree_root_deposit_poseidon, DepositPoseidonTargets},
+    is_valid_merkle_branch::{is_valid_merkle_branch_sha256, MerkleBranch, Sha256},
     is_valid_merkle_branch_poseidon::{
         is_valid_merkle_branch_poseidon, is_valid_merkle_branch_poseidon_result,
     },
+    sha256::sha256_pair,
     targets_serialization::{ReadTargets, WriteTargets},
-    utils::{
-        bool_target_equal, create_bool_target_array, if_biguint, ssz_num_from_bits,
-        ETH_SHA256_BIT_SIZE,
-    },
-    validator_hash_tree_root,
     validator_hash_tree_root_poseidon::{
-        hash_tree_root_validator_poseidon, ValidatorPoseidonHashTreeRootTargets,
-        ValidatorPoseidonTargets,
+        hash_tree_root_validator_poseidon, ValidatorPoseidonTargets,
     },
 };
 
@@ -152,7 +141,7 @@ pub struct DepositAccumulatorLeafTargets {
     pub balance_proof: MerkleBranch<22>,
     pub bls_signature_proof: ProofWithPublicInputsTarget<2>,
     pub current_epoch: BigUintTarget,
-    pub is_dummy: bool,
+    pub is_dummy: BoolTarget,
     pub eth1_deposit_index: BigUintTarget,
     pub left_most: RangeObject,
     pub right_most: RangeObject,
@@ -274,10 +263,41 @@ pub fn deposit_accumulator_leaf_circuit(
         deposit_hash_tree_root.hash_tree_root,
     );
 
-    // TODO: compute message from deposit_message_hash_tree_root
-    let message = deposit_hash_tree_root
-        .deposit
-        .deposit_message_hash_tree_root;
+    let _true = builder._true();
+    let _false = builder._false();
+
+    let domain = [
+        _false, _false, _false, _false, _false, _false, _true, _true, _false, _false, _false,
+        _false, _false, _false, _false, _false, _false, _false, _false, _false, _false, _false,
+        _false, _false, _false, _false, _false, _false, _false, _false, _false, _false, _true,
+        _true, _true, _true, _false, _true, _false, _true, _true, _false, _true, _false, _false,
+        _true, _false, _true, _true, _true, _true, _true, _true, _true, _false, _true, _false,
+        _true, _false, _false, _false, _false, _true, _false, _true, _true, _false, _true, _false,
+        _false, _false, _true, _false, _true, _true, _false, _true, _false, _true, _false, _false,
+        _false, _true, _false, _false, _false, _false, _false, _false, _false, _true, _true,
+        _false, _false, _false, _false, _false, _false, _true, _false, _false, _true, _true, _true,
+        _true, _false, _false, _true, _true, _false, _false, _false, _true, _true, _true, _false,
+        _true, _true, _true, _true, _false, _true, _true, _false, _true, _true, _true, _false,
+        _true, _true, _false, _true, _false, _false, _true, _true, _false, _false, _false, _false,
+        _true, _false, _false, _true, _true, _false, _false, _true, _false, _true, _true, _true,
+        _true, _false, _false, _true, _true, _false, _true, _true, _false, _true, _false, _false,
+        _false, _false, _true, _true, _false, _false, _false, _false, _false, _false, _false,
+        _false, _false, _false, _true, _true, _true, _true, _false, _true, _false, _false, _true,
+        _false, _false, _false, _true, _true, _false, _false, _true, _false, _false, _false,
+        _false, _false, _true, _true, _false, _true, _true, _false, _false, _true, _true, _true,
+        _true, _true, _false, _false, _false, _false, _true, _true, _true, _false, _true, _false,
+        _false, _false, _true, _true, _true, _false, _true, _false, _true, _false, _true, _false,
+        _false, _true, _true, _false, _false, _false, _false, _false, _true, _true, _false, _false,
+        _false, _true, _true, _false, _true, _false, _true, _false, _false, _true,
+    ];
+
+    let message = sha256_pair(
+        builder,
+        &domain,
+        &deposit_hash_tree_root
+            .deposit
+            .deposit_message_hash_tree_root,
+    );
     let bls_signature_proof = builder.add_virtual_proof_with_pis(bls_common_data);
 
     verify_bls_signature(
@@ -285,18 +305,21 @@ pub fn deposit_accumulator_leaf_circuit(
         &deposit_hash_tree_root.deposit.pubkey,
         &deposit_hash_tree_root.deposit.signature,
         &message,
-        bls_signature_proof,
+        &bls_signature_proof,
         bls_common_data,
         bls_verifier_data,
     );
 
-    let deposit_index = builder.add_virtual_biguint_target(2);
     let eth1_deposit_index = builder.add_virtual_biguint_target(2);
-    let deposit_is_processed = builder.cmp_biguint(&deposit_index, &eth1_deposit_index);
+    let deposit_is_processed = builder.cmp_biguint(
+        &deposit_hash_tree_root.deposit.deposit_index,
+        &eth1_deposit_index,
+    );
 
     let signature_is_valid =
         BoolTarget::new_unsafe(*bls_signature_proof.public_inputs.last().unwrap());
-    let validator_is_definitely_on_chain = builder.and(deposit_is_processed, signature_is_valid);
+    let validator_is_definitely_on_chain: BoolTarget =
+        builder.and(deposit_is_processed, signature_is_valid);
 
     let is_valid_commitment_mapper_proof = is_valid_merkle_branch_poseidon_result(builder, 41);
     let validator_hash_tree_root = hash_tree_root_validator_poseidon(builder);
@@ -304,6 +327,8 @@ pub fn deposit_accumulator_leaf_circuit(
     // connect that validators are the same
     let is_dummy = builder.add_virtual_bool_target_safe();
     let one = builder.one();
+    let not_is_dummy = builder.not(is_dummy);
+
     for i in 0..384 {
         builder.connect(
             validator_hash_tree_root.validator.pubkey[i].target,
@@ -312,7 +337,8 @@ pub fn deposit_accumulator_leaf_circuit(
 
         // connect if is dummy pubkey is max
         let is_one = builder.is_equal(validator_hash_tree_root.validator.pubkey[i].target, one);
-        builder.and(is_dummy, one);
+        let should_be_true = builder.or(not_is_dummy, is_one);
+        builder.connect(one, should_be_true.target);
     }
 
     builder.connect_hashes(
@@ -326,6 +352,17 @@ pub fn deposit_accumulator_leaf_circuit(
     );
 
     let is_valid_merkle_branch_balances = is_valid_merkle_branch_sha256(builder, 22);
+    let four = builder.constant_biguint(&BigUint::from_str("4").unwrap());
+    let validator_index_big_uint = BigUintTarget {
+        limbs: vec![U32Target(is_valid_commitment_mapper_proof.index)],
+    };
+
+    let balance_index_big_uint = builder.div_biguint(&validator_index_big_uint, &four);
+    let balance_index_target = balance_index_big_uint.limbs[0].0;
+    builder.connect(
+        balance_index_target,
+        is_valid_merkle_tree_deposit_branch.index,
+    );
 
     let balance = builder.zero_biguint();
 
@@ -334,9 +371,13 @@ pub fn deposit_accumulator_leaf_circuit(
     let exited_count = builder.zero();
     let slashed_count = builder.zero();
 
+    let current_epoch = builder.add_virtual_biguint_target(2);
+
+
+
     DepositAccumulatorLeafTargets {
-        validator: validator_hash_tree_root.validator,
-        validator_deposit: deposit_hash_tree_root.deposit,
+        validator: validator_hash_tree_root.validator.clone(),
+        validator_deposit: deposit_hash_tree_root.deposit.clone(),
         commitment_mapper_hash_tree_root: is_valid_commitment_mapper_proof.root,
         commitment_mapper_proof: is_valid_commitment_mapper_proof.branch,
         validator_index: is_valid_commitment_mapper_proof.index,
@@ -347,10 +388,21 @@ pub fn deposit_accumulator_leaf_circuit(
         balance_leaf: is_valid_merkle_branch_balances.leaf,
         balance_proof: is_valid_merkle_branch_balances.branch.try_into().unwrap(),
         bls_signature_proof: bls_signature_proof,
-        current_epoch: (),
-        is_dummy: (),
-        eth1_deposit_index: (),
+        current_epoch: current_epoch,
+        is_dummy: is_dummy,
+        eth1_deposit_index: eth1_deposit_index,
         left_most: RangeObject {
+            pubkey: validator_hash_tree_root.validator.pubkey.clone(),
+            deposit_index: deposit_hash_tree_root.deposit.deposit_index.clone(),
+            balance_sum: balance.clone(),
+            non_activated_count: non_activated_count,
+            active_count: active_count,
+            exited_count: exited_count,
+            slashed_count: slashed_count,
+            is_counted: validator_is_definitely_on_chain,
+            is_dummy: is_dummy,
+        },
+        right_most: RangeObject {
             pubkey: validator_hash_tree_root.validator.pubkey,
             deposit_index: deposit_hash_tree_root.deposit.deposit_index,
             balance_sum: balance,
@@ -361,7 +413,6 @@ pub fn deposit_accumulator_leaf_circuit(
             is_counted: validator_is_definitely_on_chain,
             is_dummy: is_dummy,
         },
-        right_most: (),
     }
 }
 
@@ -370,7 +421,7 @@ fn verify_bls_signature(
     pubkey: &[BoolTarget; 384],
     signature: &[BoolTarget; 768],
     message: &[BoolTarget; 256],
-    bls_signature_proof: ProofWithPublicInputsTarget<2>,
+    bls_signature_proof: &ProofWithPublicInputsTarget<2>,
     bls_common_data: &CommonCircuitData<GoldilocksField, 2>,
     bls_verifier_data: &VerifierOnlyCircuitData<PoseidonGoldilocksConfig, 2>,
 ) {
