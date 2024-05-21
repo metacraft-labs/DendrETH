@@ -18,12 +18,14 @@ use plonky2_u32::gadgets::arithmetic_u32::U32Target;
 use crate::{
     biguint::{BigUintTarget, CircuitBuilderBiguint},
     deposit_hash_tree_root_poseidon::{hash_tree_root_deposit_poseidon, DepositPoseidonTargets},
+    is_active_validator::get_validator_status,
     is_valid_merkle_branch::{is_valid_merkle_branch_sha256, MerkleBranch, Sha256},
     is_valid_merkle_branch_poseidon::{
         is_valid_merkle_branch_poseidon, is_valid_merkle_branch_poseidon_result,
     },
     sha256::sha256_pair,
     targets_serialization::{ReadTargets, WriteTargets},
+    utils::{if_biguint, ssz_num_from_bits},
     validator_hash_tree_root_poseidon::{
         hash_tree_root_validator_poseidon, ValidatorPoseidonTargets,
     },
@@ -324,6 +326,11 @@ pub fn deposit_accumulator_leaf_circuit(
     let is_valid_commitment_mapper_proof = is_valid_merkle_branch_poseidon_result(builder, 41);
     let validator_hash_tree_root = hash_tree_root_validator_poseidon(builder);
 
+    builder.connect(
+        is_valid_commitment_mapper_proof.is_valid.target,
+        validator_is_definitely_on_chain.target,
+    );
+
     // connect that validators are the same
     let is_dummy = builder.add_virtual_bool_target_safe();
     let one = builder.one();
@@ -346,11 +353,6 @@ pub fn deposit_accumulator_leaf_circuit(
         is_valid_commitment_mapper_proof.leaf,
     );
 
-    builder.connect(
-        is_valid_commitment_mapper_proof.is_valid.target,
-        validator_is_definitely_on_chain.target,
-    );
-
     let is_valid_merkle_branch_balances = is_valid_merkle_branch_sha256(builder, 22);
     let four = builder.constant_biguint(&BigUint::from_str("4").unwrap());
     let validator_index_big_uint = BigUintTarget {
@@ -364,16 +366,43 @@ pub fn deposit_accumulator_leaf_circuit(
         is_valid_merkle_tree_deposit_branch.index,
     );
 
-    let balance = builder.zero_biguint();
-
-    let non_activated_count = builder.zero();
-    let active_count = builder.zero();
-    let exited_count = builder.zero();
-    let slashed_count = builder.zero();
-
     let current_epoch = builder.add_virtual_biguint_target(2);
 
+    // TODO: Should work with inner index
+    let balance_inner_index = builder.rem_biguint(&validator_index_big_uint, &four);
+    let balance_inner_index = 0;
+    let balance = ssz_num_from_bits(
+        builder,
+        &is_valid_merkle_branch_balances.leaf
+            [((balance_inner_index % 4) * 64)..(((balance_inner_index % 4) * 64) + 64)],
+    );
 
+    let zero = builder.zero_biguint();
+
+    let (is_non_activated_validator, is_valid_validator, is_exited_validator) =
+        get_validator_status(
+            builder,
+            &validator_hash_tree_root.validator.activation_epoch,
+            &current_epoch,
+            &validator_hash_tree_root.validator.exit_epoch,
+        );
+
+    let will_be_counted = builder.and(validator_is_definitely_on_chain, is_valid_validator);
+
+    // TODO: should be if validator is relevant: A validator is relevant for the total locked value computation only if it is included in the validators accumulator and its activationEpoch and withdrawableEpoch enclose the currentEpoch.
+    let balance = if_biguint(builder, will_be_counted, &balance, &zero);
+
+    let active_count = will_be_counted.target;
+
+    let non_activated_count =
+        builder.and(validator_is_definitely_on_chain, is_non_activated_validator);
+
+    let exited_count = builder.and(validator_is_definitely_on_chain, is_exited_validator);
+
+    let slashed_count = builder.and(
+        validator_is_definitely_on_chain,
+        validator_hash_tree_root.validator.slashed,
+    );
 
     DepositAccumulatorLeafTargets {
         validator: validator_hash_tree_root.validator.clone(),
@@ -395,10 +424,10 @@ pub fn deposit_accumulator_leaf_circuit(
             pubkey: validator_hash_tree_root.validator.pubkey.clone(),
             deposit_index: deposit_hash_tree_root.deposit.deposit_index.clone(),
             balance_sum: balance.clone(),
-            non_activated_count: non_activated_count,
+            non_activated_count: non_activated_count.target,
             active_count: active_count,
-            exited_count: exited_count,
-            slashed_count: slashed_count,
+            exited_count: exited_count.target,
+            slashed_count: slashed_count.target,
             is_counted: validator_is_definitely_on_chain,
             is_dummy: is_dummy,
         },
@@ -406,10 +435,10 @@ pub fn deposit_accumulator_leaf_circuit(
             pubkey: validator_hash_tree_root.validator.pubkey,
             deposit_index: deposit_hash_tree_root.deposit.deposit_index,
             balance_sum: balance,
-            non_activated_count: non_activated_count,
+            non_activated_count: non_activated_count.target,
             active_count: active_count,
-            exited_count: exited_count,
-            slashed_count: slashed_count,
+            exited_count: exited_count.target,
+            slashed_count: slashed_count.target,
             is_counted: validator_is_definitely_on_chain,
             is_dummy: is_dummy,
         },
