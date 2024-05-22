@@ -14,23 +14,21 @@ use crate::{
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
 };
 
-const D: usize = 2;
-
 pub struct ValidatorsCommitmentMapperInnerLevel {}
 
 impl Circuit for ValidatorsCommitmentMapperInnerLevel {
     type F = GoldilocksField;
-    const D: usize = D;
+    const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
 
     const CIRCUIT_CONFIG: CircuitConfig = CircuitConfig::standard_recursion_config();
 
     type Target = BasicRecursiveInnerCircuitTarget;
 
-    type Params = CircuitData<Self::F, Self::C, D>;
+    type Params = CircuitData<Self::F, Self::C, { Self::D }>;
 
     fn define(
-        builder: &mut CircuitBuilder<Self::F, D>,
+        builder: &mut CircuitBuilder<Self::F, { Self::D }>,
         circuit_data: &Self::Params,
     ) -> Self::Target {
         let verifier_circuit_target = VerifierCircuitTarget {

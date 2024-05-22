@@ -78,15 +78,13 @@ pub struct ValidatorBalanceVerificationTargets<
     pub number_of_exitted_validators: Target,
 }
 
-type F = GoldilocksField;
-type C = PoseidonGoldilocksConfig;
-const D: usize = 2;
-
 pub struct WithdrawalCredentialsBalanceAggregatorFirstLevel<
     const VALIDATORS_COUNT: usize,
     const WITHDRAWAL_CREDENTIALS_COUNT: usize,
 > where
     [(); VALIDATORS_COUNT / 4]:, {}
+
+const D: usize = 2;
 
 impl<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
     for WithdrawalCredentialsBalanceAggregatorFirstLevel<
@@ -96,9 +94,9 @@ impl<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIALS_COUNT: usize> C
 where
     [(); VALIDATORS_COUNT / 4]:,
 {
-    type F = F;
-    type C = C;
-    const D: usize = D;
+    type F = GoldilocksField;
+    type C = PoseidonGoldilocksConfig;
+    const D: usize = 2;
 
     const CIRCUIT_CONFIG: CircuitConfig = CircuitConfig::standard_recursion_config();
 
@@ -106,7 +104,7 @@ where
         ValidatorBalanceVerificationTargets<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>;
     type Params = ();
 
-    fn define(builder: &mut CircuitBuilder<F, D>, _params: &()) -> Self::Target {
+    fn define(builder: &mut CircuitBuilder<Self::F, D>, _params: &()) -> Self::Target {
         if !VALIDATORS_COUNT.is_power_of_two() {
             panic!("VALIDATORS_COUNT must be a power of two");
         }

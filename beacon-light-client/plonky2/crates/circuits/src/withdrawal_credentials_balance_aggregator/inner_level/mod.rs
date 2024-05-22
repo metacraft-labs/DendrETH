@@ -19,13 +19,13 @@ use plonky2::{
     },
 };
 
-const D: usize = 2;
-
 pub struct WithdrawalCredentialsBalanceAggregatorInnerLevel<
     const VALIDATORS_COUNT: usize,
     const WITHDRAWAL_CREDENTIALS_COUNT: usize,
 > where
     [(); VALIDATORS_COUNT / 4]:, {}
+
+const D: usize = 2;
 
 impl<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
     for WithdrawalCredentialsBalanceAggregatorInnerLevel<
