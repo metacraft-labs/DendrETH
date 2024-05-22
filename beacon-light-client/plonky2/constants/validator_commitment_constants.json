@@ -14,5 +14,9 @@
   "validatorsLengthKey": "validators_length",
   "validatorsRootKey": "validators_root",
   "lastVerifiedSlotKey": "last_verified_slot",
-  "lastProcessedSlotKey": "last_processed_slot"
+  "lastProcessedSlotKey": "last_processed_slot",
+  "latestLoggedBlockKey": "latest_logged_block",
+  "depositsKey": "deposits",
+  "depositsQueue": "deposits_queue",
+  "depositSignatureVerificationProofKey": "deposit_signature_verification_proofs"
 }

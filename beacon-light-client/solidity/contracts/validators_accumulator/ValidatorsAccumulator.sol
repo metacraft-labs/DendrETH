@@ -90,25 +90,20 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
       )
     );
 
-    emit Deposited(
-      pubkey,
-      withdrawalCredentials,
-      signature,
-      depositMessageRoot,
-      depositDataRoot
-    );
-
-    validatorsCount += 1;
+    bytes memory count = IDeposit(depositAddress).get_deposit_count();
+    emit Deposited(pubkey, signature, depositMessageRoot, count);
 
     // Create a node for the validator
     bytes32 node = sha256(
       abi.encodePacked(
         pubkey,
-        IDeposit(depositAddress).get_deposit_count(), // Get the deposit count and increase the validator count
+        count, // Get the deposit count and increase the validator count
         depositMessageRoot,
         signature
       )
     );
+
+    validatorsCount += 1;
 
     // Insert the node into the Merkle accumulator tree
     uint256 size = validatorsCount;

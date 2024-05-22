@@ -4,10 +4,9 @@ pragma solidity ^0.8.18;
 interface IValidatorsAccumulator {
   event Deposited(
     bytes pubkey,
-    bytes withdrawalCredentials,
     bytes signature,
     bytes32 depositMessageRoot,
-    bytes32 depositDataRoot
+    bytes depositIndex
   );
 
   function get_validators_accumulator() external view returns (bytes32 node);
