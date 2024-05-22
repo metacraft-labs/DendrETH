@@ -1,3 +1,4 @@
+use circuits::validators_commitment_mapper::inner_level::ValidatorsCommitmentMapperInnerLevel;
 use std::{fs, marker::PhantomData};
 
 use anyhow::Result;
@@ -5,10 +6,7 @@ use anyhow::Result;
 use circuit::{Circuit, CircuitTargetType, SerdeCircuitTarget};
 use circuits::{
     serialization::generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
-    validators_commitment_mapper::{
-        build_commitment_mapper_inner_level_circuit::ValidatorsCommitmentMapperInnerLevel,
-        first_level::ValidatorsCommitmentMapperFirstLevel,
-    },
+    validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
 };
 use clap::{App, Arg};
 use futures_lite::future;

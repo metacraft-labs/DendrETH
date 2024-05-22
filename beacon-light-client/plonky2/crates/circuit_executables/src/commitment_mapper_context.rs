@@ -1,9 +1,7 @@
 use anyhow::Result;
 use circuit::{serde_circuit_target::deserialize_circuit_target, CircuitTargetType};
-use circuits::validators_commitment_mapper::{
-    build_commitment_mapper_inner_level_circuit::ValidatorsCommitmentMapperInnerLevel,
-    first_level::ValidatorsCommitmentMapperFirstLevel,
-};
+use circuits::validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel;
+use circuits::validators_commitment_mapper::inner_level::ValidatorsCommitmentMapperInnerLevel;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig},
