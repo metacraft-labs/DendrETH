@@ -177,3 +177,6 @@ redis-server/
 *.plonky2_circuit
 
 .DS_Store
+
+# Solidity remappings
+**/*/remappings.txt
