@@ -16,7 +16,7 @@
   "lastVerifiedSlotKey": "last_verified_slot",
   "lastProcessedSlotKey": "last_processed_slot",
   "latestLoggedBlockKey": "latest_logged_block",
-  "depositsKey": "deposits",
-  "depositsQueue": "deposits_queue",
+  "depositSignatureVerificationKey": "deposit_signature_verification",
+  "depositSignatureVerificationQueue": "deposits_signature_verification_queue",
   "depositSignatureVerificationProofKey": "deposit_signature_verification_proofs"
 }

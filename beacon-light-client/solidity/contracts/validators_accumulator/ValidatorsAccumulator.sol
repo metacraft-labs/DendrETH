@@ -56,7 +56,6 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
   }
 
   // Function to handle deposits from validators
-  // TODO: Maybe we can construct the accumulator using posiedon hash directly
   function deposit(
     bytes calldata pubkey,
     bytes calldata withdrawalCredentials,
@@ -90,17 +89,12 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
       )
     );
 
-    bytes memory count = IDeposit(depositAddress).get_deposit_count();
-    emit Deposited(pubkey, signature, depositMessageRoot, count);
+    bytes memory depositIndex = IDeposit(depositAddress).get_deposit_count();
+    emit Deposited(pubkey, signature, depositMessageRoot, depositIndex);
 
     // Create a node for the validator
     bytes32 node = sha256(
-      abi.encodePacked(
-        pubkey,
-        count, // Get the deposit count and increase the validator count
-        depositMessageRoot,
-        signature
-      )
+      abi.encodePacked(pubkey, depositIndex, depositMessageRoot, signature)
     );
 
     validatorsCount += 1;
