@@ -1583,9 +1583,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@dendreth/plonky2@workspace:beacon-light-client/plonky2":
+"@dendreth/balance-verification@workspace:beacon-light-client/plonky2/input_fetchers":
   version: 0.0.0-use.local
-  resolution: "@dendreth/plonky2@workspace:beacon-light-client/plonky2"
+  resolution: "@dendreth/balance-verification@workspace:beacon-light-client/plonky2/input_fetchers"
   dependencies:
     "@aws-sdk/client-s3": "npm:^3.521.0"
     "@azure/storage-blob": "npm:^12.17.0"
@@ -1599,7 +1599,7 @@ __metadata:
     "@types/circomlibjs": "npm:^0"
     "@types/yargs": "npm:^17.0.32"
     chalk: "npm:^4.1.2"
-    circom-pairing: "link:../../vendor/circom-pairing/"
+    circom-pairing: "link:../../../vendor/circom-pairing/"
     circomlibjs: "npm:^0.1.7"
     colors: "npm:^1.4.0"
     ethers: "npm:^5.7.0"
@@ -6636,9 +6636,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"circom-pairing@link:../../vendor/circom-pairing/::locator=%40dendreth%2Fplonky2%40workspace%3Abeacon-light-client%2Fplonky2":
+"circom-pairing@link:../../../vendor/circom-pairing/::locator=%40dendreth%2Fbalance-verification%40workspace%3Abeacon-light-client%2Fplonky2%2Finput_fetchers":
   version: 0.0.0-use.local
-  resolution: "circom-pairing@link:../../vendor/circom-pairing/::locator=%40dendreth%2Fplonky2%40workspace%3Abeacon-light-client%2Fplonky2"
+  resolution: "circom-pairing@link:../../../vendor/circom-pairing/::locator=%40dendreth%2Fbalance-verification%40workspace%3Abeacon-light-client%2Fplonky2%2Finput_fetchers"
   languageName: node
   linkType: soft
 
