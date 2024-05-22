@@ -14,6 +14,8 @@ interface IBalanceVerifier {
   /// @dev Verification failed
   error VerificationFailed();
 
+  function setVerifier(address newVerifier) external;
+
   /// @notice Verifies the proof and writes the data for given slot if valid
   /// @param proof the zk proof for total value locked
   /// @param slot the slot for which the proof is ran

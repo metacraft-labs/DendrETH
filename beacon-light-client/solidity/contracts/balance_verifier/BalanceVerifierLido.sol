@@ -10,12 +10,16 @@ contract BalanceVerifierLido is BalanceVerifier, IBalanceVerifierLido {
   constructor(
     uint256 verifierDigest,
     bytes32 withdrawalCredentials,
-    uint256 genesisBlockTimestamp
+    uint256 genesisBlockTimestamp,
+    address _verifier,
+    address _owner
   )
     BalanceVerifier(
       verifierDigest,
       withdrawalCredentials,
-      genesisBlockTimestamp
+      genesisBlockTimestamp,
+      _verifier,
+      _owner
     )
   {}
 

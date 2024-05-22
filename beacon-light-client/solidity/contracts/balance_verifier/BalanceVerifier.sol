@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 import {PlonkVerifier} from './verifier.sol';
 import {IBalanceVerifier} from './interfaces/IBalanceVerifierDiva.sol';
+import '@openzeppelin/contracts/access/Ownable.sol';
 
-abstract contract BalanceVerifier is PlonkVerifier, IBalanceVerifier {
+abstract contract BalanceVerifier is Ownable, IBalanceVerifier {
   /// @notice the verifierDigest of the plonky2 circuit
   uint256 public immutable VERIFIER_DIGEST;
 
@@ -22,14 +23,23 @@ abstract contract BalanceVerifier is PlonkVerifier, IBalanceVerifier {
   address internal constant BEACON_ROOTS =
     0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02;
 
+  address internal verifier;
+
   constructor(
     uint256 verifierDigest,
     bytes32 withdrawalCredentials,
-    uint256 genesisBlockTimestamp
-  ) {
+    uint256 genesisBlockTimestamp,
+    address _verifier,
+    address _owner
+  ) Ownable(_owner) {
     VERIFIER_DIGEST = verifierDigest;
     WITHDRAWAL_CREDENTIALS = withdrawalCredentials;
     GENESIS_BLOCK_TIMESTAMP = genesisBlockTimestamp;
+    verifier = _verifier;
+  }
+
+  function setVerifier(address _verifier) external override onlyOwner {
+    verifier = _verifier;
   }
 
   /// @notice Verifies the proof and writes the data for given slot if valid
@@ -65,7 +75,7 @@ abstract contract BalanceVerifier is PlonkVerifier, IBalanceVerifier {
     ) & ((1 << 253) - 1));
 
     // Make the call using `address(this).call`
-    (bool success, bytes memory returnData) = address(this).call(
+    (bool success, bytes memory returnData) = verifier.call(
       // Encode the call to the `verify` function with the public inputs
       abi.encodeWithSelector(PlonkVerifier.Verify.selector, proof, publicInputs)
     );
