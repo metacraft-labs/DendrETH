@@ -38,6 +38,9 @@
 
           # scripts/check-user-env-file-contents.sh
 
+          # Set up the environment for the Solidity compiler
+          ./scripts/config_solidity_import_mapping.sh
+
           figlet "DendrETH"
         '';
       };
