@@ -1,16 +1,8 @@
 #![feature(generic_const_exprs)]
 use anyhow::{bail, Result};
-use circuit::{Circuit, CircuitTargetType, SerdeCircuitTarget};
+use circuit::{Circuit, SerdeCircuitTarget};
 use circuits::{
-    deposits_accumulator_balance_aggregator::{
-        build_balance_accumulator_inner_level,
-        build_validator_balance_accumulator_circuit::build_validator_balance_accumulator_circuit,
-        validator_balance_circuit_accumulator::ValidatorBalanceVerificationAccumulatorTargets,
-    },
-    serialization::{
-        generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
-        targets_serialization::WriteTargets,
-    },
+    serialization::generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
     withdrawal_credentials_balance_aggregator::{
         first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
         inner_level::WithdrawalCredentialsBalanceAggregatorInnerLevel,
@@ -23,7 +15,14 @@ use clap::{App, Arg};
 use futures_lite::future;
 
 use jemallocator::Jemalloc;
-use plonky2::plonk::config::PoseidonGoldilocksConfig;
+use plonky2::{
+    field::extension::Extendable,
+    hash::hash_types::RichField,
+    plonk::{
+        circuit_data::CircuitData,
+        config::{AlgebraicHasher, GenericConfig},
+    },
+};
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -31,37 +30,11 @@ static GLOBAL: Jemalloc = Jemalloc;
 // TODO: this needs to be moved to some central place
 const CIRCUIT_DIR: &str = "circuits";
 
+const CIRCUIT_NAME: &str = "balance_verification";
+
 // NOTE: config for the withdrawal credentials circuit
 const VALIDATORS_COUNT: usize = 8;
 const WITHDRAWAL_CREDENTIALS_COUNT: usize = 1;
-
-fn write_to_file(file_path: &str, data: &[u8]) -> Result<()> {
-    fs::write(file_path, data)?;
-    Ok(())
-}
-
-enum ValidatorBalanceTargets {
-    ValidatorBalanceFirstLevel(
-        CircuitTargetType<
-            WithdrawalCredentialsBalanceAggregatorFirstLevel<
-                VALIDATORS_COUNT,
-                WITHDRAWAL_CREDENTIALS_COUNT,
-            >,
-        >,
-    ),
-    ValidatorBalanceAccumulatorFirstLevel(ValidatorBalanceVerificationAccumulatorTargets),
-    ValidatorBalanceInnerLevel(
-        CircuitTargetType<
-            WithdrawalCredentialsBalanceAggregatorInnerLevel<
-                VALIDATORS_COUNT,
-                WITHDRAWAL_CREDENTIALS_COUNT,
-            >,
-        >,
-    ),
-    ValidatorBalanceAccumulatorInnerLevel(
-        build_balance_accumulator_inner_level::BalanceInnerCircuitTargets,
-    ),
-}
 
 fn main() -> Result<()> {
     future::block_on(async_main())
@@ -85,56 +58,11 @@ pub async fn async_main() -> Result<()> {
                     }
                 }),
         )
-        .arg(
-            Arg::with_name("circuit_name")
-                .long("circuit_name")
-                .value_name("name")
-                .help("Sets the circuit name")
-                .takes_value(true)
-                .default_value("balance_verification"),
-        )
         .get_matches();
 
     let level = match matches.value_of("circuit_level").unwrap() {
         "all" => None,
         x => Some(x.parse::<usize>().unwrap()),
-    };
-
-    let circuit_name = matches.value_of("circuit_name").unwrap().to_owned();
-
-    if circuit_name != "balance_verification" && circuit_name != "balance_accumulator" {
-        bail!("Invalid circuit name. Specify \"balance_verification\" or \"balance_accumulator\"");
-    }
-
-    let validators_len = if circuit_name == "balance_accumulator" {
-        2
-    } else {
-        8
-    };
-
-    let (validators_balance_verification_targets, first_level_data) =
-        if circuit_name == "balance_accumulator" {
-            println!("building accumulator");
-            let (targets, data) = build_validator_balance_accumulator_circuit(validators_len);
-            (
-                ValidatorBalanceTargets::ValidatorBalanceAccumulatorFirstLevel(targets),
-                data,
-            )
-        } else {
-            let (targets, data) = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
-                VALIDATORS_COUNT,
-                WITHDRAWAL_CREDENTIALS_COUNT,
-            >::build(&());
-            (
-                ValidatorBalanceTargets::ValidatorBalanceFirstLevel(targets),
-                data,
-            )
-        };
-
-    let gate_serializer = DendrETHGateSerializer;
-
-    let generator_serializer = DendrETHGeneratorSerializer {
-        _phantom: PhantomData::<PoseidonGoldilocksConfig>,
     };
 
     if level != None && level.unwrap() > 37 {
@@ -146,13 +74,17 @@ pub async fn async_main() -> Result<()> {
 
     fs::create_dir_all(CIRCUIT_DIR).unwrap();
 
+    let (first_level_target, first_level_data) = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
+        VALIDATORS_COUNT,
+        WITHDRAWAL_CREDENTIALS_COUNT,
+    >::build(&());
+
     if level == None || level == Some(0) {
-        write_first_level_circuit(
+        serialize_recursive_circuit_single_level(
+            &first_level_target,
             &first_level_data,
-            &gate_serializer,
-            &generator_serializer,
-            validators_balance_verification_targets,
-            &circuit_name,
+            CIRCUIT_NAME,
+            0,
         );
     }
 
@@ -169,101 +101,58 @@ pub async fn async_main() -> Result<()> {
     let mut prev_circuit_data = first_level_data;
 
     for i in 1..=max_level {
-        let (targets, data) = if circuit_name == "balance_accumulator" {
-            let (targets, data) = build_balance_accumulator_inner_level::build_inner_level_circuit(
-                &prev_circuit_data,
-            );
-
-            (
-                ValidatorBalanceTargets::ValidatorBalanceAccumulatorInnerLevel(targets),
-                data,
-            )
-        } else {
-            // let (targets, data) = build_inner_level_circuit::<8, 1>(&prev_circuit_data);
-            let (targets, data) = WithdrawalCredentialsBalanceAggregatorInnerLevel::<
+        if level == Some(i) || level == None {
+            let (target, data) = WithdrawalCredentialsBalanceAggregatorInnerLevel::<
                 VALIDATORS_COUNT,
                 WITHDRAWAL_CREDENTIALS_COUNT,
             >::build(&prev_circuit_data);
 
-            (
-                ValidatorBalanceTargets::ValidatorBalanceInnerLevel(targets),
-                data,
-            )
-        };
-
-        if level == Some(i) || level == None {
-            let circuit_bytes = data
-                .to_bytes(&gate_serializer, &generator_serializer)
-                .unwrap();
-
-            write_to_file(
-                &format!("{}/{}_{}.plonky2_circuit", CIRCUIT_DIR, circuit_name, i),
-                &circuit_bytes,
-            )
-            .unwrap();
-
-            let inner_level_targets = match targets {
-                ValidatorBalanceTargets::ValidatorBalanceInnerLevel(targets) => {
-                    targets.serialize().unwrap()
-                }
-                ValidatorBalanceTargets::ValidatorBalanceAccumulatorInnerLevel(targets) => {
-                    targets.write_targets().unwrap()
-                }
-                _ => unreachable!(),
-            };
-
-            write_to_file(
-                &format!("{}/{}_{}.plonky2_targets", CIRCUIT_DIR, circuit_name, i),
-                &inner_level_targets,
-            )
-            .unwrap();
+            serialize_recursive_circuit_single_level(&target, &data, CIRCUIT_NAME, i);
+            prev_circuit_data = data;
         }
 
         if level == Some(i) {
             return Ok(());
         }
-
-        prev_circuit_data = data;
     }
 
     Ok(())
 }
 
-fn write_first_level_circuit(
-    first_level_data: &plonky2::plonk::circuit_data::CircuitData<
-        plonky2::field::goldilocks_field::GoldilocksField,
-        PoseidonGoldilocksConfig,
-        2,
-    >,
-    gate_serializer: &DendrETHGateSerializer,
-    generator_serializer: &DendrETHGeneratorSerializer<PoseidonGoldilocksConfig, 2>,
-    validators_balance_verification_targets: ValidatorBalanceTargets,
+fn serialize_recursive_circuit_single_level<
+    T: SerdeCircuitTarget,
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F> + 'static,
+    const D: usize,
+>(
+    target: &T,
+    circuit_data: &CircuitData<F, C, D>,
     circuit_name: &str,
-) {
-    let circuit_bytes = first_level_data
-        .to_bytes(gate_serializer, generator_serializer)
+    level: usize,
+) where
+    <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
+{
+    let gate_serializer = DendrETHGateSerializer;
+
+    let generator_serializer = DendrETHGeneratorSerializer {
+        _phantom: PhantomData::<C>,
+    };
+
+    let data_bytes = circuit_data
+        .to_bytes(&gate_serializer, &generator_serializer)
         .unwrap();
 
-    write_to_file(
-        &format!("{}/{}_0.plonky2_circuit", CIRCUIT_DIR, circuit_name),
-        &circuit_bytes,
+    fs::write(
+        &format!("{}/{}_{}.plonky2_circuit", CIRCUIT_DIR, circuit_name, level),
+        &data_bytes,
     )
     .unwrap();
 
-    let validator_balance_verification_targets_bytes = match validators_balance_verification_targets
-    {
-        ValidatorBalanceTargets::ValidatorBalanceFirstLevel(targets) => {
-            targets.serialize().unwrap()
-        }
-        ValidatorBalanceTargets::ValidatorBalanceAccumulatorFirstLevel(targets) => {
-            targets.write_targets().unwrap()
-        }
-        _ => unreachable!(),
-    };
+    let target_bytes = target.serialize().unwrap();
 
-    write_to_file(
-        &format!("{}/{}_0.plonky2_targets", CIRCUIT_DIR, circuit_name),
-        &validator_balance_verification_targets_bytes,
+    fs::write(
+        &format!("{}/{}_{}.plonky2_targets", CIRCUIT_DIR, circuit_name, level),
+        &target_bytes,
     )
     .unwrap();
 }

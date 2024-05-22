@@ -75,7 +75,7 @@ pub struct ValidatorBalanceVerificationTargets<
     pub number_of_active_validators: Target,
 
     #[target(out)]
-    pub number_of_exitted_validators: Target,
+    pub number_of_exited_validators: Target,
 }
 
 pub struct WithdrawalCredentialsBalanceAggregatorFirstLevel<
@@ -128,7 +128,7 @@ where
         let mut range_total_value = builder.zero_biguint();
         let mut number_of_non_activated_validators = builder.zero();
         let mut number_of_active_validators = builder.zero();
-        let mut number_of_exitted_validators = builder.zero();
+        let mut number_of_exited_validators = builder.zero();
 
         for i in 0..VALIDATORS_COUNT {
             let mut is_equal = builder._false();
@@ -174,8 +174,8 @@ where
 
             let will_be_counted = builder.and(is_equal, is_exited_validator);
 
-            number_of_exitted_validators =
-                builder.add(number_of_exitted_validators, will_be_counted.target);
+            number_of_exited_validators =
+                builder.add(number_of_exited_validators, will_be_counted.target);
 
             range_total_value.limbs.pop();
         }
@@ -191,7 +191,7 @@ where
             current_epoch: input.current_epoch,
             number_of_non_activated_validators,
             number_of_active_validators,
-            number_of_exitted_validators,
+            number_of_exited_validators,
         }
     }
 }

@@ -1,21 +1,14 @@
 use crate::{
-    deposits_accumulator_balance_aggregator::validator_balance_circuit_accumulator::{
-        DepositDataTarget, ValidatorBalanceVerificationAccumulatorTargets,
-    },
     final_layer::build_final_circuit::FinalCircuitTargets,
     serializers::{biguint_to_str, bool_vec_as_int_vec, bool_vec_as_int_vec_nested, parse_biguint},
-    utils::{
-        biguint::WitnessBigUint, hashing::validator_hash_tree_root_poseidon::ValidatorTarget,
-        utils::SetBytesArray,
-    },
+    utils::biguint::WitnessBigUint,
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
     withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
 use circuit::CircuitOutput;
-use itertools::Itertools;
 use num::BigUint;
 use plonky2::{
-    hash::hash_types::{HashOut, RichField},
+    hash::hash_types::RichField,
     iop::{
         target::BoolTarget,
         witness::{PartialWitness, WitnessWrite},
@@ -45,13 +38,6 @@ where
             WITHDRAWAL_CREDENTIALS_COUNT,
         >,
     >,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct BalanceAccumulatorProof {
-    pub needs_change: bool,
-    pub proof: Vec<u8>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -86,7 +72,7 @@ pub struct FinalProof {
     pub balance_sum: u64,
     pub number_of_non_activated_validators: u64,
     pub number_of_active_validators: u64,
-    pub number_of_exitted_validators: u64,
+    pub number_of_exited_validators: u64,
     pub proof: Vec<u8>,
 }
 
@@ -102,107 +88,6 @@ pub fn set_boolean_pw_values<F: RichField>(
 
 pub trait SetPWValues<F: RichField, T> {
     fn set_pw_values(&self, pw: &mut PartialWitness<F>, source: &T);
-}
-
-impl<F: RichField> SetPWValues<F, ValidatorInput> for ValidatorTarget {
-    fn set_pw_values(&self, pw: &mut PartialWitness<F>, source: &ValidatorInput) {
-        pw.set_bytes_array(&self.pubkey, &hex::decode(&source.pubkey).unwrap());
-
-        pw.set_bytes_array(
-            &self.withdrawal_credentials,
-            &hex::decode(&source.withdrawal_credentials).unwrap(),
-        );
-
-        pw.set_biguint_target(&self.effective_balance, &source.effective_balance);
-
-        pw.set_bool_target(self.slashed, source.slashed == 1);
-
-        pw.set_biguint_target(
-            &self.activation_eligibility_epoch,
-            &source.activation_eligibility_epoch,
-        );
-
-        pw.set_biguint_target(&self.activation_epoch, &source.activation_epoch);
-
-        pw.set_biguint_target(&self.exit_epoch, &source.exit_epoch);
-
-        pw.set_biguint_target(&self.withdrawable_epoch, &source.withdrawable_epoch);
-    }
-}
-
-impl<F: RichField> SetPWValues<F, DepositDataInput> for DepositDataTarget {
-    fn set_pw_values(&self, pw: &mut PartialWitness<F>, source: &DepositDataInput) {
-        pw.set_bytes_array(&self.pubkey, &hex::decode(&source.pubkey).unwrap());
-        pw.set_bytes_array(
-            &self.withdrawal_credentials,
-            &hex::decode(&source.withdrawal_credentials).unwrap(),
-        );
-        pw.set_biguint_target(&self.amount, &BigUint::from(source.amount));
-        pw.set_bytes_array(&self.signature, &hex::decode(&source.signature).unwrap());
-    }
-}
-
-impl<F: RichField> SetPWValues<F, ValidatorBalanceAccumulatorInput>
-    for ValidatorBalanceVerificationAccumulatorTargets
-{
-    fn set_pw_values(&self, pw: &mut PartialWitness<F>, source: &ValidatorBalanceAccumulatorInput) {
-        for i in 0..source.balances_leaves.len() {
-            pw.set_bytes_array(
-                &self.balances_leaves[i],
-                &hex::decode(&source.balances_leaves[i]).unwrap(),
-            );
-        }
-
-        pw.set_bytes_array(
-            &self.balances_root,
-            &hex::decode(&source.balances_root).unwrap(),
-        );
-
-        for i in 0..source.validator_is_not_zero.len() {
-            pw.set_bool_target(
-                self.non_zero_validator_leaves_mask[i],
-                source.validator_is_not_zero[i], // TODO: rename this
-            );
-        }
-
-        for i in 0..source.balances_proofs.len() {
-            for j in 0..source.balances_proofs[i].len() {
-                pw.set_bytes_array(
-                    &self.balances_proofs[i][j],
-                    &hex::decode(&source.balances_proofs[i][j]).unwrap(),
-                );
-            }
-        }
-
-        for i in 0..source.validators.len() {
-            self.validators[i].set_pw_values(pw, &source.validators[i]);
-        }
-
-        for i in 0..source.validator_indices.len() {
-            pw.set_biguint_target(
-                &self.validator_indices[i],
-                &BigUint::from(source.validator_indices[i]),
-            );
-        }
-
-        pw.set_biguint_target(&self.current_epoch, &BigUint::from(source.current_epoch));
-
-        for i in 0..source.deposits_data.len() {
-            self.deposits_data[i].set_pw_values(pw, &source.deposits_data[i]);
-        }
-
-        let validators_poseidon_root_targets = HashOut::from_vec(
-            source
-                .validators_poseidon_root
-                .iter()
-                .map(|&number| F::from_canonical_u64(number))
-                .collect_vec(),
-        );
-        pw.set_hash_target(
-            self.validators_poseidon_root,
-            validators_poseidon_root_targets,
-        );
-    }
 }
 
 impl<F: RichField, const N: usize> SetPWValues<F, FinalCircuitInput> for FinalCircuitTargets<N> {
@@ -257,99 +142,4 @@ where
 {
     let string_vec: Vec<String> = x.iter().map(|&num| num.to_string()).collect();
     string_vec.serialize(s)
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct ValidatorInput {
-    pub pubkey: String,
-    pub withdrawal_credentials: String,
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub effective_balance: BigUint,
-    pub slashed: u64,
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub activation_eligibility_epoch: BigUint,
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub activation_epoch: BigUint,
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub exit_epoch: BigUint,
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub withdrawable_epoch: BigUint,
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct ValidatorBalancesInput {
-    pub validators: Vec<ValidatorInput>,
-    #[serde(with = "bool_vec_as_int_vec_nested")]
-    pub balances: Vec<Vec<bool>>,
-    #[serde(with = "bool_vec_as_int_vec_nested")]
-    pub withdrawal_credentials: Vec<Vec<bool>>,
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub current_epoch: BigUint,
-    #[serde(with = "bool_vec_as_int_vec")]
-    pub validator_is_zero: Vec<bool>,
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct ValidatorBalanceAccumulatorInput {
-    pub balances_root: String,
-    pub balances_leaves: Vec<String>,
-    pub balances_proofs: Vec<Vec<String>>,
-    // pub validator_deposit_indexes: Vec<u64>,
-    pub validator_indices: Vec<u64>,
-    // pub validator_commitment_proofs: Vec<Vec<Vec<String>>>,
-    pub validators: Vec<ValidatorInput>,
-    #[serde(with = "bool_vec_as_int_vec")]
-    pub validator_is_not_zero: Vec<bool>,
-    // pub validator_commitment_root: Vec<String>,
-    pub current_epoch: u64,
-    // pub current_eth1_deposit_index: u64,
-    pub deposits_data: Vec<DepositDataInput>,
-    pub validators_poseidon_root: Vec<u64>,
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct DepositDataInput {
-    pub pubkey: String,
-    pub withdrawal_credentials: String,
-    pub amount: u64,
-    pub signature: String,
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use serde_json;
-
-    #[test]
-    fn test_serialize_deserialize() {
-        let input = ValidatorBalancesInput {
-            validators: vec![ValidatorInput {
-                pubkey: "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000".to_string(),
-                withdrawal_credentials: "0000000000000000000000000000000000000000000000000000000000000000".to_string(),
-                effective_balance: BigUint::from(3u64),
-                slashed: 0,
-                activation_eligibility_epoch: BigUint::from(4u64),
-                activation_epoch: BigUint::from(5u64),
-                exit_epoch: BigUint::from(6u64),
-                withdrawable_epoch: BigUint::from(7u64),
-            }],
-            balances: vec![vec![true, false, true], vec![false, true, false]],
-            withdrawal_credentials: vec![[false; 256].to_vec()],
-            current_epoch: BigUint::from(40u64),
-            validator_is_zero: vec![false, false, false],
-        };
-
-        // Serialize
-        let serialized = serde_json::to_string(&input).unwrap();
-
-        // Deserialize
-        let deserialized: ValidatorBalancesInput = serde_json::from_str(&serialized).unwrap();
-
-        // Check that the original and deserialized structs are equal
-        assert_eq!(input, deserialized);
-    }
 }

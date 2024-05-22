@@ -7,12 +7,8 @@ use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use circuit::{Circuit, CircuitInput};
 use circuits::{
-    circuit_input_common::{
-        BalanceAccumulatorProof, BalanceProof, FinalCircuitInput, FinalProof,
-        ValidatorBalanceAccumulatorInput, ValidatorProof,
-    },
+    circuit_input_common::{BalanceProof, FinalCircuitInput, FinalProof, ValidatorProof},
     serialization::generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
-    serializers::ValidatorShaInput,
     utils::utils::hash_bytes,
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
     withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
@@ -127,51 +123,6 @@ where
     .await?)
 }
 
-pub async fn fetch_validator_balance_accumulator_input(
-    con: &mut Connection,
-    protocol: String,
-    index: u64,
-) -> Result<ValidatorBalanceAccumulatorInput> {
-    Ok(fetch_redis_json_object::<ValidatorBalanceAccumulatorInput>(
-        con,
-        format!(
-            "{}:{}:{}",
-            DB_CONSTANTS.balance_verification_accumulator_key.to_owned(),
-            protocol,
-            index
-        ),
-    )
-    .await?)
-}
-
-pub async fn save_balance_accumulator_proof(
-    con: &mut Connection,
-    proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    level: u64,
-    index: u64,
-) -> Result<()> {
-    let balance_proof = BalanceAccumulatorProof {
-        needs_change: false,
-        proof: proof.to_bytes(),
-    };
-
-    save_json_object(
-        con,
-        &format!(
-            "{}:{}:{}",
-            DB_CONSTANTS
-                .balance_verification_accumulator_proof_key
-                .to_owned(),
-            level,
-            index
-        ),
-        &balance_proof,
-    )
-    .await?;
-
-    Ok(())
-}
-
 pub async fn fetch_final_layer_input(
     con: &mut Connection,
     protocol: &str,
@@ -245,7 +196,7 @@ pub async fn save_final_proof(
     balance_sum: u64,
     number_of_non_activated_validators: u64,
     number_of_active_validators: u64,
-    number_of_exitted_validators: u64,
+    number_of_exited_validators: u64,
 ) -> Result<()> {
     let final_proof = FinalProof {
         needs_change: false,
@@ -254,7 +205,7 @@ pub async fn save_final_proof(
         balance_sum,
         number_of_non_activated_validators,
         number_of_active_validators,
-        number_of_exitted_validators,
+        number_of_exited_validators,
         proof: proof.to_bytes(),
     };
 

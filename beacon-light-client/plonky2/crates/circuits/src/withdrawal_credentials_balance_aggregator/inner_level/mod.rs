@@ -93,9 +93,9 @@ where
             r_input.number_of_active_validators,
         );
 
-        let number_of_exitted_validators = builder.add(
-            l_input.number_of_exitted_validators,
-            r_input.number_of_exitted_validators,
+        let number_of_exited_validators = builder.add(
+            l_input.number_of_exited_validators,
+            r_input.number_of_exited_validators,
         );
 
         let mut range_total_value =
@@ -127,7 +127,7 @@ where
             range_validator_commitment,
             number_of_non_activated_validators,
             number_of_active_validators,
-            number_of_exitted_validators,
+            number_of_exited_validators,
         };
 
         output_target.register_public_inputs(builder);
