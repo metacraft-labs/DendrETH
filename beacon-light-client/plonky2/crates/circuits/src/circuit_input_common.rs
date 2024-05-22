@@ -3,22 +3,13 @@ use crate::{
         DepositDataTarget, ValidatorBalanceVerificationAccumulatorTargets,
     },
     final_layer::build_final_circuit::FinalCircuitTargets,
-    serializers::{
-        biguint_to_str, bool_vec_as_int_vec, bool_vec_as_int_vec_nested, parse_biguint,
-        ValidatorShaInput,
-    },
+    serializers::{biguint_to_str, bool_vec_as_int_vec, bool_vec_as_int_vec_nested, parse_biguint},
     utils::{
-        biguint::WitnessBigUint,
-        hashing::{
-            validator_hash_tree_root::ValidatorShaTargets,
-            validator_hash_tree_root_poseidon::ValidatorTarget,
-        },
+        biguint::WitnessBigUint, hashing::validator_hash_tree_root_poseidon::ValidatorTarget,
         utils::SetBytesArray,
     },
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
-    withdrawal_credentials_balance_aggregator::first_level::{
-        ValidatorBalanceVerificationTargets, WithdrawalCredentialsBalanceAggregatorFirstLevel,
-    },
+    withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
 use circuit::CircuitOutput;
 use itertools::Itertools;
@@ -139,39 +130,6 @@ impl<F: RichField> SetPWValues<F, ValidatorInput> for ValidatorTarget {
     }
 }
 
-impl<F: RichField, const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIALS_COUNT: usize>
-    SetPWValues<F, ValidatorBalancesInput>
-    for ValidatorBalanceVerificationTargets<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>
-where
-    [(); VALIDATORS_COUNT / 4]:,
-{
-    fn set_pw_values(&self, pw: &mut PartialWitness<F>, source: &ValidatorBalancesInput) {
-        for i in 0..VALIDATORS_COUNT / 4 {
-            set_boolean_pw_values(pw, &self.balances_leaves[i], &source.balances[i]);
-        }
-
-        for i in 0..VALIDATORS_COUNT {
-            self.validators[i].set_pw_values(pw, &source.validators[i]);
-        }
-
-        for i in 0..WITHDRAWAL_CREDENTIALS_COUNT {
-            set_boolean_pw_values(
-                pw,
-                &self.withdrawal_credentials[i],
-                &source.withdrawal_credentials[i],
-            );
-        }
-
-        set_boolean_pw_values(
-            pw,
-            &self.non_zero_validator_leaves_mask,
-            &source.validator_is_zero,
-        );
-
-        pw.set_biguint_target(&self.current_epoch, &source.current_epoch);
-    }
-}
-
 impl<F: RichField> SetPWValues<F, DepositDataInput> for DepositDataTarget {
     fn set_pw_values(&self, pw: &mut PartialWitness<F>, source: &DepositDataInput) {
         pw.set_bytes_array(&self.pubkey, &hex::decode(&source.pubkey).unwrap());
@@ -243,41 +201,6 @@ impl<F: RichField> SetPWValues<F, ValidatorBalanceAccumulatorInput>
         pw.set_hash_target(
             self.validators_poseidon_root,
             validators_poseidon_root_targets,
-        );
-    }
-}
-
-impl<F: RichField> SetPWValues<F, ValidatorShaInput> for ValidatorShaTargets {
-    fn set_pw_values(&self, pw: &mut PartialWitness<F>, source: &ValidatorShaInput) {
-        pw.set_bytes_array(&self.pubkey, &hex::decode(&source.pubkey).unwrap());
-
-        pw.set_bytes_array(
-            &self.withdrawal_credentials,
-            &hex::decode(&source.withdrawal_credentials).unwrap(),
-        );
-
-        pw.set_bytes_array(
-            &self.effective_balance,
-            &hex::decode(&source.effective_balance).unwrap(),
-        );
-
-        pw.set_bytes_array(&self.slashed, &hex::decode(&source.slashed).unwrap());
-
-        pw.set_bytes_array(
-            &self.activation_eligibility_epoch,
-            &hex::decode(&source.activation_eligibility_epoch).unwrap(),
-        );
-
-        pw.set_bytes_array(
-            &self.activation_epoch,
-            &hex::decode(&source.activation_epoch).unwrap(),
-        );
-
-        pw.set_bytes_array(&self.exit_epoch, &hex::decode(&source.exit_epoch).unwrap());
-
-        pw.set_bytes_array(
-            &self.withdrawable_epoch,
-            &hex::decode(&source.withdrawable_epoch).unwrap(),
         );
     }
 }
