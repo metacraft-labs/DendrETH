@@ -33,16 +33,16 @@ import { Tree } from '@chainsafe/persistent-merkle-tree';
 
   let deposit_message = {
     pubkey: hexToBytes(
-      '0x8fd1defb5dc823f93ba4e42046e52c61c3b46cdd473a8ae0d743bad8aebf85134f20b794d41125778485eb576d9a5b7a',
+      '0x90823dc2e5ab8a52a0b32883ea8451cbe4c921a42ce439f4fb306a90e9f267e463241da7274b6d44c2e4b95ddbcb0ad3',
     ),
     withdrawalCredentials: hexToBytes(
-      '0x0100000000000000000000000b18ddbc066ee097871d4973c2fc47131a18a07a',
+      '0x005bfe00d82068a0c2a6687afaf969dad5a9c663cb492815a65d203885aaf993',
     ),
     amount: 32000000000,
   };
 
   let signature =
-    '0x8b8d80e8f19b8e6d40687e8a99d9f1135efa2deedf49d7268e8b424d4075b85806d3a664873360d494ce6040bba3f4ca0fe8a89e1d9d67c5ba61f028ddce14453fc183c0960bd0497084235ef008790aa5b5d75f020616cf64418deb15b7ad42';
+    '0x802899068eb4b37c95d46869947cac42b9c65b90fcb3fde3854c93ad5737800c01e9c82e174c8ed5cc18210bd60a94ea0082a850817b1dddd4096059b6846417b05094c59d3dd7f4028ed9dff395755f9905a88015b0ed200a7ec1ed60c24922';
 
   let deposit_message_hash_tree_root =
     ssz.phase0.DepositMessage.hashTreeRoot(deposit_message);
@@ -62,6 +62,17 @@ import { Tree } from '@chainsafe/persistent-merkle-tree';
   ]);
 
   let { beaconState: beaconState } = await beaconApi.getBeaconState(5046663n);
+
+  let redis = new Redis('localhost', 6379);
+
+  generate_leaf_level_data(
+    bytesToHex(deposit_message.pubkey),
+    1n,
+    signature,
+    bytesToHex(deposit_message_hash_tree_root),
+    beaconState,
+    redis,
+  );
 })();
 
 type BeaconState = Awaited<
@@ -76,7 +87,7 @@ async function generate_leaf_level_data(
   beaconState: BeaconState,
   redis: Redis,
 ) {
-  const {ssz} = await import('@lodestar/types');
+  const { ssz } = await import('@lodestar/types');
 
   let foundIndex = -1;
   let validator = beaconState.validators.find((validator, i) => {
@@ -87,14 +98,24 @@ async function generate_leaf_level_data(
     return false;
   });
 
+  if (foundIndex === -1) {
+    throw new Error('Validator not found');
+  }
 
   const balancesView = ssz.deneb.BeaconState.fields.balances.toViewDU(
     beaconState.balances,
   );
   const balancesTree = new Tree(balancesView.node);
-  const balanceZeroGindex = ssz.deneb.BeaconState.fields.balances.getPathInfo([0]).gindex;
+  const balanceZeroGindex = ssz.deneb.BeaconState.fields.balances.getPathInfo([
+    0,
+  ]).gindex;
 
   let balanceIndex = Math.floor(foundIndex / 4);
+
+  validator!.pubkey = bytesToHex(validator!.pubkey) as any;
+  validator!.withdrawalCredentials = bytesToHex(
+    validator!.withdrawalCredentials!,
+  ) as any;
 
   let deposit_accumulator_input = {
     validator: validator,
@@ -105,7 +126,11 @@ async function generate_leaf_level_data(
       deposit_message_hash_tree_root,
     },
     commitmentMapperHashTreeRoot:
-      await redis.extractHashFromCommitmentMapperProof(1n, BigInt(beaconState.slot), 'poseidon'),
+      await redis.extractHashFromCommitmentMapperProof(
+        1n,
+        BigInt(beaconState.slot),
+        'poseidon',
+      ),
     commimtnetMapperProof: await getCommitmentMapperProof(
       BigInt(beaconState.slot),
       gindexFromIndex(BigInt(foundIndex), 40n),
@@ -113,14 +138,23 @@ async function generate_leaf_level_data(
       redis,
     ),
     validatorIndex: foundIndex,
-    validatorDepositRoot: // TODO: we should have the deposits commitment mapper root
-    validatorDepositProof: // TODO: we should have the deposits commitment mapper proof
-    balance_tree_root: ssz.deneb.BeaconState.fields.balances.hashTreeRoot(beaconState.balances),
-    balance_leaf: balancesTree.getNode(balanceZeroGindex + BigInt(balanceIndex)).root,
-    balance_proof: balancesTree.getSingleProof(balanceZeroGindex + BigInt(balanceIndex)).slice(0, 22).map(bytesToHex),
+    // validatorDepositRoot: // TODO: we should have the deposits commitment mapper root
+    // validatorDepositProof: // TODO: we should have the deposits commitment mapper proof
+    balance_tree_root: bytesToHex(
+      ssz.deneb.BeaconState.fields.balances.hashTreeRoot(beaconState.balances),
+    ),
+    balance_leaf: bytesToHex(
+      balancesTree.getNode(balanceZeroGindex + BigInt(balanceIndex)).root,
+    ),
+    balance_proof: balancesTree
+      .getSingleProof(balanceZeroGindex + BigInt(balanceIndex))
+      .slice(0, 22)
+      .map(bytesToHex),
     blsSignatureProofKey: `bls12_381_${pubkey}_${deposit_index}`,
     currentEpoch: BigInt(beaconState.slot) / 32n,
     isDummy: false,
     eth1DepositIndex: deposit_index,
   };
+
+  console.log(deposit_accumulator_input);
 }
