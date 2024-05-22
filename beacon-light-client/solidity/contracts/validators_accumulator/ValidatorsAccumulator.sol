@@ -90,7 +90,7 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
     );
 
     bytes memory depositIndex = IDeposit(depositAddress).get_deposit_count();
-    emit Deposited(pubkey, signature, depositMessageRoot, depositIndex);
+    emit Deposited(pubkey, depositIndex, signature, depositMessageRoot);
 
     // Create a node for the validator
     bytes32 node = sha256(
