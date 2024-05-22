@@ -88,9 +88,9 @@ export class DepositScheduler {
       {
         [Events.Deposited]: [
           'pubkey',
+          'depositIndex',
           'signature',
           'depositMessageRoot',
-          'depositIndex',
         ],
       },
       this.syncBlock,
