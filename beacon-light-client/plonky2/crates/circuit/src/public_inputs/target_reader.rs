@@ -30,7 +30,7 @@ impl<'a> PublicInputsTargetReader<'a> {
     }
 
     pub fn read_object<R: PublicInputsTargetReadable>(&mut self) -> R {
-        let read_targets = &self.public_inputs[self.offset..self.offset + R::get_size()];
+        let read_targets = self.read_n(R::get_size());
         R::from_targets(&read_targets)
     }
 }

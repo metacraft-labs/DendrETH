@@ -20,5 +20,6 @@ pub fn poseidon_pair<F: RichField + Extendable<D>, const D: usize>(
     left: HashOutTarget,
     right: HashOutTarget,
 ) -> HashOutTarget {
-    builder.hash_n_to_hash_no_pad::<PoseidonHash>([left.elements, right.elements].concat())
+    let elements = [left.elements, right.elements].concat();
+    builder.hash_n_to_hash_no_pad::<PoseidonHash>(elements)
 }

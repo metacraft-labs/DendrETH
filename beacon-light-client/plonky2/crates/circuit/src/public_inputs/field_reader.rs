@@ -33,9 +33,9 @@ impl<'a, F: RichField> PublicInputsFieldReader<'a, F> {
         read_elements
     }
 
-    pub fn read_object<O: PublicInputsReadable>(&mut self) -> O::Primitive {
-        let read_elements = self.read_n(O::get_size());
-        O::from_elements(read_elements)
+    pub fn read_object<R: PublicInputsReadable>(&mut self) -> R::Primitive {
+        let read_elements = self.read_n(R::get_size());
+        R::from_elements(read_elements)
     }
 }
 

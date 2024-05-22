@@ -111,7 +111,7 @@ where
 
         let input = Self::read_circuit_input_target(builder);
 
-        let balances_hash_tree_root_poseidon = hash_tree_root_new(builder, &input.balances_leaves);
+        let range_balances_root = hash_tree_root_new(builder, &input.balances_leaves);
 
         let validators_leaves = input
             .validators
@@ -183,7 +183,7 @@ where
         Self::Target {
             non_zero_validator_leaves_mask: input.non_zero_validator_leaves_mask,
             range_total_value,
-            range_balances_root: balances_hash_tree_root_poseidon,
+            range_balances_root,
             range_validator_commitment: validators_hash_tree_root_poseidon,
             validators: input.validators,
             balances_leaves: input.balances_leaves,

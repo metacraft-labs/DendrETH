@@ -1,5 +1,5 @@
 use plonky2::{
-    hash::hash_types::RichField,
+    hash::hash_types::{HashOut, HashOutTarget, RichField},
     iop::{
         target::{BoolTarget, Target},
         witness::{PartialWitness, WitnessWrite},
@@ -29,6 +29,15 @@ impl<F: RichField> SetWitness<F> for BoolTarget {
 
     fn set_witness(&self, witness: &mut PartialWitness<F>, input: &Self::Input) {
         witness.set_bool_target(*self, *input);
+    }
+}
+
+impl<F: RichField> SetWitness<F> for HashOutTarget {
+    type Input = <Self as TargetPrimitive>::Primitive;
+
+    fn set_witness(&self, witness: &mut PartialWitness<F>, input: &Self::Input) {
+        let hashout = HashOut::from_vec(input.map(|number| F::from_canonical_u64(number)).to_vec());
+        witness.set_hash_target(*self, hashout);
     }
 }
 
