@@ -9,6 +9,12 @@ import {
   BeaconApi,
   getBeaconApi,
 } from '@dendreth/relay/implementations/beacon-api';
+import { Redis } from '@dendreth/relay/implementations/redis';
+import {
+  getCommitmentMapperProof,
+  gindexFromIndex,
+} from '../validators_commitment_mapper_tree/utils';
+import { Tree } from '@chainsafe/persistent-merkle-tree';
 
 (async () => {
   const { ssz } = await import('@lodestar/types');
@@ -58,12 +64,63 @@ import {
   let { beaconState: beaconState } = await beaconApi.getBeaconState(5046663n);
 })();
 
-type BeaconState = Awaited<ReturnType<BeaconApi['getBeaconState']>>['beaconState'];
+type BeaconState = Awaited<
+  ReturnType<BeaconApi['getBeaconState']>
+>['beaconState'];
 
 async function generate_leaf_level_data(
   pubkey: string,
-  deposit_index: number,
+  deposit_index: bigint,
   signature: string,
   deposit_message_hash_tree_root: string,
   beaconState: BeaconState,
-) {}
+  redis: Redis,
+) {
+  const {ssz} = await import('@lodestar/types');
+
+  let foundIndex = -1;
+  let validator = beaconState.validators.find((validator, i) => {
+    if (formatHex(bytesToHex(validator.pubkey)) === formatHex(pubkey)) {
+      foundIndex = i;
+      return true;
+    }
+    return false;
+  });
+
+
+  const balancesView = ssz.deneb.BeaconState.fields.balances.toViewDU(
+    beaconState.balances,
+  );
+  const balancesTree = new Tree(balancesView.node);
+  const balanceZeroGindex = ssz.deneb.BeaconState.fields.balances.getPathInfo([0]).gindex;
+
+  let balanceIndex = Math.floor(foundIndex / 4);
+
+  let deposit_accumulator_input = {
+    validator: validator,
+    validatorDeposit: {
+      pubkey,
+      deposit_index,
+      signature,
+      deposit_message_hash_tree_root,
+    },
+    commitmentMapperHashTreeRoot:
+      await redis.extractHashFromCommitmentMapperProof(1n, BigInt(beaconState.slot), 'poseidon'),
+    commimtnetMapperProof: await getCommitmentMapperProof(
+      BigInt(beaconState.slot),
+      gindexFromIndex(BigInt(foundIndex), 40n),
+      'poseidon',
+      redis,
+    ),
+    validatorIndex: foundIndex,
+    validatorDepositRoot: // TODO: we should have the deposits commitment mapper root
+    validatorDepositProof: // TODO: we should have the deposits commitment mapper proof
+    balance_tree_root: ssz.deneb.BeaconState.fields.balances.hashTreeRoot(beaconState.balances),
+    balance_leaf: balancesTree.getNode(balanceZeroGindex + BigInt(balanceIndex)).root,
+    balance_proof: balancesTree.getSingleProof(balanceZeroGindex + BigInt(balanceIndex)).slice(0, 22).map(bytesToHex),
+    blsSignatureProofKey: `bls12_381_${pubkey}_${deposit_index}`,
+    currentEpoch: BigInt(beaconState.slot) / 32n,
+    isDummy: false,
+    eth1DepositIndex: deposit_index,
+  };
+}

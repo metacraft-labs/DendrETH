@@ -490,6 +490,7 @@ pub fn test_deposit_accumulator_leaf_circuit() {
     // let bls_common_data = plonky2::circuit_data::CommonCircuitData::<GoldilocksField, 2>::new();
     // let bls_verifier_data =
     //     VerifierOnlyCircuitData::<PoseidonGoldilocksConfig, 2>;
+
     let bls_data = CircuitData::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
         &[],
         &CustomGateSerializer,
