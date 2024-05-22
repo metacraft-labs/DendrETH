@@ -17,7 +17,7 @@ import { RequestOptions } from 'https';
 const logger = getGenericLogger();
 
 task('balance-verifier-publisher', 'Run relayer')
-.addParam('balanceVerifier', 'The address of the BalanceVerifier contract')
+  .addParam('balanceVerifier', 'The address of the BalanceVerifier contract')
   .addParam(
     'privateKey',
     'The private key that will be used to publish',
