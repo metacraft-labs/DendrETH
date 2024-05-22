@@ -419,7 +419,7 @@ export class Redis implements IRedis {
   ): Promise<void> {
     await this.waitForConnection();
     await this.client.set(
-      `${CONSTANTS.validatorProofKey}: zeroes:${depth}`,
+      `${CONSTANTS.validatorProofKey}:zeroes:${depth}`,
       JSON.stringify(proof),
     );
   }
@@ -503,7 +503,7 @@ export class Redis implements IRedis {
     await this.waitForConnection();
 
     return this.client.get(
-      `${protocol}: balance_wrapper_proof_with_public_inputs`,
+      `${protocol}:balance_wrapper_proof_with_public_inputs`,
     );
   }
 
@@ -550,7 +550,7 @@ export class Redis implements IRedis {
   ): Promise<void> {
     await this.waitForConnection();
 
-    await this.pubSub.subscribe(`${protocol}: gnark_proofs_channel`, listener);
+    await this.pubSub.subscribe(`${protocol}:gnark_proofs_channel`, listener);
   }
 
   private async waitForConnection() {
