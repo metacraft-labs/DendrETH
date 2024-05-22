@@ -24,10 +24,3 @@ impl<T: TargetPrimitive, const N: usize> TargetPrimitive for [T; N] {
 impl TargetPrimitive for HashOutTarget {
     type Primitive = Array<u64, NUM_HASH_OUT_ELTS>;
 }
-
-// TODO: figure this out
-// impl<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize> TargetPrimitive
-//     for ProofWithPublicInputsTarget<D>
-// {
-//     type Primitive = ProofWithPublicInputs<F, C, D>;
-// }

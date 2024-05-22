@@ -269,26 +269,20 @@ pub fn bytes_to_bits(bytes: &[u8]) -> Vec<bool> {
     bits
 }
 
+pub fn u64_to_ssz_leaf(value: u64) -> [u8; 32] {
+    let mut ret = vec![0u8; 32];
+    ret[0..8].copy_from_slice(value.to_le_bytes().as_slice());
+    ret.try_into().unwrap()
+}
+
 pub fn bits_to_bytes(bits: &[bool]) -> Vec<u8> {
-    let mut bytes = Vec::new();
-    let mut byte = 0u8;
-
-    for (index, bit) in bits.iter().enumerate() {
-        if *bit {
-            byte |= 1 << (7 - (index % 8));
-        }
-
-        if index % 8 == 7 {
-            bytes.push(byte);
-            byte = 0;
-        }
-    }
-
-    if bits.len() % 8 != 0 {
-        bytes.push(byte);
-    }
-
-    bytes
+    bits.chunks(8)
+        .map(|bits| {
+            (0..8usize).fold(0u8, |byte, pos| {
+                byte | ((bits[pos] as usize) << (7 - pos)) as u8
+            })
+        })
+        .collect::<Vec<_>>()
 }
 
 pub trait SetBytesArray<F: Field> {

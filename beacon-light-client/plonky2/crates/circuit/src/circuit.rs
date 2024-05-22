@@ -7,7 +7,6 @@ use plonky2::{
         circuit_data::{CircuitConfig, CircuitData},
         config::GenericConfig,
     },
-    util::serialization::{Buffer, IoResult},
 };
 
 // TODO: stick D in the circuit config when const generics mature enough
@@ -73,10 +72,4 @@ pub trait ReadableCircuitInputTarget {
     fn read_circuit_input_target<F: RichField + Extendable<D>, const D: usize>(
         builder: &mut CircuitBuilder<F, D>,
     ) -> Self::CircuitInputTarget;
-}
-
-// TODO: delete this
-pub trait SerializableCircuit: Circuit {
-    fn serialize(targets: &Self::Target) -> IoResult<Vec<u8>>;
-    fn deserialize(data: &mut Buffer) -> IoResult<Self::Target>;
 }

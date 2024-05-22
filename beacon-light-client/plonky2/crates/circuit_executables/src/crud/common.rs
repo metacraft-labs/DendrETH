@@ -9,7 +9,7 @@ use circuit::{Circuit, CircuitInput};
 use circuits::{
     circuit_input_common::{BalanceProof, FinalCircuitInput, FinalProof, ValidatorProof},
     serialization::generator_serializer::{DendrETHGateSerializer, DendrETHGeneratorSerializer},
-    utils::utils::hash_bytes,
+    utils::utils::{bits_to_bytes, hash_bytes, u64_to_ssz_leaf},
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
     withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
@@ -340,23 +340,6 @@ pub async fn save_json_object<T: Serialize>(
     let json = serde_json::to_string(object)?;
     con.set(key, json).await?;
     Ok(())
-}
-
-pub fn u64_to_ssz_leaf(value: u64) -> [u8; 32] {
-    let mut ret = vec![0u8; 32];
-    ret[0..8].copy_from_slice(value.to_le_bytes().as_slice());
-    ret.try_into().unwrap()
-}
-
-// TODO: This must go in utils
-fn bits_to_bytes(bits: &[bool]) -> Vec<u8> {
-    bits.chunks(8)
-        .map(|bits| {
-            (0..8usize).fold(0u8, |byte, pos| {
-                byte | ((bits[pos] as usize) << (7 - pos)) as u8
-            })
-        })
-        .collect::<Vec<_>>()
 }
 
 pub async fn save_validator_proof(

@@ -8,8 +8,6 @@ use plonky2::{
 
 use crate::target_primitive::TargetPrimitive;
 
-// TODO: new trait TargetPrimitiveType
-
 pub trait SetWitness<F: RichField> {
     type Input;
 

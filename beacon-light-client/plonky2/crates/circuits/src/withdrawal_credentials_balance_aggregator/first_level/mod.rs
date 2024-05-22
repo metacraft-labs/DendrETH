@@ -1,3 +1,5 @@
+mod is_active_validator;
+
 use crate::serializers::serde_bool_array_to_hex_string;
 use crate::serializers::serde_bool_array_to_hex_string_nested;
 use crate::utils::hashing::hash_tree_root::hash_tree_root_new;
@@ -26,10 +28,11 @@ use crate::{
         hashing::{
             sha256::bool_arrays_are_equal, validator_hash_tree_root_poseidon::ValidatorTarget,
         },
-        is_active_validator::get_validator_status,
         utils::{select_biguint, ssz_num_from_bits},
     },
 };
+
+use self::is_active_validator::get_validator_status;
 
 #[derive(CircuitTarget, SerdeCircuitTarget)]
 #[serde(rename_all = "camelCase")]
