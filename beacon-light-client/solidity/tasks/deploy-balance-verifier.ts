@@ -12,6 +12,10 @@ const logger = getGenericLogger();
 
 task('deploy-balance-verifier', 'Deploy the beacon light client contract')
   .addParam('protocol', 'The protocol used. Should be "lido" or "diva"')
+  .addParam(
+    'ownerAddress',
+    'The address of the owner of the balance verifier contract',
+  )
   .addOptionalParam(
     'withdrawCredentials',
     'The withdraw credentials for the Diva contract',
@@ -32,11 +36,10 @@ task('deploy-balance-verifier', 'Deploy the beacon light client contract')
     let WITHDRAWAL_CREDENTIALS = !args.withdrawCredentials
       ? getLidoWithdrawCredentials(networkName)
       : args.withdrawCredentials;
-      let GENESIS_BLOCK_TIMESTAMP = getGenesisBlockTimestamp(networkName);
+    let GENESIS_BLOCK_TIMESTAMP = getGenesisBlockTimestamp(networkName);
 
     let VERIFIER_DIGEST = args.verifierDigest;
     if (!VERIFIER_DIGEST) {
-
       const config = {
         REDIS_HOST: process.env.REDIS_HOST,
         REDIS_PORT: Number(process.env.REDIS_PORT),
@@ -46,7 +49,7 @@ task('deploy-balance-verifier', 'Deploy the beacon light client contract')
 
       const redis = new Redis(config.REDIS_HOST!, config.REDIS_PORT);
 
-      let balance_wrapper_verifier_only =  await redis.get(
+      let balance_wrapper_verifier_only = await redis.get(
         'balance_wrapper_verifier_only',
       );
 
@@ -74,9 +77,19 @@ task('deploy-balance-verifier', 'Deploy the beacon light client contract')
       CONTRACT = 'BalanceVerifierDiva';
     }
 
+    const verifier = await (
+      await ethers.getContractFactory('PlonkVerifier')
+    ).deploy();
+
     const beaconLightClient = await (
       await ethers.getContractFactory(CONTRACT)
-    ).deploy(VERIFIER_DIGEST, WITHDRAWAL_CREDENTIALS, GENESIS_BLOCK_TIMESTAMP);
+    ).deploy(
+      VERIFIER_DIGEST,
+      WITHDRAWAL_CREDENTIALS,
+      GENESIS_BLOCK_TIMESTAMP,
+      verifier.address,
+      args.ownerAddress,
+    );
 
     logger.info(`>>> Waiting for ${CONTRACT} deployment...`);
 

@@ -10,12 +10,16 @@ contract BalanceVerifierDiva is BalanceVerifier, IBalanceVerifierDiva {
   constructor(
     uint256 verifierDigest,
     bytes32 withdrawalcredentials,
-    uint256 genesisBlockTimestamp
+    uint256 genesisBlockTimestamp,
+    address _verifier,
+    address _owner
   )
     BalanceVerifier(
       verifierDigest,
       withdrawalcredentials,
-      genesisBlockTimestamp
+      genesisBlockTimestamp,
+      _verifier,
+      _owner
     )
   {}
 
