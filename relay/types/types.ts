@@ -233,3 +233,9 @@ export interface IndexedValidator {
   index: number;
   validator: Validator;
 }
+
+export interface Deposit {
+  pubkey: string;
+  signature: string;
+  signingRoot: string;
+}
