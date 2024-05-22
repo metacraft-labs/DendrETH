@@ -5,7 +5,7 @@ import {
   Validator,
   ValidatorShaInput,
   ValidatorProof,
-  Deposit,
+  BlsDepositData,
 } from '../types/types';
 import { RedisClientType, createClient } from 'redis';
 import CONSTANTS from '../../beacon-light-client/plonky2/constants/validator_commitment_constants.json';
@@ -428,17 +428,17 @@ export class Redis implements IRedis {
   async getDepositsCount(): Promise<number> {
     await this.waitForConnection();
 
-    const pattern = `${CONSTANTS.depositsKey}:*`;
+    const pattern = `${CONSTANTS.depositSignatureVerificationKey}:*`;
     const keys = await this.client.keys(pattern);
 
     return keys.length;
   }
 
-  async saveDeposit(index: number, deposit: Deposit): Promise<void> {
+  async saveDeposit(index: number, deposit: BlsDepositData): Promise<void> {
     await this.waitForConnection();
 
     await this.client.set(
-      `${CONSTANTS.depositsKey}:${index}`,
+      `${CONSTANTS.depositSignatureVerificationKey}:${index}`,
       JSON.stringify(deposit),
     );
   }

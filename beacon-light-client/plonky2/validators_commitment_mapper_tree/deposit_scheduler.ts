@@ -23,7 +23,9 @@ export class DepositScheduler {
 
   async init(options: any) {
     this.redis = new Redis(options['redis-host'], options['redis-port']);
-    this.queue = new WorkQueue(new KeyPrefix(`${CONSTANTS.depositsQueue}`));
+    this.queue = new WorkQueue(
+      new KeyPrefix(`${CONSTANTS.depositSignatureVerificationQueue}`),
+    );
     this.provider = new ethers.providers.JsonRpcProvider(options['rpc-url']);
     this.contract = new ethers.Contract(
       options['address'],
@@ -131,10 +133,9 @@ export class DepositScheduler {
   }
 
   async scheduleDepositSignatureProof(index: bigint) {
-    const buffer = new ArrayBuffer(9);
+    const buffer = new ArrayBuffer(8);
     const dataView = new DataView(buffer);
-    dataView.setUint8(0, 0);
-    dataView.setBigUint64(1, index, false);
+    dataView.setBigUint64(0, index, false);
     this.queue.addItem(this.redis.client, new Item(Buffer.from(buffer)));
   }
 }

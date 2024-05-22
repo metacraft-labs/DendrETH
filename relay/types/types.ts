@@ -234,7 +234,7 @@ export interface IndexedValidator {
   validator: Validator;
 }
 
-export interface Deposit {
+export interface BlsDepositData {
   pubkey: string;
   signature: string;
   signingRoot: string;
