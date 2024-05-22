@@ -94,6 +94,8 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
     beaconState.balances,
   );
 
+  console.log('balancesView is: ', balancesView);
+
   const balancesTree = new Tree(balancesView.node);
 
   const balanceZeroIndex =
@@ -107,6 +109,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
         bytesToHex(balancesTree.getNode(balanceZeroIndex + BigInt(i)).root),
       ),
     );
+    console.log('balance in leaf is: ', balances[i]);
   }
 
   if (balances.length % (CIRCUIT_SIZE / 4) !== 0) {
@@ -183,7 +186,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
               .map(v => convertValidatorToValidatorPoseidonInput(v)),
             ...Array(
               (j + 1) * CIRCUIT_SIZE -
-                Math.min((j + 1) * CIRCUIT_SIZE, validators.length),
+              Math.min((j + 1) * CIRCUIT_SIZE, validators.length),
             ).fill(getZeroValidatorPoseidonInput()),
           ],
           withdrawalCredentials: [hexToBits(withdrawCredentials)],

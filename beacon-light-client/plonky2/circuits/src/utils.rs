@@ -1,3 +1,4 @@
+use num::BigUint;
 use plonky2::{
     field::{extension::Extendable, types::Field},
     hash::hash_types::RichField,
@@ -38,6 +39,73 @@ pub fn biguint_is_equal<F: RichField + Extendable<D>, const D: usize>(
     all_equal
 }
 
+pub fn select_biguint_target<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    b: BoolTarget,
+    x: BigUintTarget,
+    y: BigUintTarget,
+) -> BigUintTarget {
+    let tmp = mul_sub_biguint(builder, b, &y, &y);
+    mul_sub_biguint(builder, b, &x, &tmp)
+}
+
+fn mul_sub_biguint<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    x: BoolTarget,
+    y: &BigUintTarget,
+    z: &BigUintTarget,
+) -> BigUintTarget {
+    let prod = builder.mul_biguint_by_bool(&y, x);
+    builder.sub_biguint(&prod, z)
+}
+
+pub fn get_validator_relevance<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    activation_epoch: &BigUintTarget,
+    current_epoch: &BigUintTarget,
+    withdrawable_epoch: &BigUintTarget,
+) -> BoolTarget {
+    let current_le_withdrawable_epoch = builder.cmp_biguint(&current_epoch, &withdrawable_epoch);
+    let activation_epoch_le_current_epoch = builder.cmp_biguint(&activation_epoch, &current_epoch);
+
+    builder.and(
+        current_le_withdrawable_epoch,
+        activation_epoch_le_current_epoch,
+    )
+}
+
+pub fn get_balance_from_leaf<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    leaf: [BoolTarget; 256],
+    balance_index: BigUintTarget,
+) {
+    let balances_in_leaf = split_into_chunks(builder, leaf);
+    let mut accumulator = ssz_num_from_bits(builder, &balances_in_leaf[0].clone());
+    for i in 0..balances_in_leaf.len() {
+        let current_index_t = builder.constant_biguint(&BigUint::from(i as u32));
+        let current_balance_in_leaf = ssz_num_from_bits(builder, &balances_in_leaf[i].clone());
+
+        let selector_enabled = biguint_is_equal(builder, &current_index_t, &balance_index);
+        accumulator = select_biguint_target(
+            builder,
+            selector_enabled,
+            current_balance_in_leaf,
+            accumulator,
+        );
+    }
+}
+
+pub fn split_into_chunks<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    leaf: [BoolTarget; 256],
+) -> [[BoolTarget; 64]; 4] {
+    let mut chunks = [[builder._false(); 64]; 4];
+    for (i, chunk) in chunks.iter_mut().enumerate() {
+        chunk.copy_from_slice(&leaf[i * 64..(i + 1) * 64]);
+    }
+    chunks
+}
+
 pub fn bool_target_equal<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     a: &[BoolTarget; ETH_SHA256_BIT_SIZE],
@@ -53,7 +121,8 @@ pub fn bool_target_equal<F: RichField + Extendable<D>, const D: usize>(
     all_equal
 }
 
-pub fn create_bool_target_array<F: RichField + Extendable<D>, const D: usize>( //Stefan TODO: size of slice should be function parameter
+pub fn create_bool_target_array<F: RichField + Extendable<D>, const D: usize>(
+    //Stefan TODO: size of slice should be function parameter
     builder: &mut CircuitBuilder<F, D>,
 ) -> [BoolTarget; ETH_SHA256_BIT_SIZE] {
     (0..ETH_SHA256_BIT_SIZE)
@@ -269,6 +338,22 @@ mod test_ssz_num_from_bits {
         Ok(config.test_cases)
     }
 
+    const D: usize = 2;
+    type C = PoseidonGoldilocksConfig;
+    type F = GoldilocksField;
+
+    #[test]
+    fn test_get_validator_relevance() {
+        // let mut pw = PartialWitness::new();
+        let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
+    }
+
+    #[test]
+    fn test_get_balance_from_leaf() {
+        // let mut pw = PartialWitness::new();
+        let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
+    }
+
     #[test]
     fn test_ssz_num_from_bits() -> Result<()> {
         let bound_test_cases = get_test_cases("../../../vendor/eth2.0-tests/ssz/uint_bounds.yaml")?
@@ -289,10 +374,6 @@ mod test_ssz_num_from_bits {
             .chain(random_test_cases.iter())
             .cloned()
             .collect_vec();
-
-        const D: usize = 2;
-        type C = PoseidonGoldilocksConfig;
-        type F = GoldilocksField;
 
         let grouped_test_cases = test_cases
             .iter()
