@@ -27,7 +27,7 @@ contract BeaconLightClient is LightClientUpdateVerifier, ILightClient {
 
   uint256 public currentIndex;
 
-  bytes32 domain;
+  bytes32 public domain;
 
   constructor(
     bytes32 _optimisticHeaderRoot,
