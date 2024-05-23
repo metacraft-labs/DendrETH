@@ -21,7 +21,11 @@ task('deploy', 'Deploy the beacon light client contract')
     const [deployer] = await ethers.getSigners();
 
     logger.info(`Deploying contracts with the account: ${deployer.address}`);
-    logger.info(`Account balance: ${(await deployer.getBalance()).toString()}`);
+    logger.info(
+      `Account balance: ${(
+        await deployer.provider.getBalance(deployer.address)
+      ).toString()}`,
+    );
 
     const beaconApi = await getBeaconApi(currentConfig.BEACON_REST_API);
 
@@ -34,11 +38,13 @@ task('deploy', 'Deploy the beacon light client contract')
     logger.info('>>> Waiting for BeaconLightClient deployment...');
 
     logger.info(
-      `Deploying transaction hash.. ${beaconLightClient.deployTransaction.hash}`,
+      `Deploying transaction hash.. ${
+        beaconLightClient.deploymentTransaction()?.hash
+      }`,
     );
 
-    const contract = await beaconLightClient.deployed();
+    const contract = await beaconLightClient.waitForDeployment();
 
-    logger.info(`>>> ${contract.address}`);
+    logger.info(`>>> ${contract.target}`);
     logger.info('>>> Done!');
   });

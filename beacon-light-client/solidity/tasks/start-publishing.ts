@@ -112,7 +112,7 @@ task('start-publishing', 'Run relayer')
 
     const beaconApi = await getBeaconApi(currentConfig.BEACON_REST_API);
     const contract = new SolidityContract(
-      lightClientContract,
+      lightClientContract as any,
       (network.config as any).url,
       args.transactionSpeed,
     );
@@ -123,7 +123,7 @@ task('start-publishing', 'Run relayer')
       contract,
       currentConfig,
       Number(args.slotsJump),
-      hashiAdapterContract,
+      hashiAdapterContract as any,
       (network.config as any).url,
       args.transactionSpeed,
     );

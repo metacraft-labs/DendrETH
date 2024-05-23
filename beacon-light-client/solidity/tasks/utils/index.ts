@@ -1,4 +1,4 @@
-import { sha256 } from 'ethers/lib/utils';
+import { sha256 } from 'ethers';
 import { IBeaconApi } from '@dendreth/relay/abstraction/beacon-api-interface';
 import { Config } from '@dendreth/relay/constants/constants';
 

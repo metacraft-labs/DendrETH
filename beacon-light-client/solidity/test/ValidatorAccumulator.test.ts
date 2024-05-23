@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat';
 import { Contract } from 'ethers';
-import { sha256 } from 'ethers/lib/utils';
+import { sha256 } from 'ethers';
 import { hashTreeRoot } from '@dendreth/utils/ts-utils/ssz-utils';
 import {
   bytesToHex,
@@ -9,65 +9,7 @@ import {
 } from '@dendreth/utils/ts-utils/bls';
 import { expect } from 'chai';
 import { writeFileSync } from 'fs';
-
-const depositContractAbi = [
-  { inputs: [], stateMutability: 'nonpayable', type: 'constructor' },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: false, internalType: 'bytes', name: 'pubkey', type: 'bytes' },
-      {
-        indexed: false,
-        internalType: 'bytes',
-        name: 'withdrawal_credentials',
-        type: 'bytes',
-      },
-      { indexed: false, internalType: 'bytes', name: 'amount', type: 'bytes' },
-      {
-        indexed: false,
-        internalType: 'bytes',
-        name: 'signature',
-        type: 'bytes',
-      },
-      { indexed: false, internalType: 'bytes', name: 'index', type: 'bytes' },
-    ],
-    name: 'DepositEvent',
-    type: 'event',
-  },
-  {
-    inputs: [
-      { internalType: 'bytes', name: 'pubkey', type: 'bytes' },
-      { internalType: 'bytes', name: 'withdrawal_credentials', type: 'bytes' },
-      { internalType: 'bytes', name: 'signature', type: 'bytes' },
-      { internalType: 'bytes32', name: 'deposit_data_root', type: 'bytes32' },
-    ],
-    name: 'deposit',
-    outputs: [],
-    stateMutability: 'payable',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'get_deposit_count',
-    outputs: [{ internalType: 'bytes', name: '', type: 'bytes' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'get_deposit_root',
-    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [{ internalType: 'bytes4', name: 'interfaceId', type: 'bytes4' }],
-    name: 'supportsInterface',
-    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
-    stateMutability: 'pure',
-    type: 'function',
-  },
-];
+import depositContractAbi from './abis/deposit.json';
 
 const depositItems = [
   {
@@ -1005,12 +947,9 @@ describe('ValidatorsAccumulator tests', async function () {
   let signatures: Uint8Array[] = [];
 
   beforeEach(async function () {
-    const [signer] = await ethers.getSigners();
-
-    depositContract = new Contract(
-      '0x00000000219ab540356cBB839Cbe05303d7705Fa',
+    depositContract = await ethers.getContractAt(
       depositContractAbi,
-      signer,
+      '0x00000000219ab540356cBB839Cbe05303d7705Fa',
     );
 
     const contractFactory = await ethers.getContractFactory(
@@ -1030,7 +969,7 @@ describe('ValidatorsAccumulator tests', async function () {
         depositItem.withdrawalCredentials,
         depositItem.signature,
         depositItem.depositDataRoot,
-        { value: ethers.utils.parseEther('32').toString() },
+        { value: ethers.parseEther('32').toString() },
       )
     ).wait();
 
