@@ -1,6 +1,6 @@
 import { ethers, network } from 'hardhat';
 import { Contract } from 'ethers';
-import { sha256 } from 'ethers';
+import { sha256 } from 'ethers/lib/utils';
 import { hashTreeRoot } from '@dendreth/utils/ts-utils/ssz-utils';
 import {
   bytesToHex,
@@ -56,7 +56,7 @@ describe('ValidatorsAccumulator tests', async function () {
       '0x00000000219ab540356cBB839Cbe05303d7705Fa',
     );
 
-    const signerAddress = (await ethers.provider.getSigner(0)).address;
+    const signerAddress = (await ethers.getSigners())[0].address;
 
     const contractFactory = await ethers.getContractFactory(
       'ValidatorsAccumulator',
@@ -68,7 +68,7 @@ describe('ValidatorsAccumulator tests', async function () {
 
     await network.provider.send('hardhat_setBalance', [
       signerAddress,
-      ethers.toBeHex(7119834272032510088813n),
+      ethers.utils.hexValue(7119834272032510088813n),
     ]);
   });
 
@@ -81,7 +81,7 @@ describe('ValidatorsAccumulator tests', async function () {
         depositItem.withdrawalCredentials,
         depositItem.signature,
         depositItem.depositDataRoot,
-        { value: ethers.parseEther('32').toString() },
+        { value: ethers.utils.parseEther('32').toString() },
       )
     ).wait();
 
@@ -127,7 +127,7 @@ describe('ValidatorsAccumulator tests', async function () {
 
     const index = Math.floor(depositItems.length / 2);
 
-    const accumulator = await validatorAccumulator.findAndPruneBlock.staticCall(
+    const accumulator = await validatorAccumulator.callStatic.findAndPruneBlock(
       startBlock + index,
     );
 
@@ -136,25 +136,25 @@ describe('ValidatorsAccumulator tests', async function () {
 
   it('Should find correct accumulator in non-consecutive blocks and prune all before it', async function () {
     await deposit(depositItems[0]);
-    await network.provider.send('hardhat_mine', [ethers.toBeHex(2)]);
+    await network.provider.send('hardhat_mine', [ethers.utils.hexValue(2)]);
     const startBlock0 = Number(await network.provider.send('eth_blockNumber'));
     await deposit(depositItems[1]);
-    await network.provider.send('hardhat_mine', [ethers.toBeHex(5)]);
+    await network.provider.send('hardhat_mine', [ethers.utils.hexValue(5)]);
     const startBlock1 = Number(await network.provider.send('eth_blockNumber'));
     await deposit(depositItems[2]);
     const startBlock2 = Number(await network.provider.send('eth_blockNumber'));
     await deposit(depositItems[3]);
-    await network.provider.send('hardhat_mine', [ethers.toBeHex(10)]);
+    await network.provider.send('hardhat_mine', [ethers.utils.hexValue(10)]);
     const startBlock3 = Number(await network.provider.send('eth_blockNumber'));
     await deposit(depositItems[4]);
     const startBlock4 = Number(await network.provider.send('eth_blockNumber'));
 
     const resAccumulators = [
-      await validatorAccumulator.findAndPruneBlock.staticCall(startBlock0),
-      await validatorAccumulator.findAndPruneBlock.staticCall(startBlock1),
-      await validatorAccumulator.findAndPruneBlock.staticCall(startBlock2),
-      await validatorAccumulator.findAndPruneBlock.staticCall(startBlock3),
-      await validatorAccumulator.findAndPruneBlock.staticCall(startBlock4),
+      await validatorAccumulator.callStatic.findAndPruneBlock(startBlock0),
+      await validatorAccumulator.callStatic.findAndPruneBlock(startBlock1),
+      await validatorAccumulator.callStatic.findAndPruneBlock(startBlock2),
+      await validatorAccumulator.callStatic.findAndPruneBlock(startBlock3),
+      await validatorAccumulator.callStatic.findAndPruneBlock(startBlock4),
     ];
 
     for (let i = 0; i < resAccumulators.length; i++) {
@@ -171,7 +171,7 @@ describe('ValidatorsAccumulator tests', async function () {
 
     const index = Math.floor(depositItems.length / 2);
 
-    const accumulator = await validatorAccumulator.findAndPruneBlock.staticCall(
+    const accumulator = await validatorAccumulator.callStatic.findAndPruneBlock(
       startBlock + index,
     );
     await validatorAccumulator.findAndPruneBlock(startBlock + index);
@@ -179,10 +179,10 @@ describe('ValidatorsAccumulator tests', async function () {
     expect(accumulator).to.equal(accumulators[index]);
 
     const accumulator1 =
-      await validatorAccumulator.findAndPruneBlock.staticCall(
+      await validatorAccumulator.callStatic.findAndPruneBlock(
         startBlock + index,
       );
 
-    expect(accumulator1).to.equal(ethers.toBeHex('0').padEnd(66, '0'));
+    expect(accumulator1).to.equal(ethers.utils.hexValue(0).padEnd(66, '0'));
   });
 });
