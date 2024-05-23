@@ -3,25 +3,22 @@ pragma solidity ^0.8.19;
 
 import {BalanceVerifier} from './BalanceVerifier.sol';
 import {IBalanceVerifierDiva} from './interfaces/IBalanceVerifierDiva.sol';
+import {IValidatorsAccumulator} from '../validators_accumulator/interfaces/IValidatorsAccumulator.sol';
 
 contract BalanceVerifierDiva is BalanceVerifier, IBalanceVerifierDiva {
-  mapping(uint256 => Report) reports;
+  address internal immutable ACCUMULATOR;
+
+  mapping(uint256 => Report) internal reports;
 
   constructor(
     uint256 verifierDigest,
-    bytes32 withdrawalcredentials,
     uint256 genesisBlockTimestamp,
     address _verifier,
+    address _accumulator,
     address _owner
-  )
-    BalanceVerifier(
-      verifierDigest,
-      withdrawalcredentials,
-      genesisBlockTimestamp,
-      _verifier,
-      _owner
-    )
-  {}
+  ) BalanceVerifier(verifierDigest, genesisBlockTimestamp, _verifier, _owner) {
+    ACCUMULATOR = _accumulator;
+  }
 
   /// @notice Verifies the proof and writes the data for given slot if valid
   /// @param proof the zk proof for total value locked
@@ -33,21 +30,39 @@ contract BalanceVerifierDiva is BalanceVerifier, IBalanceVerifierDiva {
   function verify(
     bytes calldata proof,
     uint256 slot,
+    uint256 blockNumber,
     uint64 balanceSum,
     uint64 _numberOfNonActivatedValidators,
     uint64 _numberOfActiveValidators,
     uint64 _numberOfExitedValidators,
     uint64 _numberOfSlashedValidators
   ) external override {
-    _verify(
-      proof,
-      slot,
-      balanceSum,
-      _numberOfNonActivatedValidators,
-      _numberOfActiveValidators,
-      _numberOfExitedValidators,
-      _numberOfSlashedValidators
+    if (blockNumber > block.number) {
+      revert InvalidBlockNumber();
+    }
+
+    bytes32 accumulator = IValidatorsAccumulator(ACCUMULATOR).findAndPruneBlock(
+      blockNumber
     );
+
+    uint256[] memory publicInputs = new uint256[](2);
+    publicInputs[0] = VERIFIER_DIGEST;
+    publicInputs[1] = (uint256(
+      sha256(
+        abi.encodePacked(
+          _findBlockRoot(slot),
+          blockNumber,
+          accumulator,
+          balanceSum,
+          _numberOfNonActivatedValidators,
+          _numberOfActiveValidators,
+          _numberOfExitedValidators,
+          _numberOfSlashedValidators
+        )
+      )
+    ) & ((1 << 253) - 1));
+
+    _verify(proof, publicInputs);
 
     uint64 numValidators = _numberOfActiveValidators +
       _numberOfExitedValidators;

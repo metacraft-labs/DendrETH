@@ -9,9 +9,6 @@ abstract contract BalanceVerifier is Ownable, IBalanceVerifier {
   /// @notice the verifierDigest of the plonky2 circuit
   uint256 public immutable VERIFIER_DIGEST;
 
-  /// @notice lido validators withdrawal credentials
-  bytes32 public immutable WITHDRAWAL_CREDENTIALS;
-
   /// @notice The genesis block timestamp.
   uint256 public immutable GENESIS_BLOCK_TIMESTAMP;
 
@@ -27,13 +24,11 @@ abstract contract BalanceVerifier is Ownable, IBalanceVerifier {
 
   constructor(
     uint256 verifierDigest,
-    bytes32 withdrawalCredentials,
     uint256 genesisBlockTimestamp,
     address _verifier,
     address _owner
   ) Ownable(_owner) {
     VERIFIER_DIGEST = verifierDigest;
-    WITHDRAWAL_CREDENTIALS = withdrawalCredentials;
     GENESIS_BLOCK_TIMESTAMP = genesisBlockTimestamp;
     verifier = _verifier;
   }
@@ -44,36 +39,11 @@ abstract contract BalanceVerifier is Ownable, IBalanceVerifier {
 
   /// @notice Verifies the proof and writes the data for given slot if valid
   /// @param proof the zk proof for total value locked
-  /// @param slot the slot for which the proof is ran
-  /// @param balanceSum the sum of the balances of all validators with withdrawal credentials equal to WITHDRAWAL_CREDENTIALS
-  /// @param _numberOfNonActivatedValidators number of validators yet to be activated
-  /// @param _numberOfActiveValidators number of active validators
-  /// @param _numberOfExitedValidators number of exited validators
+  /// @param publicInputs the public inputs for the proof
   function _verify(
     bytes calldata proof,
-    uint256 slot,
-    uint64 balanceSum,
-    uint64 _numberOfNonActivatedValidators,
-    uint64 _numberOfActiveValidators,
-    uint64 _numberOfExitedValidators,
-    uint64 _numberOfSlashedValidators
+    uint256[] memory publicInputs
   ) internal {
-    uint256[] memory publicInputs = new uint256[](2);
-    publicInputs[0] = VERIFIER_DIGEST;
-    publicInputs[1] = (uint256(
-      sha256(
-        abi.encodePacked(
-          _findBlockRoot(slot),
-          WITHDRAWAL_CREDENTIALS,
-          balanceSum,
-          _numberOfNonActivatedValidators,
-          _numberOfActiveValidators,
-          _numberOfExitedValidators,
-          _numberOfSlashedValidators
-        )
-      )
-    ) & ((1 << 253) - 1));
-
     // Make the call using `address(this).call`
     (bool success, bytes memory returnData) = verifier.call(
       // Encode the call to the `verify` function with the public inputs
