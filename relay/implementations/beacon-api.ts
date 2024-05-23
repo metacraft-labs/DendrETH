@@ -139,6 +139,20 @@ export class BeaconApi implements IBeaconApi {
     return Number(currentHead.data.header.message.slot);
   }
 
+  async getGenesisData(): Promise<
+    ValueOfFields<{
+      genesisTime: UintNumberType;
+      genesisValidatorsRoot: ByteVectorType;
+      genesisForkVersion: ByteVectorType;
+    }>
+  > {
+    const genesisData = await (
+      await this.fetchWithFallback('/eth/v1/beacon/genesis')
+    ).json();
+
+    return this.ssz.phase0.Genesis.fromJson(genesisData.data);
+  }
+
   async getBlockSlot(blockHash: string): Promise<number> {
     const headResult = await (
       await this.fetchWithFallback(`/eth/v1/beacon/headers/${blockHash}`)

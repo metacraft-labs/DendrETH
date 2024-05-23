@@ -2,26 +2,39 @@ import { Redis } from '@dendreth/relay/implementations/redis';
 import { Item, KeyPrefix, WorkQueue } from '@mevitae/redis-work-queue';
 import CONSTANTS from '../../../../kv_db_constants.json';
 import { ethers } from 'ethers';
-import { getEvents } from '../lib//event-fetcher';
+import { getEvents } from './event-fetcher';
 import ValidatorsAccumulator from '../../../../../solidity/artifacts/contracts/validators_accumulator/ValidatorsAccumulator.sol/ValidatorsAccumulator.json';
-import { hexToBytes } from '@dendreth/utils/ts-utils/bls';
+import {
+  bytesToHex,
+  formatHex,
+  hexToBytes,
+} from '@dendreth/utils/ts-utils/bls';
+import {
+  BeaconApi,
+  getBeaconApi,
+} from '@dendreth/relay/implementations/beacon-api';
 
 enum Events {
   Deposited = 'Deposited',
 }
-const DOMAIN =
-  '03000000f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a9';
+
+const DOMAIN_DEPOSIT = '0x03000000';
+const GENESIS_VALIDATOR_ROOT =
+  '0x0000000000000000000000000000000000000000000000000000000000000000';
 
 export class DepositScheduler {
   private redis: Redis;
+  private api: BeaconApi;
   private queue: any;
   private provider: ethers.providers.JsonRpcProvider;
   private contract: ethers.Contract;
   private depositsCount: number;
   private syncBlock: number;
   private ssz: any;
+  private GENESIS_FORK_VERSION: string;
 
   async init(options: any) {
+    this.api = await getBeaconApi(options['beacon-node']);
     this.redis = new Redis(options['redis-host'], options['redis-port']);
     this.queue = new WorkQueue(
       new KeyPrefix(`${CONSTANTS.depositSignatureVerificationQueue}`),
@@ -31,6 +44,10 @@ export class DepositScheduler {
       options['address'],
       ValidatorsAccumulator.abi,
       this.provider,
+    );
+
+    this.GENESIS_FORK_VERSION = ethers.utils.hexlify(
+      (await this.api.getGenesisData()).genesisForkVersion,
     );
 
     let latestLoggedBlock = await this.redis.get(
@@ -114,9 +131,19 @@ export class DepositScheduler {
     },
     blockNumber: number,
   ) {
+    const fork_data_root = bytesToHex(
+      this.ssz.phase0.ForkData.hashTreeRoot({
+        currentVersion: hexToBytes(this.GENESIS_FORK_VERSION),
+        genesisValidatorsRoot: hexToBytes(GENESIS_VALIDATOR_ROOT),
+      }),
+    );
+
+    const domain =
+      formatHex(DOMAIN_DEPOSIT) + formatHex(fork_data_root.slice(0, 56));
+
     const signing_root = this.ssz.phase0.SigningData.hashTreeRoot({
       objectRoot: hexToBytes(event.depositMessageRoot),
-      domain: hexToBytes(DOMAIN),
+      domain: hexToBytes(domain),
     });
 
     await this.redis.saveDeposit(this.depositsCount, {
