@@ -8,7 +8,6 @@ import {
   hexToBytes,
 } from '@dendreth/utils/ts-utils/bls';
 import { expect } from 'chai';
-import { writeFileSync } from 'fs';
 import depositContractAbi from './abis/deposit.json';
 import depositItems from './utils/depositData.json';
 
@@ -57,15 +56,18 @@ describe('ValidatorsAccumulator tests', async function () {
       '0x00000000219ab540356cBB839Cbe05303d7705Fa',
     );
 
+    const signerAddress = (await ethers.provider.getSigner(0)).address;
+
     const contractFactory = await ethers.getContractFactory(
       'ValidatorsAccumulator',
     );
     validatorAccumulator = await contractFactory.deploy(
       '0x00000000219ab540356cBB839Cbe05303d7705Fa',
+      signerAddress,
     );
 
     await network.provider.send('hardhat_setBalance', [
-      (await ethers.provider.getSigner(0)).address,
+      signerAddress,
       ethers.toBeHex(7119834272032510088813n),
     ]);
   });
@@ -114,29 +116,6 @@ describe('ValidatorsAccumulator tests', async function () {
         ),
       );
     }
-    let output: any[] = [];
-    let output1: any[] = [];
-
-    for (let i = 0; i < pubkeys.length; i++) {
-      let eth1DepositIndex = eth1DepositIndexes[i];
-      const deposit = eth1DepositIndex.reduce(
-        (acc, byte, index) => acc + (byte << (8 * index)),
-        0,
-      );
-      output.push({
-        validator_pubkey: bytesToHex(pubkeys[i]),
-        validator_eth1_deposit_index: deposit,
-      });
-      output1.push({
-        validator_pubkey: pubkeys[i].toString(),
-        validator_eth1_deposit_index: eth1DepositIndexes[i].toString(),
-      });
-    }
-
-    writeFileSync('output1.json', JSON.stringify(output1));
-    writeFileSync('output.json', JSON.stringify(output));
-
-    console.log('hash:', await validatorAccumulator.getValidatorsAccumulator());
   });
 
   it('Should find correct accumulator in consecutive blocks and prune all before it', async function () {

@@ -6,7 +6,7 @@ import {IBalanceVerifierDiva} from './interfaces/IBalanceVerifierDiva.sol';
 import {IValidatorsAccumulator} from '../validators_accumulator/interfaces/IValidatorsAccumulator.sol';
 
 contract BalanceVerifierDiva is BalanceVerifier, IBalanceVerifierDiva {
-  address internal immutable ACCUMULATOR;
+  address internal ACCUMULATOR;
 
   mapping(uint256 => Report) internal reports;
 
@@ -14,11 +14,8 @@ contract BalanceVerifierDiva is BalanceVerifier, IBalanceVerifierDiva {
     uint256 verifierDigest,
     uint256 genesisBlockTimestamp,
     address _verifier,
-    address _accumulator,
     address _owner
-  ) BalanceVerifier(verifierDigest, genesisBlockTimestamp, _verifier, _owner) {
-    ACCUMULATOR = _accumulator;
-  }
+  ) BalanceVerifier(verifierDigest, genesisBlockTimestamp, _verifier, _owner) {}
 
   /// @notice Verifies the proof and writes the data for given slot if valid
   /// @param proof the zk proof for total value locked
@@ -37,10 +34,6 @@ contract BalanceVerifierDiva is BalanceVerifier, IBalanceVerifierDiva {
     uint64 _numberOfExitedValidators,
     uint64 _numberOfSlashedValidators
   ) external override {
-    if (blockNumber > block.number) {
-      revert InvalidBlockNumber();
-    }
-
     bytes32 accumulator = IValidatorsAccumulator(ACCUMULATOR).findAndPruneBlock(
       blockNumber
     );
@@ -82,6 +75,10 @@ contract BalanceVerifierDiva is BalanceVerifier, IBalanceVerifierDiva {
       _numberOfExitedValidators,
       _numberOfSlashedValidators
     );
+  }
+
+  function setAccumulator(address _accumulator) external override onlyOwner {
+    ACCUMULATOR = _accumulator;
   }
 
   function getReport(
