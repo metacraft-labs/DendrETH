@@ -1,10 +1,9 @@
 import { Contract } from 'ethers';
-import { ethers } from 'hardhat';
-import depositContractAbi from './abis/deposit.json';
+import { ethers, network } from 'hardhat';
 import { expect } from 'chai';
+import depositItems from './utils/depositData.json';
 
 describe('BalanceVerifier', () => {
-  let depositContract: Contract;
   let validatorAccumulator: Contract;
   let verifierMock: Contract;
   let balanceVerifierLido: Contract;
@@ -12,11 +11,6 @@ describe('BalanceVerifier', () => {
 
   beforeEach(async () => {
     const owner = (await ethers.getSigners())[5];
-
-    depositContract = await ethers.getContractAt(
-      depositContractAbi,
-      '0x00000000219ab540356cBB839Cbe05303d7705Fa',
-    );
 
     const contractFactory = await ethers.getContractFactory(
       'ValidatorsAccumulator',
@@ -33,9 +27,9 @@ describe('BalanceVerifier', () => {
       await ethers.getContractFactory('BalanceVerifierDiva')
     ).deploy(
       1,
-      ethers.encodeBytes32String('test test test'),
       1606824023,
       verifierMock.target,
+      validatorAccumulator.target,
       await owner.getAddress(),
     );
 
@@ -61,9 +55,14 @@ describe('BalanceVerifier', () => {
       2,
     ];
 
-    await balanceVerifierDiva.verify(...inputData);
-
     await balanceVerifierLido.verify(...inputData);
+
+    inputData.splice(
+      2,
+      0,
+      Number(await network.provider.send('eth_blockNumber')),
+    );
+    await balanceVerifierDiva.verify(...inputData);
   });
 
   it('Should revert if slot out of range', async () => {
@@ -78,16 +77,22 @@ describe('BalanceVerifier', () => {
     ];
 
     await expect(
-      balanceVerifierDiva.verify(...inputData),
-    ).to.be.revertedWithCustomError(
-      balanceVerifierDiva,
-      'BeaconRootOutOfRange',
-    );
-
-    await expect(
       balanceVerifierLido.verify(...inputData),
     ).to.be.revertedWithCustomError(
       balanceVerifierLido,
+      'BeaconRootOutOfRange',
+    );
+
+    inputData.splice(
+      2,
+      0,
+      Number(await network.provider.send('eth_blockNumber')),
+    );
+
+    await expect(
+      balanceVerifierDiva.verify(...inputData),
+    ).to.be.revertedWithCustomError(
+      balanceVerifierDiva,
       'BeaconRootOutOfRange',
     );
   });
@@ -104,12 +109,18 @@ describe('BalanceVerifier', () => {
     ];
 
     await expect(
-      balanceVerifierDiva.verify(...inputData),
-    ).to.be.revertedWithCustomError(balanceVerifierDiva, 'NoBlockRootFound');
-
-    await expect(
       balanceVerifierLido.verify(...inputData),
     ).to.be.revertedWithCustomError(balanceVerifierLido, 'NoBlockRootFound');
+
+    inputData.splice(
+      2,
+      0,
+      Number(await network.provider.send('eth_blockNumber')),
+    );
+
+    await expect(
+      balanceVerifierDiva.verify(...inputData),
+    ).to.be.revertedWithCustomError(balanceVerifierDiva, 'NoBlockRootFound');
   });
 
   it('Should revert when verifier fails', async () => {
@@ -126,11 +137,52 @@ describe('BalanceVerifier', () => {
     ];
 
     await expect(
-      balanceVerifierDiva.verify(...inputData),
-    ).to.be.revertedWithCustomError(balanceVerifierDiva, 'VerificationFailed');
-
-    await expect(
       balanceVerifierLido.verify(...inputData),
     ).to.be.revertedWithCustomError(balanceVerifierLido, 'VerificationFailed');
+
+    inputData.splice(
+      2,
+      0,
+      Number(await network.provider.send('eth_blockNumber')),
+    );
+
+    await expect(
+      balanceVerifierDiva.verify(...inputData),
+    ).to.be.revertedWithCustomError(balanceVerifierDiva, 'VerificationFailed');
+  });
+
+  describe('Diva deposit accumulator', async () => {
+    let startBlock: number;
+
+    beforeEach(async () => {
+      startBlock = Number(await ethers.provider.getBlockNumber()) + 1;
+
+      for (const depositItem of depositItems) {
+        await (
+          await validatorAccumulator.deposit(
+            depositItem.pubkey,
+            depositItem.withdrawalCredentials,
+            depositItem.signature,
+            depositItem.depositDataRoot,
+            { value: ethers.parseEther('32').toString() },
+          )
+        ).wait();
+      }
+    });
+
+    it('Should verify the balance of the depositors', async () => {
+      const inputData = [
+        ethers.encodeBytes32String('test test test'),
+        9135288,
+        startBlock + 15,
+        2435,
+        0,
+        1,
+        1,
+        2,
+      ];
+
+      await balanceVerifierDiva.verify(...inputData);
+    });
   });
 });

@@ -12,8 +12,13 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
   // An array to hold the branch hashes for the Merkle tree
   bytes32[VALIDATOR_ACCUMULATOR_TREE_DEPTH] internal branch;
   bytes32[VALIDATOR_ACCUMULATOR_TREE_DEPTH] internal zeroHashes;
+
   // A counter for the total number of validators
   uint256 internal validatorsCount;
+  // Start index of validators map
+  uint256 internal startIndex;
+
+  mapping(uint256 => DepositData) internal snapshots;
 
   constructor(address _depositAddress) {
     depositAddress = _depositAddress;
@@ -30,29 +35,13 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
   }
 
   // Function to calculate and return the Merkle accumulator root of the validators
-  function get_validators_accumulator()
+  function getValidatorsAccumulator()
     external
     view
     override
     returns (bytes32 node)
   {
-    uint256 size = validatorsCount;
-
-    // Calculate the Merkle accumulator root
-    for (
-      uint256 height = 0;
-      height < VALIDATOR_ACCUMULATOR_TREE_DEPTH;
-      height++
-    ) {
-      // This if-else structure supports tree balancing
-      // If size is odd, the new node will be hashed with the previous node on this level
-      // If size is even, the new node will be hashed with a predefined zero hash
-      if ((size & 1) == 1)
-        node = sha256(abi.encodePacked(branch[height], node));
-      else node = sha256(abi.encodePacked(node, zeroHashes[height]));
-
-      size /= 2;
-    }
+    return _getRoot(validatorsCount);
   }
 
   // Function to handle deposits from validators
@@ -101,18 +90,92 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
 
     // Insert the node into the Merkle accumulator tree
     uint256 size = validatorsCount;
+    uint256 height = 0;
+    for (; height < VALIDATOR_ACCUMULATOR_TREE_DEPTH; height++) {
+      if ((size & 1) == 1) {
+        branch[height] = node;
+        break;
+      }
+      node = sha256(abi.encodePacked(branch[height], node));
+      size /= 2;
+    }
+
+    snapshots[validatorsCount - 1] = DepositData({
+      blockNumber: block.number,
+      accumulator: _getRoot(validatorsCount)
+    });
+  }
+
+  function findAndPruneBlock(
+    uint256 blockNumber
+  ) external override returns (bytes32 accumulator) {
+    uint256 index = _binarySearchBlock(blockNumber);
+    uint256 _startIndex = startIndex;
+
+    if (index < _startIndex) {
+      return accumulator;
+    }
+
+    accumulator = snapshots[index].accumulator;
+
+    for (uint256 i = _startIndex; i <= index; i++) {
+      delete snapshots[i];
+    }
+
+    startIndex = index + 1;
+  }
+
+  function _getRoot(uint256 size) internal view returns (bytes32 node) {
     for (
       uint256 height = 0;
       height < VALIDATOR_ACCUMULATOR_TREE_DEPTH;
       height++
     ) {
+      // This if-else structure supports tree balancing
+      // If size is odd, the new node will be hashed with the previous node on this level
+      // If size is even, the new node will be hashed with a predefined zero hash
       if ((size & 1) == 1) {
-        branch[height] = node;
-        return;
+        node = sha256(abi.encodePacked(branch[height], node));
+      } else {
+        node = sha256(abi.encodePacked(node, zeroHashes[height]));
       }
-      node = sha256(abi.encodePacked(branch[height], node));
+
       size /= 2;
     }
+  }
+
+  function _binarySearchBlock(
+    uint256 blockNumber
+  ) internal view returns (uint256) {
+    uint256 upper = validatorsCount;
+    if (upper == 0) {
+      return 0;
+    }
+
+    uint256 lower = startIndex;
+    upper -= 1;
+
+    if (snapshots[upper].blockNumber <= blockNumber) {
+      return upper;
+    }
+
+    if (snapshots[lower].blockNumber > blockNumber) {
+      return 0;
+    }
+
+    while (upper > lower) {
+      uint256 index = upper - (upper - lower) / 2; // ceil, avoiding overflow
+      DepositData memory snapshot = snapshots[index];
+      if (snapshot.blockNumber == blockNumber) {
+        return index;
+      } else if (snapshot.blockNumber < blockNumber) {
+        lower = index;
+      } else {
+        upper = index - 1;
+      }
+    }
+
+    return lower;
   }
 
   function toLe64(uint64 value) internal pure returns (bytes memory ret) {
