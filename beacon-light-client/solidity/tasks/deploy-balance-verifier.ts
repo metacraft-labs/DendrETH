@@ -29,7 +29,11 @@ task('deploy-balance-verifier', 'Deploy the beacon light client contract')
     const [deployer] = await ethers.getSigners();
 
     logger.info(`Deploying contracts with the account: ${deployer.address}`);
-    logger.info(`Account balance: ${(await deployer.getBalance()).toString()}`);
+    logger.info(
+      `Account balance: ${(
+        await deployer.provider.getBalance(deployer.address)
+      ).toString()}`,
+    );
 
     const networkName = assertSupportedNetwork(network.name);
 
@@ -87,18 +91,20 @@ task('deploy-balance-verifier', 'Deploy the beacon light client contract')
       VERIFIER_DIGEST,
       WITHDRAWAL_CREDENTIALS,
       GENESIS_BLOCK_TIMESTAMP,
-      verifier.address,
+      verifier.target,
       args.ownerAddress,
     );
 
     logger.info(`>>> Waiting for ${CONTRACT} deployment...`);
 
     logger.info(
-      `Deploying transaction hash.. ${beaconLightClient.deployTransaction.hash}`,
+      `Deploying transaction hash.. ${
+        beaconLightClient.deploymentTransaction()?.hash
+      }`,
     );
 
-    const contract = await beaconLightClient.deployed();
+    const contract = await beaconLightClient.waitForDeployment();
 
-    logger.info(`>>> ${contract.address}`);
+    logger.info(`>>> ${contract.target}`);
     logger.info('>>> Done!');
   });
