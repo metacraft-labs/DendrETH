@@ -9,12 +9,22 @@ processes:
     command: redis-server --appendonly yes
     working_dir: ./data/redis-server
     disabled: true
+    depends_on:
+      setup:
+        condition: process_completed
+    availability:
+      restart: always
 
   proverserver:
     description: proverserver
     log_location: ./logs/prover_server.log
     command: proverServer ${PROVER_SERVER_PORT} ./data/light_client.zkey
     disabled: true
+    depends_on:
+      setup:
+        condition: process_completed
+    availability:
+      restart: always
 
   prometheus:
     description: prometheus
@@ -22,20 +32,33 @@ processes:
     command: prometheus --config.file=prometheus.yml
     working_dir: ./relay
     disabled: true
+    depends_on:
+      setup:
+        condition: process_completed
+    availability:
+      restart: always
 
   pollUpdatesWorker:
     description: pollUpdatesWorker
     log_location: ./logs/pollUpdatesWorker.log
     command: yarn run pollUpdatesWorker
     working_dir: ./relay
-    disabled: true
+    depends_on:
+      prometheus:
+        condition: process_started
+    availability:
+      restart: always
 
   proofGenerationWorker:
     description: proofGenerationWorker
     log_location: ./logs/proofGenerationWorker.log
     command: yarn run proofGenerationWorker --prover ${PROVER_SERVER_HOST}:${PROVER_SERVER_PORT}
     working_dir: ./relay
-    disabled: true
+    depends_on:
+      pollUpdatesWorker:
+        condition: process_started
+    availability:
+      restart: always
 
   cleaner:
     description: cleaner
