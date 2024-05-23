@@ -20,7 +20,7 @@ import { Tree } from '@chainsafe/persistent-merkle-tree';
   const { ssz } = await import('@lodestar/types');
 
   let DOMAIN_DEPOSIT = '0x03000000';
-  let GENESIS_FORK_VERSION = '0x00000000';
+  let GENESIS_FORK_VERSION = '0x90000069';
   let genesis_validator_root =
     '0x0000000000000000000000000000000000000000000000000000000000000000';
 
@@ -33,16 +33,16 @@ import { Tree } from '@chainsafe/persistent-merkle-tree';
 
   let deposit_message = {
     pubkey: hexToBytes(
-      '0x90823dc2e5ab8a52a0b32883ea8451cbe4c921a42ce439f4fb306a90e9f267e463241da7274b6d44c2e4b95ddbcb0ad3',
+      '0xb781956110d24e4510a8b5500b71529f8635aa419a009d314898e8c572a4f923ba643ae94bdfdf9224509177aa8e6b73',
     ),
     withdrawalCredentials: hexToBytes(
-      '0x005bfe00d82068a0c2a6687afaf969dad5a9c663cb492815a65d203885aaf993',
+      '0x00ea361fd66a174b289f0b26ed7bbcaabdec4b7d47d5527ff72a994c9c1c156f',
     ),
     amount: 32000000000,
   };
 
   let signature =
-    '0x802899068eb4b37c95d46869947cac42b9c65b90fcb3fde3854c93ad5737800c01e9c82e174c8ed5cc18210bd60a94ea0082a850817b1dddd4096059b6846417b05094c59d3dd7f4028ed9dff395755f9905a88015b0ed200a7ec1ed60c24922';
+    '0xb735d0d0b03f51fcf3e5bc510b5a2cb266075322f5761a6954778714f5ab8831bc99454380d330f5c19d93436f0c4339041bfeecd2161a122c1ce8428033db8dda142768a48e582f5f9bde7d40768ac5a3b6a80492b73719f1523c5da35de275';
 
   let deposit_message_hash_tree_root =
     ssz.phase0.DepositMessage.hashTreeRoot(deposit_message);
@@ -55,13 +55,36 @@ import { Tree } from '@chainsafe/persistent-merkle-tree';
     domain: hexToBytes(domain),
   });
 
-  let slot = 5046663;
+  console.log(
+    await verify(formatHex(signature), signing_root, deposit_message.pubkey),
+  );
+
+  let slot = 5059552;
 
   let beaconApi = await getBeaconApi([
     'http://unstable.sepolia.beacon-api.nimbus.team/',
   ]);
 
   let { beaconState: beaconState } = await beaconApi.getBeaconState(5046663n);
+  beaconState.balances = beaconState.balances.slice(1573, 1573 + 32);
+  beaconState.validators = beaconState.validators.slice(1573, 1573 + 32);
+
+  console.log(beaconState.validators.length);
+
+  const validatorsView = ssz.deneb.BeaconState.fields.validators.toViewDU(
+    beaconState.validators,
+  );
+  const validatorTree = new Tree(validatorsView.node);
+
+  console.log(bytesToHex(validatorTree.getNode(2n).root));
+
+  console.log(
+    bytesToHex(
+      ssz.deneb.BeaconState.fields.validators.hashTreeRoot(
+        beaconState.validators,
+      ),
+    ),
+  );
 
   let redis = new Redis('localhost', 6379);
 
@@ -117,6 +140,8 @@ async function generate_leaf_level_data(
     validator!.withdrawalCredentials!,
   ) as any;
 
+  console.log(gindexFromIndex(BigInt(foundIndex), 40n));
+
   let deposit_accumulator_input = {
     validator: validator,
     validatorDeposit: {
@@ -153,7 +178,7 @@ async function generate_leaf_level_data(
     blsSignatureProofKey: `bls12_381_${pubkey}_${deposit_index}`,
     currentEpoch: BigInt(beaconState.slot) / 32n,
     isDummy: false,
-    eth1DepositIndex: deposit_index,
+    eth1DepositIndex: beaconState.eth1DepositIndex,
   };
 
   console.log(deposit_accumulator_input);
