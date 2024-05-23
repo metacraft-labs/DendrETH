@@ -5,7 +5,10 @@ import {BalanceVerifier} from './BalanceVerifier.sol';
 import {IBalanceVerifierLido} from './interfaces/IBalanceVerifierLido.sol';
 
 contract BalanceVerifierLido is BalanceVerifier, IBalanceVerifierLido {
-  mapping(uint256 => Report) reports;
+  /// @notice lido validators withdrawal credentials
+  bytes32 public immutable WITHDRAWAL_CREDENTIALS;
+
+  mapping(uint256 => Report) internal reports;
 
   constructor(
     uint256 verifierDigest,
@@ -13,15 +16,9 @@ contract BalanceVerifierLido is BalanceVerifier, IBalanceVerifierLido {
     uint256 genesisBlockTimestamp,
     address _verifier,
     address _owner
-  )
-    BalanceVerifier(
-      verifierDigest,
-      withdrawalCredentials,
-      genesisBlockTimestamp,
-      _verifier,
-      _owner
-    )
-  {}
+  ) BalanceVerifier(verifierDigest, genesisBlockTimestamp, _verifier, _owner) {
+    WITHDRAWAL_CREDENTIALS = withdrawalCredentials;
+  }
 
   /// @notice Verifies the proof and writes the data for given slot if valid
   /// @param proof the zk proof for total value locked
@@ -39,15 +36,23 @@ contract BalanceVerifierLido is BalanceVerifier, IBalanceVerifierLido {
     uint64 _numberOfExitedValidators,
     uint64 _numberOfSlashedValidators
   ) external override {
-    _verify(
-      proof,
-      slot,
-      balanceSum,
-      _numberOfNonActivatedValidators,
-      _numberOfActiveValidators,
-      _numberOfExitedValidators,
-      _numberOfSlashedValidators
-    );
+    uint256[] memory publicInputs = new uint256[](2);
+    publicInputs[0] = VERIFIER_DIGEST;
+    publicInputs[1] = (uint256(
+      sha256(
+        abi.encodePacked(
+          _findBlockRoot(slot),
+          WITHDRAWAL_CREDENTIALS,
+          balanceSum,
+          _numberOfNonActivatedValidators,
+          _numberOfActiveValidators,
+          _numberOfExitedValidators,
+          _numberOfSlashedValidators
+        )
+      )
+    ) & ((1 << 253) - 1));
+
+    _verify(proof, publicInputs);
 
     uint64 numValidators = _numberOfNonActivatedValidators +
       _numberOfActiveValidators +

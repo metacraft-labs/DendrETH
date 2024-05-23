@@ -29,4 +29,21 @@ interface IBalanceVerifierLido is IBalanceVerifier {
       uint256 numValidators,
       uint256 exitedValidators
     );
+
+  /// @notice Verifies the proof and writes the data for given slot if valid
+  /// @param proof the zk proof for total value locked
+  /// @param slot the slot for which the proof is ran
+  /// @param balanceSum the sum of the balances of all validators with withdrawal credentials equal to WITHDRAWAL_CREDENTIALS
+  /// @param _numberOfNonActivatedValidators number of validators yet to be activated
+  /// @param _numberOfActiveValidators number of active validators
+  /// @param _numberOfExitedValidators number of exited validators
+  function verify(
+    bytes calldata proof,
+    uint256 slot,
+    uint64 balanceSum,
+    uint64 _numberOfNonActivatedValidators,
+    uint64 _numberOfActiveValidators,
+    uint64 _numberOfExitedValidators,
+    uint64 _numberOfSlashedValidators
+  ) external;
 }

@@ -20,6 +20,8 @@ interface IBalanceVerifierDiva is IBalanceVerifier {
     uint64 slashedValidators
   );
 
+  error InvalidBlockNumber();
+
   function getReport(
     uint256 slot
   )
@@ -32,4 +34,23 @@ interface IBalanceVerifierDiva is IBalanceVerifier {
       uint64 exitedValidators,
       uint64 slashedValidators
     );
+
+  /// @notice Verifies the proof and writes the data for given slot if valid
+  /// @param proof the zk proof for total value locked
+  /// @param slot the slot for which the proof is ran
+  /// @param blockNumber the block number for which the proof is ran
+  /// @param balanceSum the sum of the balances of all validators with withdrawal credentials equal to WITHDRAWAL_CREDENTIALS
+  /// @param _numberOfNonActivatedValidators number of validators yet to be activated
+  /// @param _numberOfActiveValidators number of active validators
+  /// @param _numberOfExitedValidators number of exited validators
+  function verify(
+    bytes calldata proof,
+    uint256 slot,
+    uint256 blockNumber,
+    uint64 balanceSum,
+    uint64 _numberOfNonActivatedValidators,
+    uint64 _numberOfActiveValidators,
+    uint64 _numberOfExitedValidators,
+    uint64 _numberOfSlashedValidators
+  ) external;
 }
