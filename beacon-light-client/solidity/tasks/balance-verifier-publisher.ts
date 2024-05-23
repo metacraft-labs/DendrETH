@@ -164,7 +164,7 @@ task('balance-verifier-publisher', 'Run relayer')
             final_layer_proof.numberOfSlashedValidators;
 
           await publishTransaction(
-            balanceVerifierContract as any,
+            balanceVerifierContract,
             'verify',
             [
               proof,

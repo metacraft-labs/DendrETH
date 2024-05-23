@@ -4,8 +4,9 @@ require('dotenv').config();
 // TODO: Replace with modern alternative
 // import 'hardhat-gas-reporter';
 
-import '@nomicfoundation/hardhat-ethers';
-import '@nomicfoundation/hardhat-chai-matchers';
+import '@nomiclabs/hardhat-etherscan';
+import '@nomiclabs/hardhat-waffle';
+import '@nomiclabs/hardhat-ethers';
 
 import './tasks';
 
