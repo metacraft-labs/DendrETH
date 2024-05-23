@@ -4,6 +4,7 @@ import { DepositScheduler } from '../lib/deposit_scheduler';
 (async () => {
   const options = new CommandLineOptionsBuilder()
     .withRedisOpts()
+    .withBeaconNodeOpts()
     .option('rpc-url', {
       describe: 'The RPC URL',
       type: 'string',
