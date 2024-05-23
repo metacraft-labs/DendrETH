@@ -76,64 +76,10 @@ processes:
       setup:
         condition: process_completed
 
-  goerli:
-    description: goerli
-    log_location: ./logs/goerli.log
-    command: yarn hardhat start-publishing --lightclient ${LC_GOERLI} --network goerli --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3000
-    working_dir: ./beacon-light-client/solidity
-    depends_on:
-      proverserver_check:
-        condition: process_completed
-
-  optimisticGoerli:
-    description: optimisticGoerli
-    log_location: ./logs/optimisticGoerli.log
-    command: yarn hardhat start-publishing --lightclient ${LC_OPTIMISTIC_GOERLI} --network optimisticGoerli --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3001
-    working_dir: ./beacon-light-client/solidity
-    depends_on:
-      proverserver_check:
-        condition: process_completed
-
-  baseGoerli:
-    description: baseGoerli
-    log_location: ./logs/baseGoerli.log
-    command: yarn hardhat start-publishing --lightclient ${LC_BASE_GOERLI} --network baseGoerli --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3002
-    working_dir: ./beacon-light-client/solidity
-    depends_on:
-      proverserver_check:
-        condition: process_completed
-
-  arbitrumGoerli:
-    description: arbitrumGoerli
-    log_location: ./logs/arbitrumGoerli.log
-    command: yarn hardhat start-publishing --lightclient ${LC_ARBITRUM_GOERLI} --network arbitrumGoerli --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3003
-    working_dir: ./beacon-light-client/solidity
-    depends_on:
-      proverserver_check:
-        condition: process_completed
-
   sepolia:
     description: sepolia
     log_location: ./logs/sepolia.log
     command: yarn hardhat start-publishing --lightclient ${LC_SEPOLIA} --network sepolia --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3004
-    working_dir: ./beacon-light-client/solidity
-    depends_on:
-      proverserver_check:
-        condition: process_completed
-
-  mumbai:
-    description: mumbai
-    log_location: ./logs/mumbai.log
-    command: yarn hardhat start-publishing --lightclient ${LC_MUMBAI} --network mumbai --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3005
-    working_dir: ./beacon-light-client/solidity
-    depends_on:
-      proverserver_check:
-        condition: process_completed
-
-  fuji:
-    description: fuji
-    log_location: ./logs/fuji.log
-    command: yarn hardhat start-publishing --lightclient ${LC_FUJI} --network avalanche --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3006
     working_dir: ./beacon-light-client/solidity
     depends_on:
       proverserver_check:
@@ -171,23 +117,6 @@ processes:
     log_location: ./logs/chiado.log
     command: yarn hardhat start-publishing --lightclient ${LC_CHIADO} --network chiado --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3010
     working_dir: ./beacon-light-client/solidity
-    depends_on:
-      proverserver_check:
-        condition: process_completed
-
-  evmos:
-    description: evmos
-    log_location: ./logs/evmos.log
-    command: yarn hardhat start-publishing --lightclient ${LC_EVMOS} --network evmos --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3011
-    working_dir: ./beacon-light-client/solidity
-    depends_on:
-      proverserver_check:
-        condition: process_completed
-
-  malaga:
-    description: malaga
-    log_location: ./logs/cosmos-publisher-script-malaga.log
-    command: yarn ts ./contracts/cosmos/scripts/cosmos-publisher-script.ts malaga ${LC_MALAGA} ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3012
     depends_on:
       proverserver_check:
         condition: process_completed
