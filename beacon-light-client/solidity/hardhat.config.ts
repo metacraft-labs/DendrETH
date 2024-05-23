@@ -4,9 +4,8 @@ require('dotenv').config();
 // TODO: Replace with modern alternative
 // import 'hardhat-gas-reporter';
 
-import '@nomiclabs/hardhat-waffle';
-import '@nomiclabs/hardhat-etherscan';
-import '@nomiclabs/hardhat-ethers';
+import '@nomicfoundation/hardhat-ethers';
+import '@nomicfoundation/hardhat-chai-matchers';
 
 import './tasks';
 
@@ -99,7 +98,7 @@ export default {
     hardhat: {
       forking: {
         url: conf.ETHEREUM_MAINNET_RPC,
-        blockNumber: 17578101,
+        blockNumber: 19931139,
       },
     },
     ropsten: {
