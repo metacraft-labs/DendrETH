@@ -22,7 +22,7 @@ pub fn hash_bytes(bytes: &[u8]) -> Vec<u8> {
     hasher.finalize().to_vec()
 }
 
-pub fn biguint_is_equal<F: RichField + Extendable<D>, const D: usize>(
+pub fn biguint_same_limbs_is_equal<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     a: &BigUintTarget,
     b: &BigUintTarget,
@@ -74,14 +74,49 @@ pub fn get_validator_relevance<F: RichField + Extendable<D>, const D: usize>(
     )
 }
 
+pub fn is_equal_u32<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    x: U32Target,
+    y: U32Target,
+) -> BoolTarget {
+    builder.is_equal(x.0, y.0)
+}
+
+pub fn biguint_is_equal<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    a: &BigUintTarget,
+    b: &BigUintTarget,
+) -> BoolTarget {
+    let mut ret = builder._true();
+    let false_t = builder._false().target;
+
+    let min_limbs = a.num_limbs().min(b.num_limbs());
+    for i in 0..min_limbs {
+        let limb_equal = is_equal_u32(builder, a.get_limb(i), b.get_limb(i));
+        ret = BoolTarget::new_unsafe(builder.select(limb_equal, ret.target, false_t));
+    }
+
+    let zero_u32 = U32Target(builder.zero());
+    for i in min_limbs..a.num_limbs() {
+        let is_zero = is_equal_u32(builder, a.get_limb(i), zero_u32);
+        ret = BoolTarget::new_unsafe(builder.select(is_zero, ret.target, false_t));
+    }
+    for i in min_limbs..b.num_limbs() {
+        let is_zero = is_equal_u32(builder, b.get_limb(i), zero_u32);
+        ret = BoolTarget::new_unsafe(builder.select(is_zero, ret.target, false_t));
+    }
+
+    ret
+}
+
 pub fn get_balance_from_leaf<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     leaf: [BoolTarget; 256],
     balance_index: BigUintTarget,
-) {
+) -> BigUintTarget {
     let balances_in_leaf = split_into_chunks(builder, leaf);
     let mut accumulator = ssz_num_from_bits(builder, &balances_in_leaf[0].clone());
-    for i in 0..balances_in_leaf.len() {
+    for i in 1..balances_in_leaf.len() {
         let current_index_t = builder.constant_biguint(&BigUint::from(i as u32));
         let current_balance_in_leaf = ssz_num_from_bits(builder, &balances_in_leaf[i].clone());
 
@@ -93,6 +128,8 @@ pub fn get_balance_from_leaf<F: RichField + Extendable<D>, const D: usize>(
             accumulator,
         );
     }
+
+    accumulator
 }
 
 pub fn split_into_chunks<F: RichField + Extendable<D>, const D: usize>(
@@ -304,8 +341,11 @@ mod test_ssz_num_from_bits {
     use itertools::Itertools;
     use num::{BigUint, Num};
     use plonky2::{
-        field::goldilocks_field::GoldilocksField,
-        iop::witness::{PartialWitness, WitnessWrite},
+        field::{goldilocks_field::GoldilocksField, types::Field},
+        iop::{
+            target::BoolTarget,
+            witness::{PartialWitness, WitnessWrite},
+        },
         plonk::{
             circuit_builder::CircuitBuilder, circuit_data::CircuitConfig,
             config::PoseidonGoldilocksConfig,
@@ -315,6 +355,8 @@ mod test_ssz_num_from_bits {
     use std::{fs, iter::repeat, println};
 
     use crate::{biguint::CircuitBuilderBiguint, utils::ssz_num_from_bits};
+
+    use super::{get_balance_from_leaf, get_validator_relevance};
 
     #[derive(Debug, Default, Deserialize)]
     #[serde(default)]
@@ -343,15 +385,78 @@ mod test_ssz_num_from_bits {
     type F = GoldilocksField;
 
     #[test]
-    fn test_get_validator_relevance() {
-        // let mut pw = PartialWitness::new();
+    fn test_get_validator_relevance() -> Result<()> {
         let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
+        let activation_epoch = builder.constant_biguint(&BigUint::from(28551 as u32));
+        let current_epoch = builder.constant_biguint(&BigUint::from(285512 as u32));
+        let withdrawable_epoch = builder.constant_biguint(&BigUint::from(2855125512 as u32));
+        let is_validator_relevant = get_validator_relevance(
+            &mut builder,
+            &activation_epoch,
+            &current_epoch,
+            &withdrawable_epoch,
+        );
+
+        builder.assert_one(is_validator_relevant.target);
+
+        let pw = PartialWitness::new();
+        let data = builder.build::<C>();
+        let proof = data.prove(pw).unwrap();
+
+        data.verify(proof)
     }
 
     #[test]
-    fn test_get_balance_from_leaf() {
-        // let mut pw = PartialWitness::new();
+    fn test_get_balance_from_leaf() -> Result<()> {
         let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
+        let leaf: [BoolTarget; 256] = [
+            0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0,
+            0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1,
+            0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0,
+            1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1,
+            0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ]
+        .iter()
+        .map(|f| BoolTarget::new_unsafe(builder.constant(F::from_canonical_u8(*f))))
+        .collect_vec()
+        .try_into()
+        .unwrap();
+        let balance_index_0 = builder.zero_biguint();
+        let balance_index_1 = builder.constant_biguint(&BigUint::from(1 as u32));
+        let balance_index_2 = builder.constant_biguint(&BigUint::from(2 as u32));
+        let balance_index_3 = builder.constant_biguint(&BigUint::from(3 as u32));
+        let balance_from_leaf_at_index_0 =
+            get_balance_from_leaf(&mut builder, leaf, balance_index_0);
+        let balance_from_leaf_at_index_1 =
+            get_balance_from_leaf(&mut builder, leaf, balance_index_1);
+        let balance_from_leaf_at_index_2 =
+            get_balance_from_leaf(&mut builder, leaf, balance_index_2);
+        let balance_from_leaf_at_index_3 =
+            get_balance_from_leaf(&mut builder, leaf, balance_index_3);
+
+        let expected_balance_at_index_0 =
+            builder.constant_biguint(&BigUint::from(32000579388 as u64));
+        let expected_balance_at_index_1 =
+            builder.constant_biguint(&BigUint::from(32000574671 as u64));
+        let expected_balance_at_index_2 =
+            builder.constant_biguint(&BigUint::from(32000579312 as u64));
+        let expected_balance_at_index_3 =
+            builder.constant_biguint(&BigUint::from(32000581683 as u64));
+
+        builder.connect_biguint(&balance_from_leaf_at_index_0, &expected_balance_at_index_0);
+        builder.connect_biguint(&balance_from_leaf_at_index_1, &expected_balance_at_index_1);
+        builder.connect_biguint(&balance_from_leaf_at_index_2, &expected_balance_at_index_2);
+        builder.connect_biguint(&balance_from_leaf_at_index_3, &expected_balance_at_index_3);
+
+        let pw = PartialWitness::new();
+        let data = builder.build::<C>();
+        let proof = data.prove(pw).unwrap();
+
+        data.verify(proof)
     }
 
     #[test]

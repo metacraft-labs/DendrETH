@@ -7,7 +7,7 @@ use plonky2::{
 
 use crate::{
     biguint::{BigUintTarget, CircuitBuilderBiguint},
-    utils::biguint_is_equal,
+    utils::biguint_same_limbs_is_equal,
 };
 
 pub struct IsActiveValidatorTargets {
@@ -26,7 +26,7 @@ pub fn get_validator_status<F: RichField + Extendable<D>, const D: usize>(
 
     let current_epoch_le_exit_epoch = builder.cmp_biguint(&current_epoch, &exit_epoch);
 
-    let is_equal = biguint_is_equal(builder, current_epoch, exit_epoch);
+    let is_equal = biguint_same_limbs_is_equal(builder, current_epoch, exit_epoch);
     let not_equal = builder.not(is_equal);
 
     let current_epoch_lt_exit_epoch = builder.and(current_epoch_le_exit_epoch, not_equal);
