@@ -114,8 +114,6 @@ task('balance-verifier-publisher', 'Run relayer')
         (await redis.get(`${protocol}:final_layer_proof`))!,
       );
 
-      assert(final_layer_proof.balanceSum.length <= 2, 'Invalid balance sum');
-
       let final_layer_proof_input = JSON.parse(
         (await redis.get(`${protocol}:final_proof_input`))!,
       );
@@ -155,8 +153,7 @@ task('balance-verifier-publisher', 'Run relayer')
         });
 
         res.on('end', async () => {
-          let balanceSum = getBigIntFromLimbs(final_layer_proof.balanceSum);
-
+          let balanceSum = final_layer_proof.balanceSum;
           let numberOfNonActivatedValidators =
             final_layer_proof.numberOfNonActivatedValidators;
           let numberOfActiveValidators =
@@ -164,7 +161,7 @@ task('balance-verifier-publisher', 'Run relayer')
           let numberOfExitedValidators =
             final_layer_proof.numberOfExitedValidators;
           let numberOfSlashedValidators =
-            final_layer_proof_input.numberOfSlashedValidators;
+            final_layer_proof.numberOfSlashedValidators;
 
           await publishTransaction(
             balanceVerifierContract,

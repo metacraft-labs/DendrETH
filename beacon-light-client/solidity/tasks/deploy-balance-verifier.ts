@@ -63,10 +63,6 @@ task('deploy-balance-verifier', 'Deploy the beacon light client contract')
       ).circuit_digest;
     }
 
-    logger.info(
-      `Constructor args ${VERIFIER_DIGEST} ${WITHDRAWAL_CREDENTIALS} ${GENESIS_BLOCK_TIMESTAMP}`,
-    );
-
     let protocol = args.protocol;
     let CONTRACT = 'BalanceVerifierLido';
     if (protocol !== 'lido' && protocol !== 'diva') {
@@ -80,6 +76,10 @@ task('deploy-balance-verifier', 'Deploy the beacon light client contract')
     const verifier = await (
       await ethers.getContractFactory('PlonkVerifier')
     ).deploy();
+
+    logger.info(
+      `Constructor args ${VERIFIER_DIGEST} ${WITHDRAWAL_CREDENTIALS} ${GENESIS_BLOCK_TIMESTAMP} ${verifier.address} ${args.ownerAddress}`,
+    );
 
     const beaconLightClient = await (
       await ethers.getContractFactory(CONTRACT)

@@ -1,0 +1,5 @@
+gnark_plonky2_verifier/data
+gnark_plonky2_verifier/DendrETH
+gnark_plonky2_verifier/circuit/srs_setup
+gnark_plonky2_verifier/circuit/solidity_bytes.bin
+gnark_plonky2_verifier/public_witness.bin
