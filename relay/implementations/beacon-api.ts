@@ -526,6 +526,37 @@ export class BeaconApi implements IBeaconApi {
     return BigInt(json.data.finalized.epoch);
   }
 
+  async getBeaconBlock(slot: bigint) {
+    logger.info('Getting Beacon block..');
+
+    const beaconBlockSSZ = await this.fetchWithFallback(
+      `/eth/v2/debug/beacon/blocks/${slot}`,
+      {
+        headers: {
+          Accept: 'application/octet-stream',
+        },
+      },
+    )
+      .then(response => {
+        if (response.status === 404) {
+          throw 'Could not fetch beacon state (404 not found)';
+        }
+        return response.arrayBuffer();
+      })
+      .then(buffer => new Uint8Array(buffer))
+      .catch(console.error);
+
+    if (!beaconBlockSSZ) {
+      return null;
+    }
+
+    const currentSszFork = await this.getCurrentSSZ(slot);
+    const beaconBlock = currentSszFork.BeaconBlock.deserialize(beaconBlockSSZ);
+
+    logger.info('Got Beacon block');
+    return beaconBlock;
+  }
+
   async getBeaconState(slot: bigint) {
     logger.info('Getting Beacon State..');
 

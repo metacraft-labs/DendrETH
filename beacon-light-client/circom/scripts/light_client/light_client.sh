@@ -2,7 +2,6 @@
 
 set -euo pipefail
 
-source "${BASH_SOURCE%/*}/../../../../scripts/utils/paths.sh"
 source "${BASH_SOURCE%/*}/../common.sh"
 
 CIRCUIT_NAME="light_client"

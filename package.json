@@ -6,7 +6,7 @@
   "packageManager": "yarn@4.1.1",
   "workspaces": [
     "beacon-light-client/circom",
-    "beacon-light-client/plonky2",
+    "beacon-light-client/plonky2/input_fetchers",
     "beacon-light-client/solidity",
     "libs/typescript",
     "relay"
@@ -60,7 +60,7 @@
     "test": "jest --verbose --silent -i",
     "test-emcc": "USE_EMCC=1 jest --verbose --silent",
     "ts": "yarn node --import tsx",
-    "build-plonky-2": "tsc -p beacon-light-client/plonky2/tsconfig.json"
+    "build-plonky-2": "tsc -p beacon-light-client/plonky2/input_fetchers/tsconfig.json"
   },
   "dependencies": {
     "@chainsafe/bls": "^6.0.3",

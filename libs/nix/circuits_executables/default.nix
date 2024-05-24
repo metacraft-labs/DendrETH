@@ -13,10 +13,10 @@
     nativeBuildInputs = [pkg-config];
     buildInputs = [openssl];
     src = src-path;
-    cargoLock = "${src-path}/circuits_executables/Cargo.lock";
-    cargoToml = "${src-path}/circuits_executables/Cargo.toml";
+    cargoLock = "${src-path}/circuit_executables/Cargo.lock";
+    cargoToml = "${src-path}/circuit_executables/Cargo.toml";
     postUnpack = ''
-      cd $sourceRoot/circuits_executables
+      cd $sourceRoot/circuit_executables
       sourceRoot="."
     '';
   };
