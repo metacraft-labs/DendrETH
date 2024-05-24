@@ -30,6 +30,8 @@
           export CIRCOM_LIB="$(find $PWD/.yarn/unplugged -maxdepth 1 -type d -name 'circomlib-*')/node_modules/circomlib/circuits"
           export LOCAL_HARDHAT_PRIVATE_KEY="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 
+          export GIT_ROOT="$(git rev-parse --show-toplevel)"
+
           if [ -f .env ]; then
             set -a
             source .env

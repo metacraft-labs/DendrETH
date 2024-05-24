@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-export CIRCOM_DIR="${ROOT}/beacon-light-client/circom"
-export SNARKJS_DIR="${ROOT}/vendor/snarkjs"
+export CIRCOM_DIR="${GIT_ROOT}/beacon-light-client/circom"
+export SNARKJS_DIR="${GIT_ROOT}/vendor/snarkjs"
 export SNARKJS="${SNARKJS_DIR}/cli.js"
 
 look_for_ptau_file() {

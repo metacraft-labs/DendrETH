@@ -6,10 +6,14 @@ import {
   ValidatorShaInput,
   ValidatorProof,
   BlsDepositData,
+  BalancesAccumulatorInput,
+  ValidatorInput,
+  CommitmentMapperInput,
 } from '../types/types';
 import { RedisClientType, createClient } from 'redis';
-import CONSTANTS from '../../beacon-light-client/plonky2/constants/validator_commitment_constants.json';
-import { getDepthByGindex } from '../../beacon-light-client/plonky2/validators_commitment_mapper_tree/utils';
+import CONSTANTS from '../../beacon-light-client/plonky2/kv_db_constants.json';
+// TODO: move this to @dendreth/utils
+import { getDepthByGindex } from '../../beacon-light-client/plonky2/input_fetchers/utils/common_utils';
 import { Redis as RedisClient } from 'ioredis';
 import chalk from 'chalk';
 import { splitIntoBatches } from '@dendreth/utils/ts-utils/common-utils';
@@ -172,6 +176,23 @@ export class Redis implements IRedis {
     await this.client.del(`${CONSTANTS.validatorsRootKey}:${slot}`);
   }
 
+  async getValidatorsCommitmentRoot(slot: bigint): Promise<string[] | null> {
+    const prefix = `${CONSTANTS.validatorProofKey}:1`;
+    const latestRootChangeSlot = await this.getSlotWithLatestChange(
+      prefix,
+      slot,
+    );
+
+    if (latestRootChangeSlot == null) return null;
+
+    const rootData = await this.client.get(`${prefix}:${latestRootChangeSlot}`);
+    if (rootData == null) return null;
+
+    const obj = JSON.parse(rootData);
+    const poseidonHash = obj.poseidonHash;
+    return poseidonHash;
+  }
+
   async notifyAboutNewProof(): Promise<void> {
     await this.waitForConnection();
 
@@ -207,7 +228,6 @@ export class Redis implements IRedis {
   }
 
   async getValidatorsBatched(
-    ssz: any,
     slot: bigint,
     batchSize = 1000,
   ): Promise<Validator[]> {
@@ -225,12 +245,12 @@ export class Redis implements IRedis {
         continue;
       }
       const batchValidators = (res.filter(v => v !== null) as string[]).map(
-        (json: any) => JSON.parse(json),
+        (json: any) => JSON.parse(json).validator,
       );
 
       for (const [index, redisValidator] of batchValidators.entries()) {
         try {
-          const validator = validatorFromValidatorJSON(redisValidator, ssz);
+          const validator = validatorFromValidatorJSON(redisValidator);
           const validatorIndex = Number(batchKeys[index].split(':')[1]);
           allValidators[validatorIndex] = validator;
         } catch (e) {
@@ -241,7 +261,7 @@ export class Redis implements IRedis {
       console.log(
         `Loaded batch ${chalk.bold.yellowBright(
           keyBatchIndex + 1,
-        )}/${chalk.bold.yellow(Math.ceil(keys.length / batchSize))}`,
+        )} /${chalk.bold.yellow(Math.ceil(keys.length / batchSize))}`,
       );
     }
 
@@ -269,7 +289,7 @@ export class Redis implements IRedis {
   }
 
   async saveValidators(
-    validatorsWithIndices: { index: number; data: ValidatorShaInput }[],
+    validatorsWithIndices: { index: number; data: CommitmentMapperInput }[],
     slot: bigint,
   ) {
     await this.waitForConnection();
@@ -288,6 +308,49 @@ export class Redis implements IRedis {
         }),
       )
     ).flat();
+
+    await this.client.mset(...args);
+  }
+
+  async saveBalancesAccumulatorProof(
+    protocol: string,
+    level: bigint,
+    index: bigint,
+    proof: BalanceProof = {
+      needsChange: true,
+      proofKey: '',
+      rangeTotalValue: '0',
+      validatorsCommitment: [],
+      balancesHash: [],
+      withdrawalCredentials: [],
+      currentEpoch: '0',
+      numberOfNonActivatedValidators: 0,
+      numberOfActiveValidators: 0,
+      numberOfExitedValidators: 0,
+    },
+  ): Promise<void> {
+    await this.waitForConnection();
+
+    await this.client.set(
+      `${CONSTANTS.balanceVerificationAccumulatorProofKey}:${protocol}:${level}:${index}`,
+      JSON.stringify(proof),
+    );
+  }
+
+  async saveBalancesAccumulatorInput(
+    balancesInputs: BalancesAccumulatorInput[],
+    protocol: string,
+  ) {
+    await this.waitForConnection();
+
+    const args = balancesInputs
+      .map((input, index) => {
+        return [
+          `${CONSTANTS.balanceVerificationAccumulatorKey}:${protocol}:${index}`,
+          JSON.stringify(input),
+        ];
+      })
+      .flat();
 
     await this.client.mset(...args);
   }
@@ -313,15 +376,14 @@ export class Redis implements IRedis {
   async saveFinalProofInput(
     protocol: string,
     input: {
-      stateRoot: number[];
-      stateRootBranch: number[][];
-      blockRoot: number[];
+      stateRoot: string;
+      stateRootBranch: string[];
+      blockRoot: string;
       slot: string;
-      slotBranch: number[][];
-      withdrawalCredentials: [number[]];
-      balanceBranch: number[][];
-      validatorsBranch: number[][];
-      validatorsSizeBits: number[];
+      slotBranch: string[];
+      balanceBranch: string[];
+      validatorsBranch: string[];
+      validatorsLengthSsz: string;
     },
   ) {
     await this.waitForConnection();

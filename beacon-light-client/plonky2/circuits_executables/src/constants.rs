@@ -1,3 +1,0 @@
-const BALANCES_NUMBER_OF_LAYERS: usize = 37;
-
-const VALIDATORS_NUMBER_OF_LAYERS: usize = 40;

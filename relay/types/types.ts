@@ -188,25 +188,50 @@ export interface ValidatorPoseidonInput {
   pubkey: string;
   withdrawalCredentials: string;
   effectiveBalance: string;
-  slashed: number;
+  slashed: boolean;
   activationEligibilityEpoch: string;
   activationEpoch: string;
   exitEpoch: string;
   withdrawableEpoch: string;
 }
 
+export interface ValidatorInput {
+  pubkey: string;
+  withdrawalCredentials: string;
+  effectiveBalance: string;
+  slashed: boolean;
+  activationEligibilityEpoch: string;
+  activationEpoch: string;
+  exitEpoch: string;
+  withdrawableEpoch: string;
+}
+
+export interface CommitmentMapperInput {
+  validator: ValidatorInput;
+  isReal: boolean;
+}
+
+export interface DepositData {
+  pubkey: string;
+  withdrawalCredentials: string;
+  amount: number;
+  signature: string;
+}
+
 export interface BalancesAccumulatorInput {
   balancesRoot: string;
-  balances: string[];
+  balancesLeaves: string[];
   balancesProofs: string[][];
   validatorDepositIndexes: number[];
-  validatorIndexes: number[];
+  validatorIndices: number[];
   validators: ValidatorPoseidonInput[];
   validatorCommitmentProofs: string[][][];
   validatorIsNotZero: number[];
   validatorCommitmentRoot: string[];
   currentEpoch: number;
   currentEth1DepositIndex: number;
+  depositsData: DepositData[];
+  validatorsPoseidonRoot: number[];
 }
 
 export interface ValidatorProof {
@@ -218,9 +243,9 @@ export interface ValidatorProof {
 
 export interface BalanceProof {
   needsChange: boolean;
+  proofKey: string;
   rangeTotalValue: string;
   validatorsCommitment: number[];
-  proofKey: string;
   balancesHash: number[];
   withdrawalCredentials: number[][];
   currentEpoch: string;
