@@ -1,6 +1,8 @@
+#![feature(generic_const_exprs)]
 use std::{println, time::Instant};
 
 use anyhow::Result;
+use circuit::Circuit;
 use circuit_executables::{
     constants::SERIALIZED_CIRCUITS_DIR,
     crud::common::load_circuit_data,
@@ -8,7 +10,7 @@ use circuit_executables::{
     utils::{parse_config_file, CommandLineOptionsBuilder},
     wrap_final_layer_in_poseidon_bn128::wrap_final_layer_in_poseidon_bn_128,
 };
-use circuits::types::FinalProof;
+use circuits::{final_layer::BalanceVerificationFinalCircuit, types::FinalProof};
 use clap::Arg;
 use futures_lite::future;
 use plonky2::{
@@ -24,7 +26,7 @@ fn main() -> Result<()> {
 }
 
 async fn async_main() -> Result<()> {
-    let common_config = parse_config_file("../common_config.json".to_owned()).unwrap();
+    let common_config = parse_config_file("../../common_config.json".to_owned()).unwrap();
 
     let matches = CommandLineOptionsBuilder::new("wrapper")
         .with_redis_options(&common_config.redis_host, common_config.redis_port)
@@ -47,8 +49,15 @@ async fn async_main() -> Result<()> {
 
     let elapsed = start.elapsed();
     println!("Redis connection took: {:?}", elapsed);
-    let final_layer_circuit: CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2> =
-        load_circuit_data(&format!("{SERIALIZED_CIRCUITS_DIR}/final_layer")).unwrap();
+    let verification_circuit_data = (
+        load_circuit_data(&format!(
+            "{SERIALIZED_CIRCUITS_DIR}/balance_verification_37",
+        ))
+        .unwrap(),
+        load_circuit_data(&format!("{SERIALIZED_CIRCUITS_DIR}/commitment_mapper_40")).unwrap(),
+    );
+
+    let (_, circuit_data) = BalanceVerificationFinalCircuit::<1>::build(&verification_circuit_data);
 
     let protocol = matches.value_of("protocol").unwrap();
 
@@ -62,12 +71,12 @@ async fn async_main() -> Result<()> {
     let final_layer_proof: FinalProof = serde_json::from_str(&proof_str)?;
     let final_layer_proof = final_layer_proof.proof;
     let final_layer_proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> =
-        ProofWithPublicInputs::from_bytes(final_layer_proof, &final_layer_circuit.common)?;
+        ProofWithPublicInputs::from_bytes(final_layer_proof, &circuit_data.common)?;
 
     wrap_final_layer_in_poseidon_bn_128(
         con,
         compile_circuit,
-        final_layer_circuit,
+        circuit_data,
         final_layer_proof,
         protocol.to_string(),
     )

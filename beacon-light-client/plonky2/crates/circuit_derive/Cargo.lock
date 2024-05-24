@@ -97,6 +97,7 @@ dependencies = [
  "plonky2_crypto",
  "serde",
  "serde-big-array",
+ "starky",
 ]
 
 [[package]]
@@ -784,6 +785,22 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.60",
+]
+
+[[package]]
+name = "starky"
+version = "0.2.1"
+source = "git+https://github.com/metacraft-labs/plonky2#3ae50655f371184023815f50a42555c1cd9d7023"
+dependencies = [
+ "ahash",
+ "anyhow",
+ "hashbrown 0.14.5",
+ "itertools 0.11.0",
+ "log",
+ "num-bigint",
+ "plonky2",
+ "plonky2_maybe_rayon 0.2.0",
+ "plonky2_util",
 ]
 
 [[package]]
