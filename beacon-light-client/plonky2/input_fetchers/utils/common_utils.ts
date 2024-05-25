@@ -1,11 +1,6 @@
 import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
-import {
-  CommitmentMapperInput,
-  Validator,
-  ValidatorInput,
-  ValidatorShaInput,
-} from '@dendreth/relay/types/types';
+import { CommitmentMapperInput, Validator } from '@dendreth/relay/types/types';
 import { bitsToHex } from '@dendreth/utils/ts-utils/hex-utils';
 
 export function gindexFromIndex(index: bigint, depth: bigint): bigint {

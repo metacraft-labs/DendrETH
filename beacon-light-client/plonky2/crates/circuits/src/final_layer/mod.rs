@@ -6,12 +6,13 @@ use crate::utils::hashing::is_valid_merkle_branch::assert_merkle_proof_is_valid_
 use crate::{
     common_targets::{BasicProofTarget, Sha256MerkleBranchTarget, Sha256Target},
     utils::{
-        hashing::sha256::{sha256, sha256_pair},
+        hashing::sha256::sha256,
         utils::{biguint_to_bits_target, ssz_num_to_bits, target_to_le_bits},
     },
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
     withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
+use circuit::CircuitInputTarget;
 use circuit::{Circuit, CircuitOutputTarget};
 use circuit_derive::CircuitTarget;
 use itertools::Itertools;
@@ -54,15 +55,11 @@ pub struct FinalCircuitTargets<const WITHDRAWAL_CREDENTIALS_COUNT: usize> {
 
     #[target(in)]
     #[serde(with = "serde_bool_array_to_hex_string_nested")]
-    pub validators_branch: Sha256MerkleBranchTarget<5>,
+    pub validators_branch: Sha256MerkleBranchTarget<6>,
 
     #[target(in)]
     #[serde(with = "serde_bool_array_to_hex_string_nested")]
-    pub balance_branch: Sha256MerkleBranchTarget<5>,
-
-    #[target(in)]
-    #[serde(with = "serde_bool_array_to_hex_string")]
-    pub validators_length_ssz: Sha256Target,
+    pub balances_branch: Sha256MerkleBranchTarget<6>,
 
     pub balance_verification_proof_target: BasicProofTarget,
     pub commitment_mapper_proof_target: BasicProofTarget,
@@ -95,80 +92,46 @@ impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
         let input = Self::read_circuit_input_target(builder);
 
         // TODO: get rid of this call
-        let (balance_proof_targets, balance_verifier_circuit_target, balances_pi_target) =
-            setup_balance_targets::<Self::F, Self::C, D, 8, WITHDRAWAL_CREDENTIALS_COUNT>(
-                builder,
-                balance_verification_circuit_data,
-            );
+        let (
+            balance_verification_proof_target,
+            balance_verifier_circuit_target,
+            balance_verification_pi,
+        ) = setup_balance_targets::<Self::F, Self::C, D, 8, WITHDRAWAL_CREDENTIALS_COUNT>(
+            builder,
+            balance_verification_circuit_data,
+        );
 
         let (
-            commitment_mapper_proof_targets,
-            commitment_mapper_verifier_circuit_target,
-            mapper_pi_target,
+            validators_commitment_mapper_proof_target,
+            validators_commitment_mapper_verifier_circuit_target,
+            validators_commitment_mapper_pi,
         ) = setup_commitment_mapper_targets(builder, validators_commitment_mapper_circuit_data);
 
         // Assert that the two proofs are made for the same validator set
         builder.connect_hashes(
-            mapper_pi_target.poseidon_hash_tree_root,
-            balances_pi_target.range_validator_commitment,
+            validators_commitment_mapper_pi.poseidon_hash_tree_root,
+            balance_verification_pi.range_validator_commitment,
         );
 
-        assert_merkle_proof_is_valid_const(
+        validate_input_against_block_root::<Self::F, Self::C, D, WITHDRAWAL_CREDENTIALS_COUNT>(
             builder,
-            &input.state_root,
-            &input.block_root,
-            &input.state_root_branch,
-            11,
-        );
-
-        let validators_root = sha256_pair(
-            builder,
-            &mapper_pi_target.sha256_hash_tree_root,
-            &input.validators_length_ssz,
-        );
-
-        assert_merkle_proof_is_valid_const(
-            builder,
-            &validators_root,
-            &input.state_root,
-            &input.validators_branch,
-            43,
-        );
-
-        let balances_root = sha256_pair(
-            builder,
-            &balances_pi_target.range_balances_root,
-            &input.validators_length_ssz,
-        );
-
-        assert_merkle_proof_is_valid_const(
-            builder,
-            &balances_root,
-            &input.state_root,
-            &input.balance_branch,
-            44,
+            &input,
+            &balance_verification_pi.range_balances_root,
+            &validators_commitment_mapper_pi.sha256_hash_tree_root,
         );
 
         verify_slot_is_in_range::<Self::F, Self::C, D>(
             builder,
             &input.slot,
-            &balances_pi_target.current_epoch,
+            &balance_verification_pi.current_epoch,
         );
 
-        let slot_ssz = ssz_num_to_bits(builder, &input.slot, 64);
-
-        assert_merkle_proof_is_valid_const(
+        let accumulated_balance_bits = biguint_to_bits_target::<Self::F, D, 2>(
             builder,
-            &slot_ssz,
-            &input.state_root,
-            &input.slot_branch,
-            34,
+            &balance_verification_pi.range_total_value,
         );
 
-        let final_sum_bits =
-            biguint_to_bits_target::<Self::F, D, 2>(builder, &balances_pi_target.range_total_value);
-
-        let flattened_withdrawal_credentials = balances_pi_target
+        let flattened_withdrawal_credentials = balance_verification_pi
             .withdrawal_credentials
             .iter()
             .flat_map(|array| array.iter())
@@ -177,21 +140,23 @@ impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
 
         let number_of_non_activated_validators_bits = target_to_le_bits(
             builder,
-            balances_pi_target.number_of_non_activated_validators,
+            balance_verification_pi.number_of_non_activated_validators,
         );
         let number_of_active_validators_bits =
-            target_to_le_bits(builder, balances_pi_target.number_of_active_validators);
+            target_to_le_bits(builder, balance_verification_pi.number_of_active_validators);
         let number_of_exited_validators_bits =
-            target_to_le_bits(builder, balances_pi_target.number_of_exited_validators);
-        let number_of_slashed_validators_bits =
-            target_to_le_bits(builder, balances_pi_target.number_of_slashed_validators);
+            target_to_le_bits(builder, balance_verification_pi.number_of_exited_validators);
+        let number_of_slashed_validators_bits = target_to_le_bits(
+            builder,
+            balance_verification_pi.number_of_slashed_validators,
+        );
 
         let mut public_inputs_hash = sha256(
             builder,
             &[
                 input.block_root.as_slice(),
                 flattened_withdrawal_credentials.as_slice(),
-                final_sum_bits.as_slice(),
+                accumulated_balance_bits.as_slice(),
                 number_of_non_activated_validators_bits.as_slice(),
                 number_of_active_validators_bits.as_slice(),
                 number_of_exited_validators_bits.as_slice(),
@@ -216,21 +181,66 @@ impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
             block_root: input.block_root,
             state_root: input.state_root,
             state_root_branch: input.state_root_branch,
-            balance_branch: input.balance_branch,
+            balances_branch: input.balances_branch,
             slot: input.slot,
             slot_branch: input.slot_branch,
-            validators_length_ssz: input.validators_length_ssz,
             validators_branch: input.validators_branch,
             balance_verification_proof_target: BasicProofTarget {
-                proof: balance_proof_targets.clone(),
+                proof: balance_verification_proof_target.clone(),
                 verifier_circuit_target: balance_verifier_circuit_target,
             },
             commitment_mapper_proof_target: BasicProofTarget {
-                proof: commitment_mapper_proof_targets,
-                verifier_circuit_target: commitment_mapper_verifier_circuit_target,
+                proof: validators_commitment_mapper_proof_target,
+                verifier_circuit_target: validators_commitment_mapper_verifier_circuit_target,
             },
         }
     }
+}
+
+fn validate_input_against_block_root<
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    const D: usize,
+    const WITHDRAWAL_CREDENTIALS_COUNT: usize,
+>(
+    builder: &mut CircuitBuilder<F, D>,
+    input: &CircuitInputTarget<BalanceVerificationFinalCircuit<WITHDRAWAL_CREDENTIALS_COUNT>>,
+    balances_root_left: &Sha256Target,
+    validators_root_left: &Sha256Target,
+) {
+    assert_merkle_proof_is_valid_const(
+        builder,
+        &input.state_root,
+        &input.block_root,
+        &input.state_root_branch,
+        11,
+    );
+
+    assert_merkle_proof_is_valid_const(
+        builder,
+        validators_root_left,
+        &input.state_root,
+        &input.validators_branch,
+        86,
+    );
+
+    assert_merkle_proof_is_valid_const(
+        builder,
+        balances_root_left,
+        &input.state_root,
+        &input.balances_branch,
+        88,
+    );
+
+    let slot_ssz = ssz_num_to_bits(builder, &input.slot, 64);
+
+    assert_merkle_proof_is_valid_const(
+        builder,
+        &slot_ssz,
+        &input.state_root,
+        &input.slot_branch,
+        34,
+    );
 }
 
 fn setup_balance_targets<

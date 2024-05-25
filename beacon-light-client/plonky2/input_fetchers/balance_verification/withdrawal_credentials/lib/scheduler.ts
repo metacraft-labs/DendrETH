@@ -81,6 +81,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
   const currentSSZFork = await beaconApi.getCurrentSSZ(slot);
 
   const offset = Number(config.offset) || 0;
+  // TODO: this is wrong, fix it
   let take = config.take !== Infinity ? config.take + offset : Infinity;
   const validators = beaconState.validators.slice(offset, take);
   beaconState.balances = beaconState.balances.slice(offset, take);
@@ -242,6 +243,20 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
     )
     .map(bytesToHex);
 
+  const validatorsLengthSSZ = bytesToHex(ssz.UintNum64.hashTreeRoot(take));
+
+  const validatorsBranch = [validatorsLengthSSZ].concat(
+    beaconStateTree
+      .getSingleProof(ssz.deneb.BeaconState.getPathInfo(['validators']).gindex)
+      .map(bytesToHex),
+  );
+
+  const balancesBranch = [validatorsLengthSSZ].concat(
+    beaconStateTree
+      .getSingleProof(ssz.deneb.BeaconState.getPathInfo(['balances']).gindex)
+      .map(bytesToHex),
+  );
+
   console.log(chalk.bold.blue('Adding final proof input...'));
   await redis.saveFinalProofInput(protocol, {
     stateRoot: bytesToHex(currentSSZFork.BeaconState.hashTreeRoot(beaconState)),
@@ -251,12 +266,8 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
     ),
     slot: beaconState.slot.toString(),
     slotBranch: beaconStateTree.getSingleProof(34n).map(x => bytesToHex(x)),
-    balanceBranch: beaconStateTree.getSingleProof(44n).map(x => bytesToHex(x)),
-
-    validatorsBranch: beaconStateTree
-      .getSingleProof(43n)
-      .map(x => bytesToHex(x)),
-    validatorsLengthSsz: bytesToHex(ssz.UintNum64.hashTreeRoot(take)),
+    balancesBranch,
+    validatorsBranch,
   });
 
   console.log(chalk.bold.greenBright('Done'));

@@ -381,9 +381,8 @@ export class Redis implements IRedis {
       blockRoot: string;
       slot: string;
       slotBranch: string[];
-      balanceBranch: string[];
+      balancesBranch: string[];
       validatorsBranch: string[];
-      validatorsLengthSsz: string;
     },
   ) {
     await this.waitForConnection();
