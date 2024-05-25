@@ -1,6 +1,6 @@
 #![feature(generic_const_exprs)]
 
-use circuit::{Circuit, SetWitness};
+use circuit::{Circuit, CircuitTargetType, SetWitness};
 use circuit_executables::{
     constants::SERIALIZED_CIRCUITS_DIR,
     crud::{
@@ -14,9 +14,11 @@ use circuit_executables::{
     wrap_final_layer_in_poseidon_bn128::wrap_final_layer_in_poseidon_bn_128,
 };
 use circuits::{
+    common_targets::BasicProofTarget,
     final_layer::BalanceVerificationFinalCircuit,
     types::{BalanceProof, ValidatorProof},
     utils::utils::bits_to_bytes,
+    withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
 use colored::Colorize;
 use itertools::Itertools;
@@ -28,8 +30,15 @@ use num_traits::ToPrimitive;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     iop::witness::{PartialWitness, WitnessWrite},
-    plonk::{config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs},
+    plonk::{
+        circuit_data::CircuitData,
+        config::PoseidonGoldilocksConfig,
+        proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
+    },
 };
+
+const VALIDATORS_COUNT: usize = 8;
+const WITHDRAWAL_CREDENTIALS_COUNT: usize = 1;
 
 fn main() -> Result<()> {
     future::block_on(async_main())
@@ -45,6 +54,7 @@ async fn async_main() -> Result<()> {
         .get_matches();
 
     let redis_connection = matches.value_of("redis_connection").unwrap();
+    let protocol = matches.value_of("protocol").unwrap();
 
     let mut proof_storage = create_proof_storage(&matches).await;
 
@@ -59,118 +69,98 @@ async fn async_main() -> Result<()> {
         format!("Redis connection took: {:?}", elapsed).yellow()
     );
 
-    let verification_circuit_data = (
-        load_circuit_data(&format!(
-            "{SERIALIZED_CIRCUITS_DIR}/balance_verification_37",
-        ))
-        .unwrap(),
-        load_circuit_data(&format!("{SERIALIZED_CIRCUITS_DIR}/commitment_mapper_40")).unwrap(),
-    );
+    let circuit_input = fetch_final_layer_input(&mut con, protocol).await?;
 
-    let (circuit_targets, circuit_data) =
-        BalanceVerificationFinalCircuit::<1>::build(&verification_circuit_data);
+    let balance_proof_data: BalanceProof<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT> =
+        fetch_proof_balances(&mut con, protocol, 37, 0).await?;
 
-    let (balance_data, commitment_data) = verification_circuit_data;
+    let balance_verification_proof_bytes = proof_storage
+        .get_proof(balance_proof_data.proof_key)
+        .await?;
 
-    let protocol = matches.value_of("protocol").unwrap();
+    let balance_verification_circuit_data = load_circuit_data(&format!(
+        "{SERIALIZED_CIRCUITS_DIR}/balance_verification_37",
+    ))
+    .unwrap();
 
-    let final_input_data = fetch_final_layer_input(&mut con, protocol).await?;
-
-    let mut pw: PartialWitness<GoldilocksField> = PartialWitness::new();
-    circuit_targets.set_witness(&mut pw, &final_input_data);
-
-    // TODO: don't hard code the generics
-    let balance_proof: BalanceProof<8, 1> = fetch_proof_balances(&mut con, protocol, 37, 0).await?;
-    let balance_proof_bytes = proof_storage.get_proof(balance_proof.proof_key).await?;
-
-    let balance_final_proof =
+    let balance_verification_proof =
         ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
-            balance_proof_bytes,
-            &balance_data.common,
+            balance_verification_proof_bytes,
+            &balance_verification_circuit_data.common,
         )?;
 
-    pw.set_proof_with_pis_target(
-        &circuit_targets.balance_verification_proof_target.proof,
-        &balance_final_proof,
+    let validators_commitment_mapper_proof_data: ValidatorProof =
+        fetch_proof(&mut con, 1, circuit_input.slot.to_u64().unwrap()).await?;
+
+    let validators_commitment_mapper_proof_bytes = proof_storage
+        .get_proof(validators_commitment_mapper_proof_data.proof_key)
+        .await?;
+
+    let validators_commitment_mapper_circuit_data =
+        load_circuit_data(&format!("{SERIALIZED_CIRCUITS_DIR}/commitment_mapper_40")).unwrap();
+
+    let validators_commitment_mapper_proof =
+        ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
+            validators_commitment_mapper_proof_bytes,
+            &validators_commitment_mapper_circuit_data.common,
+        )?;
+
+    let verification_circuit_data = (
+        balance_verification_circuit_data,
+        validators_commitment_mapper_circuit_data,
     );
 
-    pw.set_cap_target(
-        &circuit_targets
-            .balance_verification_proof_target
-            .verifier_circuit_target
-            .constants_sigmas_cap,
-        &balance_data.verifier_only.constants_sigmas_cap,
+    let (circuit_target, circuit_data) = BalanceVerificationFinalCircuit::<
+        WITHDRAWAL_CREDENTIALS_COUNT,
+    >::build(&verification_circuit_data);
+
+    let (balance_verification_circuit_data, validators_commitment_mapper_circuit_data) =
+        verification_circuit_data;
+
+    let mut pw = PartialWitness::new();
+
+    circuit_target.set_witness(&mut pw, &circuit_input);
+
+    set_witness_proof(
+        &mut pw,
+        &circuit_target.balance_verification_proof_target,
+        &balance_verification_proof,
+        &balance_verification_circuit_data,
     );
 
-    pw.set_hash_target(
-        circuit_targets
-            .balance_verification_proof_target
-            .verifier_circuit_target
-            .circuit_digest,
-        balance_data.verifier_only.circuit_digest,
-    );
-
-    let commitment_proof: ValidatorProof =
-        fetch_proof(&mut con, 1, final_input_data.slot.to_u64().unwrap()).await?;
-
-    let commitment_proof_bytes = proof_storage.get_proof(commitment_proof.proof_key).await?;
-
-    let commitment_final_proof = ProofWithPublicInputs::<
-        GoldilocksField,
-        PoseidonGoldilocksConfig,
-        2,
-    >::from_bytes(commitment_proof_bytes, &commitment_data.common)?;
-
-    pw.set_proof_with_pis_target(
-        &circuit_targets.commitment_mapper_proof_target.proof,
-        &commitment_final_proof,
-    );
-
-    pw.set_cap_target(
-        &circuit_targets
-            .commitment_mapper_proof_target
-            .verifier_circuit_target
-            .constants_sigmas_cap,
-        &commitment_data.verifier_only.constants_sigmas_cap,
-    );
-
-    pw.set_hash_target(
-        circuit_targets
-            .commitment_mapper_proof_target
-            .verifier_circuit_target
-            .circuit_digest,
-        commitment_data.verifier_only.circuit_digest,
+    set_witness_proof(
+        &mut pw,
+        &circuit_target.commitment_mapper_proof_target,
+        &validators_commitment_mapper_proof,
+        &validators_commitment_mapper_circuit_data,
     );
 
     let proof = circuit_data.prove(pw)?;
 
-    let withdrawal_credentials = balance_proof.public_inputs.withdrawal_credentials.to_vec();
-    let withdrawal_credentials = withdrawal_credentials
+    let balance_verification_pis =
+        WithdrawalCredentialsBalanceAggregatorFirstLevel::<
+            VALIDATORS_COUNT,
+            WITHDRAWAL_CREDENTIALS_COUNT,
+        >::read_public_inputs(&balance_verification_proof.public_inputs);
+
+    let withdrawal_credentials = balance_verification_pis
+        .withdrawal_credentials
+        .to_vec()
         .iter()
         .map(|credentials| hex::encode(bits_to_bytes(credentials.as_slice())))
         .collect_vec();
 
-    // TODO: read the balance verification proof public inputs
     save_final_proof(
         &mut con,
         protocol.to_string(),
         &proof,
-        hex::encode(bits_to_bytes(final_input_data.block_root.as_slice())),
-        // TODO: read these off the public inputs, not the redis data
+        hex::encode(bits_to_bytes(circuit_input.block_root.as_slice())),
         withdrawal_credentials,
-        balance_proof
-            .public_inputs
-            .range_total_value
-            .to_u64()
-            .unwrap(),
-        balance_proof
-            .public_inputs
-            .number_of_non_activated_validators,
-        balance_proof.public_inputs.number_of_active_validators,
-        balance_proof
-            .public_inputs
-            .number_of_non_activated_validators,
-        balance_proof.public_inputs.number_of_slashed_validators,
+        balance_verification_pis.range_total_value.to_u64().unwrap(),
+        balance_verification_pis.number_of_non_activated_validators,
+        balance_verification_pis.number_of_active_validators,
+        balance_verification_pis.number_of_non_activated_validators,
+        balance_verification_pis.number_of_slashed_validators,
     )
     .await?;
 
@@ -194,4 +184,21 @@ async fn async_main() -> Result<()> {
     println!("{}", "Wrapper finished!".blue().bold());
 
     Ok(())
+}
+
+fn set_witness_proof(
+    pw: &mut PartialWitness<GoldilocksField>,
+    proof_target: &BasicProofTarget,
+    proof: &ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+) {
+    pw.set_proof_with_pis_target(&proof_target.proof, &proof);
+    pw.set_cap_target(
+        &proof_target.verifier_circuit_target.constants_sigmas_cap,
+        &data.verifier_only.constants_sigmas_cap,
+    );
+    pw.set_hash_target(
+        proof_target.verifier_circuit_target.circuit_digest,
+        data.verifier_only.circuit_digest,
+    );
 }
