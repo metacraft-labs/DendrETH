@@ -9,6 +9,8 @@ use plonky2::{
     },
 };
 
+use crate::{CircuitInputTarget, CircuitOutput, CircuitOutputTarget};
+
 // TODO: stick D in the circuit config when const generics mature enough
 // this D's value is the same as GoldilocksPoseidonConfig's D
 const D: usize = 2;
@@ -33,21 +35,17 @@ pub trait Circuit {
         (targets, circuit_data)
     }
 
-    fn read_public_inputs_target(
-        public_inputs: &[Target],
-    ) -> <Self::Target as TargetsWithPublicInputs>::PublicInputsTarget {
+    fn read_public_inputs_target(public_inputs: &[Target]) -> CircuitOutputTarget<Self> {
         Self::Target::read_public_inputs_target(public_inputs)
     }
 
-    fn read_public_inputs(
-        public_inputs: &[Self::F],
-    ) -> <Self::Target as TargetsWithPublicInputs>::PublicInputs {
+    fn read_public_inputs(public_inputs: &[Self::F]) -> CircuitOutput<Self> {
         Self::Target::read_public_inputs(public_inputs)
     }
 
     fn read_circuit_input_target(
         builder: &mut CircuitBuilder<Self::F, D>,
-    ) -> <Self::Target as ReadableCircuitInputTarget>::CircuitInputTarget {
+    ) -> CircuitInputTarget<Self> {
         Self::Target::read_circuit_input_target(builder)
     }
 }
