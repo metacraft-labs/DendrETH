@@ -1,4 +1,8 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+source $(dirname ${BASH_SOURCE[0]})/parse_common_cmdline_opts.sh
 
 # Reads SERVER_LIST from .env
 if [ -z "$SERVER_LIST" ]; then
@@ -21,13 +25,13 @@ for server in $SERVER_LIST
 do
   echo "Starting on ${server} in background..."
   # Pass the first argument from run_everywhere.sh to run.sh
-  ssh "$server" "cd ~/DendrETH && nix develop -c ./beacon-light-client/plonky2/circuits_executables/run.sh 0 $1" 2>&1 &
+  ssh "$server" "cd ~/DendrETH && nix develop -c ./beacon-light-client/plonky2/crates/circuit_executables/scripts/run_balance_verification.sh --proof-storage-dir $PROOF_STORAGE_DIR --redis-address $REDIS_ADDRESS --protocol $PROTOCOL" 2>&1 &
 done
 
 # Wait for all background jobs to finish
 wait
 echo "All jobs completed"
 
-ssh "$FINAL_SERVER" "cd ~/DendrETH && nix develop -c ./beacon-light-client/plonky2/circuits_executables/run_final_layer.sh $1" 2>&1
+ssh "$FINAL_SERVER" "cd ~/DendrETH && nix develop -c ./beacon-light-client/plonky2/crates/circuit_executables/scripts/run_final_layer.sh --proof-storage-dir $PROOF_STORAGE_DIR --redis-address $REDIS_ADDRESS --protocol $PROTOCOL" 2>&1
 
 echo "Final layer completed"
