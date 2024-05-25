@@ -300,7 +300,6 @@ where
     (proof_targets, verifier_circuit_target, output)
 }
 
-// TODO: Rename this function
 fn verify_slot_is_in_range<
     F: RichField + Extendable<D>,
     C: GenericConfig<D, F = F>,
