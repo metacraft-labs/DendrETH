@@ -1,13 +1,19 @@
 use itertools::Itertools;
-use plonky2::field::extension::Extendable;
-use plonky2::hash::hash_types::RichField;
-use plonky2::iop::target::{BoolTarget, Target};
-use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::plonk::circuit_data::{CircuitData, VerifierCircuitTarget, VerifierOnlyCircuitData};
-use plonky2::plonk::config::{AlgebraicHasher, GenericConfig};
-use plonky2::plonk::proof::ProofWithPublicInputsTarget;
-use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint};
-use plonky2_crypto::u32::arithmetic_u32::U32Target;
+use plonky2::{
+    field::extension::Extendable,
+    hash::hash_types::RichField,
+    iop::target::{BoolTarget, Target},
+    plonk::{
+        circuit_builder::CircuitBuilder,
+        circuit_data::{CircuitData, VerifierCircuitTarget, VerifierOnlyCircuitData},
+        config::{AlgebraicHasher, GenericConfig},
+        proof::ProofWithPublicInputsTarget,
+    },
+};
+use plonky2_crypto::{
+    biguint::{BigUintTarget, CircuitBuilderBiguint},
+    u32::arithmetic_u32::U32Target,
+};
 
 pub mod hashing;
 

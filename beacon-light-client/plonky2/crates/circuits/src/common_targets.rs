@@ -1,5 +1,4 @@
-use crate::serializers::serde_bool_array_to_hex_string;
-use crate::serializers::{biguint_to_str, parse_biguint};
+use crate::serializers::{biguint_to_str, parse_biguint, serde_bool_array_to_hex_string};
 use circuit_derive::{
     AddVirtualTarget, CircuitTarget, PublicInputsReadable, SerdeCircuitTarget, SetWitness,
     TargetPrimitive,

@@ -20,8 +20,7 @@ use circuits::bls_verification::bls12_381_circuit::BlsCircuitTargets;
 use futures_lite::future;
 use num_bigint::BigUint;
 use plonky2::{
-    field::goldilocks_field::GoldilocksField,
-    field::types::Field,
+    field::{goldilocks_field::GoldilocksField, types::Field},
     iop::witness::{PartialWitness, WitnessWrite},
     plonk::{config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs},
     util::serialization::Buffer,

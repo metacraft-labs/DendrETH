@@ -1,20 +1,21 @@
-use crate::serializers::biguint_to_str;
-use crate::serializers::parse_biguint;
-use crate::serializers::serde_bool_array_to_hex_string;
-use crate::serializers::serde_bool_array_to_hex_string_nested;
-use crate::utils::circuit::biguint_to_bits_target;
-use crate::utils::circuit::hashing::merkle::sha256::assert_merkle_proof_is_valid_const_sha256;
-use crate::utils::circuit::hashing::merkle::ssz::ssz_num_to_bits;
-use crate::utils::circuit::hashing::sha256::sha256;
-use crate::utils::circuit::target_to_le_bits;
-use crate::utils::circuit::verify_proof;
 use crate::{
     common_targets::{Sha256MerkleBranchTarget, Sha256Target},
+    serializers::{
+        biguint_to_str, parse_biguint, serde_bool_array_to_hex_string,
+        serde_bool_array_to_hex_string_nested,
+    },
+    utils::circuit::{
+        biguint_to_bits_target,
+        hashing::{
+            merkle::{sha256::assert_merkle_proof_is_valid_const_sha256, ssz::ssz_num_to_bits},
+            sha256::sha256,
+        },
+        target_to_le_bits, verify_proof,
+    },
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
     withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
-use circuit::Circuit;
-use circuit::CircuitInputTarget;
+use circuit::{Circuit, CircuitInputTarget};
 use circuit_derive::CircuitTarget;
 use itertools::Itertools;
 use num::{BigUint, FromPrimitive};

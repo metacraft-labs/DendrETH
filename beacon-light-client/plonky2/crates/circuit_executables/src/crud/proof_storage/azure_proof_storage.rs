@@ -5,8 +5,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use azure_storage::ConnectionString;
 
-use azure_storage_blobs::container::operations::BlobItem;
-use azure_storage_blobs::prelude::*;
+use azure_storage_blobs::{container::operations::BlobItem, prelude::*};
 use futures::StreamExt;
 
 pub struct AzureStorage {

@@ -1,7 +1,7 @@
-use plonky2::field::extension::Extendable;
-use plonky2::hash::hash_types::RichField;
-use plonky2::iop::target::BoolTarget;
-use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::{
+    field::extension::Extendable, hash::hash_types::RichField, iop::target::BoolTarget,
+    plonk::circuit_builder::CircuitBuilder,
+};
 
 use crate::common_targets::Sha256Target;
 

@@ -12,10 +12,11 @@ pub mod to_targets;
 
 pub use add_virtual_target::AddVirtualTarget;
 pub use array::Array;
-pub use circuit::ReadableCircuitInputTarget;
-pub use circuit::{Circuit, TargetsWithPublicInputs};
-pub use public_inputs::field_reader::{PublicInputsFieldReader, PublicInputsReadable};
-pub use public_inputs::target_reader::{PublicInputsTargetReadable, PublicInputsTargetReader};
+pub use circuit::{Circuit, ReadableCircuitInputTarget, TargetsWithPublicInputs};
+pub use public_inputs::{
+    field_reader::{PublicInputsFieldReader, PublicInputsReadable},
+    target_reader::{PublicInputsTargetReadable, PublicInputsTargetReader},
+};
 pub use serde_circuit_target::SerdeCircuitTarget;
 pub use set_witness::SetWitness;
 pub use target_primitive::TargetPrimitive;

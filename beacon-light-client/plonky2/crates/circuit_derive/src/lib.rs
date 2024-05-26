@@ -5,11 +5,11 @@ use derive_serde_circuit_target::impl_serde_circuit_target;
 use derive_set_witness::impl_derive_set_witness;
 use derive_target_primitive::impl_derive_target_primitive;
 use proc_macro::TokenStream;
-use syn::parse_macro_input;
-use syn::DeriveInput;
-use utils::create_struct_with_fields;
-use utils::create_struct_with_fields_and_inherited_attrs_target_primitive;
-use utils::gen_shorthand_struct_initialization;
+use syn::{parse_macro_input, DeriveInput};
+use utils::{
+    create_struct_with_fields, create_struct_with_fields_and_inherited_attrs_target_primitive,
+    gen_shorthand_struct_initialization,
+};
 
 mod derive_add_virtual_target;
 mod derive_circuit_target;

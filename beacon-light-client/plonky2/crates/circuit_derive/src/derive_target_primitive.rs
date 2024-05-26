@@ -1,7 +1,6 @@
 use itertools::Itertools;
 use proc_macro2::TokenStream;
-use quote::format_ident;
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::DeriveInput;
 
 use crate::create_struct_with_fields_and_inherited_attrs_target_primitive;

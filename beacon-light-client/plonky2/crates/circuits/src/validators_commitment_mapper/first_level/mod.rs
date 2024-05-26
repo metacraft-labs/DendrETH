@@ -1,19 +1,22 @@
-use crate::common_targets::ValidatorTarget;
-use crate::serializers::serde_bool_array_to_hex_string;
-use crate::serializers::serde_bool_array_to_hex_string_nested;
-use crate::utils::circuit::hashing::merkle::poseidon::hash_validator_poseidon_or_zeroes;
-use crate::utils::circuit::hashing::merkle::sha256::hash_validator_sha256_or_zeroes;
-use crate::utils::circuit::hashing::merkle::sha256::merklelize_validator_target;
+use crate::{
+    common_targets::ValidatorTarget,
+    serializers::{serde_bool_array_to_hex_string, serde_bool_array_to_hex_string_nested},
+    utils::circuit::hashing::merkle::{
+        poseidon::hash_validator_poseidon_or_zeroes,
+        sha256::{hash_validator_sha256_or_zeroes, merklelize_validator_target},
+    },
+};
 use circuit::Circuit;
-use circuit_derive::CircuitTarget;
-use circuit_derive::SerdeCircuitTarget;
-use circuit_derive::{PublicInputsReadable, TargetPrimitive};
-use plonky2::field::goldilocks_field::GoldilocksField;
-use plonky2::hash::hash_types::HashOutTarget;
-use plonky2::iop::target::BoolTarget;
-use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::plonk::circuit_data::CircuitConfig;
-use plonky2::plonk::config::PoseidonGoldilocksConfig;
+use circuit_derive::{CircuitTarget, PublicInputsReadable, SerdeCircuitTarget, TargetPrimitive};
+use plonky2::{
+    field::goldilocks_field::GoldilocksField,
+    hash::hash_types::HashOutTarget,
+    iop::target::BoolTarget,
+    plonk::{
+        circuit_builder::CircuitBuilder, circuit_data::CircuitConfig,
+        config::PoseidonGoldilocksConfig,
+    },
+};
 
 use crate::common_targets::{SSZLeafTarget, Sha256Target};
 

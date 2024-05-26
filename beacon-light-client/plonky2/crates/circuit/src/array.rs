@@ -1,6 +1,5 @@
 use deriving_via::DerivingVia;
-use serde::Deserialize;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 
 #[repr(transparent)]

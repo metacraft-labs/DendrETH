@@ -1,12 +1,15 @@
 use itertools::Itertools;
-use plonky2::field::extension::Extendable;
-use plonky2::hash::hash_types::{HashOutTarget, RichField};
-use plonky2::hash::poseidon::PoseidonHash;
-use plonky2::iop::target::BoolTarget;
-use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::{
+    field::extension::Extendable,
+    hash::{
+        hash_types::{HashOutTarget, RichField},
+        poseidon::PoseidonHash,
+    },
+    iop::target::BoolTarget,
+    plonk::circuit_builder::CircuitBuilder,
+};
 
-use crate::common_targets::ValidatorTarget;
-use crate::utils::circuit::hashing::poseidon::poseidon_pair;
+use crate::{common_targets::ValidatorTarget, utils::circuit::hashing::poseidon::poseidon_pair};
 
 pub fn hash_tree_root_poseidon<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,

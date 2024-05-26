@@ -1,20 +1,23 @@
 use itertools::Itertools;
 use num_bigint::BigUint;
-use plonky2::field::extension::Extendable;
-use plonky2::hash::hash_types::RichField;
-use plonky2::iop::target::BoolTarget;
-use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::{
+    field::extension::Extendable, hash::hash_types::RichField, iop::target::BoolTarget,
+    plonk::circuit_builder::CircuitBuilder,
+};
 use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint};
 
-use crate::common_targets::{
-    SSZLeafTarget, Sha256MerkleBranchTarget, Sha256Target, ValidatorTarget,
+use crate::{
+    common_targets::{SSZLeafTarget, Sha256MerkleBranchTarget, Sha256Target, ValidatorTarget},
+    utils::circuit::{
+        biguint_to_le_bits_target, bool_arrays_are_equal, hashing::sha256::sha256_pair,
+    },
+    validators_commitment_mapper::first_level::MerklelizedValidatorTarget,
 };
-use crate::utils::circuit::hashing::sha256::sha256_pair;
-use crate::utils::circuit::{biguint_to_le_bits_target, bool_arrays_are_equal};
-use crate::validators_commitment_mapper::first_level::MerklelizedValidatorTarget;
 
-use super::pick_left_and_right_hash;
-use super::ssz::{ssz_merklelize_bool, ssz_num_to_bits};
+use super::{
+    pick_left_and_right_hash,
+    ssz::{ssz_merklelize_bool, ssz_num_to_bits},
+};
 
 pub fn restore_merkle_root_sha256<
     const DEPTH: usize,
