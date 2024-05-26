@@ -7,11 +7,13 @@ use plonky2::{
 use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint};
 
 use crate::{
-    common_targets::{SSZTarget, Sha256MerkleBranchTarget, Sha256Target, ValidatorTarget},
+    common_targets::{
+        MerklelizedValidatorTarget, SSZTarget, Sha256MerkleBranchTarget, Sha256Target,
+        ValidatorTarget,
+    },
     utils::circuit::{
         biguint_to_le_bits_target, bool_arrays_are_equal, hashing::sha256::sha256_pair,
     },
-    validators_commitment_mapper::first_level::MerklelizedValidatorTarget,
 };
 
 use super::{
