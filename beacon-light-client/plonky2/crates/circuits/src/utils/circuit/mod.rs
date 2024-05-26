@@ -1,124 +1,104 @@
 use itertools::Itertools;
-use num::BigUint;
-use plonky2::{
-    field::{extension::Extendable, types::Field},
-    hash::hash_types::RichField,
-    iop::{
-        target::{BoolTarget, Target},
-        witness::{PartialWitness, WitnessWrite},
-    },
-    plonk::circuit_builder::CircuitBuilder,
-};
-use plonky2_crypto::{
-    biguint::{BigUintTarget, CircuitBuilderBiguint},
-    u32::arithmetic_u32::U32Target,
-};
-use sha2::{Digest, Sha256};
+use plonky2::field::extension::Extendable;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::target::{BoolTarget, Target};
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::circuit_data::{CircuitData, VerifierCircuitTarget, VerifierOnlyCircuitData};
+use plonky2::plonk::config::{AlgebraicHasher, GenericConfig};
+use plonky2::plonk::proof::ProofWithPublicInputsTarget;
+use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint};
+use plonky2_crypto::u32::arithmetic_u32::U32Target;
 
-use crate::common_targets::{SSZLeafTarget, Sha256MerkleBranchTarget};
+pub mod hashing;
 
-pub const ETH_SHA256_BIT_SIZE: usize = 256;
-pub const POSEIDON_HASH_SIZE: usize = 4;
+pub fn create_verifier_circuit_target<
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    const D: usize,
+>(
+    builder: &mut CircuitBuilder<F, D>,
+    verifier_only: &VerifierOnlyCircuitData<C, D>,
+) -> VerifierCircuitTarget
+where
+    <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
+{
+    VerifierCircuitTarget {
+        constants_sigmas_cap: builder.constant_merkle_cap(&verifier_only.constants_sigmas_cap),
+        circuit_digest: builder.constant_hash(verifier_only.circuit_digest),
+    }
+}
 
-pub fn hex_string_from_field_element_bits<F: RichField>(bits: &[F]) -> String {
-    assert!(bits.len() % 4 == 0);
-    let bits = bits
+pub fn verify_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    circuit_data: &CircuitData<F, C, D>,
+) -> ProofWithPublicInputsTarget<D>
+where
+    <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
+{
+    let proof = builder.add_virtual_proof_with_pis(&circuit_data.common);
+    let verifier_circuit_data =
+        create_verifier_circuit_target(builder, &circuit_data.verifier_only);
+    builder.verify_proof::<C>(&proof, &verifier_circuit_data, &circuit_data.common);
+    proof
+}
+
+pub fn connect_arrays<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    first: &[Target],
+    second: &[Target],
+) {
+    assert!(first.len() == second.len());
+
+    for idx in 0..first.len() {
+        builder.connect(first[idx], second[idx]);
+    }
+}
+
+pub fn connect_bool_arrays<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    first: &[BoolTarget],
+    second: &[BoolTarget],
+) {
+    let first = first
         .iter()
-        .map(|element| element.to_canonical_u64() != 0)
+        .map(|bool_target| bool_target.target)
         .collect_vec();
-
-    hex::encode(bits_to_bytes(&bits))
+    let second = second
+        .iter()
+        .map(|bool_target| bool_target.target)
+        .collect_vec();
+    connect_arrays(builder, first.as_slice(), second.as_slice())
 }
 
-pub fn biguint_target_from_limbs(limbs: &[Target]) -> BigUintTarget {
-    BigUintTarget {
-        limbs: limbs.iter().cloned().map(|x| U32Target(x)).collect_vec(),
-    }
-}
-
-pub fn biguint_from_field_elements<F: RichField>(limbs: &[F]) -> BigUint {
-    BigUint::from_slice(
-        limbs
-            .iter()
-            .map(|element| element.to_canonical_u64() as u32)
-            .collect_vec()
-            .as_slice(),
-    )
-}
-
-pub fn hash_bytes(bytes: &[u8]) -> Vec<u8> {
-    let mut hasher = Sha256::new();
-    hasher.update(bytes);
-    hasher.finalize().to_vec()
-}
-
-pub fn target_to_le_bits<F: RichField + Extendable<D>, const D: usize>(
+pub fn bool_arrays_are_equal<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    number: Target,
-) -> [BoolTarget; 64] {
-    builder
-        .split_le(number, 64)
-        .into_iter()
-        .rev()
-        .collect_vec()
-        .try_into()
-        .unwrap()
-}
-
-pub fn biguint_is_equal<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    a: &BigUintTarget,
-    b: &BigUintTarget,
+    first: &[BoolTarget],
+    second: &[BoolTarget],
 ) -> BoolTarget {
-    assert!(a.limbs.len() == b.limbs.len());
-
-    let mut all_equal = builder._true();
-
-    for i in 0..a.limbs.len() {
-        let equal = builder.is_equal(a.limbs[i].0, b.limbs[i].0);
-        all_equal = builder.and(all_equal, equal);
-    }
-
-    all_equal
+    let first = first
+        .iter()
+        .map(|bool_target| bool_target.target)
+        .collect_vec();
+    let second = second
+        .iter()
+        .map(|bool_target| bool_target.target)
+        .collect_vec();
+    arrays_are_equal(builder, first.as_slice(), second.as_slice())
 }
 
-pub fn bool_target_equal<F: RichField + Extendable<D>, const D: usize>(
+pub fn arrays_are_equal<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    a: &[BoolTarget; ETH_SHA256_BIT_SIZE],
-    b: &[BoolTarget; ETH_SHA256_BIT_SIZE],
+    first: &[Target],
+    second: &[Target],
 ) -> BoolTarget {
-    let mut all_equal = builder._true();
+    assert!(first.len() == second.len());
 
-    for i in 0..ETH_SHA256_BIT_SIZE {
-        let equal = builder.is_equal(a[i].target, b[i].target);
-        all_equal = builder.and(all_equal, equal);
+    let mut result = builder._true();
+    for idx in 0..first.len() {
+        let is_equal = builder.is_equal(first[idx], second[idx]);
+        result = builder.and(result, is_equal);
     }
-
-    all_equal
-}
-
-pub fn create_sha256_merkle_proof<
-    const DEPTH: usize,
-    F: RichField + Extendable<D>,
-    const D: usize,
->(
-    builder: &mut CircuitBuilder<F, D>,
-) -> Sha256MerkleBranchTarget<DEPTH> {
-    [(); DEPTH].map(|_| create_bool_target_array(builder))
-}
-
-pub fn create_bool_target_array<
-    F: RichField + Extendable<D>,
-    const D: usize,
-    const TARGETS_COUNT: usize,
->(
-    builder: &mut CircuitBuilder<F, D>,
-) -> [BoolTarget; TARGETS_COUNT] {
-    (0..TARGETS_COUNT)
-        .map(|_| builder.add_virtual_bool_target_safe())
-        .collect::<Vec<_>>()
-        .try_into()
-        .unwrap()
+    result
 }
 
 pub fn bits_to_biguint_target<F: RichField + Extendable<D>, const D: usize>(
@@ -162,76 +142,9 @@ pub fn biguint_to_le_bits_target<F: RichField + Extendable<D>, const D: usize, c
         .rev()
         .collect_vec()
 }
-pub fn _right_rotate<const S: usize>(n: [BoolTarget; S], bits: usize) -> [BoolTarget; S] {
-    let mut res = [None; S];
-    for i in 0..S {
-        res[i] = Some(n[((S - bits) + i) % S])
-    }
-    res.map(|x| x.unwrap())
-}
-
-pub fn _shr<F: RichField + Extendable<D>, const D: usize, const S: usize>(
-    n: [BoolTarget; S],
-    bits: i64,
-    builder: &mut CircuitBuilder<F, D>,
-) -> [BoolTarget; S] {
-    let mut res = [None; S];
-    for i in 0..S {
-        if (i as i64) < bits {
-            res[i] = Some(BoolTarget::new_unsafe(builder.constant(F::ZERO)));
-        } else {
-            res[i] = Some(n[(i as i64 - bits) as usize]);
-        }
-    }
-    res.map(|x| x.unwrap())
-}
-
-pub fn uint32_to_bits<F: RichField + Extendable<D>, const D: usize>(
-    value: u32,
-    builder: &mut CircuitBuilder<F, D>,
-) -> [BoolTarget; 32] {
-    let mut bits = [None; 32];
-    for i in 0..32 {
-        if value & (1 << (31 - i)) != 0 {
-            bits[i] = Some(BoolTarget::new_unsafe(builder.constant(F::ONE)));
-        } else {
-            bits[i] = Some(BoolTarget::new_unsafe(builder.constant(F::ZERO)));
-        }
-    }
-    bits.map(|x| x.unwrap())
-}
 
 fn reverse_endianness(bits: &[BoolTarget]) -> Vec<BoolTarget> {
     bits.chunks(8).rev().flatten().cloned().collect()
-}
-
-pub fn ssz_merklelize_bool<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    bool_target: BoolTarget,
-) -> SSZLeafTarget {
-    let mut ssz_leaf = [BoolTarget::new_unsafe(builder.zero()); 256];
-    ssz_leaf[7] = bool_target;
-    ssz_leaf
-}
-
-pub fn ssz_num_to_bits<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    num: &BigUintTarget,
-    bit_len: usize,
-) -> SSZLeafTarget {
-    assert!(bit_len <= ETH_SHA256_BIT_SIZE);
-
-    let mut bits = reverse_endianness(&biguint_to_bits_target::<F, D, 2>(builder, num));
-    bits.extend((bit_len..ETH_SHA256_BIT_SIZE).map(|_| builder._false()));
-
-    bits.try_into().unwrap()
-}
-
-pub fn ssz_num_from_bits<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    bits: &[BoolTarget],
-) -> BigUintTarget {
-    bits_to_biguint_target(builder, reverse_endianness(bits))
 }
 
 pub fn select_biguint<F: RichField + Extendable<D>, const D: usize>(
@@ -254,49 +167,40 @@ pub fn select_biguint<F: RichField + Extendable<D>, const D: usize>(
     result
 }
 
-pub fn bytes_to_bits(bytes: &[u8]) -> Vec<bool> {
-    let mut bits = Vec::new();
+pub fn target_to_le_bits<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    number: Target,
+) -> [BoolTarget; 64] {
+    builder
+        .split_le(number, 64)
+        .into_iter()
+        .rev()
+        .collect_vec()
+        .try_into()
+        .unwrap()
+}
 
-    for value in bytes {
-        for i in (0..8).rev() {
-            let mask = 1 << i;
-            bits.push(value & mask != 0);
-        }
+pub fn biguint_target_from_limbs(limbs: &[Target]) -> BigUintTarget {
+    BigUintTarget {
+        limbs: limbs.iter().cloned().map(|x| U32Target(x)).collect_vec(),
+    }
+}
+
+pub fn biguint_is_equal<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    a: &BigUintTarget,
+    b: &BigUintTarget,
+) -> BoolTarget {
+    assert!(a.limbs.len() == b.limbs.len());
+
+    let mut all_equal = builder._true();
+
+    for i in 0..a.limbs.len() {
+        let equal = builder.is_equal(a.limbs[i].0, b.limbs[i].0);
+        all_equal = builder.and(all_equal, equal);
     }
 
-    bits
-}
-
-pub fn u64_to_ssz_leaf(value: u64) -> [u8; 32] {
-    let mut ret = vec![0u8; 32];
-    ret[0..8].copy_from_slice(value.to_le_bytes().as_slice());
-    ret.try_into().unwrap()
-}
-
-pub fn bits_to_bytes(bits: &[bool]) -> Vec<u8> {
-    bits.chunks(8)
-        .map(|bits| {
-            (0..8usize).fold(0u8, |byte, pos| {
-                byte | ((bits[pos] as usize) << (7 - pos)) as u8
-            })
-        })
-        .collect::<Vec<_>>()
-}
-
-pub trait SetBytesArray<F: Field> {
-    fn set_bytes_array(&mut self, targets: &[BoolTarget], values: &[u8]);
-}
-
-impl<F: Field> SetBytesArray<F> for PartialWitness<F> {
-    fn set_bytes_array(&mut self, targets: &[BoolTarget], values: &[u8]) {
-        assert!(targets.len() == values.len() * 8);
-
-        let bool_values = bytes_to_bits(values);
-
-        for i in 0..targets.len() {
-            self.set_bool_target(targets[i], bool_values[i]);
-        }
-    }
+    all_equal
 }
 
 #[cfg(test)]
@@ -316,7 +220,7 @@ mod test_ssz_num_from_bits {
     use serde::Deserialize;
     use std::{fs, iter::repeat, println};
 
-    use crate::utils::utils::ssz_num_from_bits;
+    use crate::utils::circuit::hashing::merkle::ssz::ssz_num_from_bits;
 
     #[derive(Debug, Default, Deserialize)]
     #[serde(default)]

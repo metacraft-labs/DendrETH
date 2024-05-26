@@ -3,9 +3,12 @@ mod is_active_validator;
 use crate::common_targets::ValidatorTarget;
 use crate::serializers::serde_bool_array_to_hex_string;
 use crate::serializers::serde_bool_array_to_hex_string_nested;
-use crate::utils::hashing::hash_tree_root::hash_tree_root_new;
-use crate::utils::hashing::hash_tree_root_poseidon::hash_tree_root_poseidon_new;
-use crate::utils::hashing::poseidon::hash_validator_poseidon_or_zeroes;
+use crate::utils::circuit::bool_arrays_are_equal;
+use crate::utils::circuit::hashing::merkle::poseidon::hash_tree_root_poseidon;
+use crate::utils::circuit::hashing::merkle::poseidon::hash_validator_poseidon_or_zeroes;
+use crate::utils::circuit::hashing::merkle::sha256::hash_tree_root_sha256;
+use crate::utils::circuit::hashing::merkle::ssz::ssz_num_from_bits;
+use crate::utils::circuit::select_biguint;
 use circuit::Circuit;
 use circuit_derive::CircuitTarget;
 use circuit_derive::SerdeCircuitTarget;
@@ -26,10 +29,6 @@ use plonky2_crypto::biguint::CircuitBuilderBiguint;
 use crate::{
     common_targets::Sha256Target,
     serializers::{biguint_to_str, parse_biguint},
-    utils::{
-        hashing::sha256::bool_arrays_are_equal,
-        utils::{select_biguint, ssz_num_from_bits},
-    },
 };
 
 use self::is_active_validator::get_validator_status;
@@ -117,7 +116,7 @@ where
 
         let input = Self::read_circuit_input_target(builder);
 
-        let range_balances_root = hash_tree_root_new(builder, &input.balances_leaves);
+        let range_balances_root = hash_tree_root_sha256(builder, &input.balances_leaves);
 
         let validators_leaves = input
             .validators
@@ -129,7 +128,7 @@ where
             .collect_vec();
 
         let validators_hash_tree_root_poseidon =
-            hash_tree_root_poseidon_new(builder, &validators_leaves);
+            hash_tree_root_poseidon(builder, &validators_leaves);
 
         let mut range_total_value = builder.zero_biguint();
         let mut number_of_non_activated_validators = builder.zero();

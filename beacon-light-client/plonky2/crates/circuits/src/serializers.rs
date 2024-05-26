@@ -133,7 +133,7 @@ pub mod serde_bool_array_to_hex_string {
         Deserializer, Serializer,
     };
 
-    use crate::utils::utils::{bits_to_bytes, bytes_to_bits};
+    use crate::utils::{bits_to_bytes, bytes_to_bits};
 
     pub fn serialize<S, const N: usize>(x: &Array<bool, N>, s: S) -> Result<S::Ok, S::Error>
     where
@@ -180,7 +180,7 @@ pub mod serde_bool_array_to_hex_string_nested {
         Deserializer, Serializer,
     };
 
-    use crate::utils::utils::{bits_to_bytes, bytes_to_bits};
+    use crate::utils::{bits_to_bytes, bytes_to_bits};
 
     pub fn serialize<S, const N: usize, const M: usize>(
         x: &Array<Array<bool, M>, N>,

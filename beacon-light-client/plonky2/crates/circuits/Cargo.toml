@@ -27,3 +27,5 @@ starky_bls12_381 = { git = "https://github.com/metacraft-labs/starky_bls12_381" 
 plonky2_crypto = { git = "https://github.com/metacraft-labs/plonky2-crypto" }
 num-bigint = "0.4.4"
 
+[dev-dependencies]
+serde_yaml = "0.9.34"

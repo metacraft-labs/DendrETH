@@ -4,7 +4,7 @@ use plonky2::{
 };
 use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint};
 
-use crate::utils::utils::biguint_is_equal;
+use crate::utils::circuit::biguint_is_equal;
 
 pub fn get_validator_status<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
