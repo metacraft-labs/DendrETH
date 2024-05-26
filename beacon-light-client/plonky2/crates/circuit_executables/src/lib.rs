@@ -1,3 +1,4 @@
+#![allow(incomplete_features)]
 #![feature(async_closure)]
 #![feature(generic_const_exprs)]
 

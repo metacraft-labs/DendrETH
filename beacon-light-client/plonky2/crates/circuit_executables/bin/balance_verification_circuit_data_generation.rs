@@ -1,4 +1,6 @@
+#![allow(incomplete_features)]
 #![feature(generic_const_exprs)]
+
 use anyhow::{bail, Result};
 use circuit::{Circuit, SerdeCircuitTarget};
 use circuit_executables::constants::SERIALIZED_CIRCUITS_DIR;

@@ -1,4 +1,6 @@
+#![allow(incomplete_features)]
 #![feature(generic_const_exprs)]
+
 use std::{println, time::Instant};
 
 use anyhow::Result;
