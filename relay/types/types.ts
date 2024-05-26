@@ -173,28 +173,6 @@ export interface IndexedValidatorPubkeyDeposit {
   validator: ValidatorPubkeyDeposit;
 }
 
-export interface ValidatorShaInput {
-  pubkey: string;
-  withdrawalCredentials: string;
-  effectiveBalance: string;
-  slashed: string;
-  activationEligibilityEpoch: string;
-  activationEpoch: string;
-  exitEpoch: string;
-  withdrawableEpoch: string;
-}
-
-export interface ValidatorPoseidonInput {
-  pubkey: string;
-  withdrawalCredentials: string;
-  effectiveBalance: string;
-  slashed: boolean;
-  activationEligibilityEpoch: string;
-  activationEpoch: string;
-  exitEpoch: string;
-  withdrawableEpoch: string;
-}
-
 export interface ValidatorInput {
   pubkey: string;
   withdrawalCredentials: string;
@@ -224,7 +202,7 @@ export interface BalancesAccumulatorInput {
   balancesProofs: string[][];
   validatorDepositIndexes: number[];
   validatorIndices: number[];
-  validators: ValidatorPoseidonInput[];
+  validators: ValidatorInput[];
   validatorCommitmentProofs: string[][][];
   validatorIsNotZero: number[];
   validatorCommitmentRoot: string[];

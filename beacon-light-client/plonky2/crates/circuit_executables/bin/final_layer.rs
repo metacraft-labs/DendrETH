@@ -1,6 +1,6 @@
 #![feature(generic_const_exprs)]
 
-use circuit::{Circuit, CircuitTargetType, SetWitness};
+use circuit::{Circuit, SetWitness};
 use circuit_executables::{
     constants::SERIALIZED_CIRCUITS_DIR,
     crud::{
@@ -31,9 +31,7 @@ use plonky2::{
     field::goldilocks_field::GoldilocksField,
     iop::witness::{PartialWitness, WitnessWrite},
     plonk::{
-        circuit_data::CircuitData,
-        config::PoseidonGoldilocksConfig,
-        proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
+        circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs,
     },
 };
 

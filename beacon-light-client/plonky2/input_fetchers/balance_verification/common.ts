@@ -1,7 +1,7 @@
 import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
-import { Validator, ValidatorPoseidonInput } from '@dendreth/relay/types/types';
+import { Validator, ValidatorInput } from '@dendreth/relay/types/types';
 
-export function getZeroValidatorPoseidonInput(): ValidatorPoseidonInput {
+export function getDummyValidatorInput(): ValidatorInput {
   return {
     pubkey: ''.padStart(96, '0'),
     withdrawalCredentials: ''.padStart(64, '0'),
@@ -14,9 +14,9 @@ export function getZeroValidatorPoseidonInput(): ValidatorPoseidonInput {
   };
 }
 
-export function convertValidatorToValidatorPoseidonInput(
+export function convertValidatorToValidatorInput(
   validator: Validator,
-): ValidatorPoseidonInput {
+): ValidatorInput {
   return {
     pubkey: bytesToHex(validator.pubkey),
     withdrawalCredentials: bytesToHex(validator.withdrawalCredentials),

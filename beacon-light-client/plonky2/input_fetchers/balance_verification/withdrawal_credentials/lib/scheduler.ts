@@ -9,8 +9,8 @@ import CONSTANTS from '../../../../kv_db_constants.json';
 import { computeEpochAt } from '@dendreth/utils/ts-utils/ssz-utils';
 import { panic } from '@dendreth/utils/ts-utils/common-utils';
 import {
-  convertValidatorToValidatorPoseidonInput,
-  getZeroValidatorPoseidonInput,
+  convertValidatorToValidatorInput,
+  getDummyValidatorInput,
 } from '../../common';
 import commonConfig from '../../../../common_config.json';
 
@@ -118,7 +118,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
           .fill('')
           .map(() => ''.padStart(64, '0')),
         validators: Array(VALIDATORS_COUNT).fill(
-          getZeroValidatorPoseidonInput(),
+          getDummyValidatorInput(),
         ),
         withdrawalCredentials: [withdrawalCredentials],
         currentEpoch: computeEpochAt(beaconState.slot).toString(),
@@ -171,11 +171,11 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
           validators: [
             ...validators
               .slice(j * VALIDATORS_COUNT, (j + 1) * VALIDATORS_COUNT)
-              .map(v => convertValidatorToValidatorPoseidonInput(v)),
+              .map(v => convertValidatorToValidatorInput(v)),
             ...Array(
               (j + 1) * VALIDATORS_COUNT -
-                Math.min((j + 1) * VALIDATORS_COUNT, validators.length),
-            ).fill(getZeroValidatorPoseidonInput()),
+              Math.min((j + 1) * VALIDATORS_COUNT, validators.length),
+            ).fill(getDummyValidatorInput()),
           ],
           withdrawalCredentials: [withdrawalCredentials],
           currentEpoch: computeEpochAt(beaconState.slot).toString(),

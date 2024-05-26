@@ -78,7 +78,6 @@ pub struct WorkQueueConfig {
     pub lease_for: u64,
 }
 
-// TODO: use the new circuit trait
 pub struct FirstLevelCircuit {
     pub targets: CircuitTargetType<ValidatorsCommitmentMapperFirstLevel>,
     pub data: CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,

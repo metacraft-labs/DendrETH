@@ -15,9 +15,7 @@ use clap::Arg;
 use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
-    plonk::{
-        circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs,
-    },
+    plonk::{config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs},
 };
 use redis::AsyncCommands;
 

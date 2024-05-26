@@ -14,10 +14,7 @@ import {
 } from '@dendreth/relay/types/types';
 import Redis from 'ioredis';
 import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
-import {
-  convertValidatorToValidatorPoseidonInput,
-  getZeroValidatorPoseidonInput,
-} from '../../common';
+import { convertValidatorToValidatorInput, getDummyValidatorInput } from '../../common';
 import { panic } from '@dendreth/utils/ts-utils/common-utils';
 import { CommandLineOptionsBuilder } from '../../../utils/cmdline';
 
@@ -160,7 +157,7 @@ const CIRCUIT_SIZE = 2;
           idx,
         );
         balancesInput.validators.push(
-          convertValidatorToValidatorPoseidonInput(beaconState.validators[idx]),
+          convertValidatorToValidatorInput(beaconState.validators[idx]),
         );
         balancesInput.validatorCommitmentProofs.push(
           validatorCommitmentProofs[idx],
@@ -172,7 +169,7 @@ const CIRCUIT_SIZE = 2;
         balancesInput.balancesProofs.push(
           new Array(22).map(() => ''.padStart(64, '0')),
         );
-        balancesInput.validators.push(getZeroValidatorPoseidonInput());
+        balancesInput.validators.push(getDummyValidatorInput());
         balancesInput.validatorDepositIndexes.push(0);
         balancesInput.validatorIndices.push(0);
         balancesInput.validatorCommitmentProofs.push(

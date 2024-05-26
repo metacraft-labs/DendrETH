@@ -4,7 +4,7 @@ use circuit::{
     SerdeCircuitTarget,
 };
 use circuit_executables::{
-    constants::SERIALIZED_CIRCUITS_DIR,
+    constants::{SERIALIZED_CIRCUITS_DIR, VALIDATOR_REGISTRY_LIMIT},
     crud::{
         common::{
             delete_balance_verification_proof_dependencies, fetch_proofs_balances,
@@ -18,7 +18,6 @@ use circuit_executables::{
         parse_balance_verification_command_line_options, parse_config_file,
         CommandLineOptionsBuilder,
     },
-    validator::VALIDATOR_REGISTRY_LIMIT,
 };
 use circuits::{
     common_targets::BasicRecursiveInnerCircuitTarget,
