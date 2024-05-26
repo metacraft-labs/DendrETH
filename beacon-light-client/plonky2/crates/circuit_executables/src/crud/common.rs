@@ -1,7 +1,7 @@
 use std::{fs, marker::PhantomData, thread, time::Duration};
 
 use crate::{
-    db_constants::DB_CONSTANTS, utils::get_depth_for_gindex, validator::VALIDATOR_REGISTRY_LIMIT,
+    constants::VALIDATOR_REGISTRY_LIMIT, db_constants::DB_CONSTANTS, utils::get_depth_for_gindex,
 };
 use anyhow::{ensure, Result};
 use async_trait::async_trait;

@@ -1,5 +1,5 @@
 use num::BigUint;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serializer};
 
 pub mod bool_vec_as_int_vec {
     use std::fmt;
@@ -223,7 +223,7 @@ pub mod serde_bool_array_to_hex_string_nested {
                     Array(
                         bytes_to_bits(&hex::decode(hex_string).unwrap())
                             .try_into()
-                            .unwrap(), // BUG: trashes ( I know why :( )
+                            .unwrap(),
                     )
                 })))
             }
@@ -231,22 +231,6 @@ pub mod serde_bool_array_to_hex_string_nested {
 
         deserializer.deserialize_seq(MultipleHexStringsVisitor)
     }
-}
-
-// TODO: These need to be moved
-pub const VALIDATOR_REGISTRY_LIMIT: usize = 1099511627776;
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct ValidatorShaInput {
-    pub pubkey: String,
-    pub withdrawal_credentials: String,
-    pub effective_balance: String,
-    pub slashed: String,
-    pub activation_eligibility_epoch: String,
-    pub activation_epoch: String,
-    pub exit_epoch: String,
-    pub withdrawable_epoch: String,
 }
 
 pub fn biguint_to_str<S>(value: &BigUint, serializer: S) -> Result<S::Ok, S::Error>
@@ -266,63 +250,4 @@ where
     str_value
         .parse::<BigUint>()
         .map_err(serde::de::Error::custom)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use serde_json;
-
-    #[test]
-    fn test_serialize() {
-        let validator = ValidatorShaInput {
-            pubkey: "933ad9491b62059dd065b560d256d8957a8c402cc6e8d8ee7290ae11e8f7329267a8811c397529dac52ae1342ba58c95".to_string(),
-            withdrawal_credentials: "0100000000000000000000000d369bb49efa5100fd3b86a9f828c55da04d2d50".to_string(),
-            effective_balance: "0040597307000000000000000000000000000000000000000000000000000000".to_string(),
-            slashed: "0000000000000000000000000000000000000000000000000000000000000000".to_string(),
-            activation_eligibility_epoch: "0000000000000000000000000000000000000000000000000000000000000000".to_string(),
-            activation_epoch: "0000000000000000000000000000000000000000000000000000000000000000".to_string(),
-            exit_epoch: "ffffffffffffffff000000000000000000000000000000000000000000000000".to_string(),
-            withdrawable_epoch: "ffffffffffffffff000000000000000000000000000000000000000000000000".to_string(),
-        };
-
-        let serialized = serde_json::to_string(&validator).unwrap();
-        assert_eq!(serialized, "{\"pubkey\":\"933ad9491b62059dd065b560d256d8957a8c402cc6e8d8ee7290ae11e8f7329267a8811c397529dac52ae1342ba58c95\",\"withdrawalCredentials\":\"0100000000000000000000000d369bb49efa5100fd3b86a9f828c55da04d2d50\",\"effectiveBalance\":\"0040597307000000000000000000000000000000000000000000000000000000\",\"slashed\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"activationEligibilityEpoch\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"activationEpoch\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"exitEpoch\":\"ffffffffffffffff000000000000000000000000000000000000000000000000\",\"withdrawableEpoch\":\"ffffffffffffffff000000000000000000000000000000000000000000000000\"}");
-    }
-
-    #[test]
-    fn test_deserialize() {
-        let data = "{\"pubkey\":\"933ad9491b62059dd065b560d256d8957a8c402cc6e8d8ee7290ae11e8f7329267a8811c397529dac52ae1342ba58c95\",\"withdrawalCredentials\":\"0100000000000000000000000d369bb49efa5100fd3b86a9f828c55da04d2d50\",\"effectiveBalance\":\"0040597307000000000000000000000000000000000000000000000000000000\",\"slashed\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"activationEligibilityEpoch\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"activationEpoch\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"exitEpoch\":\"ffffffffffffffff000000000000000000000000000000000000000000000000\",\"withdrawableEpoch\":\"ffffffffffffffff000000000000000000000000000000000000000000000000\"}";
-        let deserialized: ValidatorShaInput = serde_json::from_str(data).unwrap();
-
-        assert_eq!(deserialized.pubkey, "933ad9491b62059dd065b560d256d8957a8c402cc6e8d8ee7290ae11e8f7329267a8811c397529dac52ae1342ba58c95");
-        assert_eq!(
-            deserialized.withdrawal_credentials,
-            "0100000000000000000000000d369bb49efa5100fd3b86a9f828c55da04d2d50"
-        );
-        assert_eq!(
-            deserialized.effective_balance,
-            "0040597307000000000000000000000000000000000000000000000000000000"
-        );
-        assert_eq!(
-            deserialized.slashed,
-            "0000000000000000000000000000000000000000000000000000000000000000"
-        );
-        assert_eq!(
-            deserialized.activation_eligibility_epoch,
-            "0000000000000000000000000000000000000000000000000000000000000000"
-        );
-        assert_eq!(
-            deserialized.activation_epoch,
-            "0000000000000000000000000000000000000000000000000000000000000000"
-        );
-        assert_eq!(
-            deserialized.exit_epoch,
-            "ffffffffffffffff000000000000000000000000000000000000000000000000"
-        );
-        assert_eq!(
-            deserialized.withdrawable_epoch,
-            "ffffffffffffffff000000000000000000000000000000000000000000000000"
-        );
-    }
 }

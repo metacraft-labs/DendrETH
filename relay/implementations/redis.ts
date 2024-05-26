@@ -3,11 +3,9 @@ import {
   BalanceProof,
   ProofResultType,
   Validator,
-  ValidatorShaInput,
   ValidatorProof,
   BlsDepositData,
   BalancesAccumulatorInput,
-  ValidatorInput,
   CommitmentMapperInput,
 } from '../types/types';
 import { RedisClientType, createClient } from 'redis';

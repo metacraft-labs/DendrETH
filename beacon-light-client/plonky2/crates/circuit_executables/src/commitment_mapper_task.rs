@@ -9,13 +9,13 @@ use plonky2::iop::witness::PartialWitness;
 
 use crate::{
     commitment_mapper_context::CommitmentMapperContext,
+    constants::VALIDATOR_REGISTRY_LIMIT,
     crud::common::{
         fetch_proofs, fetch_validator, fetch_zero_proof, save_validator_proof,
         save_zero_validator_proof, ProofProvider,
     },
     provers::prove_inner_level,
     utils::{get_depth_for_gindex, gindex_from_validator_index},
-    validator::VALIDATOR_REGISTRY_LIMIT,
 };
 
 #[derive(FromPrimitive)]
