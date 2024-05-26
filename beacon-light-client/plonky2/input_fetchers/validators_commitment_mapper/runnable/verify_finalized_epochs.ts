@@ -11,7 +11,14 @@ import { CommitmentMapperScheduler } from '../lib/scheduler';
 import { Tree, zeroNode } from '@chainsafe/persistent-merkle-tree';
 import CONSTANTS from '../../../kv_db_constants.json';
 // @ts-ignore
-import { getDepthByGindex, getLastSlotInEpoch, indexFromGindex, panic, range, sleep } from '@dendreth/utils/ts-utils/common-utils';
+import {
+  getDepthByGindex,
+  getLastSlotInEpoch,
+  indexFromGindex,
+  panic,
+  range,
+  sleep,
+} from '@dendreth/utils/ts-utils/common-utils';
 import chalk from 'chalk';
 import { bitsToHex } from '@dendreth/utils/ts-utils/hex-utils';
 import { CommandLineOptionsBuilder } from '../../utils/cmdline';

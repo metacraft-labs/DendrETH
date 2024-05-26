@@ -117,9 +117,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
         balancesLeaves: Array(VALIDATORS_COUNT / 4)
           .fill('')
           .map(() => ''.padStart(64, '0')),
-        validators: Array(VALIDATORS_COUNT).fill(
-          getDummyValidatorInput(),
-        ),
+        validators: Array(VALIDATORS_COUNT).fill(getDummyValidatorInput()),
         withdrawalCredentials: [withdrawalCredentials],
         currentEpoch: computeEpochAt(beaconState.slot).toString(),
         nonZeroValidatorLeavesMask: Array(VALIDATORS_COUNT).fill(false),
@@ -174,7 +172,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
               .map(v => convertValidatorToValidatorInput(v)),
             ...Array(
               (j + 1) * VALIDATORS_COUNT -
-              Math.min((j + 1) * VALIDATORS_COUNT, validators.length),
+                Math.min((j + 1) * VALIDATORS_COUNT, validators.length),
             ).fill(getDummyValidatorInput()),
           ],
           withdrawalCredentials: [withdrawalCredentials],

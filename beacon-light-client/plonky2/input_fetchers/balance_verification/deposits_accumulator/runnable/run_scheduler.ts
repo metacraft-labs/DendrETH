@@ -4,16 +4,17 @@ import CONSTANTS from '../../../../kv_db_constants.json';
 import { BeaconApi } from '@dendreth/relay/implementations/beacon-api';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { computeEpochAt } from '@dendreth/utils/ts-utils/ssz-utils';
-import {
-  getCommitmentMapperProof,
-} from '../../../utils/common_utils';
+import { getCommitmentMapperProof } from '../../../utils/common_utils';
 import {
   BalancesAccumulatorInput,
   DepositData,
 } from '@dendreth/relay/types/types';
 import Redis from 'ioredis';
 import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
-import { convertValidatorToValidatorInput, getDummyValidatorInput } from '../../common';
+import {
+  convertValidatorToValidatorInput,
+  getDummyValidatorInput,
+} from '../../common';
 import { gindexFromIndex, panic } from '@dendreth/utils/ts-utils/common-utils';
 import { CommandLineOptionsBuilder } from '../../../utils/cmdline';
 

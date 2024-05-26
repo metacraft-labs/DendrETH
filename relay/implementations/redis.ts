@@ -13,7 +13,10 @@ import CONSTANTS from '../../beacon-light-client/plonky2/kv_db_constants.json';
 //
 import { Redis as RedisClient } from 'ioredis';
 import chalk from 'chalk';
-import { getDepthByGindex, splitIntoBatches } from '@dendreth/utils/ts-utils/common-utils';
+import {
+  getDepthByGindex,
+  splitIntoBatches,
+} from '@dendreth/utils/ts-utils/common-utils';
 import { validatorFromValidatorJSON } from '../utils/converters';
 
 export class Redis implements IRedis {
