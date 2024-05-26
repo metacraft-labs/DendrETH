@@ -1,21 +1,24 @@
 use core::fmt;
-use std::error::Error;
-use std::marker::PhantomData;
+use std::{error::Error, marker::PhantomData};
 
 use ff::{Field as ff_Field, PrimeField};
 use num::BigUint;
-use plonky2::field::extension::quadratic::QuadraticExtension;
-use plonky2::field::goldilocks_field::GoldilocksField;
-use plonky2::field::types::Field;
-use plonky2::hash::hash_types::RichField;
-use plonky2::hash::poseidon::{PoseidonHash, PoseidonPermutation};
-use plonky2::plonk::config::{GenericConfig, GenericHashOut, Hasher};
-use serde::de::Visitor;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use plonky2::{
+    field::{
+        extension::quadratic::QuadraticExtension, goldilocks_field::GoldilocksField, types::Field,
+    },
+    hash::{
+        hash_types::RichField,
+        poseidon::{PoseidonHash, PoseidonPermutation},
+    },
+    plonk::config::{GenericConfig, GenericHashOut, Hasher},
+};
+use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::poseidon_bn128::{permution, RATE, GOLDILOCKS_ELEMENTS};
-use crate::utils::{FrRepr, Fr};
-
+use crate::{
+    poseidon_bn128::{permution, GOLDILOCKS_ELEMENTS, RATE},
+    utils::{Fr, FrRepr},
+};
 
 /// Configuration using Poseidon BN128 over the Goldilocks field.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize)]

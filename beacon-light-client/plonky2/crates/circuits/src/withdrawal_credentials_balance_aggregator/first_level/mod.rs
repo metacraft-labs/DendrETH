@@ -1,17 +1,20 @@
 mod is_active_validator;
 
-use crate::common_targets::ValidatorTarget;
-use crate::serializers::serde_bool_array_to_hex_string;
-use crate::serializers::serde_bool_array_to_hex_string_nested;
-use crate::utils::circuit::bool_arrays_are_equal;
-use crate::utils::circuit::hashing::merkle::poseidon::hash_tree_root_poseidon;
-use crate::utils::circuit::hashing::merkle::poseidon::hash_validator_poseidon_or_zeroes;
-use crate::utils::circuit::hashing::merkle::sha256::hash_tree_root_sha256;
-use crate::utils::circuit::hashing::merkle::ssz::ssz_num_from_bits;
-use crate::utils::circuit::select_biguint;
+use crate::{
+    common_targets::ValidatorTarget,
+    serializers::{serde_bool_array_to_hex_string, serde_bool_array_to_hex_string_nested},
+    utils::circuit::{
+        bool_arrays_are_equal,
+        hashing::merkle::{
+            poseidon::{hash_tree_root_poseidon, hash_validator_poseidon_or_zeroes},
+            sha256::hash_tree_root_sha256,
+            ssz::ssz_num_from_bits,
+        },
+        select_biguint,
+    },
+};
 use circuit::Circuit;
-use circuit_derive::CircuitTarget;
-use circuit_derive::SerdeCircuitTarget;
+use circuit_derive::{CircuitTarget, SerdeCircuitTarget};
 use itertools::Itertools;
 
 use plonky2::{
@@ -23,8 +26,7 @@ use plonky2::{
         config::PoseidonGoldilocksConfig,
     },
 };
-use plonky2_crypto::biguint::BigUintTarget;
-use plonky2_crypto::biguint::CircuitBuilderBiguint;
+use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint};
 
 use crate::{
     common_targets::Sha256Target,

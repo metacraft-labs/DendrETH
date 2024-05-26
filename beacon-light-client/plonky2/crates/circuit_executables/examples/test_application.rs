@@ -1,7 +1,6 @@
 use anyhow::Result;
 use aws_config::Region;
-use aws_sdk_s3::primitives::ByteStream;
-use aws_sdk_s3::{Client, Config};
+use aws_sdk_s3::{primitives::ByteStream, Client, Config};
 use std::env;
 
 #[tokio::main]

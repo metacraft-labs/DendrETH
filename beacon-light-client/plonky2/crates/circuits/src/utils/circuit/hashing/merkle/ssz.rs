@@ -1,11 +1,13 @@
-use plonky2::field::extension::Extendable;
-use plonky2::hash::hash_types::RichField;
-use plonky2::iop::target::BoolTarget;
-use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::{
+    field::extension::Extendable, hash::hash_types::RichField, iop::target::BoolTarget,
+    plonk::circuit_builder::CircuitBuilder,
+};
 use plonky2_crypto::biguint::BigUintTarget;
 
-use crate::common_targets::SSZLeafTarget;
-use crate::utils::circuit::{biguint_to_bits_target, bits_to_biguint_target, reverse_endianness};
+use crate::{
+    common_targets::SSZLeafTarget,
+    utils::circuit::{biguint_to_bits_target, bits_to_biguint_target, reverse_endianness},
+};
 
 pub fn ssz_merklelize_bool<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
