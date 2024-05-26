@@ -1,4 +1,6 @@
+#![allow(incomplete_features)]
 #![feature(generic_const_exprs)]
+
 use circuit::{
     serde_circuit_target::deserialize_circuit_target, set_witness::SetWitness, CircuitTargetType,
     SerdeCircuitTarget,
