@@ -10,4 +10,4 @@ for i in $(seq 0 37); do
     cargo run --bin balance_verification --release -- --preserve-intermediary-proofs --level $i --stop-after 0 --protocol $PROTOCOL --proof-storage-type file --folder-name $PROOF_STORAGE_DIR --redis $REDIS_ADDRESS
 done
 
-popd
+command popd "$@" > /dev/null
