@@ -48,18 +48,6 @@ pub fn prove_inner_level(
     pw.set_proof_with_pis_target(&inner_circuit_target.proof1, &inner_proof1);
     pw.set_proof_with_pis_target(&inner_circuit_target.proof2, &inner_proof2);
 
-    pw.set_cap_target(
-        &inner_circuit_target
-            .verifier_circuit_target
-            .constants_sigmas_cap,
-        &inner_circuit_data.verifier_only.constants_sigmas_cap,
-    );
-
-    pw.set_hash_target(
-        inner_circuit_target.verifier_circuit_target.circuit_digest,
-        inner_circuit_data.verifier_only.circuit_digest,
-    );
-
     Ok(circuit_data.prove(pw)?)
 }
 

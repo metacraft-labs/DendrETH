@@ -15,7 +15,6 @@ use circuit_executables::{
     wrap_final_layer_in_poseidon_bn128::wrap_final_layer_in_poseidon_bn_128,
 };
 use circuits::{
-    common_targets::BasicProofTarget,
     final_layer::BalanceVerificationFinalCircuit,
     types::{BalanceProof, ValidatorProof},
     utils::utils::bits_to_bytes,
@@ -31,9 +30,7 @@ use num_traits::ToPrimitive;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     iop::witness::{PartialWitness, WitnessWrite},
-    plonk::{
-        circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs,
-    },
+    plonk::{config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs},
 };
 
 const VALIDATORS_COUNT: usize = 8;
@@ -113,25 +110,18 @@ async fn async_main() -> Result<()> {
         WITHDRAWAL_CREDENTIALS_COUNT,
     >::build(&verification_circuit_data);
 
-    let (balance_verification_circuit_data, validators_commitment_mapper_circuit_data) =
-        verification_circuit_data;
-
     let mut pw = PartialWitness::new();
 
     circuit_target.set_witness(&mut pw, &circuit_input);
 
-    set_witness_proof(
-        &mut pw,
-        &circuit_target.balance_verification_proof_target,
+    pw.set_proof_with_pis_target(
+        &circuit_target.balance_verification_proof,
         &balance_verification_proof,
-        &balance_verification_circuit_data,
     );
 
-    set_witness_proof(
-        &mut pw,
-        &circuit_target.commitment_mapper_proof_target,
+    pw.set_proof_with_pis_target(
+        &circuit_target.validators_commitment_mapper_proof,
         &validators_commitment_mapper_proof,
-        &validators_commitment_mapper_circuit_data,
     );
 
     let proof = circuit_data.prove(pw)?;
@@ -183,21 +173,4 @@ async fn async_main() -> Result<()> {
     println!("{}", "Wrapper finished!".blue().bold());
 
     Ok(())
-}
-
-fn set_witness_proof(
-    pw: &mut PartialWitness<GoldilocksField>,
-    proof_target: &BasicProofTarget,
-    proof: &ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-) {
-    pw.set_proof_with_pis_target(&proof_target.proof, &proof);
-    pw.set_cap_target(
-        &proof_target.verifier_circuit_target.constants_sigmas_cap,
-        &data.verifier_only.constants_sigmas_cap,
-    );
-    pw.set_hash_target(
-        proof_target.verifier_circuit_target.circuit_digest,
-        data.verifier_only.circuit_digest,
-    );
 }

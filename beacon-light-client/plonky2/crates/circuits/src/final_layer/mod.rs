@@ -2,9 +2,10 @@ use crate::serializers::biguint_to_str;
 use crate::serializers::parse_biguint;
 use crate::serializers::serde_bool_array_to_hex_string;
 use crate::serializers::serde_bool_array_to_hex_string_nested;
+use crate::utils::circuit::verify_proof;
 use crate::utils::hashing::is_valid_merkle_branch::assert_merkle_proof_is_valid_const;
 use crate::{
-    common_targets::{BasicProofTarget, Sha256MerkleBranchTarget, Sha256Target},
+    common_targets::{Sha256MerkleBranchTarget, Sha256Target},
     utils::{
         hashing::sha256::sha256,
         utils::{biguint_to_bits_target, ssz_num_to_bits, target_to_le_bits},
@@ -12,23 +13,24 @@ use crate::{
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
     withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
+use circuit::Circuit;
 use circuit::CircuitInputTarget;
-use circuit::{Circuit, CircuitOutputTarget};
 use circuit_derive::CircuitTarget;
 use itertools::Itertools;
 use num::{BigUint, FromPrimitive};
 use plonky2::{
     field::{extension::Extendable, goldilocks_field::GoldilocksField},
-    fri::{reduction_strategies::FriReductionStrategy, FriConfig},
     hash::hash_types::RichField,
     plonk::{
         circuit_builder::CircuitBuilder,
-        circuit_data::{CircuitConfig, CircuitData, VerifierCircuitTarget},
-        config::{AlgebraicHasher, GenericConfig, PoseidonGoldilocksConfig},
+        circuit_data::{CircuitConfig, CircuitData},
+        config::{GenericConfig, PoseidonGoldilocksConfig},
         proof::ProofWithPublicInputsTarget,
     },
 };
 use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint};
+
+const D: usize = 2;
 
 #[derive(CircuitTarget)]
 #[serde(rename_all = "camelCase")]
@@ -61,11 +63,9 @@ pub struct FinalCircuitTargets<const WITHDRAWAL_CREDENTIALS_COUNT: usize> {
     #[serde(with = "serde_bool_array_to_hex_string_nested")]
     pub balances_branch: Sha256MerkleBranchTarget<6>,
 
-    pub balance_verification_proof_target: BasicProofTarget,
-    pub commitment_mapper_proof_target: BasicProofTarget,
+    pub balance_verification_proof: ProofWithPublicInputsTarget<D>,
+    pub validators_commitment_mapper_proof: ProofWithPublicInputsTarget<D>,
 }
-
-const D: usize = 2;
 
 pub struct BalanceVerificationFinalCircuit<const WITHDRAWAL_CREDENTIALS_COUNT: usize> {}
 
@@ -91,21 +91,20 @@ impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
     ) -> Self::Target {
         let input = Self::read_circuit_input_target(builder);
 
-        // TODO: get rid of this call
-        let (
-            balance_verification_proof_target,
-            balance_verifier_circuit_target,
-            balance_verification_pi,
-        ) = setup_balance_targets::<Self::F, Self::C, D, 8, WITHDRAWAL_CREDENTIALS_COUNT>(
-            builder,
-            balance_verification_circuit_data,
-        );
+        let balance_verification_proof = verify_proof(builder, &balance_verification_circuit_data);
+        let validators_commitment_mapper_proof =
+            verify_proof(builder, &validators_commitment_mapper_circuit_data);
 
-        let (
-            validators_commitment_mapper_proof_target,
-            validators_commitment_mapper_verifier_circuit_target,
-            validators_commitment_mapper_pi,
-        ) = setup_commitment_mapper_targets(builder, validators_commitment_mapper_circuit_data);
+        let balance_verification_pi =
+            WithdrawalCredentialsBalanceAggregatorFirstLevel::<
+                8, // placeholder value
+                WITHDRAWAL_CREDENTIALS_COUNT,
+            >::read_public_inputs_target(&balance_verification_proof.public_inputs);
+
+        let validators_commitment_mapper_pi =
+            ValidatorsCommitmentMapperFirstLevel::read_public_inputs_target(
+                &validators_commitment_mapper_proof.public_inputs,
+            );
 
         // Assert that the two proofs are made for the same validator set
         builder.connect_hashes(
@@ -185,14 +184,8 @@ impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
             slot: input.slot,
             slot_branch: input.slot_branch,
             validators_branch: input.validators_branch,
-            balance_verification_proof_target: BasicProofTarget {
-                proof: balance_verification_proof_target.clone(),
-                verifier_circuit_target: balance_verifier_circuit_target,
-            },
-            commitment_mapper_proof_target: BasicProofTarget {
-                proof: validators_commitment_mapper_proof_target,
-                verifier_circuit_target: validators_commitment_mapper_verifier_circuit_target,
-            },
+            balance_verification_proof,
+            validators_commitment_mapper_proof,
         }
     }
 }
@@ -243,63 +236,6 @@ fn validate_input_against_block_root<
     );
 }
 
-fn setup_balance_targets<
-    F: RichField + Extendable<D>,
-    C: GenericConfig<D, F = F>,
-    const D: usize,
-    const VALIDATORS_COUNT: usize,
-    const WITHDRAWAL_CREDENTIALS_COUNT: usize,
->(
-    builder: &mut CircuitBuilder<F, D>,
-    data: &CircuitData<F, C, D>,
-) -> (
-    ProofWithPublicInputsTarget<D>,
-    VerifierCircuitTarget,
-    CircuitOutputTarget<
-        WithdrawalCredentialsBalanceAggregatorFirstLevel<
-            VALIDATORS_COUNT,
-            WITHDRAWAL_CREDENTIALS_COUNT,
-        >,
-    >,
-)
-where
-    [(); VALIDATORS_COUNT / 4]:,
-    <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
-{
-    let (proof_targets, verifier_circuit_target) = setup_proof_targets(data, builder);
-
-    let output = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
-        VALIDATORS_COUNT,
-        WITHDRAWAL_CREDENTIALS_COUNT,
-    >::read_public_inputs_target(&proof_targets.public_inputs);
-
-    (proof_targets, verifier_circuit_target, output)
-}
-
-fn setup_commitment_mapper_targets<
-    F: RichField + Extendable<D>,
-    C: GenericConfig<D, F = F>,
-    const D: usize,
->(
-    builder: &mut CircuitBuilder<F, D>,
-    data: &CircuitData<F, C, D>,
-) -> (
-    ProofWithPublicInputsTarget<D>,
-    VerifierCircuitTarget,
-    CircuitOutputTarget<ValidatorsCommitmentMapperFirstLevel>,
-)
-where
-    <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
-{
-    let (proof_targets, verifier_circuit_target) = setup_proof_targets(data, builder);
-
-    let output = ValidatorsCommitmentMapperFirstLevel::read_public_inputs_target(
-        &proof_targets.public_inputs,
-    );
-
-    (proof_targets, verifier_circuit_target, output)
-}
-
 fn verify_slot_is_in_range<
     F: RichField + Extendable<D>,
     C: GenericConfig<D, F = F>,
@@ -312,47 +248,6 @@ fn verify_slot_is_in_range<
     let slots_per_epoch = builder.constant_biguint(&BigUint::from_u32(32).unwrap());
     let slot_epoch = builder.div_biguint(slot, &slots_per_epoch);
     builder.connect_biguint(&slot_epoch, current_epoch);
-}
-
-fn setup_proof_targets<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
-    circuit_data: &CircuitData<F, C, D>,
-    builder: &mut CircuitBuilder<F, D>,
-) -> (ProofWithPublicInputsTarget<D>, VerifierCircuitTarget)
-where
-    <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
-{
-    let verifier_circuit_target = VerifierCircuitTarget {
-        constants_sigmas_cap: builder
-            .add_virtual_cap(circuit_data.common.config.fri_config.cap_height),
-        circuit_digest: builder.add_virtual_hash(),
-    };
-
-    let proof_targets = builder.add_virtual_proof_with_pis(&circuit_data.common);
-
-    builder.verify_proof::<C>(
-        &proof_targets,
-        &verifier_circuit_target,
-        &circuit_data.common,
-    );
-
-    (proof_targets, verifier_circuit_target)
-}
-
-#[allow(dead_code)]
-fn create_final_config() -> CircuitConfig {
-    let standard_recursion_config = CircuitConfig::standard_recursion_config();
-
-    CircuitConfig {
-        num_routed_wires: 37,
-        fri_config: FriConfig {
-            rate_bits: 8,
-            cap_height: 0,
-            proof_of_work_bits: 20,
-            reduction_strategy: FriReductionStrategy::MinSize(None),
-            num_query_rounds: 10,
-        },
-        ..standard_recursion_config
-    }
 }
 
 #[cfg(test)]

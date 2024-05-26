@@ -10,7 +10,10 @@ use plonky2::{
 
 use crate::{
     common_targets::BasicRecursiveInnerCircuitTarget,
-    utils::hashing::{poseidon::poseidon_pair, sha256::sha256_pair},
+    utils::{
+        circuit::verify_proof,
+        hashing::{poseidon::poseidon_pair, sha256::sha256_pair},
+    },
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
 };
 
@@ -31,17 +34,8 @@ impl Circuit for ValidatorsCommitmentMapperInnerLevel {
         builder: &mut CircuitBuilder<Self::F, { Self::D }>,
         circuit_data: &Self::Params,
     ) -> Self::Target {
-        let verifier_circuit_target = VerifierCircuitTarget {
-            constants_sigmas_cap: builder
-                .constant_merkle_cap(&circuit_data.verifier_only.constants_sigmas_cap),
-            circuit_digest: builder.constant_hash(circuit_data.verifier_only.circuit_digest),
-        };
-
-        let proof1 = builder.add_virtual_proof_with_pis(&circuit_data.common);
-        let proof2 = builder.add_virtual_proof_with_pis(&circuit_data.common);
-
-        builder.verify_proof::<Self::C>(&proof1, &verifier_circuit_target, &circuit_data.common);
-        builder.verify_proof::<Self::C>(&proof2, &verifier_circuit_target, &circuit_data.common);
+        let proof1 = verify_proof(builder, &circuit_data);
+        let proof2 = verify_proof(builder, &circuit_data);
 
         let l_input =
             ValidatorsCommitmentMapperFirstLevel::read_public_inputs_target(&proof1.public_inputs);
@@ -68,10 +62,6 @@ impl Circuit for ValidatorsCommitmentMapperInnerLevel {
 
         output_target.register_public_inputs(builder);
 
-        Self::Target {
-            proof1,
-            proof2,
-            verifier_circuit_target,
-        }
+        Self::Target { proof1, proof2 }
     }
 }
