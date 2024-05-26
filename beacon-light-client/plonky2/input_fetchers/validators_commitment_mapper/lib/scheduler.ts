@@ -1,4 +1,4 @@
-import { splitIntoBatches } from '@dendreth/utils/ts-utils/common-utils';
+import { getFirstSlotInEpoch, getLastSlotInEpoch, gindexFromIndex, makeBranchIterator, splitIntoBatches } from '@dendreth/utils/ts-utils/common-utils';
 import {
   BeaconApi,
   getBeaconApi,
@@ -8,14 +8,7 @@ import { Validator, IndexedValidator } from '@dendreth/relay/types/types';
 import chalk from 'chalk';
 import { KeyPrefix, WorkQueue, Item } from '@mevitae/redis-work-queue';
 import CONSTANTS from '../../../kv_db_constants.json';
-import {
-  gindexFromIndex,
-  makeBranchIterator,
-  getLastSlotInEpoch,
-  getFirstSlotInEpoch,
-  commitmentMapperInputFromValidator,
-  getDummyCommitmentMapperInput,
-} from '../../utils/common_utils';
+import { commitmentMapperInputFromValidator, getDummyCommitmentMapperInput } from '../../utils/common_utils';
 
 enum TaskTag {
   UPDATE_PROOF_NODE = 0,
@@ -160,12 +153,11 @@ export class CommitmentMapperScheduler {
 
       console.log(
         chalk.bold.blue(
-          `Syncing ${
-            this.currentSlot === this.headSlot
-              ? chalk.cyan(this.currentSlot)
-              : `${chalk.cyanBright(this.currentSlot)}/${chalk.cyan(
-                  this.headSlot,
-                )}`
+          `Syncing ${this.currentSlot === this.headSlot
+            ? chalk.cyan(this.currentSlot)
+            : `${chalk.cyanBright(this.currentSlot)}/${chalk.cyan(
+              this.headSlot,
+            )}`
           }...`,
         ),
       );
@@ -318,7 +310,7 @@ function hasValidatorChanged(prevValidators: Validator[]) {
     validator.effectiveBalance !== prevValidators[index].effectiveBalance ||
     validator.slashed !== prevValidators[index].slashed ||
     validator.activationEligibilityEpoch !==
-      prevValidators[index].activationEligibilityEpoch ||
+    prevValidators[index].activationEligibilityEpoch ||
     validator.activationEpoch !== prevValidators[index].activationEpoch ||
     validator.exitEpoch !== prevValidators[index].exitEpoch ||
     validator.withdrawableEpoch !== prevValidators[index].withdrawableEpoch;

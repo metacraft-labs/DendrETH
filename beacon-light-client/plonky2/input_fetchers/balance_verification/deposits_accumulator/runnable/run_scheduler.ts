@@ -6,7 +6,6 @@ import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { computeEpochAt } from '@dendreth/utils/ts-utils/ssz-utils';
 import {
   getCommitmentMapperProof,
-  gindexFromIndex,
 } from '../../../utils/common_utils';
 import {
   BalancesAccumulatorInput,
@@ -15,7 +14,7 @@ import {
 import Redis from 'ioredis';
 import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import { convertValidatorToValidatorInput, getDummyValidatorInput } from '../../common';
-import { panic } from '@dendreth/utils/ts-utils/common-utils';
+import { gindexFromIndex, panic } from '@dendreth/utils/ts-utils/common-utils';
 import { CommandLineOptionsBuilder } from '../../../utils/cmdline';
 
 import deposits from '../deposits.json';

@@ -1,11 +1,9 @@
 import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
 import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
 
-import {
-  getCommitmentMapperProof,
-  gindexFromIndex,
-} from '../../utils/common_utils';
 import { CommandLineOptionsBuilder } from '../../utils/cmdline';
+import { gindexFromIndex } from '@dendreth/utils/ts-utils/common-utils';
+import { getCommitmentMapperProof } from '../../utils/common_utils';
 
 type HashAlgorithm = 'sha256' | 'poseidon';
 
