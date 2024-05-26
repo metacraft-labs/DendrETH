@@ -137,8 +137,8 @@ export class Redis implements IRedis {
     hashAlgorithm: 'sha256' | 'poseidon',
   ): Promise<number[] | null> {
     const hashAlgorithmOptionMap = {
-      sha256: 'sha256Hash',
-      poseidon: 'poseidonHash',
+      sha256: 'sha256HashTreeRoot',
+      poseidon: 'poseidonHashTreeRoot',
     };
 
     const hashKey = hashAlgorithmOptionMap[hashAlgorithm];
@@ -157,7 +157,7 @@ export class Redis implements IRedis {
         return null;
       }
 
-      return JSON.parse(result)[hashKey];
+      return JSON.parse(result).publicInputs[hashKey];
     }
 
     const key = `${CONSTANTS.validatorProofKey}:${gindex}:${latestSlot}`;
@@ -319,14 +319,17 @@ export class Redis implements IRedis {
     proof: BalanceProof = {
       needsChange: true,
       proofKey: '',
-      rangeTotalValue: '0',
-      validatorsCommitment: [],
-      balancesHash: [],
-      withdrawalCredentials: [],
-      currentEpoch: '0',
-      numberOfNonActivatedValidators: 0,
-      numberOfActiveValidators: 0,
-      numberOfExitedValidators: 0,
+      publicInputs: {
+        rangeTotalValue: '0',
+        rangeValidatorCommitment: [0, 0, 0, 0],
+        rangeBalancesRoot: ''.padEnd(64, '0'),
+        withdrawalCredentials: [''.padEnd(64, '0')],
+        currentEpoch: '0',
+        numberOfNonActivatedValidators: 0,
+        numberOfActiveValidators: 0,
+        numberOfExitedValidators: 0,
+        numberOfSlashedValidators: 0,
+      },
     },
   ): Promise<void> {
     await this.waitForConnection();
@@ -399,8 +402,10 @@ export class Redis implements IRedis {
     proof: ValidatorProof = {
       needsChange: true,
       proofKey: '',
-      poseidonHash: [],
-      sha256Hash: [],
+      publicInputs: {
+        poseidonHashTreeRoot: [0, 0, 0, 0],
+        sha256HashTreeRoot: ''.padEnd(64, '0'),
+      },
     },
   ): Promise<void> {
     await this.waitForConnection();
@@ -410,13 +415,15 @@ export class Redis implements IRedis {
     );
   }
 
-  async saveZeroValidatorProof(
+  async saveDummyValidatorProof(
     depth: bigint,
     proof: ValidatorProof = {
       needsChange: true,
       proofKey: 'invalid',
-      poseidonHash: [],
-      sha256Hash: [],
+      publicInputs: {
+        poseidonHashTreeRoot: [0, 0, 0, 0],
+        sha256HashTreeRoot: ''.padEnd(64, '0'),
+      },
     },
   ): Promise<void> {
     await this.waitForConnection();
@@ -432,15 +439,18 @@ export class Redis implements IRedis {
     index: bigint,
     proof: BalanceProof = {
       needsChange: true,
-      rangeTotalValue: '0',
-      validatorsCommitment: [],
       proofKey: '',
-      balancesHash: [],
-      withdrawalCredentials: [],
-      currentEpoch: '0',
-      numberOfNonActivatedValidators: 0,
-      numberOfActiveValidators: 0,
-      numberOfExitedValidators: 0,
+      publicInputs: {
+        rangeTotalValue: '0',
+        rangeValidatorCommitment: [0, 0, 0, 0],
+        rangeBalancesRoot: ''.padEnd(64, '0'),
+        withdrawalCredentials: [''.padEnd(64, '0')],
+        currentEpoch: '0',
+        numberOfNonActivatedValidators: 0,
+        numberOfActiveValidators: 0,
+        numberOfExitedValidators: 0,
+        numberOfSlashedValidators: 0,
+      },
     },
   ): Promise<void> {
     await this.waitForConnection();
