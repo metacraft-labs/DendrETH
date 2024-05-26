@@ -18,26 +18,26 @@ use plonky2::{
     },
 };
 
-use crate::common_targets::{SSZLeafTarget, Sha256Target};
+use crate::common_targets::{SSZTarget, Sha256Target};
 
 #[derive(TargetPrimitive, PublicInputsReadable)]
 pub struct MerklelizedValidatorTarget {
     #[serde(with = "serde_bool_array_to_hex_string_nested")]
-    pub pubkey: [SSZLeafTarget; 2],
+    pub pubkey: [SSZTarget; 2],
     #[serde(with = "serde_bool_array_to_hex_string")]
-    pub withdrawal_credentials: SSZLeafTarget,
+    pub withdrawal_credentials: SSZTarget,
     #[serde(with = "serde_bool_array_to_hex_string")]
-    pub effective_balance: SSZLeafTarget,
+    pub effective_balance: SSZTarget,
     #[serde(with = "serde_bool_array_to_hex_string")]
-    pub slashed: SSZLeafTarget,
+    pub slashed: SSZTarget,
     #[serde(with = "serde_bool_array_to_hex_string")]
-    pub activation_eligibility_epoch: SSZLeafTarget,
+    pub activation_eligibility_epoch: SSZTarget,
     #[serde(with = "serde_bool_array_to_hex_string")]
-    pub activation_epoch: SSZLeafTarget,
+    pub activation_epoch: SSZTarget,
     #[serde(with = "serde_bool_array_to_hex_string")]
-    pub exit_epoch: SSZLeafTarget,
+    pub exit_epoch: SSZTarget,
     #[serde(with = "serde_bool_array_to_hex_string")]
-    pub withdrawable_epoch: SSZLeafTarget,
+    pub withdrawable_epoch: SSZTarget,
 }
 
 #[derive(CircuitTarget, SerdeCircuitTarget)]

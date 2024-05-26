@@ -7,7 +7,7 @@ use plonky2::{iop::target::BoolTarget, plonk::proof::ProofWithPublicInputsTarget
 use plonky2_crypto::biguint::BigUintTarget;
 
 pub type Sha256Target = [BoolTarget; 256];
-pub type SSZLeafTarget = [BoolTarget; 256];
+pub type SSZTarget = [BoolTarget; 256];
 pub type Sha256MerkleBranchTarget<const DEPTH: usize> = [Sha256Target; DEPTH];
 
 #[derive(CircuitTarget, SerdeCircuitTarget)]

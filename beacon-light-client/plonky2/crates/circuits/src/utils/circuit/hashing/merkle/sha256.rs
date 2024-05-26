@@ -7,7 +7,7 @@ use plonky2::{
 use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint};
 
 use crate::{
-    common_targets::{SSZLeafTarget, Sha256MerkleBranchTarget, Sha256Target, ValidatorTarget},
+    common_targets::{SSZTarget, Sha256MerkleBranchTarget, Sha256Target, ValidatorTarget},
     utils::circuit::{
         biguint_to_le_bits_target, bool_arrays_are_equal, hashing::sha256::sha256_pair,
     },
@@ -106,7 +106,7 @@ pub fn assert_merkle_proof_is_valid_const_sha256<
 
 pub fn hash_tree_root_sha256<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    leaves: &[SSZLeafTarget],
+    leaves: &[SSZTarget],
 ) -> Sha256Target {
     assert!(leaves.len().is_power_of_two());
 
@@ -156,8 +156,8 @@ pub fn merklelize_validator_target<F: RichField + Extendable<D>, const D: usize>
 ) -> MerklelizedValidatorTarget {
     let zero_bits_128 = [BoolTarget::new_unsafe(builder.zero()); 128];
 
-    let first_pubkey_leaf: SSZLeafTarget = (&validator.pubkey[0..256]).try_into().unwrap();
-    let second_pubkey_leaf: SSZLeafTarget = [&validator.pubkey[256..], &zero_bits_128[..]]
+    let first_pubkey_leaf: SSZTarget = (&validator.pubkey[0..256]).try_into().unwrap();
+    let second_pubkey_leaf: SSZTarget = [&validator.pubkey[256..], &zero_bits_128[..]]
         .concat()
         .try_into()
         .unwrap();
