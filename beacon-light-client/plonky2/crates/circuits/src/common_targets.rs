@@ -1,4 +1,7 @@
-use crate::serializers::{biguint_to_str, parse_biguint, serde_bool_array_to_hex_string};
+use crate::serializers::{
+    biguint_to_str, parse_biguint, serde_bool_array_to_hex_string,
+    serde_bool_array_to_hex_string_nested,
+};
 use circuit_derive::{
     AddVirtualTarget, CircuitTarget, PublicInputsReadable, SerdeCircuitTarget, SetWitness,
     TargetPrimitive,
@@ -49,4 +52,31 @@ pub struct ValidatorTarget {
 
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub withdrawable_epoch: BigUintTarget,
+}
+
+#[derive(TargetPrimitive, PublicInputsReadable)]
+pub struct MerklelizedValidatorTarget {
+    #[serde(with = "serde_bool_array_to_hex_string_nested")]
+    pub pubkey: [SSZTarget; 2],
+
+    #[serde(with = "serde_bool_array_to_hex_string")]
+    pub withdrawal_credentials: SSZTarget,
+
+    #[serde(with = "serde_bool_array_to_hex_string")]
+    pub effective_balance: SSZTarget,
+
+    #[serde(with = "serde_bool_array_to_hex_string")]
+    pub slashed: SSZTarget,
+
+    #[serde(with = "serde_bool_array_to_hex_string")]
+    pub activation_eligibility_epoch: SSZTarget,
+
+    #[serde(with = "serde_bool_array_to_hex_string")]
+    pub activation_epoch: SSZTarget,
+
+    #[serde(with = "serde_bool_array_to_hex_string")]
+    pub exit_epoch: SSZTarget,
+
+    #[serde(with = "serde_bool_array_to_hex_string")]
+    pub withdrawable_epoch: SSZTarget,
 }

@@ -1,13 +1,13 @@
 use crate::{
     common_targets::ValidatorTarget,
-    serializers::{serde_bool_array_to_hex_string, serde_bool_array_to_hex_string_nested},
+    serializers::serde_bool_array_to_hex_string,
     utils::circuit::hashing::merkle::{
         poseidon::hash_validator_poseidon_or_zeroes,
         sha256::{hash_validator_sha256_or_zeroes, merklelize_validator_target},
     },
 };
 use circuit::Circuit;
-use circuit_derive::{CircuitTarget, PublicInputsReadable, SerdeCircuitTarget, TargetPrimitive};
+use circuit_derive::{CircuitTarget, SerdeCircuitTarget};
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     hash::hash_types::HashOutTarget,
@@ -18,27 +18,7 @@ use plonky2::{
     },
 };
 
-use crate::common_targets::{SSZTarget, Sha256Target};
-
-#[derive(TargetPrimitive, PublicInputsReadable)]
-pub struct MerklelizedValidatorTarget {
-    #[serde(with = "serde_bool_array_to_hex_string_nested")]
-    pub pubkey: [SSZTarget; 2],
-    #[serde(with = "serde_bool_array_to_hex_string")]
-    pub withdrawal_credentials: SSZTarget,
-    #[serde(with = "serde_bool_array_to_hex_string")]
-    pub effective_balance: SSZTarget,
-    #[serde(with = "serde_bool_array_to_hex_string")]
-    pub slashed: SSZTarget,
-    #[serde(with = "serde_bool_array_to_hex_string")]
-    pub activation_eligibility_epoch: SSZTarget,
-    #[serde(with = "serde_bool_array_to_hex_string")]
-    pub activation_epoch: SSZTarget,
-    #[serde(with = "serde_bool_array_to_hex_string")]
-    pub exit_epoch: SSZTarget,
-    #[serde(with = "serde_bool_array_to_hex_string")]
-    pub withdrawable_epoch: SSZTarget,
-}
+use crate::common_targets::Sha256Target;
 
 #[derive(CircuitTarget, SerdeCircuitTarget)]
 #[serde(rename_all = "camelCase")]
