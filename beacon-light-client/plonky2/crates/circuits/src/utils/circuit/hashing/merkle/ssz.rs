@@ -5,14 +5,14 @@ use plonky2::{
 use plonky2_crypto::biguint::BigUintTarget;
 
 use crate::{
-    common_targets::SSZLeafTarget,
+    common_targets::SSZTarget,
     utils::circuit::{biguint_to_bits_target, bits_to_biguint_target, reverse_endianness},
 };
 
 pub fn ssz_merklelize_bool<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     bool_target: BoolTarget,
-) -> SSZLeafTarget {
+) -> SSZTarget {
     let mut ssz_leaf = [BoolTarget::new_unsafe(builder.zero()); 256];
     ssz_leaf[7] = bool_target;
     ssz_leaf
@@ -21,7 +21,7 @@ pub fn ssz_num_to_bits<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     num: &BigUintTarget,
     bit_len: usize,
-) -> SSZLeafTarget {
+) -> SSZTarget {
     assert!(bit_len <= 256);
 
     let mut bits = reverse_endianness(&biguint_to_bits_target::<F, D, 2>(builder, num));
