@@ -10,6 +10,57 @@ export function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+export function gindexFromIndex(index: bigint, depth: bigint): bigint {
+  return 2n ** depth + index;
+}
+
+export function indexFromGindex(gindex: bigint, depth: bigint): bigint {
+  return gindex - 2n ** depth;
+}
+
+export function getDepthByGindex(gindex: number): number {
+  return Math.floor(Math.log2(gindex));
+}
+
+export function getNthParent(gindex: bigint, n: bigint): bigint {
+  return gindex / 2n ** n;
+}
+
+export function getParent(gindex: bigint): bigint {
+  return getNthParent(gindex, 1n);
+}
+
+export function getLastSlotInEpoch(epoch: bigint): bigint {
+  return epoch * 32n + 31n;
+}
+
+export function getFirstSlotInEpoch(epoch: bigint): bigint {
+  return epoch * 32n;
+}
+
+// TODO: make indices be a number[]
+export function* makeBranchIterator(indices: bigint[], depth: bigint) {
+  const changedValidatorGindices = indices.map(index =>
+    gindexFromIndex(index, depth),
+  );
+
+  yield changedValidatorGindices;
+
+  let nodesNeedingUpdate = new Set(changedValidatorGindices.map(getParent));
+  while (nodesNeedingUpdate.size !== 0) {
+    const newNodesNeedingUpdate = new Set<bigint>();
+
+    for (const gindex of nodesNeedingUpdate) {
+      if (gindex !== 1n) {
+        newNodesNeedingUpdate.add(getParent(gindex));
+      }
+    }
+
+    yield [...nodesNeedingUpdate];
+    nodesNeedingUpdate = newNodesNeedingUpdate;
+  }
+}
+
 export function bitArrayToByteArray(hash: number[]): Uint8Array {
   const result = new Uint8Array(32);
 

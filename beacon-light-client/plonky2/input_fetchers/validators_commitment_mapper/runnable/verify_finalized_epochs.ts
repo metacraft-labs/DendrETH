@@ -11,16 +11,11 @@ import { CommitmentMapperScheduler } from '../lib/scheduler';
 import { Tree, zeroNode } from '@chainsafe/persistent-merkle-tree';
 import CONSTANTS from '../../../kv_db_constants.json';
 // @ts-ignore
-import { panic, range, sleep } from '@dendreth/utils/ts-utils/common-utils';
-import {
-  getDepthByGindex,
-  getDummyCommitmentMapperInput,
-  indexFromGindex,
-} from '../../utils/common_utils';
-import { CommandLineOptionsBuilder } from '../../utils/cmdline';
+import { getDepthByGindex, getLastSlotInEpoch, indexFromGindex, panic, range, sleep } from '@dendreth/utils/ts-utils/common-utils';
 import chalk from 'chalk';
-import { getLastSlotInEpoch } from '../../utils/common_utils';
 import { bitsToHex } from '@dendreth/utils/ts-utils/hex-utils';
+import { CommandLineOptionsBuilder } from '../../utils/cmdline';
+import { getDummyCommitmentMapperInput } from '../../utils/common_utils';
 
 let zeroHashes: string[] = [];
 
