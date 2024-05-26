@@ -146,11 +146,11 @@ export class CommitmentMapperScheduler {
       BigInt(CONSTANTS.validatorRegistryLimit),
       this.currentSlot,
     );
-    await this.redis.saveZeroValidatorProof(40n);
+    await this.redis.saveDummyValidatorProof(40n);
 
     for (let depth = 39n; depth >= 0n; depth--) {
       this.scheduleProveZeroForDepth(depth);
-      await this.redis.saveZeroValidatorProof(depth);
+      await this.redis.saveDummyValidatorProof(depth);
     }
   }
 

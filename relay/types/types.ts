@@ -215,21 +215,26 @@ export interface BalancesAccumulatorInput {
 export interface ValidatorProof {
   needsChange: boolean;
   proofKey: string;
-  poseidonHash: number[];
-  sha256Hash: number[];
+  publicInputs: {
+    poseidonHashTreeRoot: number[];
+    sha256HashTreeRoot: string;
+  };
 }
 
 export interface BalanceProof {
   needsChange: boolean;
   proofKey: string;
-  rangeTotalValue: string;
-  validatorsCommitment: number[];
-  balancesHash: number[];
-  withdrawalCredentials: number[][];
-  currentEpoch: string;
-  numberOfNonActivatedValidators: number;
-  numberOfActiveValidators: number;
-  numberOfExitedValidators: number;
+  publicInputs: {
+    rangeTotalValue: string;
+    rangeValidatorCommitment: number[];
+    rangeBalancesRoot: string;
+    withdrawalCredentials: string[];
+    currentEpoch: string;
+    numberOfNonActivatedValidators: number;
+    numberOfActiveValidators: number;
+    numberOfExitedValidators: number;
+    numberOfSlashedValidators: number;
+  };
 }
 
 export interface IndexedValidator {

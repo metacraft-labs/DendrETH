@@ -5,7 +5,6 @@ use crate::{
 use circuit::CircuitOutput;
 use serde::{Deserialize, Serialize};
 
-// TODO: the corresponding typescript types don't have public inputs field
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidatorProof {
@@ -14,7 +13,6 @@ pub struct ValidatorProof {
     pub public_inputs: CircuitOutput<ValidatorsCommitmentMapperFirstLevel>,
 }
 
-// TODO: the corresponding typescript types don't have public inputs field
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BalanceProof<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIALS_COUNT: usize>
