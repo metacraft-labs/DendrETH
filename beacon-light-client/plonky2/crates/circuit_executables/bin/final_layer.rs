@@ -17,7 +17,7 @@ use circuit_executables::{
 use circuits::{
     final_layer::BalanceVerificationFinalCircuit,
     types::{BalanceProof, ValidatorProof},
-    utils::utils::bits_to_bytes,
+    utils::bits_to_bytes,
     withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
 use colored::Colorize;

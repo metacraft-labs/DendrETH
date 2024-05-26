@@ -3,16 +3,16 @@ use plonky2::{
     field::goldilocks_field::GoldilocksField,
     plonk::{
         circuit_builder::CircuitBuilder,
-        circuit_data::{CircuitConfig, CircuitData, VerifierCircuitTarget},
+        circuit_data::{CircuitConfig, CircuitData},
         config::PoseidonGoldilocksConfig,
     },
 };
 
 use crate::{
     common_targets::BasicRecursiveInnerCircuitTarget,
-    utils::{
-        circuit::verify_proof,
+    utils::circuit::{
         hashing::{poseidon::poseidon_pair, sha256::sha256_pair},
+        verify_proof,
     },
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
 };

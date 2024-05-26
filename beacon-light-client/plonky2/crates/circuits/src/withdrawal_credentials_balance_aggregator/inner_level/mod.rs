@@ -1,11 +1,9 @@
 use crate::{
     common_targets::BasicRecursiveInnerCircuitTarget,
-    utils::{
-        circuit::verify_proof,
-        hashing::{
-            poseidon::poseidon_pair,
-            sha256::{connect_bool_arrays, sha256_pair},
-        },
+    utils::circuit::{
+        connect_bool_arrays,
+        hashing::{poseidon::poseidon_pair, sha256::sha256_pair},
+        verify_proof,
     },
     withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
@@ -14,7 +12,7 @@ use plonky2::{
     field::goldilocks_field::GoldilocksField,
     plonk::{
         circuit_builder::CircuitBuilder,
-        circuit_data::{CircuitConfig, CircuitData, VerifierCircuitTarget},
+        circuit_data::{CircuitConfig, CircuitData},
         config::PoseidonGoldilocksConfig,
     },
 };

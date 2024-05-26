@@ -1,8 +1,7 @@
-use itertools::Itertools;
+use plonky2::field::extension::Extendable;
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::target::BoolTarget;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::{field::extension::Extendable, iop::target::Target};
 use plonky2_crypto::u32::arithmetic_u32::{CircuitBuilderU32, U32Target};
 
 use crate::common_targets::Sha256Target;
@@ -34,24 +33,7 @@ pub const K256: [u32; 64] = [
     0x90BEFFFA, 0xA4506CEB, 0xBEF9A3F7, 0xC67178F2
 ];
 
-pub struct Sha256Targets {
-    pub message: Vec<BoolTarget>,
-    pub digest: Vec<BoolTarget>,
-}
-
-pub fn bytes_to_bits(bytes: &[u8]) -> Vec<bool> {
-    let len = bytes.len();
-    let mut ret = Vec::new();
-    for i in 0..len {
-        for j in 0..8 {
-            let b = (bytes[i] >> (7 - j)) & 1;
-            ret.push(b == 1);
-        }
-    }
-    ret
-}
-
-pub fn u32_to_bits_target<F: RichField + Extendable<D>, const D: usize, const B: usize>(
+fn u32_to_bits_target<F: RichField + Extendable<D>, const D: usize, const B: usize>(
     builder: &mut CircuitBuilder<F, D>,
     a: &U32Target,
 ) -> Vec<BoolTarget> {
@@ -63,7 +45,7 @@ pub fn u32_to_bits_target<F: RichField + Extendable<D>, const D: usize, const B:
     res
 }
 
-pub fn bits_to_u32_target<F: RichField + Extendable<D>, const D: usize>(
+fn bits_to_u32_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     bits_target: Vec<BoolTarget>,
 ) -> U32Target {
@@ -274,65 +256,6 @@ fn add_u32<F: RichField + Extendable<D>, const D: usize>(
     res
 }
 
-pub fn connect_arrays<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    first: &[Target],
-    second: &[Target],
-) {
-    assert!(first.len() == second.len());
-
-    for idx in 0..first.len() {
-        builder.connect(first[idx], second[idx]);
-    }
-}
-
-pub fn connect_bool_arrays<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    first: &[BoolTarget],
-    second: &[BoolTarget],
-) {
-    let first = first
-        .iter()
-        .map(|bool_target| bool_target.target)
-        .collect_vec();
-    let second = second
-        .iter()
-        .map(|bool_target| bool_target.target)
-        .collect_vec();
-    connect_arrays(builder, first.as_slice(), second.as_slice())
-}
-
-pub fn bool_arrays_are_equal<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    first: &[BoolTarget],
-    second: &[BoolTarget],
-) -> BoolTarget {
-    let first = first
-        .iter()
-        .map(|bool_target| bool_target.target)
-        .collect_vec();
-    let second = second
-        .iter()
-        .map(|bool_target| bool_target.target)
-        .collect_vec();
-    arrays_are_equal(builder, first.as_slice(), second.as_slice())
-}
-
-pub fn arrays_are_equal<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    first: &[Target],
-    second: &[Target],
-) -> BoolTarget {
-    assert!(first.len() == second.len());
-
-    let mut result = builder._true();
-    for idx in 0..first.len() {
-        let is_equal = builder.is_equal(first[idx], second[idx]);
-        result = builder.and(result, is_equal);
-    }
-    result
-}
-
 pub fn sha256_pair<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     left: &[BoolTarget],
@@ -461,238 +384,4 @@ pub fn sha256<F: RichField + Extendable<D>, const D: usize>(
     }
 
     digest.try_into().unwrap()
-}
-
-// padded_msg_len = block_count x 512 bits
-// Size: msg_len_in_bits (L) |  p bits   | 64 bits
-// Bits:      msg            | 100...000 |    L
-pub fn make_circuits<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    msg_len_in_bits: u64,
-) -> Sha256Targets {
-    let mut message = Vec::new();
-    let mut digest = Vec::new();
-    let block_count = (msg_len_in_bits + 65 + 511) / 512;
-    let padded_msg_len = 512 * block_count;
-    let p = padded_msg_len - 64 - msg_len_in_bits;
-    assert!(p > 1);
-
-    for _ in 0..msg_len_in_bits {
-        message.push(builder.add_virtual_bool_target_unsafe());
-    }
-    message.push(builder.constant_bool(true));
-    for _ in 0..p - 1 {
-        message.push(builder.constant_bool(false));
-    }
-    for i in 0..64 {
-        let b = ((msg_len_in_bits as u64) >> (63 - i)) & 1;
-        message.push(builder.constant_bool(b == 1));
-    }
-
-    // init states
-    let mut state = Vec::new();
-    for i in 0..8 {
-        state.push(builder.constant_u32(H256[i]));
-    }
-
-    let mut k256 = Vec::new();
-    for i in 0..64 {
-        k256.push(builder.constant_u32(K256[i]));
-    }
-
-    for blk in 0..block_count {
-        let mut x = Vec::new();
-        let mut a = state[0].clone();
-        let mut b = state[1].clone();
-        let mut c = state[2].clone();
-        let mut d = state[3].clone();
-        let mut e = state[4].clone();
-        let mut f = state[5].clone();
-        let mut g = state[6].clone();
-        let mut h = state[7].clone();
-
-        for i in 0..16 {
-            let index = blk as usize * 512 + i * 32;
-            let u32_target = builder.le_sum(message[index..index + 32].iter().rev());
-
-            x.push(U32Target(u32_target));
-            let mut t1 = h.clone();
-            let big_sigma1_e = big_sigma1(builder, &e);
-            t1 = add_u32(builder, &t1, &big_sigma1_e);
-            let ch_e_f_g = ch(builder, &e, &f, &g);
-            t1 = add_u32(builder, &t1, &ch_e_f_g);
-            t1 = add_u32(builder, &t1, &k256[i]);
-            t1 = add_u32(builder, &t1, &x[i]);
-
-            let mut t2 = big_sigma0(builder, &a);
-            let maj_a_b_c = maj(builder, &a, &b, &c);
-            t2 = add_u32(builder, &t2, &maj_a_b_c);
-
-            h = g;
-            g = f;
-            f = e;
-            e = add_u32(builder, &d, &t1);
-            d = c;
-            c = b;
-            b = a;
-            a = add_u32(builder, &t1, &t2);
-        }
-
-        for i in 16..64 {
-            let s0 = sigma0(builder, &x[(i + 1) & 0x0f]);
-            let s1 = sigma1(builder, &x[(i + 14) & 0x0f]);
-
-            let s0_add_s1 = add_u32(builder, &s0, &s1);
-            let s0_add_s1_add_x = add_u32(builder, &s0_add_s1, &x[(i + 9) & 0xf]);
-            x[i & 0xf] = add_u32(builder, &x[i & 0xf], &s0_add_s1_add_x);
-
-            let big_sigma0_a = big_sigma0(builder, &a);
-            let big_sigma1_e = big_sigma1(builder, &e);
-            let ch_e_f_g = ch(builder, &e, &f, &g);
-            let maj_a_b_c = maj(builder, &a, &b, &c);
-
-            let h_add_sigma1 = add_u32(builder, &h, &big_sigma1_e);
-            let h_add_sigma1_add_ch_e_f_g = add_u32(builder, &h_add_sigma1, &ch_e_f_g);
-            let h_add_sigma1_add_ch_e_f_g_add_k256 =
-                add_u32(builder, &h_add_sigma1_add_ch_e_f_g, &k256[i]);
-
-            let t1 = add_u32(builder, &x[i & 0xf], &h_add_sigma1_add_ch_e_f_g_add_k256);
-            let t2 = add_u32(builder, &big_sigma0_a, &maj_a_b_c);
-
-            h = g;
-            g = f;
-            f = e;
-            e = add_u32(builder, &d, &t1);
-            d = c;
-            c = b;
-            b = a;
-            a = add_u32(builder, &t1, &t2);
-        }
-
-        state[0] = add_u32(builder, &state[0], &a);
-        state[1] = add_u32(builder, &state[1], &b);
-        state[2] = add_u32(builder, &state[2], &c);
-        state[3] = add_u32(builder, &state[3], &d);
-        state[4] = add_u32(builder, &state[4], &e);
-        state[5] = add_u32(builder, &state[5], &f);
-        state[6] = add_u32(builder, &state[6], &g);
-        state[7] = add_u32(builder, &state[7], &h);
-    }
-
-    for i in 0..8 {
-        let bit_targets = builder.split_le_base::<2>(state[i].0, 32);
-        for j in (0..32).rev() {
-            digest.push(BoolTarget::new_unsafe(bit_targets[j]));
-        }
-    }
-
-    Sha256Targets { message, digest }
-}
-
-#[cfg(test)]
-mod tests {
-    use plonky2::field::types::Field;
-    use plonky2::iop::witness::{PartialWitness, WitnessWrite};
-    use plonky2::plonk::circuit_builder::CircuitBuilder;
-    use plonky2::plonk::circuit_data::CircuitConfig;
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
-
-    use crate::utils::hashing::sha256::make_circuits;
-    use crate::utils::utils::bytes_to_bits;
-
-    fn perform_sha256_test(message: &[u8], expected: &[u8]) {
-        let message_bits = bytes_to_bits(message);
-        const D: usize = 2;
-        type C = PoseidonGoldilocksConfig;
-        type F = <C as GenericConfig<D>>::F;
-        let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
-        let targets = make_circuits(&mut builder, message_bits.len() as u64);
-        let mut pw = PartialWitness::new();
-
-        for i in 0..message_bits.len() {
-            pw.set_bool_target(targets.message[i], message_bits[i]);
-        }
-
-        let expected_bits = bytes_to_bits(expected);
-        for i in 0..expected_bits.len() {
-            let expected_bit = builder.constant(F::from_canonical_u8(expected_bits[i] as u8));
-            builder.connect(targets.digest[i].target, expected_bit);
-        }
-
-        let data = builder.build::<C>();
-        let proof = data.prove(pw).unwrap();
-
-        data.verify(proof).unwrap();
-    }
-
-    #[test]
-    fn test_sha256() {
-        const MESSAGE: [u8; 128] = [
-            0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,
-            0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b,
-            0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29,
-            0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
-            0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f, 0x40, 0x41, 0x42, 0x43, 0x44, 0x45,
-            0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f, 0x50, 0x51, 0x52, 0x53,
-            0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b, 0x5c, 0x5d, 0x5e, 0x5f, 0x60, 0x61,
-            0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6a, 0x6b, 0x6c, 0x6d, 0x6e, 0x6f,
-            0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a, 0x7b, 0x7c, 0x7d,
-            0x7e, 0x00,
-        ];
-
-        const EXPECTED: [u8; 32] = [
-            0x3c, 0x5e, 0xa3, 0xe9, 0x28, 0xf9, 0x36, 0x43, 0xe6, 0xf5, 0x70, 0x56, 0x99, 0x16,
-            0xba, 0x9f, 0x71, 0x56, 0x0e, 0x70, 0x84, 0x41, 0x38, 0x55, 0xb4, 0xa0, 0x2d, 0xd7,
-            0x5d, 0x38, 0x3e, 0x02,
-        ];
-
-        perform_sha256_test(&MESSAGE, &EXPECTED);
-    }
-
-    #[test]
-    fn test_sha256_hello_message() {
-        // These bytes correspond to the ASCII message "Welcome to the Noir zk language!".
-        const MESSAGE: [u8; 32] = [
-            0x57, 0x65, 0x6c, 0x63, 0x6f, 0x6d, 0x65, 0x20, 0x74, 0x6f, 0x20, 0x74, 0x68, 0x65,
-            0x20, 0x4e, 0x6f, 0x69, 0x72, 0x20, 0x7a, 0x6b, 0x20, 0x6c, 0x61, 0x6e, 0x67, 0x75,
-            0x61, 0x67, 0x65, 0x21,
-        ];
-
-        // Verified with sha256sum from Linux coreutils-9.3.
-        const EXPECTED: [u8; 32] = [
-            0x79, 0x2a, 0x87, 0x3e, 0x90, 0x73, 0x47, 0x97, 0x52, 0x31, 0x7f, 0x5c, 0xb8, 0xf3,
-            0x2a, 0x39, 0x49, 0x09, 0xe5, 0x43, 0xcf, 0x59, 0x7c, 0x9f, 0x4d, 0x92, 0x4d, 0x34,
-            0x4a, 0xe0, 0xff, 0xdd,
-        ];
-
-        perform_sha256_test(&MESSAGE, &EXPECTED);
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_sha256_failure() {
-        const MESSAGE: [u8; 128] = [
-            0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,
-            0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b,
-            0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29,
-            0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
-            0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f, 0x40, 0x41, 0x42, 0x43, 0x44, 0x45,
-            0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f, 0x50, 0x51, 0x52, 0x53,
-            0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b, 0x5c, 0x5d, 0x5e, 0x5f, 0x60, 0x61,
-            0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6a, 0x6b, 0x6c, 0x6d, 0x6e, 0x6f,
-            0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a, 0x7b, 0x7c, 0x7d,
-            0x7e, 0x00,
-        ];
-
-        let mut expected: [u8; 32] = [
-            0x3c, 0x5e, 0xa3, 0xe9, 0x28, 0xf9, 0x36, 0x43, 0xe6, 0xf5, 0x70, 0x56, 0x99, 0x16,
-            0xba, 0x9f, 0x71, 0x56, 0x0e, 0x70, 0x84, 0x41, 0x38, 0x55, 0xb4, 0xa0, 0x2d, 0xd7,
-            0x5d, 0x38, 0x3e, 0x02,
-        ];
-
-        // Modify some byte to lead to a wrong result.
-        expected[10] = 0xff;
-
-        perform_sha256_test(&MESSAGE, &expected);
-    }
 }

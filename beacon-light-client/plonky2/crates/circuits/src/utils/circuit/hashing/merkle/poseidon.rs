@@ -1,31 +1,30 @@
-use plonky2::{
-    field::extension::Extendable,
-    hash::{
-        hash_types::{HashOutTarget, RichField},
-        poseidon::PoseidonHash,
-    },
-    iop::target::{BoolTarget, Target},
-    plonk::circuit_builder::CircuitBuilder,
-};
+use itertools::Itertools;
+use plonky2::field::extension::Extendable;
+use plonky2::hash::hash_types::{HashOutTarget, RichField};
+use plonky2::hash::poseidon::PoseidonHash;
+use plonky2::iop::target::BoolTarget;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
 
 use crate::common_targets::ValidatorTarget;
+use crate::utils::circuit::hashing::poseidon::poseidon_pair;
 
-use super::hash_tree_root_poseidon::hash_tree_root_poseidon;
-
-pub fn hash_poseidon<F: RichField + Extendable<D>, const D: usize>(
+pub fn hash_tree_root_poseidon<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    targets: Vec<Target>,
+    leaves: &[HashOutTarget],
 ) -> HashOutTarget {
-    builder.hash_n_to_hash_no_pad::<PoseidonHash>(targets)
-}
+    assert!(leaves.len().is_power_of_two());
 
-pub fn poseidon_pair<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    left: HashOutTarget,
-    right: HashOutTarget,
-) -> HashOutTarget {
-    let elements = [left.elements, right.elements].concat();
-    builder.hash_n_to_hash_no_pad::<PoseidonHash>(elements)
+    let mut level = leaves.to_owned();
+
+    while level.len() != 1 {
+        level = level
+            .iter()
+            .tuples()
+            .map(|(&left, &right)| poseidon_pair(builder, left, right))
+            .collect_vec();
+    }
+
+    level[0]
 }
 
 pub fn hash_validator_poseidon_or_zeroes<F: RichField + Extendable<D>, const D: usize>(
@@ -94,11 +93,5 @@ pub fn hash_validator_poseidon<F: RichField + Extendable<D>, const D: usize>(
         ),
     ];
 
-    let hash_tree_root_poseidon = hash_tree_root_poseidon(builder, leaves.len());
-
-    for i in 0..leaves.len() {
-        builder.connect_hashes(leaves[i], hash_tree_root_poseidon.leaves[i]);
-    }
-
-    hash_tree_root_poseidon.hash_tree_root
+    hash_tree_root_poseidon(builder, &leaves)
 }

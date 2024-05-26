@@ -10,7 +10,7 @@ use circuits::{
     bls_verification::build_stark_proof_verifier::RecursiveStarkTargets,
     final_layer::BalanceVerificationFinalCircuit,
     types::{BalanceProof, FinalProof, ValidatorProof},
-    utils::utils::{bits_to_bytes, hash_bytes, u64_to_ssz_leaf},
+    utils::{bits_to_bytes, hash_bytes, u64_to_ssz_leaf},
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
     withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };

@@ -2,14 +2,14 @@ use crate::serializers::biguint_to_str;
 use crate::serializers::parse_biguint;
 use crate::serializers::serde_bool_array_to_hex_string;
 use crate::serializers::serde_bool_array_to_hex_string_nested;
+use crate::utils::circuit::biguint_to_bits_target;
+use crate::utils::circuit::hashing::merkle::sha256::assert_merkle_proof_is_valid_const_sha256;
+use crate::utils::circuit::hashing::merkle::ssz::ssz_num_to_bits;
+use crate::utils::circuit::hashing::sha256::sha256;
+use crate::utils::circuit::target_to_le_bits;
 use crate::utils::circuit::verify_proof;
-use crate::utils::hashing::is_valid_merkle_branch::assert_merkle_proof_is_valid_const;
 use crate::{
     common_targets::{Sha256MerkleBranchTarget, Sha256Target},
-    utils::{
-        hashing::sha256::sha256,
-        utils::{biguint_to_bits_target, ssz_num_to_bits, target_to_le_bits},
-    },
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
     withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
@@ -201,7 +201,7 @@ fn validate_input_against_block_root<
     balances_root_left: &Sha256Target,
     validators_root_left: &Sha256Target,
 ) {
-    assert_merkle_proof_is_valid_const(
+    assert_merkle_proof_is_valid_const_sha256(
         builder,
         &input.state_root,
         &input.block_root,
@@ -209,7 +209,7 @@ fn validate_input_against_block_root<
         11,
     );
 
-    assert_merkle_proof_is_valid_const(
+    assert_merkle_proof_is_valid_const_sha256(
         builder,
         validators_root_left,
         &input.state_root,
@@ -217,7 +217,7 @@ fn validate_input_against_block_root<
         86,
     );
 
-    assert_merkle_proof_is_valid_const(
+    assert_merkle_proof_is_valid_const_sha256(
         builder,
         balances_root_left,
         &input.state_root,
@@ -227,7 +227,7 @@ fn validate_input_against_block_root<
 
     let slot_ssz = ssz_num_to_bits(builder, &input.slot, 64);
 
-    assert_merkle_proof_is_valid_const(
+    assert_merkle_proof_is_valid_const_sha256(
         builder,
         &slot_ssz,
         &input.state_root,
