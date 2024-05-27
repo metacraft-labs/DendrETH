@@ -310,7 +310,7 @@ pub mod tests {
     #[tokio::test]
     async fn test_bls12_381_components_proofs_with_verify_eth_cases() {
         let bls_components_with_verify_eth_tests_cases =
-            read_yaml_files_from_directory("eth_tests").unwrap();
+            read_yaml_files_from_directory("eth_verify_tests").unwrap();
         let standard_recursion_config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(standard_recursion_config);
 
