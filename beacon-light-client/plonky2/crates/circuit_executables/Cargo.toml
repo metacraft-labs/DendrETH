@@ -8,7 +8,12 @@ edition.workspace = true
 [dependencies]
 circuit = { path = "../circuit" }
 circuits = { path = "../circuits" }
-redis = { version = "0.23", features = ["aio", "async-std-comp", "connection-manager", "json"] }
+redis = { version = "0.23", features = [
+    "aio",
+    "async-std-comp",
+    "connection-manager",
+    "json",
+] }
 num = { version = "0.4.0", features = ["serde"] }
 plonky2 = { git = "https://github.com/metacraft-labs/plonky2" }
 starky = { git = "https://github.com/metacraft-labs/plonky2" }
@@ -16,6 +21,7 @@ plonky2-circuit-serializer = { git = "https://github.com/metacraft-labs/plonky2-
 starky_bls12_381 = { git = "https://github.com/metacraft-labs/starky_bls12_381" }
 serde = "1.0.164"
 serde_json = "1.0.96"
+serde_yaml = "0.9.34"
 anyhow = "1.0.71"
 hex = "0.4.3"
 redis-work-queue = "0.1.3"

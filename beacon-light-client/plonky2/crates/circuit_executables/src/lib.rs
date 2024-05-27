@@ -2,6 +2,7 @@
 #![feature(async_closure)]
 #![feature(generic_const_exprs)]
 
+pub mod bls_components;
 pub mod commitment_mapper_context;
 pub mod commitment_mapper_task;
 pub mod constants;

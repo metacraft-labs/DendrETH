@@ -1210,6 +1210,7 @@ dependencies = [
  "redis-work-queue",
  "serde",
  "serde_json",
+ "serde_yaml",
  "snowbridge-amcl",
  "starky",
  "starky_bls12_381",
