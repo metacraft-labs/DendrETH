@@ -148,7 +148,7 @@ async fn async_main() -> Result<()> {
         balance_verification_pis.range_total_value.to_u64().unwrap(),
         balance_verification_pis.number_of_non_activated_validators,
         balance_verification_pis.number_of_active_validators,
-        balance_verification_pis.number_of_non_activated_validators,
+        balance_verification_pis.number_of_exited_validators,
         balance_verification_pis.number_of_slashed_validators,
     )
     .await?;
