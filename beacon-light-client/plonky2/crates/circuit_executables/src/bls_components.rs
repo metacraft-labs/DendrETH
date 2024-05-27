@@ -4,7 +4,6 @@ use ark_ec::Group;
 use ark_ff::PrimeField;
 use ark_serialize::CanonicalDeserialize;
 use circuits::{bls12_381_circuit::BlsCircuitTargets, targets_serialization::ReadTargets};
-use clap::ArgMatches;
 use num::BigUint;
 use plonky2::{
     field::{goldilocks_field::GoldilocksField, types::Field},
@@ -18,10 +17,7 @@ use starky_bls12_381::native::{miller_loop, Fp, Fp12, Fp2};
 use std::{fs, ops::Neg, path::Path, str::FromStr};
 
 use crate::{
-    crud::{
-        common::{get_recursive_stark_targets, load_circuit_data_starky, read_from_file},
-        proof_storage::proof_storage::{create_proof_storage, ProofStorage},
-    },
+    crud::common::{get_recursive_stark_targets, load_circuit_data_starky, read_from_file},
     provers::{
         generate_final_exponentiate, generate_fp12_mul_proof, generate_miller_loop_proof,
         generate_pairing_precomp_proof,
@@ -35,51 +31,48 @@ const D: usize = 2;
 type C = PoseidonGoldilocksConfig;
 type F = GoldilocksField;
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Input {
     pub pubkey: String,
     pub signature: String,
     pub message: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct BlsComponents {
     pub input: Input,
     pub output: bool,
 }
 
-pub fn reconcile_bls_input_fields(bls_components: &BlsComponents) -> BlsComponents {
-    BlsComponents {
-        input: Input {
-            pubkey: bls_components
-                .input
-                .pubkey
-                .chars()
-                .skip(2)
-                .collect::<String>(),
-            signature: bls_components
-                .input
-                .signature
-                .chars()
-                .skip(2)
-                .collect::<String>(),
-            message: bls_components
-                .input
-                .message
-                .chars()
-                .skip(2)
-                .collect::<String>(),
-        },
-        output: bls_components.output,
+impl BlsComponents {
+    fn remove_first_two_chars(&mut self) {
+        self.input.pubkey = self.input.pubkey.chars().skip(2).collect();
+        self.input.signature = self.input.signature.chars().skip(2).collect();
+        self.input.message = self.input.message.chars().skip(2).collect();
     }
 }
 
-pub fn read_yaml_file<P: AsRef<Path>>(
-    path: P,
-) -> Result<BlsComponents, Box<dyn std::error::Error>> {
+pub fn read_yaml_files_from_directory<P: AsRef<Path>>(
+    dir: P,
+) -> Result<Vec<BlsComponents>, Box<dyn std::error::Error>> {
+    let mut components = Vec::new();
+
+    for entry in fs::read_dir(dir)? {
+        let entry = entry?;
+        if entry.path().extension() == Some(std::ffi::OsStr::new("yaml")) {
+            let config = read_yaml_file(entry.path())?;
+            components.push(config);
+        }
+    }
+
+    Ok(components)
+}
+
+fn read_yaml_file<P: AsRef<Path>>(path: P) -> Result<BlsComponents, Box<dyn std::error::Error>> {
     let file_content = fs::read_to_string(path)?;
-    let config: BlsComponents = serde_yaml::from_str(&file_content)?;
-    Ok(config)
+    let mut components: BlsComponents = serde_yaml::from_str(&file_content)?;
+    components.remove_first_two_chars();
+    Ok(components)
 }
 
 pub async fn bls12_381_components_proofs(
@@ -138,7 +131,6 @@ pub async fn bls12_381_components_proofs(
 
     let fp12_mull = miller_loop1 * miller_loop2;
     // PROVING HAPPENS HERE
-    // let proof_storage = create_proof_storage(&matches).await;
     let (pp1, pp2) = handle_pairing_precomp(&message_g2, &signature_g2).await;
 
     let (ml1, ml2) =
@@ -186,6 +178,8 @@ pub async fn bls12_381_components_proofs(
     pw.set_proof_with_pis_target(&targets.pt_ml2, &ml2);
     pw.set_proof_with_pis_target(&targets.pt_fp12m, &fp12_mul_proof);
     pw.set_proof_with_pis_target(&targets.pt_fe, &final_exp_proof);
+
+    println!("Starting proof generation");
 
     let proof = circuit_data.prove(pw).unwrap();
 
@@ -308,39 +302,33 @@ pub mod tests {
         plonk::{circuit_builder::CircuitBuilder, circuit_data::CircuitConfig},
     };
 
-    use crate::utils::CommandLineOptionsBuilder;
-
-    use super::{bls12_381_components_proofs, read_yaml_file, reconcile_bls_input_fields};
+    use super::{bls12_381_components_proofs, read_yaml_files_from_directory};
 
     const D: usize = 2;
     type F = GoldilocksField;
 
     #[tokio::test]
-    async fn test_bls12_381_components_proofs() {
-        let verify_path = read_yaml_file("bin/verify_valid_case_2ea479adf8c40300.yaml").unwrap();
+    async fn test_bls12_381_components_proofs_with_verify_eth_cases() {
+        let bls_components_with_verify_eth_tests_cases =
+            read_yaml_files_from_directory("eth_tests").unwrap();
         let standard_recursion_config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(standard_recursion_config);
-        let bls_components = reconcile_bls_input_fields(&verify_path);
 
-        // let matches = CommandLineOptionsBuilder::new("bls12_381_components_proofs")
-        //     .with_proof_storage_options()
-        //     .get_matches();
+        for i in 0..bls_components_with_verify_eth_tests_cases.len() {
+            let current_eth_verify_test = &bls_components_with_verify_eth_tests_cases[i];
+            let proof = bls12_381_components_proofs((*current_eth_verify_test).clone())
+                .await
+                .unwrap();
 
-        let proof = bls12_381_components_proofs(bls_components).await.unwrap();
+            println!("Proof generated");
 
-        // let proof = proof_storage_and_proof.0;
-        // let mut proof_storage = proof_storage_and_proof.1;
-        println!(
-            "Is valid signature {}",
-            proof.public_inputs[proof.public_inputs.len() - 1]
-        );
+            println!(
+                "Is valid signature {}",
+                proof.public_inputs[proof.public_inputs.len() - 1]
+            );
 
-        let proof_t = builder.constant(proof.public_inputs[proof.public_inputs.len() - 1]);
-        builder.assert_one(proof_t);
-
-        // proof_storage
-        //     .set_proof("bls12_381_proof".to_string(), &proof.to_bytes())
-        //     .await
-        //     .unwrap();
+            let proof_t = builder.constant(proof.public_inputs[proof.public_inputs.len() - 1]);
+            builder.assert_one(proof_t);
+        }
     }
 }
