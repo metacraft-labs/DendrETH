@@ -14,8 +14,11 @@ contract BalanceVerifierDiva is BalanceVerifier, IBalanceVerifierDiva {
     uint256 verifierDigest,
     uint256 genesisBlockTimestamp,
     address _verifier,
+    address _accumulator,
     address _owner
-  ) BalanceVerifier(verifierDigest, genesisBlockTimestamp, _verifier, _owner) {}
+  ) BalanceVerifier(verifierDigest, genesisBlockTimestamp, _verifier, _owner) {
+    ACCUMULATOR = _accumulator;
+  }
 
   /// @notice Verifies the proof and writes the data for given slot if valid
   /// @param proof the zk proof for total value locked
@@ -34,9 +37,8 @@ contract BalanceVerifierDiva is BalanceVerifier, IBalanceVerifierDiva {
     uint64 _numberOfExitedValidators,
     uint64 _numberOfSlashedValidators
   ) external override {
-    bytes32 accumulator = IValidatorsAccumulator(ACCUMULATOR).findAndPruneBlock(
-      blockNumber
-    );
+    bytes32 accumulator = IValidatorsAccumulator(ACCUMULATOR)
+      .findAccumulatorByBlock(blockNumber);
 
     uint256[] memory publicInputs = new uint256[](2);
     publicInputs[0] = VERIFIER_DIGEST;
