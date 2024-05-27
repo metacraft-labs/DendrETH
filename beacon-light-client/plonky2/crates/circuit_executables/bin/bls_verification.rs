@@ -101,22 +101,22 @@ async fn async_main() -> Result<()> {
 
     println!("{}", "Loading circuit data...".yellow());
     let circuit_data = load_circuit_data(&format!(
-        "{}/{}_{}",
-        SERIALIZED_CIRCUITS_DIR, CIRCUIT_NAME, &config.circuit_level
+        "{}/{}",
+        SERIALIZED_CIRCUITS_DIR, CIRCUIT_NAME
     ))?;
 
     let protocol = matches.value_of("protocol").unwrap();
 
     let queue = WorkQueue::new(KeyPrefix::new(format!(
-        "{}:{}:{}",
-        protocol, DB_CONSTANTS.bls_verification_queue, config.circuit_level
+        "{}:{}",
+        protocol, DB_CONSTANTS.bls_verification_queue
     )));
 
     println!(
         "{}",
         &format!(
-            "{}:{}:{}",
-            protocol, DB_CONSTANTS.bls_verification_queue, config.circuit_level
+            "{}:{}",
+            protocol, DB_CONSTANTS.bls_verification_queue
         )
     );
 

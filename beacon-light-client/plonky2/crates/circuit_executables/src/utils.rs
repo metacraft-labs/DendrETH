@@ -16,10 +16,26 @@ pub struct BalanceVerificationConfig {
 
 pub struct BLSVerificationConfig {
     pub redis_connection: String,
-    pub circuit_level: u64,
     pub stop_after: u64,
     pub lease_for: u64,
-    pub time_to_run: Option<Duration>,
+}
+
+pub fn parse_bls_verification_command_line_options(
+    matches: &ArgMatches,
+) -> BLSVerificationConfig {
+    BLSVerificationConfig {
+        redis_connection: matches.value_of("redis_connection").unwrap().to_string(),
+        stop_after: matches
+            .value_of("stop_after")
+            .unwrap()
+            .parse::<u64>()
+            .unwrap(),
+        lease_for: matches
+            .value_of("lease_for")
+            .unwrap()
+            .parse::<u64>()
+            .unwrap(),
+    }
 }
 
 pub fn parse_balance_verification_command_line_options(
