@@ -68,7 +68,7 @@ pub struct FinalCircuitTargets<const WITHDRAWAL_CREDENTIALS_COUNT: usize> {
     pub validators_commitment_mapper_proof: ProofWithPublicInputsTarget<D>,
 }
 
-pub struct BalanceVerificationFinalCircuit<const WITHDRAWAL_CREDENTIALS_COUNT: usize> {}
+pub struct BalanceVerificationFinalCircuit<const WITHDRAWAL_CREDENTIALS_COUNT: usize>;
 
 impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
     for BalanceVerificationFinalCircuit<WITHDRAWAL_CREDENTIALS_COUNT>

@@ -22,7 +22,7 @@ pub trait Circuit {
     const CIRCUIT_CONFIG: CircuitConfig;
 
     type Target: ReadablePublicInputs + ReadableCircuitInputTarget;
-    type Params;
+    type Params = ();
 
     fn define(builder: &mut CircuitBuilder<Self::F, D>, params: &Self::Params) -> Self::Target;
 
