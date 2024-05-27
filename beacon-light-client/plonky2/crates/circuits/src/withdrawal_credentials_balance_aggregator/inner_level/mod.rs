@@ -22,7 +22,7 @@ pub struct WithdrawalCredentialsBalanceAggregatorInnerLevel<
     const VALIDATORS_COUNT: usize,
     const WITHDRAWAL_CREDENTIALS_COUNT: usize,
 > where
-    [(); VALIDATORS_COUNT / 4]:, {}
+    [(); VALIDATORS_COUNT / 4]:;
 
 const D: usize = 2;
 
@@ -41,7 +41,6 @@ where
     const CIRCUIT_CONFIG: CircuitConfig = CircuitConfig::standard_recursion_config();
 
     type Target = BasicRecursiveInnerCircuitTarget;
-
     type Params = CircuitData<Self::F, Self::C, D>;
 
     fn define(

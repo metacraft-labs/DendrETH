@@ -37,7 +37,7 @@ pub struct ValidatorsCommitmentMapperTarget {
     pub poseidon_hash_tree_root: HashOutTarget,
 }
 
-pub struct ValidatorsCommitmentMapperFirstLevel {}
+pub struct ValidatorsCommitmentMapperFirstLevel;
 
 impl Circuit for ValidatorsCommitmentMapperFirstLevel {
     type F = GoldilocksField;
@@ -48,11 +48,9 @@ impl Circuit for ValidatorsCommitmentMapperFirstLevel {
 
     type Target = ValidatorsCommitmentMapperTarget;
 
-    type Params = ();
-
     fn define(
         builder: &mut CircuitBuilder<Self::F, { Self::D }>,
-        _params: &Self::Params,
+        _: &Self::Params,
     ) -> Self::Target {
         let input = Self::read_circuit_input_target(builder);
 
