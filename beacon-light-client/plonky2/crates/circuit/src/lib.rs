@@ -12,7 +12,7 @@ pub mod to_targets;
 
 pub use add_virtual_target::AddVirtualTarget;
 pub use array::Array;
-pub use circuit::{Circuit, ReadableCircuitInputTarget, TargetsWithPublicInputs};
+pub use circuit::{Circuit, ReadableCircuitInputTarget, ReadablePublicInputs};
 pub use public_inputs::{
     field_reader::{PublicInputsFieldReader, PublicInputsReadable},
     target_reader::{PublicInputsTargetReadable, PublicInputsTargetReader},
@@ -25,7 +25,7 @@ pub use to_targets::ToTargets;
 pub type CircuitInput<T> = <<T as Circuit>::Target as SetWitness<<T as Circuit>::F>>::Input;
 pub type CircuitInputTarget<T> =
     <<T as Circuit>::Target as ReadableCircuitInputTarget>::CircuitInputTarget;
-pub type CircuitOutput<T> = <<T as Circuit>::Target as TargetsWithPublicInputs>::PublicInputs;
+pub type CircuitOutput<T> = <<T as Circuit>::Target as ReadablePublicInputs>::PublicInputs;
 pub type CircuitOutputTarget<T> =
-    <<T as Circuit>::Target as TargetsWithPublicInputs>::PublicInputsTarget;
+    <<T as Circuit>::Target as ReadablePublicInputs>::PublicInputsTarget;
 pub type CircuitTargetType<T> = <T as Circuit>::Target;

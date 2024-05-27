@@ -21,7 +21,7 @@ pub trait Circuit {
     const D: usize = D; // NOTE: Don't override this
     const CIRCUIT_CONFIG: CircuitConfig;
 
-    type Target: TargetsWithPublicInputs + ReadableCircuitInputTarget;
+    type Target: ReadablePublicInputs + ReadableCircuitInputTarget;
     type Params;
 
     fn define(builder: &mut CircuitBuilder<Self::F, D>, params: &Self::Params) -> Self::Target;
@@ -50,7 +50,7 @@ pub trait Circuit {
     }
 }
 
-pub trait TargetsWithPublicInputs {
+pub trait ReadablePublicInputs {
     type PublicInputsTarget;
     type PublicInputs;
 
