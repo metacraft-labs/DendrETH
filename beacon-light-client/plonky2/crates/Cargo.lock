@@ -383,7 +383,7 @@ checksum = "c6fa2087f2753a7da8cc1c0dbfcf89579dd57458e36769de5ac750b4671737ca"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.66",
+ "syn 2.0.50",
 ]
 
 [[package]]
@@ -1166,7 +1166,7 @@ dependencies = [
  "itertools 0.10.5",
  "proc-macro2",
  "quote",
- "syn 2.0.66",
+ "syn 2.0.50",
 ]
 
 [[package]]
@@ -1470,31 +1470,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "curve25519-dalek"
-version = "4.0.0"
-source = "git+https://github.com/Electron-Labs/curve25519-dalek#fd71e1a4f0f36a7e3590177e999ca72b9c41ba42"
-dependencies = [
- "cfg-if 1.0.0",
- "cpufeatures",
- "curve25519-dalek-derive",
- "fiat-crypto",
- "platforms",
- "rustc_version",
- "subtle",
- "zeroize",
-]
-
-[[package]]
-name = "curve25519-dalek-derive"
-version = "0.1.0"
-source = "git+https://github.com/Electron-Labs/curve25519-dalek#fd71e1a4f0f36a7e3590177e999ca72b9c41ba42"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.66",
-]
-
-[[package]]
 name = "darling"
 version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1539,7 +1514,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "strsim 0.11.1",
- "syn 2.0.66",
+ "syn 2.0.50",
 ]
 
 [[package]]
@@ -1561,7 +1536,7 @@ checksum = "733cabb43482b1a1b53eee8583c2b9e8684d592215ea83efd305dd31bc2f0178"
 dependencies = [
  "darling_core 0.20.9",
  "quote",
- "syn 2.0.66",
+ "syn 2.0.50",
 ]
 
 [[package]]
@@ -1617,7 +1592,7 @@ dependencies = [
  "convert_case 0.6.0",
  "proc-macro2",
  "quote",
- "syn 2.0.66",
+ "syn 2.0.50",
 ]
 
 [[package]]
@@ -1633,7 +1608,7 @@ dependencies = [
  "quote",
  "strum 0.26.2",
  "strum_macros 0.26.2",
- "syn 2.0.66",
+ "syn 2.0.50",
  "typed-builder",
 ]
 
@@ -1702,7 +1677,7 @@ version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c762bae6dcaf24c4c84667b8579785430908723d5c889f469d76a41d59cc7a9d"
 dependencies = [
- "curve25519-dalek 3.2.0",
+ "curve25519-dalek",
  "ed25519",
  "rand 0.7.3",
  "serde",
@@ -1970,12 +1945,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fiat-crypto"
-version = "0.1.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e825f6987101665dea6ec934c09ec6d721de7bc1bf92248e1d5810c8cd636b77"
-
-[[package]]
 name = "fixed-hash"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2125,7 +2094,7 @@ checksum = "87750cf4b7a4c0625b1529e4c543c2182106e4dedc60a2a6455e00d212c489ac"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.66",
+ "syn 2.0.50",
 ]
 
 [[package]]
@@ -2851,7 +2820,7 @@ dependencies = [
  "borsh",
  "bs58",
  "c2-chacha",
- "curve25519-dalek 3.2.0",
+ "curve25519-dalek",
  "derive_more",
  "ed25519-dalek",
  "near-account-id",
@@ -3071,7 +3040,7 @@ checksum = "ed3955f1a9c7c0c15e092f9c887db08b1fc683305fdf6eb6684f22555355e202"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.66",
+ "syn 2.0.50",
 ]
 
 [[package]]
@@ -3182,7 +3151,7 @@ checksum = "a948666b637a0f465e8564c73e89d4dde00d72d4d473cc972f390fc3dcee7d9c"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.66",
+ "syn 2.0.50",
 ]
 
 [[package]]
@@ -3347,7 +3316,7 @@ checksum = "2f38a4412a78282e09a2cf38d195ea5420d15ba0602cb375210efbc877243965"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.66",
+ "syn 2.0.50",
 ]
 
 [[package]]
@@ -3390,15 +3359,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d231b230927b5e4ad203db57bbcbee2802f6bce620b1e4a9024a07d94e2907ec"
 
 [[package]]
-name = "platforms"
-version = "3.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db23d408679286588f4d4644f965003d056e3dd5abcaaa938116871d7ce2fee7"
-
-[[package]]
 name = "plonky2"
-version = "0.2.0"
-source = "git+https://github.com/metacraft-labs/plonky2#3ae50655f371184023815f50a42555c1cd9d7023"
+version = "0.2.2"
+source = "git+https://github.com/metacraft-labs/plonky2#c7a5809b45f5cbfe19b40bec367ae2251ad1a4df"
 dependencies = [
  "ahash 0.8.11",
  "anyhow",
@@ -3422,13 +3385,12 @@ dependencies = [
 [[package]]
 name = "plonky2-circuit-serializer"
 version = "0.1.0"
-source = "git+https://github.com/metacraft-labs/plonky2-circuit-serializer#fb465ac5bf526673767264f32cb0f4d31b1d6bd8"
+source = "git+https://github.com/metacraft-labs/plonky2-circuit-serializer#c4818b3b0007ce46209713dc0efa314ba4a72b98"
 dependencies = [
  "log",
  "multithreaded-fs",
  "plonky2",
  "plonky2_crypto",
- "plonky2_ed25519",
  "serde",
  "serde_json",
  "starky_bls12_381",
@@ -3437,7 +3399,7 @@ dependencies = [
 [[package]]
 name = "plonky2_crypto"
 version = "0.1.0"
-source = "git+https://github.com/metacraft-labs/plonky2-crypto#b069bb3f0ea133e6348df0a8644660ca65f18403"
+source = "git+https://github.com/metacraft-labs/plonky2-crypto#ee3b0afb86fbd7332ca28ab1136f8ca1b0b0a7ef"
 dependencies = [
  "anyhow",
  "hex",
@@ -3445,6 +3407,7 @@ dependencies = [
  "num",
  "plonky2",
  "plonky2_maybe_rayon 0.1.1",
+ "proc-macro2",
  "rand 0.8.5",
  "rayon",
  "serde",
@@ -3452,29 +3415,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "plonky2_ed25519"
-version = "0.1.0"
-source = "git+https://github.com/metacraft-labs/plonky2_ed25519#895bbf54e626be0b2d9e7bebc5ff4948d1f40298"
-dependencies = [
- "anyhow",
- "curve25519-dalek 4.0.0",
- "env_logger",
- "itertools 0.11.0",
- "log",
- "num",
- "plonky2",
- "plonky2_crypto",
- "plonky2_sha512",
- "rand 0.8.5",
- "serde",
- "serde_json",
- "sha2 0.10.8",
-]
-
-[[package]]
 name = "plonky2_field"
-version = "0.2.0"
-source = "git+https://github.com/metacraft-labs/plonky2#3ae50655f371184023815f50a42555c1cd9d7023"
+version = "0.2.2"
+source = "git+https://github.com/metacraft-labs/plonky2#c7a5809b45f5cbfe19b40bec367ae2251ad1a4df"
 dependencies = [
  "anyhow",
  "itertools 0.11.0",
@@ -3495,27 +3438,15 @@ checksum = "194db0cbdd974e92d897cd92b74adb3968dc1b967315eb280357c49a7637994e"
 [[package]]
 name = "plonky2_maybe_rayon"
 version = "0.2.0"
-source = "git+https://github.com/metacraft-labs/plonky2#3ae50655f371184023815f50a42555c1cd9d7023"
+source = "git+https://github.com/metacraft-labs/plonky2#c7a5809b45f5cbfe19b40bec367ae2251ad1a4df"
 dependencies = [
  "rayon",
 ]
 
 [[package]]
-name = "plonky2_sha512"
-version = "0.1.0"
-source = "git+https://github.com/metacraft-labs/plonky2_sha512#82360002bcf81323edf1e4d58ff1902f9435fcb1"
-dependencies = [
- "anyhow",
- "plonky2",
- "plonky2_crypto",
- "rand 0.8.5",
- "sha2 0.10.8",
-]
-
-[[package]]
 name = "plonky2_util"
 version = "0.2.0"
-source = "git+https://github.com/metacraft-labs/plonky2#3ae50655f371184023815f50a42555c1cd9d7023"
+source = "git+https://github.com/metacraft-labs/plonky2#c7a5809b45f5cbfe19b40bec367ae2251ad1a4df"
 
 [[package]]
 name = "polling"
@@ -3638,9 +3569,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.84"
+version = "1.0.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec96c6a92621310b51366f1e28d05ef11489516e93be030060e5fc12024a49d6"
+checksum = "e835ff2298f5721608eb1a980ecaee1aef2c132bf95ecc026a11b7bf3c01c02e"
 dependencies = [
  "unicode-ident",
 ]
@@ -4102,7 +4033,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "serde_derive_internals",
- "syn 2.0.66",
+ "syn 2.0.50",
 ]
 
 [[package]]
@@ -4199,7 +4130,7 @@ checksum = "500cbc0ebeb6f46627f50f3f5811ccf6bf00643be300b4c3eabc0ef55dc5b5ba"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.66",
+ "syn 2.0.50",
 ]
 
 [[package]]
@@ -4210,7 +4141,7 @@ checksum = "18d26a20a969b9e3fdf2fc2d9f21eda6c40e2de84c9408bb5d3b05d499aae711"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.66",
+ "syn 2.0.50",
 ]
 
 [[package]]
@@ -4272,7 +4203,7 @@ dependencies = [
  "darling 0.20.9",
  "proc-macro2",
  "quote",
- "syn 2.0.66",
+ "syn 2.0.50",
 ]
 
 [[package]]
@@ -4453,8 +4384,8 @@ dependencies = [
 
 [[package]]
 name = "starky"
-version = "0.2.1"
-source = "git+https://github.com/metacraft-labs/plonky2#3ae50655f371184023815f50a42555c1cd9d7023"
+version = "0.4.0"
+source = "git+https://github.com/metacraft-labs/plonky2#c7a5809b45f5cbfe19b40bec367ae2251ad1a4df"
 dependencies = [
  "ahash 0.8.11",
  "anyhow",
@@ -4548,7 +4479,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "rustversion",
- "syn 2.0.66",
+ "syn 2.0.50",
 ]
 
 [[package]]
@@ -4570,9 +4501,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.66"
+version = "2.0.50"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c42f3f41a2de00b01c0aaad383c5a45241efc8b2d1eda5661812fda5f3cdcff5"
+checksum = "74f1bdc9872430ce9b75da68329d1c1746faf50ffac5f19e02b71e37ff881ffb"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4656,7 +4587,7 @@ checksum = "46c3384250002a6d5af4d114f2845d37b57521033f30d5c3f46c4d70e1197533"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.66",
+ "syn 2.0.50",
 ]
 
 [[package]]
@@ -4751,7 +4682,7 @@ checksum = "5b8a1e28f2deaa14e508979454cb3a223b10b938b45af148bc0986de36f1923b"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.66",
+ "syn 2.0.50",
 ]
 
 [[package]]
@@ -4860,7 +4791,7 @@ checksum = "34704c8d6ebcbc939824180af020566b01a7c01f80641264eba0999f6c2b6be7"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.66",
+ "syn 2.0.50",
 ]
 
 [[package]]
@@ -4917,7 +4848,7 @@ checksum = "1f718dfaf347dcb5b983bfc87608144b0bad87970aebcbea5ce44d2a30c08e63"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.66",
+ "syn 2.0.50",
 ]
 
 [[package]]
@@ -5031,7 +4962,7 @@ checksum = "9881bea7cbe687e36c9ab3b778c36cd0487402e270304e8b1296d5085303c1a2"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.66",
+ "syn 2.0.50",
 ]
 
 [[package]]
@@ -5106,7 +5037,7 @@ dependencies = [
  "once_cell",
  "proc-macro2",
  "quote",
- "syn 2.0.66",
+ "syn 2.0.50",
  "wasm-bindgen-shared",
 ]
 
@@ -5140,7 +5071,7 @@ checksum = "e94f17b526d0a461a191c78ea52bbce64071ed5c04c9ffe424dcb38f74171bb7"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.66",
+ "syn 2.0.50",
  "wasm-bindgen-backend",
  "wasm-bindgen-shared",
 ]
@@ -5432,7 +5363,7 @@ checksum = "15e934569e47891f7d9411f1a451d947a60e000ab3bd24fbb970f000387d1b3b"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.66",
+ "syn 2.0.50",
 ]
 
 [[package]]
@@ -5452,7 +5383,7 @@ checksum = "ce36e65b0d2999d2aafac989fb249189a141aee1f53c612c1f37d72631959f69"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.66",
+ "syn 2.0.50",
 ]
 
 [[package]]
