@@ -177,7 +177,7 @@ fn impl_targets_with_public_inputs(
             }
         }
 
-        impl #impl_generics circuit::TargetsWithPublicInputs for #ident #type_generics #where_clause {
+        impl #impl_generics circuit::ReadablePublicInputs for #ident #type_generics #where_clause {
             type PublicInputs = #public_inputs_ident #type_generics;
 
             #[allow(unused_variables)]
