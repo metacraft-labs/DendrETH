@@ -5,6 +5,8 @@ REPO_URL="https://github.com/ethereum/bls12-381-tests"
 REPO_DIR="bls12-381-tests"
 OUTPUT_DIR="eth_tests"
 VERIFY_DIR="$OUTPUT_DIR/verify"
+SCRIPTS_DIR="scripts"
+RUST_FILES_DIR="src" 
 
 # Clone the repository
 if [ ! -d "$REPO_DIR" ]; then
@@ -42,13 +44,19 @@ deactivate
 # Navigate back to the root directory
 cd ..
 
+# Navigate to the rust files directory
+cd "$RUST_FILES_DIR" || exit 
+
 # Run the verify tests
 run_verify_tests() {
     local test_name=$1
     local file_path=$2
 
+    # Set the FILE_PATH environment variable
+    export FILE_PATH="$file_path" 
+
     # Run the specified Rust test with the given file path
-    cargo test "$test_name" --release -- --nocapture --file "$file_path"
+    RUST_MIN_STACK=16777216 cargo test "$test_name" --release -- --nocapture "$file_path"
 }
 
 # Loop through the extracted files in the 'verify' directory
