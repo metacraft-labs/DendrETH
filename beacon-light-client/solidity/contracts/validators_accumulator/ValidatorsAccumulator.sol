@@ -111,9 +111,9 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
 
   function findAccumulatorByBlock(
     uint256 blockNumber
-  ) external view override returns (bytes32) {
+  ) external view override returns (uint256, bytes32) {
     if (validatorsCount == 0) {
-      return zeroHashes[VALIDATOR_ACCUMULATOR_TREE_DEPTH - 1];
+      return (0, zeroHashes[VALIDATOR_ACCUMULATOR_TREE_DEPTH - 1]);
     }
 
     uint256 index = _binarySearchBlock(blockNumber);
@@ -121,10 +121,10 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
     DepositData memory snapshot = snapshots[index];
 
     if (snapshot.blockNumber > blockNumber) {
-      return zeroHashes[VALIDATOR_ACCUMULATOR_TREE_DEPTH - 1];
+      return (0, zeroHashes[VALIDATOR_ACCUMULATOR_TREE_DEPTH - 1]);
     }
 
-    return snapshot.accumulator;
+    return (index + 1, snapshot.accumulator);
   }
 
   function _getRoot(uint256 size) internal view returns (bytes32 node) {

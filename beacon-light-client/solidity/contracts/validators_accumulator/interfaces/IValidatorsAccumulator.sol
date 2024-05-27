@@ -27,5 +27,5 @@ interface IValidatorsAccumulator {
 
   function findAccumulatorByBlock(
     uint256 blockNumber
-  ) external view returns (bytes32);
+  ) external view returns (uint256 validatorsCount, bytes32 accumulator);
 }

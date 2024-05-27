@@ -126,11 +126,11 @@ describe('ValidatorsAccumulator tests', async function () {
 
     const index = Math.floor(depositItems.length / 2);
 
-    const accumulator = await validatorAccumulator.findAccumulatorByBlock(
-      startBlock + index,
-    );
+    const [count, accumulator] =
+      await validatorAccumulator.findAccumulatorByBlock(startBlock + index);
 
     expect(accumulator).to.equal(accumulators[index]);
+    expect(count.toNumber()).to.equal(index + 1);
   });
 
   it('Should find correct accumulator in non-consecutive blocks and prune all before it', async function () {
@@ -148,16 +148,17 @@ describe('ValidatorsAccumulator tests', async function () {
     await deposit(depositItems[4]);
     const startBlock4 = Number(await network.provider.send('eth_blockNumber'));
 
-    const resAccumulators = [
-      await validatorAccumulator.findAccumulatorByBlock(startBlock0),
-      await validatorAccumulator.findAccumulatorByBlock(startBlock1),
-      await validatorAccumulator.findAccumulatorByBlock(startBlock2),
-      await validatorAccumulator.findAccumulatorByBlock(startBlock3),
-      await validatorAccumulator.findAccumulatorByBlock(startBlock4),
-    ];
+    const res = await Promise.all([
+      validatorAccumulator.findAccumulatorByBlock(startBlock0),
+      validatorAccumulator.findAccumulatorByBlock(startBlock1),
+      validatorAccumulator.findAccumulatorByBlock(startBlock2),
+      validatorAccumulator.findAccumulatorByBlock(startBlock3),
+      validatorAccumulator.findAccumulatorByBlock(startBlock4),
+    ]);
 
-    for (let i = 0; i < resAccumulators.length; i++) {
-      expect(resAccumulators[i]).to.equal(accumulators[i]);
+    for (let i = 0; i < res.length; i++) {
+      expect(res[i][0].toNumber()).to.equal(i + 1);
+      expect(res[i][1]).to.equal(accumulators[i]);
     }
   });
 
@@ -165,24 +166,24 @@ describe('ValidatorsAccumulator tests', async function () {
     await deposit(depositItems[0]);
     const startBlock = Number(await network.provider.send('eth_blockNumber'));
 
-    const accumulator = await validatorAccumulator.findAccumulatorByBlock(
-      startBlock - 1,
-    );
+    const [count, accumulator] =
+      await validatorAccumulator.findAccumulatorByBlock(startBlock - 1);
 
     expect(accumulator).to.equal(
       '0x985e929f70af28d0bdd1a90a808f977f597c7c778c489e98d3bd8910d31ac0f7',
     );
+    expect(count.toNumber()).to.equal(0);
   });
 
   it('Should return zero hash if no validators have deposited', async function () {
     const startBlock = Number(await network.provider.send('eth_blockNumber'));
 
-    const accumulator = await validatorAccumulator.findAccumulatorByBlock(
-      startBlock,
-    );
+    const [count, accumulator] =
+      await validatorAccumulator.findAccumulatorByBlock(startBlock);
 
     expect(accumulator).to.equal(
       '0x985e929f70af28d0bdd1a90a808f977f597c7c778c489e98d3bd8910d31ac0f7',
     );
+    expect(count.toNumber()).to.equal(0);
   });
 });
