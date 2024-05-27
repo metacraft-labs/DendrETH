@@ -49,6 +49,10 @@ num-bigint = "0.4.4"
 snowbridge-amcl = "1.0.2"
 
 [[bin]]
+name = "bls_verification"
+path = "bin/bls_verification.rs"
+
+[[bin]]
 name = "balance_verification"
 path = "bin/balance_verification.rs"
 

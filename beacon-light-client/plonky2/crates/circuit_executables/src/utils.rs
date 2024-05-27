@@ -14,6 +14,14 @@ pub struct BalanceVerificationConfig {
     pub protocol: Option<String>,
 }
 
+pub struct BLSVerificationConfig {
+    pub redis_connection: String,
+    pub circuit_level: u64,
+    pub stop_after: u64,
+    pub lease_for: u64,
+    pub time_to_run: Option<Duration>,
+}
+
 pub fn parse_balance_verification_command_line_options(
     matches: &ArgMatches,
 ) -> BalanceVerificationConfig {
