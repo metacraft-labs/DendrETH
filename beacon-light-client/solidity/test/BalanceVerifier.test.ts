@@ -31,6 +31,7 @@ describe('BalanceVerifier', () => {
     ).deploy(
       1,
       1606824023,
+      0x00000000,
       verifierMock.address,
       validatorAccumulator.address,
       owner.address,
