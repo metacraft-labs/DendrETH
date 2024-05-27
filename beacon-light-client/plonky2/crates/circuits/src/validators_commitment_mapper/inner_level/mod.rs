@@ -17,7 +17,7 @@ use crate::{
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
 };
 
-pub struct ValidatorsCommitmentMapperInnerLevel {}
+pub struct ValidatorsCommitmentMapperInnerLevel;
 
 impl Circuit for ValidatorsCommitmentMapperInnerLevel {
     type F = GoldilocksField;
@@ -27,7 +27,6 @@ impl Circuit for ValidatorsCommitmentMapperInnerLevel {
     const CIRCUIT_CONFIG: CircuitConfig = CircuitConfig::standard_recursion_config();
 
     type Target = BasicRecursiveInnerCircuitTarget;
-
     type Params = CircuitData<Self::F, Self::C, { Self::D }>;
 
     fn define(

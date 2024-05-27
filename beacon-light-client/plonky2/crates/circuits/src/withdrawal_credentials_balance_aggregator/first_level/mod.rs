@@ -89,7 +89,7 @@ pub struct WithdrawalCredentialsBalanceAggregatorFirstLevel<
     const VALIDATORS_COUNT: usize,
     const WITHDRAWAL_CREDENTIALS_COUNT: usize,
 > where
-    [(); VALIDATORS_COUNT / 4]:, {}
+    [(); VALIDATORS_COUNT / 4]:;
 
 const D: usize = 2;
 
@@ -109,9 +109,8 @@ where
 
     type Target =
         ValidatorBalanceVerificationTargets<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>;
-    type Params = ();
 
-    fn define(builder: &mut CircuitBuilder<Self::F, D>, _params: &()) -> Self::Target {
+    fn define(builder: &mut CircuitBuilder<Self::F, D>, _: &Self::Params) -> Self::Target {
         if !VALIDATORS_COUNT.is_power_of_two() {
             panic!("VALIDATORS_COUNT must be a power of two");
         }
