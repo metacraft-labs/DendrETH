@@ -200,7 +200,7 @@ const CIRCUIT_SIZE = 2;
   // inner level tasks
   for (let level = 1; level < 24; level++) {
     await redis.saveBalancesAccumulatorProof(
-      options['protocl'],
+      options['protocol'],
       BigInt(level),
       BigInt(CONSTANTS.validatorRegistryLimit),
     );

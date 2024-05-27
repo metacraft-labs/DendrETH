@@ -247,3 +247,15 @@ export interface BlsDepositData {
   signature: string;
   signingRoot: string;
 }
+
+export interface DepositInput {
+  pubkey: string;
+  signature: string;
+  depositIndex: string;
+  depositMessageRoot: string;
+}
+
+export interface DepositCommitmentMapperInput {
+  deposit: DepositInput;
+  isReal: boolean;
+}

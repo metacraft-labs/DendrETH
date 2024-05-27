@@ -7,6 +7,7 @@ import {
   BlsDepositData,
   BalancesAccumulatorInput,
   CommitmentMapperInput,
+  DepositCommitmentMapperInput,
 } from '../types/types';
 import { RedisClientType, createClient } from 'redis';
 import CONSTANTS from '../../beacon-light-client/plonky2/kv_db_constants.json';
@@ -507,12 +508,70 @@ export class Redis implements IRedis {
     return keys.length;
   }
 
-  async saveDeposit(index: number, deposit: BlsDepositData): Promise<void> {
+  async saveDepositSignatureVerification(
+    index: number,
+    deposit: BlsDepositData,
+  ): Promise<void> {
     await this.waitForConnection();
 
     await this.client.set(
       `${CONSTANTS.depositSignatureVerificationKey}:${index}`,
       JSON.stringify(deposit),
+    );
+  }
+
+  async isZeroDepositsEmpty(): Promise<boolean> {
+    await this.waitForConnection();
+
+    const result = await this.client.keys(
+      `${CONSTANTS.depositKey}:${CONSTANTS.validatorRegistryLimit}:*`,
+    );
+
+    return result.length === 0;
+  }
+
+  async saveDeposit(index: number, data: DepositCommitmentMapperInput) {
+    await this.waitForConnection();
+
+    await this.client.set(
+      `${CONSTANTS.depositKey}:${index}`,
+      JSON.stringify(data),
+    );
+  }
+
+  async saveDummyDepositProof(
+    depth: bigint,
+    proof: ValidatorProof = {
+      needsChange: true,
+      proofKey: 'invalid',
+      publicInputs: {
+        poseidonHashTreeRoot: [0, 0, 0, 0],
+        sha256HashTreeRoot: ''.padEnd(64, '0'),
+      },
+    },
+  ): Promise<void> {
+    await this.waitForConnection();
+    await this.client.set(
+      `${CONSTANTS.depositProofKey}:zeroes:${depth}`,
+      JSON.stringify(proof),
+    );
+  }
+
+  async saveDepositProof(
+    gindex: bigint,
+    proof: ValidatorProof = {
+      needsChange: true,
+      proofKey: '',
+      publicInputs: {
+        poseidonHashTreeRoot: [0, 0, 0, 0],
+        sha256HashTreeRoot: ''.padEnd(64, '0'),
+      },
+    },
+  ): Promise<void> {
+    await this.waitForConnection();
+    await this.client.set(
+      `${CONSTANTS.depositProofKey}:${gindex}`,
+      JSON.stringify(proof),
     );
   }
 
