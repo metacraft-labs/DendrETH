@@ -25,5 +25,7 @@ interface IValidatorsAccumulator {
     bytes32 depositDataRoot
   ) external payable;
 
-  function findAndPruneBlock(uint256 blockNumber) external returns (bytes32);
+  function findAccumulatorByBlock(
+    uint256 blockNumber
+  ) external view returns (bytes32);
 }

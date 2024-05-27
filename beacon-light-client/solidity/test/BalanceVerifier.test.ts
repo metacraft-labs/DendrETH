@@ -15,13 +15,26 @@ describe('BalanceVerifier', () => {
   beforeEach(async () => {
     const owner = (await ethers.getSigners())[5];
 
+    const contractFactory = await ethers.getContractFactory(
+      'ValidatorsAccumulator',
+    );
+    validatorAccumulator = await contractFactory.deploy(
+      '0x00000000219ab540356cBB839Cbe05303d7705Fa',
+    );
+
     verifierMock = await (
       await ethers.getContractFactory('VerifierMock')
     ).deploy();
 
     balanceVerifierDiva = await (
       await ethers.getContractFactory('BalanceVerifierDiva')
-    ).deploy(1, 1606824023, verifierMock.address, owner.address);
+    ).deploy(
+      1,
+      1606824023,
+      verifierMock.address,
+      validatorAccumulator.address,
+      owner.address,
+    );
 
     balanceVerifierLido = await (
       await ethers.getContractFactory('BalanceVerifierLido')
@@ -32,18 +45,6 @@ describe('BalanceVerifier', () => {
       verifierMock.address,
       owner.address,
     );
-
-    const contractFactory = await ethers.getContractFactory(
-      'ValidatorsAccumulator',
-    );
-    validatorAccumulator = await contractFactory.deploy(
-      '0x00000000219ab540356cBB839Cbe05303d7705Fa',
-      balanceVerifierDiva.address,
-    );
-
-    await balanceVerifierDiva
-      .connect(owner)
-      .setAccumulator(validatorAccumulator.address);
   });
 
   it('Should verify successfully', async () => {
