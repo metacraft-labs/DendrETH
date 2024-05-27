@@ -302,8 +302,6 @@ fn convert_big_to_fq(big: Big) -> Fq {
 
 #[cfg(test)]
 pub mod tests {
-    use std::env;
-
     use plonky2::{
         field::goldilocks_field::GoldilocksField,
         plonk::{circuit_builder::CircuitBuilder, circuit_data::CircuitConfig},
@@ -316,13 +314,9 @@ pub mod tests {
 
     #[tokio::test]
     async fn test_bls12_381_components_proofs_with_verify_eth_cases() {
-        let args: Vec<String> = env::args().collect();
-        if args.len() < 2 {
-            panic!("Expected a file path as argument");
-        }
-
+        let eth_tests_directory_path = "../scripts/bls12-381-tests/eth_tests/bls/verify";
         let bls_components_with_verify_eth_tests_cases =
-            read_yaml_files_from_directory(args[1].as_str()).unwrap();
+            read_yaml_files_from_directory(eth_tests_directory_path).unwrap();
         let standard_recursion_config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(standard_recursion_config);
 
@@ -347,13 +341,9 @@ pub mod tests {
     #[tokio::test]
     #[should_panic]
     async fn test_bls12_381_components_proofs_with_verify_eth_cases_should_panic() {
-        let args: Vec<String> = env::args().collect();
-        if args.len() < 2 {
-            panic!("Expected a file path as argument");
-        }
-
+        let eth_tests_directory_path = "../scripts/bls12-381-tests/eth_tests/bls/verify";
         let bls_components_with_verify_eth_tests_cases =
-            read_yaml_files_from_directory(args[1].as_str()).unwrap();
+            read_yaml_files_from_directory(eth_tests_directory_path).unwrap();
         let standard_recursion_config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(standard_recursion_config);
 
