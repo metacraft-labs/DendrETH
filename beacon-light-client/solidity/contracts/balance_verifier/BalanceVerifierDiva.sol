@@ -6,6 +6,10 @@ import {IBalanceVerifierDiva} from './interfaces/IBalanceVerifierDiva.sol';
 import {IValidatorsAccumulator} from '../validators_accumulator/interfaces/IValidatorsAccumulator.sol';
 
 contract BalanceVerifierDiva is BalanceVerifier, IBalanceVerifierDiva {
+  /// @notice The genesis fork version.
+  uint256 internal immutable GENESIS_FORK_VERSION;
+
+  /// @notice The address of the validators accumulator contract.
   address internal ACCUMULATOR;
 
   mapping(uint256 => Report) internal reports;
@@ -13,10 +17,12 @@ contract BalanceVerifierDiva is BalanceVerifier, IBalanceVerifierDiva {
   constructor(
     uint256 verifierDigest,
     uint256 genesisBlockTimestamp,
+    uint256 genesisForkVersion,
     address _verifier,
     address _accumulator,
     address _owner
   ) BalanceVerifier(verifierDigest, genesisBlockTimestamp, _verifier, _owner) {
+    GENESIS_FORK_VERSION = genesisForkVersion;
     ACCUMULATOR = _accumulator;
   }
 
@@ -37,17 +43,20 @@ contract BalanceVerifierDiva is BalanceVerifier, IBalanceVerifierDiva {
     uint64 _numberOfExitedValidators,
     uint64 _numberOfSlashedValidators
   ) external override {
-    bytes32 accumulator = IValidatorsAccumulator(ACCUMULATOR)
-      .findAccumulatorByBlock(blockNumber);
+    (uint256 validatorsCount, bytes32 accumulator) = IValidatorsAccumulator(
+      ACCUMULATOR
+    ).findAccumulatorByBlock(blockNumber);
 
     uint256[] memory publicInputs = new uint256[](2);
     publicInputs[0] = VERIFIER_DIGEST;
     publicInputs[1] = (uint256(
       sha256(
         abi.encodePacked(
+          GENESIS_FORK_VERSION,
           _findBlockRoot(slot),
           blockNumber,
           accumulator,
+          validatorsCount,
           balanceSum,
           _numberOfNonActivatedValidators,
           _numberOfActiveValidators,
