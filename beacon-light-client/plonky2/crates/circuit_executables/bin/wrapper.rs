@@ -12,7 +12,10 @@ use circuit_executables::{
     utils::{parse_config_file, CommandLineOptionsBuilder},
     wrap_final_layer_in_poseidon_bn128::wrap_final_layer_in_poseidon_bn_128,
 };
-use circuits::{final_layer::BalanceVerificationFinalCircuit, types::FinalProof};
+use circuits::{
+    final_layer::BalanceVerificationFinalCircuit,
+    redis_storage_types::BalanceVerificationFinalProofData,
+};
 use clap::Arg;
 use futures_lite::future;
 use plonky2::{
@@ -68,7 +71,7 @@ async fn async_main() -> Result<()> {
             DB_CONSTANTS.final_layer_proof_key
         ))
         .await?;
-    let final_layer_proof: FinalProof = serde_json::from_str(&proof_str)?;
+    let final_layer_proof: BalanceVerificationFinalProofData = serde_json::from_str(&proof_str)?;
     let final_layer_proof = final_layer_proof.proof;
     let final_layer_proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> =
         ProofWithPublicInputs::from_bytes(final_layer_proof, &circuit_data.common)?;
