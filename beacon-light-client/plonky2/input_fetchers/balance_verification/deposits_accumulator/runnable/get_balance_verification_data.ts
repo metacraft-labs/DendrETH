@@ -149,8 +149,6 @@ async function generate_leaf_level_data(
   validator!.withdrawalCredentials = bytesToHex(
     validator!.withdrawalCredentials!,
   ) as any;
-  getNthParent,
-  gindexFromIndex,
 
   console.log(gindexFromIndex(BigInt(foundIndex), 40n));
 
