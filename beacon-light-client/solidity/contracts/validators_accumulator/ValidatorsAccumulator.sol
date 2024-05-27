@@ -8,7 +8,6 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
   // The depth of the validator accumulator tree
   uint8 internal constant VALIDATOR_ACCUMULATOR_TREE_DEPTH = 32;
   address internal immutable depositAddress;
-  address internal immutable balanceVerifier;
 
   // An array to hold the branch hashes for the Merkle tree
   bytes32[VALIDATOR_ACCUMULATOR_TREE_DEPTH] internal branch;
@@ -21,9 +20,8 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
 
   mapping(uint256 => DepositData) internal snapshots;
 
-  constructor(address _depositAddress, address _balanceVerifier) {
+  constructor(address _depositAddress) {
     depositAddress = _depositAddress;
-    balanceVerifier = _balanceVerifier;
 
     // Compute hashes in empty Merkle tree
     for (
@@ -111,13 +109,9 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
     });
   }
 
-  function findAndPruneBlock(
+  function findAccumulatorByBlock(
     uint256 blockNumber
-  ) external override returns (bytes32) {
-    if (msg.sender != balanceVerifier) {
-      revert InvalidCaller();
-    }
-
+  ) external view override returns (bytes32) {
     if (validatorsCount == 0) {
       return zeroHashes[VALIDATOR_ACCUMULATOR_TREE_DEPTH - 1];
     }
@@ -129,12 +123,6 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
     if (snapshot.blockNumber > blockNumber) {
       return zeroHashes[VALIDATOR_ACCUMULATOR_TREE_DEPTH - 1];
     }
-
-    for (uint256 i = startIndex; i <= index; i++) {
-      delete snapshots[i];
-    }
-
-    startIndex = index + 1;
 
     return snapshot.accumulator;
   }

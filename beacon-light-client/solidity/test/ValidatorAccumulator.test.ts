@@ -11,30 +11,6 @@ import { expect } from 'chai';
 import depositContractAbi from './abis/deposit.json';
 import depositItems from './utils/depositData.json';
 
-export function calculateValidatorsAccumulator(
-  validatorsPubkeys: Uint8Array[],
-  eth1DepositIndexes: Uint8Array[],
-  depositMessageRoots: Uint8Array[],
-  signatures: Uint8Array[],
-): string {
-  const leaves = validatorsPubkeys.map((pubkey, i) => {
-    const validatorPubkey = bytesToHex(pubkey);
-    const eth1DepositIndex = bytesToHex(eth1DepositIndexes[i]);
-    const depositMessageRoot = bytesToHex(depositMessageRoots[i]);
-    const signature = bytesToHex(signatures[i]);
-
-    return sha256(
-      '0x' +
-        formatHex(validatorPubkey) +
-        formatHex(eth1DepositIndex) +
-        formatHex(depositMessageRoot) +
-        formatHex(signature),
-    );
-  });
-
-  return hashTreeRoot(leaves, 32);
-}
-
 describe('ValidatorsAccumulator tests', async function () {
   let validatorAccumulator: Contract;
   let depositContract: Contract;
@@ -63,7 +39,6 @@ describe('ValidatorsAccumulator tests', async function () {
     );
     validatorAccumulator = await contractFactory.deploy(
       '0x00000000219ab540356cBB839Cbe05303d7705Fa',
-      signerAddress,
     );
 
     await network.provider.send('hardhat_setBalance', [
@@ -104,6 +79,30 @@ describe('ValidatorsAccumulator tests', async function () {
     signatures.push(signature);
   }
 
+  function calculateValidatorsAccumulator(
+    validatorsPubkeys: Uint8Array[],
+    eth1DepositIndexes: Uint8Array[],
+    depositMessageRoots: Uint8Array[],
+    signatures: Uint8Array[],
+  ): string {
+    const leaves = validatorsPubkeys.map((pubkey, i) => {
+      const validatorPubkey = bytesToHex(pubkey);
+      const eth1DepositIndex = bytesToHex(eth1DepositIndexes[i]);
+      const depositMessageRoot = bytesToHex(depositMessageRoots[i]);
+      const signature = bytesToHex(signatures[i]);
+
+      return sha256(
+        '0x' +
+          formatHex(validatorPubkey) +
+          formatHex(eth1DepositIndex) +
+          formatHex(depositMessageRoot) +
+          formatHex(signature),
+      );
+    });
+
+    return hashTreeRoot(leaves, 32);
+  }
+
   it('Should deposit', async function () {
     for (const depositItem of depositItems) {
       await deposit(depositItem);
@@ -127,7 +126,7 @@ describe('ValidatorsAccumulator tests', async function () {
 
     const index = Math.floor(depositItems.length / 2);
 
-    const accumulator = await validatorAccumulator.callStatic.findAndPruneBlock(
+    const accumulator = await validatorAccumulator.findAccumulatorByBlock(
       startBlock + index,
     );
 
@@ -150,11 +149,11 @@ describe('ValidatorsAccumulator tests', async function () {
     const startBlock4 = Number(await network.provider.send('eth_blockNumber'));
 
     const resAccumulators = [
-      await validatorAccumulator.callStatic.findAndPruneBlock(startBlock0),
-      await validatorAccumulator.callStatic.findAndPruneBlock(startBlock1),
-      await validatorAccumulator.callStatic.findAndPruneBlock(startBlock2),
-      await validatorAccumulator.callStatic.findAndPruneBlock(startBlock3),
-      await validatorAccumulator.callStatic.findAndPruneBlock(startBlock4),
+      await validatorAccumulator.findAccumulatorByBlock(startBlock0),
+      await validatorAccumulator.findAccumulatorByBlock(startBlock1),
+      await validatorAccumulator.findAccumulatorByBlock(startBlock2),
+      await validatorAccumulator.findAccumulatorByBlock(startBlock3),
+      await validatorAccumulator.findAccumulatorByBlock(startBlock4),
     ];
 
     for (let i = 0; i < resAccumulators.length; i++) {
@@ -162,27 +161,28 @@ describe('ValidatorsAccumulator tests', async function () {
     }
   });
 
-  it('Should not find one accumulator twice', async function () {
-    const startBlock =
-      Number(await network.provider.send('eth_blockNumber')) + 1;
-    for (const depositItem of depositItems) {
-      await deposit(depositItem);
-    }
+  it('Should return zero hash if block is before first deposit', async function () {
+    await deposit(depositItems[0]);
+    const startBlock = Number(await network.provider.send('eth_blockNumber'));
 
-    const index = Math.floor(depositItems.length / 2);
-
-    const accumulator = await validatorAccumulator.callStatic.findAndPruneBlock(
-      startBlock + index,
+    const accumulator = await validatorAccumulator.findAccumulatorByBlock(
+      startBlock - 1,
     );
-    await validatorAccumulator.findAndPruneBlock(startBlock + index);
 
-    expect(accumulator).to.equal(accumulators[index]);
+    expect(accumulator).to.equal(
+      '0x985e929f70af28d0bdd1a90a808f977f597c7c778c489e98d3bd8910d31ac0f7',
+    );
+  });
 
-    const accumulator1 =
-      await validatorAccumulator.callStatic.findAndPruneBlock(
-        startBlock + index,
-      );
+  it('Should return zero hash if no validators have deposited', async function () {
+    const startBlock = Number(await network.provider.send('eth_blockNumber'));
 
-    expect(accumulator1).to.equal(ethers.utils.hexValue(0).padEnd(66, '0'));
+    const accumulator = await validatorAccumulator.findAccumulatorByBlock(
+      startBlock,
+    );
+
+    expect(accumulator).to.equal(
+      '0x985e929f70af28d0bdd1a90a808f977f597c7c778c489e98d3bd8910d31ac0f7',
+    );
   });
 });
