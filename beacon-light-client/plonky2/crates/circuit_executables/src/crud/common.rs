@@ -9,7 +9,10 @@ use circuit::{Circuit, CircuitInput, SerdeCircuitTarget};
 use circuits::{
     bls_verification::build_stark_proof_verifier::RecursiveStarkTargets,
     final_layer::BalanceVerificationFinalCircuit,
-    types::{BalanceProof, FinalProof, ValidatorProof},
+    redis_storage_types::{
+        BalanceVerificationFinalProofData, ValidatorsCommitmentMapperProofData,
+        WithdrawalCredentialsBalanceVerificationProofData,
+    },
     utils::{bits_to_bytes, hash_bytes, u64_to_ssz_leaf},
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
     withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
@@ -42,20 +45,23 @@ pub trait ProofProvider {
     async fn get_proof(&self, proof_storage: &mut dyn ProofStorage) -> Vec<u8>;
 }
 
-impl NeedsChange for ValidatorProof {
+impl NeedsChange for ValidatorsCommitmentMapperProofData {
     fn needs_change(&self) -> bool {
         self.needs_change
     }
 }
 
-impl KeyProvider for ValidatorProof {
+impl KeyProvider for ValidatorsCommitmentMapperProofData {
     fn get_key() -> String {
         DB_CONSTANTS.validator_proof_key.to_owned()
     }
 }
 
 impl<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIALS_COUNT: usize> NeedsChange
-    for BalanceProof<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>
+    for WithdrawalCredentialsBalanceVerificationProofData<
+        VALIDATORS_COUNT,
+        WITHDRAWAL_CREDENTIALS_COUNT,
+    >
 where
     [(); VALIDATORS_COUNT / 4]:,
 {
@@ -65,7 +71,10 @@ where
 }
 
 impl<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIALS_COUNT: usize> KeyProvider
-    for BalanceProof<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>
+    for WithdrawalCredentialsBalanceVerificationProofData<
+        VALIDATORS_COUNT,
+        WITHDRAWAL_CREDENTIALS_COUNT,
+    >
 where
     [(); VALIDATORS_COUNT / 4]:,
 {
@@ -75,7 +84,7 @@ where
 }
 
 #[async_trait(?Send)]
-impl ProofProvider for ValidatorProof {
+impl ProofProvider for ValidatorsCommitmentMapperProofData {
     async fn get_proof(&self, proof_storage: &mut dyn ProofStorage) -> Vec<u8> {
         proof_storage
             .get_proof(self.proof_key.clone())
@@ -86,7 +95,10 @@ impl ProofProvider for ValidatorProof {
 
 #[async_trait(?Send)]
 impl<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIALS_COUNT: usize> ProofProvider
-    for BalanceProof<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>
+    for WithdrawalCredentialsBalanceVerificationProofData<
+        VALIDATORS_COUNT,
+        WITHDRAWAL_CREDENTIALS_COUNT,
+    >
 where
     [(); VALIDATORS_COUNT / 4]:,
 {
@@ -165,7 +177,7 @@ where
         WITHDRAWAL_CREDENTIALS_COUNT,
     >::read_public_inputs(&proof.public_inputs);
 
-    let balance_proof = BalanceProof {
+    let balance_proof = WithdrawalCredentialsBalanceVerificationProofData {
         needs_change: false,
         proof_key: proof_key.clone(),
         public_inputs,
@@ -203,7 +215,7 @@ pub async fn save_final_proof(
     number_of_exited_validators: u64,
     number_of_slashed_validators: u64,
 ) -> Result<()> {
-    let final_proof = FinalProof {
+    let final_proof = BalanceVerificationFinalProofData {
         needs_change: false,
         block_root,
         withdrawal_credentials,
@@ -312,7 +324,7 @@ pub async fn save_zero_validator_proof(
 ) -> Result<()> {
     let proof_key = format!("{}:zeroes:{}", DB_CONSTANTS.validator_proof_storage, depth);
 
-    let validator_proof = ValidatorProof {
+    let validator_proof = ValidatorsCommitmentMapperProofData {
         needs_change: false,
         proof_key: proof_key.clone(),
         public_inputs: ValidatorsCommitmentMapperFirstLevel::read_public_inputs(
@@ -359,7 +371,7 @@ pub async fn save_validator_proof(
         "{}:{}:{}",
         DB_CONSTANTS.validator_proof_storage, gindex, slot
     );
-    let validator_proof = ValidatorProof {
+    let validator_proof = ValidatorsCommitmentMapperProofData {
         proof_key: proof_key.clone(),
         needs_change: false,
         public_inputs: ValidatorsCommitmentMapperFirstLevel::read_public_inputs(
