@@ -1,3 +1,4 @@
+use circuit::ToTargets;
 use itertools::Itertools;
 use plonky2::{
     field::extension::Extendable,
@@ -51,56 +52,18 @@ pub fn hash_validator_poseidon<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     validator: &ValidatorTarget,
 ) -> HashOutTarget {
-    let leaves = vec![
-        builder.hash_n_to_hash_no_pad::<PoseidonHash>(
-            validator.pubkey.iter().map(|x| x.target).collect(),
-        ),
-        builder.hash_n_to_hash_no_pad::<PoseidonHash>(
-            validator
-                .withdrawal_credentials
-                .iter()
-                .map(|x| x.target)
-                .collect(),
-        ),
-        builder.hash_n_to_hash_no_pad::<PoseidonHash>(
-            validator
-                .effective_balance
-                .limbs
-                .iter()
-                .map(|x| x.0)
-                .collect(),
-        ),
-        builder.hash_n_to_hash_no_pad::<PoseidonHash>(vec![validator.slashed.target]),
-        builder.hash_n_to_hash_no_pad::<PoseidonHash>(
-            validator
-                .activation_eligibility_epoch
-                .limbs
-                .iter()
-                .map(|x| x.0)
-                .collect(),
-        ),
-        builder.hash_n_to_hash_no_pad::<PoseidonHash>(
-            validator
-                .activation_epoch
-                .limbs
-                .iter()
-                .map(|x| x.0)
-                .collect(),
-        ),
-        builder.hash_n_to_hash_no_pad::<PoseidonHash>(
-            validator.exit_epoch.limbs.iter().map(|x| x.0).collect(),
-        ),
-        builder.hash_n_to_hash_no_pad::<PoseidonHash>(
-            validator
-                .withdrawable_epoch
-                .limbs
-                .iter()
-                .map(|x| x.0)
-                .collect(),
-        ),
+    let leaves = &[
+        poseidon(builder, validator.pubkey.to_targets()),
+        poseidon(builder, validator.withdrawal_credentials.to_targets()),
+        poseidon(builder, validator.effective_balance.to_targets()),
+        poseidon(builder, validator.slashed.to_targets()),
+        poseidon(builder, validator.activation_eligibility_epoch.to_targets()),
+        poseidon(builder, validator.activation_epoch.to_targets()),
+        poseidon(builder, validator.exit_epoch.to_targets()),
+        poseidon(builder, validator.withdrawable_epoch.to_targets()),
     ];
 
-    hash_tree_root_poseidon(builder, &leaves)
+    hash_tree_root_poseidon(builder, leaves)
 }
 
 pub fn hash_outs_are_equal<F: RichField + Extendable<D>, const D: usize>(
