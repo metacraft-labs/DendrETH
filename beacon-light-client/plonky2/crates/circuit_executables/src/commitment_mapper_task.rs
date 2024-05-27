@@ -1,6 +1,6 @@
 use anyhow::{bail, Result};
 use circuit::SetWitness;
-use circuits::types::ValidatorProof;
+use circuits::redis_storage_types::ValidatorsCommitmentMapperProofData;
 use colored::Colorize;
 
 use num::FromPrimitive;
@@ -193,7 +193,7 @@ async fn handle_update_proof_node_task(
 ) -> Result<()> {
     let level = 39 - get_depth_for_gindex(gindex) as usize;
 
-    let fetch_result = fetch_proofs::<ValidatorProof>(
+    let fetch_result = fetch_proofs::<ValidatorsCommitmentMapperProofData>(
         &mut ctx.redis_con,
         ctx.proof_storage.as_mut(),
         gindex,
@@ -242,7 +242,9 @@ async fn handle_prove_zero_for_depth_task(
     // the level in the inner proofs tree
     let level = 39 - depth as usize;
 
-    match fetch_zero_proof::<ValidatorProof>(&mut ctx.redis_con, depth + 1).await {
+    match fetch_zero_proof::<ValidatorsCommitmentMapperProofData>(&mut ctx.redis_con, depth + 1)
+        .await
+    {
         Ok(lower_proof) => {
             let inner_circuit_data = if level > 0 {
                 &ctx.inner_level_circuits[level - 1].data

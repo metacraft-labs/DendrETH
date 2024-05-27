@@ -16,7 +16,9 @@ use circuit_executables::{
 };
 use circuits::{
     final_layer::BalanceVerificationFinalCircuit,
-    types::{BalanceProof, ValidatorProof},
+    redis_storage_types::{
+        ValidatorsCommitmentMapperProofData, WithdrawalCredentialsBalanceVerificationProofData,
+    },
     utils::bits_to_bytes,
     withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
@@ -67,8 +69,10 @@ async fn async_main() -> Result<()> {
 
     let circuit_input = fetch_final_layer_input(&mut con, protocol).await?;
 
-    let balance_proof_data: BalanceProof<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT> =
-        fetch_proof_balances(&mut con, protocol, 37, 0).await?;
+    let balance_proof_data: WithdrawalCredentialsBalanceVerificationProofData<
+        VALIDATORS_COUNT,
+        WITHDRAWAL_CREDENTIALS_COUNT,
+    > = fetch_proof_balances(&mut con, protocol, 37, 0).await?;
 
     let balance_verification_proof_bytes = proof_storage
         .get_proof(balance_proof_data.proof_key)
@@ -85,7 +89,7 @@ async fn async_main() -> Result<()> {
             &balance_verification_circuit_data.common,
         )?;
 
-    let validators_commitment_mapper_proof_data: ValidatorProof =
+    let validators_commitment_mapper_proof_data: ValidatorsCommitmentMapperProofData =
         fetch_proof(&mut con, 1, circuit_input.slot.to_u64().unwrap()).await?;
 
     let validators_commitment_mapper_proof_bytes = proof_storage

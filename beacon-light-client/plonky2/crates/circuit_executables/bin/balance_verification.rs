@@ -23,7 +23,7 @@ use circuit_executables::{
 };
 use circuits::{
     common_targets::BasicRecursiveInnerCircuitTarget,
-    types::BalanceProof,
+    redis_storage_types::WithdrawalCredentialsBalanceVerificationProofData,
     withdrawal_credentials_balance_aggregator::{
         first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
         inner_level::WithdrawalCredentialsBalanceAggregatorInnerLevel,
@@ -364,13 +364,12 @@ where
         println!("{}", "Processing task for zero proof...".blue().bold());
     }
 
-    match fetch_proofs_balances::<BalanceProof<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>>(
-        con,
-        proof_storage,
-        protocol.to_owned(),
-        level,
-        index,
-    )
+    match fetch_proofs_balances::<
+        WithdrawalCredentialsBalanceVerificationProofData<
+            VALIDATORS_COUNT,
+            WITHDRAWAL_CREDENTIALS_COUNT,
+        >,
+    >(con, proof_storage, protocol.to_owned(), level, index)
     .await
     {
         Err(err) => {

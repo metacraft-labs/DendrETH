@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct ValidatorProof {
+pub struct ValidatorsCommitmentMapperProofData {
     pub needs_change: bool,
     pub proof_key: String,
     pub public_inputs: CircuitOutput<ValidatorsCommitmentMapperFirstLevel>,
@@ -15,8 +15,10 @@ pub struct ValidatorProof {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct BalanceProof<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIALS_COUNT: usize>
-where
+pub struct WithdrawalCredentialsBalanceVerificationProofData<
+    const VALIDATORS_COUNT: usize,
+    const WITHDRAWAL_CREDENTIALS_COUNT: usize,
+> where
     [(); VALIDATORS_COUNT / 4]:,
 {
     pub needs_change: bool,
@@ -31,7 +33,7 @@ where
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct FinalProof {
+pub struct BalanceVerificationFinalProofData {
     pub needs_change: bool,
     pub block_root: String,
     pub withdrawal_credentials: Vec<String>,
