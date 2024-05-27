@@ -10,15 +10,15 @@ import {
   getBeaconApi,
 } from '@dendreth/relay/implementations/beacon-api';
 import { Redis } from '@dendreth/relay/implementations/redis';
-import {
-  getCommitmentMapperProof,
-  getNthParent,
-  gindexFromIndex,
-} from '../../../utils/common_utils';
+import { getCommitmentMapperProof } from '../../../utils/common_utils';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { write, writeFileSync } from 'fs';
 import JSONbig from 'json-bigint';
 import { verifyMerkleProof } from '@dendreth/utils/ts-utils/ssz-utils';
+import {
+  getNthParent,
+  gindexFromIndex,
+} from '@dendreth/utils/ts-utils/common-utils';
 
 (async () => {
   const { ssz } = await import('@lodestar/types');
@@ -149,6 +149,8 @@ async function generate_leaf_level_data(
   validator!.withdrawalCredentials = bytesToHex(
     validator!.withdrawalCredentials!,
   ) as any;
+  getNthParent,
+  gindexFromIndex,
 
   console.log(gindexFromIndex(BigInt(foundIndex), 40n));
 

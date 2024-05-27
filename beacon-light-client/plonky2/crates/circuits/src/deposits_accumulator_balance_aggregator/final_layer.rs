@@ -64,7 +64,7 @@ pub struct DepositAccumulatorBalanceAggregatorFinalLayerTargets {
     pub execution_block_number: BigUintTarget,
     #[target(in)]
     #[serde(with = "serde_bool_array_to_hex_string_nested")]
-    pub execution_block_number_branch: Sha256MerkleBranchTarget<5>,
+    pub execution_block_number_branch: Sha256MerkleBranchTarget<10>,
 
     #[target(in)]
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
@@ -240,7 +240,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFinalLayer {
             &block_number_ssz,
             &input.state_root,
             &input.execution_block_number_branch,
-            120,
+            1798,
         );
 
         let eth1_deposit_index_ssz = ssz_num_to_bits(builder, &node.eth1_deposit_index, 64);
@@ -250,7 +250,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFinalLayer {
             &eth1_deposit_index_ssz,
             &input.state_root,
             &input.eth1_deposit_index_branch,
-            120,
+            42,
         );
 
         let final_sum_bits =
@@ -283,6 +283,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFinalLayer {
         let mut public_inputs_hash = sha256(
             builder,
             &[
+                node.genesis_fork_version.as_slice(),
                 input.block_root.as_slice(),
                 block_number_bits.as_slice(),
                 deposit_commitment_mapper_root_public_inputs
