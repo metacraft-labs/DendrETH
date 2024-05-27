@@ -38,7 +38,7 @@ export class DepositScheduler {
     );
     if (!latestLoggedBlock) {
       latestLoggedBlock = (
-        (await this.provider.getBlockNumber()) - 100000
+        (await this.provider.getBlockNumber()) - 10000
       ).toString();
     }
     this.syncBlock = options['sync-block'] || +latestLoggedBlock;
