@@ -25,8 +25,8 @@ use plonky2::{
     hash::hash_types::RichField,
     plonk::{
         circuit_builder::CircuitBuilder,
-        circuit_data::{CircuitConfig, CircuitData, VerifierCircuitTarget},
-        config::{GenericConfig, PoseidonGoldilocksConfig},
+        circuit_data::{CircuitConfig, CircuitData},
+        config::PoseidonGoldilocksConfig,
         proof::ProofWithPublicInputsTarget,
     },
 };
