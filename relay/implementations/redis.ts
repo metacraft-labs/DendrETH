@@ -508,6 +508,23 @@ export class Redis implements IRedis {
     return keys.length;
   }
 
+  async getDepositsIndices(): Promise<string[]> {
+    await this.waitForConnection();
+
+    const pattern = `${CONSTANTS.depositKey}:*`;
+    const keys = (await this.client.keys(pattern)).filter(
+      key => !key.includes(CONSTANTS.validatorRegistryLimit.toString()),
+    );
+
+    if (keys.length === 0) {
+      return [];
+    }
+
+    return (await this.client.mget(keys))?.map(
+      data => JSON.parse(data || '').deposit.depositIndex,
+    );
+  }
+
   async saveDepositSignatureVerification(
     index: number,
     deposit: BlsDepositData,
@@ -524,19 +541,32 @@ export class Redis implements IRedis {
     await this.waitForConnection();
 
     const result = await this.client.keys(
-      `${CONSTANTS.depositKey}:${CONSTANTS.validatorRegistryLimit}:*`,
+      `${CONSTANTS.depositKey}:${CONSTANTS.validatorRegistryLimit}`,
     );
 
     return result.length === 0;
   }
 
-  async saveDeposit(index: number, data: DepositCommitmentMapperInput) {
+  async saveDeposits(
+    depositsWithIndices: {
+      index: number;
+      data: DepositCommitmentMapperInput;
+    }[],
+  ) {
     await this.waitForConnection();
 
-    await this.client.set(
-      `${CONSTANTS.depositKey}:${index}`,
-      JSON.stringify(data),
-    );
+    const args = (
+      await Promise.all(
+        depositsWithIndices.map(async deposit => {
+          return [
+            `${CONSTANTS.depositKey}:${deposit.index}`,
+            JSON.stringify(deposit.data),
+          ];
+        }),
+      )
+    ).flat();
+
+    await this.client.mset(...args);
   }
 
   async saveDummyDepositProof(

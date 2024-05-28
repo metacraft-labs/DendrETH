@@ -20,31 +20,44 @@ const GENESIS_VALIDATOR_ROOT =
 export class DepositScheduler extends Scheduler {
   private api: BeaconApi;
   private GENESIS_FORK_VERSION: string;
+  protected depositsCount: number;
 
   async init(options: any) {
-    super.init(options, {
+    await super.init(options, {
       queue: CONSTANTS.depositSignatureVerificationQueue,
       latestBlock: CONSTANTS.depositSignatureVerificationLatestBlockKey,
     });
     this.api = await getBeaconApi(options['beacon-node']);
+    this.depositsCount = await this.redis.getDepositsCount();
 
     this.GENESIS_FORK_VERSION = ethers.utils.hexlify(
       (await this.api.getGenesisData()).genesisForkVersion,
     );
   }
 
-  override async updateDeposits(
-    event: {
-      pubkey: string;
-      signature: string;
-      depositMessageRoot: string;
-      index: string;
-    },
-    blockNumber: number,
+  override async updateDepositsBatch(
+    deposits: {
+      event: {
+        pubkey: string;
+        signature: string;
+        depositMessageRoot: string;
+        depositIndex: string;
+      };
+      blockNumber: number;
+    }[],
   ): Promise<void> {
-    console.log(
-      chalk.blue(`Processing deposit for ${chalk.bold.yellow(event.pubkey)}`),
-    );
+    if (deposits.length === 1) {
+      console.log(
+        chalk.blue(
+          `Processing deposit for ${chalk.yellow(
+            deposits[0].event.pubkey.slice(0, 6),
+          )}...${chalk.yellow(deposits[0].event.pubkey.slice(-4))}`,
+        ),
+      );
+    } else {
+      console.log(chalk.bold.blue(`Processing ${deposits.length} deposits...`));
+    }
+
     const fork_data_root = bytesToHex(
       this.ssz.phase0.ForkData.hashTreeRoot({
         currentVersion: hexToBytes(this.GENESIS_FORK_VERSION),
@@ -55,30 +68,33 @@ export class DepositScheduler extends Scheduler {
     const domain =
       formatHex(DOMAIN_DEPOSIT) + formatHex(fork_data_root.slice(0, 56));
 
-    const signing_root = this.ssz.phase0.SigningData.hashTreeRoot({
-      objectRoot: hexToBytes(event.depositMessageRoot),
-      domain: hexToBytes(domain),
-    });
+    for (const { event } of deposits) {
+      const signing_root = this.ssz.phase0.SigningData.hashTreeRoot({
+        objectRoot: hexToBytes(event.depositMessageRoot),
+        domain: hexToBytes(domain),
+      });
 
-    await this.redis.saveDepositSignatureVerification(this.depositsCount, {
-      pubkey: event.pubkey,
-      signature: event.signature,
-      signingRoot: ethers.utils.hexlify(signing_root),
-    });
+      await this.redis.saveDepositSignatureVerification(this.depositsCount, {
+        pubkey: event.pubkey,
+        signature: event.signature,
+        signingRoot: ethers.utils.hexlify(signing_root),
+      });
 
-    await this.scheduleDepositSignatureProof(BigInt(this.depositsCount));
+      await this.scheduleDepositSignatureProof(BigInt(this.depositsCount));
 
-    this.depositsCount++;
+      this.depositsCount++;
+    }
 
+    const blockNumber = deposits[deposits.length - 1].blockNumber;
     await this.redis.set(
-      CONSTANTS.depositSignatureVerificationQueue,
+      CONSTANTS.depositSignatureVerificationLatestBlockKey,
       `${blockNumber + 1}`,
     );
     console.log(
       chalk.bold.green(
-        `Deposit ${this.depositsCount} added (${chalk.yellow(
-          blockNumber,
-        )} block)`,
+        `${deposits.length} deposit${
+          deposits.length > 1 ? 's' : ''
+        } added (${chalk.yellow(blockNumber)} block)`,
       ),
     );
   }
@@ -86,7 +102,9 @@ export class DepositScheduler extends Scheduler {
   async scheduleDepositSignatureProof(index: bigint) {
     const buffer = new ArrayBuffer(8);
     const dataView = new DataView(buffer);
+
     dataView.setBigUint64(0, index, false);
+
     this.queue.addItem(this.redis.client, new Item(Buffer.from(buffer)));
   }
 }
