@@ -26,7 +26,6 @@ use crate::{
     },
 };
 
-const CIRCUIT_DIR: &str = "circuits";
 const DST: &str = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
 
 const D: usize = 2;
@@ -192,11 +191,14 @@ pub async fn bls12_381_components_proofs(
 }
 
 async fn handle_final_exponentiation(fp12_mull: &Fp12) -> ProofWithPublicInputs<F, C, D> {
-    let final_exp_circuit_data =
-        load_circuit_data_starky(&format!("{CIRCUIT_DIR}/final_exponentiate_circuit"));
+    let final_exp_circuit_data = load_circuit_data_starky(&format!(
+        "{SERIALIZED_CIRCUITS_DIR}/final_exponentiate_circuit"
+    ));
 
-    let final_exp_targets =
-        get_recursive_stark_targets(&format!("{CIRCUIT_DIR}/final_exponentiate_circuit")).unwrap();
+    let final_exp_targets = get_recursive_stark_targets(&format!(
+        "{SERIALIZED_CIRCUITS_DIR}/final_exponentiate_circuit"
+    ))
+    .unwrap();
 
     let final_exp_proof =
         generate_final_exponentiate(&fp12_mull, &final_exp_targets, &final_exp_circuit_data);
@@ -208,9 +210,11 @@ async fn handle_fp12_mul(
     miller_loop1: &Fp12,
     miller_loop2: &Fp12,
 ) -> ProofWithPublicInputs<F, C, D> {
-    let fp12_mul_circuit_data = load_circuit_data_starky(&format!("{CIRCUIT_DIR}/fp12_mul"));
+    let fp12_mul_circuit_data =
+        load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/fp12_mul"));
 
-    let fp12_mul_targets = get_recursive_stark_targets(&format!("{CIRCUIT_DIR}/fp12_mul")).unwrap();
+    let fp12_mul_targets =
+        get_recursive_stark_targets(&format!("{SERIALIZED_CIRCUITS_DIR}/fp12_mul")).unwrap();
 
     let fp12_mul_proof = generate_fp12_mul_proof(
         &miller_loop1,
@@ -231,10 +235,11 @@ async fn handle_miller_loop(
     ProofWithPublicInputs<F, C, D>,
     ProofWithPublicInputs<F, C, D>,
 ) {
-    let miller_loop_circuit_data = load_circuit_data_starky(&format!("{CIRCUIT_DIR}/miller_loop"));
+    let miller_loop_circuit_data =
+        load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/miller_loop"));
 
     let miller_loop_targets =
-        get_recursive_stark_targets(&format!("{CIRCUIT_DIR}/miller_loop")).unwrap();
+        get_recursive_stark_targets(&format!("{SERIALIZED_CIRCUITS_DIR}/miller_loop")).unwrap();
 
     let ml1 = generate_miller_loop_proof(
         &pubkey_g1,
@@ -261,10 +266,10 @@ async fn handle_pairing_precomp(
     ProofWithPublicInputs<F, C, D>,
 ) {
     let pairing_precomp_circuit_data =
-        load_circuit_data_starky(&format!("{CIRCUIT_DIR}/pairing_precomp"));
+        load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/pairing_precomp"));
 
     let pairing_precomp_targets =
-        get_recursive_stark_targets(&format!("{CIRCUIT_DIR}/pairing_precomp")).unwrap();
+        get_recursive_stark_targets(&format!("{SERIALIZED_CIRCUITS_DIR}/pairing_precomp")).unwrap();
 
     let pp1 = generate_pairing_precomp_proof(
         &message_g2,
@@ -314,7 +319,7 @@ pub mod tests {
 
     #[tokio::test]
     async fn test_bls12_381_components_proofs_with_verify_eth_cases() {
-        let eth_tests_directory_path = "../scripts/bls12-381-tests/eth_tests/bls/verify";
+        let eth_tests_directory_path = "scripts/bls12-381-tests/eth_tests/bls/verify";
         let bls_components_with_verify_eth_tests_cases =
             read_yaml_files_from_directory(eth_tests_directory_path).unwrap();
         let standard_recursion_config = CircuitConfig::standard_recursion_config();
@@ -341,7 +346,7 @@ pub mod tests {
     #[tokio::test]
     #[should_panic]
     async fn test_bls12_381_components_proofs_with_verify_eth_cases_should_panic() {
-        let eth_tests_directory_path = "../scripts/bls12-381-tests/eth_tests/bls/verify";
+        let eth_tests_directory_path = "scripts/bls12-381-tests/eth_tests/bls/verify";
         let bls_components_with_verify_eth_tests_cases =
             read_yaml_files_from_directory(eth_tests_directory_path).unwrap();
         let standard_recursion_config = CircuitConfig::standard_recursion_config();
