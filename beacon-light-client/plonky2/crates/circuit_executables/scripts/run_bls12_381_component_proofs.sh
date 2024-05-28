@@ -41,6 +41,9 @@ python main.py --output-dir="$OUTPUT_DIR" --encoding=yaml
 # Deactivate the virtual environment
 deactivate
 
+# Navigate back to the scripts directory
+cd ..
+
 # Navigate back to the root directory
 cd ..
 
