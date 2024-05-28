@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use crate::{
     common_targets::{PubkeyTarget, Sha256MerkleBranchTarget, SignatureTarget},
     deposits_accumulator_balance_aggregator::common_targets::{
@@ -24,7 +22,7 @@ use crate::{
 };
 use circuit::Circuit;
 use circuit_derive::{CircuitTarget, SerdeCircuitTarget};
-use num::BigUint;
+use num::{BigUint, FromPrimitive};
 use plonky2::{
     field::{extension::Extendable, goldilocks_field::GoldilocksField},
     hash::hash_types::{HashOutTarget, RichField},
@@ -187,9 +185,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
             &input.validator_deposit.pubkey,
         );
 
-        assert_pubkey_is_max_if_dummy(builder, &input.validator.pubkey, is_real);
-
-        let four = builder.constant_biguint(&BigUint::from_str("4").unwrap());
+        let four = builder.constant_biguint(&BigUint::from_u64(4u64).unwrap());
         let balance_gindex = builder.div_biguint(&input.validator_gindex, &four);
 
         let is_valid = validate_merkle_proof_sha256(
@@ -288,20 +284,6 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
             bls_signature_proof,
             node,
         }
-    }
-}
-
-fn assert_pubkey_is_max_if_dummy<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    pubkey: &PubkeyTarget,
-    is_real: BoolTarget,
-) {
-    let one = builder.one();
-
-    for i in 0..384 {
-        let is_one = builder.is_equal(pubkey[i].target, one);
-        let should_be_true = builder.or(is_real, is_one);
-        builder.connect(one, should_be_true.target);
     }
 }
 

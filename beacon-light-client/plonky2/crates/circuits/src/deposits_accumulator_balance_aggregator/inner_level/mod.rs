@@ -1,4 +1,4 @@
-use circuit::{Circuit, CircuitOutputTarget};
+use circuit::{circuit_builder_extensions::CircuitBuilderExtensions, Circuit, CircuitOutputTarget};
 use plonky2::{
     field::{extension::Extendable, goldilocks_field::GoldilocksField},
     hash::hash_types::RichField,
@@ -63,17 +63,20 @@ impl Circuit for DepositAccumulatorBalanceAggregatorInnerLevel {
         let _true = builder._true();
         let _false = builder._false();
 
+        assert_no_dummy_deposits_to_the_left(builder, &left_node, &right_node);
+
         connect_pass_through_data(builder, &left_node, &right_node);
 
-        let pk_are_monotonic_ordering = cmp_pubkey(
+        let mut pk_are_monotonic_ordering = cmp_pubkey(
             builder,
             left_node.rightmost.pubkey,
             right_node.leftmost.pubkey,
         );
 
-        builder.connect(pk_are_monotonic_ordering.target, _true.target);
+        pk_are_monotonic_ordering =
+            builder.or(pk_are_monotonic_ordering, right_node.leftmost.is_dummy);
 
-        let right_is_zero_proof = is_dummy_proof(builder, &right_node);
+        builder.assert_true(pk_are_monotonic_ordering);
 
         let inner_deposits_are_monotonic = builder.cmp_biguint(
             &left_node.rightmost.deposit_index,
@@ -89,8 +92,10 @@ impl Circuit for DepositAccumulatorBalanceAggregatorInnerLevel {
         let inner_deposits_are_not_equal = builder.not(inner_deposits_are_equal);
         let inner_deposits_are_strictly_monotonic =
             builder.and(inner_deposits_are_monotonic, inner_deposits_are_not_equal);
-        let inner_deposits_are_strictly_monotonic_or_dummy =
-            builder.or(inner_deposits_are_strictly_monotonic, right_is_zero_proof);
+        let inner_deposits_are_strictly_monotonic_or_dummy = builder.or(
+            inner_deposits_are_strictly_monotonic,
+            right_node.leftmost.is_dummy,
+        );
         let pks_are_equal = are_pubkeys_equal(
             builder,
             &left_node.rightmost.pubkey,
@@ -136,17 +141,6 @@ impl Circuit for DepositAccumulatorBalanceAggregatorInnerLevel {
 
         Self::Target { proof1, proof2 }
     }
-}
-
-pub fn is_dummy_proof<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    node: &NodeTargets,
-) -> BoolTarget {
-    let _true = builder._true();
-    let is_leftmost_fictional = builder.and(node.leftmost.is_dummy, _true);
-    let is_rightmost_fictional = builder.and(node.rightmost.is_dummy, _true);
-
-    builder.and(is_leftmost_fictional, is_rightmost_fictional)
 }
 
 pub fn connect_pass_through_data<F: RichField + Extendable<D>, const D: usize>(
@@ -318,10 +312,10 @@ pub fn accumulate_validator_stats<F: RichField + Extendable<D>, const D: usize>(
     );
 
     return ValidatorStatsTargets {
-        non_activated_validators_count: non_activated_validators_count,
-        active_validators_count: active_validators_count,
-        exited_validators_count: exited_validators_count,
-        slashed_validators_count: slashed_validators_count,
+        non_activated_validators_count,
+        active_validators_count,
+        exited_validators_count,
+        slashed_validators_count,
     };
 }
 
@@ -412,6 +406,17 @@ pub fn account_for_double_counting<F: RichField + Extendable<D>, const D: usize>
             slashed_validators_count: slashed_validators_count_final,
         },
     };
+}
+
+fn assert_no_dummy_deposits_to_the_left<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    left_node: &NodeTargets,
+    right_node: &NodeTargets,
+) {
+    let left_bound_is_not_dummy = builder.not(left_node.rightmost.is_dummy);
+    let right_bound_is_not_dummy = builder.not(right_node.leftmost.is_dummy);
+    let no_dummies_to_the_left = builder.imply(right_bound_is_not_dummy, left_bound_is_not_dummy);
+    builder.assert_true(no_dummies_to_the_left)
 }
 
 #[cfg(test)]
