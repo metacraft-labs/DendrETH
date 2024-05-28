@@ -113,18 +113,14 @@ impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
             balance_verification_pi.range_validator_commitment,
         );
 
-        validate_input_against_block_root::<Self::F, Self::C, D, WITHDRAWAL_CREDENTIALS_COUNT>(
+        validate_input_against_block_root::<Self::F, D, WITHDRAWAL_CREDENTIALS_COUNT>(
             builder,
             &input,
             &balance_verification_pi.range_balances_root,
             &validators_commitment_mapper_pi.sha256_hash_tree_root,
         );
 
-        verify_slot_is_in_range::<Self::F, Self::C, D>(
-            builder,
-            &input.slot,
-            &balance_verification_pi.current_epoch,
-        );
+        verify_slot_is_in_range(builder, &input.slot, &balance_verification_pi.current_epoch);
 
         let accumulated_balance_bits = biguint_to_bits_target::<Self::F, D, 2>(
             builder,
@@ -193,7 +189,6 @@ impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
 
 fn validate_input_against_block_root<
     F: RichField + Extendable<D>,
-    C: GenericConfig<D, F = F>,
     const D: usize,
     const WITHDRAWAL_CREDENTIALS_COUNT: usize,
 >(
@@ -237,12 +232,7 @@ fn validate_input_against_block_root<
     );
 }
 
-// TODO: Rename this function
-pub fn verify_slot_is_in_range<
-    F: RichField + Extendable<D>,
-    C: GenericConfig<D, F = F>,
-    const D: usize,
->(
+pub fn verify_slot_is_in_range<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     slot: &BigUintTarget,
     current_epoch: &BigUintTarget,
