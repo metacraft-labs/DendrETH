@@ -3,10 +3,10 @@
 # Define variables
 REPO_URL="https://github.com/ethereum/bls12-381-tests"
 REPO_DIR="bls12-381-tests"
-OUTPUT_DIR="eth_tests"
+OUTPUT_DIR="eth_tests/bls"
 VERIFY_DIR="$OUTPUT_DIR/verify"
 SCRIPTS_DIR="scripts"
-RUST_FILES_DIR="src" 
+SRC="src" 
 
 # Clone the repository
 if [ ! -d "$REPO_DIR" ]; then
@@ -41,32 +41,31 @@ python main.py --output-dir="$OUTPUT_DIR" --encoding=yaml
 # Deactivate the virtual environment
 deactivate
 
-# Navigate back to the scripts directory
-cd ..
+# Navigate to the verify directory
+cd "$VERIFY_DIR" || exit
+
+# Store all files in a variable
+mapfile -t all_yaml_files_in_verify < <(ls *)
 
 # Navigate back to the root directory
-cd ..
+cd ../../../../../
 
-# Navigate to the rust files directory
-cd "$RUST_FILES_DIR" || exit 
+# Navigate to the src directory
+cd "$SRC" || exit 
 
 # Run the verify tests
 run_verify_tests() {
-    local test_name=$1
-    local file_path=$2
+  local test_name=$1
+  local file_path=$2
 
-    # Set the FILE_PATH environment variable
-    export FILE_PATH="$file_path" 
+  # Set the FILE_PATH environment variable
+  export FILE_PATH="$file_path" 
 
-    # Run the specified Rust test with the given file path
-    RUST_MIN_STACK=16777216 cargo test "$test_name" --release -- --nocapture "$file_path"
+  # Run the specified Rust test with the given file path
+  RUST_MIN_STACK=1116777216 cargo test "$test_name" --release -- --nocapture "$file_path"
 }
 
 # Loop through the extracted files in the 'verify' directory
-for file in "$VERIFY_DIR"/*.yaml; do
-  if [[ "$file" == *"wrong"* || "$file" == *"tampered"* ]]; then
-    run_verify_tests "test_bls12_381_components_proofs_with_verify_eth_cases_should_fail" "$file"
-  else
-    run_verify_tests "test_bls12_381_components_proofs_with_verify_eth_cases" "$file"
-  fi
+for yaml_file in "${all_yaml_files_in_verify[@]}"; do
+  run_verify_tests "test_bls12_381_components_proofs_with_verify_eth_cases" "$yaml_file"
 done

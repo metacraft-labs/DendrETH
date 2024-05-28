@@ -1,18 +1,17 @@
 use anyhow::Result;
-use ark_bls12_381::{Fq, Fq2, G1Affine, G1Projective, G2Affine};
+use ark_bls12_381::{G1Affine, G1Projective, G2Affine};
 use ark_ec::Group;
-use ark_ff::PrimeField;
 use ark_serialize::CanonicalDeserialize;
 use circuit::SerdeCircuitTarget;
 use circuit_executables::{
+    bls_components::{
+        convert_ecp2_to_g2affine, handle_final_exponentiation, handle_fp12_mul, handle_miller_loop,
+        handle_pairing_precomp,
+    },
     constants::SERIALIZED_CIRCUITS_DIR,
     crud::{
-        common::{get_recursive_stark_targets, load_circuit_data_starky, read_from_file},
+        common::{load_circuit_data_starky, read_from_file},
         proof_storage::proof_storage::create_proof_storage,
-    },
-    provers::{
-        generate_final_exponentiate, generate_fp12_mul_proof, generate_miller_loop_proof,
-        generate_pairing_precomp_proof,
     },
     utils::CommandLineOptionsBuilder,
 };
@@ -22,11 +21,10 @@ use num_bigint::BigUint;
 use plonky2::{
     field::{goldilocks_field::GoldilocksField, types::Field},
     iop::witness::{PartialWitness, WitnessWrite},
-    plonk::{config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs},
     util::serialization::Buffer,
 };
-use snowbridge_amcl::bls381::{big::Big, bls381::utils::hash_to_curve_g2, ecp2::ECP2};
-use starky_bls12_381::native::{miller_loop, Fp, Fp12, Fp2};
+use snowbridge_amcl::bls381::bls381::utils::hash_to_curve_g2;
+use starky_bls12_381::native::{miller_loop, Fp, Fp2};
 use std::{ops::Neg, str::FromStr};
 
 async fn async_main() -> Result<()> {
@@ -41,8 +39,10 @@ async fn async_main() -> Result<()> {
     let message_g2 = hash_to_curve_g2(&hex::decode(msg).unwrap(), DST.as_bytes());
     let message_g2 = convert_ecp2_to_g2affine(message_g2);
 
-    let pubkey_g1 = G1Affine::deserialize_compressed(&*hex::decode(pubkey).unwrap()).unwrap();
-    let signature_g2 = G2Affine::deserialize_compressed(&*hex::decode(signature).unwrap()).unwrap();
+    let pubkey_g1 =
+        G1Affine::deserialize_compressed_unchecked(&*hex::decode(pubkey).unwrap()).unwrap();
+    let signature_g2 =
+        G2Affine::deserialize_compressed_unchecked(&*hex::decode(signature).unwrap()).unwrap();
     let g1 = G1Projective::generator();
     let neg_g1 = g1.neg();
 
@@ -153,126 +153,10 @@ async fn async_main() -> Result<()> {
     Ok(())
 }
 
-async fn handle_final_exponentiation(
-    fp12_mull: &Fp12,
-) -> ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> {
-    let final_exp_circuit_data = load_circuit_data_starky(&format!(
-        "{SERIALIZED_CIRCUITS_DIR}/final_exponentiate_circuit"
-    ));
-
-    let final_exp_targets = get_recursive_stark_targets(&format!(
-        "{SERIALIZED_CIRCUITS_DIR}/final_exponentiate_circuit"
-    ))
-    .unwrap();
-
-    let final_exp_proof =
-        generate_final_exponentiate(&fp12_mull, &final_exp_targets, &final_exp_circuit_data);
-
-    final_exp_proof
-}
-
-async fn handle_fp12_mul(
-    miller_loop1: &Fp12,
-    miller_loop2: &Fp12,
-) -> ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> {
-    let fp12_mul_circuit_data =
-        load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/fp12_mul"));
-
-    let fp12_mul_targets =
-        get_recursive_stark_targets(&format!("{SERIALIZED_CIRCUITS_DIR}/fp12_mul")).unwrap();
-
-    let fp12_mul_proof = generate_fp12_mul_proof(
-        &miller_loop1,
-        &miller_loop2,
-        &fp12_mul_targets,
-        &fp12_mul_circuit_data,
-    );
-
-    fp12_mul_proof
-}
-
-async fn handle_miller_loop(
-    pubkey_g1: &G1Affine,
-    message_g2: &G2Affine,
-    neg_g1: &G1Affine,
-    signature_g2: &G2Affine,
-) -> (
-    ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-) {
-    let miller_loop_circuit_data =
-        load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/miller_loop"));
-
-    let miller_loop_targets =
-        get_recursive_stark_targets(&format!("{SERIALIZED_CIRCUITS_DIR}/miller_loop")).unwrap();
-
-    let ml1 = generate_miller_loop_proof(
-        &pubkey_g1,
-        &message_g2,
-        &miller_loop_targets,
-        &miller_loop_circuit_data,
-    );
-
-    let ml2 = generate_miller_loop_proof(
-        &neg_g1,
-        &signature_g2,
-        &miller_loop_targets,
-        &miller_loop_circuit_data,
-    );
-
-    (ml1, ml2)
-}
 fn main() {
     let _ = std::thread::Builder::new()
         .spawn(|| future::block_on(async_main()))
         .unwrap()
         .join()
         .unwrap();
-}
-
-async fn handle_pairing_precomp(
-    message_g2: &G2Affine,
-    signature_g2: &G2Affine,
-) -> (
-    ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-) {
-    let pairing_precomp_circuit_data =
-        load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/pairing_precomp"));
-
-    let pairing_precomp_targets =
-        get_recursive_stark_targets(&format!("{SERIALIZED_CIRCUITS_DIR}/pairing_precomp")).unwrap();
-
-    let pp1 = generate_pairing_precomp_proof(
-        &message_g2,
-        &pairing_precomp_targets,
-        &pairing_precomp_circuit_data,
-    );
-
-    let pp2 = generate_pairing_precomp_proof(
-        &signature_g2,
-        &pairing_precomp_targets,
-        &pairing_precomp_circuit_data,
-    );
-
-    (pp1, pp2)
-}
-
-fn convert_ecp2_to_g2affine(ecp2_point: ECP2) -> G2Affine {
-    let x = Fq2::new(
-        convert_big_to_fq(ecp2_point.getpx().geta()),
-        convert_big_to_fq(ecp2_point.getpx().getb()),
-    );
-
-    let y = Fq2::new(
-        convert_big_to_fq(ecp2_point.getpy().geta()),
-        convert_big_to_fq(ecp2_point.getpy().getb()),
-    );
-
-    G2Affine::new(x, y)
-}
-
-fn convert_big_to_fq(big: Big) -> Fq {
-    let bytes = &hex::decode(big.to_string()).unwrap();
-    Fq::from_be_bytes_mod_order(bytes)
 }

@@ -69,7 +69,9 @@ pub fn read_yaml_files_from_directory<P: AsRef<Path>>(
     Ok(components)
 }
 
-fn read_yaml_file<P: AsRef<Path>>(path: P) -> Result<BlsComponents, Box<dyn std::error::Error>> {
+pub fn read_yaml_file<P: AsRef<Path>>(
+    path: P,
+) -> Result<BlsComponents, Box<dyn std::error::Error>> {
     let file_content = fs::read_to_string(path)?;
     let mut components: BlsComponents = serde_yaml::from_str(&file_content)?;
     components.remove_first_two_chars();
@@ -190,7 +192,7 @@ pub async fn bls12_381_components_proofs(
     Ok(proof)
 }
 
-async fn handle_final_exponentiation(fp12_mull: &Fp12) -> ProofWithPublicInputs<F, C, D> {
+pub async fn handle_final_exponentiation(fp12_mull: &Fp12) -> ProofWithPublicInputs<F, C, D> {
     let final_exp_circuit_data = load_circuit_data_starky(&format!(
         "{SERIALIZED_CIRCUITS_DIR}/final_exponentiate_circuit"
     ));
@@ -206,7 +208,7 @@ async fn handle_final_exponentiation(fp12_mull: &Fp12) -> ProofWithPublicInputs<
     final_exp_proof
 }
 
-async fn handle_fp12_mul(
+pub async fn handle_fp12_mul(
     miller_loop1: &Fp12,
     miller_loop2: &Fp12,
 ) -> ProofWithPublicInputs<F, C, D> {
@@ -226,7 +228,7 @@ async fn handle_fp12_mul(
     fp12_mul_proof
 }
 
-async fn handle_miller_loop(
+pub async fn handle_miller_loop(
     pubkey_g1: &G1Affine,
     message_g2: &G2Affine,
     neg_g1: &G1Affine,
@@ -258,7 +260,7 @@ async fn handle_miller_loop(
     (ml1, ml2)
 }
 
-async fn handle_pairing_precomp(
+pub async fn handle_pairing_precomp(
     message_g2: &G2Affine,
     signature_g2: &G2Affine,
 ) -> (
@@ -286,7 +288,7 @@ async fn handle_pairing_precomp(
     (pp1, pp2)
 }
 
-fn convert_ecp2_to_g2affine(ecp2_point: ECP2) -> G2Affine {
+pub fn convert_ecp2_to_g2affine(ecp2_point: ECP2) -> G2Affine {
     let x = Fq2::new(
         convert_big_to_fq(ecp2_point.getpx().geta()),
         convert_big_to_fq(ecp2_point.getpx().getb()),
@@ -300,73 +302,65 @@ fn convert_ecp2_to_g2affine(ecp2_point: ECP2) -> G2Affine {
     G2Affine::new(x, y)
 }
 
-fn convert_big_to_fq(big: Big) -> Fq {
+pub fn convert_big_to_fq(big: Big) -> Fq {
     let bytes = &hex::decode(big.to_string()).unwrap();
     Fq::from_be_bytes_mod_order(bytes)
 }
 
 #[cfg(test)]
 pub mod tests {
+    use std::env;
+
     use plonky2::{
         field::goldilocks_field::GoldilocksField,
         plonk::{circuit_builder::CircuitBuilder, circuit_data::CircuitConfig},
     };
 
-    use super::{bls12_381_components_proofs, read_yaml_files_from_directory};
+    use super::{bls12_381_components_proofs, read_yaml_file};
 
+    const PATH_TO_VERIFY_ETH_TEST_CASES: &str = "scripts/bls12-381-tests/eth_tests/bls/verify";
     const D: usize = 2;
     type F = GoldilocksField;
 
     #[tokio::test]
     async fn test_bls12_381_components_proofs_with_verify_eth_cases() {
-        let eth_tests_directory_path = "scripts/bls12-381-tests/eth_tests/bls/verify";
-        let bls_components_with_verify_eth_tests_cases =
-            read_yaml_files_from_directory(eth_tests_directory_path).unwrap();
+        let args: Vec<String> = env::args().collect();
+        if args.len() < 3 {
+            panic!("Expected a file path as argument");
+        }
+
+        let file_path = &args[3];
+        let x = format!("{}/{}", PATH_TO_VERIFY_ETH_TEST_CASES, file_path);
+        println!("file path is: {:?}", x);
+        let bls_components =
+            read_yaml_file(format!("{}/{}", PATH_TO_VERIFY_ETH_TEST_CASES, file_path)).unwrap();
         let standard_recursion_config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(standard_recursion_config);
 
-        for i in 0..bls_components_with_verify_eth_tests_cases.len() {
-            let current_eth_verify_test = &bls_components_with_verify_eth_tests_cases[i];
-            let proof = bls12_381_components_proofs((*current_eth_verify_test).clone())
-                .await
-                .unwrap();
+        println!("current pubkey: {:?}", bls_components.input.pubkey);
+        println!("current signature: {:?}", bls_components.input.signature);
+        println!("current message: {:?}", bls_components.input.message);
+        let proof = bls12_381_components_proofs(bls_components.clone())
+            .await
+            .unwrap();
 
-            println!("Proof generated");
+        println!(
+            "Is valid signature {}",
+            proof.public_inputs[proof.public_inputs.len() - 1]
+        );
 
-            println!(
-                "Is valid signature {}",
-                proof.public_inputs[proof.public_inputs.len() - 1]
-            );
-
-            let proof_t = builder.constant(proof.public_inputs[proof.public_inputs.len() - 1]);
+        let proof_t = builder.constant(proof.public_inputs[proof.public_inputs.len() - 1]);
+        if bls_components.output {
             builder.assert_one(proof_t);
+        } else {
+            builder.assert_zero(proof_t);
         }
-    }
 
-    #[tokio::test]
-    #[should_panic]
-    async fn test_bls12_381_components_proofs_with_verify_eth_cases_should_panic() {
-        let eth_tests_directory_path = "scripts/bls12-381-tests/eth_tests/bls/verify";
-        let bls_components_with_verify_eth_tests_cases =
-            read_yaml_files_from_directory(eth_tests_directory_path).unwrap();
-        let standard_recursion_config = CircuitConfig::standard_recursion_config();
-        let mut builder = CircuitBuilder::<F, D>::new(standard_recursion_config);
-
-        for i in 0..bls_components_with_verify_eth_tests_cases.len() {
-            let current_eth_verify_test = &bls_components_with_verify_eth_tests_cases[i];
-            let proof = bls12_381_components_proofs((*current_eth_verify_test).clone())
-                .await
-                .unwrap();
-
-            println!("Proof generated");
-
-            println!(
-                "Is valid signature {}",
-                proof.public_inputs[proof.public_inputs.len() - 1]
-            );
-
-            let proof_t = builder.constant(proof.public_inputs[proof.public_inputs.len() - 1]);
-            builder.assert_one(proof_t);
-        }
+        println!(
+            "test case is VALID for: pubkey: {:?}, signature: {:?} and message: {:?}",
+            bls_components.input.pubkey,
+            bls_components.input.signature,
+            bls_components.input.message,
+        );
     }
 }
