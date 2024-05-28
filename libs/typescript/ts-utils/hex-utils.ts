@@ -32,3 +32,8 @@ export function bitsToHex(bits: number[]) {
 
   return bytesStr;
 }
+
+export function hexToLittleEndianBigInt(bytes: Uint8Array) {
+  const view = new DataView(bytes.buffer);
+  return view.getBigUint64(0, true);
+}

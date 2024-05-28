@@ -1,10 +1,11 @@
 import { Redis } from '@dendreth/relay/implementations/redis';
 import { Item, KeyPrefix, WorkQueue } from '@mevitae/redis-work-queue';
 import CONSTANTS from '../../../../kv_db_constants.json';
-import { ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import { getEvents } from '../lib//event-fetcher';
 import ValidatorsAccumulator from '../../../../../solidity/artifacts/contracts/validators_accumulator/ValidatorsAccumulator.sol/ValidatorsAccumulator.json';
-import { hexToBytes } from '@dendreth/utils/ts-utils/bls';
+import { formatHex, hexToBytes } from '@dendreth/utils/ts-utils/bls';
+import { hexToLittleEndianBigInt } from '@dendreth/utils/ts-utils/hex-utils';
 
 enum Events {
   Deposited = 'Deposited',
@@ -110,19 +111,26 @@ export class DepositScheduler {
       pubkey: string;
       signature: string;
       depositMessageRoot: string;
-      index: string;
+      depositIndex: string;
     },
     blockNumber: number,
   ) {
+    if(event.depositIndex === undefined) {
+      return;
+    }
+
     const signing_root = this.ssz.phase0.SigningData.hashTreeRoot({
       objectRoot: hexToBytes(event.depositMessageRoot),
       domain: hexToBytes(DOMAIN),
     });
 
+    let depositIndex = hexToLittleEndianBigInt(hexToBytes(event.depositIndex));
+
     await this.redis.saveDeposit(this.depositsCount, {
-      pubkey: event.pubkey,
-      signature: event.signature,
-      signingRoot: ethers.utils.hexlify(signing_root),
+      pubkey: formatHex(event.pubkey),
+      signature: formatHex(event.signature),
+      signingRoot: formatHex(ethers.utils.hexlify(signing_root)),
+      depositIndex: depositIndex.toString()
     });
 
     await this.scheduleDepositSignatureProof(BigInt(this.depositsCount));

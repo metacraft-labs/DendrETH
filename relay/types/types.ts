@@ -246,4 +246,5 @@ export interface BlsDepositData {
   pubkey: string;
   signature: string;
   signingRoot: string;
+  depositIndex: string;
 }
