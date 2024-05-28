@@ -1,8 +1,8 @@
 use crate::{
-    validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
-    withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
+    serializers::{biguint_to_str, parse_biguint}, validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel, withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel
 };
 use circuit::CircuitOutput;
+use num::{BigInt, BigUint};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -41,4 +41,14 @@ pub struct FinalProof {
     pub number_of_exited_validators: u64,
     pub number_of_slashed_validators: u64,
     pub proof: Vec<u8>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BLSData {
+    pub pubkey: String,
+    pub signature: String,
+    pub signing_root: String,
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
+    pub deposit_index: BigUint
 }

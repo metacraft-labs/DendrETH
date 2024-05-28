@@ -23,8 +23,8 @@ pub struct DBConstants<'a> {
     pub balance_verification_accumulator_proof_queue: &'a str,
     pub balance_verification_accumulator_key: &'a str,
     pub balance_verification_accumulator_proof_key: &'a str,
-    pub bls_verification_queue: &'a str,
-    // pub bls_verification_proof_key: &'a str,
+    pub deposit_signature_verification_queue: &'a str,
+    pub deposit_signature_verification_key: &'a str
 }
 
 pub fn get_db_constants() -> DBConstants<'static> {

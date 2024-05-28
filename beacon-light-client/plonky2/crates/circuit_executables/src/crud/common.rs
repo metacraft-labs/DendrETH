@@ -1,4 +1,4 @@
-use std::{fs, marker::PhantomData, thread, time::Duration};
+use std::{fmt::format, fs, marker::PhantomData, thread, time::Duration};
 
 use crate::{
     constants::VALIDATOR_REGISTRY_LIMIT, db_constants::DB_CONSTANTS, utils::get_depth_for_gindex,
@@ -9,7 +9,7 @@ use circuit::{Circuit, CircuitInput, SerdeCircuitTarget};
 use circuits::{
     bls_verification::build_stark_proof_verifier::RecursiveStarkTargets,
     final_layer::BalanceVerificationFinalCircuit,
-    types::{BalanceProof, FinalProof, ValidatorProof},
+    types::{BLSData, BalanceProof, FinalProof, ValidatorProof},
     utils::{bits_to_bytes, hash_bytes, u64_to_ssz_leaf},
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
     withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
@@ -96,6 +96,12 @@ where
             .await
             .unwrap()
     }
+}
+
+pub async fn fetch_deposit_signature_verification(con: &mut Connection, index: u64) -> Result<BLSData> {
+    Ok(
+        fetch_redis_json_object(con, format!("{}:{}", DB_CONSTANTS.deposit_signature_verification_key.to_owned(), index)).await?
+    )
 }
 
 pub async fn fetch_validator_balance_input<

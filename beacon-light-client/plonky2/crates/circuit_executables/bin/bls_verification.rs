@@ -9,10 +9,7 @@ use circuit::SerdeCircuitTarget;
 use circuit_executables::{
     constants::{BLS_DST, SERIALIZED_CIRCUITS_DIR},
     crud::{
-        common::{
-            get_recursive_stark_targets,
-            load_circuit_data_starky, read_from_file,
-        },
+        common::{fetch_deposit_signature_verification, get_recursive_stark_targets, load_circuit_data_starky, read_from_file},
         proof_storage::proof_storage::{create_proof_storage, ProofStorage},
     },
     db_constants::DB_CONSTANTS,
@@ -20,19 +17,17 @@ use circuit_executables::{
         generate_final_exponentiate, generate_fp12_mul_proof, generate_miller_loop_proof,
         generate_pairing_precomp_proof,
     },
-    utils::{parse_bls_verification_command_line_options, parse_config_file, CommandLineOptionsBuilder,},
+    utils::{
+        parse_bls_verification_command_line_options, parse_config_file, CommandLineOptionsBuilder,
+    },
 };
-use circuits::bls_verification::bls12_381_circuit::BlsCircuitTargets;
+use circuits::{bls_verification::{self, bls12_381_circuit::BlsCircuitTargets}, types::BLSData};
 use colored::Colorize;
 use num::BigUint;
+use redis::aio::Connection;
 use snowbridge_amcl::bls381::{big::Big, bls381::utils::hash_to_curve_g2, ecp2::ECP2};
 use starky_bls12_381::native::{miller_loop, Fp, Fp12, Fp2};
-use std::{
-    ops::Neg,
-    println,
-    str::FromStr,
-    time::Duration,
-};
+use std::{ops::Neg, println, str::FromStr, time::Duration};
 
 use anyhow::Result;
 
@@ -54,29 +49,14 @@ use jemallocator::Jemalloc;
 static GLOBAL: Jemalloc = Jemalloc;
 
 const CIRCUIT_NAME: &str = "bls12_381";
+const DST: &str = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
 
-pub struct BLSData {
-    dst: String,
-    pubkey: String,
-    signature: String,
-    msg: String,
-}
 
-impl BLSData {
-    fn from_queue(queue_item: Item) -> BLSData {
-        BLSData {
-            dst: BLS_DST.to_string(),
-            pubkey: std::str::from_utf8(&queue_item.data[0..8])
-                .unwrap()
-                .to_string(),
-            signature: std::str::from_utf8(&queue_item.data[8..16])
-                .unwrap()
-                .to_string(),
-            msg: std::str::from_utf8(&queue_item.data[16..24])
-                .unwrap()
-                .to_string(),
-        }
-    }
+async fn from_queue(con: &mut Connection, queue_item: Item) -> Result<BLSData> {
+    let bls_verification_index = u64::from_be_bytes(queue_item.data[0..8].try_into().unwrap());
+    let deposit_signature_verification = fetch_deposit_signature_verification(con, bls_verification_index).await?;
+    
+    Ok(deposit_signature_verification)
 }
 
 fn main() -> Result<()> {
@@ -100,25 +80,22 @@ async fn async_main() -> Result<()> {
 
     let mut proof_storage = create_proof_storage(&matches).await;
 
-    println!("{}", "Loading circuit data...".yellow());
-    let circuit_data = load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/{CIRCUIT_NAME}"));
-    let protocol = matches.value_of("protocol").unwrap();
+    // println!("{}", "Loading circuit data...".yellow());
+    // let circuit_data =
+    //     load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/{CIRCUIT_NAME}"));
 
     let queue = WorkQueue::new(KeyPrefix::new(format!(
-        "{}:{}",
-        protocol, DB_CONSTANTS.bls_verification_queue
+        "{}",
+        DB_CONSTANTS.deposit_signature_verification_queue
     )));
 
-    println!(
-        "{}",
-        &format!("{}:{}", protocol, DB_CONSTANTS.bls_verification_queue)
-    );
+    println!("{}", &format!("{}", DB_CONSTANTS.deposit_signature_verification_queue));
 
     process_queue(
         &mut con,
         proof_storage.as_mut(),
         &queue,
-        &circuit_data,
+        // &circuit_data,
         config.stop_after,
         config.lease_for,
     )
@@ -129,7 +106,7 @@ async fn process_queue(
     con: &mut redis::aio::Connection,
     proof_storage: &mut dyn ProofStorage,
     queue: &WorkQueue,
-    circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    // circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     stop_after: u64,
     lease_for: u64,
 ) -> Result<()> {
@@ -157,7 +134,7 @@ async fn process_queue(
             continue;
         }
 
-        let data = BLSData::from_queue(queue_item);
+        let data = from_queue(con, queue_item).await.unwrap();
 
         println!(
             "{}",
@@ -169,24 +146,23 @@ async fn process_queue(
             .bold()
         );
 
-        let proof = prove_bls(data, circuit_data).await;
+        let proof = prove_bls(&data).await;
 
         proof_storage
-            .set_proof("bls12_381_proof".to_string(), &proof.unwrap().to_bytes())
+            .set_proof(format!("{}:{}:{}", "bls12_381_proof".to_string(), data.pubkey, data.deposit_index.to_string()), &proof.unwrap().to_bytes())
             .await?;
     }
 }
 
 async fn prove_bls(
-    data: BLSData,
-    circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    data: &BLSData,
+    // circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
 ) -> Result<ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>, anyhow::Error> {
-    let dst = data.dst.as_str();
     let pubkey = data.pubkey.as_str();
     let signature = data.signature.as_str();
-    let msg = data.msg.as_str();
+    let msg = data.signing_root.as_str();
 
-    let message_g2 = hash_to_curve_g2(&hex::decode(msg).unwrap(), dst.as_bytes());
+    let message_g2 = hash_to_curve_g2(&hex::decode(msg).unwrap(), DST.as_bytes());
     let message_g2 = convert_ecp2_to_g2affine(message_g2);
 
     let pubkey_g1 = G1Affine::deserialize_compressed(&*hex::decode(pubkey).unwrap()).unwrap();
@@ -239,6 +215,9 @@ async fn prove_bls(
 
     let final_exp_proof = handle_final_exponentiation(&fp12_mull).await;
 
+    println!("{}", "Loading circuit data...".yellow());
+    let circuit_data =
+        load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/{CIRCUIT_NAME}"));
     let target_bytes = read_from_file(&format!(
         "{}/{}.plonky2_targets",
         SERIALIZED_CIRCUITS_DIR, "bls12_381"
