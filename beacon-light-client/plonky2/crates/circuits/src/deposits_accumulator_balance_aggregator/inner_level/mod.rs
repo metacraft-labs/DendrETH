@@ -14,7 +14,7 @@ use plonky2_crypto::biguint::CircuitBuilderBiguint;
 use crate::{
     common_targets::{BasicRecursiveInnerCircuitTarget, PubkeyTarget},
     deposits_accumulator_balance_aggregator::first_level::DepositAccumulatorBalanceAggregatorFirstLevel,
-    utils::circuit::{biguint_is_equal, bits_to_biguint_target, select_biguint},
+    utils::circuit::{biguint_is_equal, bits_to_biguint_target, select_biguint, verify_proof},
 };
 
 use super::common_targets::{
@@ -38,17 +38,8 @@ impl Circuit for DepositAccumulatorBalanceAggregatorInnerLevel {
         builder: &mut CircuitBuilder<Self::F, { Self::D }>,
         circuit_data: &Self::Params,
     ) -> Self::Target {
-        let verifier_circuit_target = VerifierCircuitTarget {
-            constants_sigmas_cap: builder
-                .constant_merkle_cap(&circuit_data.verifier_only.constants_sigmas_cap),
-            circuit_digest: builder.constant_hash(circuit_data.verifier_only.circuit_digest),
-        };
-
-        let proof1 = builder.add_virtual_proof_with_pis(&circuit_data.common);
-        let proof2 = builder.add_virtual_proof_with_pis(&circuit_data.common);
-
-        builder.verify_proof::<Self::C>(&proof1, &verifier_circuit_target, &circuit_data.common);
-        builder.verify_proof::<Self::C>(&proof2, &verifier_circuit_target, &circuit_data.common);
+        let proof1 = verify_proof(builder, &circuit_data);
+        let proof2 = verify_proof(builder, &circuit_data);
 
         let left_node = DepositAccumulatorBalanceAggregatorFirstLevel::read_public_inputs_target(
             &proof1.public_inputs,
