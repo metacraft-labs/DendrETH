@@ -278,9 +278,9 @@ pub fn accumulate_data<F: RichField + Extendable<D>, const D: usize>(
     );
 
     return AccumulatedDataTargets {
-        balance_sum: balance_sum,
-        deposits_count: deposits_count,
-        validator_stats: validator_stats,
+        balance_sum,
+        deposits_count,
+        validator_stats,
     };
 }
 
@@ -397,6 +397,11 @@ pub fn account_for_double_counting<F: RichField + Extendable<D>, const D: usize>
             slashed_validators_count: slashed_validators_count_final,
         },
     };
+}
+
+fn assert_deposits_are_sorted<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+) {
 }
 
 fn assert_no_dummy_deposits_to_the_left<F: RichField + Extendable<D>, const D: usize>(

@@ -8,7 +8,7 @@ use crate::{
         serde_bool_array_to_hex_string_nested,
     },
     utils::circuit::{
-        get_balance_from_leaf,
+        assert_bool_arrays_are_equal, get_balance_from_leaf,
         hashing::{
             merkle::{
                 poseidon::{hash_validator_poseidon, validate_merkle_proof_poseidon},
@@ -68,7 +68,7 @@ pub struct DepositAccumulatorBalanceAggregatorFirstLevelTargets {
     pub genesis_fork_version: [BoolTarget; 32],
 
     #[target(in)]
-    pub validator_deposit: DepositTargets,
+    pub deposit: DepositTargets,
     #[target(in)]
     pub deposit_commitment_mapper_root: HashOutTarget,
     #[target(in)]
@@ -133,28 +133,22 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
 
         let domain = compute_domain(builder, &input.genesis_fork_version);
 
-        let message = sha256_pair(
-            builder,
-            &input.validator_deposit.deposit_message_root,
-            &domain,
-        );
+        let message = sha256_pair(builder, &input.deposit.deposit_message_root, &domain);
 
         let bls_signature_proof = builder.add_virtual_proof_with_pis(&bls_circuit_data.common);
 
         verify_bls_signature(
             builder,
-            &input.validator_deposit.pubkey,
-            &input.validator_deposit.signature,
+            &input.deposit.pubkey,
+            &input.deposit.signature,
             &message,
             &bls_signature_proof,
             &bls_circuit_data.common,
             &bls_circuit_data.verifier_only,
         );
 
-        let deposit_is_processed = builder.cmp_biguint(
-            &input.validator_deposit.deposit_index,
-            &input.eth1_deposit_index,
-        );
+        let deposit_is_processed =
+            builder.cmp_biguint(&input.deposit.deposit_index, &input.eth1_deposit_index);
 
         let signature_is_valid =
             BoolTarget::new_unsafe(*bls_signature_proof.public_inputs.last().unwrap());
@@ -179,11 +173,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
             validator_is_in_commitment_mapper.target,
         );
 
-        connect_pubkeys_are_same(
-            builder,
-            &input.validator.pubkey,
-            &input.validator_deposit.pubkey,
-        );
+        assert_bool_arrays_are_equal(builder, &input.validator.pubkey, &input.deposit.pubkey);
 
         let four = builder.constant_biguint(&BigUint::from_u64(4u64).unwrap());
         let balance_gindex = builder.div_biguint(&input.validator_gindex, &four);
@@ -229,14 +219,14 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
 
         let leftmost = RangeObjectTarget {
             pubkey: input.validator.pubkey,
-            deposit_index: input.validator_deposit.deposit_index.clone(),
+            deposit_index: input.deposit.deposit_index.clone(),
             is_counted: should_check_merkle_proof,
             is_dummy: input.is_dummy,
         };
 
         let rightmost = RangeObjectTarget {
             pubkey: input.validator.pubkey,
-            deposit_index: input.validator_deposit.deposit_index.clone(),
+            deposit_index: input.deposit.deposit_index.clone(),
             is_counted: should_check_merkle_proof,
             is_dummy: input.is_dummy,
         };
@@ -272,7 +262,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
             validator_gindex: input.validator_gindex,
             eth1_deposit_index: input.eth1_deposit_index,
             genesis_fork_version: input.genesis_fork_version,
-            validator_deposit: input.validator_deposit,
+            deposit: input.deposit,
             deposit_commitment_mapper_root: input.deposit_commitment_mapper_root,
             validator_deposit_proof: input.validator_deposit_proof,
             validator_deposit_gindex: input.validator_deposit_gindex,
@@ -284,16 +274,6 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
             bls_signature_proof,
             node,
         }
-    }
-}
-
-fn connect_pubkeys_are_same<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    pubkey_1: &PubkeyTarget,
-    pubkey_2: &PubkeyTarget,
-) {
-    for i in 0..384 {
-        builder.connect(pubkey_1[i].target, pubkey_2[i].target);
     }
 }
 
@@ -418,7 +398,7 @@ mod test {
                   "exitEpoch": "18446744073709551615",
                   "withdrawableEpoch": "18446744073709551615"
                 },
-                "validatorDeposit": {
+                "deposit": {
                   "pubkey": "b781956110d24e4510a8b5500b71529f8635aa419a009d314898e8c572a4f923ba643ae94bdfdf9224509177aa8e6b73",
                   "depositIndex": "1",
                   "signature": "b735d0d0b03f51fcf3e5bc510b5a2cb266075322f5761a6954778714f5ab8831bc99454380d330f5c19d93436f0c4339041bfeecd2161a122c1ce8428033db8dda142768a48e582f5f9bde7d40768ac5a3b6a80492b73719f1523c5da35de275",
