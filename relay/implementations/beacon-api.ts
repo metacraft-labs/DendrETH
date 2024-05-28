@@ -628,7 +628,6 @@ export class BeaconApi implements IBeaconApi {
     const maxApiRetries = 5;
 
     while (true) {
-      console.log(this.getCurrentApi());
       try {
         const result = await this.fetchWithFallbackNoRetry(subUrl, init);
         if (result.status === 429) {
@@ -667,7 +666,6 @@ export class BeaconApi implements IBeaconApi {
       baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl
     }/${urlPath.startsWith('/') ? urlPath.slice(1) : urlPath}`;
 
-    console.log('url href', finalUrl);
     return finalUrl;
   }
 }
