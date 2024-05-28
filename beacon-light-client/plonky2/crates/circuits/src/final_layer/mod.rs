@@ -25,7 +25,7 @@ use plonky2::{
     plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::{CircuitConfig, CircuitData},
-        config::{GenericConfig, PoseidonGoldilocksConfig},
+        config::PoseidonGoldilocksConfig,
         proof::ProofWithPublicInputsTarget,
     },
 };
@@ -270,7 +270,7 @@ mod test_verify_slot_is_in_range {
         let slot_target = builder.add_virtual_biguint_target(2);
         let current_epoch = builder.add_virtual_biguint_target(2);
 
-        verify_slot_is_in_range::<F, C, D>(&mut builder, &slot_target, &current_epoch);
+        verify_slot_is_in_range(&mut builder, &slot_target, &current_epoch);
 
         pw.set_biguint_target(&slot_target, &BigUint::from_u64(6953401).unwrap());
         pw.set_biguint_target(&current_epoch, &BigUint::from_u64(217293).unwrap());
@@ -295,7 +295,7 @@ mod test_verify_slot_is_in_range {
         let slot_target = builder.add_virtual_biguint_target(2);
         let current_epoch = builder.add_virtual_biguint_target(2);
 
-        verify_slot_is_in_range::<F, C, D>(&mut builder, &slot_target, &current_epoch);
+        verify_slot_is_in_range(&mut builder, &slot_target, &current_epoch);
 
         pw.set_biguint_target(&slot_target, &BigUint::from_u64(7314752).unwrap());
         pw.set_biguint_target(&current_epoch, &BigUint::from_u64(228586).unwrap());
@@ -319,7 +319,7 @@ mod test_verify_slot_is_in_range {
         let slot_target = builder.add_virtual_biguint_target(2);
         let current_epoch = builder.add_virtual_biguint_target(2);
 
-        verify_slot_is_in_range::<F, C, D>(&mut builder, &slot_target, &current_epoch);
+        verify_slot_is_in_range(&mut builder, &slot_target, &current_epoch);
 
         pw.set_biguint_target(&slot_target, &BigUint::from_u64(7314751).unwrap());
         pw.set_biguint_target(&current_epoch, &BigUint::from_u64(228585).unwrap());
@@ -344,7 +344,7 @@ mod test_verify_slot_is_in_range {
         let slot_target = builder.add_virtual_biguint_target(2);
         let current_epoch = builder.add_virtual_biguint_target(2);
 
-        verify_slot_is_in_range::<F, C, D>(&mut builder, &slot_target, &current_epoch);
+        verify_slot_is_in_range(&mut builder, &slot_target, &current_epoch);
 
         pw.set_biguint_target(&slot_target, &BigUint::from_u64(7314751).unwrap());
         pw.set_biguint_target(&current_epoch, &BigUint::from_u64(228586).unwrap());
