@@ -4,6 +4,7 @@
 pub mod add_virtual_target;
 pub mod array;
 pub mod circuit;
+pub mod circuit_builder_extensions;
 pub mod public_inputs;
 pub mod serde_circuit_target;
 pub mod set_witness;
