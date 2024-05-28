@@ -87,11 +87,11 @@ pub async fn bls12_381_components_proofs(
     );
     let message_g2 = convert_ecp2_to_g2affine(message_g2);
 
-    let pubkey_g1 = G1Affine::deserialize_compressed(
+    let pubkey_g1 = G1Affine::deserialize_compressed_unchecked(
         &*hex::decode(bls_components.input.pubkey.clone()).unwrap(),
     )
     .unwrap();
-    let signature_g2 = G2Affine::deserialize_compressed(
+    let signature_g2 = G2Affine::deserialize_compressed_unchecked(
         &*hex::decode(bls_components.input.signature.clone()).unwrap(),
     )
     .unwrap();
