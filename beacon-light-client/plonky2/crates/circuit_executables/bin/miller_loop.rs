@@ -31,7 +31,7 @@ fn main_thread() {
     println!("Starting to deserialize circuit");
 
     let circuit_data_bytes = read_from_file(&format!(
-        "{SERIALIZED_CIRCUITS_DIR}/{SERIALIZED_CIRCUITS_DIR}.plonky2_circuit"
+        "{SERIALIZED_CIRCUITS_DIR}/{CIRCUIT_NAME}.plonky2_circuit"
     ))
     .unwrap();
 
