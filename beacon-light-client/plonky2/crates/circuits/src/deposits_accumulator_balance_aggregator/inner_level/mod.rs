@@ -413,9 +413,8 @@ fn assert_no_dummy_deposits_to_the_left<F: RichField + Extendable<D>, const D: u
     left_node: &NodeTargets,
     right_node: &NodeTargets,
 ) {
-    let left_bound_is_not_dummy = builder.not(left_node.rightmost.is_dummy);
-    let right_bound_is_not_dummy = builder.not(right_node.leftmost.is_dummy);
-    let no_dummies_to_the_left = builder.imply(right_bound_is_not_dummy, left_bound_is_not_dummy);
+    let no_dummies_to_the_left =
+        builder.imply(left_node.rightmost.is_dummy, right_node.leftmost.is_dummy);
     builder.assert_true(no_dummies_to_the_left)
 }
 
