@@ -1,3 +1,4 @@
+use circuit::circuit_builder_extensions::CircuitBuilderExtensions;
 use itertools::Itertools;
 use num::BigUint;
 use plonky2::{
@@ -95,6 +96,15 @@ pub fn bool_arrays_are_equal<F: RichField + Extendable<D>, const D: usize>(
         .map(|bool_target| bool_target.target)
         .collect_vec();
     arrays_are_equal(builder, first.as_slice(), second.as_slice())
+}
+
+pub fn assert_bool_arrays_are_equal<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    first: &[BoolTarget],
+    second: &[BoolTarget],
+) {
+    let are_equal = bool_arrays_are_equal(builder, first, second);
+    builder.assert_true(are_equal);
 }
 
 pub fn arrays_are_equal<F: RichField + Extendable<D>, const D: usize>(
