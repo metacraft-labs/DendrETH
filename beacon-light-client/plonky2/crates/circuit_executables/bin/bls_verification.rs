@@ -5,39 +5,24 @@ use ark_bls12_381::{Fq, Fq2, G1Affine, G1Projective, G2Affine};
 use ark_ec::Group;
 use ark_ff::PrimeField;
 use ark_serialize::CanonicalDeserialize;
-use aws_sdk_s3::primitives::event_stream::Message;
-use circuit::{
-    serde_circuit_target::deserialize_circuit_target, set_witness::SetWitness, CircuitTargetType,
-    SerdeCircuitTarget,
-};
+use circuit::SerdeCircuitTarget;
 use circuit_executables::{
-    constants::{BLS_DST, SERIALIZED_CIRCUITS_DIR, VALIDATOR_REGISTRY_LIMIT},
+    constants::{BLS_DST, SERIALIZED_CIRCUITS_DIR},
     crud::{
         common::{
-            delete_balance_verification_proof_dependencies, fetch_proofs_balances,
-            fetch_validator_balance_input, get_recursive_stark_targets, load_circuit_data,
-            load_circuit_data_starky, read_from_file, save_balance_proof,
+            get_recursive_stark_targets,
+            load_circuit_data_starky, read_from_file,
         },
         proof_storage::proof_storage::{create_proof_storage, ProofStorage},
     },
     db_constants::DB_CONSTANTS,
     provers::{
         generate_final_exponentiate, generate_fp12_mul_proof, generate_miller_loop_proof,
-        generate_pairing_precomp_proof, prove_inner_level,
+        generate_pairing_precomp_proof,
     },
-    utils::{
-        parse_balance_verification_command_line_options, parse_bls_verification_command_line_options, parse_config_file, CommandLineOptionsBuilder
-    },
+    utils::{parse_bls_verification_command_line_options, parse_config_file, CommandLineOptionsBuilder,},
 };
-use circuits::{
-    bls_verification::bls12_381_circuit::BlsCircuitTargets,
-    common_targets::BasicRecursiveInnerCircuitTarget,
-    types::BalanceProof,
-    withdrawal_credentials_balance_aggregator::{
-        first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
-        inner_level::WithdrawalCredentialsBalanceAggregatorInnerLevel,
-    },
-};
+use circuits::bls_verification::bls12_381_circuit::BlsCircuitTargets;
 use colored::Colorize;
 use num::BigUint;
 use snowbridge_amcl::bls381::{big::Big, bls381::utils::hash_to_curve_g2, ecp2::ECP2};
@@ -46,8 +31,7 @@ use std::{
     ops::Neg,
     println,
     str::FromStr,
-    thread,
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 use anyhow::Result;
@@ -69,13 +53,30 @@ use jemallocator::Jemalloc;
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
-const CIRCUIT_NAME: &str = "bls_verification";
+const CIRCUIT_NAME: &str = "bls12_381";
 
 pub struct BLSData {
     dst: String,
     pubkey: String,
     signature: String,
     msg: String,
+}
+
+impl BLSData {
+    fn from_queue(queue_item: Item) -> BLSData {
+        BLSData {
+            dst: BLS_DST.to_string(),
+            pubkey: std::str::from_utf8(&queue_item.data[0..8])
+                .unwrap()
+                .to_string(),
+            signature: std::str::from_utf8(&queue_item.data[8..16])
+                .unwrap()
+                .to_string(),
+            msg: std::str::from_utf8(&queue_item.data[16..24])
+                .unwrap()
+                .to_string(),
+        }
+    }
 }
 
 fn main() -> Result<()> {
@@ -100,11 +101,7 @@ async fn async_main() -> Result<()> {
     let mut proof_storage = create_proof_storage(&matches).await;
 
     println!("{}", "Loading circuit data...".yellow());
-    let circuit_data = load_circuit_data(&format!(
-        "{}/{}",
-        SERIALIZED_CIRCUITS_DIR, CIRCUIT_NAME
-    ))?;
-
+    let circuit_data = load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/{CIRCUIT_NAME}"));
     let protocol = matches.value_of("protocol").unwrap();
 
     let queue = WorkQueue::new(KeyPrefix::new(format!(
@@ -114,17 +111,14 @@ async fn async_main() -> Result<()> {
 
     println!(
         "{}",
-        &format!(
-            "{}:{}",
-            protocol, DB_CONSTANTS.bls_verification_queue
-        )
+        &format!("{}:{}", protocol, DB_CONSTANTS.bls_verification_queue)
     );
 
-    let start: Instant = Instant::now();
     process_queue(
         &mut con,
         proof_storage.as_mut(),
         &queue,
+        &circuit_data,
         config.stop_after,
         config.lease_for,
     )
@@ -135,6 +129,7 @@ async fn process_queue(
     con: &mut redis::aio::Connection,
     proof_storage: &mut dyn ProofStorage,
     queue: &WorkQueue,
+    circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     stop_after: u64,
     lease_for: u64,
 ) -> Result<()> {
@@ -162,7 +157,7 @@ async fn process_queue(
             continue;
         }
 
-        let data = prepare_bls_prover(queue_item).await;
+        let data = BLSData::from_queue(queue_item);
 
         println!(
             "{}",
@@ -174,7 +169,7 @@ async fn process_queue(
             .bold()
         );
 
-        let proof = prove_bls(data).await;
+        let proof = prove_bls(data, circuit_data).await;
 
         proof_storage
             .set_proof("bls12_381_proof".to_string(), &proof.unwrap().to_bytes())
@@ -182,23 +177,9 @@ async fn process_queue(
     }
 }
 
-async fn prepare_bls_prover(queue_item: Item) -> BLSData {
-    BLSData {
-        dst: BLS_DST.to_string(),
-        pubkey: std::str::from_utf8(&queue_item.data[0..8])
-            .unwrap()
-            .to_string(),
-        signature: std::str::from_utf8(&queue_item.data[8..16])
-            .unwrap()
-            .to_string(),
-        msg: std::str::from_utf8(&queue_item.data[16..24])
-            .unwrap()
-            .to_string(),
-    }
-}
-
 async fn prove_bls(
     data: BLSData,
+    circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
 ) -> Result<ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>, anyhow::Error> {
     let dst = data.dst.as_str();
     let pubkey = data.pubkey.as_str();
@@ -249,8 +230,6 @@ async fn prove_bls(
 
     let fp12_mull = miller_loop1 * miller_loop2;
 
-    //TODO: From here
-
     let (pp1, pp2) = handle_pairing_precomp(&message_g2, &signature_g2).await;
 
     let (ml1, ml2) =
@@ -260,7 +239,6 @@ async fn prove_bls(
 
     let final_exp_proof = handle_final_exponentiation(&fp12_mull).await;
 
-    let circuit_data = load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/bls12_381"));
     let target_bytes = read_from_file(&format!(
         "{}/{}.plonky2_targets",
         SERIALIZED_CIRCUITS_DIR, "bls12_381"
