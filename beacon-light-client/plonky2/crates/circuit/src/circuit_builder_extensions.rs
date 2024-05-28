@@ -9,6 +9,8 @@ pub trait CircuitBuilderExtensions {
     fn select_target<T>(&mut self, selector: BoolTarget, a: &T, b: &T) -> T
     where
         T: ToTargets + PublicInputsTargetReadable;
+
+    fn imply(&mut self, p: BoolTarget, q: BoolTarget) -> BoolTarget;
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderExtensions
@@ -29,5 +31,11 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderExtensions
         });
 
         T::from_targets(&targets)
+    }
+
+    /// p -> q, could also be written as !p || q
+    fn imply(&mut self, p: BoolTarget, q: BoolTarget) -> BoolTarget {
+        let not_p = self.not(p);
+        self.or(not_p, q)
     }
 }
