@@ -37,6 +37,32 @@ export async function getCommitmentMapperProof<T extends 'sha256' | 'poseidon'>(
   return path;
 }
 
+export async function getDepositCommitmentMapperProof<
+  T extends 'sha256' | 'poseidon',
+>(gindex: bigint, hashAlg: T, redis: RedisLocal): Promise<PoseidonOrSha256<T>> {
+  let path: PoseidonOrSha256<T> = [];
+
+  while (gindex !== 1n) {
+    const siblingGindex = gindex % 2n === 0n ? gindex + 1n : gindex - 1n;
+
+    const hash = await redis.extractHashFromDepositCommitmentMapperProof(
+      siblingGindex,
+      hashAlg,
+    );
+    if (hash !== null) {
+      path.push(hash as any);
+    }
+
+    gindex = gindex / 2n;
+  }
+
+  if (hashAlg === 'sha256') {
+    path = (path as any).map(bitsToHex);
+  }
+
+  return path;
+}
+
 function numberToString(num: number): string {
   return num == Infinity ? BigInt(2n ** 64n - 1n).toString() : num.toString();
 }
