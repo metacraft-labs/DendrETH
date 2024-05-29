@@ -4,7 +4,7 @@ use circuit::Circuit;
 use circuit_derive::{CircuitTarget, SerdeCircuitTarget};
 use num_bigint::BigUint;
 use plonky2::{
-    field::{extension::Extendable, goldilocks_field::GoldilocksField},
+    field::extension::Extendable,
     hash::hash_types::RichField,
     iop::target::{BoolTarget, Target},
     plonk::{

@@ -13,6 +13,10 @@ pub trait CircuitBuilderExtensions {
     fn imply(&mut self, p: BoolTarget, q: BoolTarget) -> BoolTarget;
 
     fn assert_true(&mut self, b: BoolTarget);
+
+    fn assert_false(&mut self, b: BoolTarget);
+
+    fn zero_init<T: PublicInputsTargetReadable>(&mut self) -> T;
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderExtensions
@@ -44,5 +48,15 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderExtensions
     fn assert_true(&mut self, b: BoolTarget) {
         let _true = self._true();
         self.connect(b.target, _true.target);
+    }
+
+    fn assert_false(&mut self, b: BoolTarget) {
+        let _false = self._false();
+        self.connect(b.target, _false.target);
+    }
+
+    fn zero_init<T: PublicInputsTargetReadable>(&mut self) -> T {
+        let zeroes = vec![self.zero(); T::get_size()];
+        T::from_targets(&zeroes)
     }
 }
