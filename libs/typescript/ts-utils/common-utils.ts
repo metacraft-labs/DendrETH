@@ -26,6 +26,30 @@ export function getNthParent(gindex: bigint, n: bigint): bigint {
   return gindex / 2n ** n;
 }
 
+function log2bigInt(n: bigint): bigint {
+  return BigInt(n.toString(2).length) - 1n;
+}
+
+export function concatGIndices(...gindices: bigint[]) {
+  let firstTreeGIndex = gindices[0];
+  for (let i = 1; i < gindices.length; ++i) {
+    const secondTreeGIndex = gindices[i];
+    const firstTreeDepth = log2bigInt(firstTreeGIndex);
+    const secondTreeDepth = log2bigInt(secondTreeGIndex);
+    const bigTreeDepth = firstTreeDepth + secondTreeDepth;
+
+    const leavesToSkip = firstTreeGIndex - 2n ** firstTreeDepth;
+    const indicesPerLeaf = 2n ** secondTreeDepth;
+    const firstLeafGIndexInBigTree = 2n ** bigTreeDepth;
+    const firstSubtreeLeafGIndex =
+      firstLeafGIndexInBigTree + leavesToSkip * indicesPerLeaf;
+    const indexInSubtree = secondTreeGIndex - 2n ** secondTreeDepth;
+    firstTreeGIndex = firstSubtreeLeafGIndex + indexInSubtree;
+  }
+
+  return firstTreeGIndex;
+}
+
 export function getParent(gindex: bigint): bigint {
   return getNthParent(gindex, 1n);
 }

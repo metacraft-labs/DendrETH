@@ -302,6 +302,8 @@ fn assert_deposits_are_sorted<F: RichField + Extendable<D>, const D: usize>(
         right_range.leftmost_deposit.pubkey,
     );
 
+    builder.assert_true(pks_are_increasing);
+
     let pks_are_same = bool_arrays_are_equal(
         builder,
         &left_range.rightmost_deposit.pubkey,
@@ -326,6 +328,8 @@ fn assert_deposits_are_sorted<F: RichField + Extendable<D>, const D: usize>(
 
     let if_pks_are_same_then_deposits_are_strictly_increasing =
         builder.imply(pks_are_same, deposits_are_strictly_increasing);
+
+    builder.assert_true(if_pks_are_same_then_deposits_are_strictly_increasing);
 
     let ordering_is_respected = builder.and(
         pks_are_increasing,

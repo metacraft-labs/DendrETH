@@ -58,7 +58,7 @@ pub struct DepositAccumulatorBalanceAggregatorFinalLayerTargets {
 
     #[target(in)]
     #[serde(with = "serde_bool_array_to_hex_string_nested")]
-    pub balance_branch: Sha256MerkleBranchTarget<5>,
+    pub balance_branch: Sha256MerkleBranchTarget<22>,
 
     #[target(in)]
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
@@ -239,7 +239,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFinalLayer {
 fn validate_data_against_block_root<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     input: &CircuitInputTarget<DepositAccumulatorBalanceAggregatorFinalLayer>,
-    balances_root_left: &Sha256Target,
+    balances_root_level_22: &Sha256Target,
     validators_root_left: &Sha256Target,
     eth1_deposit_index: &BigUintTarget,
 ) {
@@ -261,10 +261,10 @@ fn validate_data_against_block_root<F: RichField + Extendable<D>, const D: usize
 
     assert_merkle_proof_is_valid_const_sha256(
         builder,
-        &balances_root_left,
+        &balances_root_level_22,
         &input.state_root,
         &input.balance_branch,
-        44,
+        5767168,
     );
 
     let slot_ssz = ssz_num_to_bits(builder, &input.slot, 64);
