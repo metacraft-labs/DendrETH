@@ -18,6 +18,13 @@ use crate::{
     utils::{get_depth_for_gindex, gindex_from_validator_index},
 };
 
+
+type Gindex = u64;
+type Slot = u64;
+type ValidatorIndex = u64;
+type Depth = u64;
+type DepositIndex = u64;
+
 #[derive(FromPrimitive)]
 #[repr(u8)]
 enum CommitmentMapperTaskType {
@@ -27,10 +34,26 @@ enum CommitmentMapperTaskType {
     ZeroOutValidator,
 }
 
-type Gindex = u64;
-type Slot = u64;
-type ValidatorIndex = u64;
-type Depth = u64;
+#[derive(FromPrimitive)]
+#[repr(u8)]
+enum DepositAccumulatorTaskType {
+    ProveZeroForDepth,
+    DepositProof,
+    DepositNodeDeposit,
+}
+
+#[derive(Debug)]
+pub enum Task {
+    CommitmentMapper(CommitmentMapperTask),
+    DepositAccumulator(DepositAccumulatorTask),
+}
+
+#[derive(Debug)]
+pub enum DepositAccumulatorTask {
+    ProveZeroForDepth(Depth),
+    UpdateDepositProof(DepositIndex, Slot),
+    ZeroDeposit(DepositIndex, Slot),
+}
 
 #[derive(Debug)]
 pub enum CommitmentMapperTask {
@@ -123,7 +146,14 @@ impl CommitmentMapperTask {
     }
 }
 
-pub async fn handle_task(
+pub fn handle_task(task: Task) {
+    match task {
+        Task::CommitmentMapper(commitment_task) => handle_commitment_mapper_task(commitment_task),
+        Task::DepositAccumulator(deposit_task) => handle_deposit_accumulator_task(deposit_task),
+    }
+}
+
+pub async fn handle_commitment_mapper_task(
     ctx: &mut CommitmentMapperContext,
     task: CommitmentMapperTask,
 ) -> Result<()> {
@@ -142,6 +172,19 @@ pub async fn handle_task(
         }
     }
 }
+
+pub fn handle_deposit_accumulator_task(task: DepositAccumulatorTask) {
+    match task {
+        DepositAccumulatorTask::ProveZeroForDepth(depth) => {
+        }
+        DepositAccumulatorTask::UpdateDepositProof(deposit_index, slot) => {
+        }
+        DepositAccumulatorTask::ZeroDeposit(deposit_index, slot) => {
+        }
+    }
+    todo!()
+}
+
 
 async fn handle_update_validator_proof_task(
     ctx: &mut CommitmentMapperContext,
