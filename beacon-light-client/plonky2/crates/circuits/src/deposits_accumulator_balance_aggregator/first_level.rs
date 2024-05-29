@@ -16,7 +16,7 @@ use crate::{
                 poseidon::{hash_validator_poseidon, validate_merkle_proof_poseidon},
                 sha256::{hash_tree_root_sha256, validate_merkle_proof_sha256},
             },
-            poseidon::hash_poseidon,
+            poseidon::poseidon,
             sha256::sha256_pair,
         },
         select_biguint, verify_proof,
@@ -136,7 +136,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
     ) -> Self::Target {
         let input = Self::read_circuit_input_target(builder);
 
-        let _deposit_hash_tree_root = hash_poseidon(builder, input.deposit.to_targets());
+        let _deposit_hash_tree_root = poseidon(builder, input.deposit.to_targets());
 
         let deposit_is_real = builder.not(input.is_dummy);
 

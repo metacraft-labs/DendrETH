@@ -6,7 +6,6 @@ The `circuits` crate houses all circuits pertinent to the application. Let's del
 
 ## Commitment Mapper
 
-
 ### First Level
 
 **Location:** `src/validators_commitment_mapper/first_level`
@@ -121,22 +120,27 @@ The circuit takes the following inputs:
 **Process:**
 
 1. **Merkle Proof Validation:**
+
    - If the deposit is real (needed to represent zero deposits to pad the tree), validate the Merkle proof using Poseidon for the `validator_deposit`.
 
 2. **BLS Signature Validation:**
+
    - Compute the domain using the `genesis_fork_version`.
    - Compute the message the validator signed using the `validator_deposit.deposit_message_root` and the domain.
    - Verify the `bls_signature_proof` and assert its public inputs against the `validator_deposit.pubkey`, `validator_deposit.signature`, and the computed message.
 
 3. **Deposit Processing:**
+
    - Consider the deposit processed if `validator_deposit.deposit_index` <= `eth1_deposit_index`.
    - If the deposit is processed and the signature is valid, confirm that the validator is definitely on-chain.
 
 4. **Commitment Mapper Validation:**
+
    - Check the Merkle proof against the `commitment_mapper`.
    - Ensure that the pubkeys of the deposit and the validator from the commitment mapper are the same.
 
 5. **Balance Validation:**
+
    - Validate the `balance_leaf` against the `balances_root` using the formula: validator_index / 4 and take the balance in the leaf at `validator_index % 4`.
 
 6. **Updating Counts:**
@@ -154,15 +158,18 @@ The circuit takes the following inputs:
 The circuit returns a `node` object which contains the following:
 
 - **Leftmost Range Object:**
+
   - `pubkey`: The public key of the validator.
   - `deposit_index`: The index of the validator's deposit.
   - `is_counted`: A boolean indicating if the Merkle proof should be checked.
   - `is_dummy`: A boolean indicating if this is a dummy validator.
 
 - **Rightmost Range Object:**
+
   - Similar to the leftmost range object with the same attributes.
 
 - **Accumulated Data:**
+
   - `balance_sum`: The sum of balances of all processed deposits, excluding dummy validators.
   - `deposits_count`: The count of deposits processed.
   - `validator_stats`:
@@ -196,6 +203,7 @@ This circuit aggregates the results from two first-level circuits, ensuring that
 The circuit takes the following inputs:
 
 - **Proofs:**
+
   - `proof1`: The first proof generated from the first-level circuit.
   - `proof2`: The second proof generated from the first-level circuit.
 
@@ -206,6 +214,7 @@ The circuit takes the following inputs:
 ### Process
 
 1. **Verification of Proofs:**
+
    - Verify both `proof1` and `proof2` using the verifier circuit target:
      ```rust
      builder.verify_proof::<Self::C>(&proof1, &verifier_circuit_target, &circuit_data.common);
@@ -213,6 +222,7 @@ The circuit takes the following inputs:
      ```
 
 2. **Extract Node Data:**
+
    - Extract `NodeTargets` from the public inputs of both proofs:
      ```rust
      let left_node = DepositAccumulatorBalanceAggregatorFirstLevel::read_public_inputs_target(&proof1.public_inputs).node;
@@ -220,12 +230,14 @@ The circuit takes the following inputs:
      ```
 
 3. **Data Consistency Checks:**
+
    - Ensure that the data is passed through consistently between nodes:
      ```rust
      connect_pass_through_data(builder, &left_node, &right_node);
      ```
 
 4. **Order Validation:**
+
    - Ensure that the public keys are in monotonic order and deposit indices are strictly monotonic:
      ```rust
      let pk_are_monotonic_ordering = cmp_pubkey(builder, left_node.rightmost.pubkey, right_node.leftmost.pubkey);
@@ -233,6 +245,7 @@ The circuit takes the following inputs:
      ```
 
 5. **Dummy Proof Handling:**
+
    - Check if the right node is a dummy proof:
      ```rust
      let right_is_zero_proof = is_dummy_proof(builder, &right_node);
@@ -250,11 +263,13 @@ The circuit takes the following inputs:
 The circuit returns a `NodeTargets` object which contains the following:
 
 - **Leftmost and Rightmost Range Objects:**
+
   - `leftmost`: Contains the leftmost public key, deposit index, and dummy status.
   - `rightmost`: Contains the rightmost public key, deposit index, and dummy status.
   - Both range objects inherit bounds data from their respective child nodes.
 
 - **Accumulated Data:**
+
   - `balance_sum`: The sum of balances from all processed deposits.
   - `deposits_count`: The count of deposits processed.
   - `validator_stats`:
@@ -284,7 +299,6 @@ The circuit returns a `NodeTargets` object which contains the following:
 - **accumulate_validator_stats:** Accumulates validator statistics.
 - **account_for_double_counting:** Accounts for double-counting in accumulated data.
 
-
 ## Deposits Accumulator Balance Aggregator - Final Layer
 
 The final layer of the `DepositsAccumulatorBalanceAggregator` circuit consolidates the proofs and accumulated data from previous layers and verifies the integrity and correctness of the overall aggregation process.
@@ -298,11 +312,13 @@ This circuit integrates the results from the inner-level circuits and verifies t
 The circuit takes the following inputs:
 
 - **Proofs:**
+
   - `deposit_accumulator_root_proof`: Proof from the inner-level `DepositAccumulatorBalanceAggregator`.
   - `commitment_mapper_root_proof`: Proof from the `ValidatorsCommitmentMapper`.
   - `deposit_commitment_mapper_root_proof`: Proof from the `DepositsCommitmentMapper`.
 
 - **State Roots and Branches:**
+
   - `block_root`: `Sha256Target` - The block root hash.
   - `state_root`: `Sha256Target` - The state root hash.
   - `state_root_branch`: `Sha256MerkleBranchTarget<3>` - Merkle proof for the state root.
@@ -319,6 +335,7 @@ The circuit takes the following inputs:
 ### Process
 
 1. **Verification of Proofs:**
+
    - Verify the proofs from the inner-level circuits and the commitment mappers:
      ```rust
      builder.verify_proof::<Self::C>(&deposit_accumulator_root_proof, &verifier_deposit_accumulator_inner, &deposit_accumulator_inner_circuit_data.common);
@@ -327,12 +344,14 @@ The circuit takes the following inputs:
      ```
 
 2. **Extract Node Data:**
+
    - Extract `NodeTargets` from the public inputs of the `deposit_accumulator_root_proof`:
      ```rust
      let node = DepositAccumulatorBalanceAggregatorFirstLevel::read_public_inputs_target(&deposit_accumulator_root_proof.public_inputs).node;
      ```
 
 3. **Data Consistency Checks:**
+
    - Ensure consistency between the proofs and the extracted node data:
      ```rust
      builder.connect_hashes(commitment_mapper_root_public_inputs.poseidon_hash_tree_root, node.commitment_mapper_root);
@@ -340,6 +359,7 @@ The circuit takes the following inputs:
      ```
 
 4. **Merkle Proof Validations:**
+
    - Validate the state root, block root, and other branches against their respective Merkle proofs:
      ```rust
      assert_merkle_proof_is_valid_const_sha256(builder, &input.state_root, &input.block_root, &input.state_root_branch, 11);
@@ -348,13 +368,16 @@ The circuit takes the following inputs:
      ```
 
 5. **Slot and Range Verification:**
+
    - Verify the slot number and ensure it is within the valid range:
      ```rust
      verify_slot_is_in_range::<Self::F, Self::C, { Self::D }>(builder, &input.slot, &node.current_epoch);
      ```
 
 6. **Public Inputs Hash Calculation:**
+
    - Calculate the public inputs hash and register it:
+
      ```rust
      let public_inputs_hash = sha256(builder, &[
          input.block_root.as_slice(),
@@ -383,11 +406,13 @@ The circuit takes the following inputs:
 The circuit returns a `DepositAccumulatorBalanceAggregatorFinalLayerTargets` object which contains the following:
 
 - **Proofs:**
+
   - `deposit_accumulator_root_proof`: Proof from the inner-level `DepositAccumulatorBalanceAggregator`.
   - `commitment_mapper_root_proof`: Proof from the `ValidatorsCommitmentMapper`.
   - `deposit_commitment_mapper_root_proof`: Proof from the `DepositsCommitmentMapper`.
 
 - **State Roots and Branches:**
+
   - `block_root`: The block root hash.
   - `state_root`: The state root hash.
   - `state_root_branch`: Merkle proof for the state root.
