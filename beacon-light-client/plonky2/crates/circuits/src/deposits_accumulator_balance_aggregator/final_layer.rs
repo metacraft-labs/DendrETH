@@ -41,6 +41,7 @@ pub struct DepositAccumulatorBalanceAggregatorFinalLayerTargets {
     pub validators_commitment_mapper_root_proof: ProofWithPublicInputsTarget<2>,
     pub deposits_commitment_mapper_root_proof: ProofWithPublicInputsTarget<2>,
 
+    // Public input
     #[target(in)]
     #[serde(with = "serde_bool_array_to_hex_string")]
     pub block_root: Sha256Target,
@@ -60,6 +61,7 @@ pub struct DepositAccumulatorBalanceAggregatorFinalLayerTargets {
     #[serde(with = "serde_bool_array_to_hex_string_nested")]
     pub balance_branch: Sha256MerkleBranchTarget<22>,
 
+    // Public input
     #[target(in)]
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub execution_block_number: BigUintTarget,
@@ -67,6 +69,7 @@ pub struct DepositAccumulatorBalanceAggregatorFinalLayerTargets {
     #[serde(with = "serde_bool_array_to_hex_string_nested")]
     pub execution_block_number_branch: Sha256MerkleBranchTarget<10>,
 
+    // Public input
     #[target(in)]
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub slot: BigUintTarget,

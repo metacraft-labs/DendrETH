@@ -160,12 +160,21 @@ fn calc_counted_data<F: RichField + Extendable<D>, const D: usize>(
     right_range: &CircuitOutputTarget<DepositAccumulatorBalanceAggregatorFirstLevel>,
 ) -> (BoolTarget, BoolTarget) {
     let leftmost_pubkey = left_range.leftmost_deposit.pubkey;
-    let l_x =
-        deposit_has_pubkey_and_counted(builder, &leftmost_pubkey, &left_range.rightmost_deposit);
-    let l_y =
-        deposit_has_pubkey_and_counted(builder, &leftmost_pubkey, &right_range.leftmost_deposit);
-    let l_z =
-        deposit_has_pubkey_and_counted(builder, &leftmost_pubkey, &right_range.rightmost_deposit);
+    let l_x = deposit_has_same_pubkey_and_counted(
+        builder,
+        &leftmost_pubkey,
+        &left_range.rightmost_deposit,
+    );
+    let l_y = deposit_has_same_pubkey_and_counted(
+        builder,
+        &leftmost_pubkey,
+        &right_range.leftmost_deposit,
+    );
+    let l_z = deposit_has_same_pubkey_and_counted(
+        builder,
+        &leftmost_pubkey,
+        &right_range.rightmost_deposit,
+    );
 
     let mut is_leftmost_counted = left_range.leftmost_deposit.is_counted;
     is_leftmost_counted = builder.or(is_leftmost_counted, l_x);
@@ -173,12 +182,21 @@ fn calc_counted_data<F: RichField + Extendable<D>, const D: usize>(
     is_leftmost_counted = builder.or(is_leftmost_counted, l_z);
 
     let rightmost_pubkey = right_range.rightmost_deposit.pubkey;
-    let r_x =
-        deposit_has_pubkey_and_counted(builder, &rightmost_pubkey, &left_range.leftmost_deposit);
-    let r_y =
-        deposit_has_pubkey_and_counted(builder, &rightmost_pubkey, &left_range.rightmost_deposit);
-    let r_z =
-        deposit_has_pubkey_and_counted(builder, &rightmost_pubkey, &right_range.leftmost_deposit);
+    let r_x = deposit_has_same_pubkey_and_counted(
+        builder,
+        &rightmost_pubkey,
+        &left_range.leftmost_deposit,
+    );
+    let r_y = deposit_has_same_pubkey_and_counted(
+        builder,
+        &rightmost_pubkey,
+        &left_range.rightmost_deposit,
+    );
+    let r_z = deposit_has_same_pubkey_and_counted(
+        builder,
+        &rightmost_pubkey,
+        &right_range.leftmost_deposit,
+    );
 
     let mut is_rightmost_counted = right_range.rightmost_deposit.is_counted;
     is_rightmost_counted = builder.or(is_rightmost_counted, r_x);
@@ -188,7 +206,7 @@ fn calc_counted_data<F: RichField + Extendable<D>, const D: usize>(
     return (is_leftmost_counted, is_rightmost_counted);
 }
 
-fn deposit_has_pubkey_and_counted<F: RichField + Extendable<D>, const D: usize>(
+fn deposit_has_same_pubkey_and_counted<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     pubkey: &PubkeyTarget,
     deposit: &DepositDataTarget,
@@ -302,8 +320,6 @@ fn assert_deposits_are_sorted<F: RichField + Extendable<D>, const D: usize>(
         right_range.leftmost_deposit.pubkey,
     );
 
-    builder.assert_true(pks_are_increasing);
-
     let pks_are_same = bool_arrays_are_equal(
         builder,
         &left_range.rightmost_deposit.pubkey,
@@ -328,8 +344,6 @@ fn assert_deposits_are_sorted<F: RichField + Extendable<D>, const D: usize>(
 
     let if_pks_are_same_then_deposits_are_strictly_increasing =
         builder.imply(pks_are_same, deposits_are_strictly_increasing);
-
-    builder.assert_true(if_pks_are_same_then_deposits_are_strictly_increasing);
 
     let ordering_is_respected = builder.and(
         pks_are_increasing,

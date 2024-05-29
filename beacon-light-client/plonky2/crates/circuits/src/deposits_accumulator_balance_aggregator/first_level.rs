@@ -156,10 +156,9 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
         let deposit_is_processed =
             builder.cmp_biguint(&input.deposit.deposit_index, &input.eth1_deposit_index);
 
-        let mut deposit_is_real_and_validator_is_on_chain =
-            builder.and(deposit_is_processed, signature_is_valid);
-        deposit_is_real_and_validator_is_on_chain =
-            builder.and(deposit_is_real_and_validator_is_on_chain, deposit_is_real);
+        let validator_is_on_chain = builder.and(deposit_is_processed, signature_is_valid);
+        let deposit_is_real_and_validator_is_on_chain =
+            builder.and(validator_is_on_chain, deposit_is_real);
 
         let validator_hash_tree_root = hash_validator_poseidon(builder, &input.validator);
 
@@ -850,7 +849,7 @@ mod test {
                     ]
                   ],
                 "genesisForkVersion": "90000069",
-                "validatorGindex": "0",
+                "validatorGindex": "1099511627776",
                 "balancesRoot": "20fe0fb226a1c08e1830dfab419b67caea4f4d090b7b5a73e8b9c2439b60611d",
                 "balanceLeaf": "b07ad63907000000045d8b6d0b000000be642c690b0000001cba346c0b000000",
                 "balanceProof": [
