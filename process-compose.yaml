@@ -139,6 +139,15 @@ processes:
       proverserver_check:
         condition: process_completed
 
+  lukso:
+    description: lukso
+    log_location: ./logs/lukso.log
+    command: yarn hardhat start-publishing --lightclient ${LC_LUKSO} --network lukso --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3015
+    working_dir: ./beacon-light-client/solidity
+    depends_on:
+      proverserver_check:
+        condition: process_completed
+
   general_logs:
     description: general_logs
     log_location: ./logs/general_logs.log
