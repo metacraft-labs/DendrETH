@@ -12,12 +12,16 @@ use jemallocator::Jemalloc;
 
 use std::{format, println, thread::sleep, time::Duration};
 
+const CIRCUIT_NAME: &str = "commitment_mapper";
+
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
 fn main() -> Result<()> {
     future::block_on(async_main())
 }
+
+
 
 async fn async_main() -> Result<()> {
     let config = parse_config_file("../../common_config.json".to_owned())?;
@@ -49,7 +53,7 @@ async fn async_main() -> Result<()> {
 
     let proof_storage = create_proof_storage(&matches).await;
     let mut ctx =
-        CommitmentMapperContext::new(redis_connection, work_queue_cfg, proof_storage).await?;
+        CommitmentMapperContext::new(redis_connection, work_queue_cfg, proof_storage, CIRCUIT_NAME.to_string()).await?;
 
     loop {
         let Some(queue_item) = ctx

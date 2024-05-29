@@ -21,8 +21,6 @@ use crate::{
     db_constants::DB_CONSTANTS,
 };
 
-const CIRCUIT_NAME: &str = "commitment_mapper";
-
 pub struct CommitmentMapperContext {
     pub redis_con: Connection,
     pub work_queue: WorkQueue,
@@ -30,6 +28,7 @@ pub struct CommitmentMapperContext {
     pub proof_storage: Box<dyn ProofStorage>,
     pub first_level_circuit: FirstLevelCircuit,
     pub inner_level_circuits: Vec<InnerLevelCircuit>,
+    pub circuit_name: String
 }
 
 impl CommitmentMapperContext {
@@ -37,6 +36,7 @@ impl CommitmentMapperContext {
         redis_connection: &str,
         work_queue_cfg: WorkQueueConfig,
         proof_storage: Box<dyn ProofStorage>,
+        circuit_name: String,
     ) -> Result<Self> {
         let client = redis::Client::open(redis_connection)?;
         let redis_con = client.get_async_connection().await?;
@@ -46,17 +46,17 @@ impl CommitmentMapperContext {
         ));
 
         let first_level_circuit = FirstLevelCircuit {
-            targets: get_first_level_targets()?,
-            data: load_circuit_data(&format!("{}/{}_0", SERIALIZED_CIRCUITS_DIR, CIRCUIT_NAME))?,
+            targets: get_first_level_targets(circuit_name)?,
+            data: load_circuit_data(&format!("{}/{}_0", SERIALIZED_CIRCUITS_DIR, circuit_name))?,
         };
 
         let mut inner_level_circuits: Vec<InnerLevelCircuit> = Vec::new();
         for i in 1..41 {
             let inner_level_circuit = InnerLevelCircuit {
-                targets: get_inner_targets(i)?,
+                targets: get_inner_targets(i, circuit_name)?,
                 data: load_circuit_data(&format!(
                     "{}/{}_{}",
-                    SERIALIZED_CIRCUITS_DIR, CIRCUIT_NAME, i
+                    SERIALIZED_CIRCUITS_DIR, circuit_name, i
                 ))?,
             };
             inner_level_circuits.push(inner_level_circuit);
@@ -69,6 +69,7 @@ impl CommitmentMapperContext {
             proof_storage,
             first_level_circuit,
             inner_level_circuits,
+            circuit_name,
         };
 
         Ok(ctx)
@@ -90,10 +91,10 @@ pub struct InnerLevelCircuit {
     pub data: CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
 }
 
-fn get_inner_targets(i: usize) -> Result<CircuitTargetType<ValidatorsCommitmentMapperInnerLevel>> {
+fn get_inner_targets(i: usize, circuit_name: String) -> Result<CircuitTargetType<ValidatorsCommitmentMapperInnerLevel>> {
     let target_bytes = read_from_file(&format!(
         "{}/{}_{}.plonky2_targets",
-        SERIALIZED_CIRCUITS_DIR, CIRCUIT_NAME, i
+        SERIALIZED_CIRCUITS_DIR, circuit_name, i
     ))?;
     let mut target_buffer = Buffer::new(&target_bytes);
 
@@ -103,10 +104,10 @@ fn get_inner_targets(i: usize) -> Result<CircuitTargetType<ValidatorsCommitmentM
     )
 }
 
-fn get_first_level_targets() -> Result<CircuitTargetType<ValidatorsCommitmentMapperFirstLevel>> {
+fn get_first_level_targets(circuit_name: String) -> Result<CircuitTargetType<ValidatorsCommitmentMapperFirstLevel>> {
     let target_bytes = read_from_file(&format!(
         "{}/{}_0.plonky2_targets",
-        SERIALIZED_CIRCUITS_DIR, CIRCUIT_NAME
+        SERIALIZED_CIRCUITS_DIR, circuit_name
     ))?;
     let mut target_buffer = Buffer::new(&target_bytes);
 
