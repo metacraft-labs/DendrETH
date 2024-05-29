@@ -13,8 +13,8 @@ use circuit_executables::{
     wrap_final_layer_in_poseidon_bn128::wrap_final_layer_in_poseidon_bn_128,
 };
 use circuits::{
-    final_layer::BalanceVerificationFinalCircuit,
     redis_storage_types::BalanceVerificationFinalProofData,
+    withdrawal_credentials_balance_aggregator::final_layer::BalanceVerificationFinalCircuit,
 };
 use clap::Arg;
 use futures_lite::future;

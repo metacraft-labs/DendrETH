@@ -15,12 +15,14 @@ use circuit_executables::{
     wrap_final_layer_in_poseidon_bn128::wrap_final_layer_in_poseidon_bn_128,
 };
 use circuits::{
-    final_layer::BalanceVerificationFinalCircuit,
     redis_storage_types::{
         ValidatorsCommitmentMapperProofData, WithdrawalCredentialsBalanceVerificationProofData,
     },
     utils::bits_to_bytes,
-    withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
+    withdrawal_credentials_balance_aggregator::{
+        final_layer::BalanceVerificationFinalCircuit,
+        first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
+    },
 };
 use colored::Colorize;
 use itertools::Itertools;
