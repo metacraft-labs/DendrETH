@@ -210,3 +210,51 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod test_withdrawal_credentials_balance_aggregator_first_level {
+    use circuit::Circuit;
+    use num::{BigUint, FromPrimitive};
+    use plonky2::{
+        field::goldilocks_field::GoldilocksField,
+        iop::witness::PartialWitness,
+        plonk::{
+            circuit_builder::CircuitBuilder, circuit_data::CircuitConfig,
+            config::PoseidonGoldilocksConfig,
+        },
+    };
+    use plonky2_crypto::biguint::{CircuitBuilderBiguint, WitnessBigUint};
+
+    use crate::withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel;
+
+    #[test]
+    fn test_withdrawal_credentials_balance_aggregator_first_level(
+    ) -> std::result::Result<(), anyhow::Error> {
+        const D: usize = 2;
+        type C = PoseidonGoldilocksConfig;
+        type F = GoldilocksField;
+
+        let mut pw = PartialWitness::new();
+
+        let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
+
+        WithdrawalCredentialsBalanceAggregatorFirstLevel::define(&mut builder, params);
+
+        // let slot_target = builder.add_virtual_biguint_target(2);
+        // let current_epoch = builder.add_virtual_biguint_target(2);
+
+        // pw.set_biguint_target(&slot_target, &BigUint::from_u64(6953401).unwrap());
+        // pw.set_biguint_target(&current_epoch, &BigUint::from_u64(217293).unwrap());
+
+        let data = builder.build::<C>();
+        let proof = data.prove(pw)?;
+
+        data.verify(proof)
+    }
+}
+
+// Withdrawal
+// Credentials
+// Balance
+// Aggregator
+// FirstLevel
