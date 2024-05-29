@@ -22,7 +22,7 @@ use crate::{
     },
     withdrawal_credentials_balance_aggregator::first_level::is_active_validator::get_validator_status,
 };
-use circuit::Circuit;
+use circuit::{Circuit, CircuitInputTarget};
 use circuit_derive::{CircuitTarget, SerdeCircuitTarget};
 use num::{BigUint, FromPrimitive};
 use plonky2::{
@@ -133,17 +133,8 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
 
         // builder.connect(is_valid.target, is_real.target);
 
-        let domain = compute_domain(builder, &input.genesis_fork_version);
-
-        let message = sha256_pair(builder, &input.deposit.deposit_message_root, &domain);
-
-        let (bls_verification_proof, signature_is_valid) = verify_bls_signature(
-            builder,
-            &input.deposit.pubkey,
-            &input.deposit.signature,
-            &message,
-            &bls_circuit_data,
-        );
+        let (bls_verification_proof, signature_is_valid) =
+            verify_bls_signature(builder, &input, &bls_circuit_data);
 
         let deposit_is_processed =
             builder.cmp_biguint(&input.deposit.deposit_index, &input.eth1_deposit_index);
@@ -309,29 +300,29 @@ pub fn compute_domain<F: RichField + Extendable<D>, const D: usize>(
 
 fn verify_bls_signature<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    pubkey: &PubkeyTarget,
-    signature: &SignatureTarget,
-    message: &Sha256Target,
+    input: &CircuitInputTarget<DepositAccumulatorBalanceAggregatorFirstLevel>,
     bls_verification_circuit_data: &CircuitData<F, C, D>,
 ) -> (ProofWithPublicInputsTarget<D>, BoolTarget)
 where
     <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
 {
     let bls_verification_proof = verify_proof(builder, bls_verification_circuit_data);
-
-    let pi =
+    let public_inputs =
         BLSVerificationCircuit::read_public_inputs_target(&bls_verification_proof.public_inputs);
 
-    let pubkey_bytes = bits_to_bytes_target(builder, pubkey);
-    assert_arrays_are_equal(builder, &pubkey_bytes, &pi.pubkey);
+    let domain = compute_domain(builder, &input.genesis_fork_version);
+    let message = sha256_pair(builder, &input.deposit.deposit_message_root, &domain);
 
-    let message_bytes = bits_to_bytes_target(builder, message);
-    assert_arrays_are_equal(builder, &message_bytes, &pi.msg);
+    let pubkey_bytes = bits_to_bytes_target(builder, &input.deposit.pubkey);
+    assert_arrays_are_equal(builder, &pubkey_bytes, &public_inputs.pubkey);
 
-    let signature_bytes = bits_to_bytes_target(builder, signature);
-    assert_arrays_are_equal(builder, &signature_bytes, &pi.sig);
+    let message_bytes = bits_to_bytes_target(builder, &message);
+    assert_arrays_are_equal(builder, &message_bytes, &public_inputs.msg);
 
-    (bls_verification_proof, pi.is_valid_signature)
+    let signature_bytes = bits_to_bytes_target(builder, &input.deposit.signature);
+    assert_arrays_are_equal(builder, &signature_bytes, &public_inputs.sig);
+
+    (bls_verification_proof, public_inputs.is_valid_signature)
 }
 
 #[cfg(test)]
