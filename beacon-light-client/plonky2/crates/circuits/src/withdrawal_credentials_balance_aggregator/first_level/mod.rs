@@ -138,7 +138,7 @@ where
         let mut number_of_slashed_validators = builder.zero();
 
         for i in 0..VALIDATORS_COUNT {
-            let mut is_equal = builder._false();
+            let mut validator_is_considered = builder._false();
 
             for j in 0..WITHDRAWAL_CREDENTIALS_COUNT {
                 let is_equal_inner = bool_arrays_are_equal(
@@ -147,7 +147,7 @@ where
                     &input.withdrawal_credentials[j],
                 );
 
-                is_equal = builder.or(is_equal_inner, is_equal);
+                validator_is_considered = builder.or(is_equal_inner, validator_is_considered);
             }
 
             let balance = ssz_num_from_bits(
@@ -165,7 +165,7 @@ where
                     &input.validators[i].exit_epoch,
                 );
 
-            let will_be_counted = builder.and(is_equal, is_valid_validator);
+            let will_be_counted = builder.and(validator_is_considered, is_valid_validator);
 
             let current = select_biguint(builder, will_be_counted, &balance, &zero);
 
@@ -174,18 +174,18 @@ where
             number_of_active_validators =
                 builder.add(number_of_active_validators, will_be_counted.target);
 
-            let will_be_counted = builder.and(is_equal, is_non_activated_validator);
+            let will_be_counted = builder.and(validator_is_considered, is_non_activated_validator);
 
             number_of_non_activated_validators =
                 builder.add(number_of_non_activated_validators, will_be_counted.target);
 
-            let will_be_counted = builder.and(is_equal, is_exited_validator);
+            let will_be_counted = builder.and(validator_is_considered, is_exited_validator);
 
             number_of_exited_validators =
                 builder.add(number_of_exited_validators, will_be_counted.target);
 
             let validator_is_considered_and_is_slashed =
-                builder.and(is_equal, input.validators[i].slashed);
+                builder.and(validator_is_considered, input.validators[i].slashed);
             number_of_slashed_validators = builder.add(
                 number_of_slashed_validators,
                 validator_is_considered_and_is_slashed.target,
