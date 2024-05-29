@@ -2,12 +2,12 @@ use crate::{
     common_targets::Sha256MerkleBranchTarget,
     deposits_accumulator_balance_aggregator::first_level::DepositAccumulatorBalanceAggregatorFirstLevel,
     deposits_accumulator_commitment_mapper::first_level::DepositsCommitmentMapperFirstLevel,
-    final_layer::verify_slot_is_in_range,
     serializers::{
         biguint_to_str, parse_biguint, serde_bool_array_to_hex_string,
         serde_bool_array_to_hex_string_nested,
     },
     utils::circuit::{
+        assert_slot_is_in_epoch::assert_slot_is_in_epoch,
         biguint_to_bits_target,
         hashing::{
             merkle::{sha256::assert_merkle_proof_is_valid_const_sha256, ssz::ssz_num_to_bits},
@@ -150,7 +150,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFinalLayer {
             &balances_pi.eth1_deposit_index,
         );
 
-        verify_slot_is_in_range(builder, &input.slot, &balances_pi.current_epoch);
+        assert_slot_is_in_epoch(builder, &input.slot, &balances_pi.current_epoch);
 
         let final_sum_bits =
             biguint_to_bits_target::<Self::F, D, 2>(builder, &balances_pi.accumulated_data.balance);
