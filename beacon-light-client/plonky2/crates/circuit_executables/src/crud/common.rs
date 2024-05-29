@@ -8,14 +8,16 @@ use async_trait::async_trait;
 use circuit::{Circuit, CircuitInput, SerdeCircuitTarget};
 use circuits::{
     bls_verification::build_stark_proof_verifier::RecursiveStarkTargets,
-    final_layer::BalanceVerificationFinalCircuit,
     redis_storage_types::{
         BalanceVerificationFinalProofData, ValidatorsCommitmentMapperProofData,
         WithdrawalCredentialsBalanceVerificationProofData,
     },
     utils::{bits_to_bytes, hash_bytes, u64_to_ssz_leaf},
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
-    withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
+    withdrawal_credentials_balance_aggregator::{
+        final_layer::BalanceVerificationFinalCircuit,
+        first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
+    },
 };
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
