@@ -23,23 +23,6 @@ use self::hashing::merkle::ssz::ssz_num_from_bits;
 
 pub mod hashing;
 
-pub fn create_verifier_circuit_target<
-    F: RichField + Extendable<D>,
-    C: GenericConfig<D, F = F>,
-    const D: usize,
->(
-    builder: &mut CircuitBuilder<F, D>,
-    verifier_only: &VerifierOnlyCircuitData<C, D>,
-) -> VerifierCircuitTarget
-where
-    <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
-{
-    VerifierCircuitTarget {
-        constants_sigmas_cap: builder.constant_merkle_cap(&verifier_only.constants_sigmas_cap),
-        circuit_digest: builder.constant_hash(verifier_only.circuit_digest),
-    }
-}
-
 pub fn verify_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     circuit_data: &CircuitData<F, C, D>,
@@ -48,8 +31,7 @@ where
     <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
 {
     let proof = builder.add_virtual_proof_with_pis(&circuit_data.common);
-    let verifier_circuit_data =
-        create_verifier_circuit_target(builder, &circuit_data.verifier_only);
+    let verifier_circuit_data = builder.constant_verifier_data(&circuit_data.verifier_only);
     builder.verify_proof::<C>(&proof, &verifier_circuit_data, &circuit_data.common);
     proof
 }
@@ -107,6 +89,15 @@ pub fn assert_bool_arrays_are_equal<F: RichField + Extendable<D>, const D: usize
     builder.assert_true(are_equal);
 }
 
+pub fn assert_arrays_are_equal<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    first: &[Target],
+    second: &[Target],
+) {
+    let are_equal = arrays_are_equal(builder, first, second);
+    builder.assert_true(are_equal);
+}
+
 pub fn arrays_are_equal<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     first: &[Target],
@@ -161,6 +152,16 @@ pub fn biguint_to_le_bits_target<F: RichField + Extendable<D>, const D: usize, c
     biguint_to_bits_target::<F, D, B>(builder, a)
         .into_iter()
         .rev()
+        .collect_vec()
+}
+
+pub fn bits_to_bytes_target<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    bits: &[BoolTarget],
+) -> Vec<Target> {
+    assert!(bits.len() % 8 == 0);
+    bits.chunks(8)
+        .map(|byte_bits| builder.le_sum(byte_bits.iter().rev()))
         .collect_vec()
 }
 

@@ -1,11 +1,12 @@
 use std::str::FromStr;
 
-use circuit_derive::SerdeCircuitTarget;
+use circuit::Circuit;
+use circuit_derive::{CircuitTarget, SerdeCircuitTarget};
 use num_bigint::BigUint;
 use plonky2::{
     field::{extension::Extendable, goldilocks_field::GoldilocksField},
     hash::hash_types::RichField,
-    iop::target::Target,
+    iop::target::{BoolTarget, Target},
     plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::{CircuitConfig, CircuitData},
@@ -25,15 +26,24 @@ use starky_bls12_381::{
     miller_loop,
 };
 
+use crate::utils::circuit::verify_proof;
+
 const N: usize = 12;
 
-#[derive(SerdeCircuitTarget)]
+#[derive(CircuitTarget, SerdeCircuitTarget)]
 pub struct BlsCircuitTargets {
     // Pub inputs
+    #[target(in, out)]
     pub pubkey: [Target; 48],
+
+    #[target(in, out)]
     pub sig: [Target; 96],
+
+    #[target(in, out)]
     pub msg: [Target; 32],
-    pub is_valid_signature: Target,
+
+    #[target(out)]
+    pub is_valid_signature: BoolTarget,
 
     // Proofs
     pub pt_pp1: ProofWithPublicInputsTarget<2>,
@@ -44,129 +54,97 @@ pub struct BlsCircuitTargets {
     pub pt_fe: ProofWithPublicInputsTarget<2>,
 }
 
-pub fn build_bls12_381_circuit(
-    pairing_precomp: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    miller_loop_circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    fp12_mul_circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    fe_circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-) -> (
-    BlsCircuitTargets,
-    CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-) {
-    let config = CircuitConfig::standard_recursion_config();
-    let mut builder = CircuitBuilder::new(config);
-
-    let targets = bls12_381(
-        &mut builder,
-        &pairing_precomp,
-        &miller_loop_circuit_data,
-        &fp12_mul_circuit_data,
-        &fe_circuit_data,
-    );
-
-    let circuit_data = builder.build();
-
-    (targets, circuit_data)
-}
-
-type C = PoseidonGoldilocksConfig;
 type F = <C as GenericConfig<2>>::F;
+type C = PoseidonGoldilocksConfig;
 const D: usize = 2;
 
-pub fn bls12_381(
-    builder: &mut CircuitBuilder<F, D>,
-    pairing_precomp: &CircuitData<F, C, D>,
-    miller_loop_circuit_data: &CircuitData<F, C, D>,
-    fp12_mul_circuit_data: &CircuitData<F, C, D>,
-    fe_circuit_data: &CircuitData<F, C, D>,
-) -> BlsCircuitTargets {
-    let pubkey = builder.add_virtual_target_arr::<48>();
+pub struct BLSVerificationCircuit;
 
-    let sig_targets = builder.add_virtual_target_arr::<96>();
+impl Circuit for BLSVerificationCircuit {
+    type F = F;
+    type C = C;
+    const D: usize = D;
 
-    let msg_targets = builder.add_virtual_target_arr::<32>();
+    const CIRCUIT_CONFIG: CircuitConfig = CircuitConfig::standard_recursion_config();
 
-    let pp_verifier_data = builder.constant_verifier_data(&pairing_precomp.verifier_only);
-    let ml_verifier_data = builder.constant_verifier_data(&miller_loop_circuit_data.verifier_only);
-    let fp12m_verifier_data = builder.constant_verifier_data(&fp12_mul_circuit_data.verifier_only);
-    let fe_verifier_data = builder.constant_verifier_data(&fe_circuit_data.verifier_only);
+    type Target = BlsCircuitTargets;
 
-    let pt_pp1 = builder.add_virtual_proof_with_pis(&pairing_precomp.common);
-    builder.verify_proof::<C>(&pt_pp1, &pp_verifier_data, &pairing_precomp.common);
-    let pt_pp2 = builder.add_virtual_proof_with_pis(&pairing_precomp.common);
-    builder.verify_proof::<C>(&pt_pp2, &pp_verifier_data, &pairing_precomp.common);
-
-    let pt_ml1 = builder.add_virtual_proof_with_pis(&miller_loop_circuit_data.common);
-    builder.verify_proof::<C>(&pt_ml1, &ml_verifier_data, &miller_loop_circuit_data.common);
-    let pt_ml2 = builder.add_virtual_proof_with_pis(&miller_loop_circuit_data.common);
-    builder.verify_proof::<C>(&pt_ml2, &ml_verifier_data, &miller_loop_circuit_data.common);
-
-    let pt_fp12m = builder.add_virtual_proof_with_pis(&fp12_mul_circuit_data.common);
-    builder.verify_proof::<C>(
-        &pt_fp12m,
-        &fp12m_verifier_data,
-        &fp12_mul_circuit_data.common,
+    type Params = (
+        CircuitData<Self::F, Self::C, D>,
+        CircuitData<Self::F, Self::C, D>,
+        CircuitData<Self::F, Self::C, D>,
+        CircuitData<Self::F, Self::C, D>,
     );
 
-    let pt_fe = builder.add_virtual_proof_with_pis(&fe_circuit_data.common);
-    builder.verify_proof::<C>(&pt_fe, &fe_verifier_data, &fe_circuit_data.common);
+    fn define(
+        builder: &mut CircuitBuilder<Self::F, D>,
+        (
+            pairing_precomp_circuit_data,
+            miller_loop_circuit_data,
+            fp12_mul_circuit_data,
+            final_exponentiation_circuit_data,
+        ): &Self::Params,
+    ) -> Self::Target {
+        let input = Self::read_circuit_input_target(builder);
 
-    let hm = hash_to_curve(builder, &msg_targets);
+        let pt_pp1 = verify_proof(builder, &pairing_precomp_circuit_data);
+        let pt_pp2 = verify_proof(builder, &pairing_precomp_circuit_data);
+        let pt_ml1 = verify_proof(builder, &miller_loop_circuit_data);
+        let pt_ml2 = verify_proof(builder, &miller_loop_circuit_data);
+        let pt_fp12m = verify_proof(builder, &fp12_mul_circuit_data);
+        let pt_fe = verify_proof(builder, &final_exponentiation_circuit_data);
 
-    connect_pairing_precomp_with_g2(builder, &pt_pp1, &hm);
+        let hm = hash_to_curve(builder, &input.msg);
 
-    connect_pairing_precomp_with_miller_loop_g2(builder, &pt_pp1, &pt_ml1);
+        connect_pairing_precomp_with_g2(builder, &pt_pp1, &hm);
 
-    let pubkey_g1 = get_g1_from_miller_loop(&pt_ml1);
-    pk_point_check(builder, &pubkey_g1, &pubkey);
+        connect_pairing_precomp_with_miller_loop_g2(builder, &pt_pp1, &pt_ml1);
 
-    let signature_g2 = get_g2_point_from_pairing_precomp(builder, &pt_pp2);
-    signature_point_check(builder, &signature_g2, &sig_targets);
+        let pubkey_g1 = get_g1_from_miller_loop(&pt_ml1);
+        pk_point_check(builder, &pubkey_g1, &input.pubkey);
 
-    connect_pairing_precomp_with_miller_loop_g2(builder, &pt_pp2, &pt_ml2);
+        let signature_g2 = get_g2_point_from_pairing_precomp(builder, &pt_pp2);
+        signature_point_check(builder, &signature_g2, &input.sig);
 
-    let neg_generator = get_neg_generator(builder);
+        connect_pairing_precomp_with_miller_loop_g2(builder, &pt_pp2, &pt_ml2);
 
-    connect_miller_loop_with_g1(builder, &neg_generator, &pt_ml2);
+        let neg_generator = get_neg_generator(builder);
 
-    connect_miller_loop_with_fp12_mull(builder, &pt_ml1, &pt_ml2, &pt_fp12m);
+        connect_miller_loop_with_g1(builder, &neg_generator, &pt_ml2);
 
-    connect_fp12_mull_with_final_exponentiation(builder, &pt_fp12m, &pt_fe);
+        connect_miller_loop_with_fp12_mull(builder, &pt_ml1, &pt_ml2, &pt_fp12m);
 
-    let one = builder.one();
-    let zero = builder.zero();
+        connect_fp12_mull_with_final_exponentiation(builder, &pt_fp12m, &pt_fe);
 
-    let mut is_valid_signature = builder.is_equal(
-        pt_fe.public_inputs[final_exponentiate::PIS_OUTPUT_OFFSET],
-        one,
-    );
+        let one = builder.one();
+        let zero = builder.zero();
 
-    for i in 1..24 * 3 * 2 {
-        let is_valid_signature_i = builder.is_equal(
-            pt_fe.public_inputs[final_exponentiate::PIS_OUTPUT_OFFSET + i],
-            zero,
+        let mut is_valid_signature = builder.is_equal(
+            pt_fe.public_inputs[final_exponentiate::PIS_OUTPUT_OFFSET],
+            one,
         );
 
-        is_valid_signature = builder.and(is_valid_signature, is_valid_signature_i);
-    }
+        for i in 1..24 * 3 * 2 {
+            let is_valid_signature_i = builder.is_equal(
+                pt_fe.public_inputs[final_exponentiate::PIS_OUTPUT_OFFSET + i],
+                zero,
+            );
 
-    // TODO: maybe transfer to bits
-    builder.register_public_inputs(&pubkey);
-    builder.register_public_inputs(&sig_targets);
-    builder.register_public_inputs(&msg_targets);
-    builder.register_public_input(is_valid_signature.target);
+            is_valid_signature = builder.and(is_valid_signature, is_valid_signature_i);
+        }
 
-    BlsCircuitTargets {
-        pubkey,
-        sig: sig_targets,
-        msg: msg_targets,
-        is_valid_signature: is_valid_signature.target,
-        pt_pp1,
-        pt_pp2,
-        pt_ml1,
-        pt_ml2,
-        pt_fp12m,
-        pt_fe,
+        Self::Target {
+            pubkey: input.pubkey,
+            sig: input.sig,
+            msg: input.msg,
+            is_valid_signature,
+            pt_pp1,
+            pt_pp2,
+            pt_ml1,
+            pt_ml2,
+            pt_fp12m,
+            pt_fe,
+        }
     }
 }
 
