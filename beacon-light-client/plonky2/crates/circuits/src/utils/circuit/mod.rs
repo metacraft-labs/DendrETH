@@ -7,7 +7,7 @@ use plonky2::{
     iop::target::{BoolTarget, Target},
     plonk::{
         circuit_builder::CircuitBuilder,
-        circuit_data::{CircuitData, VerifierCircuitTarget, VerifierOnlyCircuitData},
+        circuit_data::CircuitData,
         config::{AlgebraicHasher, GenericConfig},
         proof::ProofWithPublicInputsTarget,
     },

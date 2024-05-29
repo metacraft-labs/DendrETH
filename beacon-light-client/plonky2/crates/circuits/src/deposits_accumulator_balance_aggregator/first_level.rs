@@ -1,8 +1,8 @@
 use crate::{
     bls_verification::bls12_381_circuit::BLSVerificationCircuit,
-    common_targets::{PubkeyTarget, Sha256MerkleBranchTarget, SignatureTarget},
+    common_targets::Sha256MerkleBranchTarget,
     deposits_accumulator_balance_aggregator::common_targets::{
-        AccumulatedDataTargets, RangeObjectTarget, ValidatorStatsTargets,
+        AccumulatedDataTarget, DepositDataTarget, ValidatorStatusStatsTarget,
     },
     serializers::{
         biguint_to_str, parse_biguint, serde_bool_array_to_hex_string,
@@ -22,7 +22,7 @@ use crate::{
     },
     withdrawal_credentials_balance_aggregator::first_level::is_active_validator::get_validator_status,
 };
-use circuit::{Circuit, CircuitInputTarget};
+use circuit::{circuit_builder_extensions::CircuitBuilderExtensions, Circuit, CircuitInputTarget};
 use circuit_derive::{CircuitTarget, SerdeCircuitTarget};
 use num::{BigUint, FromPrimitive};
 use plonky2::{
@@ -31,7 +31,7 @@ use plonky2::{
     iop::target::BoolTarget,
     plonk::{
         circuit_builder::CircuitBuilder,
-        circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
+        circuit_data::{CircuitConfig, CircuitData},
         config::{AlgebraicHasher, GenericConfig, PoseidonGoldilocksConfig},
         proof::ProofWithPublicInputsTarget,
     },
@@ -42,9 +42,7 @@ use crate::common_targets::{
     DepositTargets, PoseidonMerkleBranchTarget, Sha256Target, ValidatorTarget,
 };
 
-use super::common_targets::NodeTargets;
-
-// use super::common_targets::NodeTargets;
+use super::common_targets::ValidatorDataTarget;
 
 pub struct DepositAccumulatorBalanceAggregatorFirstLevel {}
 
@@ -53,52 +51,67 @@ pub struct DepositAccumulatorBalanceAggregatorFirstLevel {}
 pub struct DepositAccumulatorBalanceAggregatorFirstLevelTargets {
     #[target(in)]
     pub validator: ValidatorTarget,
-    #[target(in)]
-    pub commitment_mapper_root: HashOutTarget,
+
     #[target(in)]
     pub commitment_mapper_proof: PoseidonMerkleBranchTarget<40>,
+
     #[target(in)]
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub validator_gindex: BigUintTarget,
 
     #[target(in)]
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub eth1_deposit_index: BigUintTarget,
-
-    #[target(in)]
-    #[serde(with = "serde_bool_array_to_hex_string")]
-    pub genesis_fork_version: [BoolTarget; 32],
-
-    #[target(in)]
     pub deposit: DepositTargets,
-    #[target(in)]
-    pub deposit_commitment_mapper_root: HashOutTarget,
+
+    #[target(in, out)]
+    pub deposits_commitment_mapper_root: HashOutTarget,
+
     #[target(in)]
     pub validator_deposit_proof: PoseidonMerkleBranchTarget<32>,
+
     #[target(in)]
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub validator_deposit_gindex: BigUintTarget,
 
     #[target(in)]
     #[serde(with = "serde_bool_array_to_hex_string")]
-    pub balance_tree_root: Sha256Target,
-    #[target(in)]
-    #[serde(with = "serde_bool_array_to_hex_string")]
     pub balance_leaf: Sha256Target,
+
     #[target(in)]
     #[serde(with = "serde_bool_array_to_hex_string_nested")]
     pub balance_proof: Sha256MerkleBranchTarget<22>,
-    #[target(in)]
-    pub is_dummy: BoolTarget,
 
     #[target(in)]
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub current_epoch: BigUintTarget,
+    pub is_dummy: BoolTarget,
 
     pub bls_verification_proof: ProofWithPublicInputsTarget<2>,
 
     #[target(out)]
-    pub node: NodeTargets,
+    pub leftmost_deposit: DepositDataTarget,
+
+    #[target(out)]
+    pub rightmost_deposit: DepositDataTarget,
+
+    #[target(out)]
+    pub accumulated_data: AccumulatedDataTarget,
+
+    #[target(in, out)]
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
+    pub current_epoch: BigUintTarget,
+
+    #[target(in, out)]
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
+    pub eth1_deposit_index: BigUintTarget,
+
+    #[target(in, out)]
+    pub commitment_mapper_root: HashOutTarget,
+
+    #[target(in, out)]
+    #[serde(with = "serde_bool_array_to_hex_string")]
+    pub balances_root: Sha256Target,
+
+    #[target(in, out)]
+    #[serde(with = "serde_bool_array_to_hex_string")]
+    pub genesis_fork_version: [BoolTarget; 32],
 }
 
 impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
@@ -121,7 +134,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
         // let deposit_hash_tree_root =
         //     hash_tree_root_deposit_poseidon(builder, &input.validator_deposit);
 
-        let is_real = builder.not(input.is_dummy);
+        let deposit_is_real = builder.not(input.is_dummy);
 
         // let is_valid = validate_merkle_proof_poseidon(
         //     builder,
@@ -139,14 +152,14 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
         let deposit_is_processed =
             builder.cmp_biguint(&input.deposit.deposit_index, &input.eth1_deposit_index);
 
-        let validator_is_definitely_on_chain =
+        let mut deposit_is_real_and_validator_is_on_chain =
             builder.and(deposit_is_processed, signature_is_valid);
-
-        let should_check_merkle_proof = builder.and(validator_is_definitely_on_chain, is_real);
+        deposit_is_real_and_validator_is_on_chain =
+            builder.and(deposit_is_real_and_validator_is_on_chain, deposit_is_real);
 
         let validator_hash_tree_root = hash_validator_poseidon(builder, &input.validator);
 
-        let validator_is_in_commitment_mapper = validate_merkle_proof_poseidon(
+        let validators_proof_is_valid = validate_merkle_proof_poseidon(
             builder,
             &validator_hash_tree_root,
             &input.commitment_mapper_root,
@@ -154,94 +167,82 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
             &input.validator_gindex,
         );
 
-        builder.connect(
-            should_check_merkle_proof.target,
-            validator_is_in_commitment_mapper.target,
+        builder.imply(
+            deposit_is_real_and_validator_is_on_chain,
+            validators_proof_is_valid,
         );
 
         assert_bool_arrays_are_equal(builder, &input.validator.pubkey, &input.deposit.pubkey);
 
         let four = builder.constant_biguint(&BigUint::from_u64(4u64).unwrap());
+        let balance_inner_index = builder.rem_biguint(&input.validator_gindex, &four);
+        let balance = get_balance_from_leaf(builder, &input.balance_leaf, balance_inner_index);
         let balance_gindex = builder.div_biguint(&input.validator_gindex, &four);
 
-        let is_valid = validate_merkle_proof_sha256(
+        let balances_proof_is_valid = validate_merkle_proof_sha256(
             builder,
             &input.balance_leaf,
-            &input.balance_tree_root,
+            &input.balances_root,
             &input.balance_proof,
             &balance_gindex,
         );
 
-        builder.connect(should_check_merkle_proof.target, is_valid.target);
+        builder.imply(
+            deposit_is_real_and_validator_is_on_chain,
+            balances_proof_is_valid,
+        );
 
-        let balance_inner_index = builder.rem_biguint(&input.validator_gindex, &four);
-        let balance = get_balance_from_leaf(builder, &input.balance_leaf, balance_inner_index);
-        let (is_non_activated_validator, is_valid_validator, is_exited_validator) =
-            get_validator_status(
-                builder,
-                &input.validator.activation_epoch,
-                &input.current_epoch,
-                &input.validator.exit_epoch,
-            );
+        let (is_non_activated, is_active, is_exited) = get_validator_status(
+            builder,
+            &input.validator.activation_epoch,
+            &input.current_epoch,
+            &input.validator.exit_epoch,
+        );
 
-        let will_be_counted = builder.and(should_check_merkle_proof, is_valid_validator);
-
-        let zero = builder.zero_biguint();
-        let balance = select_biguint(builder, will_be_counted, &balance, &zero);
-
-        let active_count = will_be_counted.target;
-
-        let non_activated_count = builder
-            .and(should_check_merkle_proof, is_non_activated_validator)
-            .target;
-
-        let exited_count = builder
-            .and(should_check_merkle_proof, is_exited_validator)
-            .target;
-
-        let slashed_count = builder
-            .and(should_check_merkle_proof, input.validator.slashed)
-            .target;
-
-        let leftmost = RangeObjectTarget {
-            pubkey: input.validator.pubkey,
-            deposit_index: input.deposit.deposit_index.clone(),
-            is_counted: should_check_merkle_proof,
-            is_dummy: input.is_dummy,
+        let zero_validator_status_stats: ValidatorStatusStatsTarget = builder.zero_init();
+        let mut validator_status_stats = ValidatorStatusStatsTarget {
+            non_activated_count: is_non_activated.target,
+            active_count: is_active.target,
+            exited_count: is_exited.target,
+            slashed_count: input.validator.slashed.target,
         };
+        validator_status_stats = builder.select_target(
+            deposit_is_real_and_validator_is_on_chain,
+            &validator_status_stats,
+            &zero_validator_status_stats,
+        );
 
-        let rightmost = RangeObjectTarget {
-            pubkey: input.validator.pubkey,
-            deposit_index: input.deposit.deposit_index.clone(),
-            is_counted: should_check_merkle_proof,
-            is_dummy: input.is_dummy,
-        };
+        let zero_biguint = builder.zero_biguint();
+        let validator_balance = select_biguint(builder, is_active, &balance, &zero_biguint);
 
-        let one = builder.one();
-        let accumulated = AccumulatedDataTargets {
-            balance_sum: balance,
-            deposits_count: one,
-            validator_stats: ValidatorStatsTargets {
-                non_activated_validators_count: non_activated_count,
-                active_validators_count: active_count,
-                exited_validators_count: exited_count,
-                slashed_validators_count: slashed_count,
+        let deposit_data = DepositDataTarget {
+            pubkey: input.deposit.pubkey,
+            validator: ValidatorDataTarget {
+                balance: validator_balance.clone(),
+                is_non_activated,
+                is_active,
+                is_exited,
+                is_slashed: input.validator.slashed,
             },
+            deposit_index: input.deposit.deposit_index.clone(),
+            is_counted: deposit_is_real_and_validator_is_on_chain,
+            is_dummy: input.is_dummy,
         };
 
-        let node = NodeTargets {
-            leftmost,
-            rightmost,
-            accumulated,
-            current_epoch: input.current_epoch.clone(),
-            eth1_deposit_index: input.eth1_deposit_index.clone(),
-            commitment_mapper_root: input.commitment_mapper_root,
-            balances_root: input.balance_tree_root,
-            deposits_mapper_root: input.deposit_commitment_mapper_root,
-            genesis_fork_version: input.genesis_fork_version,
+        let zero_accumulated_data: AccumulatedDataTarget = builder.zero_init();
+        let mut accumulated_data = AccumulatedDataTarget {
+            balance: validator_balance,
+            deposits_count: builder.one(),
+            validator_status_stats,
         };
+        accumulated_data =
+            builder.select_target(deposit_is_real, &accumulated_data, &zero_accumulated_data);
 
         Self::Target {
+            leftmost_deposit: deposit_data.clone(),
+            rightmost_deposit: deposit_data.clone(),
+            accumulated_data,
+
             validator: input.validator,
             commitment_mapper_root: input.commitment_mapper_root,
             commitment_mapper_proof: input.commitment_mapper_proof,
@@ -249,16 +250,16 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
             eth1_deposit_index: input.eth1_deposit_index,
             genesis_fork_version: input.genesis_fork_version,
             deposit: input.deposit,
-            deposit_commitment_mapper_root: input.deposit_commitment_mapper_root,
+            deposits_commitment_mapper_root: input.deposits_commitment_mapper_root,
             validator_deposit_proof: input.validator_deposit_proof,
             validator_deposit_gindex: input.validator_deposit_gindex,
-            balance_tree_root: input.balance_tree_root,
+            balances_root: input.balances_root,
             balance_leaf: input.balance_leaf,
             balance_proof: input.balance_proof,
             is_dummy: input.is_dummy,
             current_epoch: input.current_epoch,
+
             bls_verification_proof,
-            node,
         }
     }
 }
@@ -274,7 +275,7 @@ pub fn compute_domain<F: RichField + Extendable<D>, const D: usize>(
             .try_into()
             .unwrap();
 
-    let genesis_validator_root = [BoolTarget::new_unsafe(builder.zero()); 256];
+    let genesis_validator_root = [builder._false(); 256];
 
     let fork_data_root = hash_tree_root_sha256(
         builder,
@@ -388,7 +389,7 @@ mod test {
                     2738900304525190430,
                     18373424356305701427
                   ],
-                "depositCommitmentMapperRoot": [
+                "depositsCommitmentMapperRoot": [
                   9598574192830159000,
                   15798717172533123000,
                   2738900304525190700,
@@ -833,7 +834,7 @@ mod test {
                   ],
                 "genesisForkVersion": "90000069",
                 "validatorGindex": "0",
-                "balanceTreeRoot": "20fe0fb226a1c08e1830dfab419b67caea4f4d090b7b5a73e8b9c2439b60611d",
+                "balancesRoot": "20fe0fb226a1c08e1830dfab419b67caea4f4d090b7b5a73e8b9c2439b60611d",
                 "balanceLeaf": "b07ad63907000000045d8b6d0b000000be642c690b0000001cba346c0b000000",
                 "balanceProof": [
                   "cbf1a3690b000000798608680b000000cd73407d0b00000001ad6a6b0b000000",
