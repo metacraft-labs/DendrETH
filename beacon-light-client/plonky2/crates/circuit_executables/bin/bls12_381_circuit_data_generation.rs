@@ -1,11 +1,11 @@
 use std::marker::PhantomData;
 
-use circuit::SerdeCircuitTarget;
+use circuit::{Circuit, SerdeCircuitTarget};
 use circuit_executables::{
     constants::SERIALIZED_CIRCUITS_DIR,
     crud::common::{load_circuit_data_starky, write_to_file},
 };
-use circuits::bls_verification::bls12_381_circuit::{build_bls12_381_circuit, BlsCircuitTargets};
+use circuits::bls_verification::bls12_381_circuit::{BLSVerificationCircuit, BlsCircuitTargets};
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig},
@@ -25,15 +25,12 @@ fn main() {
         "{SERIALIZED_CIRCUITS_DIR}/final_exponentiate_circuit"
     ));
 
-    let (targets, data): (
-        BlsCircuitTargets,
-        CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    ) = build_bls12_381_circuit(
-        &pairing_precomp_circuit_data,
-        &miller_loop_circuit_data,
-        &fp12_mul_circuit_data,
-        &final_exponentiate_circuit_data,
-    );
+    let (targets, data) = BLSVerificationCircuit::build(&(
+        pairing_precomp_circuit_data,
+        miller_loop_circuit_data,
+        fp12_mul_circuit_data,
+        final_exponentiate_circuit_data,
+    ));
 
     let circuit_bytes = data
         .to_bytes(

@@ -1,4 +1,5 @@
 use crate::{
+    bls_verification::bls12_381_circuit::BLSVerificationCircuit,
     common_targets::{PubkeyTarget, Sha256MerkleBranchTarget, SignatureTarget},
     deposits_accumulator_balance_aggregator::common_targets::{
         AccumulatedDataTargets, RangeObjectTarget, ValidatorStatsTargets,
@@ -8,7 +9,8 @@ use crate::{
         serde_bool_array_to_hex_string_nested,
     },
     utils::circuit::{
-        assert_bool_arrays_are_equal, get_balance_from_leaf,
+        assert_arrays_are_equal, assert_bool_arrays_are_equal, bits_to_bytes_target,
+        get_balance_from_leaf,
         hashing::{
             merkle::{
                 poseidon::{hash_validator_poseidon, validate_merkle_proof_poseidon},
@@ -16,7 +18,7 @@ use crate::{
             },
             sha256::sha256_pair,
         },
-        select_biguint,
+        select_biguint, verify_proof,
     },
     withdrawal_credentials_balance_aggregator::first_level::is_active_validator::get_validator_status,
 };
@@ -93,7 +95,7 @@ pub struct DepositAccumulatorBalanceAggregatorFirstLevelTargets {
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub current_epoch: BigUintTarget,
 
-    pub bls_signature_proof: ProofWithPublicInputsTarget<2>,
+    pub bls_verification_proof: ProofWithPublicInputsTarget<2>,
 
     #[target(out)]
     pub node: NodeTargets,
@@ -135,23 +137,16 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
 
         let message = sha256_pair(builder, &input.deposit.deposit_message_root, &domain);
 
-        let bls_signature_proof = builder.add_virtual_proof_with_pis(&bls_circuit_data.common);
-
-        verify_bls_signature(
+        let (bls_verification_proof, signature_is_valid) = verify_bls_signature(
             builder,
             &input.deposit.pubkey,
             &input.deposit.signature,
             &message,
-            &bls_signature_proof,
-            &bls_circuit_data.common,
-            &bls_circuit_data.verifier_only,
+            &bls_circuit_data,
         );
 
         let deposit_is_processed =
             builder.cmp_biguint(&input.deposit.deposit_index, &input.eth1_deposit_index);
-
-        let signature_is_valid =
-            BoolTarget::new_unsafe(*bls_signature_proof.public_inputs.last().unwrap());
 
         let validator_is_definitely_on_chain =
             builder.and(deposit_is_processed, signature_is_valid);
@@ -271,7 +266,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
             balance_proof: input.balance_proof,
             is_dummy: input.is_dummy,
             current_epoch: input.current_epoch,
-            bls_signature_proof,
+            bls_verification_proof,
             node,
         }
     }
@@ -316,35 +311,27 @@ fn verify_bls_signature<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>
     builder: &mut CircuitBuilder<F, D>,
     pubkey: &PubkeyTarget,
     signature: &SignatureTarget,
-    message: &[BoolTarget; 256],
-    bls_signature_proof: &ProofWithPublicInputsTarget<D>,
-    bls_common_data: &CommonCircuitData<F, D>,
-    bls_verifier_data: &VerifierOnlyCircuitData<C, D>,
-) where
+    message: &Sha256Target,
+    bls_verification_circuit_data: &CircuitData<F, C, D>,
+) -> (ProofWithPublicInputsTarget<D>, BoolTarget)
+where
     <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
 {
-    let bls_verifier_circuit_targets = builder.constant_verifier_data(bls_verifier_data);
+    let bls_verification_proof = verify_proof(builder, bls_verification_circuit_data);
 
-    builder.verify_proof::<C>(
-        &bls_signature_proof,
-        &bls_verifier_circuit_targets,
-        bls_common_data,
-    );
+    let pi =
+        BLSVerificationCircuit::read_public_inputs_target(&bls_verification_proof.public_inputs);
 
-    for i in (0..384).step_by(8) {
-        let byte = builder.le_sum(pubkey[i..(i + 8)].iter().rev().copied());
-        builder.connect(byte, bls_signature_proof.public_inputs[i / 8])
-    }
+    let pubkey_bytes = bits_to_bytes_target(builder, pubkey);
+    assert_arrays_are_equal(builder, &pubkey_bytes, &pi.pubkey);
 
-    for i in (0..768).step_by(8) {
-        let byte = builder.le_sum(signature[i..(i + 8)].iter().rev().copied());
-        builder.connect(byte, bls_signature_proof.public_inputs[(i + 384) / 8]);
-    }
+    let message_bytes = bits_to_bytes_target(builder, message);
+    assert_arrays_are_equal(builder, &message_bytes, &pi.msg);
 
-    for i in (0..256).step_by(8) {
-        let byte = builder.le_sum(message[i..(i + 8)].iter().rev().copied());
-        builder.connect(byte, bls_signature_proof.public_inputs[(i + 384 + 768) / 8]);
-    }
+    let signature_bytes = bits_to_bytes_target(builder, signature);
+    assert_arrays_are_equal(builder, &signature_bytes, &pi.sig);
+
+    (bls_verification_proof, pi.is_valid_signature)
 }
 
 #[cfg(test)]
@@ -901,7 +888,7 @@ mod test {
 
         let mut pw = PartialWitness::<GoldilocksField>::new();
         targets.set_witness(&mut pw, &json_input);
-        pw.set_proof_with_pis_target(&targets.bls_signature_proof, &bls_proof);
+        pw.set_proof_with_pis_target(&targets.bls_verification_proof, &bls_proof);
 
         let s = Instant::now();
         let proof = circuit.prove(pw).unwrap();
