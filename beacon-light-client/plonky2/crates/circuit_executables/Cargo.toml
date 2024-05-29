@@ -115,3 +115,7 @@ path = "bin/bls12_381_components_proofs.rs"
 [[bin]]
 name = "bls12_381"
 path = "bin/bls12_381.rs"
+
+[[bin]]
+name = "deposit_accumulator_verification"
+path = "bin/deposit_accumulator_verification.rs"

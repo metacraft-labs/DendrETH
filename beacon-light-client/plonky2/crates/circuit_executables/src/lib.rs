@@ -13,3 +13,4 @@ pub mod poseidon_constants;
 pub mod provers;
 pub mod utils;
 pub mod wrap_final_layer_in_poseidon_bn128;
+pub mod deposit_accumulator;
