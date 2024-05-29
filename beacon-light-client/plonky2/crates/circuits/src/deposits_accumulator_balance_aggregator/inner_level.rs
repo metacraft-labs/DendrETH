@@ -361,11 +361,10 @@ fn assert_no_dummy_deposits_to_the_left<F: RichField + Extendable<D>, const D: u
     left_range: &CircuitOutputTarget<DepositAccumulatorBalanceAggregatorFirstLevel>,
     right_range: &CircuitOutputTarget<DepositAccumulatorBalanceAggregatorFirstLevel>,
 ) {
-    let no_dummies_to_the_left = builder.imply(
+    builder.assert_implication(
         left_range.rightmost_deposit.is_dummy,
         right_range.leftmost_deposit.is_dummy,
     );
-    builder.assert_true(no_dummies_to_the_left)
 }
 
 #[cfg(test)]

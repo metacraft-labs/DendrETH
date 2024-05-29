@@ -170,12 +170,10 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
             &input.validator_gindex,
         );
 
-        let implied = builder.imply(
+        builder.assert_implication(
             deposit_is_real_and_validator_is_on_chain,
             validators_proof_is_valid,
         );
-
-        builder.assert_true(implied);
 
         assert_bool_arrays_are_equal(builder, &input.validator.pubkey, &input.deposit.pubkey);
 
@@ -192,12 +190,10 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
             &balance_gindex,
         );
 
-        let implied = builder.imply(
+        builder.assert_implication(
             deposit_is_real_and_validator_is_on_chain,
             balances_proof_is_valid,
         );
-
-        builder.assert_true(implied);
 
         let (is_non_activated, is_active, is_exited) = get_validator_status(
             builder,
