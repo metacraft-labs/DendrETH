@@ -2,7 +2,7 @@ import { Redis } from '@dendreth/relay/implementations/redis';
 import { Item, KeyPrefix, WorkQueue } from '@mevitae/redis-work-queue';
 import CONSTANTS from '../../../../kv_db_constants.json';
 import { ethers } from 'ethers';
-import { getEvents } from './event-fetcher';
+import { getEvents } from './event_fetcher';
 import ValidatorsAccumulator from '../../../../../solidity/artifacts/contracts/validators_accumulator/ValidatorsAccumulator.sol/ValidatorsAccumulator.json';
 import {
   bytesToHex,

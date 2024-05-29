@@ -24,5 +24,7 @@
   "depositSignatureVerificationKey": "deposit_signature_verification",
   "depositSignatureVerificationQueue": "deposits_signature_verification_queue",
   "depositSignatureVerificationProofKey": "deposit_signature_verification_proofs",
+  "depositBalanceVerificationQueue": "deposit_balance_verification_queue",
+  "depositBalanceVerificationKey": "deposit_balance_verification",
   "balanceVerificationAccumulatorProofKey": "balance_verification_accumulator_proof"
 }
