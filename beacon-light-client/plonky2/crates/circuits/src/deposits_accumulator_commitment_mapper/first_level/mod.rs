@@ -2,9 +2,7 @@ use crate::{
     serializers::serde_bool_array_to_hex_string,
     utils::circuit::{
         biguint_to_bits_target,
-        hashing::{
-            merkle::poseidon::hash_tree_root_poseidon, poseidon::hash_poseidon, sha256::sha256,
-        },
+        hashing::{merkle::poseidon::hash_tree_root_poseidon, poseidon::poseidon, sha256::sha256},
         reverse_endianness,
     },
 };
@@ -105,7 +103,7 @@ impl Circuit for DepositsCommitmentMapperFirstLevel {
         .map(|x| builder.and(x, input.is_real));
 
         let poseidon_hash_tree_root = HashOutTarget {
-            elements: hash_poseidon(builder, input.deposit.to_targets())
+            elements: poseidon(builder, input.deposit.to_targets())
                 .elements
                 .map(|x| builder.mul(x, input.is_real.target)),
         };
