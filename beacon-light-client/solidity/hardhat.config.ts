@@ -53,6 +53,7 @@ const conf = {
   GNOSIS_RPC: process.env.GNOSIS_RPC || '',
   EVMOS_RPC: process.env.EVMOS_RPC || '',
   AURORA_RPC: process.env.AURORA_RPC || '',
+  LUKSO_RPC: process.env.LUKSO_RPC || '',
 };
 
 if (!/^0x[0-9a-fA-F]{64}$/.test(conf.USER_PRIVATE_KEY ?? '')) {
@@ -172,6 +173,10 @@ export default {
       url: conf.GNOSIS_RPC,
       accounts: [conf.USER_PRIVATE_KEY],
     },
+    lukso: {
+      url: conf.LUKSO_RPC,
+      accounts: [conf.USER_PRIVATE_KEY],
+    },
   },
   mocha: {
     timeout: 100000000,
@@ -190,6 +195,7 @@ export default {
       bscTestnet: conf.BSC_ETHERSCAN_API_KEY,
       chiado: conf.CHIADO_ETHERSCAN_API,
       gnosis: conf.GNOSIS_ETHERSCAN_API,
+      lukso: conf.ETHERSCAN_API_KEY,
     },
     customChains: [
       {
