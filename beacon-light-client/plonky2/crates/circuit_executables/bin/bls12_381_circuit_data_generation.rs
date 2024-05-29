@@ -5,11 +5,8 @@ use circuit_executables::{
     constants::SERIALIZED_CIRCUITS_DIR,
     crud::common::{load_circuit_data_starky, write_to_file},
 };
-use circuits::bls_verification::bls12_381_circuit::{BLSVerificationCircuit, BlsCircuitTargets};
-use plonky2::{
-    field::goldilocks_field::GoldilocksField,
-    plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig},
-};
+use circuits::bls_verification::bls12_381_circuit::BLSVerificationCircuit;
+use plonky2::plonk::config::PoseidonGoldilocksConfig;
 use plonky2_circuit_serializer::serializer::{CustomGateSerializer, CustomGeneratorSerializer};
 
 const CIRCUIT_NAME: &str = "bls12_381";

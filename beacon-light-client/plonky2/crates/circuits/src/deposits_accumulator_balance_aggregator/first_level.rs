@@ -16,13 +16,18 @@ use crate::{
                 poseidon::{hash_validator_poseidon, validate_merkle_proof_poseidon},
                 sha256::{hash_tree_root_sha256, validate_merkle_proof_sha256},
             },
+            poseidon::hash_poseidon,
             sha256::sha256_pair,
         },
         select_biguint, verify_proof,
     },
-    withdrawal_credentials_balance_aggregator::first_level::is_active_validator::get_validator_status,
+    withdrawal_credentials_balance_aggregator::first_level::is_active_validator::{
+        get_validator_relevance, get_validator_status,
+    },
 };
-use circuit::{circuit_builder_extensions::CircuitBuilderExtensions, Circuit, CircuitInputTarget};
+use circuit::{
+    circuit_builder_extensions::CircuitBuilderExtensions, Circuit, CircuitInputTarget, ToTargets,
+};
 use circuit_derive::{CircuitTarget, SerdeCircuitTarget};
 use num::{BigUint, FromPrimitive};
 use plonky2::{
@@ -62,9 +67,6 @@ pub struct DepositAccumulatorBalanceAggregatorFirstLevelTargets {
     #[target(in)]
     pub deposit: DepositTargets,
 
-    #[target(in, out)]
-    pub deposits_commitment_mapper_root: HashOutTarget,
-
     #[target(in)]
     pub validator_deposit_proof: PoseidonMerkleBranchTarget<32>,
 
@@ -83,17 +85,6 @@ pub struct DepositAccumulatorBalanceAggregatorFirstLevelTargets {
     #[target(in)]
     pub is_dummy: BoolTarget,
 
-    pub bls_verification_proof: ProofWithPublicInputsTarget<2>,
-
-    #[target(out)]
-    pub leftmost_deposit: DepositDataTarget,
-
-    #[target(out)]
-    pub rightmost_deposit: DepositDataTarget,
-
-    #[target(out)]
-    pub accumulated_data: AccumulatedDataTarget,
-
     #[target(in, out)]
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub current_epoch: BigUintTarget,
@@ -106,12 +97,26 @@ pub struct DepositAccumulatorBalanceAggregatorFirstLevelTargets {
     pub commitment_mapper_root: HashOutTarget,
 
     #[target(in, out)]
+    pub deposits_commitment_mapper_root: HashOutTarget,
+
+    #[target(in, out)]
     #[serde(with = "serde_bool_array_to_hex_string")]
     pub balances_root: Sha256Target,
 
     #[target(in, out)]
     #[serde(with = "serde_bool_array_to_hex_string")]
     pub genesis_fork_version: [BoolTarget; 32],
+
+    #[target(out)]
+    pub leftmost_deposit: DepositDataTarget,
+
+    #[target(out)]
+    pub rightmost_deposit: DepositDataTarget,
+
+    #[target(out)]
+    pub accumulated_data: AccumulatedDataTarget,
+
+    pub bls_verification_proof: ProofWithPublicInputsTarget<2>,
 }
 
 impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
@@ -131,8 +136,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
     ) -> Self::Target {
         let input = Self::read_circuit_input_target(builder);
 
-        // let deposit_hash_tree_root =
-        //     hash_tree_root_deposit_poseidon(builder, &input.validator_deposit);
+        let _deposit_hash_tree_root = hash_poseidon(builder, input.deposit.to_targets());
 
         let deposit_is_real = builder.not(input.is_dummy);
 
@@ -167,10 +171,12 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
             &input.validator_gindex,
         );
 
-        builder.imply(
+        let implied = builder.imply(
             deposit_is_real_and_validator_is_on_chain,
             validators_proof_is_valid,
         );
+
+        builder.assert_true(implied);
 
         assert_bool_arrays_are_equal(builder, &input.validator.pubkey, &input.deposit.pubkey);
 
@@ -187,10 +193,12 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
             &balance_gindex,
         );
 
-        builder.imply(
+        let implied = builder.imply(
             deposit_is_real_and_validator_is_on_chain,
             balances_proof_is_valid,
         );
+
+        builder.assert_true(implied);
 
         let (is_non_activated, is_active, is_exited) = get_validator_status(
             builder,
@@ -212,8 +220,17 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
             &zero_validator_status_stats,
         );
 
+        let mut is_relevant = get_validator_relevance(
+            builder,
+            &input.validator.activation_epoch,
+            &input.current_epoch,
+            &input.validator.withdrawable_epoch,
+        );
+
+        is_relevant = builder.and(is_relevant, deposit_is_real_and_validator_is_on_chain);
+
         let zero_biguint = builder.zero_biguint();
-        let validator_balance = select_biguint(builder, is_active, &balance, &zero_biguint);
+        let validator_balance = select_biguint(builder, is_relevant, &balance, &zero_biguint);
 
         let deposit_data = DepositDataTarget {
             pubkey: input.deposit.pubkey,
