@@ -19,10 +19,9 @@ use crate::{
             poseidon::poseidon,
             sha256::sha256_pair,
         },
-        select_biguint, verify_proof,
-    },
-    withdrawal_credentials_balance_aggregator::first_level::is_active_validator::{
-        get_validator_relevance, get_validator_status,
+        select_biguint,
+        validator_status::{get_validator_relevance, get_validator_status},
+        verify_proof,
     },
 };
 use circuit::{

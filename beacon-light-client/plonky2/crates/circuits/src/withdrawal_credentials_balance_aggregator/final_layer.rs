@@ -5,6 +5,7 @@ use crate::{
         serde_bool_array_to_hex_string_nested,
     },
     utils::circuit::{
+        assert_slot_is_in_epoch::assert_slot_is_in_epoch,
         biguint_to_bits_target,
         hashing::{
             merkle::{sha256::assert_merkle_proof_is_valid_const_sha256, ssz::ssz_num_to_bits},
@@ -18,7 +19,6 @@ use crate::{
 use circuit::{Circuit, CircuitInputTarget};
 use circuit_derive::CircuitTarget;
 use itertools::Itertools;
-use num::{BigUint, FromPrimitive};
 use plonky2::{
     field::{extension::Extendable, goldilocks_field::GoldilocksField},
     hash::hash_types::RichField,
@@ -29,7 +29,7 @@ use plonky2::{
         proof::ProofWithPublicInputsTarget,
     },
 };
-use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint};
+use plonky2_crypto::biguint::BigUintTarget;
 
 const D: usize = 2;
 
@@ -120,7 +120,7 @@ impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
             &validators_commitment_mapper_pi.sha256_hash_tree_root,
         );
 
-        verify_slot_is_in_range(builder, &input.slot, &balance_verification_pi.current_epoch);
+        assert_slot_is_in_epoch(builder, &input.slot, &balance_verification_pi.current_epoch);
 
         let accumulated_balance_bits = biguint_to_bits_target::<Self::F, D, 2>(
             builder,
@@ -230,128 +230,4 @@ fn validate_input_against_block_root<
         &input.slot_branch,
         34,
     );
-}
-
-pub fn verify_slot_is_in_range<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    slot: &BigUintTarget,
-    current_epoch: &BigUintTarget,
-) -> () {
-    let slots_per_epoch = builder.constant_biguint(&BigUint::from_u32(32).unwrap());
-    let slot_epoch = builder.div_biguint(slot, &slots_per_epoch);
-    builder.connect_biguint(&slot_epoch, current_epoch);
-}
-
-#[cfg(test)]
-mod test_verify_slot_is_in_range {
-    use num::{BigUint, FromPrimitive};
-    use plonky2::{
-        field::goldilocks_field::GoldilocksField,
-        iop::witness::PartialWitness,
-        plonk::{
-            circuit_builder::CircuitBuilder, circuit_data::CircuitConfig,
-            config::PoseidonGoldilocksConfig,
-        },
-    };
-    use plonky2_crypto::biguint::{CircuitBuilderBiguint, WitnessBigUint};
-
-    use crate::final_layer::verify_slot_is_in_range;
-
-    #[test]
-    fn test_verify_slot_is_in_range() -> std::result::Result<(), anyhow::Error> {
-        const D: usize = 2;
-        type C = PoseidonGoldilocksConfig;
-        type F = GoldilocksField;
-
-        let mut pw = PartialWitness::new();
-
-        let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
-
-        let slot_target = builder.add_virtual_biguint_target(2);
-        let current_epoch = builder.add_virtual_biguint_target(2);
-
-        verify_slot_is_in_range(&mut builder, &slot_target, &current_epoch);
-
-        pw.set_biguint_target(&slot_target, &BigUint::from_u64(6953401).unwrap());
-        pw.set_biguint_target(&current_epoch, &BigUint::from_u64(217293).unwrap());
-
-        let data = builder.build::<C>();
-        let proof = data.prove(pw)?;
-
-        data.verify(proof)
-    }
-
-    #[test]
-    fn test_verify_slot_is_in_range_first_slot_in_epoch() -> std::result::Result<(), anyhow::Error>
-    {
-        const D: usize = 2;
-        type C = PoseidonGoldilocksConfig;
-        type F = GoldilocksField;
-
-        let mut pw = PartialWitness::new();
-
-        let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
-
-        let slot_target = builder.add_virtual_biguint_target(2);
-        let current_epoch = builder.add_virtual_biguint_target(2);
-
-        verify_slot_is_in_range(&mut builder, &slot_target, &current_epoch);
-
-        pw.set_biguint_target(&slot_target, &BigUint::from_u64(7314752).unwrap());
-        pw.set_biguint_target(&current_epoch, &BigUint::from_u64(228586).unwrap());
-
-        let data = builder.build::<C>();
-        let proof = data.prove(pw)?;
-
-        data.verify(proof)
-    }
-
-    #[test]
-    fn test_verify_slot_is_in_range_last_slot_in_epoch() -> std::result::Result<(), anyhow::Error> {
-        const D: usize = 2;
-        type C = PoseidonGoldilocksConfig;
-        type F = GoldilocksField;
-
-        let mut pw = PartialWitness::new();
-
-        let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
-
-        let slot_target = builder.add_virtual_biguint_target(2);
-        let current_epoch = builder.add_virtual_biguint_target(2);
-
-        verify_slot_is_in_range(&mut builder, &slot_target, &current_epoch);
-
-        pw.set_biguint_target(&slot_target, &BigUint::from_u64(7314751).unwrap());
-        pw.set_biguint_target(&current_epoch, &BigUint::from_u64(228585).unwrap());
-
-        let data = builder.build::<C>();
-        let proof = data.prove(pw)?;
-
-        data.verify(proof)
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_verify_slot_is_not_in_range() -> () {
-        const D: usize = 2;
-        type C = PoseidonGoldilocksConfig;
-        type F = GoldilocksField;
-
-        let mut pw = PartialWitness::new();
-
-        let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
-
-        let slot_target = builder.add_virtual_biguint_target(2);
-        let current_epoch = builder.add_virtual_biguint_target(2);
-
-        verify_slot_is_in_range(&mut builder, &slot_target, &current_epoch);
-
-        pw.set_biguint_target(&slot_target, &BigUint::from_u64(7314751).unwrap());
-        pw.set_biguint_target(&current_epoch, &BigUint::from_u64(228586).unwrap());
-
-        let data = builder.build::<C>();
-        let proof = data.prove(pw).unwrap();
-
-        data.verify(proof).unwrap();
-    }
 }

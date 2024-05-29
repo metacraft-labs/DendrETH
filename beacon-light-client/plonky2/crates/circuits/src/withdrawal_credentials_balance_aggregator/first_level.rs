@@ -1,5 +1,3 @@
-pub mod is_active_validator;
-
 use crate::{
     common_targets::ValidatorTarget,
     serializers::{serde_bool_array_to_hex_string, serde_bool_array_to_hex_string_nested},
@@ -11,6 +9,7 @@ use crate::{
             ssz::ssz_num_from_bits,
         },
         select_biguint,
+        validator_status::get_validator_status,
     },
 };
 use circuit::Circuit;
@@ -32,8 +31,6 @@ use crate::{
     common_targets::Sha256Target,
     serializers::{biguint_to_str, parse_biguint},
 };
-
-use self::is_active_validator::get_validator_status;
 
 #[derive(CircuitTarget, SerdeCircuitTarget)]
 #[serde(rename_all = "camelCase")]

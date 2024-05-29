@@ -63,7 +63,7 @@ mod test {
     };
     use plonky2_crypto::biguint::{CircuitBuilderBiguint, WitnessBigUint};
 
-    use crate::withdrawal_credentials_balance_aggregator::first_level::is_active_validator::get_validator_status;
+    use crate::utils::circuit::validator_status::get_validator_status;
 
     use super::get_validator_relevance;
 

@@ -21,7 +21,9 @@ use crate::common_targets::SSZTarget;
 
 use self::hashing::merkle::ssz::ssz_num_from_bits;
 
+pub mod assert_slot_is_in_epoch;
 pub mod hashing;
+pub mod validator_status;
 
 pub fn verify_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F = F>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
