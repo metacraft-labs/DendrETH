@@ -12,6 +12,8 @@ pub trait CircuitBuilderExtensions {
 
     fn imply(&mut self, p: BoolTarget, q: BoolTarget) -> BoolTarget;
 
+    fn assert_implication(&mut self, p: BoolTarget, q: BoolTarget);
+
     fn assert_true(&mut self, b: BoolTarget);
 
     fn assert_false(&mut self, b: BoolTarget);
@@ -43,6 +45,11 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderExtensions
     fn imply(&mut self, p: BoolTarget, q: BoolTarget) -> BoolTarget {
         let not_p = self.not(p);
         self.or(not_p, q)
+    }
+
+    fn assert_implication(&mut self, p: BoolTarget, q: BoolTarget) {
+        let implication = self.imply(p, q);
+        self.assert_true(implication);
     }
 
     fn assert_true(&mut self, b: BoolTarget) {
