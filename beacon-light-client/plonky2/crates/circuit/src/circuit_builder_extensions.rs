@@ -1,5 +1,7 @@
 use plonky2::{
-    field::extension::Extendable, hash::hash_types::RichField, iop::target::BoolTarget,
+    field::extension::Extendable,
+    hash::hash_types::RichField,
+    iop::target::{BoolTarget, Target},
     plonk::circuit_builder::CircuitBuilder,
 };
 
@@ -19,6 +21,10 @@ pub trait CircuitBuilderExtensions {
     fn assert_false(&mut self, b: BoolTarget);
 
     fn zero_init<T: PublicInputsTargetReadable>(&mut self) -> T;
+
+    fn targets_are_equal<T: ToTargets>(&mut self, a: &T, b: &T) -> BoolTarget;
+
+    fn assert_targets_are_equal<T: ToTargets>(&mut self, a: &T, b: &T);
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderExtensions
@@ -66,4 +72,30 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderExtensions
         let zeroes = vec![self.zero(); T::get_size()];
         T::from_targets(&zeroes)
     }
+
+    fn targets_are_equal<T: ToTargets>(&mut self, a: &T, b: &T) -> BoolTarget {
+        let a_targets = a.to_targets();
+        let b_targets = b.to_targets();
+        arrays_are_equal(self, &a_targets, &b_targets)
+    }
+
+    fn assert_targets_are_equal<T: ToTargets>(&mut self, a: &T, b: &T) {
+        let targets_are_equal = self.targets_are_equal(a, b);
+        self.assert_true(targets_are_equal);
+    }
+}
+
+fn arrays_are_equal<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    first: &[Target],
+    second: &[Target],
+) -> BoolTarget {
+    assert!(first.len() == second.len());
+
+    let mut result = builder._true();
+    for idx in 0..first.len() {
+        let is_equal = builder.is_equal(first[idx], second[idx]);
+        result = builder.and(result, is_equal);
+    }
+    result
 }
