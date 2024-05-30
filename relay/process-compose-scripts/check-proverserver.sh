@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-source "${BASH_SOURCE%/*}/../../scripts/utils/paths.sh"
-source "${ROOT}/.env"
+source "${GIT_ROOT}/.env"
 
 if [[ -z "${PROVER_SERVER_HOST}" ]] && [[ -z "${PROVER_SERVER_PORT}" ]]; then
   PROVER_SERVER_HOST="http://127.0.0.1"
