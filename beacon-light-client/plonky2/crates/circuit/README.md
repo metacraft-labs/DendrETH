@@ -2,6 +2,16 @@
 
 The framework provides a common interface for all circuits. This crate, along with `circuit_derive`, automates a considerable amount of the code that one would otherwise have to write by hand in the process of writing circuits. This framework works fine on its own but is tailored to our use cases, including deserialization of the witness input and serialization of the public inputs to facilitate our distributed computation model based on Redis for IPC.
 
+## Macro expansion
+
+You can inspect the generated code with cargo-expand
+
+```sh
+$ cargo install cargo-expand
+$ cargo expand
+
+```
+
 ## Usage
 
 ### Circuit Target

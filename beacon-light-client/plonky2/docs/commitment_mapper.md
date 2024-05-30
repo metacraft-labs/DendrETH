@@ -4,7 +4,7 @@
 
 Our goal is to confirm the total of a certain collection of validator balances on-chain, aiming to diminish the amount of required on-chain Merkle proofs. Our current strategy utilizes one zk-proof validation on-chain to ensure that a specific validator set exhibits a certain balance total for a designated beacon state root.
 
-The primary obstacle encountered is the lack of zk-friendliness in the SHA-256 hash function, which is presently employed in our Merkle proofs. The performance deficiency due to the significant computational burden of the SHA-256 makes it unsuitable for our requirements. To illustrate, a single Merkle proof for a validator demands about 43 hashes, whereas the balance tree calls for 39 hashes.
+The primary obstacle encountered is the lack of zk-friendliness in the SHA-256 hash function, which is presently employed in our Merkle proofs. The performance deficiency due to the significant computational burden of the SHA-256 makes it unsuitable for our requirements. To illustrate, a single Merkle proof for a validator demands 41 hashes, whereas the balance tree calls for 39 hashes.
 
 ## Suggested Approach
 
@@ -14,4 +14,4 @@ We propose to create a commitment mapping from the validators' root (a SHA-256 M
 
 ### Dealing with Balances
 
-The complexity with balances lies in their tendency to alter with each epoch. Consequently, adopting a similar approach as the one for validators would not be feasible. This is due to the need for recalculating the proofs for all balances from the ground up for each epoch.
+The complexity with balances lies in their tendency to alter with each slot. Consequently, adopting a similar approach as the one for validators would not be feasible. This is due to the need for recalculating the proofs for all balances from the ground up for each slot.
