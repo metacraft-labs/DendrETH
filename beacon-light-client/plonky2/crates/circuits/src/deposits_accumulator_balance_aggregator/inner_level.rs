@@ -53,6 +53,11 @@ impl Circuit for DepositAccumulatorBalanceAggregatorInnerLevel {
         connect_pass_through_data(builder, &left_range, &right_range);
         assert_no_dummy_deposits_to_the_left(builder, &left_range, &right_range);
         assert_deposits_are_sorted(builder, &left_range, &right_range);
+        assert_validator_data_integrity(
+            builder,
+            &left_range.leftmost_deposit,
+            &right_range.rightmost_deposit,
+        );
 
         let (leftmost_deposit, rightmost_deposit) =
             inherit_bounding_deposits_data_from_children(builder, &left_range, &right_range);
@@ -367,5 +372,15 @@ fn assert_no_dummy_deposits_to_the_left<F: RichField + Extendable<D>, const D: u
     );
 }
 
-#[cfg(test)]
-mod test {}
+fn assert_validator_data_integrity<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    leftmost_deposit: &DepositDataTarget,
+    rightmost_deposit: &DepositDataTarget,
+) {
+    let pubkeys_are_same =
+        builder.targets_are_equal(&leftmost_deposit.pubkey, &rightmost_deposit.pubkey);
+    let validator_data_is_same =
+        builder.targets_are_equal(&leftmost_deposit.validator, &rightmost_deposit.validator);
+
+    builder.assert_implication(pubkeys_are_same, validator_data_is_same);
+}
