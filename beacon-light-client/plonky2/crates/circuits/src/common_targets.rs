@@ -103,7 +103,7 @@ pub struct DepositTargets {
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub deposit_index: BigUintTarget,
     #[serde(with = "serde_bool_array_to_hex_string")]
-    pub signature: SignatureTarget,
-    #[serde(with = "serde_bool_array_to_hex_string")]
     pub deposit_message_root: Sha256Target,
+    #[serde(with = "serde_bool_array_to_hex_string")]
+    pub signature: SignatureTarget,
 }
