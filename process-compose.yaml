@@ -79,7 +79,7 @@ processes:
   sepolia:
     description: sepolia
     log_location: ./logs/sepolia.log
-    command: yarn hardhat start-publishing --lightclient ${LC_SEPOLIA} --network sepolia --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3004
+    command: yarn hardhat start-publishing --light-client ${LC_SEPOLIA} --network sepolia --follow-network ${FOLLOW_NETWORK} --slots-jump ${SLOTS_JUMP} --prometheus-port 3004
     working_dir: ./beacon-light-client/solidity
     depends_on:
       proverserver_check:
@@ -88,7 +88,7 @@ processes:
   fantom:
     description: fantom
     log_location: ./logs/fantom.log
-    command: yarn hardhat start-publishing --lightclient ${LC_FANTOM} --network fantom --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3007
+    command: yarn hardhat start-publishing --light-client ${LC_FANTOM} --network fantom --follow-network ${FOLLOW_NETWORK} --slots-jump ${SLOTS_JUMP} --prometheus-port 3007
     working_dir: ./beacon-light-client/solidity
     depends_on:
       proverserver_check:
@@ -97,7 +97,7 @@ processes:
   alfajores:
     description: alfajores-celo
     log_location: ./logs/alfajores.log
-    command: yarn hardhat start-publishing --lightclient ${LC_ALFAJORES} --network celo --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3008
+    command: yarn hardhat start-publishing --light-client ${LC_ALFAJORES} --network celo --follow-network ${FOLLOW_NETWORK} --slots-jump ${SLOTS_JUMP} --prometheus-port 3008
     working_dir: ./beacon-light-client/solidity
     depends_on:
       proverserver_check:
@@ -106,7 +106,7 @@ processes:
   bsc:
     description: bsc
     log_location: ./logs/bsc.log
-    command: yarn hardhat start-publishing --lightclient ${LC_BSC} --network bsc --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3009
+    command: yarn hardhat start-publishing --light-client ${LC_BSC} --network bsc --follow-network ${FOLLOW_NETWORK} --slots-jump ${SLOTS_JUMP} --prometheus-port 3009
     working_dir: ./beacon-light-client/solidity
     depends_on:
       proverserver_check:
@@ -115,7 +115,7 @@ processes:
   chiado:
     description: chiado
     log_location: ./logs/chiado.log
-    command: yarn hardhat start-publishing --lightclient ${LC_CHIADO} --network chiado --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3010
+    command: yarn hardhat start-publishing --light-client ${LC_CHIADO} --network chiado --follow-network ${FOLLOW_NETWORK} --slots-jump ${SLOTS_JUMP} --prometheus-port 3010
     working_dir: ./beacon-light-client/solidity
     depends_on:
       proverserver_check:
@@ -124,7 +124,7 @@ processes:
   aurora:
     description: aurora
     log_location: ./logs/aurora.log
-    command: yarn hardhat start-publishing --lightclient ${LC_AURORA} --network aurora --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3013
+    command: yarn hardhat start-publishing --light-client ${LC_AURORA} --network aurora --follow-network ${FOLLOW_NETWORK} --slots-jump ${SLOTS_JUMP} --prometheus-port 3013
     working_dir: ./beacon-light-client/solidity
     depends_on:
       proverserver_check:
@@ -133,7 +133,7 @@ processes:
   gnosis:
     description: gnosis
     log_location: ./logs/gnosis.log
-    command: yarn hardhat start-publishing --lightclient ${LC_GNOSIS} --network gnosis --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3014
+    command: yarn hardhat start-publishing --light-client ${LC_GNOSIS} --network gnosis --follow-network ${FOLLOW_NETWORK} --slots-jump ${SLOTS_JUMP} --prometheus-port 3014
     working_dir: ./beacon-light-client/solidity
     depends_on:
       proverserver_check:
@@ -142,7 +142,7 @@ processes:
   lukso:
     description: lukso
     log_location: ./logs/lukso.log
-    command: yarn hardhat start-publishing --lightclient ${LC_LUKSO} --network lukso --follownetwork ${FOLLOW_NETWORK} --slotsjump ${SLOTS_JUMP} --prometheusport 3015
+    command: yarn hardhat start-publishing --light-client ${LC_LUKSO} --network lukso --follow-network ${FOLLOW_NETWORK} --slots-jump ${SLOTS_JUMP} --prometheus-port 3015
     working_dir: ./beacon-light-client/solidity
     depends_on:
       proverserver_check:

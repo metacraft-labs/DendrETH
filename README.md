@@ -211,10 +211,10 @@ For a full list of supported ENV variables, please see the provided
 
 We utilize BullMQ for our system.
 
-We have set up a recurring job that repeats itself after a specified time interval (slotsjump) and starts from an initial slot. The job follows a specific network, currently supporting Pratter and Mainnet. To run this job, execute the following command in the `beacon-light-client/solidity` folder:
+We have set up a recurring job that repeats itself after a specified time interval (slots-jump) and starts from an initial slot. The job follows a specific network, currently supporting Pratter and Mainnet. To run this job, execute the following command in the `beacon-light-client/solidity` folder:
 
 ```
-yarn hardhat run-update --initialslot $INITIAL_SLOT --slotsjump $SLOTS_JUMP --follownetwork pratter
+yarn hardhat run-update --initialslot $INITIAL_SLOT --slots-jump $SLOTS_JUMP --follow-network pratter
 ```
 
 The Update Polling Worker, responsible for executing this recurring job, is run by executing the following command in the `relay` folder:
@@ -244,7 +244,7 @@ Upon completion of proof generation, the generated proof is saved in Redis. The 
 These instances can be executed using:
 
 ```
-yarn hardhat start-publishing --lightclient $LC_ADDRESS --network goerli --follownetwork pratter
+yarn hardhat start-publishing --light-client $LC_ADDRESS --network goerli --follow-network pratter
 ```
 
 in the beacon-light-client/solidity folder.
