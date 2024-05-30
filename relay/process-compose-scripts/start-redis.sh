@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-source "${BASH_SOURCE%/*}/../../scripts/utils/paths.sh"
-source "${ROOT}/.env"
+source "${GIT_ROOT}/.env"
 
 # Check if Redis is running
 if pgrep redis-server >/dev/null; then
