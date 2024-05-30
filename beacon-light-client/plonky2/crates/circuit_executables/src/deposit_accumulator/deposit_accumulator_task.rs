@@ -1,3 +1,18 @@
+use crate::{commitment_mapper_context::CommitmentMapperContext, types::DepositAccumulatorTask};
+
+
+pub fn handle_deposit_accumulator_task(task: DepositAccumulatorTask) {
+    match task {
+        DepositAccumulatorTask::ProveZeroForDepth(depth) => {
+        }
+        DepositAccumulatorTask::UpdateDepositProof(deposit_index, slot) => {
+        }
+        DepositAccumulatorTask::ZeroDeposit(deposit_index, slot) => {
+        }
+    }
+    todo!()
+}
+
 async fn handle_update_validator_proof_task(
     ctx: &mut CommitmentMapperContext,
     validator_index: u64,

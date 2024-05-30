@@ -46,17 +46,17 @@ impl CommitmentMapperContext {
         ));
 
         let first_level_circuit = FirstLevelCircuit {
-            targets: get_first_level_targets(circuit_name)?,
-            data: load_circuit_data(&format!("{}/{}_0", SERIALIZED_CIRCUITS_DIR, circuit_name))?,
+            targets: get_first_level_targets(circuit_name.clone())?,
+            data: load_circuit_data(&format!("{}/{}_0", SERIALIZED_CIRCUITS_DIR, circuit_name.clone()))?,
         };
 
         let mut inner_level_circuits: Vec<InnerLevelCircuit> = Vec::new();
         for i in 1..41 {
             let inner_level_circuit = InnerLevelCircuit {
-                targets: get_inner_targets(i, circuit_name)?,
+                targets: get_inner_targets(i, circuit_name.clone())?,
                 data: load_circuit_data(&format!(
                     "{}/{}_{}",
-                    SERIALIZED_CIRCUITS_DIR, circuit_name, i
+                    SERIALIZED_CIRCUITS_DIR, circuit_name.clone(), i
                 ))?,
             };
             inner_level_circuits.push(inner_level_circuit);
@@ -69,7 +69,7 @@ impl CommitmentMapperContext {
             proof_storage,
             first_level_circuit,
             inner_level_circuits,
-            circuit_name,
+            circuit_name: circuit_name.clone()
         };
 
         Ok(ctx)

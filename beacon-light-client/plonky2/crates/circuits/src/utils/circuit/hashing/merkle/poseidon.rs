@@ -13,7 +13,7 @@ use plonky2_crypto::biguint::BigUintTarget;
 
 use crate::{
     common_targets::{PoseidonMerkleBranchTarget, ValidatorTarget},
-    utils::circuit::{biguint_to_le_bits_target, hashing::poseidon::poseidon_pair},
+    utils::circuit::{biguint_to_le_bits_target, hashing::poseidon::{poseidon, poseidon_pair}},
 };
 
 pub fn hash_tree_root_poseidon<F: RichField + Extendable<D>, const D: usize>(

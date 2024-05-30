@@ -80,7 +80,7 @@ async fn async_main() -> Result<()> {
 
         task.log();
 
-        match handle_task(&mut ctx, task).await {
+        match handle_commitment_mapper_task(&mut ctx, task).await {
             Ok(_) => {
                 ctx.work_queue
                     .complete(&mut ctx.redis_con, &queue_item)
