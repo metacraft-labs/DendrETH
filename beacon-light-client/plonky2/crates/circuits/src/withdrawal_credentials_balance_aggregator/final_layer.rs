@@ -113,7 +113,7 @@ impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
             balance_verification_pi.range_validator_commitment,
         );
 
-        validate_input_against_block_root::<Self::F, D, WITHDRAWAL_CREDENTIALS_COUNT>(
+        validate_input_against_block_root(
             builder,
             &input,
             &balance_verification_pi.range_balances_root,
@@ -122,10 +122,8 @@ impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
 
         assert_slot_is_in_epoch(builder, &input.slot, &balance_verification_pi.current_epoch);
 
-        let accumulated_balance_bits = biguint_to_bits_target::<Self::F, D, 2>(
-            builder,
-            &balance_verification_pi.range_total_value,
-        );
+        let accumulated_balance_bits =
+            biguint_to_bits_target(builder, &balance_verification_pi.range_total_value);
 
         let flattened_withdrawal_credentials = balance_verification_pi
             .withdrawal_credentials

@@ -31,7 +31,7 @@ pub fn restore_merkle_root_sha256<
     branch: &Sha256MerkleBranchTarget<DEPTH>,
     gindex: &BigUintTarget,
 ) -> Sha256Target {
-    let bits = biguint_to_le_bits_target::<F, D, 2>(builder, &gindex);
+    let bits = biguint_to_le_bits_target(builder, &gindex);
     let mut current = leaf.clone();
 
     for level in 0..DEPTH {
