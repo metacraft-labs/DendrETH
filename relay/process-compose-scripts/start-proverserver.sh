@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-source "${BASH_SOURCE%/*}/../../scripts/utils/paths.sh"
-source "${ROOT}/.env"
+source "${GIT_ROOT}/.env"
 
 if [[ -z "${PROVER_SERVER_HOST}" ]] && [[ -z "${PROVER_SERVER_PORT}" ]]; then
   echo "PROVER_SERVER_HOST and PROVER_SERVER_PORT environment variables are not set. Using default values."
@@ -13,8 +12,8 @@ fi
 
 if [[ "${PROVER_SERVER_HOST}" == "http://127.0.0.1" ]]; then
   (
-    cd "${ROOT}" || exit 1
-    proverServer "${PROVER_SERVER_PORT}" "${ROOT}/data/light_client.zkey"
+    cd "${GIT_ROOT}" || exit 1
+    proverServer "${PROVER_SERVER_PORT}" "${GIT_ROOT}/data/light_client.zkey"
     echo "Prover server started with command"
   )
 
