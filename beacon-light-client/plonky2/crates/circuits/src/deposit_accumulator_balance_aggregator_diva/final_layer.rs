@@ -1,6 +1,6 @@
 use crate::{
     common_targets::{PoseidonMerkleBranchTarget, Sha256MerkleBranchTarget},
-    deposits_accumulator_commitment_mapper::first_level::DepositsCommitmentMapperFirstLevel,
+    pubkey_commitment_mapper::first_level::PubkeyCommitmentMapperFL,
     serializers::{
         biguint_to_str, parse_biguint, serde_bool_array_to_hex_string,
         serde_bool_array_to_hex_string_nested,
@@ -42,8 +42,8 @@ use super::first_level::DepositAccumulatorBalanceAggregatorDivaFirstLevel;
 pub struct DepositAccumulatorBalanceAggregatorDivaFinalLayerTarget {
     pub balance_aggregation_proof: ProofWithPublicInputsTarget<2>,
     pub validators_commitment_mapper_root_proof: ProofWithPublicInputsTarget<2>,
-    pub validators_commitment_mapper_65536_proof: ProofWithPublicInputsTarget<2>,
-    pub deposits_commitment_mapper_root_proof: ProofWithPublicInputsTarget<2>,
+    pub validators_commitment_mapper_65536gindex_proof: ProofWithPublicInputsTarget<2>,
+    pub pubkey_commitment_mapper_proof: ProofWithPublicInputsTarget<2>,
 
     // Public input
     #[target(in)]
@@ -59,7 +59,7 @@ pub struct DepositAccumulatorBalanceAggregatorDivaFinalLayerTarget {
 
     #[target(in)]
     #[serde(with = "serde_bool_array_to_hex_string_nested")]
-    pub validators_branch: Sha256MerkleBranchTarget<5>,
+    pub validators_branch: Sha256MerkleBranchTarget<6>,
 
     #[target(in)]
     #[serde(with = "serde_bool_array_to_hex_string_nested")]
@@ -97,14 +97,16 @@ impl Circuit for DepositAccumulatorBalanceAggregatorDivaFinalLayer {
         CircuitData<Self::F, Self::C, { Self::D }>,
         CircuitData<Self::F, Self::C, { Self::D }>,
         CircuitData<Self::F, Self::C, { Self::D }>,
+        CircuitData<Self::F, Self::C, { Self::D }>,
     );
 
     fn define(
         builder: &mut CircuitBuilder<Self::F, { Self::D }>,
         (
             deposit_accumulator_balance_aggregator_circuit_data,
-            validators_commitment_mapper_circuit_data,
-            deposit_commitment_mapper_circuit_data,
+            validators_commitment_mapper_root_circuit_data,
+            validators_commitment_mapper_65536_circuit_data,
+            pubkey_commitment_mapper_circuit_data,
         ): &Self::Params,
     ) -> Self::Target {
         let input = Self::read_circuit_input_target(builder);
@@ -114,47 +116,46 @@ impl Circuit for DepositAccumulatorBalanceAggregatorDivaFinalLayer {
             &deposit_accumulator_balance_aggregator_circuit_data,
         );
         let validators_commitment_mapper_root_proof =
-            verify_proof(builder, &validators_commitment_mapper_circuit_data);
-        let validators_commitment_mapper_65536_proof =
-            verify_proof(builder, &validators_commitment_mapper_circuit_data);
-        let deposits_commitment_mapper_root_proof =
-            verify_proof(builder, &deposit_commitment_mapper_circuit_data);
+            verify_proof(builder, &validators_commitment_mapper_root_circuit_data);
+        let validators_commitment_mapper_65536gindex_proof =
+            verify_proof(builder, &validators_commitment_mapper_65536_circuit_data);
+        let pubkey_commitment_mapper_proof =
+            verify_proof(builder, &pubkey_commitment_mapper_circuit_data);
 
         let balance_aggregation_pis =
             DepositAccumulatorBalanceAggregatorDivaFirstLevel::read_public_inputs_target(
                 &balance_aggregation_proof.public_inputs,
             );
-
         let validators_commitment_mapper_root_pis =
             ValidatorsCommitmentMapperFirstLevel::read_public_inputs_target(
                 &validators_commitment_mapper_root_proof.public_inputs,
             );
-        let validators_commitment_mapper_65536_pis =
+        let validators_commitment_mapper_65536gindex_pis =
             ValidatorsCommitmentMapperFirstLevel::read_public_inputs_target(
-                &validators_commitment_mapper_65536_proof.public_inputs,
+                &validators_commitment_mapper_65536gindex_proof.public_inputs,
             );
-        let deposits_commitment_mapper_pis =
-            DepositsCommitmentMapperFirstLevel::read_public_inputs_target(
-                &deposits_commitment_mapper_root_proof.public_inputs,
-            );
+
+        let pubkey_commitment_mapper_pis = PubkeyCommitmentMapperFL::read_public_inputs_target(
+            &pubkey_commitment_mapper_proof.public_inputs,
+        );
 
         let poseidon_branch = get_validators_poseidon_branch(builder);
 
         assert_merkle_proof_is_valid_const_poseidon(
             builder,
-            &validators_commitment_mapper_root_pis.poseidon_hash_tree_root,
+            &validators_commitment_mapper_65536gindex_pis.poseidon_hash_tree_root,
             &validators_commitment_mapper_root_pis.poseidon_hash_tree_root,
             &poseidon_branch,
             65536,
         );
 
         builder.connect_hashes(
-            validators_commitment_mapper_65536_pis.poseidon_hash_tree_root,
+            validators_commitment_mapper_65536gindex_pis.poseidon_hash_tree_root,
             balance_aggregation_pis.validators_commitment_mapper_root,
         );
         builder.connect_hashes(
-            deposits_commitment_mapper_pis.poseidon_hash_tree_root,
-            balance_aggregation_pis.deposits_hash_tree_root,
+            pubkey_commitment_mapper_pis.poseidon,
+            balance_aggregation_pis.pubkey_commitment_mapper_root,
         );
 
         validate_data_against_block_root(
@@ -170,7 +171,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorDivaFinalLayer {
             builder,
             &input,
             &balance_aggregation_pis,
-            &deposits_commitment_mapper_pis,
+            &pubkey_commitment_mapper_pis,
         );
 
         // Mask the last 3 bits in big endian as zero
@@ -184,8 +185,8 @@ impl Circuit for DepositAccumulatorBalanceAggregatorDivaFinalLayer {
         Self::Target {
             balance_aggregation_proof,
             validators_commitment_mapper_root_proof,
-            validators_commitment_mapper_65536_proof,
-            deposits_commitment_mapper_root_proof,
+            validators_commitment_mapper_65536gindex_proof,
+            pubkey_commitment_mapper_proof,
             block_root: input.block_root,
             state_root: input.state_root,
             state_root_branch: input.state_root_branch,
@@ -256,7 +257,7 @@ fn hash_public_inputs<F: RichField + Extendable<D>, const D: usize>(
     balance_aggregation_pis: &CircuitOutputTarget<
         DepositAccumulatorBalanceAggregatorDivaFirstLevel,
     >,
-    deposits_commitment_mapper_pis: &CircuitOutputTarget<DepositsCommitmentMapperFirstLevel>,
+    deposits_commitment_mapper_pis: &CircuitOutputTarget<PubkeyCommitmentMapperFL>,
 ) -> Sha256Target {
     let balance_bits =
         biguint_to_bits_target(builder, &balance_aggregation_pis.accumulated_data.balance);
@@ -297,9 +298,7 @@ fn hash_public_inputs<F: RichField + Extendable<D>, const D: usize>(
         &[
             input.block_root.as_slice(),
             block_number_bits.as_slice(),
-            deposits_commitment_mapper_pis
-                .sha256_hash_tree_root
-                .as_slice(),
+            deposits_commitment_mapper_pis.sha256.as_slice(),
             balance_bits.as_slice(),
             number_of_non_activated_validators_bits.as_slice(),
             number_of_active_validators_bits.as_slice(),

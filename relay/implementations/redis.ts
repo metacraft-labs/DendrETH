@@ -423,6 +423,28 @@ export class Redis implements IRedis {
     );
   }
 
+  async saveBalanceAggregatorFinalProofInput(
+    protocol: string,
+    input: {
+      blockRoot: string;
+      stateRoot: string;
+      stateRootBranch: string[];
+      validatorsBranch: string[];
+      balanceBranch: string[];
+      executionBlockNumber: string;
+      executionBlockNumberBranch: string[];
+      slot: string;
+      slotBranch: string[];
+    },
+  ) {
+    await this.waitForConnection();
+
+    await this.client.set(
+      `${protocol}:${CONSTANTS.depositBalanceVerificationFinalProofInputKey}`,
+      JSON.stringify(input),
+    );
+  }
+
   async saveValidatorProof(
     gindex: bigint,
     slot: bigint,
@@ -542,6 +564,7 @@ export class Redis implements IRedis {
   }
 
   async extractHashFromDepositCommitmentMapperProof(
+    protocol: string,
     gindex: bigint,
     hashAlgorithm: 'sha256' | 'poseidon',
   ): Promise<number[] | null> {
@@ -553,12 +576,12 @@ export class Redis implements IRedis {
     const hashKey = hashAlgorithmOptionMap[hashAlgorithm];
 
     const result = await this.client.get(
-      `${CONSTANTS.balanceVerificationAccumulatorProofKey}:${gindex}`,
+      `${protocol}:${CONSTANTS.balanceVerificationAccumulatorProofKey}:${gindex}`,
     );
     if (result === null) {
       const depth = getDepthByGindex(Number(gindex));
       const result = await this.client.get(
-        `${CONSTANTS.balanceVerificationAccumulatorProofKey}:zeroes:${depth}`,
+        `${protocol}:${CONSTANTS.balanceVerificationAccumulatorProofKey}:zeroes:${depth}`,
       );
 
       if (result == null) {
@@ -573,43 +596,58 @@ export class Redis implements IRedis {
 
   async saveDepositBalanceVerificationInput(
     protocol: string,
+    index: bigint,
+    input: any,
+  ): Promise<void> {
+    await this.waitForConnection();
+
+    await this.client.set(
+      `${protocol}:${CONSTANTS.depositBalanceVerificationInputKey}:${index}`,
+      JSONbig.stringify(input),
+    );
+  }
+
+  async saveDepositBalanceVerificationProof(
+    protocol: string,
     level: bigint,
     index: bigint,
     proof = {
-      validator: {
-        pubkey: ''.padEnd(96, '0'),
-        withdrawalCredentials: ''.padEnd(64, '0'),
-        effectiveBalance: '0',
-        slashed: false,
-        activationEligibilityEpoch: '0',
-        activationEpoch: '0',
-        exitEpoch: '0',
-        withdrawableEpoch: '0',
+      needsChange: true,
+      proofKey: '',
+      publicInputs: {
+        validator: {
+          pubkey: ''.padEnd(96, '0'),
+          withdrawalCredentials: ''.padEnd(64, '0'),
+          effectiveBalance: '0',
+          slashed: false,
+          activationEligibilityEpoch: '0',
+          activationEpoch: '0',
+          exitEpoch: '0',
+          withdrawableEpoch: '0',
+        },
+        validatorDeposit: {
+          pubkey: ''.padEnd(96, '0'),
+          depositIndex: '0',
+          signature: ''.padEnd(192, '0'),
+          depositMessageRoot: ''.padEnd(64, '0'),
+        },
+        commitmentMapperRoot: [''],
+        commitmentMapperProof: [['']],
+        validatorIndex: 0,
+        validatorDepositRoot: [''],
+        validatorDepositProof: [['']],
+        balanceTreeRoot: ''.padEnd(64, '0'),
+        balanceLeaf: ''.padEnd(64, '0'),
+        balanceProof: [''.padEnd(64, '0')],
+        currentEpoch: '0',
+        isDummy: true,
       },
-      validatorDeposit: {
-        pubkey: ''.padEnd(96, '0'),
-        depositIndex: '0',
-        signature: ''.padEnd(192, '0'),
-        depositMessageRoot: ''.padEnd(64, '0'),
-      },
-      commitmentMapperRoot: [''],
-      commitmentMapperProof: [['']],
-      validatorIndex: 0,
-      validatorDepositRoot: [''],
-      validatorDepositProof: [['']],
-      balanceTreeRoot: ''.padEnd(64, '0'),
-      balanceLeaf: ''.padEnd(64, '0'),
-      balanceProof: [''.padEnd(64, '0')],
-      blsSignatureProofKey: `bls12_381_${''.padEnd(96, '0')}_0`,
-      currentEpoch: '0',
-      isDummy: true,
-      eth1DepositIndex: 0,
     },
   ): Promise<void> {
     await this.waitForConnection();
 
     await this.client.set(
-      `${protocol}:${CONSTANTS.depositBalanceVerificationKey}:${level}:${index}`,
+      `${protocol}:${CONSTANTS.depositBalanceVerificationProofKey}:${level}:${index}`,
       JSONbig.stringify(proof),
     );
   }

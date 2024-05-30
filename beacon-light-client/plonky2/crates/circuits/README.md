@@ -90,7 +90,42 @@ The `circuits` crate houses all circuits pertinent to the application. Let's del
 
 ---
 
-## Deposits Accumulator Balance Aggregator
+## Deposits Accumulator Balance Aggregator Diva
+
+**Description:** Computes the total value locked of the validators that are part of the ValidatorsAccumulator Diva contract
+
+### First Level
+
+**Location:** `circuits/src/deposit_accumulator_balance_aggregator_diva/first_level.rs`
+
+**Workflow:**
+
+1. **Target Definitions:** Defines the `DepositAccumulatorBalanceAggregatorDivaFirstLevelTarget`
+2. **Circuit Inputs:** Accepts the validator, validators_commitment_mapper_branch, validators_commitment_mapper_root, deposit, balance_leaf, balance_branch, balances_root, current_epoch, is_dummy
+3. **Circuit Outputs:** current_epoch, validators_commitment_mapper_root, balances_root, deposits_hash_tree_root, accumulated_data.
+4. **Data validation:** The validator and the balance_leaf are validated against the validators_commitment_mapper_root and the balances_root
+5. **Deposit hashing:** The deposits are hashed and the deposits_hash_tree_root is outputted
+6. **Data accumulation:** The circuit outputs also the balance of the validator if it is relevant and also its validator stats exept if it is dummy and then zero is returned.
+
+### Inner Level
+
+**Location:** `circuits/src/deposit_accumulator_balance_aggregator_diva/inner_level.rs`
+
+**Workflow:**
+
+1. **Circuit Definition:** The circuit uses `BasicRecursiveInnerCircuitTarget` defined in `circuits/src/common_targets.rs` which basically defines two proofs as targets.
+2. **Proof Verification:** Both proofs undergo verification.
+3. **Validated pass through data:** The data that is propagated up from the leaf level is validated to be equal in both proofs
+4. **Deposit hashing:** Hash values from the proofs are extracted and combined to produce a new level hash.
+5. **Data accumulation:** Sums from booth proofs are accumulated.
+
+### Final Layer
+
+**Location:** `circuits/src/deposit_accumulator_balance_aggregator_diva/final_layer.rs`
+
+**Description:** This circuit provides the final proof for total value locked (TVL) using the proofs from balance aggregator, validators commitment mapper and deposits commitment mapper.
+
+## Deposits Accumulator Balance Aggregator (Not to be audited)
 
 The purpose of this circuit is to compute the total value locked (TVL) of all validators that have deposited through the `ValidatorsAccumulator` contract on-chain. This computation is done within the `deposits_accumulator_balance_aggregator` circuit, which has both first-level and inner-level components.
 

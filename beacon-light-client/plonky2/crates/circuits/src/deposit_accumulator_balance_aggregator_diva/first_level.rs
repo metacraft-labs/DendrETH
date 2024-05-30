@@ -1,8 +1,6 @@
 use crate::{
     common_targets::{PubkeyTarget, Sha256MerkleBranchTarget},
-    deposits_accumulator_balance_aggregator::common_targets::{
-        AccumulatedDataTargetDiva, ValidatorStatusStatsTarget,
-    },
+    deposits_accumulator_balance_aggregator::common_targets::ValidatorStatusStatsTarget,
     serializers::{
         biguint_to_str, parse_biguint, serde_bool_array_to_hex_string,
         serde_bool_array_to_hex_string_nested,
@@ -14,14 +12,14 @@ use crate::{
                 poseidon::{hash_validator_poseidon, validate_merkle_proof_poseidon},
                 sha256::validate_merkle_proof_sha256,
             },
-            poseidon::poseidon,
+            poseidon::poseidon_or_zeroes,
         },
         select_biguint,
         validator_status::{get_validator_relevance, get_validator_status},
     },
 };
 use circuit::{circuit_builder_extensions::CircuitBuilderExtensions, Circuit, ToTargets};
-use circuit_derive::{CircuitTarget, SerdeCircuitTarget};
+use circuit_derive::{CircuitTarget, PublicInputsReadable, SerdeCircuitTarget, TargetPrimitive};
 use num::{BigUint, FromPrimitive};
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
@@ -38,6 +36,14 @@ use crate::common_targets::{PoseidonMerkleBranchTarget, Sha256Target, ValidatorT
 
 pub struct DepositAccumulatorBalanceAggregatorDivaFirstLevel {}
 
+#[derive(Clone, Debug, TargetPrimitive, PublicInputsReadable, SerdeCircuitTarget)]
+#[serde(rename_all = "camelCase")]
+pub struct AccumulatedDataTargetDiva {
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
+    pub balance: BigUintTarget,
+    pub validator_status_stats: ValidatorStatusStatsTarget,
+}
+
 #[derive(CircuitTarget, SerdeCircuitTarget)]
 #[serde(rename_all = "camelCase")]
 pub struct DepositAccumulatorBalanceAggregatorDivaFirstLevelTarget {
@@ -53,7 +59,7 @@ pub struct DepositAccumulatorBalanceAggregatorDivaFirstLevelTarget {
 
     #[target(in)]
     #[serde(with = "serde_bool_array_to_hex_string")]
-    pub deposit: PubkeyTarget,
+    pub deposit_pubkey: PubkeyTarget,
 
     #[target(in)]
     #[serde(with = "serde_bool_array_to_hex_string")]
@@ -78,7 +84,7 @@ pub struct DepositAccumulatorBalanceAggregatorDivaFirstLevelTarget {
     pub balances_root: Sha256Target,
 
     #[target(out)]
-    pub deposits_hash_tree_root: HashOutTarget,
+    pub pubkey_commitment_mapper_root: HashOutTarget,
 
     #[target(out)]
     pub accumulated_data: AccumulatedDataTargetDiva,
@@ -93,8 +99,6 @@ impl Circuit for DepositAccumulatorBalanceAggregatorDivaFirstLevel {
 
     type Target = DepositAccumulatorBalanceAggregatorDivaFirstLevelTarget;
 
-    type Params = ();
-
     fn define(
         builder: &mut CircuitBuilder<Self::F, { Self::D }>,
         _params: &Self::Params,
@@ -103,11 +107,8 @@ impl Circuit for DepositAccumulatorBalanceAggregatorDivaFirstLevel {
 
         let deposit_is_real = builder.not(input.is_dummy);
 
-        let deposits_hash_tree_root = HashOutTarget {
-            elements: poseidon(builder, input.deposit.to_targets())
-                .elements
-                .map(|x| builder.mul(x, deposit_is_real.target)),
-        };
+        let deposits_hash_tree_root =
+            poseidon_or_zeroes(builder, input.deposit_pubkey.to_targets(), deposit_is_real);
 
         let validator_hash_tree_root = hash_validator_poseidon(builder, &input.validator);
 
@@ -121,7 +122,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorDivaFirstLevel {
 
         builder.assert_implication(deposit_is_real, is_valid);
 
-        assert_bool_arrays_are_equal(builder, &input.validator.pubkey, &input.deposit);
+        assert_bool_arrays_are_equal(builder, &input.validator.pubkey, &input.deposit_pubkey);
 
         let four = builder.constant_biguint(&BigUint::from_u64(4u64).unwrap());
         let balance_inner_index = builder.rem_biguint(&input.validator_gindex, &four);
@@ -183,13 +184,13 @@ impl Circuit for DepositAccumulatorBalanceAggregatorDivaFirstLevel {
             validators_commitment_mapper_root: input.validators_commitment_mapper_root,
             validators_commitment_mapper_branch: input.validators_commitment_mapper_branch,
             validator_gindex: input.validator_gindex,
-            deposit: input.deposit,
+            deposit_pubkey: input.deposit_pubkey,
             balances_root: input.balances_root,
             balance_leaf: input.balance_leaf,
             balance_branch: input.balance_branch,
             is_dummy: input.is_dummy,
             current_epoch: input.current_epoch,
-            deposits_hash_tree_root: deposits_hash_tree_root,
+            pubkey_commitment_mapper_root: deposits_hash_tree_root,
         }
     }
 }
@@ -280,7 +281,7 @@ mod test {
             result.accumulated_data.validator_status_stats.slashed_count,
             0
         );
-        assert_ne!(result.deposits_hash_tree_root.0, [0, 0, 0, 0]);
+        assert_ne!(result.pubkey_commitment_mapper_root.0, [0, 0, 0, 0]);
     }
 
     #[test]
@@ -292,7 +293,7 @@ mod test {
         >(&json_str)
         .unwrap();
 
-        json_input.deposit[253] = true;
+        json_input.deposit_pubkey[253] = true;
 
         let s = Instant::now();
         println!("Stared building circuit");
@@ -494,7 +495,7 @@ mod test {
             0
         );
 
-        assert_eq!(result.deposits_hash_tree_root.0, [0, 0, 0, 0]);
+        assert_eq!(result.pubkey_commitment_mapper_root.0, [0, 0, 0, 0]);
     }
 
     fn read_file_to_string() -> io::Result<String> {
