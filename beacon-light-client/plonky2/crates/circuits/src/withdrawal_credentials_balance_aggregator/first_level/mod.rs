@@ -18,7 +18,7 @@ use circuit_derive::{CircuitTarget, SerdeCircuitTarget};
 use itertools::Itertools;
 
 use plonky2::{
-    field::goldilocks_field::GoldilocksField,
+    field::{goldilocks_field::GoldilocksField, types::Field},
     hash::hash_types::HashOutTarget,
     iop::target::{BoolTarget, Target},
     plonk::{
@@ -211,19 +211,42 @@ where
     }
 }
 
+pub(crate) fn reconcile_validator_field<const N: usize>(
+    builder: &mut CircuitBuilder<GoldilocksField, D>,
+    field: &str,
+) -> [BoolTarget; N] {
+    field
+        .as_bytes()
+        .iter()
+        .map(|b| BoolTarget::new_unsafe(builder.constant(GoldilocksField::from_canonical_u8(*b))))
+        .collect_vec()
+        .try_into()
+        .unwrap()
+}
+
 #[cfg(test)]
 mod test_withdrawal_credentials_balance_aggregator_first_level {
+    use crate::{
+        common_targets::ValidatorTarget,
+        utils::circuit::hashing::merkle::{
+            poseidon::hash_tree_root_poseidon, sha256::hash_tree_root_sha256,
+        },
+        withdrawal_credentials_balance_aggregator::first_level::{
+            reconcile_validator_field, ValidatorBalanceVerificationTargets,
+        },
+    };
     use circuit::Circuit;
+    use itertools::Itertools;
     use num::{BigUint, FromPrimitive};
     use plonky2::{
-        field::goldilocks_field::GoldilocksField,
-        iop::witness::PartialWitness,
+        field::{goldilocks_field::GoldilocksField, types::Field},
+        iop::{target::BoolTarget, witness::PartialWitness},
         plonk::{
             circuit_builder::CircuitBuilder, circuit_data::CircuitConfig,
             config::PoseidonGoldilocksConfig,
         },
     };
-    use plonky2_crypto::biguint::{CircuitBuilderBiguint, WitnessBigUint};
+    use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint, WitnessBigUint};
 
     use crate::withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel;
 
@@ -238,7 +261,41 @@ mod test_withdrawal_credentials_balance_aggregator_first_level {
 
         let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
 
-        WithdrawalCredentialsBalanceAggregatorFirstLevel::define(&mut builder, params);
+        // one less than withdrawable epoch of the validator target
+        let current_epoch = builder.constant_biguint(&BigUint::from(11088797506618031724u64));
+        let number_of_non_activated_validators = builder.zero();
+        let number_of_active_validators = builder.one();
+        let number_of_exited_validators = builder.zero();
+        let number_of_slashed_validators = builder.zero();
+        let non_zero_validator_leaves_mask = [builder._true()];
+
+        let pubkey = "0xdce8886981784ec14df0d772ec184989d730c3aa693067c18f69ae545e0a75bdce897cd1b2a80b752d81fa5273fe4ef9";
+        let withdrawal_credentials =
+            "0x9da1972f5f429488f41d31ce8e9284de3226ebf98dcc18016ddb91257ce999b6";
+        let validator_target = ValidatorTarget {
+            pubkey: reconcile_validator_field::<384>(&mut builder, pubkey),
+            withdrawal_credentials: reconcile_validator_field::<256>(
+                &mut builder,
+                withdrawal_credentials,
+            ),
+            effective_balance: builder.constant_biguint(&BigUint::from(14214326743871124494u64)),
+            slashed: builder._false(),
+            activation_eligibility_epoch: builder
+                .constant_biguint(&BigUint::from(17597259681949569805u64)),
+            activation_epoch: builder.constant_biguint(&BigUint::from(6353383518537632738u64)),
+            exit_epoch: builder.constant_biguint(&BigUint::from(9536164400595174516u64)),
+            withdrawable_epoch: builder.constant_biguint(&BigUint::from(11088797506618031725u64)),
+        };
+
+        let withdrawal_credentials = [validator_target.withdrawal_credentials];
+        let balances_leaves = [validator_target.effective_balance.clone()]; // perhaps it's not the effective balance of the validator?
+                                                                            // let range_balances_root = hash_tree_root_sha256(&mut builder, &balances_leaves);
+        let mut range_total_value = validator_target.effective_balance.limbs;
+        range_total_value.pop();
+        let range_total_value = range_total_value.to_owned();
+        // let range_validator_commitment = hash_tree_root_poseidon(&mut builder, &validators_leaves);
+
+        // WithdrawalCredentialsBalanceAggregatorFirstLevel::define(&mut builder, params);
 
         // let slot_target = builder.add_virtual_biguint_target(2);
         // let current_epoch = builder.add_virtual_biguint_target(2);
@@ -252,9 +309,3 @@ mod test_withdrawal_credentials_balance_aggregator_first_level {
         data.verify(proof)
     }
 }
-
-// Withdrawal
-// Credentials
-// Balance
-// Aggregator
-// FirstLevel
