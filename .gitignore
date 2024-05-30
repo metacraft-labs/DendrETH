@@ -181,3 +181,7 @@ redis-server/
 
 # Solidity remappings
 **/*/remappings.txt
+
+# secrets dir
+
+.secrets/
