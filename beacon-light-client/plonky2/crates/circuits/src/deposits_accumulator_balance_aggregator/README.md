@@ -13,6 +13,7 @@ Finally, the final layer circuit's job is to prove the computation was in fact d
 ## First Level Circuit
 
 ### Algorithm
+
 - Verifies a proof that verifies the BLS signature of the deposit.
 - Asserts that the BLS verification proof was made for the correct message and pubkey.
 - Computes the packed poseidon hash of the deposit and performs a merkle proof against the mapped poseidon deposists accumulator hash tree root in our deposits accumulator commitment mapper.
@@ -21,12 +22,13 @@ Finally, the final layer circuit's job is to prove the computation was in fact d
 - Extracts the validator's balance from the balances ssz leaf.
 - Computes validator status bits (is_non_activated, is_active, is_exited, is_slashed).
 - Outputs if the deposit is real, zeroes out everything otherwise:
-	- **validator balance** - equals the extracted balance if the pubkey is owned by an active validator
-	- **validator status bits** - zeroes if it's not a validator
-	- **is_counted (whether the validator's stats are already accumulated)** - validator is on chain
-	- **accumulated_data (balance, deposits_count, validator_status_stats)** - (validator balance, 1, validator status bits)
+  - **validator balance** - equals the extracted balance if the pubkey is owned by an active validator
+  - **validator status bits** - zeroes if it's not a validator
+  - **is_counted (whether the validator's stats are already accumulated)** - validator is on chain
+  - **accumulated_data (balance, deposits_count, validator_status_stats)** - (validator balance, 1, validator status bits)
 
 ### Private Inputs
+
 - **validator** - The deposit's public key's corresponding validator
 - **commitment_mapper_proof**
 - **validator_gindex** - The generalized index of the deposit's corresponding validator
@@ -45,6 +47,7 @@ Finally, the final layer circuit's job is to prove the computation was in fact d
 - **bls_verification_proof**
 
 ### Public Inputs
+
 - **current_epoch (pass-through)**
 - **eth1_deposit_index (pass-through)**
 - **commitment_mapper_root (pass-through)**
@@ -58,5 +61,3 @@ Finally, the final layer circuit's job is to prove the computation was in fact d
 ## Inner Level Circuit
 
 ## Final Layer Circuit
-
-
