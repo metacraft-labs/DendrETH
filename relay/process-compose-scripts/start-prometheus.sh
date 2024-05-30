@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-source "${BASH_SOURCE%/*}/../../scripts/utils/paths.sh"
-source "${ROOT}/.env"
+source "${GIT_ROOT}/.env"
 
 # Check if Redis is running
 if pgrep prometheus >/dev/null; then
@@ -9,7 +8,7 @@ if pgrep prometheus >/dev/null; then
 else
   echo "Prometheus is not running. Starting a new one"
   (
-    cd "${ROOT}/relay" || exit 1
+    cd "${GIT_ROOT}/relay" || exit 1
     prometheus --config.file=prometheus.yml
   )
 fi
