@@ -1,6 +1,4 @@
-For the BLS signature verification we rely on https://github.com/Electron-Labs/starky_bls12_381
-
-The BLS signature verification happens in the following way: 
+The BLS signature verification is based on third-party circuits located at https://github.com/Electron-Labs/starky_bls12_381 and works in the following way:
 
 We have `pubkey`, `signature` and `message` as inputs.
 The `pubkey` is just a compressed version of BLS G1 point, the `signature` is a compressed version of BLS G2 point and the `message` gets hashed to a G2 point using `hash_to_curve`.
