@@ -1,10 +1,7 @@
 use anyhow::Result;
 
 use circuit_executables::{
-    commitment_mapper_context::{CommitmentMapperContext, WorkQueueConfig},
-    commitment_mapper_task::{handle_task, CommitmentMapperTask},
-    crud::proof_storage::proof_storage::create_proof_storage,
-    utils::{parse_config_file, CommandLineOptionsBuilder},
+    commitment_mapper_context::{CommitmentMapperContext, WorkQueueConfig}, commitment_mapper_task::handle_commitment_mapper_task, crud::proof_storage::proof_storage::create_proof_storage, types::CommitmentMapperTask, utils::{parse_config_file, CommandLineOptionsBuilder}
 };
 use colored::Colorize;
 use futures_lite::future;
@@ -80,7 +77,7 @@ async fn async_main() -> Result<()> {
 
         task.log();
 
-        match handle_task(&mut ctx, task).await {
+        match handle_commitment_mapper_task(&mut ctx, task).await {
             Ok(_) => {
                 ctx.work_queue
                     .complete(&mut ctx.redis_con, &queue_item)
