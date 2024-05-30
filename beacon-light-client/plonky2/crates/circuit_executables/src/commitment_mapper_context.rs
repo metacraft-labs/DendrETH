@@ -1,8 +1,11 @@
 use anyhow::Result;
 use circuit::{serde_circuit_target::deserialize_circuit_target, CircuitTargetType};
-use circuits::validators_commitment_mapper::{
-    first_level::ValidatorsCommitmentMapperFirstLevel,
-    inner_level::ValidatorsCommitmentMapperInnerLevel,
+use circuits::{
+    deposits_accumulator_commitment_mapper::first_level::DepositsCommitmentMapperFirstLevel,
+    validators_commitment_mapper::{
+        first_level::ValidatorsCommitmentMapperFirstLevel,
+        inner_level::ValidatorsCommitmentMapperInnerLevel,
+    },
 };
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
@@ -28,7 +31,15 @@ pub struct CommitmentMapperContext {
     pub proof_storage: Box<dyn ProofStorage>,
     pub first_level_circuit: FirstLevelCircuit,
     pub inner_level_circuits: Vec<InnerLevelCircuit>,
-    pub circuit_name: String
+}
+
+pub struct DepositCommitmentMapperContext {
+    pub redis_con: Connection,
+    pub work_queue: WorkQueue,
+    pub work_queue_cfg: WorkQueueConfig,
+    pub proof_storage: Box<dyn ProofStorage>,
+    pub first_level_circuit: FirstLevelDepositCircuit,
+    pub inner_level_circuits: Vec<InnerLevelCircuit>,
 }
 
 impl CommitmentMapperContext {
@@ -47,7 +58,11 @@ impl CommitmentMapperContext {
 
         let first_level_circuit = FirstLevelCircuit {
             targets: get_first_level_targets(circuit_name.clone())?,
-            data: load_circuit_data(&format!("{}/{}_0", SERIALIZED_CIRCUITS_DIR, circuit_name.clone()))?,
+            data: load_circuit_data(&format!(
+                "{}/{}_0",
+                SERIALIZED_CIRCUITS_DIR,
+                circuit_name.clone()
+            ))?,
         };
 
         let mut inner_level_circuits: Vec<InnerLevelCircuit> = Vec::new();
@@ -56,7 +71,9 @@ impl CommitmentMapperContext {
                 targets: get_inner_targets(i, circuit_name.clone())?,
                 data: load_circuit_data(&format!(
                     "{}/{}_{}",
-                    SERIALIZED_CIRCUITS_DIR, circuit_name.clone(), i
+                    SERIALIZED_CIRCUITS_DIR,
+                    circuit_name.clone(),
+                    i
                 ))?,
             };
             inner_level_circuits.push(inner_level_circuit);
@@ -69,7 +86,54 @@ impl CommitmentMapperContext {
             proof_storage,
             first_level_circuit,
             inner_level_circuits,
-            circuit_name: circuit_name.clone()
+        };
+
+        Ok(ctx)
+    }
+}
+
+impl DepositCommitmentMapperContext {
+    pub async fn new(
+        redis_connection: &str,
+        work_queue_cfg: WorkQueueConfig,
+        proof_storage: Box<dyn ProofStorage>,
+        circuit_name: String,
+    ) -> Result<Self> {
+        let client = redis::Client::open(redis_connection)?;
+        let redis_con = client.get_async_connection().await?;
+
+        let work_queue = WorkQueue::new(KeyPrefix::new(DB_CONSTANTS.deposit_queue.to_owned()));
+
+        let first_level_circuit = FirstLevelDepositCircuit {
+            targets: get_deposit_first_level_targets(circuit_name.clone())?,
+            data: load_circuit_data(&format!(
+                "{}/{}_0",
+                SERIALIZED_CIRCUITS_DIR,
+                circuit_name.clone()
+            ))?,
+        };
+
+        let mut inner_level_circuits: Vec<InnerLevelCircuit> = Vec::new();
+        for i in 1..=32 {
+            let inner_level_circuit = InnerLevelCircuit {
+                targets: get_inner_targets(i, circuit_name.clone())?,
+                data: load_circuit_data(&format!(
+                    "{}/{}_{}",
+                    SERIALIZED_CIRCUITS_DIR,
+                    circuit_name.clone(),
+                    i
+                ))?,
+            };
+            inner_level_circuits.push(inner_level_circuit);
+        }
+
+        let ctx = Self {
+            redis_con,
+            work_queue,
+            work_queue_cfg,
+            proof_storage,
+            first_level_circuit,
+            inner_level_circuits,
         };
 
         Ok(ctx)
@@ -91,7 +155,15 @@ pub struct InnerLevelCircuit {
     pub data: CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
 }
 
-fn get_inner_targets(i: usize, circuit_name: String) -> Result<CircuitTargetType<ValidatorsCommitmentMapperInnerLevel>> {
+pub struct FirstLevelDepositCircuit {
+    pub targets: CircuitTargetType<DepositsCommitmentMapperFirstLevel>,
+    pub data: CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+}
+
+fn get_inner_targets(
+    i: usize,
+    circuit_name: String,
+) -> Result<CircuitTargetType<ValidatorsCommitmentMapperInnerLevel>> {
     let target_bytes = read_from_file(&format!(
         "{}/{}_{}.plonky2_targets",
         SERIALIZED_CIRCUITS_DIR, circuit_name, i
@@ -104,7 +176,9 @@ fn get_inner_targets(i: usize, circuit_name: String) -> Result<CircuitTargetType
     )
 }
 
-fn get_first_level_targets(circuit_name: String) -> Result<CircuitTargetType<ValidatorsCommitmentMapperFirstLevel>> {
+fn get_first_level_targets(
+    circuit_name: String,
+) -> Result<CircuitTargetType<ValidatorsCommitmentMapperFirstLevel>> {
     let target_bytes = read_from_file(&format!(
         "{}/{}_0.plonky2_targets",
         SERIALIZED_CIRCUITS_DIR, circuit_name
@@ -113,6 +187,22 @@ fn get_first_level_targets(circuit_name: String) -> Result<CircuitTargetType<Val
 
     Ok(
         deserialize_circuit_target::<ValidatorsCommitmentMapperFirstLevel>(&mut target_buffer)
+            .unwrap(),
+    )
+}
+
+fn get_deposit_first_level_targets(
+    circuit_name: String,
+) -> Result<CircuitTargetType<DepositsCommitmentMapperFirstLevel>> {
+    let target_bytes = read_from_file(&format!(
+        "{}/{}_0.plonky2_targets",
+        SERIALIZED_CIRCUITS_DIR, circuit_name
+    ))?;
+
+    let mut target_buffer = Buffer::new(&target_bytes);
+
+    Ok(
+        deserialize_circuit_target::<DepositsCommitmentMapperFirstLevel>(&mut target_buffer)
             .unwrap(),
     )
 }

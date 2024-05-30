@@ -10,7 +10,10 @@ import {
   getBeaconApi,
 } from '@dendreth/relay/implementations/beacon-api';
 import { Redis } from '@dendreth/relay/implementations/redis';
-import { getCommitmentMapperProof } from '../../../utils/common_utils';
+import {
+  getCommitmentMapperProof,
+  getDepositCommitmentMapperProof,
+} from '../../../utils/common_utils';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { write, writeFileSync } from 'fs';
 import JSONbig from 'json-bigint';
@@ -51,6 +54,8 @@ import {
   let deposit_message_hash_tree_root =
     ssz.phase0.DepositMessage.hashTreeRoot(deposit_message);
 
+  console.log(bytesToHex(deposit_message_hash_tree_root));
+
   let domain =
     formatHex(DOMAIN_DEPOSIT) + formatHex(fork_data_root.slice(0, 56));
 
@@ -68,7 +73,7 @@ import {
   let slot = 5066944;
 
   let beaconApi = await getBeaconApi([
-    'http://unstable.sepolia.beacon-api.nimbus.team/',
+    'https://ultra-newest-replica.ethereum-sepolia.quiknode.pro/db0a9b731eb41c9edbfa564fe4d05f7696bfabf3/',
   ]);
 
   let { beaconState: beaconState } = await beaconApi.getBeaconState(
@@ -98,7 +103,7 @@ import {
 
   generate_leaf_level_data(
     bytesToHex(deposit_message.pubkey),
-    1n,
+    0n,
     signature,
     bytesToHex(deposit_message_hash_tree_root),
     beaconState,
@@ -152,13 +157,20 @@ async function generate_leaf_level_data(
 
   console.log(gindexFromIndex(BigInt(foundIndex), 40n));
 
-  console.log(
-    await redis.extractHashFromCommitmentMapperProof(
-      1n,
-      BigInt(beaconState.slot),
-      'poseidon',
-    ),
-  );
+  // console.log(
+  //   await redis.extractHashFromCommitmentMapperProof(
+  //     1n,
+  //     BigInt(beaconState.slot),
+  //     'poseidon',
+  //   ),
+  // );
+
+  // console.log(
+  //   'deposit commitment mapper proof',
+  //   JSON.stringify(
+  //     await getDepositCommitmentMapperProof(4294967296n, 'poseidon', redis),
+  //   ),
+  // );
 
   console.log(beaconState.slot);
   let deposit_accumulator_input = {
@@ -181,6 +193,15 @@ async function generate_leaf_level_data(
       redis,
     ),
     validatorIndex: foundIndex,
+    validatorDepositRoot: await redis.extractHashFromDepositMapperProof(
+      1n,
+      'poseidon',
+    ),
+    validatorDepositProof: await getDepositCommitmentMapperProof(
+      4294967296n,
+      'poseidon',
+      redis,
+    ),
     // validatorDepositRoot: // TODO: we should have the deposits commitment mapper root
     // validatorDepositProof: // TODO: we should have the deposits commitment mapper proof
     balanceTreeRoot: bytesToHex(

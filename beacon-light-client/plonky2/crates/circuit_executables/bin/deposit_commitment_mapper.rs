@@ -1,8 +1,8 @@
 use anyhow::Result;
 
 use circuit_executables::{
-    commitment_mapper_context::{CommitmentMapperContext, WorkQueueConfig},
-    commitment_mapper_task::{handle_task, CommitmentMapperTask},
+    commitment_mapper_context::{CommitmentMapperContext, DepositCommitmentMapperContext, WorkQueueConfig},
+    commitment_mapper_task::{handle_commitment_mapper_task, handle_deposit_accumulator_task, CommitmentMapperTask, DepositAccumulatorTask},
     crud::proof_storage::proof_storage::create_proof_storage,
     utils::{parse_config_file, CommandLineOptionsBuilder},
 };
@@ -12,7 +12,7 @@ use jemallocator::Jemalloc;
 
 use std::{format, println, thread::sleep, time::Duration};
 
-const CIRCUIT_NAME: &str = "deposit_accumulator";
+const CIRCUIT_NAME: &str = "deposit_commitment_mapper";
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -21,12 +21,10 @@ fn main() -> Result<()> {
     future::block_on(async_main())
 }
 
-
-
 async fn async_main() -> Result<()> {
     let config = parse_config_file("../../common_config.json".to_owned())?;
 
-    let matches = CommandLineOptionsBuilder::new("commitment_mapper")
+    let matches = CommandLineOptionsBuilder::new("deposit_commitment_mapper")
         .with_redis_options(&config.redis_host, config.redis_port)
         .with_work_queue_options()
         .with_proof_storage_options()
@@ -52,8 +50,13 @@ async fn async_main() -> Result<()> {
     };
 
     let proof_storage = create_proof_storage(&matches).await;
-    let mut ctx =
-        CommitmentMapperContext::new(redis_connection, work_queue_cfg, proof_storage, CIRCUIT_NAME.to_string()).await?;
+    let mut ctx = DepositCommitmentMapperContext::new(
+        redis_connection,
+        work_queue_cfg,
+        proof_storage,
+        CIRCUIT_NAME.to_string(),
+    )
+    .await?;
 
     loop {
         let Some(queue_item) = ctx
@@ -69,7 +72,7 @@ async fn async_main() -> Result<()> {
             continue;
         };
 
-        let Some(task) = CommitmentMapperTask::deserialize(&queue_item.data) else {
+        let Some(task) = DepositAccumulatorTask::deserialize(&queue_item.data) else {
             println!("{}", "Invalid task data".red().bold());
             println!("{}", format!("Got bytes: {:?}", queue_item.data).red());
             ctx.work_queue
@@ -80,7 +83,7 @@ async fn async_main() -> Result<()> {
 
         task.log();
 
-        match handle_task(&mut ctx, task).await {
+        match handle_deposit_accumulator_task(&mut ctx, task).await {
             Ok(_) => {
                 ctx.work_queue
                     .complete(&mut ctx.redis_con, &queue_item)

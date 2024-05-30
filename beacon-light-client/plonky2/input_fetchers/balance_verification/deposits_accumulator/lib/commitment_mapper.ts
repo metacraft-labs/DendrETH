@@ -3,6 +3,7 @@ import CONSTANTS from '../../../../kv_db_constants.json';
 import { Scheduler } from './scheduler';
 import chalk from 'chalk';
 import { makeBranchIterator } from '@dendreth/utils/ts-utils/common-utils';
+import { formatHex, hexToBytes } from '@dendreth/utils/ts-utils/bls';
 
 enum TaskTag {
   PROVE_ZERO_FOR_DEPTH = 0,
@@ -71,7 +72,14 @@ export class CommitmentMapperScheduler extends Scheduler {
         return {
           index: depositIndex,
           data: {
-            deposit: deposit.event,
+            deposit: {
+              pubkey: formatHex(deposit.event.pubkey),
+              signature: formatHex(deposit.event.signature),
+              depositIndex: hexToLittleEndianBigInt(
+                hexToBytes(deposit.event.depositIndex),
+              ).toString(),
+              depositMessageRoot: formatHex(deposit.event.depositMessageRoot),
+            },
             isReal: true,
           },
         };
@@ -95,7 +103,7 @@ export class CommitmentMapperScheduler extends Scheduler {
   }
 
   public async updateBranches(depositIndices: number[]) {
-    let levelIterator = makeBranchIterator(depositIndices.map(BigInt), 40n);
+    let levelIterator = makeBranchIterator(depositIndices.map(BigInt), 32n);
 
     let leafs = levelIterator.next().value!;
 
@@ -129,9 +137,9 @@ export class CommitmentMapperScheduler extends Scheduler {
     ]);
 
     await this.scheduleDepositProof(BigInt(CONSTANTS.validatorRegistryLimit));
-    await this.redis.saveDummyDepositProof(40n);
+    await this.redis.saveDummyDepositProof(32n);
 
-    for (let depth = 39n; depth >= 0n; depth--) {
+    for (let depth = 31n; depth >= 0n; depth--) {
       this.scheduleProveZeroForDepth(depth);
       await this.redis.saveDummyDepositProof(depth);
     }
@@ -158,4 +166,8 @@ export class CommitmentMapperScheduler extends Scheduler {
 
     this.queue.addItem(this.redis.client, new Item(Buffer.from(buffer)));
   }
+}
+export function hexToLittleEndianBigInt(bytes: Uint8Array) {
+  const view = new DataView(bytes.buffer);
+  return view.getBigUint64(0, true);
 }

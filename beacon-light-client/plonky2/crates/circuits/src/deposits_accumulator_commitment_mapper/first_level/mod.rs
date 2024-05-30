@@ -1,5 +1,12 @@
-use crate::{serializers::serde_bool_array_to_hex_string, utils::circuit::{biguint_to_bits_target, hashing::{merkle::poseidon::hash_tree_root_poseidon, sha256::sha256}, reverse_endianness}};
-use circuit::Circuit;
+use crate::{
+    serializers::serde_bool_array_to_hex_string,
+    utils::circuit::{
+        biguint_to_bits_target,
+        hashing::{merkle::poseidon::hash_tree_root_poseidon, poseidon::poseidon, sha256::sha256},
+        reverse_endianness,
+    },
+};
+use circuit::{Circuit, ToTargets};
 use circuit_derive::{CircuitTarget, SerdeCircuitTarget};
 use plonky2::{
     field::{extension::Extendable, goldilocks_field::GoldilocksField},
@@ -95,11 +102,7 @@ impl Circuit for DepositsCommitmentMapperFirstLevel {
         )
         .map(|x| builder.and(x, input.is_real));
 
-        let poseidon_hash_tree_root = HashOutTarget {
-            elements: hash_tree_root_deposit_poseidon(builder, &input.deposit)
-                .elements
-                .map(|x| builder.mul(x, input.is_real.target)),
-        };
+        let poseidon_hash_tree_root = poseidon(builder, input.deposit.to_targets());
 
         Self::Target {
             deposit: input.deposit,

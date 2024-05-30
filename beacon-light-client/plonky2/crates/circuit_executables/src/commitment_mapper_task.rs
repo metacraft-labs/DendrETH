@@ -1,6 +1,8 @@
 use anyhow::{bail, Result};
 use circuit::SetWitness;
-use circuits::redis_storage_types::ValidatorsCommitmentMapperProofData;
+use circuits::redis_storage_types::{
+    DepositCommitmentMapperProofData, ValidatorsCommitmentMapperProofData,
+};
 use colored::Colorize;
 
 use num::FromPrimitive;
@@ -8,11 +10,54 @@ use num_derive::FromPrimitive;
 use plonky2::iop::witness::PartialWitness;
 
 use crate::{
-    commitment_mapper_context::CommitmentMapperContext, constants::VALIDATOR_REGISTRY_LIMIT, crud::common::{
-        fetch_proofs, fetch_validator, fetch_zero_proof, save_validator_proof,
+    commitment_mapper_context::{CommitmentMapperContext, DepositCommitmentMapperContext},
+    constants::VALIDATOR_REGISTRY_LIMIT,
+    crud::common::{
+        fetch_deposit, fetch_proofs, fetch_proofs_deposit, fetch_validator, fetch_zero_proof,
+        save_deposit_proof, save_validator_proof, save_zero_deposit_proof,
         save_zero_validator_proof, ProofProvider,
-    }, provers::prove_inner_level, types::{CommitmentMapperTask, CommitmentMapperTaskType}, utils::{get_depth_for_gindex, gindex_from_validator_index}
+    },
+    provers::prove_inner_level,
+    utils::{get_depth_for_gindex, gindex_from_index},
 };
+
+type Gindex = u64;
+type Slot = u64;
+type ValidatorIndex = u64;
+type Depth = u64;
+type DepositIndex = u64;
+
+#[derive(FromPrimitive)]
+#[repr(u8)]
+pub enum CommitmentMapperTaskType {
+    UpdateProofNode,
+    ProveZeroForDepth,
+    UpdateValidatorProof,
+    ZeroOutValidator,
+}
+
+#[derive(FromPrimitive)]
+#[repr(u8)]
+pub enum DepositAccumulatorTaskType {
+    ProveZeroForDepth,
+    DepositProof,
+    DepositNodeProof,
+}
+
+#[derive(Debug)]
+pub enum CommitmentMapperTask {
+    UpdateProofNode(Gindex, Slot),
+    ProveZeroForDepth(Depth),
+    UpdateValidatorProof(ValidatorIndex, Slot),
+    ZeroOutValidator(ValidatorIndex, Slot),
+}
+
+#[derive(Debug)]
+pub enum DepositAccumulatorTask {
+    ProveZeroForDepth(Depth),
+    DepositProof(DepositIndex),
+    DepositNodeProof(Gindex),
+}
 
 impl CommitmentMapperTask {
     pub fn log(&self) {
@@ -97,6 +142,62 @@ impl CommitmentMapperTask {
     }
 }
 
+impl DepositAccumulatorTask {
+    pub fn deserialize(bytes: &[u8]) -> Option<DepositAccumulatorTask> {
+        match FromPrimitive::from_u8(u8::from_be_bytes(bytes[0..1].try_into().unwrap()))? {
+            DepositAccumulatorTaskType::ProveZeroForDepth => {
+                let depth = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
+                Some(DepositAccumulatorTask::ProveZeroForDepth(depth))
+            }
+            DepositAccumulatorTaskType::DepositProof => {
+                let deposit_index = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
+                Some(DepositAccumulatorTask::DepositProof(deposit_index))
+            }
+            DepositAccumulatorTaskType::DepositNodeProof => {
+                let gindex = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
+                Some(DepositAccumulatorTask::DepositNodeProof(gindex))
+            }
+        }
+    }
+}
+
+impl DepositAccumulatorTask {
+    pub fn log(&self) {
+        match *self {
+            DepositAccumulatorTask::ProveZeroForDepth(depth) => {
+                println!(
+                    "{}",
+                    format!("Proving zero for depth {}...", depth.to_string().magenta())
+                        .blue()
+                        .bold(),
+                )
+            }
+            DepositAccumulatorTask::DepositProof(deposit_index) => {
+                println!(
+                    "{}",
+                    format!(
+                        "Proving deposit at index {}...",
+                        deposit_index.to_string().magenta()
+                    )
+                    .blue()
+                    .bold(),
+                )
+            }
+            DepositAccumulatorTask::DepositNodeProof(gindex) => {
+                println!(
+                    "{}",
+                    format!(
+                        "Proving deposit node at gindex {}...",
+                        gindex.to_string().magenta()
+                    )
+                    .blue()
+                    .bold(),
+                )
+            }
+        };
+    }
+}
+
 pub async fn handle_commitment_mapper_task(
     ctx: &mut CommitmentMapperContext,
     task: CommitmentMapperTask,
@@ -133,7 +234,7 @@ async fn handle_update_validator_proof_task(
                     &mut ctx.redis_con,
                     ctx.proof_storage.as_mut(),
                     proof,
-                    gindex_from_validator_index(validator_index, 40),
+                    gindex_from_index(validator_index, 40),
                     slot,
                 )
                 .await;
@@ -270,7 +371,7 @@ async fn handle_zero_out_validator_task(
                 &mut ctx.redis_con,
                 ctx.proof_storage.as_mut(),
                 proof,
-                gindex_from_validator_index(validator_index, 40),
+                gindex_from_index(validator_index, 40),
                 slot,
             )
             .await;
@@ -286,4 +387,141 @@ async fn handle_zero_out_validator_task(
         Err(_) => bail!("Could not fetch zero validator"),
     }
     Ok(())
+}
+
+pub async fn handle_deposit_accumulator_task(
+    ctx: &mut DepositCommitmentMapperContext,
+    task: DepositAccumulatorTask,
+) -> Result<()> {
+    Ok(match task {
+        DepositAccumulatorTask::ProveZeroForDepth(depth) => {
+            let level = 31 - depth as usize;
+
+            match fetch_zero_proof::<DepositCommitmentMapperProofData>(
+                &mut ctx.redis_con,
+                depth + 1,
+            )
+            .await
+            {
+                Ok(lower_proof) => {
+                    println!("Fetched zero proof");
+                    let inner_circuit_data = if level > 0 {
+                        &ctx.inner_level_circuits[level - 1].data
+                    } else {
+                        &ctx.first_level_circuit.data
+                    };
+
+                    println!("Got circuit");
+
+                    let lower_proof_bytes = lower_proof.get_proof(ctx.proof_storage.as_mut()).await;
+
+                    println!("Got bytes");
+
+                    let proof = prove_inner_level(
+                        lower_proof_bytes.clone(),
+                        lower_proof_bytes,
+                        inner_circuit_data,
+                        &ctx.inner_level_circuits[level].targets,
+                        &ctx.inner_level_circuits[level].data,
+                    )?;
+
+                    println!("Proved inner");
+
+                    let save_result = save_zero_deposit_proof(
+                        &mut ctx.redis_con,
+                        ctx.proof_storage.as_mut(),
+                        &proof,
+                        depth,
+                    )
+                    .await;
+
+                    println!("saved inner");
+
+                    if let Err(err) = save_result {
+                        bail!("Error while saving zero validator proof: {}", err);
+                    }
+                }
+                Err(err) => {
+                    bail!("Error while proving zero for depth {}: {}", depth, err);
+                }
+            }
+        }
+        DepositAccumulatorTask::DepositProof(deposit_index) => {
+            match fetch_deposit(&mut ctx.redis_con, deposit_index).await {
+                Ok(input) => {
+                    let mut pw = PartialWitness::new();
+                    ctx.first_level_circuit.targets.set_witness(&mut pw, &input);
+                    let proof = ctx.first_level_circuit.data.prove(pw)?;
+
+                    if input.is_real {
+                        let save_result = save_deposit_proof(
+                            &mut ctx.redis_con,
+                            ctx.proof_storage.as_mut(),
+                            proof,
+                            gindex_from_index(deposit_index, 32),
+                        )
+                        .await;
+
+                        if let Err(err) = save_result {
+                            bail!("Error while proving zero validator: {}", err);
+                        };
+                    } else {
+                        let save_result = save_zero_deposit_proof(
+                            &mut ctx.redis_con,
+                            ctx.proof_storage.as_mut(),
+                            &proof,
+                            32,
+                        )
+                        .await;
+
+                        if let Err(err) = save_result {
+                            bail!("Error while proving validator: {}", err);
+                        }
+                    }
+                }
+                Err(err) => bail!("Error while fetching validator: {}", err),
+            }
+        }
+        DepositAccumulatorTask::DepositNodeProof(gindex) => {
+            let level = 31 - get_depth_for_gindex(gindex) as usize;
+
+            let fetch_result = fetch_proofs_deposit::<DepositCommitmentMapperProofData>(
+                &mut ctx.redis_con,
+                ctx.proof_storage.as_mut(),
+                gindex,
+            )
+            .await;
+
+            match fetch_result {
+                Ok(proofs) => {
+                    let inner_circuit_data = if level > 0 {
+                        &ctx.inner_level_circuits[level - 1].data
+                    } else {
+                        &ctx.first_level_circuit.data
+                    };
+
+                    let proof = prove_inner_level(
+                        proofs.0,
+                        proofs.1,
+                        inner_circuit_data,
+                        &ctx.inner_level_circuits[level].targets,
+                        &ctx.inner_level_circuits[level].data,
+                    )?;
+
+                    let save_result = save_deposit_proof(
+                        &mut ctx.redis_con,
+                        ctx.proof_storage.as_mut(),
+                        proof,
+                        gindex,
+                    )
+                    .await;
+
+                    if let Err(err) = save_result {
+                        bail!("Error while saving validator proof: {}", err);
+                    };
+                }
+                Err(err) => bail!("Error while fetching validator proof: {}", err),
+            }
+        }
+    })
 }

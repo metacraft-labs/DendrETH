@@ -43,10 +43,14 @@ pub fn prove_inner_level(
             &inner_circuit_data.common,
         )?;
 
+    println!("serialized proofs");
+
     let mut pw = PartialWitness::new();
 
     pw.set_proof_with_pis_target(&inner_circuit_target.proof1, &inner_proof1);
     pw.set_proof_with_pis_target(&inner_circuit_target.proof2, &inner_proof2);
+
+    println!("Ofcourse the error is in first level");
 
     Ok(circuit_data.prove(pw)?)
 }

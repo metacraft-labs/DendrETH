@@ -8,10 +8,11 @@ use async_trait::async_trait;
 use circuit::{Circuit, CircuitInput, SerdeCircuitTarget};
 use circuits::{
     bls_verification::build_stark_proof_verifier::RecursiveStarkTargets,
+    deposits_accumulator_commitment_mapper::first_level::DepositsCommitmentMapperFirstLevel,
     final_layer::BalanceVerificationFinalCircuit,
     redis_storage_types::{
-        BalanceVerificationFinalProofData, ValidatorsCommitmentMapperProofData,
-        WithdrawalCredentialsBalanceVerificationProofData,
+        BalanceVerificationFinalProofData, DepositCommitmentMapperProofData,
+        ValidatorsCommitmentMapperProofData, WithdrawalCredentialsBalanceVerificationProofData,
     },
     utils::{bits_to_bytes, hash_bytes, u64_to_ssz_leaf},
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
@@ -57,6 +58,18 @@ impl KeyProvider for ValidatorsCommitmentMapperProofData {
     }
 }
 
+impl NeedsChange for DepositCommitmentMapperProofData {
+    fn needs_change(&self) -> bool {
+        self.needs_change
+    }
+}
+
+impl KeyProvider for DepositCommitmentMapperProofData {
+    fn get_key() -> String {
+        DB_CONSTANTS.deposit_proof_key.to_owned()
+    }
+}
+
 impl<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIALS_COUNT: usize> NeedsChange
     for WithdrawalCredentialsBalanceVerificationProofData<
         VALIDATORS_COUNT,
@@ -85,6 +98,16 @@ where
 
 #[async_trait(?Send)]
 impl ProofProvider for ValidatorsCommitmentMapperProofData {
+    async fn get_proof(&self, proof_storage: &mut dyn ProofStorage) -> Vec<u8> {
+        proof_storage
+            .get_proof(self.proof_key.clone())
+            .await
+            .unwrap()
+    }
+}
+
+#[async_trait(?Send)]
+impl ProofProvider for DepositCommitmentMapperProofData {
     async fn get_proof(&self, proof_storage: &mut dyn ProofStorage) -> Vec<u8> {
         proof_storage
             .get_proof(self.proof_key.clone())
@@ -316,6 +339,47 @@ pub async fn fetch_validator(
     Ok(fetch_redis_json_object(con, format!("{}:{}", key, latest_change_slot)).await?)
 }
 
+pub async fn fetch_deposit(
+    con: &mut Connection,
+    deposit_index: u64,
+) -> Result<CircuitInput<DepositsCommitmentMapperFirstLevel>> {
+    let key = format!("{}:{}", DB_CONSTANTS.deposit_key.to_owned(), deposit_index);
+
+    Ok(fetch_redis_json_object(con, key).await?)
+}
+
+pub async fn save_zero_deposit_proof(
+    con: &mut Connection,
+    proof_storage: &mut dyn ProofStorage,
+    proof: &ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    depth: u64,
+) -> Result<()> {
+    let proof_key = format!("{}:zeroes:{}", DB_CONSTANTS.deposit_proof_key, depth);
+
+    let deposit_proof = DepositCommitmentMapperProofData {
+        needs_change: false,
+        proof_key: proof_key.clone(),
+        public_inputs: DepositsCommitmentMapperFirstLevel::read_public_inputs(&proof.public_inputs),
+    };
+
+    proof_storage
+        .set_proof(proof_key, &proof.to_bytes())
+        .await?;
+
+    save_json_object(
+        con,
+        &format!(
+            "{}:zeroes:{}",
+            DB_CONSTANTS.deposit_proof_key.to_owned(),
+            depth
+        ),
+        &deposit_proof,
+    )
+    .await?;
+
+    Ok(())
+}
+
 pub async fn save_zero_validator_proof(
     con: &mut Connection,
     proof_storage: &mut dyn ProofStorage,
@@ -421,6 +485,33 @@ pub async fn save_validator_proof(
     Ok(())
 }
 
+pub async fn save_deposit_proof(
+    con: &mut Connection,
+    proof_storage: &mut dyn ProofStorage,
+    proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    gindex: u64,
+) -> Result<()> {
+    let proof_key = format!("{}:{}", DB_CONSTANTS.deposit_proof_key, gindex);
+    let validator_proof = DepositCommitmentMapperProofData {
+        proof_key: proof_key.clone(),
+        needs_change: false,
+        public_inputs: DepositsCommitmentMapperFirstLevel::read_public_inputs(&proof.public_inputs),
+    };
+
+    proof_storage
+        .set_proof(proof_key, &proof.to_bytes())
+        .await?;
+
+    save_json_object(
+        con,
+        &format!("{}:{}", DB_CONSTANTS.deposit_proof_key.to_owned(), gindex,),
+        &validator_proof,
+    )
+    .await?;
+
+    Ok(())
+}
+
 pub async fn fetch_zero_proof<T: NeedsChange + KeyProvider + DeserializeOwned + Clone>(
     con: &mut Connection,
     depth: u64,
@@ -449,6 +540,7 @@ pub async fn fetch_redis_json_object<T: DeserializeOwned + Clone>(
     key: String,
 ) -> Result<T> {
     let json: String = con.get(&key).await?;
+    println!("JSON: {}", json);
     let result = serde_json::from_str::<T>(&json)?;
     Ok(result)
 }
@@ -512,6 +604,40 @@ pub async fn fetch_proofs<
         proof1.get_proof(proof_storage).await,
         proof2.get_proof(proof_storage).await,
     ))
+}
+
+pub async fn fetch_proofs_deposit<
+    T: NeedsChange + KeyProvider + ProofProvider + DeserializeOwned + Clone,
+>(
+    con: &mut Connection,
+    proof_storage: &mut dyn ProofStorage,
+    gindex: u64,
+) -> Result<(Vec<u8>, Vec<u8>)> {
+    let left_child_gindex = gindex * 2;
+    let right_child_gindex = gindex * 2 + 1;
+
+    let proof1 = fetch_deposit_proof::<T>(con, left_child_gindex).await?;
+    let proof2 = fetch_deposit_proof::<T>(con, right_child_gindex).await?;
+
+    Ok((
+        proof1.get_proof(proof_storage).await,
+        proof2.get_proof(proof_storage).await,
+    ))
+}
+
+pub async fn fetch_deposit_proof<T: NeedsChange + KeyProvider + DeserializeOwned + Clone>(
+    con: &mut Connection,
+    gindex: u64,
+) -> Result<T> {
+    let proof_result =
+        fetch_redis_json_object::<T>(con, format!("{}:{}", T::get_key(), gindex)).await;
+
+    let actual_proof = match proof_result {
+        Ok(res) => res,
+        Err(_) => fetch_zero_proof::<T>(con, get_depth_for_gindex(gindex)).await?,
+    };
+
+    Ok(actual_proof)
 }
 
 // @TODO: Rename this later

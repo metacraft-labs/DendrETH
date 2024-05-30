@@ -171,6 +171,32 @@ export class Redis implements IRedis {
     return JSONbig.parse(result).publicInputs[hashKey];
   }
 
+  async extractHashFromDepositMapperProof(
+    gindex: bigint,
+    hashAlgorithm: 'sha256' | 'poseidon',
+  ): Promise<number | null> {
+    const hashAlgorithmOptionMap = {
+      sha256: 'sha256HashTreeRoot',
+      poseidon: 'poseidonHashTreeRoot',
+    };
+
+    const hashKey = hashAlgorithmOptionMap[hashAlgorithm];
+    const key = `${CONSTANTS.depositProofKey}:${gindex}`;
+    let result = await this.client.get(key);
+    if (result == null) {
+      const depth = getDepthByGindex(Number(gindex));
+      result = await this.client.get(
+        `${CONSTANTS.depositProofKey}:zeroes:${depth}`,
+      );
+    }
+
+    if (result == null) {
+      return null;
+    }
+
+    return JSONbig.parse(result).publicInputs[hashKey];
+  }
+
   async getValidatorsRoot(slot: bigint): Promise<String | null> {
     return this.client.get(`${CONSTANTS.validatorsRootKey}:${slot}`);
   }

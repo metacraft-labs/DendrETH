@@ -1,4 +1,5 @@
 use crate::{
+    deposits_accumulator_commitment_mapper::first_level::DepositsCommitmentMapperFirstLevel,
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
     withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
@@ -11,6 +12,14 @@ pub struct ValidatorsCommitmentMapperProofData {
     pub needs_change: bool,
     pub proof_key: String,
     pub public_inputs: CircuitOutput<ValidatorsCommitmentMapperFirstLevel>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct DepositCommitmentMapperProofData {
+    pub needs_change: bool,
+    pub proof_key: String,
+    pub public_inputs: CircuitOutput<DepositsCommitmentMapperFirstLevel>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

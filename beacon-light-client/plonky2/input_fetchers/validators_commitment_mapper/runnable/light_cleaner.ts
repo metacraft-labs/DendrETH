@@ -14,7 +14,7 @@ import { CommandLineOptionsBuilder } from '../../utils/cmdline';
     .withLightCleanOpts()
     .build();
 
-  const prefix = new KeyPrefix(`${CONSTANTS.validatorProofsQueue}`);
+  const prefix = new KeyPrefix(`${CONSTANTS.depositQueue}`);
   const validatorProofs = new WorkQueue(prefix);
 
   const redis = new Redis(
