@@ -355,6 +355,8 @@ mod test {
     use super::DepositAccumulatorBalanceAggregatorFirstLevel;
 
     #[test]
+    #[ignore]
+    // Ignored because it requires circuit data for the bls to be generated
     pub fn test_deposit_accumulator_leaf_circuit() {
         let bls_circuit_bytes =
             fs::read("../circuit_executables/serialized_circuits/bls12_381.plonky2_circuit")
