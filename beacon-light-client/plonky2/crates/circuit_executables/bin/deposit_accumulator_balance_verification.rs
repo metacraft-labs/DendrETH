@@ -239,10 +239,7 @@ async fn process_queue<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIA
     Ok(())
 }
 
-async fn process_first_level_task<
-    const VALIDATORS_COUNT: usize,
-    const WITHDRAWAL_CREDENTIALS_COUNT: usize,
->(
+async fn process_first_level_task(
     con: &mut Connection,
     proof_storage: &mut dyn ProofStorage,
     queue: &WorkQueue,
