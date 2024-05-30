@@ -58,23 +58,14 @@ const CIRCUIT_SIZE = 2;
   }
 
   const beaconApi = new BeaconApi(options['beacon-node'], ssz);
-  const slot = 8915136n;
-  // const slot =
-  //   options['slot'] !== undefined
-  //     ? options['slot']
-  //     : Number(await beaconApi.getHeadSlot());
+  const slot =
+    options['slot'] !== undefined
+      ? options['slot']
+      : Number(await beaconApi.getHeadSlot());
 
   const { beaconState } =
     (await beaconApi.getBeaconState(slot)) ||
     panic('Could not get beacon state');
-  // const beaconBlock = await beaconApi.getBeaconBlock(slot) || panic("Could not get beacon block");
-  // const deposits = beaconBlock.body.deposits.map(deposit => deposit.data);
-  // const depositsInput = deposits.map(deposit => ({
-  //   pubkey: bytesToHex(deposit.pubkey),
-  //   withdrawalCredentials: bytesToHex(deposit.withdrawalCredentials),
-  //   amount: deposit.amount,
-  //   signature: bytesToHex(deposit.signature),
-  // }));
 
   beaconState.balances = beaconState.balances.slice(0, deposits.length);
   beaconState.validators = beaconState.validators.slice(0, deposits.length);

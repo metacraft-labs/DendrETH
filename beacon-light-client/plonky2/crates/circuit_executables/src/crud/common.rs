@@ -8,9 +8,14 @@ use async_trait::async_trait;
 use circuit::{Circuit, CircuitInput, SerdeCircuitTarget};
 use circuits::{
     bls_verification::build_stark_proof_verifier::RecursiveStarkTargets,
+    deposit_accumulator_balance_aggregator_diva::{
+        final_layer::DepositAccumulatorBalanceAggregatorDivaFinalLayer,
+        first_level::DepositAccumulatorBalanceAggregatorDivaFirstLevel,
+    },
     redis_storage_types::{
-        BalanceVerificationFinalProofData, ValidatorsCommitmentMapperProofData,
-        WithdrawalCredentialsBalanceVerificationProofData,
+        BalanceVerificationFinalProofData, DepositAccumulatorBalanceAggregatorDivaProofData,
+        DepositAccumulatorFinalProofData, PubkeyCommitmentMapperRedisStorageData,
+        ValidatorsCommitmentMapperProofData, WithdrawalCredentialsBalanceVerificationProofData,
     },
     utils::{bits_to_bytes, hash_bytes, u64_to_ssz_leaf},
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
@@ -85,6 +90,20 @@ where
     }
 }
 
+impl NeedsChange for DepositAccumulatorBalanceAggregatorDivaProofData {
+    fn needs_change(&self) -> bool {
+        self.needs_change
+    }
+}
+
+impl KeyProvider for DepositAccumulatorBalanceAggregatorDivaProofData {
+    fn get_key() -> String {
+        DB_CONSTANTS
+            .deposit_balance_verification_proof_key
+            .to_owned()
+    }
+}
+
 #[async_trait(?Send)]
 impl ProofProvider for ValidatorsCommitmentMapperProofData {
     async fn get_proof(&self, proof_storage: &mut dyn ProofStorage) -> Vec<u8> {
@@ -110,6 +129,35 @@ where
             .await
             .unwrap()
     }
+}
+
+#[async_trait(?Send)]
+impl ProofProvider for DepositAccumulatorBalanceAggregatorDivaProofData {
+    async fn get_proof(&self, proof_storage: &mut dyn ProofStorage) -> Vec<u8> {
+        proof_storage
+            .get_proof(self.proof_key.clone())
+            .await
+            .unwrap()
+    }
+}
+
+pub async fn fetch_validator_balance_aggregator_input(
+    con: &mut Connection,
+    protocol: String,
+    index: u64,
+) -> Result<CircuitInput<DepositAccumulatorBalanceAggregatorDivaFirstLevel>> {
+    Ok(fetch_redis_json_object(
+        con,
+        format!(
+            "{}:{}:{}",
+            protocol,
+            DB_CONSTANTS
+                .deposit_balance_verification_input_key
+                .to_owned(),
+            index
+        ),
+    )
+    .await?)
 }
 
 pub async fn fetch_validator_balance_input<
@@ -153,6 +201,64 @@ pub async fn fetch_final_layer_input<const WITHDRAWAL_CREDENTIALS_COUNT: usize>(
         ))
         .await?;
     Ok(serde_json::from_str(&json)?)
+}
+
+pub async fn fetch_deposit_accumulator_final_layer_input(
+    con: &mut Connection,
+    protocol: &str,
+) -> Result<CircuitInput<DepositAccumulatorBalanceAggregatorDivaFinalLayer>> {
+    let json: String = con
+        .get(format!(
+            "{}:{}",
+            protocol, DB_CONSTANTS.deposit_balance_verification_final_proof_input_key
+        ))
+        .await?;
+
+    Ok(serde_json::from_str(&json)?)
+}
+
+pub async fn save_balance_aggregator_proof(
+    con: &mut Connection,
+    proof_storage: &mut dyn ProofStorage,
+    protocol: String,
+    proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    level: u64,
+    index: u64,
+) -> Result<()> {
+    let proof_key = format!(
+        "{}:{}:{}:{}",
+        protocol, DB_CONSTANTS.deposit_balance_verification_proof_key, level, index
+    );
+
+    let public_inputs =
+        DepositAccumulatorBalanceAggregatorDivaFirstLevel::read_public_inputs(&proof.public_inputs);
+
+    let balance_aggregator_proof = DepositAccumulatorBalanceAggregatorDivaProofData {
+        needs_change: false,
+        proof_key: proof_key.clone(),
+        public_inputs,
+    };
+
+    proof_storage
+        .set_proof(proof_key, &proof.to_bytes())
+        .await?;
+
+    save_json_object(
+        con,
+        &format!(
+            "{}:{}:{}:{}",
+            protocol,
+            DB_CONSTANTS
+                .deposit_balance_verification_proof_key
+                .to_owned(),
+            level,
+            index
+        ),
+        &balance_aggregator_proof,
+    )
+    .await?;
+
+    Ok(())
 }
 
 pub async fn save_balance_proof<
@@ -239,6 +345,45 @@ pub async fn save_final_proof(
     Ok(())
 }
 
+pub async fn save_deposit_accumulator_final_proof(
+    con: &mut Connection,
+    protocol: String,
+    proof: &ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    slot: u64,
+    block_number: u64,
+    block_root: String,
+    balance_sum: u64,
+    number_of_non_activated_validators: u64,
+    number_of_active_validators: u64,
+    number_of_exited_validators: u64,
+    number_of_slashed_validators: u64,
+) -> Result<()> {
+    let final_proof = DepositAccumulatorFinalProofData {
+        needs_change: false,
+        slot,
+        block_number,
+        block_root,
+        balance_sum,
+        number_of_non_activated_validators,
+        number_of_active_validators,
+        number_of_exited_validators,
+        number_of_slashed_validators,
+        proof: proof.to_bytes(),
+    };
+
+    save_json_object(
+        con,
+        &format!(
+            "{}:{}",
+            protocol, &DB_CONSTANTS.deposit_balance_verification_final_proof_key
+        ),
+        &final_proof,
+    )
+    .await?;
+
+    Ok(())
+}
+
 pub async fn delete_balance_verification_proof_dependencies(
     con: &mut Connection,
     proof_storage: &mut dyn ProofStorage,
@@ -284,6 +429,55 @@ pub async fn delete_balance_verification_proof_dependencies(
     Ok(())
 }
 
+pub async fn delete_balance_verification_diva_proof_dependencies(
+    con: &mut Connection,
+    proof_storage: &mut dyn ProofStorage,
+    protocol: &str,
+    level: u64,
+    index: u64,
+) -> Result<()> {
+    let proof_prefix = format!(
+        "{}:{}:{}",
+        protocol,
+        DB_CONSTANTS
+            .deposit_balance_verification_proof_key
+            .to_owned(),
+        level - 1,
+    );
+
+    let redis_prefix = format!(
+        "{}:{}:{}",
+        protocol,
+        DB_CONSTANTS
+            .deposit_balance_verification_proof_key
+            .to_owned(),
+        level - 1
+    );
+
+    con.del(format!("{}:{}", redis_prefix, index * 2)).await?;
+    con.del(format!("{}:{}", redis_prefix, index * 2 + 1))
+        .await?;
+
+    let _ = proof_storage
+        .del_proof(format!("{}:{}", proof_prefix, index * 2))
+        .await;
+
+    let _ = proof_storage
+        .del_proof(format!("{}:{}", proof_prefix, index * 2 + 1))
+        .await;
+
+    if proof_storage.get_keys_count(proof_prefix.to_string()).await == 1 {
+        con.del(format!("{}:{}", redis_prefix, VALIDATOR_REGISTRY_LIMIT))
+            .await?;
+
+        let _ = proof_storage
+            .del_proof(format!("{}:{}", proof_prefix, VALIDATOR_REGISTRY_LIMIT))
+            .await;
+    }
+
+    Ok(())
+}
+
 pub async fn get_slot_with_latest_change(
     con: &mut Connection,
     key: &String,
@@ -301,6 +495,49 @@ pub async fn get_slot_with_latest_change(
 
     ensure!(!result.is_empty(), "Could not find data for slot");
     Ok(result[0].clone())
+}
+
+pub fn get_block_number_with_latest_change(keys: Vec<u64>, block_number: u64) -> Result<u64> {
+    let mut min_key = keys[0];
+    let mut min_key_difference = u64::MAX;
+
+    for i in 0..keys.len() {
+        let key = keys[i];
+
+        if block_number >= key && block_number - key < min_key_difference {
+            min_key = key;
+            min_key_difference = block_number - key;
+        }
+    }
+
+    if min_key_difference == u64::MAX {
+        return Err(anyhow::anyhow!("Could not find data for block number"));
+    }
+
+    Ok(min_key)
+}
+
+pub async fn fetch_pubkey_commitment_mapper_proof(
+    con: &mut Connection,
+    protocol: &str,
+    block_number: u64,
+) -> Result<PubkeyCommitmentMapperRedisStorageData> {
+    let keys: Vec<String> = con
+        .keys(format!("{protocol}:pubkey_commitment_mapper:root_proofs:*").as_str())
+        .await?;
+
+    let keys = keys
+        .iter()
+        .map(|key| key.split(":").last().unwrap().parse().unwrap())
+        .collect();
+
+    let key = get_block_number_with_latest_change(keys, block_number).unwrap();
+
+    Ok(fetch_redis_json_object(
+        con,
+        format!("{}:pubkey_commitment_mapper:root_proofs:{}", protocol, key),
+    )
+    .await?)
 }
 
 pub async fn fetch_validator(

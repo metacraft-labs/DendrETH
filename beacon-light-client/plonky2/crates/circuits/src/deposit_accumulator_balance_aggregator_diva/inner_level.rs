@@ -1,8 +1,6 @@
 use crate::{
     common_targets::BasicRecursiveInnerCircuitTarget,
-    deposits_accumulator_balance_aggregator::common_targets::{
-        AccumulatedDataTargetDiva, ValidatorStatusStatsTarget,
-    },
+    deposits_accumulator_balance_aggregator::common_targets::ValidatorStatusStatsTarget,
     utils::circuit::{
         assert_bool_arrays_are_equal, hashing::poseidon::poseidon_pair, verify_proof,
     },
@@ -19,13 +17,15 @@ use plonky2::{
 };
 use plonky2_crypto::biguint::CircuitBuilderBiguint;
 
-use super::first_level::DepositAccumulatorBalanceAggregatorDivaFirstLevel;
+use super::first_level::{
+    AccumulatedDataTargetDiva, DepositAccumulatorBalanceAggregatorDivaFirstLevel,
+};
 
-pub struct DepositAccumulatorBalanceAggregatorInnerLevel;
+pub struct DepositAccumulatorBalanceAggregatorDivaInnerLevel;
 
 const D: usize = 2;
 
-impl Circuit for DepositAccumulatorBalanceAggregatorInnerLevel {
+impl Circuit for DepositAccumulatorBalanceAggregatorDivaInnerLevel {
     type F = GoldilocksField;
     type C = PoseidonGoldilocksConfig;
     const D: usize = D;
@@ -54,16 +54,16 @@ impl Circuit for DepositAccumulatorBalanceAggregatorInnerLevel {
 
         let accumulated_data = accumulate_data(builder, &l_input, &r_input);
 
-        let deposits_hash_tree_root = poseidon_pair(
+        let pubkey_commitment_mapper_root = poseidon_pair(
             builder,
-            l_input.deposits_hash_tree_root,
-            r_input.deposits_hash_tree_root,
+            l_input.pubkey_commitment_mapper_root,
+            r_input.pubkey_commitment_mapper_root,
         );
 
         let output_targets =
             CircuitOutputTarget::<DepositAccumulatorBalanceAggregatorDivaFirstLevel> {
                 accumulated_data,
-                deposits_hash_tree_root,
+                pubkey_commitment_mapper_root,
                 current_epoch: l_input.current_epoch,
                 balances_root: l_input.balances_root,
                 validators_commitment_mapper_root: l_input.validators_commitment_mapper_root,
@@ -80,11 +80,16 @@ fn accumulate_data<F: RichField + Extendable<D>, const D: usize>(
     left_range: &CircuitOutputTarget<DepositAccumulatorBalanceAggregatorDivaFirstLevel>,
     right_range: &CircuitOutputTarget<DepositAccumulatorBalanceAggregatorDivaFirstLevel>,
 ) -> AccumulatedDataTargetDiva {
+    let mut balance = builder.add_biguint(
+        &left_range.accumulated_data.balance,
+        &right_range.accumulated_data.balance,
+    );
+
+    // pop carry
+    balance.limbs.pop();
+
     AccumulatedDataTargetDiva {
-        balance: builder.add_biguint(
-            &left_range.accumulated_data.balance,
-            &right_range.accumulated_data.balance,
-        ),
+        balance,
         validator_status_stats: accumulate_validator_stats(
             builder,
             &left_range.accumulated_data.validator_status_stats,

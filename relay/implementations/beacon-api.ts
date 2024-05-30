@@ -17,7 +17,7 @@ import {
 } from '@dendreth/utils/ts-utils/ssz-utils';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 import { prometheusTiming } from '@dendreth/utils/ts-utils/prometheus-utils';
-import { panic } from '@dendreth/utils/ts-utils/common-utils';
+import { panic, sleep } from '@dendreth/utils/ts-utils/common-utils';
 import EventSource from 'eventsource';
 // @ts-ignore
 import { StateId } from '@lodestar/api/beacon/routes/beacon';
@@ -631,6 +631,15 @@ export class BeaconApi implements IBeaconApi {
       console.log(this.getCurrentApi());
       try {
         const result = await this.fetchWithFallbackNoRetry(subUrl, init);
+
+        if (result.status == 404) {
+          logger.warn('404 not found');
+          logger.warn('Retrying as sometimes info appears with lag');
+          await sleep(1000);
+          this.nextApi();
+          continue;
+        }
+
         if (result.status === 429) {
           logger.warn('Rate limit exceeded');
 

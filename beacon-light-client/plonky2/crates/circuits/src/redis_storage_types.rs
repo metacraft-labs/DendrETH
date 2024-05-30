@@ -1,4 +1,5 @@
 use crate::{
+    deposit_accumulator_balance_aggregator_diva::first_level::DepositAccumulatorBalanceAggregatorDivaFirstLevel,
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
     withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
@@ -32,6 +33,14 @@ pub struct WithdrawalCredentialsBalanceVerificationProofData<
     >,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct DepositAccumulatorBalanceAggregatorDivaProofData {
+    pub needs_change: bool,
+    pub proof_key: String,
+    pub public_inputs: CircuitOutput<DepositAccumulatorBalanceAggregatorDivaFirstLevel>,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct BalanceVerificationFinalProofData {
@@ -47,6 +56,21 @@ pub struct BalanceVerificationFinalProofData {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct DepositAccumulatorFinalProofData {
+    pub needs_change: bool,
+    pub slot: u64,
+    pub block_root: String,
+    pub block_number: u64,
+    pub balance_sum: u64,
+    pub number_of_non_activated_validators: u64,
+    pub number_of_active_validators: u64,
+    pub number_of_exited_validators: u64,
+    pub number_of_slashed_validators: u64,
+    pub proof: Vec<u8>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PubkeyCommitmentMapperRedisStorageData {
     pub sha256: String,

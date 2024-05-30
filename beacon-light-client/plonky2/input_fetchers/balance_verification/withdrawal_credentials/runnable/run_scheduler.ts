@@ -15,13 +15,6 @@ import { getBalancesInput } from '../lib/scheduler';
       default: undefined,
       description: 'Fetches the balances for this slot',
     })
-    .option('withdrawal-credentials', {
-      alias: 'withdrawal-credentials',
-      describe: 'The withdrawal credentials',
-      type: 'string',
-      demandOption: true,
-      description: 'Sets the withdrawal credentials',
-    })
     .withRangeOpts()
     .withProtocolOpts()
     .build();

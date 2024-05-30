@@ -15,13 +15,6 @@ import { storeBalanceVerificationData } from '../lib/get_balance_verification_da
       default: undefined,
       description: 'Fetches the balances for this slot',
     })
-    .option('withdrawal-credentials', {
-      alias: 'withdrawal-credentials',
-      describe: 'The withdrawal credentials',
-      type: 'string',
-      demandOption: true,
-      description: 'Sets the withdrawal credentials',
-    })
     .option('rpc-url', {
       describe: 'The RPC URL',
       type: 'string',
@@ -42,7 +35,6 @@ import { storeBalanceVerificationData } from '../lib/get_balance_verification_da
     .build();
 
   await storeBalanceVerificationData({
-    withdrawalCredentials: options['withdrawal-credentials'],
     beaconNodeUrls: options['beacon-node'],
     slot: options['slot'],
     take: options['take'],
