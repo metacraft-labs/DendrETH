@@ -1,7 +1,7 @@
 import { Redis } from '@dendreth/relay/implementations/redis';
 import { KeyPrefix, WorkQueue } from '@mevitae/redis-work-queue';
 import { ethers } from 'ethers';
-import { getEvents } from './event-fetcher';
+import { getEvents } from './event_fetcher';
 import ValidatorsAccumulator from '../../../../../solidity/artifacts/contracts/validators_accumulator/ValidatorsAccumulator.sol/ValidatorsAccumulator.json';
 import chalk from 'chalk';
 
@@ -85,12 +85,16 @@ export abstract class Scheduler {
       return;
     }
 
-    const iterations = Math.floor(
-      (latestBlock - this.syncBlock) / EVENTS_BATCH_SIZE,
-    );
-
     let deposits: any[] = [];
-    for (let i = 0; i < iterations; i++) {
+    for (
+      let block = this.syncBlock;
+      block <= latestBlock;
+      block += EVENTS_BATCH_SIZE
+    ) {
+      const lastBlockInChunk = Math.min(
+        block + EVENTS_BATCH_SIZE - 1,
+        latestBlock,
+      );
       const logs = await getEvents(
         this.provider,
         this.contract,
@@ -102,47 +106,19 @@ export abstract class Scheduler {
             'depositMessageRoot',
           ],
         },
-        this.syncBlock,
-        this.syncBlock + EVENTS_BATCH_SIZE - 1,
+        block,
+        lastBlockInChunk,
       );
 
-      deposits.push(
-        ...logs.map(log => {
+      deposits = deposits.concat(
+        logs.map(log => {
           return {
             event: log[Events.Deposited],
             blockNumber: log[Events.Deposited].blockNumber,
           };
         }),
       );
-
-      this.syncBlock += EVENTS_BATCH_SIZE;
     }
-
-    const logs = await getEvents(
-      this.provider,
-      this.contract,
-      {
-        [Events.Deposited]: [
-          'pubkey',
-          'depositIndex',
-          'signature',
-          'depositMessageRoot',
-        ],
-      },
-      this.syncBlock,
-      latestBlock,
-    );
-
-    deposits.push(
-      ...logs.map(log => {
-        return {
-          event: log[Events.Deposited],
-          blockNumber: log[Events.Deposited].blockNumber,
-        };
-      }),
-    );
-
-    this.syncBlock = latestBlock + 1;
 
     await this.updateDepositsBatch(deposits);
   }
