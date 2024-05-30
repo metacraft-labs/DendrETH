@@ -24,7 +24,7 @@ pub fn ssz_num_to_bits<F: RichField + Extendable<D>, const D: usize>(
 ) -> SSZTarget {
     assert!(bit_len <= 256);
 
-    let mut bits = reverse_endianness(&biguint_to_bits_target::<F, D, 2>(builder, num));
+    let mut bits = reverse_endianness(&biguint_to_bits_target(builder, num));
     bits.extend((bit_len..256).map(|_| builder._false()));
 
     bits.try_into().unwrap()

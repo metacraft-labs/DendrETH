@@ -132,13 +132,13 @@ pub fn bits_to_biguint_target<F: RichField + Extendable<D>, const D: usize>(
     BigUintTarget { limbs: u32_targets }
 }
 
-pub fn biguint_to_bits_target<F: RichField + Extendable<D>, const D: usize, const B: usize>(
+pub fn biguint_to_bits_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     a: &BigUintTarget,
 ) -> Vec<BoolTarget> {
     let mut res = Vec::new();
     for i in (0..a.num_limbs()).rev() {
-        let bit_targets = builder.split_le_base::<B>(a.get_limb(i).0, 32);
+        let bit_targets = builder.split_le_base::<2>(a.get_limb(i).0, 32);
         for j in (0..32).rev() {
             res.push(BoolTarget::new_unsafe(bit_targets[j]));
         }
@@ -147,11 +147,11 @@ pub fn biguint_to_bits_target<F: RichField + Extendable<D>, const D: usize, cons
     res
 }
 
-pub fn biguint_to_le_bits_target<F: RichField + Extendable<D>, const D: usize, const B: usize>(
+pub fn biguint_to_le_bits_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     a: &BigUintTarget,
 ) -> Vec<BoolTarget> {
-    biguint_to_bits_target::<F, D, B>(builder, a)
+    biguint_to_bits_target(builder, a)
         .into_iter()
         .rev()
         .collect_vec()

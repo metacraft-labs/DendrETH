@@ -85,7 +85,7 @@ impl Circuit for DepositsCommitmentMapperFirstLevel {
     ) -> Self::Target {
         let input = Self::read_circuit_input_target(builder);
 
-        let deposit_index_bits = reverse_endianness(&biguint_to_bits_target::<Self::F, 2, 2>(
+        let deposit_index_bits = reverse_endianness(&biguint_to_bits_target(
             builder,
             &input.deposit.deposit_index,
         ));

@@ -8,7 +8,7 @@ use crate::{
     },
     utils::circuit::{
         assert_slot_is_in_epoch::assert_slot_is_in_epoch,
-        biguint_to_bits_target,
+        biguint_to_bits_target, bits_to_bytes_target,
         hashing::{
             merkle::{sha256::assert_merkle_proof_is_valid_const_sha256, ssz::ssz_num_to_bits},
             sha256::sha256,
@@ -17,9 +17,8 @@ use crate::{
     },
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
 };
-use circuit::{Circuit, CircuitInputTarget};
+use circuit::{Circuit, CircuitInputTarget, CircuitOutputTarget};
 use circuit_derive::CircuitTarget;
-use itertools::Itertools;
 use plonky2::{
     field::{extension::Extendable, goldilocks_field::GoldilocksField},
     hash::hash_types::RichField,
@@ -82,8 +81,6 @@ pub struct DepositAccumulatorBalanceAggregatorFinalLayerTargets {
     pub eth1_deposit_index_branch: Sha256MerkleBranchTarget<5>,
 }
 
-const D: usize = 2;
-
 pub struct DepositAccumulatorBalanceAggregatorFinalLayer;
 
 impl Circuit for DepositAccumulatorBalanceAggregatorFinalLayer {
@@ -120,93 +117,44 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFinalLayer {
         let deposits_commitment_mapper_root_proof =
             verify_proof(builder, &deposit_commitment_mapper_circuit_data);
 
-        let balances_pi = DepositAccumulatorBalanceAggregatorFirstLevel::read_public_inputs_target(
-            &balance_aggregation_proof.public_inputs,
-        );
+        let balance_aggregation_pis =
+            DepositAccumulatorBalanceAggregatorFirstLevel::read_public_inputs_target(
+                &balance_aggregation_proof.public_inputs,
+            );
 
-        let validators_commitment_mapper_pi =
+        let validators_commitment_mapper_pis =
             ValidatorsCommitmentMapperFirstLevel::read_public_inputs_target(
                 &validators_commitment_mapper_root_proof.public_inputs,
             );
-        let deposit_commitment_mapper_pi =
+        let deposits_commitment_mapper_pis =
             DepositsCommitmentMapperFirstLevel::read_public_inputs_target(
                 &deposits_commitment_mapper_root_proof.public_inputs,
             );
 
         builder.connect_hashes(
-            validators_commitment_mapper_pi.poseidon_hash_tree_root,
-            balances_pi.commitment_mapper_root,
+            validators_commitment_mapper_pis.poseidon_hash_tree_root,
+            balance_aggregation_pis.commitment_mapper_root,
         );
         builder.connect_hashes(
-            deposit_commitment_mapper_pi.poseidon_hash_tree_root,
-            balances_pi.deposits_commitment_mapper_root,
+            deposits_commitment_mapper_pis.poseidon_hash_tree_root,
+            balance_aggregation_pis.deposits_commitment_mapper_root,
         );
 
         validate_data_against_block_root(
             builder,
             &input,
-            &balances_pi.balances_root,
-            &validators_commitment_mapper_pi.sha256_hash_tree_root,
-            &balances_pi.eth1_deposit_index,
+            &balance_aggregation_pis.balances_root,
+            &validators_commitment_mapper_pis.sha256_hash_tree_root,
+            &balance_aggregation_pis.eth1_deposit_index,
         );
 
-        assert_slot_is_in_epoch(builder, &input.slot, &balances_pi.current_epoch);
+        assert_slot_is_in_epoch(builder, &input.slot, &balance_aggregation_pis.current_epoch);
 
-        let final_sum_bits =
-            biguint_to_bits_target::<Self::F, D, 2>(builder, &balances_pi.accumulated_data.balance);
-
-        let block_number_bits =
-            biguint_to_bits_target::<Self::F, D, 2>(builder, &input.execution_block_number);
-
-        let deposit_count_bits =
-            target_to_le_bits(builder, balances_pi.accumulated_data.deposits_count);
-
-        let number_of_non_activated_validators_bits = target_to_le_bits(
+        let mut public_inputs_hash = hash_public_inputs(
             builder,
-            balances_pi
-                .accumulated_data
-                .validator_status_stats
-                .non_activated_count,
-        );
-        let number_of_active_validators_bits = target_to_le_bits(
-            builder,
-            balances_pi
-                .accumulated_data
-                .validator_status_stats
-                .active_count,
-        );
-        let number_of_exited_validators_bits = target_to_le_bits(
-            builder,
-            balances_pi
-                .accumulated_data
-                .validator_status_stats
-                .exited_count,
-        );
-        let number_of_slashed_validators_bits = target_to_le_bits(
-            builder,
-            balances_pi
-                .accumulated_data
-                .validator_status_stats
-                .slashed_count,
-        );
-
-        let mut public_inputs_hash = sha256(
-            builder,
-            &[
-                balances_pi.genesis_fork_version.as_slice(),
-                input.block_root.as_slice(),
-                block_number_bits.as_slice(),
-                deposit_commitment_mapper_pi
-                    .sha256_hash_tree_root
-                    .as_slice(),
-                deposit_count_bits.as_slice(),
-                final_sum_bits.as_slice(),
-                number_of_non_activated_validators_bits.as_slice(),
-                number_of_active_validators_bits.as_slice(),
-                number_of_exited_validators_bits.as_slice(),
-                number_of_slashed_validators_bits.as_slice(),
-            ]
-            .concat(),
+            &input,
+            &balance_aggregation_pis,
+            &deposits_commitment_mapper_pis,
         );
 
         // Mask the last 3 bits in big endian as zero
@@ -214,11 +162,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFinalLayer {
         public_inputs_hash[1] = builder._false();
         public_inputs_hash[2] = builder._false();
 
-        let public_inputs_hash_bytes = public_inputs_hash
-            .chunks(8)
-            .map(|x| builder.le_sum(x.iter().rev()))
-            .collect_vec();
-
+        let public_inputs_hash_bytes = bits_to_bytes_target(builder, &public_inputs_hash);
         builder.register_public_inputs(&public_inputs_hash_bytes);
 
         Self::Target {
@@ -299,4 +243,69 @@ fn validate_data_against_block_root<F: RichField + Extendable<D>, const D: usize
         &input.eth1_deposit_index_branch,
         42,
     );
+}
+
+fn hash_public_inputs<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    input: &CircuitInputTarget<DepositAccumulatorBalanceAggregatorFinalLayer>,
+    balance_aggregation_pis: &CircuitOutputTarget<DepositAccumulatorBalanceAggregatorFirstLevel>,
+    deposits_commitment_mapper_pis: &CircuitOutputTarget<DepositsCommitmentMapperFirstLevel>,
+) -> Sha256Target {
+    let balance_bits =
+        biguint_to_bits_target(builder, &balance_aggregation_pis.accumulated_data.balance);
+
+    let block_number_bits = biguint_to_bits_target(builder, &input.execution_block_number);
+
+    let deposits_count_bits = target_to_le_bits(
+        builder,
+        balance_aggregation_pis.accumulated_data.deposits_count,
+    );
+
+    let number_of_non_activated_validators_bits = target_to_le_bits(
+        builder,
+        balance_aggregation_pis
+            .accumulated_data
+            .validator_status_stats
+            .non_activated_count,
+    );
+    let number_of_active_validators_bits = target_to_le_bits(
+        builder,
+        balance_aggregation_pis
+            .accumulated_data
+            .validator_status_stats
+            .active_count,
+    );
+    let number_of_exited_validators_bits = target_to_le_bits(
+        builder,
+        balance_aggregation_pis
+            .accumulated_data
+            .validator_status_stats
+            .exited_count,
+    );
+    let number_of_slashed_validators_bits = target_to_le_bits(
+        builder,
+        balance_aggregation_pis
+            .accumulated_data
+            .validator_status_stats
+            .slashed_count,
+    );
+
+    sha256(
+        builder,
+        &[
+            balance_aggregation_pis.genesis_fork_version.as_slice(),
+            input.block_root.as_slice(),
+            block_number_bits.as_slice(),
+            deposits_commitment_mapper_pis
+                .sha256_hash_tree_root
+                .as_slice(),
+            deposits_count_bits.as_slice(),
+            balance_bits.as_slice(),
+            number_of_non_activated_validators_bits.as_slice(),
+            number_of_active_validators_bits.as_slice(),
+            number_of_exited_validators_bits.as_slice(),
+            number_of_slashed_validators_bits.as_slice(),
+        ]
+        .concat(),
+    )
 }
