@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use circuit::Circuit;
+use circuit::{circuit_builder_extensions::CircuitBuilderExtensions, Circuit};
 use circuit_derive::{CircuitTarget, SerdeCircuitTarget};
 use num_bigint::BigUint;
 use plonky2::{
@@ -20,6 +20,8 @@ use plonky2_crypto::{
 };
 use starky_bls12_381::{
     calc_pairing_precomp, final_exponentiate, fp12_mul,
+    fp2_plonky2::is_zero,
+    fp_plonky2::FpTarget,
     g1_plonky2::{pk_point_check, PointG1Target},
     g2_plonky2::{signature_point_check, PointG2Target},
     hash_to_curve::hash_to_curve,
@@ -102,9 +104,11 @@ impl Circuit for BLSVerificationCircuit {
 
         let pubkey_g1 = get_g1_from_miller_loop(&pt_ml1);
         pk_point_check(builder, &pubkey_g1, &input.pubkey);
+        assert_g1_point_is_at_infinity(builder, &pubkey_g1);
 
         let signature_g2 = get_g2_point_from_pairing_precomp(builder, &pt_pp2);
         signature_point_check(builder, &signature_g2, &input.sig);
+        assert_g2_point_is_at_infinity(builder, &signature_g2);
 
         connect_pairing_precomp_with_miller_loop_g2(builder, &pt_pp2, &pt_ml2);
 
@@ -112,7 +116,7 @@ impl Circuit for BLSVerificationCircuit {
 
         connect_miller_loop_with_g1(builder, &neg_generator, &pt_ml2);
 
-        connect_miller_loop_with_fp12_mull(builder, &pt_ml1, &pt_ml2, &pt_fp12m);
+        connect_miller_loop_with_fp12_mul(builder, &pt_ml1, &pt_ml2, &pt_fp12m);
 
         connect_fp12_mull_with_final_exponentiation(builder, &pt_fp12m, &pt_fe);
 
@@ -230,7 +234,7 @@ fn get_g2_point_from_pairing_precomp<F: RichField + Extendable<D>, const D: usiz
     [[sig_point_x0, sig_point_x1], [sig_point_y0, sig_point_y1]]
 }
 
-fn connect_miller_loop_with_fp12_mull<F: RichField + Extendable<D>, const D: usize>(
+fn connect_miller_loop_with_fp12_mul<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     pt_ml1: &ProofWithPublicInputsTarget<D>,
     pt_ml2: &ProofWithPublicInputsTarget<D>,
@@ -345,4 +349,26 @@ fn connect_pairing_precomp_with_g2<F: RichField + Extendable<D>, const D: usize>
             );
         }
     }
+}
+
+fn assert_g1_point_is_at_infinity(builder: &mut CircuitBuilder<F, D>, g1_point: &PointG1Target) {
+    let is_g1_x_zero = is_fp_zero(builder, &g1_point[0]);
+    let is_g1_y_zero = is_fp_zero(builder, &g1_point[1]);
+    let are_g1_x_and_y_zero = builder.and(is_g1_x_zero, is_g1_y_zero);
+    builder.assert_true(are_g1_x_and_y_zero)
+}
+
+fn assert_g2_point_is_at_infinity(builder: &mut CircuitBuilder<F, D>, g2_point: &PointG2Target) {
+    let is_g2_x_zero = is_zero(builder, &g2_point[0]);
+    let is_g2_y_zero = is_zero(builder, &g2_point[1]);
+    let are_g2_x_and_y_zero = builder.and(is_g2_x_zero, is_g2_y_zero);
+    builder.assert_true(are_g2_x_and_y_zero)
+}
+
+fn is_fp_zero<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    input: &FpTarget,
+) -> BoolTarget {
+    let zero = builder.zero_biguint();
+    builder.cmp_biguint(input, &zero)
 }
