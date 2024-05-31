@@ -107,3 +107,18 @@ pub struct DepositTargets {
     #[serde(with = "serde_bool_array_to_hex_string")]
     pub signature: SignatureTarget,
 }
+
+#[derive(
+    Clone,
+    Debug,
+    TargetPrimitive,
+    SetWitness,
+    PublicInputsReadable,
+    AddVirtualTarget,
+    SerdeCircuitTarget,
+)]
+#[serde(rename_all = "camelCase")]
+pub struct DepositTargetsDiva {
+    #[serde(with = "serde_bool_array_to_hex_string")]
+    pub pubkey: PubkeyTarget,
+}

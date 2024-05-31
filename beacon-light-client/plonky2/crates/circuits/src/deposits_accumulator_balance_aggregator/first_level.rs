@@ -899,7 +899,7 @@ mod test {
         let proof = circuit.prove(pw).unwrap();
         println!("Proof generated in {:?}", s.elapsed());
 
-        let result =
+        let _result =
             DepositAccumulatorBalanceAggregatorFirstLevel::read_public_inputs(&proof.public_inputs);
     }
 }

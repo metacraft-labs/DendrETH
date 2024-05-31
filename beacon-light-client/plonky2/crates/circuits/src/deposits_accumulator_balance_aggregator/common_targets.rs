@@ -25,6 +25,14 @@ pub struct AccumulatedDataTarget {
 
 #[derive(Clone, Debug, TargetPrimitive, PublicInputsReadable, SerdeCircuitTarget)]
 #[serde(rename_all = "camelCase")]
+pub struct AccumulatedDataTargetDiva {
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
+    pub balance: BigUintTarget,
+    pub validator_status_stats: ValidatorStatusStatsTarget,
+}
+
+#[derive(Clone, Debug, TargetPrimitive, PublicInputsReadable, SerdeCircuitTarget)]
+#[serde(rename_all = "camelCase")]
 pub struct ValidatorDataTarget {
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub balance: BigUintTarget,

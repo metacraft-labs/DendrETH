@@ -1,4 +1,4 @@
-use circuit::ToTargets;
+use circuit::{circuit_builder_extensions::CircuitBuilderExtensions, ToTargets};
 use itertools::Itertools;
 use plonky2::{
     field::extension::Extendable,
@@ -163,6 +163,5 @@ pub fn assert_merkle_proof_is_valid_poseidon<
     gindex: &BigUintTarget,
 ) {
     let is_valid = validate_merkle_proof_poseidon(builder, leaf, root, branch, gindex);
-    let _true = builder._true();
-    builder.connect(is_valid.target, _true.target);
+    builder.assert_true(is_valid);
 }

@@ -1,3 +1,4 @@
+use circuit::circuit_builder_extensions::CircuitBuilderExtensions;
 use itertools::Itertools;
 use num_bigint::BigUint;
 use plonky2::{
@@ -70,8 +71,7 @@ pub fn assert_merkle_proof_is_valid_sha256<
     gindex: &BigUintTarget,
 ) {
     let is_valid = validate_merkle_proof_sha256(builder, leaf, root, branch, gindex);
-    let _true = builder._true();
-    builder.connect(is_valid.target, _true.target);
+    builder.assert_true(is_valid);
 }
 
 pub fn validate_merkle_proof_const_sha256<
