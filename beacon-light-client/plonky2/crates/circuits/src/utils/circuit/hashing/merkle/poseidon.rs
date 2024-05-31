@@ -1,12 +1,13 @@
-use circuit::ToTargets;
+use circuit::{circuit_builder_extensions::CircuitBuilderExtensions, ToTargets};
 use itertools::Itertools;
+use num::BigUint;
 use plonky2::{
     field::extension::Extendable,
     hash::hash_types::{HashOutTarget, RichField, NUM_HASH_OUT_ELTS},
     iop::target::BoolTarget,
     plonk::circuit_builder::CircuitBuilder,
 };
-use plonky2_crypto::biguint::BigUintTarget;
+use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint};
 
 use crate::{
     common_targets::{PoseidonMerkleBranchTarget, ValidatorTarget},
@@ -136,6 +137,22 @@ pub fn restore_merkle_root_poseidon<
     current
 }
 
+pub fn validate_merkle_proof_const_poseidon<
+    const DEPTH: usize,
+    F: RichField + Extendable<D>,
+    const D: usize,
+>(
+    builder: &mut CircuitBuilder<F, D>,
+    leaf: &HashOutTarget,
+    root: &HashOutTarget,
+    branch: &PoseidonMerkleBranchTarget<DEPTH>,
+    gindex: u64,
+) -> BoolTarget {
+    let gindex_target = builder.constant_biguint(&BigUint::from(gindex));
+    let restored_root = restore_merkle_root_poseidon(builder, leaf, branch, &gindex_target);
+    hash_outs_are_equal(builder, &restored_root, root)
+}
+
 pub fn validate_merkle_proof_poseidon<
     const DEPTH: usize,
     F: RichField + Extendable<D>,
@@ -163,6 +180,21 @@ pub fn assert_merkle_proof_is_valid_poseidon<
     gindex: &BigUintTarget,
 ) {
     let is_valid = validate_merkle_proof_poseidon(builder, leaf, root, branch, gindex);
-    let _true = builder._true();
-    builder.connect(is_valid.target, _true.target);
+    builder.assert_true(is_valid);
+}
+
+pub fn assert_merkle_proof_is_valid_const_poseidon<
+    const DEPTH: usize,
+    F: RichField + Extendable<D>,
+    const D: usize,
+>(
+    builder: &mut CircuitBuilder<F, D>,
+    leaf: &HashOutTarget,
+    root: &HashOutTarget,
+    branch: &PoseidonMerkleBranchTarget<DEPTH>,
+    gindex: u64,
+) {
+    let gindex_target = builder.constant_biguint(&BigUint::from(gindex));
+    let is_valid = validate_merkle_proof_poseidon(builder, leaf, root, branch, &gindex_target);
+    builder.assert_true(is_valid);
 }
