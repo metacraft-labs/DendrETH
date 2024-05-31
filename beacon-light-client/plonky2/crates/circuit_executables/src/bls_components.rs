@@ -1,6 +1,6 @@
 use anyhow::Result;
 use ark_bls12_381::{Fq, Fq2, G1Affine, G1Projective, G2Affine};
-use ark_ec::Group;
+use ark_ec::{CurveGroup, Group};
 use ark_ff::PrimeField;
 use ark_serialize::CanonicalDeserialize;
 use circuit::SerdeCircuitTarget;
@@ -45,28 +45,21 @@ pub struct BlsComponents {
     pub output: bool,
 }
 
+pub struct BlsProofs {
+    pub pairing_prec_proof1: ProofWithPublicInputs<F, C, D>,
+    pub pairing_prec_proof2: ProofWithPublicInputs<F, C, D>,
+    pub miller_loop_proof1: ProofWithPublicInputs<F, C, D>,
+    pub miller_loop_proof2: ProofWithPublicInputs<F, C, D>,
+    pub fp12_mul_proof: ProofWithPublicInputs<F, C, D>,
+    pub final_exp_proof: ProofWithPublicInputs<F, C, D>,
+}
+
 impl BlsComponents {
     fn remove_first_two_chars(&mut self) {
         self.input.pubkey = self.input.pubkey.chars().skip(2).collect();
         self.input.signature = self.input.signature.chars().skip(2).collect();
         self.input.message = self.input.message.chars().skip(2).collect();
     }
-}
-
-pub fn read_yaml_files_from_directory<P: AsRef<Path>>(
-    dir: P,
-) -> Result<Vec<BlsComponents>, Box<dyn std::error::Error>> {
-    let mut components = Vec::new();
-
-    for entry in fs::read_dir(dir)? {
-        let entry = entry?;
-        if entry.path().extension() == Some(std::ffi::OsStr::new("yaml")) {
-            let config = read_yaml_file(entry.path())?;
-            components.push(config);
-        }
-    }
-
-    Ok(components)
 }
 
 pub fn read_yaml_file<P: AsRef<Path>>(
@@ -78,65 +71,75 @@ pub fn read_yaml_file<P: AsRef<Path>>(
     Ok(components)
 }
 
+pub fn set_bls_witness(
+    pw: &mut PartialWitness<F>,
+    targets: &BlsCircuitTargets,
+    components: &BlsComponents,
+    proofs: &BlsProofs,
+) {
+    pw.set_target_arr(
+        &targets.pubkey,
+        &hex::decode(&components.input.pubkey)
+            .unwrap()
+            .iter()
+            .map(|x| F::from_canonical_usize(*x as usize))
+            .collect::<Vec<F>>(),
+    );
+    pw.set_target_arr(
+        &targets.sig,
+        &hex::decode(&components.input.signature)
+            .unwrap()
+            .iter()
+            .map(|x| F::from_canonical_usize(*x as usize))
+            .collect::<Vec<F>>(),
+    );
+    pw.set_target_arr(
+        &targets.msg,
+        &hex::decode(&components.input.message)
+            .unwrap()
+            .iter()
+            .map(|x| F::from_canonical_usize(*x as usize))
+            .collect::<Vec<F>>(),
+    );
+
+    pw.set_proof_with_pis_target(&targets.pt_pp1, &proofs.pairing_prec_proof1);
+    pw.set_proof_with_pis_target(&targets.pt_pp2, &proofs.pairing_prec_proof2);
+    pw.set_proof_with_pis_target(&targets.pt_ml1, &proofs.miller_loop_proof1);
+    pw.set_proof_with_pis_target(&targets.pt_ml2, &proofs.miller_loop_proof2);
+    pw.set_proof_with_pis_target(&targets.pt_fp12m, &proofs.fp12_mul_proof);
+    pw.set_proof_with_pis_target(&targets.pt_fe, &proofs.final_exp_proof);
+}
+
 pub async fn bls12_381_components_proofs(
-    bls_components: BlsComponents,
+    components: &BlsComponents,
 ) -> Result<ProofWithPublicInputs<F, C, D>> {
-    let message_g2 = hash_to_curve_g2(
-        &hex::decode(bls_components.input.message.clone()).unwrap(),
+    let message_g2 = convert_ecp2_to_g2affine(hash_to_curve_g2(
+        &hex::decode(&components.input.message).unwrap(),
         DST.as_bytes(),
-    );
-    let message_g2 = convert_ecp2_to_g2affine(message_g2);
-
-    let pubkey_g1 = G1Affine::deserialize_compressed_unchecked(
-        &*hex::decode(bls_components.input.pubkey.clone()).unwrap(),
-    )
-    .unwrap();
+    ));
     let signature_g2 = G2Affine::deserialize_compressed_unchecked(
-        &*hex::decode(bls_components.input.signature.clone()).unwrap(),
+        &*hex::decode(&components.input.signature).unwrap(),
     )
     .unwrap();
-    let g1 = G1Projective::generator();
-    let neg_g1 = g1.neg();
+    let pubkey_g1 = G1Affine::deserialize_compressed_unchecked(
+        &*hex::decode(&components.input.pubkey).unwrap(),
+    )
+    .unwrap();
+    let neg_g1 = G1Projective::generator().neg();
 
-    let miller_loop1 = miller_loop(
-        Fp::get_fp_from_biguint(pubkey_g1.x.to_string().parse::<BigUint>().unwrap()),
-        Fp::get_fp_from_biguint(pubkey_g1.y.to_string().parse::<BigUint>().unwrap()),
-        Fp2([
-            Fp::get_fp_from_biguint(message_g2.x.c0.to_string().parse::<BigUint>().unwrap()),
-            Fp::get_fp_from_biguint(message_g2.x.c1.to_string().parse::<BigUint>().unwrap()),
-        ]),
-        Fp2([
-            Fp::get_fp_from_biguint(message_g2.y.c0.to_string().parse::<BigUint>().unwrap()),
-            Fp::get_fp_from_biguint(message_g2.y.c1.to_string().parse::<BigUint>().unwrap()),
-        ]),
-        Fp2([
-            Fp::get_fp_from_biguint(BigUint::from_str("1").unwrap()),
-            Fp::get_fp_from_biguint(BigUint::from_str("0").unwrap()),
-        ]),
-    );
+    let miller_loop1 = compute_native_miller_loop_from(pubkey_g1, message_g2);
 
-    let miller_loop2 = miller_loop(
-        Fp::get_fp_from_biguint(neg_g1.x.to_string().parse::<BigUint>().unwrap()),
-        Fp::get_fp_from_biguint(neg_g1.y.to_string().parse::<BigUint>().unwrap()),
-        Fp2([
-            Fp::get_fp_from_biguint(signature_g2.x.c0.to_string().parse::<BigUint>().unwrap()),
-            Fp::get_fp_from_biguint(signature_g2.x.c1.to_string().parse::<BigUint>().unwrap()),
-        ]),
-        Fp2([
-            Fp::get_fp_from_biguint(signature_g2.y.c0.to_string().parse::<BigUint>().unwrap()),
-            Fp::get_fp_from_biguint(signature_g2.y.c1.to_string().parse::<BigUint>().unwrap()),
-        ]),
-        Fp2([
-            Fp::get_fp_from_biguint(BigUint::from_str("1").unwrap()),
-            Fp::get_fp_from_biguint(BigUint::from_str("0").unwrap()),
-        ]),
-    );
+    let miller_loop2 = compute_native_miller_loop_from(neg_g1.into_affine(), signature_g2);
 
     let fp12_mull = miller_loop1 * miller_loop2;
-    // PROVING HAPPENS HERE
-    let (pp1, pp2) = handle_pairing_precomp(&message_g2, &signature_g2).await;
+    println!("fp12_mull is: {:?}", fp12_mull);
+    if fp12_mull = Fp12::one() - Fp12::one() {}
 
-    let (ml1, ml2) =
+    // PROVING HAPPENS HERE
+    let (pairing_prec_proof1, pairing_prec_proof2) =
+        handle_pairing_precomp(&message_g2, &signature_g2).await;
+
+    let (miller_loop_proof1, miller_loop_proof2) =
         handle_miller_loop(&pubkey_g1, &message_g2, &neg_g1.into(), &signature_g2).await;
 
     let fp12_mul_proof = handle_fp12_mul(&miller_loop1, &miller_loop2).await;
@@ -151,39 +154,17 @@ pub async fn bls12_381_components_proofs(
     let mut target_buffer = Buffer::new(&target_bytes);
 
     let targets = BlsCircuitTargets::deserialize(&mut target_buffer).unwrap();
+    let proofs = BlsProofs {
+        pairing_prec_proof1,
+        pairing_prec_proof2,
+        miller_loop_proof1,
+        miller_loop_proof2,
+        fp12_mul_proof,
+        final_exp_proof,
+    };
+
     let mut pw = PartialWitness::<F>::new();
-
-    pw.set_target_arr(
-        &targets.pubkey,
-        &hex::decode(bls_components.input.pubkey)
-            .unwrap()
-            .iter()
-            .map(|x| F::from_canonical_usize(*x as usize))
-            .collect::<Vec<F>>(),
-    );
-    pw.set_target_arr(
-        &targets.sig,
-        &hex::decode(bls_components.input.signature)
-            .unwrap()
-            .iter()
-            .map(|x| F::from_canonical_usize(*x as usize))
-            .collect::<Vec<F>>(),
-    );
-    pw.set_target_arr(
-        &targets.msg,
-        &hex::decode(bls_components.input.message)
-            .unwrap()
-            .iter()
-            .map(|x| F::from_canonical_usize(*x as usize))
-            .collect::<Vec<F>>(),
-    );
-
-    pw.set_proof_with_pis_target(&targets.pt_pp1, &pp1);
-    pw.set_proof_with_pis_target(&targets.pt_pp2, &pp2);
-    pw.set_proof_with_pis_target(&targets.pt_ml1, &ml1);
-    pw.set_proof_with_pis_target(&targets.pt_ml2, &ml2);
-    pw.set_proof_with_pis_target(&targets.pt_fp12m, &fp12_mul_proof);
-    pw.set_proof_with_pis_target(&targets.pt_fe, &final_exp_proof);
+    set_bls_witness(&mut pw, &targets, &components, &proofs);
 
     println!("Starting proof generation");
 
@@ -288,6 +269,28 @@ pub async fn handle_pairing_precomp(
     (pp1, pp2)
 }
 
+pub fn compute_native_miller_loop_from(
+    g1_affine_point: G1Affine,
+    g2_affine_point: G2Affine,
+) -> Fp12 {
+    miller_loop(
+        Fp::get_fp_from_biguint(g1_affine_point.x.to_string().parse::<BigUint>().unwrap()),
+        Fp::get_fp_from_biguint(g1_affine_point.y.to_string().parse::<BigUint>().unwrap()),
+        Fp2([
+            Fp::get_fp_from_biguint(g2_affine_point.x.c0.to_string().parse::<BigUint>().unwrap()),
+            Fp::get_fp_from_biguint(g2_affine_point.x.c1.to_string().parse::<BigUint>().unwrap()),
+        ]),
+        Fp2([
+            Fp::get_fp_from_biguint(g2_affine_point.y.c0.to_string().parse::<BigUint>().unwrap()),
+            Fp::get_fp_from_biguint(g2_affine_point.y.c1.to_string().parse::<BigUint>().unwrap()),
+        ]),
+        Fp2([
+            Fp::get_fp_from_biguint(BigUint::from_str("1").unwrap()),
+            Fp::get_fp_from_biguint(BigUint::from_str("0").unwrap()),
+        ]),
+    )
+}
+
 pub fn convert_ecp2_to_g2affine(ecp2_point: ECP2) -> G2Affine {
     let x = Fq2::new(
         convert_big_to_fq(ecp2_point.getpx().geta()),
@@ -340,9 +343,73 @@ pub mod tests {
         println!("current pubkey: {:?}", bls_components.input.pubkey);
         println!("current signature: {:?}", bls_components.input.signature);
         println!("current message: {:?}", bls_components.input.message);
-        let proof = bls12_381_components_proofs(bls_components.clone())
-            .await
-            .unwrap();
+        let proof = bls12_381_components_proofs(&bls_components).await.unwrap();
+
+        println!(
+            "Is valid signature {}",
+            proof.public_inputs[proof.public_inputs.len() - 1]
+        );
+
+        let proof_t = builder.constant(proof.public_inputs[proof.public_inputs.len() - 1]);
+        if bls_components.output {
+            builder.assert_one(proof_t);
+        } else {
+            builder.assert_zero(proof_t);
+        }
+
+        println!(
+            "test case is VALID for: pubkey: {:?}, signature: {:?} and message: {:?}",
+            bls_components.input.pubkey,
+            bls_components.input.signature,
+            bls_components.input.message,
+        );
+    }
+
+    #[tokio::test]
+    async fn test_bls12_381_at_infinity_case() {
+        let file_path = "verify_infinity_pubkey_and_infinity_signature.yaml";
+        let bls_components =
+            read_yaml_file(format!("{}/{}", PATH_TO_VERIFY_ETH_TEST_CASES, file_path)).unwrap();
+        let standard_recursion_config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(standard_recursion_config);
+
+        println!("current pubkey: {:?}", bls_components.input.pubkey);
+        println!("current signature: {:?}", bls_components.input.signature);
+        println!("current message: {:?}", bls_components.input.message);
+        let proof = bls12_381_components_proofs(&bls_components).await.unwrap();
+
+        println!(
+            "Is valid signature {}",
+            proof.public_inputs[proof.public_inputs.len() - 1]
+        );
+
+        let proof_t = builder.constant(proof.public_inputs[proof.public_inputs.len() - 1]);
+        if bls_components.output {
+            builder.assert_one(proof_t);
+        } else {
+            builder.assert_zero(proof_t);
+        }
+
+        println!(
+            "test case is VALID for: pubkey: {:?}, signature: {:?} and message: {:?}",
+            bls_components.input.pubkey,
+            bls_components.input.signature,
+            bls_components.input.message,
+        );
+    }
+
+    #[tokio::test]
+    async fn test_bls12_381_one_privkey() {
+        let file_path = "verifycase_one_privkey_47117849458281be.yaml";
+        let bls_components =
+            read_yaml_file(format!("{}/{}", PATH_TO_VERIFY_ETH_TEST_CASES, file_path)).unwrap();
+        let standard_recursion_config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(standard_recursion_config);
+
+        println!("current pubkey: {:?}", bls_components.input.pubkey);
+        println!("current signature: {:?}", bls_components.input.signature);
+        println!("current message: {:?}", bls_components.input.message);
+        let proof = bls12_381_components_proofs(&bls_components).await.unwrap();
 
         println!(
             "Is valid signature {}",

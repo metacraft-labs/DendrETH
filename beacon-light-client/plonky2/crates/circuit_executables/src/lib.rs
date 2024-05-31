@@ -13,4 +13,5 @@ pub mod poseidon_bn128_config;
 pub mod poseidon_constants;
 pub mod provers;
 pub mod utils;
+pub mod verify_bls_at_infinity;
 pub mod wrap_final_layer_in_poseidon_bn128;
