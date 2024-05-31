@@ -132,8 +132,6 @@ pub async fn bls12_381_components_proofs(
     let miller_loop2 = compute_native_miller_loop_from(neg_g1.into_affine(), signature_g2);
 
     let fp12_mull = miller_loop1 * miller_loop2;
-    println!("fp12_mull is: {:?}", fp12_mull);
-    if fp12_mull = Fp12::one() - Fp12::one() {}
 
     // PROVING HAPPENS HERE
     let (pairing_prec_proof1, pairing_prec_proof2) =
