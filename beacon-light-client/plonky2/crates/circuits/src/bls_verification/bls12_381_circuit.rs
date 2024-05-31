@@ -372,3 +372,26 @@ fn is_fp_zero<F: RichField + Extendable<D>, const D: usize>(
     let zero = builder.zero_biguint();
     builder.cmp_biguint(input, &zero)
 }
+
+#[cfg(test)]
+pub mod tests {
+    use circuit::Circuit;
+    use plonky2::plonk::{
+        circuit_builder::CircuitBuilder,
+        circuit_data::CircuitConfig,
+        config::{GenericConfig, PoseidonGoldilocksConfig},
+    };
+
+    use super::BLSVerificationCircuit;
+
+    type F = <C as GenericConfig<2>>::F;
+    type C = PoseidonGoldilocksConfig;
+    const D: usize = 2;
+
+    #[test]
+    fn test_bls12_381_circuit() {
+        let standard_recursion_config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(standard_recursion_config);
+        // BLSVerificationCircuit::define(&mut builder, params);
+    }
+}
