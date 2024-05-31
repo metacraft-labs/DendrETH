@@ -90,8 +90,21 @@ The `circuits` crate houses all circuits pertinent to the application. Let's del
 
 ---
 
+## Wrapper circuit
+
+**Location:** `circuit_executables/src/wrap_final_layer_in_poseidon_bn128.rs`
+
+**Description:** In order to publish plonky2 proofs on chain we wrap those proofs in a gnark plonk proof that can be published on chain. This circuit defines the plonky2 wrapper that just wraps the plonky2 proof using the `PoseidonBN128GoldilocksConfig` defined in `circuits_executables/src/poseidon_bn128_config.rs`
+
+## Gnark verification
+
+**Location:** `gnark_plonky2_verifier/circuit.go`
+
+**Description:** The gnark plonk wrapper for plonky2 proofs based on https://github.com/succinctlabs/gnark-plonky2-verifier
+
 ## Deposits Accumulator Balance Aggregator
 
 The purpose of this circuit is to compute the total value locked (TVL) of all validators that have deposited through the `ValidatorsAccumulator` contract on-chain. This computation is done within the `deposits_accumulator_balance_aggregator` circuit, which has both first-level and inner-level components.
 
 Read more detailed docs here: [Deposit accumulator balance aggregator description](./src/deposits_accumulator_balance_aggregator/README.md)
+

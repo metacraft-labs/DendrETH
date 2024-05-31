@@ -9,11 +9,10 @@ The Balance Verification relies heavily on a Redis instance to handle task manag
    - A JavaScript script feeds the commitment mapper tasks. This script downloads all the validators from the beacon chain.
    - For each validator, the script produces a proving task.
    - At every epoch, the script checks for any changed validators and creates proving tasks for them.
-
-   The script can be executed by navigating to the `beacon-light-client/plonky2/validators_commitment_mapper_tree/get_changed_validators.ts` directory and running:
+   The script can be executed by navigating to the `beacon-light-client/plonky2/input_fetchers/` directory and running
 
    ```
-    ts-node get_changed_validators.ts --redis-host [value] --redis-port [number] --take [number] --beacon-node [value]
+    yarn ts validators_commitment_mapper/runnable/run_scheduler.ts --redis-host [value] --redis-port [number] --offset [number] --take [number] --beacon-node [value]
    ```
 
    Flags:
@@ -22,9 +21,10 @@ The Balance Verification relies heavily on a Redis instance to handle task manag
    - `--redis-port [number]`: Optional. Specifies the Redis port number. Defaults to: `6379`
    - `--take [number]`: Optional. Limits the number of validators for task creation. Useful for testing. Defaults to: `takes all`
    - `--beacon-node [array]`: Optional. Sets the beacon api url. Defaults to: `http://unstable.mainnet.beacon-api.nimbus.team`
-   - `--slot [number]`: Optional. Fetches the balances for this slot. Defaults to: `undefined`
+   - `--sync-slot [number]`: Optional. Starts syncing the commitment mapper from this slot
    - `--take [number]`: Optional. Sets the number of validators to take. Defaults to: `Infinity`
    - `--offset [number]`: Optional. Index offset in the validator set. Defaults to: `undefined`
+
 
 2. **Task Consumption**
 
@@ -32,7 +32,7 @@ The Balance Verification relies heavily on a Redis instance to handle task manag
    - The program can be initiated using:
 
    ```
-   cargo run --bin commitment_mapper --release -- --redis [URI] --run_for [value] --stop-after [value] --lease-for [value]
+   cargo run --bin commitment_mapper --release -- --redis [URI] --run_for [value] --stop-after [value] --lease-for [value] --proof-storage-type [value]
    ```
 
    Flags:
@@ -40,13 +40,14 @@ The Balance Verification relies heavily on a Redis instance to handle task manag
    - `--redis [URI]`: Optional. Specifies the Redis connection URI. Defaults to: `redis://127.0.0.1:6379/`
    - `--stop-after [value]`: Optional. Sets how many seconds to wait until the program stops if no new tasks are found in the queue. Defaults to: `20`
    - `--lease-for [value]`: Optional. Sets for how long the task will be leased and then possibly requeued if not finished. Defaults to: `30`
+   - `--proof-storage-type [value]`: Required possible values ["redis", "file", "azure", "aws"]
 
 3. **Cleaning Unfinished Tasks**
 
-   - Occasionally, tasks might get leased by a worker but aren't completed. The `ligth_cleaner.ts` script in the `beacon-light-client/plonky2/validators_commitment_mapper_tree/get_changed_validators.ts` directory cleans up such tasks. Run the script using:
+   - Occasionally, tasks might get leased by a worker but aren't completed. The `ligth_cleaner.ts` script in the `beacon-light-client/plonky2/input_fetches` directory cleans up such tasks. Run the script using:
 
    ```
-   ts-node light_cleaner.ts --redis-host [value] --redis-port [number]
+  yarn ts validators_commitment_mapper/runnable/light_cleaner.ts --redis-host [value] --redis-port [number]
    ```
 
    Flags:
@@ -83,7 +84,7 @@ Flags:
    - Unlike the commitment mapper that continually checks for changes, this is a one-time run script, which is executed as:
 
    ```
-   ts-node get_balances_input.ts --redis-host [value] --redis-port [number] --take [number] --beacon-node [value]
+   yarn ts balance_verification/withdrawal_credentials/runnable/run_scheduler.ts --redis-host [value] --redis-port [number] --take [number] --beacon-node [value]
    ```
 
    Flags:
@@ -92,24 +93,26 @@ Flags:
    - `--redis-port [number]`: Optional. Specifies the Redis port number. Defaults to: `6379`
    - `--take [number]`: Optional. Limits the number of validators for task creation. Useful for testing. Defaults to: `takes all`
    - `--beacon-node [value]`: Optional. Sets the beacon api url. Defaults to: `http://unstable.mainnet.beacon-api.nimbus.team`
+   - `--slot [value]`: Required a value to take for the slot
+   - `--protocol [value]`: The protocol for which balance verification is ran
 
 3. **Cleaning Unfinished Tasks**
-   - The cleaner script resides in the same directory as above:
    ```
-   ts-node light_cleaner.ts --redis-host [value] --redis-port [number]
+   yarn ts balance_verification/withdrawal_credentials/runnable/light_cleaner.ts --protocol diva
    ```
 
 Flags:
 
 - `--redis-host [value]`: Optional. Specifies the Redis host address. Defaults to: `127.0.0.1`
 - `--redis-port [number]`: Optional. Specifies the Redis port number. Defaults to: `6379`
+- `--protocol [value]`: Specifies the protocol for which light_cleaner will operate
 
 4. **Task Workers for Different Levels**
 
    - Because these will run in the cloud, workers for each level are isolated. They can be run using:
 
    ```
-   cargo run --bin balance_verification --release -- --redis [URI] --run_for [value] --stop-after [value] --lease-for [value] --level 0
+   cargo run --bin balance_verification --release -- --redis [URI] --run_for [value] --stop-after [value] --lease-for [value] --level 0 --proof-storage-type [value]
    ```
 
    Each level (n) requires the n-th circuit files, and the (n-th - 1) circuit for recursive verification of the previous proof.
@@ -121,6 +124,7 @@ Flags:
    - `--run-for [value]`: Optional. Determines how long the program should run for, specified in minutes. Defaults to: `infinity`
    - `--stop-after [value]`: Optional. Sets how many seconds to wait until the program stops if no new tasks are found in the queue. Defaults to: `20`
    - `--lease-for [value]`: Optional. Sets for how long the task will be leased and then possibly requeued if not finished. Defaults to: `30`
+   - `--proof-storage-ty`
 
 5. **Final Proof Execution**
 
