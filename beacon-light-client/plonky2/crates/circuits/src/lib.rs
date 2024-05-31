@@ -3,6 +3,7 @@
 
 pub mod bls_verification;
 pub mod common_targets;
+pub mod deposit_accumulator_balance_aggregator_diva;
 pub mod deposits_accumulator_balance_aggregator;
 pub mod deposits_accumulator_commitment_mapper;
 pub mod pubkey_commitment_mapper;
