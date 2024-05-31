@@ -229,7 +229,8 @@ mod test_withdrawal_credentials_balance_aggregator_first_level {
     use crate::{
         common_targets::ValidatorTarget,
         utils::circuit::hashing::merkle::{
-            poseidon::hash_tree_root_poseidon, sha256::hash_tree_root_sha256,
+            poseidon::{hash_tree_root_poseidon, hash_validator_poseidon_or_zeroes},
+            sha256::hash_tree_root_sha256,
         },
         withdrawal_credentials_balance_aggregator::first_level::{
             reconcile_validator_field, ValidatorBalanceVerificationTargets,
@@ -261,6 +262,8 @@ mod test_withdrawal_credentials_balance_aggregator_first_level {
 
         let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
 
+        let params = (
+        )
         // one less than withdrawable epoch of the validator target
         let current_epoch = builder.constant_biguint(&BigUint::from(11088797506618031724u64));
         let number_of_non_activated_validators = builder.zero();
@@ -290,15 +293,24 @@ mod test_withdrawal_credentials_balance_aggregator_first_level {
         let withdrawal_credentials = [validator_target.withdrawal_credentials];
         let balances_leaves = [validator_target.effective_balance.clone()]; // perhaps it's not the effective balance of the validator?
                                                                             // let range_balances_root = hash_tree_root_sha256(&mut builder, &balances_leaves);
-        let mut range_total_value = validator_target.effective_balance.limbs;
+        let mut range_total_value = validator_target.effective_balance.limbs.clone();
         range_total_value.pop();
         let range_total_value = range_total_value.to_owned();
-        // let range_validator_commitment = hash_tree_root_poseidon(&mut builder, &validators_leaves);
+        let validators_leaves = [validator_target];
+        let validators_leaves = validators_leaves
+            .iter()
+            .zip(non_zero_validator_leaves_mask)
+            .map(|(validator, is_not_zero)| {
+                hash_validator_poseidon_or_zeroes(&mut builder, &validator, is_not_zero)
+            })
+            .collect_vec();
+        let range_validator_commitment = hash_tree_root_poseidon(&mut builder, &validators_leaves);
 
-        // WithdrawalCredentialsBalanceAggregatorFirstLevel::define(&mut builder, params);
 
-        // let slot_target = builder.add_virtual_biguint_target(2);
-        // let current_epoch = builder.add_virtual_biguint_target(2);
+        let x: WithdrawalCredentialsBalanceAggregatorFirstLevel<1, 1>;
+
+        WithdrawalCredentialsBalanceAggregatorFirstLevel::<1, 1>::define(&mut builder, &());
+        // WithdrawalCredentialsBalanceAggregatorFirstLevel::define(&mut builder);
 
         // pw.set_biguint_target(&slot_target, &BigUint::from_u64(6953401).unwrap());
         // pw.set_biguint_target(&current_epoch, &BigUint::from_u64(217293).unwrap());
