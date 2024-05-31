@@ -2,11 +2,8 @@ import { task } from 'hardhat/config';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 import { checkConfig } from '@dendreth/utils/ts-utils/common-utils';
 import { Redis } from '@dendreth/relay/implementations/redis';
-import {
-  getLidoWithdrawCredentials,
-  getGenesisBlockTimestamp,
-  assertSupportedNetwork,
-} from '@dendreth/utils/balance-verification-utils/utils';
+import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
+import { ethers } from 'ethers';
 
 const logger = getGenericLogger();
 
@@ -16,27 +13,27 @@ task('deploy-balance-verifier', 'Deploy the beacon light client contract')
     'ownerAddress',
     'The address of the owner of the balance verifier contract',
   )
-  .addOptionalParam(
-    'withdrawCredentials',
-    'The withdraw credentials for the Diva contract',
+  .addParam('beaconNode', 'The endpoint of the beacon node API for the network')
+  .addParam('rpcUrl', 'The RPC URL for the network')
+  .addParam(
+    'additionalData',
+    'Either the withdraw credentials for the Lido contract or the accumulator contract address for the Diva contract',
   )
   .addOptionalParam(
     'verifierDigest',
     'The verifier digest for the plonky2 circuit to initialize the BalanceVerifier contract',
   )
-  .setAction(async (args, { run, ethers, network }) => {
+  .setAction(async (args, { run, ethers }) => {
     await run('compile');
-    const [deployer] = await ethers.getSigners();
+    const provider = new ethers.providers.JsonRpcProvider(args.rpcUrl);
+    const deployer = new ethers.Wallet(process.env.USER_PRIVATE_KEY!, provider);
 
     logger.info(`Deploying contracts with the account: ${deployer.address}`);
     logger.info(`Account balance: ${(await deployer.getBalance()).toString()}`);
 
-    const networkName = assertSupportedNetwork(network.name);
+    const beaconApi = await getBeaconApi([args.beaconNode]);
 
-    let WITHDRAWAL_CREDENTIALS = !args.withdrawCredentials
-      ? getLidoWithdrawCredentials(networkName)
-      : args.withdrawCredentials;
-    let GENESIS_BLOCK_TIMESTAMP = getGenesisBlockTimestamp(networkName);
+    const genesisData = await beaconApi.getGenesisData();
 
     let VERIFIER_DIGEST = args.verifierDigest;
     if (!VERIFIER_DIGEST) {
@@ -63,35 +60,67 @@ task('deploy-balance-verifier', 'Deploy the beacon light client contract')
       ).circuit_digest;
     }
 
-    let protocol = args.protocol;
-    let CONTRACT = 'BalanceVerifierLido';
+    const protocol = args.protocol;
     if (protocol !== 'lido' && protocol !== 'diva') {
       logger.error('Invalid protocol');
       return;
     }
+
+    const verifier = await (await ethers.getContractFactory('PlonkVerifier'))
+      .connect(deployer)
+      .deploy();
+
+    let beaconLightClient: ethers.Contract;
+    let contractName: string;
     if (protocol === 'diva') {
-      CONTRACT = 'BalanceVerifierDiva';
+      if (!ethers.utils.isAddress(args.additionalData)) {
+        logger.error('Invalid accumulator address');
+        return;
+      }
+
+      const accumulatorAddress = args.additionalData;
+      logger.info(
+        `Constructor args ${VERIFIER_DIGEST} ${genesisData.genesisTime} ${genesisData.genesisTime} ${verifier.address} ${accumulatorAddress} ${args.ownerAddress}`,
+      );
+
+      contractName = 'BalanceVerifierDiva';
+      beaconLightClient = await (await ethers.getContractFactory(contractName))
+        .connect(deployer)
+        .deploy(
+          VERIFIER_DIGEST,
+          genesisData.genesisTime,
+          genesisData.genesisForkVersion,
+          verifier.address,
+          accumulatorAddress,
+          args.ownerAddress,
+        );
+    } else {
+      if (
+        args.additionalData.length !== 66 ||
+        !ethers.utils.isHexString(args.additionalData)
+      ) {
+        logger.error('Invalid withdrawal credentials');
+        return;
+      }
+
+      const withdrawCredentials = args.additionalData;
+      logger.info(
+        `Constructor args ${VERIFIER_DIGEST} ${withdrawCredentials} ${genesisData.genesisTime} ${verifier.address} ${args.ownerAddress}`,
+      );
+      contractName = 'BalanceVerifierLido';
+
+      beaconLightClient = await (await ethers.getContractFactory(contractName))
+        .connect(deployer)
+        .deploy(
+          VERIFIER_DIGEST,
+          withdrawCredentials,
+          genesisData.genesisTime,
+          verifier.address,
+          args.ownerAddress,
+        );
     }
 
-    const verifier = await (
-      await ethers.getContractFactory('PlonkVerifier')
-    ).deploy();
-
-    logger.info(
-      `Constructor args ${VERIFIER_DIGEST} ${WITHDRAWAL_CREDENTIALS} ${GENESIS_BLOCK_TIMESTAMP} ${verifier.address} ${args.ownerAddress}`,
-    );
-
-    const beaconLightClient = await (
-      await ethers.getContractFactory(CONTRACT)
-    ).deploy(
-      VERIFIER_DIGEST,
-      WITHDRAWAL_CREDENTIALS,
-      GENESIS_BLOCK_TIMESTAMP,
-      verifier.address,
-      args.ownerAddress,
-    );
-
-    logger.info(`>>> Waiting for ${CONTRACT} deployment...`);
+    logger.info(`>>> Waiting for ${contractName} deployment...`);
 
     logger.info(
       `Deploying transaction hash.. ${beaconLightClient.deployTransaction.hash}`,
