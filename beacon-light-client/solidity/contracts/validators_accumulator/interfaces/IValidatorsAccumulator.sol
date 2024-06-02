@@ -7,12 +7,7 @@ interface IValidatorsAccumulator {
     bytes32 accumulator;
   }
 
-  event Deposited(
-    bytes pubkey,
-    bytes depositIndex,
-    bytes signature,
-    bytes32 depositMessageRoot
-  );
+  event Deposited(bytes pubkey);
 
   error InvalidCaller();
 

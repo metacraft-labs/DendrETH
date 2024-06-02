@@ -8,29 +8,16 @@ import {
   hexToBytes,
 } from '@dendreth/utils/ts-utils/bls';
 import { expect } from 'chai';
-import depositContractAbi from './abis/deposit.json';
 import depositItems from './utils/depositData.json';
 
 describe('ValidatorsAccumulator tests', async function () {
   let validatorAccumulator: Contract;
-  let depositContract: Contract;
   let pubkeys: Uint8Array[] = [];
-  let eth1DepositIndexes: Uint8Array[] = [];
-  let depositMessageRoots: Uint8Array[] = [];
-  let signatures: Uint8Array[] = [];
   let accumulators: string[] = [];
 
   beforeEach(async function () {
     pubkeys = [];
-    eth1DepositIndexes = [];
-    depositMessageRoots = [];
-    signatures = [];
     accumulators = [];
-
-    depositContract = await ethers.getContractAt(
-      depositContractAbi,
-      '0x00000000219ab540356cBB839Cbe05303d7705Fa',
-    );
 
     const signerAddress = (await ethers.getSigners())[0].address;
 
@@ -48,8 +35,6 @@ describe('ValidatorsAccumulator tests', async function () {
   });
 
   async function deposit(depositItem: any) {
-    const { ssz } = await import('@lodestar/types');
-
     await (
       await validatorAccumulator.deposit(
         depositItem.pubkey,
@@ -61,43 +46,18 @@ describe('ValidatorsAccumulator tests', async function () {
     ).wait();
 
     const pubkey = hexToBytes(depositItem.pubkey);
-    const eth1DepositIndex = await depositContract.get_deposit_count();
-
-    let deposit_message = {
-      pubkey: hexToBytes(depositItem.pubkey),
-      withdrawalCredentials: hexToBytes(depositItem.withdrawalCredentials),
-      amount: 32000000000,
-    };
-    const depositMessageRoot =
-      ssz.phase0.DepositMessage.hashTreeRoot(deposit_message);
-    const signature = hexToBytes(depositItem.signature);
 
     accumulators.push(await validatorAccumulator.getValidatorsAccumulator());
     pubkeys.push(pubkey);
-    eth1DepositIndexes.push(hexToBytes(eth1DepositIndex));
-    depositMessageRoots.push(depositMessageRoot);
-    signatures.push(signature);
   }
 
   function calculateValidatorsAccumulator(
     validatorsPubkeys: Uint8Array[],
-    eth1DepositIndexes: Uint8Array[],
-    depositMessageRoots: Uint8Array[],
-    signatures: Uint8Array[],
   ): string {
     const leaves = validatorsPubkeys.map((pubkey, i) => {
       const validatorPubkey = bytesToHex(pubkey);
-      const eth1DepositIndex = bytesToHex(eth1DepositIndexes[i]);
-      const depositMessageRoot = bytesToHex(depositMessageRoots[i]);
-      const signature = bytesToHex(signatures[i]);
 
-      return sha256(
-        '0x' +
-          formatHex(validatorPubkey) +
-          formatHex(eth1DepositIndex) +
-          formatHex(depositMessageRoot) +
-          formatHex(signature),
-      );
+      return sha256('0x' + formatHex(validatorPubkey));
     });
 
     return hashTreeRoot(leaves, 32);
@@ -107,12 +67,7 @@ describe('ValidatorsAccumulator tests', async function () {
     for (const depositItem of depositItems) {
       await deposit(depositItem);
       expect(await validatorAccumulator.getValidatorsAccumulator()).to.equal(
-        calculateValidatorsAccumulator(
-          pubkeys,
-          eth1DepositIndexes,
-          depositMessageRoots,
-          signatures,
-        ),
+        calculateValidatorsAccumulator(pubkeys),
       );
     }
   });

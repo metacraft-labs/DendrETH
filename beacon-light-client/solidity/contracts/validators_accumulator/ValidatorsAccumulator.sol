@@ -59,32 +59,10 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
       depositDataRoot
     );
 
-    // Calculate hash tree root of deposit message
-    bytes32 depositMessageRoot = sha256(
-      abi.encodePacked(
-        sha256(
-          abi.encodePacked(
-            sha256(abi.encodePacked(pubkey, bytes16(0))),
-            withdrawalCredentials
-          )
-        ),
-        sha256(
-          abi.encodePacked(
-            toLe64(uint64(msg.value / 1 gwei)),
-            bytes24(0),
-            bytes32(0)
-          )
-        )
-      )
-    );
-
-    bytes memory depositIndex = IDeposit(depositAddress).get_deposit_count();
-    emit Deposited(pubkey, depositIndex, signature, depositMessageRoot);
+    emit Deposited(pubkey);
 
     // Create a node for the validator
-    bytes32 node = sha256(
-      abi.encodePacked(pubkey, depositIndex, depositMessageRoot, signature)
-    );
+    bytes32 node = sha256(pubkey);
 
     validatorsCount += 1;
 
