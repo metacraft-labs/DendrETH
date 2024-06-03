@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use circuit::{circuit_builder_extensions::CircuitBuilderExtensions, Circuit};
+use circuit::Circuit;
 use circuit_derive::{CircuitTarget, SerdeCircuitTarget};
 use num_bigint::BigUint;
 use plonky2::{
@@ -20,8 +20,6 @@ use plonky2_crypto::{
 };
 use starky_bls12_381::{
     calc_pairing_precomp, final_exponentiate, fp12_mul,
-    fp2_plonky2::is_zero,
-    fp_plonky2::FpTarget,
     g1_plonky2::{pk_point_check, PointG1Target},
     g2_plonky2::{signature_point_check, PointG2Target},
     hash_to_curve::hash_to_curve,
@@ -104,16 +102,9 @@ impl Circuit for BLSVerificationCircuit {
 
         let pubkey_g1 = get_g1_from_miller_loop(&pt_ml1);
         pk_point_check(builder, &pubkey_g1, &input.pubkey);
-        let is_g1_point_is_at_infinity = is_g1_point_is_at_infinity(builder, &pubkey_g1);
 
         let signature_g2 = get_g2_point_from_pairing_precomp(builder, &pt_pp2);
         signature_point_check(builder, &signature_g2, &input.sig);
-        let is_g2_point_is_at_infinity = is_g2_point_is_at_infinity(builder, &signature_g2);
-        assert_g1_or_g2_point_at_infinity(
-            builder,
-            is_g1_point_is_at_infinity,
-            is_g2_point_is_at_infinity,
-        );
 
         connect_pairing_precomp_with_miller_loop_g2(builder, &pt_pp2, &pt_ml2);
 
@@ -157,20 +148,7 @@ impl Circuit for BLSVerificationCircuit {
     }
 }
 
-fn connect_fp12_mull_with_final_exponentiation<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    pt_fp12m: &ProofWithPublicInputsTarget<D>,
-    pt_fe: &ProofWithPublicInputsTarget<D>,
-) {
-    for i in 0..24 * 3 * 2 {
-        builder.connect(
-            pt_fp12m.public_inputs[fp12_mul::PIS_OUTPUT_OFFSET + i],
-            pt_fe.public_inputs[final_exponentiate::PIS_INPUT_OFFSET + i],
-        );
-    }
-}
-
-fn get_neg_generator<F: RichField + Extendable<D>, const D: usize>(
+pub fn get_neg_generator<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
 ) -> PointG1Target {
     let neg_generator_x = builder.constant_biguint(&BigUint::from_str("3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507").unwrap());
@@ -179,7 +157,7 @@ fn get_neg_generator<F: RichField + Extendable<D>, const D: usize>(
     [neg_generator_x, neg_generator_y]
 }
 
-fn get_g2_point_from_pairing_precomp<F: RichField + Extendable<D>, const D: usize>(
+pub fn get_g2_point_from_pairing_precomp<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     pt_pp2: &ProofWithPublicInputsTarget<D>,
 ) -> PointG2Target {
@@ -239,6 +217,41 @@ fn get_g2_point_from_pairing_precomp<F: RichField + Extendable<D>, const D: usiz
     [[sig_point_x0, sig_point_x1], [sig_point_y0, sig_point_y1]]
 }
 
+pub fn get_g1_from_miller_loop(pt_ml1: &ProofWithPublicInputsTarget<D>) -> PointG1Target {
+    let g1_x = BigUintTarget {
+        limbs: (0..N)
+            .into_iter()
+            .map(|i| {
+                U32Target(pt_ml1.public_inputs[calc_pairing_precomp::X0_PUBLIC_INPUTS_OFFSET + i])
+            })
+            .collect(),
+    };
+
+    let g1_y = BigUintTarget {
+        limbs: (0..N)
+            .into_iter()
+            .map(|i| {
+                U32Target(pt_ml1.public_inputs[calc_pairing_precomp::X1_PUBLIC_INPUTS_OFFSET + i])
+            })
+            .collect(),
+    };
+
+    [g1_x, g1_y]
+}
+
+fn connect_fp12_mull_with_final_exponentiation<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    pt_fp12m: &ProofWithPublicInputsTarget<D>,
+    pt_fe: &ProofWithPublicInputsTarget<D>,
+) {
+    for i in 0..24 * 3 * 2 {
+        builder.connect(
+            pt_fp12m.public_inputs[fp12_mul::PIS_OUTPUT_OFFSET + i],
+            pt_fe.public_inputs[final_exponentiate::PIS_INPUT_OFFSET + i],
+        );
+    }
+}
+
 fn connect_miller_loop_with_fp12_mul<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     pt_ml1: &ProofWithPublicInputsTarget<D>,
@@ -276,28 +289,6 @@ fn connect_miller_loop_with_g1<F: RichField + Extendable<D>, const D: usize>(
             pt_ml1.public_inputs[miller_loop::PIS_PY_OFFSET + i],
         );
     }
-}
-
-fn get_g1_from_miller_loop(pt_ml1: &ProofWithPublicInputsTarget<D>) -> PointG1Target {
-    let g1_x = BigUintTarget {
-        limbs: (0..N)
-            .into_iter()
-            .map(|i| {
-                U32Target(pt_ml1.public_inputs[calc_pairing_precomp::X0_PUBLIC_INPUTS_OFFSET + i])
-            })
-            .collect(),
-    };
-
-    let g1_y = BigUintTarget {
-        limbs: (0..N)
-            .into_iter()
-            .map(|i| {
-                U32Target(pt_ml1.public_inputs[calc_pairing_precomp::X1_PUBLIC_INPUTS_OFFSET + i])
-            })
-            .collect(),
-    };
-
-    [g1_x, g1_y]
 }
 
 fn connect_pairing_precomp_with_miller_loop_g2<F: RichField + Extendable<D>, const D: usize>(
@@ -353,112 +344,5 @@ fn connect_pairing_precomp_with_g2<F: RichField + Extendable<D>, const D: usize>
                 zero,
             );
         }
-    }
-}
-
-fn assert_g1_or_g2_point_at_infinity(
-    builder: &mut CircuitBuilder<F, D>,
-    is_g1_at_infinity: BoolTarget,
-    is_g2_at_infinity: BoolTarget,
-) -> BoolTarget {
-    builder.or(is_g1_at_infinity, is_g2_at_infinity)
-}
-
-fn is_g1_point_is_at_infinity(
-    builder: &mut CircuitBuilder<F, D>,
-    g1_point: &PointG1Target,
-) -> BoolTarget {
-    let is_g1_x_zero = is_fp_zero(builder, &g1_point[0]);
-    let is_g1_y_zero = is_fp_zero(builder, &g1_point[1]);
-    builder.and(is_g1_x_zero, is_g1_y_zero)
-}
-
-fn is_g2_point_is_at_infinity(
-    builder: &mut CircuitBuilder<F, D>,
-    g2_point: &PointG2Target,
-) -> BoolTarget {
-    let is_g2_x_zero = is_zero(builder, &g2_point[0]);
-    let is_g2_y_zero = is_zero(builder, &g2_point[1]);
-    builder.and(is_g2_x_zero, is_g2_y_zero)
-}
-
-fn is_fp_zero<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    input: &FpTarget,
-) -> BoolTarget {
-    let zero = builder.zero_biguint();
-    builder.cmp_biguint(input, &zero)
-}
-
-#[cfg(test)]
-pub mod tests {
-    use std::{fs, marker::PhantomData};
-
-    use anyhow::Result;
-    use circuit::Circuit;
-    use plonky2::{
-        iop::witness::PartialWitness,
-        plonk::{
-            circuit_builder::CircuitBuilder,
-            circuit_data::{CircuitConfig, CircuitData},
-            config::{GenericConfig, PoseidonGoldilocksConfig},
-        },
-    };
-    use plonky2_circuit_serializer::serializer::{CustomGateSerializer, CustomGeneratorSerializer};
-
-    use super::BLSVerificationCircuit;
-
-    type F = <C as GenericConfig<2>>::F;
-    type C = PoseidonGoldilocksConfig;
-    const D: usize = 2;
-    const SERIALIZED_CIRCUITS_DIR: &str = "../circuit_executables/serialized_circuits";
-
-    fn read_from_file(file_path: &str) -> Result<Vec<u8>> {
-        let data = fs::read(file_path)?;
-        Ok(data)
-    }
-
-    fn load_circuit_data_starky(file_name: &str) -> CircuitData<F, C, D> {
-        let circuit_data_bytes = read_from_file(&format!("{file_name}.plonky2_circuit")).unwrap();
-
-        CircuitData::<F, C, D>::from_bytes(
-            &circuit_data_bytes,
-            &CustomGateSerializer,
-            &CustomGeneratorSerializer {
-                _phantom: PhantomData::<PoseidonGoldilocksConfig>,
-            },
-        )
-        .unwrap()
-    }
-
-    #[test]
-    fn test_bls12_381_circuit() -> std::result::Result<(), anyhow::Error> {
-        let standard_recursion_config = CircuitConfig::standard_recursion_config();
-        let mut builder = CircuitBuilder::<F, D>::new(standard_recursion_config);
-
-        let pairing_precomp_circuit_data =
-            load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/pairing_precomp"));
-        let miller_loop_circuit_data =
-            load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/miller_loop"));
-        let fp12_mul_circuit_data =
-            load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/fp12_mul"));
-        let final_exponentiate_circuit_data = load_circuit_data_starky(&format!(
-            "{SERIALIZED_CIRCUITS_DIR}/final_exponentiate_circuit"
-        ));
-
-        let params = (
-            pairing_precomp_circuit_data,
-            miller_loop_circuit_data,
-            fp12_mul_circuit_data,
-            final_exponentiate_circuit_data,
-        );
-
-        BLSVerificationCircuit::define(&mut builder, &params);
-
-        let pw = PartialWitness::new();
-        let data = builder.build::<C>();
-        let proof = data.prove(pw)?;
-
-        data.verify(proof)
     }
 }
