@@ -104,11 +104,16 @@ impl Circuit for BLSVerificationCircuit {
 
         let pubkey_g1 = get_g1_from_miller_loop(&pt_ml1);
         pk_point_check(builder, &pubkey_g1, &input.pubkey);
-        assert_g1_point_is_at_infinity(builder, &pubkey_g1);
+        let is_g1_point_is_at_infinity = is_g1_point_is_at_infinity(builder, &pubkey_g1);
 
         let signature_g2 = get_g2_point_from_pairing_precomp(builder, &pt_pp2);
         signature_point_check(builder, &signature_g2, &input.sig);
-        assert_g2_point_is_at_infinity(builder, &signature_g2);
+        let is_g2_point_is_at_infinity = is_g2_point_is_at_infinity(builder, &signature_g2);
+        assert_g1_or_g2_point_at_infinity(
+            builder,
+            is_g1_point_is_at_infinity,
+            is_g2_point_is_at_infinity,
+        );
 
         connect_pairing_precomp_with_miller_loop_g2(builder, &pt_pp2, &pt_ml2);
 
@@ -351,18 +356,30 @@ fn connect_pairing_precomp_with_g2<F: RichField + Extendable<D>, const D: usize>
     }
 }
 
-fn assert_g1_point_is_at_infinity(builder: &mut CircuitBuilder<F, D>, g1_point: &PointG1Target) {
-    let is_g1_x_zero = is_fp_zero(builder, &g1_point[0]);
-    let is_g1_y_zero = is_fp_zero(builder, &g1_point[1]);
-    let are_g1_x_and_y_zero = builder.and(is_g1_x_zero, is_g1_y_zero);
-    builder.assert_true(are_g1_x_and_y_zero)
+fn assert_g1_or_g2_point_at_infinity(
+    builder: &mut CircuitBuilder<F, D>,
+    is_g1_at_infinity: BoolTarget,
+    is_g2_at_infinity: BoolTarget,
+) -> BoolTarget {
+    builder.or(is_g1_at_infinity, is_g2_at_infinity)
 }
 
-fn assert_g2_point_is_at_infinity(builder: &mut CircuitBuilder<F, D>, g2_point: &PointG2Target) {
+fn is_g1_point_is_at_infinity(
+    builder: &mut CircuitBuilder<F, D>,
+    g1_point: &PointG1Target,
+) -> BoolTarget {
+    let is_g1_x_zero = is_fp_zero(builder, &g1_point[0]);
+    let is_g1_y_zero = is_fp_zero(builder, &g1_point[1]);
+    builder.and(is_g1_x_zero, is_g1_y_zero)
+}
+
+fn is_g2_point_is_at_infinity(
+    builder: &mut CircuitBuilder<F, D>,
+    g2_point: &PointG2Target,
+) -> BoolTarget {
     let is_g2_x_zero = is_zero(builder, &g2_point[0]);
     let is_g2_y_zero = is_zero(builder, &g2_point[1]);
-    let are_g2_x_and_y_zero = builder.and(is_g2_x_zero, is_g2_y_zero);
-    builder.assert_true(are_g2_x_and_y_zero)
+    builder.and(is_g2_x_zero, is_g2_y_zero)
 }
 
 fn is_fp_zero<F: RichField + Extendable<D>, const D: usize>(
@@ -402,7 +419,6 @@ pub mod tests {
     }
 
     fn load_circuit_data_starky(file_name: &str) -> CircuitData<F, C, D> {
-        println!("path: {:?}.plonky2_circuit", file_name);
         let circuit_data_bytes = read_from_file(&format!("{file_name}.plonky2_circuit")).unwrap();
 
         CircuitData::<F, C, D>::from_bytes(
