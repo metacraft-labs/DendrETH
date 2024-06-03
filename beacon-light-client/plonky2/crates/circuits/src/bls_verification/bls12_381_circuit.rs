@@ -375,23 +375,74 @@ fn is_fp_zero<F: RichField + Extendable<D>, const D: usize>(
 
 #[cfg(test)]
 pub mod tests {
+    use std::{fs, marker::PhantomData};
+
+    use anyhow::Result;
     use circuit::Circuit;
-    use plonky2::plonk::{
-        circuit_builder::CircuitBuilder,
-        circuit_data::CircuitConfig,
-        config::{GenericConfig, PoseidonGoldilocksConfig},
+    use plonky2::{
+        iop::witness::PartialWitness,
+        plonk::{
+            circuit_builder::CircuitBuilder,
+            circuit_data::{CircuitConfig, CircuitData},
+            config::{GenericConfig, PoseidonGoldilocksConfig},
+        },
     };
+    use plonky2_circuit_serializer::serializer::{CustomGateSerializer, CustomGeneratorSerializer};
 
     use super::BLSVerificationCircuit;
 
     type F = <C as GenericConfig<2>>::F;
     type C = PoseidonGoldilocksConfig;
     const D: usize = 2;
+    const SERIALIZED_CIRCUITS_DIR: &str = "../circuit_executables/serialized_circuits";
+
+    fn read_from_file(file_path: &str) -> Result<Vec<u8>> {
+        let data = fs::read(file_path)?;
+        Ok(data)
+    }
+
+    fn load_circuit_data_starky(file_name: &str) -> CircuitData<F, C, D> {
+        println!("path: {:?}.plonky2_circuit", file_name);
+        let circuit_data_bytes = read_from_file(&format!("{file_name}.plonky2_circuit")).unwrap();
+
+        CircuitData::<F, C, D>::from_bytes(
+            &circuit_data_bytes,
+            &CustomGateSerializer,
+            &CustomGeneratorSerializer {
+                _phantom: PhantomData::<PoseidonGoldilocksConfig>,
+            },
+        )
+        .unwrap()
+    }
 
     #[test]
-    fn test_bls12_381_circuit() {
+    fn test_bls12_381_circuit() -> std::result::Result<(), anyhow::Error> {
         let standard_recursion_config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(standard_recursion_config);
-        // BLSVerificationCircuit::define(&mut builder, params);
+
+        let pairing_precomp_circuit_data =
+            load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/pairing_precomp"));
+        let miller_loop_circuit_data =
+            load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/miller_loop"));
+        let fp12_mul_circuit_data =
+            load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/fp12_mul"));
+        let final_exponentiate_circuit_data = load_circuit_data_starky(&format!(
+            "{SERIALIZED_CIRCUITS_DIR}/final_exponentiate_circuit"
+        ));
+
+        let params = (
+            pairing_precomp_circuit_data,
+            miller_loop_circuit_data,
+            fp12_mul_circuit_data,
+            final_exponentiate_circuit_data,
+        );
+
+        BLSVerificationCircuit::define(&mut builder, &params);
+
+        let pw = PartialWitness::new();
+        let data = builder.build::<C>();
+        let proof = data.prove(pw)?;
+
+        data.verify(proof)
     }
 }
