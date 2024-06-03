@@ -33,7 +33,7 @@ task('deploy-balance-verifier', 'Deploy the beacon light client contract')
 
     const beaconApi = await getBeaconApi([args.beaconNode]);
 
-    const genesisData = await beaconApi.getGenesisData();
+    const genesisTime = (await beaconApi.getGenesisData()).genesisTime;
 
     let VERIFIER_DIGEST = args.verifierDigest;
     if (!VERIFIER_DIGEST) {
@@ -80,7 +80,7 @@ task('deploy-balance-verifier', 'Deploy the beacon light client contract')
 
       const accumulatorAddress = args.additionalData;
       logger.info(
-        `Constructor args ${VERIFIER_DIGEST} ${genesisData.genesisTime} ${genesisData.genesisTime} ${verifier.address} ${accumulatorAddress} ${args.ownerAddress}`,
+        `Constructor args ${VERIFIER_DIGEST} ${genesisTime} ${verifier.address} ${accumulatorAddress} ${args.ownerAddress}`,
       );
 
       contractName = 'BalanceVerifierDiva';
@@ -88,8 +88,7 @@ task('deploy-balance-verifier', 'Deploy the beacon light client contract')
         .connect(deployer)
         .deploy(
           VERIFIER_DIGEST,
-          genesisData.genesisTime,
-          genesisData.genesisForkVersion,
+          genesisTime,
           verifier.address,
           accumulatorAddress,
           args.ownerAddress,
@@ -105,7 +104,7 @@ task('deploy-balance-verifier', 'Deploy the beacon light client contract')
 
       const withdrawCredentials = args.additionalData;
       logger.info(
-        `Constructor args ${VERIFIER_DIGEST} ${withdrawCredentials} ${genesisData.genesisTime} ${verifier.address} ${args.ownerAddress}`,
+        `Constructor args ${VERIFIER_DIGEST} ${withdrawCredentials} ${genesisTime} ${verifier.address} ${args.ownerAddress}`,
       );
       contractName = 'BalanceVerifierLido';
 
@@ -114,7 +113,7 @@ task('deploy-balance-verifier', 'Deploy the beacon light client contract')
         .deploy(
           VERIFIER_DIGEST,
           withdrawCredentials,
-          genesisData.genesisTime,
+          genesisTime,
           verifier.address,
           args.ownerAddress,
         );
