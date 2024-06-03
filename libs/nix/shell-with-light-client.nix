@@ -16,7 +16,7 @@ in
     shellHook = ''
       set -e
 
-      export NODE_OPTIONS="--experimental-vm-modules"
+      export NODE_OPTIONS="--experimental-vm-modules --max-old-space-size=16384"
       export PATH="$PATH:$PWD/node_modules/.bin";
       export CC=clang
       export LOCAL_NIM_LIB="$PWD/vendor/nim/lib"
