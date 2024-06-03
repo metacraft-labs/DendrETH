@@ -112,7 +112,7 @@ impl Circuit for BLSVerificationCircuit {
 
         connect_miller_loop_with_g1(builder, &neg_generator, &pt_ml2);
 
-        connect_miller_loop_with_fp12_mull(builder, &pt_ml1, &pt_ml2, &pt_fp12m);
+        connect_miller_loop_with_fp12_mul(builder, &pt_ml1, &pt_ml2, &pt_fp12m);
 
         connect_fp12_mull_with_final_exponentiation(builder, &pt_fp12m, &pt_fe);
 
@@ -148,20 +148,7 @@ impl Circuit for BLSVerificationCircuit {
     }
 }
 
-fn connect_fp12_mull_with_final_exponentiation<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    pt_fp12m: &ProofWithPublicInputsTarget<D>,
-    pt_fe: &ProofWithPublicInputsTarget<D>,
-) {
-    for i in 0..24 * 3 * 2 {
-        builder.connect(
-            pt_fp12m.public_inputs[fp12_mul::PIS_OUTPUT_OFFSET + i],
-            pt_fe.public_inputs[final_exponentiate::PIS_INPUT_OFFSET + i],
-        );
-    }
-}
-
-fn get_neg_generator<F: RichField + Extendable<D>, const D: usize>(
+pub fn get_neg_generator<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
 ) -> PointG1Target {
     let neg_generator_x = builder.constant_biguint(&BigUint::from_str("3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507").unwrap());
@@ -170,7 +157,7 @@ fn get_neg_generator<F: RichField + Extendable<D>, const D: usize>(
     [neg_generator_x, neg_generator_y]
 }
 
-fn get_g2_point_from_pairing_precomp<F: RichField + Extendable<D>, const D: usize>(
+pub fn get_g2_point_from_pairing_precomp<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     pt_pp2: &ProofWithPublicInputsTarget<D>,
 ) -> PointG2Target {
@@ -230,7 +217,42 @@ fn get_g2_point_from_pairing_precomp<F: RichField + Extendable<D>, const D: usiz
     [[sig_point_x0, sig_point_x1], [sig_point_y0, sig_point_y1]]
 }
 
-fn connect_miller_loop_with_fp12_mull<F: RichField + Extendable<D>, const D: usize>(
+pub fn get_g1_from_miller_loop(pt_ml1: &ProofWithPublicInputsTarget<D>) -> PointG1Target {
+    let g1_x = BigUintTarget {
+        limbs: (0..N)
+            .into_iter()
+            .map(|i| {
+                U32Target(pt_ml1.public_inputs[calc_pairing_precomp::X0_PUBLIC_INPUTS_OFFSET + i])
+            })
+            .collect(),
+    };
+
+    let g1_y = BigUintTarget {
+        limbs: (0..N)
+            .into_iter()
+            .map(|i| {
+                U32Target(pt_ml1.public_inputs[calc_pairing_precomp::X1_PUBLIC_INPUTS_OFFSET + i])
+            })
+            .collect(),
+    };
+
+    [g1_x, g1_y]
+}
+
+fn connect_fp12_mull_with_final_exponentiation<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    pt_fp12m: &ProofWithPublicInputsTarget<D>,
+    pt_fe: &ProofWithPublicInputsTarget<D>,
+) {
+    for i in 0..24 * 3 * 2 {
+        builder.connect(
+            pt_fp12m.public_inputs[fp12_mul::PIS_OUTPUT_OFFSET + i],
+            pt_fe.public_inputs[final_exponentiate::PIS_INPUT_OFFSET + i],
+        );
+    }
+}
+
+fn connect_miller_loop_with_fp12_mul<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     pt_ml1: &ProofWithPublicInputsTarget<D>,
     pt_ml2: &ProofWithPublicInputsTarget<D>,
@@ -267,28 +289,6 @@ fn connect_miller_loop_with_g1<F: RichField + Extendable<D>, const D: usize>(
             pt_ml1.public_inputs[miller_loop::PIS_PY_OFFSET + i],
         );
     }
-}
-
-fn get_g1_from_miller_loop(pt_ml1: &ProofWithPublicInputsTarget<D>) -> PointG1Target {
-    let g1_x = BigUintTarget {
-        limbs: (0..N)
-            .into_iter()
-            .map(|i| {
-                U32Target(pt_ml1.public_inputs[calc_pairing_precomp::X0_PUBLIC_INPUTS_OFFSET + i])
-            })
-            .collect(),
-    };
-
-    let g1_y = BigUintTarget {
-        limbs: (0..N)
-            .into_iter()
-            .map(|i| {
-                U32Target(pt_ml1.public_inputs[calc_pairing_precomp::X1_PUBLIC_INPUTS_OFFSET + i])
-            })
-            .collect(),
-    };
-
-    [g1_x, g1_y]
 }
 
 fn connect_pairing_precomp_with_miller_loop_g2<F: RichField + Extendable<D>, const D: usize>(
