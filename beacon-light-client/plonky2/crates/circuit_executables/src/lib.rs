@@ -2,6 +2,7 @@
 #![feature(async_closure)]
 #![feature(generic_const_exprs)]
 
+pub mod cached_circuit_build;
 pub mod commitment_mapper_context;
 pub mod commitment_mapper_task;
 pub mod constants;
