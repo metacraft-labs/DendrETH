@@ -15,7 +15,7 @@ task('deploy', 'Deploy the beacon light client contract')
       return;
     }
 
-    const currentConfig = getNetworkConfig(args.followNetwork);
+    const currentConfig = await getNetworkConfig(args.followNetwork);
 
     await run('compile');
     const [deployer] = await ethers.getSigners();
