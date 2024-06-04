@@ -11,7 +11,7 @@ import {
 import { RedisClientType, createClient } from 'redis';
 import CONSTANTS from '../../beacon-light-client/plonky2/kv_db_constants.json';
 //
-import { Redis as RedisClient } from 'ioredis';
+import { Redis as RedisClient, Result } from 'ioredis';
 import chalk from 'chalk';
 import {
   getDepthByGindex,
@@ -19,6 +19,12 @@ import {
 } from '@dendreth/utils/ts-utils/common-utils';
 import { validatorFromValidatorJSON } from '../utils/converters';
 import JSONbig from 'json-bigint';
+
+declare module 'ioredis' {
+  interface RedisCommander<Context> {
+    deletePattern(pattern: string): Result<string, Context>;
+  }
+}
 
 export class Redis implements IRedis {
   public readonly client: RedisClient;
@@ -32,6 +38,25 @@ export class Redis implements IRedis {
 
     this.pubSub = createClient({
       url: `redis://${redisHost}:${redisPort}`,
+    });
+
+    this.client.defineCommand('deletePattern', {
+      numberOfKeys: 0,
+      lua: `
+      local cursor = 0
+      local calls = 0
+      local dels = 0
+      repeat
+          local result = redis.call('SCAN', cursor, 'MATCH', ARGV[1])
+          calls = calls + 1
+          for _,key in ipairs(result[2]) do
+              redis.call('DEL', key)
+              dels = dels + 1
+          end
+          cursor = tonumber(result[1])
+      until cursor == 0
+      return "Calls " .. calls .. " Dels " .. dels
+  `,
     });
   }
 

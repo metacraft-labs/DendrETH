@@ -265,6 +265,14 @@ pub fn sha256_pair<F: RichField + Extendable<D>, const D: usize>(
     sha256(builder, message.as_slice())
 }
 
+pub fn sha256_or_zeroes<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    message: &[BoolTarget],
+    condition: BoolTarget,
+) -> Sha256Target {
+    sha256(builder, message).map(|bit| builder.and(bit, condition))
+}
+
 pub fn sha256<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     message: &[BoolTarget],

@@ -57,6 +57,10 @@ name = "commitment_mapper"
 path = "bin/commitment_mapper.rs"
 
 [[bin]]
+name = "pubkey_commitment_mapper"
+path = "bin/pubkey_commitment_mapper.rs"
+
+[[bin]]
 name = "balance_verification_circuit_data_generation"
 path = "bin/balance_verification_circuit_data_generation.rs"
 
