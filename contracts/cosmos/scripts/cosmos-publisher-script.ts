@@ -22,7 +22,7 @@ async function publishTask() {
     return;
   }
 
-  const currentNetwork = getNetworkConfig(followNetwork);
+  const currentNetwork = await getNetworkConfig(followNetwork);
 
   let address;
   let rpcEndpoint;
