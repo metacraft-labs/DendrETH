@@ -2,7 +2,8 @@ use crate::{
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
     withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
-use circuit::CircuitOutput;
+use circuit::{Array, CircuitOutput};
+use plonky2::hash::hash_types::NUM_HASH_OUT_ELTS;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -43,4 +44,12 @@ pub struct BalanceVerificationFinalProofData {
     pub number_of_exited_validators: u64,
     pub number_of_slashed_validators: u64,
     pub proof: Vec<u8>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct PubkeyCommitmentMapperRedisStorageData {
+    pub sha256: String,
+    pub poseidon: Array<u64, NUM_HASH_OUT_ELTS>,
+    pub proof_key: String,
 }

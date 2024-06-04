@@ -46,3 +46,42 @@ export const getEvents = async (
 
   return events;
 };
+
+export async function* fetchEventsAsync(
+  contract: ethers.Contract,
+  event: string,
+  firstBlock: number,
+  lastBlock: number,
+): AsyncGenerator<ethers.Event[]> {
+  const chunkSize = Math.min(lastBlock - firstBlock + 1, 10_000);
+
+  for (let block = firstBlock; block <= lastBlock; block += chunkSize) {
+    const lastBlockInChunk = Math.min(block + chunkSize - 1, lastBlock);
+    yield await contract.queryFilter(event, block, lastBlockInChunk);
+  }
+}
+
+export async function fetchEventsAsyncCB<T>(
+  contract: ethers.Contract,
+  event: string,
+  firstBlock: number,
+  lastBlock: number,
+  callback: (event: ethers.Event) => Promise<T>,
+): Promise<T[]> {
+  const eventsIterator = fetchEventsAsync(
+    contract,
+    event,
+    firstBlock,
+    lastBlock,
+  );
+
+  const result: T[] = [];
+
+  for await (const eventsChunk of eventsIterator) {
+    for (const event of eventsChunk) {
+      result.push(await callback(event));
+    }
+  }
+
+  return result;
+}
