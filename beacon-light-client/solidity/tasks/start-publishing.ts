@@ -72,7 +72,7 @@ task('start-publishing', 'Run relayer')
       initPrometheusSetup(args.prometheusPort, networkName);
     }
 
-    const currentConfig = getNetworkConfig(args.followNetwork);
+    const currentConfig = await getNetworkConfig(args.followNetwork);
 
     let publisher;
 

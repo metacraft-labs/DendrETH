@@ -16,7 +16,7 @@ task('verify-contracts', 'Verify')
       return;
     }
 
-    const currentConfig = getNetworkConfig(args.followNetwork);
+    const currentConfig = await getNetworkConfig(args.followNetwork);
 
     const beaconApi = await getBeaconApi(currentConfig.BEACON_REST_API!);
 
