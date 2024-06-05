@@ -257,7 +257,7 @@ fn hash_public_inputs<F: RichField + Extendable<D>, const D: usize>(
     balance_aggregation_pis: &CircuitOutputTarget<
         DepositAccumulatorBalanceAggregatorDivaFirstLevel,
     >,
-    deposits_commitment_mapper_pis: &CircuitOutputTarget<PubkeyCommitmentMapperFL>,
+    pubkey_commitment_mapper_pis: &CircuitOutputTarget<PubkeyCommitmentMapperFL>,
 ) -> Sha256Target {
     let balance_bits =
         biguint_to_bits_target(builder, &balance_aggregation_pis.accumulated_data.balance);
@@ -298,7 +298,7 @@ fn hash_public_inputs<F: RichField + Extendable<D>, const D: usize>(
         &[
             input.block_root.as_slice(),
             block_number_bits.as_slice(),
-            deposits_commitment_mapper_pis.sha256.as_slice(),
+            pubkey_commitment_mapper_pis.sha256.as_slice(),
             balance_bits.as_slice(),
             number_of_non_activated_validators_bits.as_slice(),
             number_of_active_validators_bits.as_slice(),

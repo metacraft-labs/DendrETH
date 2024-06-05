@@ -1,8 +1,6 @@
-#![allow(incomplete_features)]
-#![feature(generic_const_exprs)]
-
 use circuit::{Circuit, SetWitness};
 use circuit_executables::{
+    cached_circuit_build::{build_circuit_cached, build_recursive_circuit_cached},
     constants::SERIALIZED_CIRCUITS_DIR,
     crud::{
         common::{
@@ -96,11 +94,11 @@ async fn async_main() -> Result<()> {
         .get_proof(validators_commitment_mapper_root_proof_data.proof_key)
         .await?;
 
-    let validators_commitment_mapper_65536gindex_proof_data: ValidatorsCommitmentMapperProofData =
+    let validators_commitment_mapper_65536_gindex_proof_data: ValidatorsCommitmentMapperProofData =
         fetch_proof(&mut con, 65536, circuit_input.slot.to_u64().unwrap()).await?;
 
     let validators_commitment_mapper_65536gindex_proof_bytes = proof_storage
-        .get_proof(validators_commitment_mapper_65536gindex_proof_data.proof_key)
+        .get_proof(validators_commitment_mapper_65536_gindex_proof_data.proof_key)
         .await?;
 
     let validators_commitment_mapper_root_circuit_data =
@@ -148,7 +146,9 @@ async fn async_main() -> Result<()> {
     );
 
     let (circuit_target, circuit_data) =
-        DepositAccumulatorBalanceAggregatorDivaFinalLayer::build(&verification_circuit_data);
+        build_circuit_cached("deposit_accumulator_final_layer", &|| {
+            DepositAccumulatorBalanceAggregatorDivaFinalLayer::build(&verification_circuit_data)
+        });
 
     let mut pw = PartialWitness::new();
 

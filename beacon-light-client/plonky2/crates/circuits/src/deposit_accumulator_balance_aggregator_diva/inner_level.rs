@@ -18,7 +18,7 @@ use plonky2::{
 use plonky2_crypto::biguint::CircuitBuilderBiguint;
 
 use super::first_level::{
-    AccumulatedDataTargetDiva, DepositAccumulatorBalanceAggregatorDivaFirstLevel,
+    DivaAccumulatedDataTarget, DepositAccumulatorBalanceAggregatorDivaFirstLevel,
 };
 
 pub struct DepositAccumulatorBalanceAggregatorDivaInnerLevel;
@@ -79,7 +79,7 @@ fn accumulate_data<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     left_range: &CircuitOutputTarget<DepositAccumulatorBalanceAggregatorDivaFirstLevel>,
     right_range: &CircuitOutputTarget<DepositAccumulatorBalanceAggregatorDivaFirstLevel>,
-) -> AccumulatedDataTargetDiva {
+) -> DivaAccumulatedDataTarget {
     let mut balance = builder.add_biguint(
         &left_range.accumulated_data.balance,
         &right_range.accumulated_data.balance,
@@ -88,7 +88,7 @@ fn accumulate_data<F: RichField + Extendable<D>, const D: usize>(
     // pop carry
     balance.limbs.pop();
 
-    AccumulatedDataTargetDiva {
+    DivaAccumulatedDataTarget {
         balance,
         validator_status_stats: accumulate_validator_stats(
             builder,
