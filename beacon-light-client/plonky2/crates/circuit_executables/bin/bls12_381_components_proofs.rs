@@ -5,7 +5,7 @@ use ark_ff::PrimeField;
 use ark_serialize::CanonicalDeserialize;
 use circuit::SerdeCircuitTarget;
 use circuit_executables::{
-    constants::SERIALIZED_CIRCUITS_DIR,
+    cached_circuit_build::SERIALIZED_CIRCUITS_DIR,
     crud::{
         common::{get_recursive_stark_targets, load_circuit_data_starky, read_from_file},
         proof_storage::proof_storage::create_proof_storage,

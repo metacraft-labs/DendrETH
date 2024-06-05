@@ -1,7 +1,7 @@
 use anyhow::Result;
 use circuit::SerdeCircuitTarget;
 use circuit_executables::{
-    constants::SERIALIZED_CIRCUITS_DIR,
+    cached_circuit_build::SERIALIZED_CIRCUITS_DIR,
     crud::{
         common::{load_circuit_data_starky, load_common_circuit_data_starky, read_from_file},
         proof_storage::proof_storage::{create_proof_storage, ProofStorage},

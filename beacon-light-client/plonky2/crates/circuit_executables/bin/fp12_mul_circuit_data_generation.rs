@@ -1,5 +1,5 @@
 use circuit::SerdeCircuitTarget;
-use circuit_executables::constants::SERIALIZED_CIRCUITS_DIR;
+use circuit_executables::cached_circuit_build::SERIALIZED_CIRCUITS_DIR;
 use std::{fs, marker::PhantomData, time::Instant};
 
 use ark_std::UniformRand;

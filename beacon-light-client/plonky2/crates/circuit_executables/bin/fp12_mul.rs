@@ -2,7 +2,9 @@ use std::{marker::PhantomData, time::Instant};
 
 use ark_std::UniformRand;
 use circuit::SerdeCircuitTarget;
-use circuit_executables::{constants::SERIALIZED_CIRCUITS_DIR, crud::common::read_from_file};
+use circuit_executables::{
+    cached_circuit_build::SERIALIZED_CIRCUITS_DIR, crud::common::read_from_file,
+};
 use circuits::bls_verification::build_stark_proof_verifier::RecursiveStarkTargets;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,

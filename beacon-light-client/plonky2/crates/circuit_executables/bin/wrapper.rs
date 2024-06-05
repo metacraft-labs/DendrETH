@@ -6,7 +6,7 @@ use std::{println, time::Instant};
 use anyhow::Result;
 use circuit::Circuit;
 use circuit_executables::{
-    constants::SERIALIZED_CIRCUITS_DIR,
+    cached_circuit_build::SERIALIZED_CIRCUITS_DIR,
     crud::common::load_circuit_data,
     db_constants::DB_CONSTANTS,
     utils::{parse_config_file, CommandLineOptionsBuilder},

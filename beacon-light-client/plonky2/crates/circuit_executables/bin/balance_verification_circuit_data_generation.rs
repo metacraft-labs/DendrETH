@@ -3,7 +3,7 @@
 
 use anyhow::{bail, Result};
 use circuit::{Circuit, SerdeCircuitTarget};
-use circuit_executables::constants::SERIALIZED_CIRCUITS_DIR;
+use circuit_executables::cached_circuit_build::SERIALIZED_CIRCUITS_DIR;
 use circuits::withdrawal_credentials_balance_aggregator::{
     first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
     inner_level::WithdrawalCredentialsBalanceAggregatorInnerLevel,

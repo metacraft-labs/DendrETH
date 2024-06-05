@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use circuit::{Circuit, SerdeCircuitTarget};
 use circuit_executables::{
-    constants::SERIALIZED_CIRCUITS_DIR,
+    cached_circuit_build::SERIALIZED_CIRCUITS_DIR,
     crud::common::{load_circuit_data_starky, write_to_file},
 };
 use circuits::bls_verification::bls12_381_circuit::BLSVerificationCircuit;

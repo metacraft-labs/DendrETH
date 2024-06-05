@@ -13,7 +13,7 @@ use redis::aio::Connection;
 use redis_work_queue::{KeyPrefix, WorkQueue};
 
 use crate::{
-    constants::SERIALIZED_CIRCUITS_DIR,
+    cached_circuit_build::SERIALIZED_CIRCUITS_DIR,
     crud::{
         common::{load_circuit_data, read_from_file},
         proof_storage::proof_storage::ProofStorage,
