@@ -61,7 +61,7 @@ export async function destroySchedulerContext(
 
 export async function pollEvents(
   ctx: SchedulerContext,
-  timeout: number = 5000,
+  timeout: number = 12000,
 ): Promise<void> {
   const lastLoggedBlock = await ctx.redis.client.get(
     `${ctx.protocol}:${lastLoggedBlockKey}`,
