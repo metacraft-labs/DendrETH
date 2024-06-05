@@ -78,6 +78,10 @@ in
     # Developer tool to help you get up and running quickly with a new Rust
     # project by leveraging a pre-existing git repository as a template.
     cargo-generate
+
+    docker-client
+    curl
+    python3
   ]
   ++ lib.optionals (stdenv.isx86_64) [
     metacraft-labs.rapidsnark
