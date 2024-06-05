@@ -38,7 +38,7 @@ pub struct DepositAccumulatorBalanceAggregatorDivaFirstLevel {}
 
 #[derive(Clone, Debug, TargetPrimitive, PublicInputsReadable, SerdeCircuitTarget)]
 #[serde(rename_all = "camelCase")]
-pub struct AccumulatedDataTargetDiva {
+pub struct DivaAccumulatedDataTarget {
     #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub balance: BigUintTarget,
     pub validator_status_stats: ValidatorStatusStatsTarget,
@@ -87,7 +87,7 @@ pub struct DepositAccumulatorBalanceAggregatorDivaFirstLevelTarget {
     pub pubkey_commitment_mapper_root: HashOutTarget,
 
     #[target(out)]
-    pub accumulated_data: AccumulatedDataTargetDiva,
+    pub accumulated_data: DivaAccumulatedDataTarget,
 }
 
 impl Circuit for DepositAccumulatorBalanceAggregatorDivaFirstLevel {
@@ -169,8 +169,8 @@ impl Circuit for DepositAccumulatorBalanceAggregatorDivaFirstLevel {
         let zero_biguint = builder.zero_biguint();
         let validator_balance = select_biguint(builder, is_relevant, &balance, &zero_biguint);
 
-        let zero_accumulated_data: AccumulatedDataTargetDiva = builder.zero_init();
-        let mut accumulated_data = AccumulatedDataTargetDiva {
+        let zero_accumulated_data: DivaAccumulatedDataTarget = builder.zero_init();
+        let mut accumulated_data = DivaAccumulatedDataTarget {
             balance: validator_balance,
             validator_status_stats,
         };

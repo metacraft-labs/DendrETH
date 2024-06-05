@@ -126,10 +126,6 @@ name = "bls12_381"
 path = "bin/bls12_381.rs"
 
 [[bin]]
-name = "deposit_accumulator_balance_aggregator_diva_circuit_data_generation"
-path = "bin/deposit_accumulator_balance_aggregator_diva_circuit_data_generation.rs"
-
-[[bin]]
 name = "deposit_accumulator_balance_aggregator_diva"
 path = "bin/deposit_accumulator_balance_aggregator_diva.rs"
 

@@ -633,6 +633,10 @@ export class BeaconApi implements IBeaconApi {
         const result = await this.fetchWithFallbackNoRetry(subUrl, init);
 
         if (result.status == 404) {
+          retries++;
+          if (retries >= this.beaconRestApis.length * maxApiRetries) {
+            throw new Error('Could not find the requested resource');
+          }
           logger.warn('404 not found');
           logger.warn('Retrying as sometimes info appears with lag');
           await sleep(1000);

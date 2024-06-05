@@ -531,7 +531,7 @@ pub async fn fetch_pubkey_commitment_mapper_proof(
         .map(|key| key.split(":").last().unwrap().parse().unwrap())
         .collect();
 
-    let key = get_block_number_with_latest_change(keys, block_number).unwrap();
+    let key = get_block_number_with_latest_change(keys, block_number)?;
 
     Ok(fetch_redis_json_object(
         con,
