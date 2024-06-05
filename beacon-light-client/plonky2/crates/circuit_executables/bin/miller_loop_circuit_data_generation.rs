@@ -3,7 +3,7 @@ use std::{fs, marker::PhantomData, str::FromStr, time::Instant};
 use ark_bls12_381::{G1Affine, G2Affine};
 use ark_std::UniformRand;
 use circuit::SerdeCircuitTarget;
-use circuit_executables::constants::SERIALIZED_CIRCUITS_DIR;
+use circuit_executables::cached_circuit_build::SERIALIZED_CIRCUITS_DIR;
 use circuits::bls_verification::build_stark_proof_verifier::build_stark_proof_verifier;
 use num_bigint::BigUint;
 use plonky2::{

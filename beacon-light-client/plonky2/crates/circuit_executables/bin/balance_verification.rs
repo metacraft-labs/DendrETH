@@ -6,7 +6,8 @@ use circuit::{
     SerdeCircuitTarget,
 };
 use circuit_executables::{
-    constants::{SERIALIZED_CIRCUITS_DIR, VALIDATOR_REGISTRY_LIMIT},
+    cached_circuit_build::SERIALIZED_CIRCUITS_DIR,
+    constants::VALIDATOR_REGISTRY_LIMIT,
     crud::{
         common::{
             delete_balance_verification_proof_dependencies, fetch_proofs_balances,

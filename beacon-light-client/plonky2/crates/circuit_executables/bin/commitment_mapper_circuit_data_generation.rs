@@ -1,4 +1,4 @@
-use circuit_executables::constants::SERIALIZED_CIRCUITS_DIR;
+use circuit_executables::cached_circuit_build::SERIALIZED_CIRCUITS_DIR;
 use circuits::validators_commitment_mapper::inner_level::ValidatorsCommitmentMapperInnerLevel;
 use plonky2_circuit_serializer::serializer::{CustomGateSerializer, CustomGeneratorSerializer};
 use std::{fs, marker::PhantomData};

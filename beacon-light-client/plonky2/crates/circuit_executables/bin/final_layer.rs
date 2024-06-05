@@ -3,7 +3,7 @@
 
 use circuit::{Circuit, SetWitness};
 use circuit_executables::{
-    constants::SERIALIZED_CIRCUITS_DIR,
+    cached_circuit_build::SERIALIZED_CIRCUITS_DIR,
     crud::{
         common::{
             fetch_final_layer_input, fetch_proof, fetch_proof_balances, load_circuit_data,
