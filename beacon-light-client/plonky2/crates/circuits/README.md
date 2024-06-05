@@ -105,7 +105,7 @@ The `circuits` crate houses all circuits pertinent to the application. Let's del
 3. **Circuit Outputs:** current_epoch, validators_commitment_mapper_root, balances_root, deposits_hash_tree_root, accumulated_data.
 4. **Data validation:** The validator and the balance_leaf are validated against the validators_commitment_mapper_root and the balances_root
 5. **Deposit hashing:** The deposits are hashed and the deposits_hash_tree_root is outputted
-6. **Data accumulation:** The circuit outputs also the balance of the validator if it is relevant and also its validator stats exept if it is dummy and then zero is returned.
+6. **Data accumulation:** The circuit outputs also the balance of the validator if the current epoch is between its activation epoch and withdrawable epoch and also its validator stats. Except if it is dummy and then zero is returned for everything.
 
 ### Inner Level
 
