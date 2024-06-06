@@ -9,12 +9,6 @@ pub trait Add<F: RichField + Extendable<D>, const D: usize, Rhs = Self> {
     fn add(self, rhs: Rhs, builder: &mut CircuitBuilder<F, D>) -> Self::Output;
 }
 
-pub trait CircuitBuilderUnsignedInteger<F: RichField + Extendable<D>, const D: usize> {
-    fn add_uint<Lhs, Rhs>(&mut self, lhs: Lhs, rhs: Rhs) -> <Lhs as Add<F, D, Rhs>>::Output
-    where
-        Lhs: Add<F, D, Rhs>;
-}
-
 pub trait Sub<F: RichField + Extendable<D>, const D: usize, Rhs = Self> {
     type Output;
 
@@ -25,12 +19,6 @@ pub trait Mul<F: RichField + Extendable<D>, const D: usize, Rhs = Self> {
     type Output;
 
     fn mul(self, rhs: Rhs, builder: &mut CircuitBuilder<F, D>) -> Self::Output;
-}
-
-pub trait Neg<F: RichField + Extendable<D>, const D: usize> {
-    type Output;
-
-    fn neg(self, builder: &mut CircuitBuilder<F, D>) -> Self::Output;
 }
 
 pub trait Div<F: RichField + Extendable<D>, const D: usize, Rhs = Self> {
