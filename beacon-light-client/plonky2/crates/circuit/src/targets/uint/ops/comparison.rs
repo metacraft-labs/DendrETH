@@ -43,7 +43,7 @@ pub trait Comparison<F: RichField + Extendable<D>, const D: usize, Rhs = Self>:
         Self: Sized + Copy,
         Rhs: Copy,
     {
-        let are_equal = self.lte(rhs, builder);
+        let are_equal = self.equal_to(rhs, builder);
         let gt = self.gt(rhs, builder);
         builder.or(gt, are_equal)
     }
