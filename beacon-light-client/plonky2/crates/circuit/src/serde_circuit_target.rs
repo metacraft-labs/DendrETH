@@ -4,7 +4,7 @@ use plonky2::{
     plonk::{circuit_data::VerifierCircuitTarget, proof::ProofWithPublicInputsTarget},
     util::serialization::{Buffer, IoResult, Read, Write},
 };
-use plonky2_crypto::biguint::BigUintTarget;
+use plonky2_crypto::{biguint::BigUintTarget, u32::arithmetic_u32::U32Target};
 use starky::proof::{StarkOpeningSetTarget, StarkProofTarget, StarkProofWithPublicInputsTarget};
 
 use crate::{Circuit, PublicInputsTargetReadable};
@@ -118,8 +118,24 @@ impl<T: SerdeCircuitTarget + std::fmt::Debug, const N: usize> SerdeCircuitTarget
     }
 }
 
+impl SerdeCircuitTarget for U32Target {
+    fn serialize(&self) -> IoResult<Vec<u8>> {
+        let mut buffer: Vec<u8> = Vec::new();
+        buffer.write_target(self.0)?;
+        Ok(buffer)
+    }
+
+    fn deserialize(buffer: &mut Buffer) -> IoResult<Self>
+    where
+        Self: Sized,
+    {
+        let target = buffer.read_target()?;
+        Ok(Self(target))
+    }
+}
+
 impl SerdeCircuitTarget for BigUintTarget {
-    fn serialize(&self) -> plonky2::util::serialization::IoResult<Vec<u8>> {
+    fn serialize(&self) -> IoResult<Vec<u8>> {
         assert_eq!(self.num_limbs(), 2);
 
         let mut buffer: Vec<u8> = Vec::new();
@@ -128,9 +144,7 @@ impl SerdeCircuitTarget for BigUintTarget {
         Ok(buffer)
     }
 
-    fn deserialize(
-        buffer: &mut plonky2::util::serialization::Buffer,
-    ) -> plonky2::util::serialization::IoResult<Self>
+    fn deserialize(buffer: &mut Buffer) -> IoResult<Self>
     where
         Self: Sized,
     {

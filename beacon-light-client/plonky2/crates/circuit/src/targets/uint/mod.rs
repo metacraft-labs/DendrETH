@@ -1,5 +1,5 @@
 use crate::{
-    make_uint32_n,
+    self as circuit, make_uint32_n,
     targets::uint::ops::{
         arithmetic::{Add, Div, Mul, One, Rem, Sub, Zero},
         comparison::{Comparison, EqualTo, LessThanOrEqual},
@@ -7,6 +7,7 @@ use crate::{
     AddVirtualTarget, PublicInputsReadable, PublicInputsTargetReadable, SetWitness,
     TargetPrimitive, ToTargets,
 };
+use circuit_derive::SerdeCircuitTarget;
 use itertools::Itertools;
 use num_bigint::BigUint;
 use plonky2::{

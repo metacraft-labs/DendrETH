@@ -2,7 +2,7 @@
 macro_rules! make_uint32_n {
     ($a:ident, $b:ty, $c:expr) => {
         /// An integer type encoded as little-endian u32 limbs.
-        #[derive(Debug, Clone, Copy)]
+        #[derive(SerdeCircuitTarget, Debug, Clone, Copy)]
         pub struct $a {
             pub limbs: [U32Target; $c],
         }
