@@ -38,13 +38,14 @@ macro_rules! make_uint32_n {
         }
 
         impl PublicInputsReadable for $a {
+            #[allow(arithmetic_overflow)]
             fn from_elements<F: RichField>(elements: &[F]) -> Self::Primitive {
                 assert_eq!(elements.len(), Self::get_size());
                 elements
                     .iter()
                     .rev()
-                    .fold(Self::Primitive::from(0u64), |acc, limb| {
-                        (acc << 32) + Self::Primitive::from(limb.to_canonical_u64())
+                    .fold(Self::Primitive::from(0u32), |acc, limb| {
+                        (acc << 32) + Self::Primitive::from(limb.to_canonical_u64() as u32)
                     })
             }
         }
