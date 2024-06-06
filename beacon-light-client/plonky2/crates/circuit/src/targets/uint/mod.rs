@@ -1,6 +1,6 @@
 use crate::{
     make_uint32_n,
-    targets::uint::ops::arithmetic::{Add, One, Zero},
+    targets::uint::ops::arithmetic::{Add, Div, One, Zero},
     AddVirtualTarget, PublicInputsReadable, PublicInputsTargetReadable, SetWitness,
     TargetPrimitive, ToTargets,
 };
