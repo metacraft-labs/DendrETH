@@ -38,7 +38,6 @@ macro_rules! make_uint32_n {
         }
 
         impl PublicInputsReadable for $a {
-            #[allow(arithmetic_overflow)]
             fn from_elements<F: RichField>(elements: &[F]) -> Self::Primitive {
                 assert_eq!(elements.len(), Self::get_size());
                 elements
