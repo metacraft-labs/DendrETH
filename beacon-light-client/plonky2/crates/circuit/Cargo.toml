@@ -4,6 +4,7 @@ version = "0.1.0"
 edition.workspace = true
 
 [dependencies]
+circuit_derive = { path = "../circuit_derive" }
 plonky2 = { git = "https://github.com/metacraft-labs/plonky2" }
 plonky2_crypto = { git = "https://github.com/metacraft-labs/plonky2-crypto" }
 starky = { git = "https://github.com/metacraft-labs/plonky2" }
