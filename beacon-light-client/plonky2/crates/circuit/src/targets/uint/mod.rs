@@ -1,7 +1,7 @@
 use crate::{
     make_uint32_n,
     targets::uint::ops::{
-        arithmetic::{Add, Div, Mul, One, Rem, Zero},
+        arithmetic::{Add, Div, Mul, One, Rem, Sub, Zero},
         comparison::{Comparison, EqualTo, LessThanOrEqual},
     },
     AddVirtualTarget, PublicInputsReadable, PublicInputsTargetReadable, SetWitness,
