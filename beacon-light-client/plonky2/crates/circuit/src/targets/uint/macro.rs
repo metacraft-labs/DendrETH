@@ -171,6 +171,7 @@ macro_rules! make_uint32_n {
                 Self { limbs }
             }
         }
+
         impl<F: RichField + Extendable<D>, const D: usize> LessThanOrEqual<F, D> for $a {
             #[must_use]
             fn lte(self, rhs: Self, builder: &mut CircuitBuilder<F, D>) -> BoolTarget {
@@ -197,5 +198,7 @@ macro_rules! make_uint32_n {
                 result
             }
         }
+
+        impl<F: RichField + Extendable<D>, const D: usize> Comparison<F, D> for $a {}
     };
 }
