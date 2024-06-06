@@ -12,7 +12,14 @@ use crate::{
         validator_status::get_validator_status,
     },
 };
-use circuit::Circuit;
+use circuit::{
+    circuit_builder_extensions::CircuitBuilderExtensions,
+    targets::uint::{
+        ops::arithmetic::{Add, Zero},
+        Uint64Target,
+    },
+    Circuit,
+};
 use circuit_derive::{CircuitTarget, SerdeCircuitTarget};
 use itertools::Itertools;
 
@@ -59,8 +66,8 @@ pub struct ValidatorBalanceVerificationTargets<
     pub current_epoch: BigUintTarget,
 
     #[target(out)]
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub range_total_value: BigUintTarget,
+    // #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
+    pub range_total_value: Uint64Target,
 
     #[target(out)]
     #[serde(with = "serde_bool_array_to_hex_string")]
@@ -128,7 +135,7 @@ where
         let validators_hash_tree_root_poseidon =
             hash_tree_root_poseidon(builder, &validators_leaves);
 
-        let mut range_total_value = builder.zero_biguint();
+        let mut range_total_value = Uint64Target::zero(builder);
         let mut number_of_non_activated_validators = builder.zero();
         let mut number_of_active_validators = builder.zero();
         let mut number_of_exited_validators = builder.zero();
@@ -164,9 +171,11 @@ where
 
             let will_be_counted = builder.and(validator_is_considered, is_valid_validator);
 
-            let current = select_biguint(builder, will_be_counted, &balance, &zero);
+            let zero_u64 = Uint64Target::zero(builder);
+            let current = builder.select_target(will_be_counted, &balance, &zero_u64);
 
-            range_total_value = builder.add_biguint(&range_total_value, &current);
+            // range_total_value = builder.add_biguint(&range_total_value, &current);
+            range_total_value = range_total_value.add(current, builder);
 
             number_of_active_validators =
                 builder.add(number_of_active_validators, will_be_counted.target);
