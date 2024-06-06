@@ -25,7 +25,7 @@ macro_rules! make_uint32_n {
             }
         }
 
-        impl crate::TargetPrimitive for $a {
+        impl TargetPrimitive for $a {
             type Primitive = $b;
         }
 
