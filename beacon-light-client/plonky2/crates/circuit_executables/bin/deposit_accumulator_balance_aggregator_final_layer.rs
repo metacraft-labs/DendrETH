@@ -1,7 +1,6 @@
 use circuit::{Circuit, SetWitness};
 use circuit_executables::{
-    cached_circuit_build::{build_circuit_cached, build_recursive_circuit_cached},
-    constants::SERIALIZED_CIRCUITS_DIR,
+    cached_circuit_build::{build_circuit_cached, SERIALIZED_CIRCUITS_DIR},
     crud::{
         common::{
             fetch_deposit_accumulator_final_layer_input, fetch_proof, fetch_proof_balances,
