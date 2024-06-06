@@ -7,3 +7,8 @@ pub trait LessThanOrEqual<F: RichField + Extendable<D>, const D: usize, Rhs = Se
     #[must_use]
     fn lte(self, rhs: Rhs, builder: &mut CircuitBuilder<F, D>) -> BoolTarget;
 }
+
+pub trait EqualTo<F: RichField + Extendable<D>, const D: usize, Rhs = Self> {
+    #[must_use]
+    fn equal_to(self, rhs: Rhs, builder: &mut CircuitBuilder<F, D>) -> BoolTarget;
+}

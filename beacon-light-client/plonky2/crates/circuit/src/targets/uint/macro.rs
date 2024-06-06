@@ -183,5 +183,19 @@ macro_rules! make_uint32_n {
                 builder.cmp_biguint(&self_biguint, &rhs_biguint)
             }
         }
+
+        impl<F: RichField + Extendable<D>, const D: usize> EqualTo<F, D> for $a {
+            #[must_use]
+            fn equal_to(self, rhs: Self, builder: &mut CircuitBuilder<F, D>) -> BoolTarget {
+                let mut result = builder._true();
+
+                for i in 0..$c {
+                    let limbs_are_equal = builder.is_equal(self.limbs[i].0, rhs.limbs[i].0);
+                    result = builder.and(result, limbs_are_equal);
+                }
+
+                result
+            }
+        }
     };
 }
