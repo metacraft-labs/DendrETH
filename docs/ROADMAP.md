@@ -1,6 +1,6 @@
 # DendrETH: a smart contract implementation of the light client sync protocol
 
-The low bandwidth requirements of the Ethereum [light client sync protocol](https://github.com/ethereum/annotated-spec/blob/master/altair/sync-protocol.md) create an unique opportunity for third-party blockchains to host smart contracts that implement a fully functional Ethereum light client.
+The low bandwidth requirements of the Ethereum [light client sync protocol](https://github.com/ethereum/annotated-spec/blob/master/altair/sync-protocol.md) create a unique opportunity for third-party blockchains to host smart contracts that implement a fully functional Ethereum light client.
 
 Such a light client would be able to provide frequently updated information regarding recently finalized beacon chain block headers which in turn can be used to authenticate any portion of the Ethereum consensus or execution layer states through a chain of merkle proofs (or other commitment schemes in the future).
 
@@ -14,9 +14,9 @@ All developed software will be released under a FOSS license. The implemented br
 
 ## Team
 
-The development is lead by [Zahary Karadjov](https://github.com/zah), currently serving as the [Nimbus](https://nimbus.team/) implementation team lead. The Nimbus team (and the rest of [Status](https://status.im/)) fully supports Zahary's participation in this project as it closely aligns with Status' mission to create highly efficient light clients.
+The development is led by [Zahary Karadjov](https://github.com/zah), currently serving as the [Nimbus](https://nimbus.team/) implementation team lead. The Nimbus team (and the rest of [Status](https://status.im/)) fully supports Zahary's participation in this project as it closely aligns with Status' mission to create highly efficient light clients.
 
-The majority of the implementation work is carried out by an young team of blockchain developers
+The majority of the implementation work is carried out by a young team of blockchain developers
 , selected with the notable help from [prof. Petko Ruskov](https://www.fmi.uni-sofia.bg/en/faculty/petko-ruskov-ruskov) at Sofia University and [Dr. Svetlin Nakov](https://cryptobook.nakov.com/) at [SoftUni](https://softuni.bg/):
 
 - [Emil Ivanichkov](https://github.com/EmilIvanichkovv)
@@ -36,9 +36,9 @@ The team is provided with mentorship consisting of frequent planning meetings, c
 
 ### May 2022
 
-Realised goals:
+Realized goals:
 
-- Recruited the team and allowed all team members to build up all required pre-requisite knowledge for the project.
+- Recruited the team and allowed all team members to build up all required prerequisite knowledge for the project.
 
 ### June-September 2022
 
@@ -70,7 +70,7 @@ Goals:
 
 - Develop a compatibility layer for bridge standards such as [TokenBridge](https://docs.tokenbridge.net/) and AMB to facilitate the creation of a trustless bridge between Ethereum and Gnosis Chain.
 
-- Develop a succinct solution for the long-range attack problem, based on an one-shot syncing proof that keeps track of the observed minimal validator participation rate in the history. The solution will be based on the assumption that any long-range attack is likely to have a lower participation rate immediately after the forking point because the corrupted validators are likely to be active in both the real and the forged histories while the honest validators will be participating only in the real one. Thus, a client which is not subjected to an eclipse attack will be able to select the chain with higher minimal participation rate.
+- Develop a succinct solution for the long-range attack problem, based on a one-shot syncing proof that keeps track of the observed minimal validator participation rate in the history. The solution will be based on the assumption that any long-range attack is likely to have a lower participation rate immediately after the forking point because the corrupted validators are likely to be active in both the real and the forged histories while the honest validators will be participating only in the real one. Thus, a client which is not subjected to an eclipse attack will be able to select the chain with higher minimal participation rate.
 
   In practice, clients employing one-shot syncing are likely to develop various heuristics for determining a safe syncing distance based on the demonstrated minimal participation rate. For example, if your client is 6 months behind the head block and you are presented with a proof that the minimal participation rate during this period was 97% (which has been historically true for mainnet), you can have high assurance that this is not a long-range attack because the validators are likely to be corrupted only if they have exited, but exiting 97% of the validators requires more than 6 months. In practice, it's also reasonable to assume that a certain percentage of the validators are non-corruptible which will make the 97% participation rate an even stronger guarantee.
 
@@ -102,9 +102,9 @@ Upon implementation of these goals, Blockdaemon commits to operate, promote, and
 
 1. Blockchain Migration
 
-   The goal of the investigation is to build a proof of concept migrating data from a dApp on Ethereum 2.0 to a EVM-compatible chain in a trustless way (validating state migration via the oracle). This is project would be the first introducing trustless , automatic state migration across chains.
+   The goal of the investigation is to build a proof of concept migrating data from a dApp on Ethereum 2.0 to a EVM-compatible chain in a trustless way (validating state migration via the oracle). This project would be the first introducing trustless, automatic state migration across chains.
 
-2. Integration with [Hyperledger Cactus](This is project would be the first introducing trustless , automatic state migration across chains).
+2. Integration with [Hyperledger Cactus](This is project would be the first introducing trustless, automatic state migration across chains).
 
    Hyperledger Cactus is the leading open-source, enterprise-grade interoperability project. Cactus aims to promote integration between enterprise systems and different blockchains. Cactus also provides support for developing infrastructure that integrates with Ethereum, and the developed oracle and bridge, including but not limited to: operators, relayers, and products on top of the bridge/oracle. The goal of this investigation is to diminish the entry barrier to enterprises wanting to use Ethereum 2.0. We can extend the current Ethereum connector to support Ethereum 2.0, and facilitate the integration with the developed bridges.
 

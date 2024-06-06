@@ -26,13 +26,13 @@ highly efficient BLS, SSZ and Light client syncing libraries developed
 by [Supranational][9] and the [Nimbus team][10]. When compared to the
 similarly positioned [Snowbridge][11] project, our implementation
 brings a 36-fold reduction in code size (2.2MB vs 60kb) which should
-also translate in significant reduction in gas costs (currently, our
+also translate in a significant reduction in gas costs (currently, our
 code is targeting only the standard WebAssembly run-time instead of
 the full blockchain environments).
 
 ## Deployed instances of our smart contracts
 
-| The smart contract is deployed in                                                                                                                                                | The targetted network is                                 | Circuit Version                                              |
+| The smart contract is deployed in                                                                                                                                                | The targeted network is                                  | Circuit Version                                              |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------ |
 | [Goerli/Ethereum](https://goerli.etherscan.io/address/0xf65B59bc947865490eF92D8461e8B5D0eA87c343)                                                                                | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | https://github.com/metacraft-labs/DendrETH/pull/94 (Capella) |
 | [Goerli/Optimism](https://goerli-optimism.etherscan.io/address/0xa38f1c6F9F50dbd8d11AdD89c1A218F037498Bc1)                                                                       | [goerli](http://unstable.prater.beacon-api.nimbus.team/) | https://github.com/metacraft-labs/DendrETH/pull/94 (Capella) |
@@ -71,7 +71,7 @@ the full blockchain environments).
 
 Due to the large number of required compiler toolchains and blockchain
 run-time environments targeted by this project, installing all pre-requisites
-by hand is not practical. We are offering a deterministic build environment
+by hand is impractical. We are offering a deterministic build environment
 based on the Nix package manager, which is best supported on Linux, but also
 runs on macOS with some minor limitations at the moment. Windows users may try
 to use Nix in the Windows Subsystem for Linux, but our team is not currently
@@ -223,7 +223,7 @@ The Update Polling Worker, responsible for executing this recurring job, is run 
 yarn run pollUpdatesWorker
 ```
 
-The Update Polling Worker retrieves updates from the Beacon REST API and saves the lastDownloadedUpdate for the job in Redis. Next time, the job starts from this point and adds a task for the Proof Generation Worker, which is executed using in the in the `relay` folder.
+The Update Polling Worker retrieves updates from the Beacon REST API and saves the lastDownloadedUpdate for the job in Redis. Next time, the job starts from this point and adds a task for the Proof Generation Worker, which is executed using in the `relay` folder.
 
 ```
 yarn run proofGenerationWorker

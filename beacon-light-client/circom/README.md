@@ -3,7 +3,7 @@ which are assembled in the final `light_client` circuit.
 
 ## Tests
 
-To run the `snarkit2` tests you can execute:
+To run the `snarkit2` tests, you can execute:
 
 ```
 ./test/run_snarkit2_tests.sh
@@ -13,7 +13,7 @@ To run the `snarkit2` tests you can execute:
 
 In the scripts folder, you'll find the circuits with main components. You can build them with the provided shell scripts and use the provided JavaScript files for producing example inputs. Please note that compiling some of the larger circuits is expected to take multiple hours and may require a computer with hundreds of GB of RAM.
 
-As an example, here are our build times from a 32-core, 384G RAM machine with a 1TB NVMe hard drive, configured with 500GB of swap space.
+As an example, here are our build times from a 32-core, 384GB RAM machine with a 1TB NVMe hard drive, configured with 500GB of swap space.
 
 |                                      | light_client |
 | ------------------------------------ | ------------ |
@@ -31,7 +31,7 @@ To build the circuits you need Powers of Tau file with `2^28` constraints
 You can download it from this repository <https://github.com/iden3/snarkjs#7-prepare-phase-2>
 And place it in `circuits/build` folder
 
-Than you can just enter the `scripts/light_client` to build the light client circuit.
+Then you can just enter the `scripts/light_client` to build the light client circuit.
 
 ```
 ./build_proof.sh
@@ -39,16 +39,16 @@ Than you can just enter the `scripts/light_client` to build the light client cir
 
 It will generate the witness generator program and the zkey file of the circuit.
 
-To run the `relayer` which will poll a beacon node for a finality update every minute. You need to run
+To run the `relayer` which will poll a beacon node for a finality update every minute. You need to run:
 
 ```
 yarn ts-node relayer.ts
 ```
 
-And the two workers
+And the two workers:
 
 ```
-yarn ts-node get-update-worket.ts
+yarn ts-node get-update-worker.ts
 yarn ts-node proof-generator-worker.ts
 ```
 
