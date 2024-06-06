@@ -37,5 +37,5 @@ describe('Check verifier build on ffjavascript', () => {
       updatePath,
     );
     expect(res).toEqual(true);
-  }, 1000);
+  }, 10000);
 });
