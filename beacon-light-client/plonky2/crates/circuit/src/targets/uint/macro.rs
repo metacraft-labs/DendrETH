@@ -111,6 +111,28 @@ macro_rules! make_uint32_n {
                 Self { limbs }
             }
         }
+
+        impl<F: RichField + Extendable<D>, const D: usize> Sub<F, D> for $a {
+            type Output = Self;
+
+            fn sub(self, rhs: $a, builder: &mut CircuitBuilder<F, D>) -> Self::Output {
+                let self_biguint = BigUintTarget {
+                    limbs: self.limbs.to_vec(),
+                };
+                let rhs_biguint = BigUintTarget {
+                    limbs: rhs.limbs.to_vec(),
+                };
+                let sub_biguint = builder.sub_biguint(&self_biguint, &rhs_biguint);
+
+                let mut limbs: [U32Target; $c] = Self::zero(builder).limbs;
+                for i in 0..$c {
+                    limbs[i] = sub_biguint.limbs[i].into();
+                }
+
+                Self { limbs }
+            }
+        }
+
         impl<F: RichField + Extendable<D>, const D: usize> Div<F, D> for $a {
             type Output = Self;
 
@@ -131,6 +153,7 @@ macro_rules! make_uint32_n {
                 Self { limbs }
             }
         }
+
         impl<F: RichField + Extendable<D>, const D: usize> Mul<F, D> for $a {
             type Output = Self;
 
@@ -151,6 +174,7 @@ macro_rules! make_uint32_n {
                 Self { limbs }
             }
         }
+
         impl<F: RichField + Extendable<D>, const D: usize> Rem<F, D> for $a {
             type Output = Self;
 
