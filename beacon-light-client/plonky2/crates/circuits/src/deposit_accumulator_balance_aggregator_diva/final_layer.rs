@@ -20,7 +20,7 @@ use crate::{
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
 };
 use circuit::{Circuit, CircuitInputTarget, CircuitOutputTarget};
-use circuit_derive::CircuitTarget;
+use circuit_derive::{CircuitTarget, SerdeCircuitTarget};
 use plonky2::{
     field::{extension::Extendable, goldilocks_field::GoldilocksField},
     hash::hash_types::{HashOut, RichField},
@@ -37,7 +37,7 @@ use crate::common_targets::Sha256Target;
 
 use super::first_level::DepositAccumulatorBalanceAggregatorDivaFirstLevel;
 
-#[derive(CircuitTarget)]
+#[derive(CircuitTarget, SerdeCircuitTarget)]
 #[serde(rename_all = "camelCase")]
 pub struct DepositAccumulatorBalanceAggregatorDivaFinalLayerTarget {
     pub balance_aggregation_proof: ProofWithPublicInputsTarget<2>,

@@ -3,8 +3,8 @@
 
 use circuit::{set_witness::SetWitness, Circuit, CircuitTargetType};
 use circuit_executables::{
-    cached_circuit_build::build_recursive_circuit_single_level_cached,
-    constants::{SERIALIZED_CIRCUITS_DIR, VALIDATOR_REGISTRY_LIMIT},
+    cached_circuit_build::{build_recursive_circuit_single_level_cached, SERIALIZED_CIRCUITS_DIR},
+    constants::VALIDATOR_REGISTRY_LIMIT,
     crud::{
         common::{
             delete_balance_verification_diva_proof_dependencies, fetch_proofs_balances,
