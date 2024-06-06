@@ -1,5 +1,5 @@
 use plonky2::{
-    field::extension::Extendable, hash::hash_types::RichField, iop::target::BoolTarget,
+    field::extension::Extendable, hash::hash_types::RichField,
     plonk::circuit_builder::CircuitBuilder,
 };
 
@@ -51,9 +51,4 @@ pub trait Zero<F: RichField + Extendable<D>, const D: usize> {
 
 pub trait One<F: RichField + Extendable<D>, const D: usize> {
     fn one(builder: &mut CircuitBuilder<F, D>) -> Self;
-}
-
-pub trait LessThanOrEqual<F: RichField + Extendable<D>, const D: usize, Rhs = Self> {
-    #[must_use]
-    fn lte(self, rhs: Rhs, builder: &mut CircuitBuilder<F, D>) -> BoolTarget;
 }
