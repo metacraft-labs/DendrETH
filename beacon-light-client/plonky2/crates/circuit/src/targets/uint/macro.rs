@@ -7,6 +7,24 @@ macro_rules! make_uint32_n {
             pub limbs: [U32Target; $c],
         }
 
+        impl $a {
+            pub fn constant<F: RichField + Extendable<D>, const D: usize>(
+                builder: &mut CircuitBuilder<F, D>,
+                value: $b,
+            ) -> Self {
+                let mut limbs: Vec<U32Target> = Vec::new();
+
+                for index in 0..$c {
+                    let limb = (value >> (32 * index)) & <$b>::from(0xffffffff as u32);
+                    limbs.push(builder.constant_u32(limb.try_into().unwrap()));
+                }
+
+                Self {
+                    limbs: limbs.try_into().unwrap(),
+                }
+            }
+        }
+
         impl crate::TargetPrimitive for $a {
             type Primitive = $b;
         }
