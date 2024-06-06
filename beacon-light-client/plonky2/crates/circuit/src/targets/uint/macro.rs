@@ -95,21 +95,12 @@ macro_rules! make_uint32_n {
             type Output = Self;
 
             fn add(self, rhs: $a, builder: &mut CircuitBuilder<F, D>) -> Self::Output {
-                let self_targets = self
-                    .limbs
-                    .into_iter()
-                    .map(|x| U32Target::from(x))
-                    .collect_vec();
-                let rhs_targets = rhs
-                    .limbs
-                    .into_iter()
-                    .map(|x| U32Target::from(x))
-                    .collect_vec();
-
                 let self_biguint = BigUintTarget {
-                    limbs: self_targets,
+                    limbs: self.limbs.to_vec(),
                 };
-                let rhs_biguint = BigUintTarget { limbs: rhs_targets };
+                let rhs_biguint = BigUintTarget {
+                    limbs: rhs.limbs.to_vec(),
+                };
                 let sum_biguint = builder.add_biguint(&self_biguint, &rhs_biguint);
 
                 let mut limbs: [U32Target; $c] = Self::zero(builder).limbs;
@@ -124,21 +115,12 @@ macro_rules! make_uint32_n {
             type Output = Self;
 
             fn div(self, rhs: $a, builder: &mut CircuitBuilder<F, D>) -> Self::Output {
-                let self_targets = self
-                    .limbs
-                    .into_iter()
-                    .map(|x| U32Target::from(x))
-                    .collect_vec();
-                let rhs_targets = rhs
-                    .limbs
-                    .into_iter()
-                    .map(|x| U32Target::from(x))
-                    .collect_vec();
-
                 let self_biguint = BigUintTarget {
-                    limbs: self_targets,
+                    limbs: self.limbs.to_vec(),
                 };
-                let rhs_biguint = BigUintTarget { limbs: rhs_targets };
+                let rhs_biguint = BigUintTarget {
+                    limbs: rhs.limbs.to_vec(),
+                };
                 let quotient_biguint = builder.div_biguint(&self_biguint, &rhs_biguint);
 
                 let mut limbs: [U32Target; $c] = Self::zero(builder).limbs;
@@ -153,21 +135,12 @@ macro_rules! make_uint32_n {
             type Output = Self;
 
             fn mul(self, rhs: $a, builder: &mut CircuitBuilder<F, D>) -> Self::Output {
-                let self_targets = self
-                    .limbs
-                    .into_iter()
-                    .map(|x| U32Target::from(x))
-                    .collect_vec();
-                let rhs_targets = rhs
-                    .limbs
-                    .into_iter()
-                    .map(|x| U32Target::from(x))
-                    .collect_vec();
-
                 let self_biguint = BigUintTarget {
-                    limbs: self_targets,
+                    limbs: self.limbs.to_vec(),
                 };
-                let rhs_biguint = BigUintTarget { limbs: rhs_targets };
+                let rhs_biguint = BigUintTarget {
+                    limbs: rhs.limbs.to_vec(),
+                };
                 let product_biguint = builder.mul_biguint(&self_biguint, &rhs_biguint);
 
                 let mut limbs: [U32Target; $c] = Self::zero(builder).limbs;
@@ -182,21 +155,12 @@ macro_rules! make_uint32_n {
             type Output = Self;
 
             fn rem(self, rhs: $a, builder: &mut CircuitBuilder<F, D>) -> Self::Output {
-                let self_targets = self
-                    .limbs
-                    .into_iter()
-                    .map(|x| U32Target::from(x))
-                    .collect_vec();
-                let rhs_targets = rhs
-                    .limbs
-                    .into_iter()
-                    .map(|x| U32Target::from(x))
-                    .collect_vec();
-
                 let self_biguint = BigUintTarget {
-                    limbs: self_targets,
+                    limbs: self.limbs.to_vec(),
                 };
-                let rhs_biguint = BigUintTarget { limbs: rhs_targets };
+                let rhs_biguint = BigUintTarget {
+                    limbs: rhs.limbs.to_vec(),
+                };
                 let rem_biguint = builder.rem_biguint(&self_biguint, &rhs_biguint);
 
                 let mut limbs: [U32Target; $c] = Self::zero(builder).limbs;
@@ -211,10 +175,10 @@ macro_rules! make_uint32_n {
             #[must_use]
             fn lte(self, rhs: Self, builder: &mut CircuitBuilder<F, D>) -> BoolTarget {
                 let self_biguint = BigUintTarget {
-                    limbs: self.limbs.into_iter().collect_vec(),
+                    limbs: self.limbs.to_vec(),
                 };
                 let rhs_biguint = BigUintTarget {
-                    limbs: rhs.limbs.into_iter().collect_vec(),
+                    limbs: rhs.limbs.to_vec(),
                 };
                 builder.cmp_biguint(&self_biguint, &rhs_biguint)
             }
