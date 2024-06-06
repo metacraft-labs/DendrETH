@@ -7,9 +7,9 @@ Time to do 5 pairings(of 2 points) or in the case of 'constantine',
 
 ### Speed in release(milliseconds):
 
-- bncurve: 24,8(6,4 for 1)
+- bncurve: 24.8(6.4 for 1)
 - bn-rust: 16.4(4.2 for 1)
-- constantine: 0,8
+- constantine: 0.8
 - barretenberg 1.15
 
 ### Speed not in release(milliseconds):
@@ -17,7 +17,7 @@ Time to do 5 pairings(of 2 points) or in the case of 'constantine',
 - ffjavascript: 5-6
 - bncurve: 238(62 for 1)
 - bn-rust: 539.7(134.3 for 1)
-- constantine: 5,1
+- constantine: 5.1
 
 ## Full time to verify:
 
@@ -27,14 +27,14 @@ Full time needed for verification using our implementation of the verifier
 
 - bncurve: 26
 - bn-rust: 22
-- constantine: 1,1
+- constantine: 1.1
 
 ### Speed not in release(milliseconds):
 
 - ffjavascript: 344
 - bncurve: 245
 - bn-rust: 745
-- constantine: 7,5
+- constantine: 7.5
 
 ## NIM
 

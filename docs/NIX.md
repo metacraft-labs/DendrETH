@@ -6,7 +6,7 @@ diverse set of software packages that must be installed by all contributors:
 - Compilers and development libraries for the full set of supported blockchains.
 - Blockchain simulation environments.
 - Testing frameworks.
-- Various project automation tools and utilities such as docker compose, tmux, etc.
+- Various project automation tools and utilities such as Docker Compose, tmux, etc.
 
 If the members of the development team were required to install all these
 components manually, setting up the project on a new machine would have
@@ -45,8 +45,8 @@ sh <(curl -L https://nixos.org/nix/install) --daemon
 ```
 
 DendrETH is taking advantage of some experimental Nix features such as the
-`nix` command the so called `flakes` which provide more control when pinning
-all dependencies of the project to precise versions. These feature must be
+`nix` command the so-called `flakes`, which provide more control when pinning
+all dependencies of the project to precise versions. These features must be
 [enabled manually][2] after the installation. To learn more about the Nix
 flakes, please see the following tutorial:
 
