@@ -27,7 +27,6 @@ use primitive_types::{U256, U512};
 mod r#macro;
 pub mod ops;
 
-make_uint32_n!(Uint32Target, u32, 1);
 make_uint32_n!(Uint64Target, u64, 2);
 make_uint32_n!(Uint128Target, u128, 4);
 make_uint32_n!(Uint256Target, U256, 8);
