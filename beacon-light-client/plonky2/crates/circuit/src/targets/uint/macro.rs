@@ -1,6 +1,7 @@
 #[macro_export]
 macro_rules! make_uint32_n {
     ($a:ident, $b:ty, $c:expr) => {
+        /// An integer type encoded as little-endian u32 limbs.
         #[derive(Debug, Clone, Copy)]
         pub struct $a {
             pub limbs: [U32Target; $c],
@@ -14,7 +15,7 @@ macro_rules! make_uint32_n {
             type Input = <$a as TargetPrimitive>::Primitive;
 
             fn set_witness(&self, witness: &mut PartialWitness<F>, input: &Self::Input) {
-                for (index, &limb) in self.limbs.iter().enumerate() {
+                for (index, limb) in self.limbs.into_iter().enumerate() {
                     let value: u32 = ((input >> (32 * index))
                         & Self::Input::from(0xffffffff as u32))
                     .try_into()
@@ -96,14 +97,14 @@ macro_rules! make_uint32_n {
             fn add(self, rhs: $a, builder: &mut CircuitBuilder<F, D>) -> Self::Output {
                 let self_targets = self
                     .limbs
-                    .iter()
-                    .map(|x| U32Target::from(*x))
-                    .collect::<Vec<_>>();
+                    .into_iter()
+                    .map(|x| U32Target::from(x))
+                    .collect_vec();
                 let rhs_targets = rhs
                     .limbs
-                    .iter()
-                    .map(|x| U32Target::from(*x))
-                    .collect::<Vec<_>>();
+                    .into_iter()
+                    .map(|x| U32Target::from(x))
+                    .collect_vec();
 
                 let self_biguint = BigUintTarget {
                     limbs: self_targets,
@@ -114,6 +115,35 @@ macro_rules! make_uint32_n {
                 let mut limbs: [U32Target; $c] = Self::zero(builder).limbs;
                 for i in 0..$c {
                     limbs[i] = sum_biguint.limbs[i].into();
+                }
+
+                Self { limbs }
+            }
+        }
+        impl<F: RichField + Extendable<D>, const D: usize> Div<F, D> for $a {
+            type Output = Self;
+
+            fn div(self, rhs: $a, builder: &mut CircuitBuilder<F, D>) -> Self::Output {
+                let self_targets = self
+                    .limbs
+                    .into_iter()
+                    .map(|x| U32Target::from(x))
+                    .collect_vec();
+                let rhs_targets = rhs
+                    .limbs
+                    .into_iter()
+                    .map(|x| U32Target::from(x))
+                    .collect_vec();
+
+                let self_biguint = BigUintTarget {
+                    limbs: self_targets,
+                };
+                let rhs_biguint = BigUintTarget { limbs: rhs_targets };
+                let quotient_biguint = builder.div_biguint(&self_biguint, &rhs_biguint);
+
+                let mut limbs: [U32Target; $c] = Self::zero(builder).limbs;
+                for i in 0..quotient_biguint.num_limbs() {
+                    limbs[i] = quotient_biguint.limbs[i].into();
                 }
 
                 Self { limbs }
