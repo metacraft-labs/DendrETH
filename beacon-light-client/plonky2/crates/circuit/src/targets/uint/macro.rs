@@ -23,6 +23,12 @@ macro_rules! make_uint32_n {
                     limbs: limbs.try_into().unwrap(),
                 }
             }
+
+            pub fn to_biguint(self) -> BigUintTarget {
+                BigUintTarget {
+                    limbs: self.limbs.to_vec(),
+                }
+            }
         }
 
         impl TargetPrimitive for $a {
