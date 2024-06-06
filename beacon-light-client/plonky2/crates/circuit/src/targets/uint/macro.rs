@@ -149,5 +149,34 @@ macro_rules! make_uint32_n {
                 Self { limbs }
             }
         }
+        impl<F: RichField + Extendable<D>, const D: usize> Mul<F, D> for $a {
+            type Output = Self;
+
+            fn mul(self, rhs: $a, builder: &mut CircuitBuilder<F, D>) -> Self::Output {
+                let self_targets = self
+                    .limbs
+                    .into_iter()
+                    .map(|x| U32Target::from(x))
+                    .collect_vec();
+                let rhs_targets = rhs
+                    .limbs
+                    .into_iter()
+                    .map(|x| U32Target::from(x))
+                    .collect_vec();
+
+                let self_biguint = BigUintTarget {
+                    limbs: self_targets,
+                };
+                let rhs_biguint = BigUintTarget { limbs: rhs_targets };
+                let product_biguint = builder.mul_biguint(&self_biguint, &rhs_biguint);
+
+                let mut limbs: [U32Target; $c] = Self::zero(builder).limbs;
+                for i in 0..$c {
+                    limbs[i] = product_biguint.limbs[i].into();
+                }
+
+                Self { limbs }
+            }
+        }
     };
 }
