@@ -9,6 +9,7 @@ pub mod public_inputs;
 pub mod serde_circuit_target;
 pub mod set_witness;
 pub mod target_primitive;
+pub mod targets;
 pub mod to_targets;
 
 pub use add_virtual_target::AddVirtualTarget;

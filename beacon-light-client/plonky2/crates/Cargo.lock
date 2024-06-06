@@ -1154,6 +1154,7 @@ dependencies = [
  "num-bigint 0.4.5",
  "plonky2",
  "plonky2_crypto",
+ "primitive-types 0.12.2",
  "serde",
  "serde-big-array 0.5.1",
  "starky",
