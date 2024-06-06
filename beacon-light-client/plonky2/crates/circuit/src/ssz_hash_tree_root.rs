@@ -10,10 +10,11 @@ pub trait SSZHashTreeRoot<F: RichField + Extendable<D>, const D: usize> {
     fn ssz_hash_tree_root(self, builder: &mut CircuitBuilder<F, D>) -> [BoolTarget; 256];
 }
 
-impl<F: RichField + Extendable<D>, const D: usize> crate::SSZHashTreeRoot<F, D> for Uint64Target {
+impl<F: RichField + Extendable<D>, const D: usize> SSZHashTreeRoot<F, D> for Uint64Target {
     fn ssz_hash_tree_root(self, builder: &mut CircuitBuilder<F, D>) -> [BoolTarget; 256] {
-        let mut le_bytes_bits: Vec<BoolTarget> = self
-            .limbs
+        let _false = builder._false();
+
+        self.limbs
             .into_iter()
             .map(|limb| {
                 builder
@@ -21,11 +22,11 @@ impl<F: RichField + Extendable<D>, const D: usize> crate::SSZHashTreeRoot<F, D> 
                     .into_iter()
                     .map(|target| BoolTarget::new_unsafe(target))
                     .rev()
-                    .collect_vec()
             })
             .flatten()
-            .collect_vec();
-        le_bytes_bits.extend((le_bytes_bits.len()..256).map(|_| builder._false()));
-        le_bytes_bits.try_into().unwrap()
+            .pad_using(256, |_| _false)
+            .collect_vec()
+            .try_into()
+            .unwrap()
     }
 }
