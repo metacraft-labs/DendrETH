@@ -8,6 +8,7 @@ pub mod circuit_builder_extensions;
 pub mod public_inputs;
 pub mod serde_circuit_target;
 pub mod set_witness;
+pub mod ssz_hash_tree_root;
 pub mod target_primitive;
 pub mod targets;
 pub mod to_targets;
@@ -21,6 +22,7 @@ pub use public_inputs::{
 };
 pub use serde_circuit_target::SerdeCircuitTarget;
 pub use set_witness::SetWitness;
+pub use ssz_hash_tree_root::SSZHashTreeRoot;
 pub use target_primitive::TargetPrimitive;
 pub use to_targets::ToTargets;
 
