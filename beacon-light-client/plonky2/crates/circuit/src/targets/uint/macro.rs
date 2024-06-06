@@ -207,5 +207,17 @@ macro_rules! make_uint32_n {
                 Self { limbs }
             }
         }
+        impl<F: RichField + Extendable<D>, const D: usize> LessThanOrEqual<F, D> for $a {
+            #[must_use]
+            fn lte(self, rhs: Self, builder: &mut CircuitBuilder<F, D>) -> BoolTarget {
+                let self_biguint = BigUintTarget {
+                    limbs: self.limbs.into_iter().collect_vec(),
+                };
+                let rhs_biguint = BigUintTarget {
+                    limbs: rhs.limbs.into_iter().collect_vec(),
+                };
+                builder.cmp_biguint(&self_biguint, &rhs_biguint)
+            }
+        }
     };
 }
