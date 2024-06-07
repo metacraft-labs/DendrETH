@@ -151,11 +151,17 @@ async fn async_main() -> Result<()> {
         &proof,
         hex::encode(bits_to_bytes(circuit_input.block_root.as_slice())),
         withdrawal_credentials,
-        balance_verification_pis.range_total_value.to_u64().unwrap(),
-        balance_verification_pis.number_of_non_activated_validators,
-        balance_verification_pis.number_of_active_validators,
-        balance_verification_pis.number_of_exited_validators,
-        balance_verification_pis.number_of_slashed_validators,
+        balance_verification_pis
+            .accumulated_data
+            .balance
+            .to_u64()
+            .unwrap(),
+        balance_verification_pis
+            .accumulated_data
+            .non_activated_count,
+        balance_verification_pis.accumulated_data.active_count,
+        balance_verification_pis.accumulated_data.exited_count,
+        balance_verification_pis.accumulated_data.slashed_count,
     )
     .await?;
 

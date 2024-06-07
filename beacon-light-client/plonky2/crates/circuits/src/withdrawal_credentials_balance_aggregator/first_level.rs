@@ -1,5 +1,5 @@
 use crate::{
-    common_targets::ValidatorTarget,
+    common_targets::{SSZTarget, ValidatorTarget},
     serializers::{serde_bool_array_to_hex_string, serde_bool_array_to_hex_string_nested},
     utils::circuit::{
         bool_arrays_are_equal,
@@ -8,17 +8,16 @@ use crate::{
             sha256::hash_tree_root_sha256,
             ssz::ssz_num_from_bits,
         },
-        select_biguint,
         validator_status::get_validator_status,
     },
 };
-use circuit::Circuit;
-use circuit_derive::{CircuitTarget, SerdeCircuitTarget};
-use itertools::Itertools;
+use circuit::{circuit_builder_extensions::CircuitBuilderExtensions, Circuit};
+use circuit_derive::{CircuitTarget, PublicInputsReadable, SerdeCircuitTarget, TargetPrimitive};
+use itertools::{izip, Itertools};
 
 use plonky2::{
-    field::goldilocks_field::GoldilocksField,
-    hash::hash_types::HashOutTarget,
+    field::{extension::Extendable, goldilocks_field::GoldilocksField},
+    hash::hash_types::{HashOutTarget, RichField},
     iop::target::{BoolTarget, Target},
     plonk::{
         circuit_builder::CircuitBuilder, circuit_data::CircuitConfig,
@@ -31,6 +30,15 @@ use crate::{
     common_targets::Sha256Target,
     serializers::{biguint_to_str, parse_biguint},
 };
+
+#[derive(PublicInputsReadable, TargetPrimitive, SerdeCircuitTarget)]
+pub struct AccumulatedValidatorsData {
+    pub balance: BigUintTarget,
+    pub non_activated_count: Target,
+    pub active_count: Target,
+    pub exited_count: Target,
+    pub slashed_count: Target,
+}
 
 #[derive(CircuitTarget, SerdeCircuitTarget)]
 #[serde(rename_all = "camelCase")]
@@ -59,10 +67,6 @@ pub struct ValidatorBalanceVerificationTargets<
     pub current_epoch: BigUintTarget,
 
     #[target(out)]
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub range_total_value: BigUintTarget,
-
-    #[target(out)]
     #[serde(with = "serde_bool_array_to_hex_string")]
     pub range_balances_root: Sha256Target,
 
@@ -70,16 +74,7 @@ pub struct ValidatorBalanceVerificationTargets<
     pub range_validator_commitment: HashOutTarget,
 
     #[target(out)]
-    pub number_of_non_activated_validators: Target,
-
-    #[target(out)]
-    pub number_of_active_validators: Target,
-
-    #[target(out)]
-    pub number_of_exited_validators: Target,
-
-    #[target(out)]
-    pub number_of_slashed_validators: Target,
+    pub accumulated_data: AccumulatedValidatorsData,
 }
 
 pub struct WithdrawalCredentialsBalanceAggregatorFirstLevel<
@@ -119,7 +114,7 @@ where
         let validators_leaves = input
             .validators
             .iter()
-            .zip(input.non_zero_validator_leaves_mask)
+            .zip_eq(input.non_zero_validator_leaves_mask)
             .map(|(validator, is_not_zero)| {
                 hash_validator_poseidon_or_zeroes(builder, &validator, is_not_zero)
             })
@@ -128,82 +123,89 @@ where
         let validators_hash_tree_root_poseidon =
             hash_tree_root_poseidon(builder, &validators_leaves);
 
-        let mut range_total_value = builder.zero_biguint();
-        let mut number_of_non_activated_validators = builder.zero();
-        let mut number_of_active_validators = builder.zero();
-        let mut number_of_exited_validators = builder.zero();
-        let mut number_of_slashed_validators = builder.zero();
-
-        for i in 0..VALIDATORS_COUNT {
-            let mut validator_is_considered = builder._false();
-
-            for j in 0..WITHDRAWAL_CREDENTIALS_COUNT {
-                let is_equal_inner = bool_arrays_are_equal(
-                    builder,
-                    &input.validators[i].withdrawal_credentials,
-                    &input.withdrawal_credentials[j],
-                );
-
-                validator_is_considered = builder.or(is_equal_inner, validator_is_considered);
-            }
-
-            let balance = ssz_num_from_bits(
-                builder,
-                &input.balances_leaves[i / 4][((i % 4) * 64)..(((i % 4) * 64) + 64)],
-            );
-
-            let zero = builder.zero_biguint();
-
-            let (is_non_activated_validator, is_valid_validator, is_exited_validator) =
-                get_validator_status(
-                    builder,
-                    &input.validators[i].activation_epoch,
-                    &input.current_epoch,
-                    &input.validators[i].exit_epoch,
-                );
-
-            let will_be_counted = builder.and(validator_is_considered, is_valid_validator);
-
-            let current = select_biguint(builder, will_be_counted, &balance, &zero);
-
-            range_total_value = builder.add_biguint(&range_total_value, &current);
-
-            number_of_active_validators =
-                builder.add(number_of_active_validators, will_be_counted.target);
-
-            let will_be_counted = builder.and(validator_is_considered, is_non_activated_validator);
-
-            number_of_non_activated_validators =
-                builder.add(number_of_non_activated_validators, will_be_counted.target);
-
-            let will_be_counted = builder.and(validator_is_considered, is_exited_validator);
-
-            number_of_exited_validators =
-                builder.add(number_of_exited_validators, will_be_counted.target);
-
-            let validator_is_considered_and_is_slashed =
-                builder.and(validator_is_considered, input.validators[i].slashed);
-            number_of_slashed_validators = builder.add(
-                number_of_slashed_validators,
-                validator_is_considered_and_is_slashed.target,
-            );
-
-            range_total_value.limbs.pop();
-        }
+        let accumulated_data = accumulate_data(
+            builder,
+            &input.validators,
+            &input.balances_leaves,
+            &input.withdrawal_credentials,
+            &input.current_epoch,
+        );
 
         Self::Target {
+            validators: input.validators,
             non_zero_validator_leaves_mask: input.non_zero_validator_leaves_mask,
-            range_total_value,
+            withdrawal_credentials: input.withdrawal_credentials,
+            balances_leaves: input.balances_leaves,
+            current_epoch: input.current_epoch,
             range_balances_root,
             range_validator_commitment: validators_hash_tree_root_poseidon,
-            validators: input.validators,
-            balances_leaves: input.balances_leaves,
-            withdrawal_credentials: input.withdrawal_credentials,
-            current_epoch: input.current_epoch,
-            number_of_non_activated_validators,
-            number_of_active_validators,
-            number_of_exited_validators,
-            number_of_slashed_validators,
+            accumulated_data,
         }
     }
+}
+
+fn accumulate_data<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    validators: &[ValidatorTarget],
+    balance_leaves: &[SSZTarget],
+    withdrawal_credentials: &[Sha256Target],
+    current_epoch: &BigUintTarget,
+) -> AccumulatedValidatorsData {
+    let considered_validators_mask = validators
+        .iter()
+        .map(|validator| {
+            withdrawal_credentials
+                .iter()
+                .fold(builder._false(), |acc, credentials| {
+                    let credentials_match = bool_arrays_are_equal(
+                        builder,
+                        &validator.withdrawal_credentials,
+                        credentials,
+                    );
+                    builder.or(acc, credentials_match)
+                })
+        })
+        .collect_vec();
+
+    let balances = balance_leaves
+        .into_iter()
+        .flatten()
+        .copied()
+        .collect_vec()
+        .chunks(64)
+        .into_iter()
+        .map(|balance_bits| ssz_num_from_bits(builder, balance_bits))
+        .collect_vec();
+
+    let zero_accumulated_data: AccumulatedValidatorsData = builder.zero_init();
+
+    izip!(validators, &balances, considered_validators_mask).fold(
+        zero_accumulated_data,
+        |acc, (validator, balance, is_considered)| {
+            let (is_non_activated, is_active, is_exited) = get_validator_status(
+                builder,
+                &validator.activation_epoch,
+                &current_epoch,
+                &validator.exit_epoch,
+            );
+
+            let should_sum_balance = builder.and(is_considered, is_active);
+
+            let mut summed_balance = builder.add_biguint(&acc.balance, balance);
+            summed_balance.limbs.pop().unwrap();
+
+            let new_balance =
+                builder.select_target(should_sum_balance, &summed_balance, &acc.balance);
+
+            let new_accumulated_data = AccumulatedValidatorsData {
+                balance: new_balance,
+                non_activated_count: builder.add(acc.non_activated_count, is_non_activated.target),
+                active_count: builder.add(acc.active_count, is_active.target),
+                exited_count: builder.add(acc.exited_count, is_exited.target),
+                slashed_count: builder.add(acc.slashed_count, validator.slashed.target),
+            };
+
+            builder.select_target(is_considered, &new_accumulated_data, &acc)
+        },
+    )
 }
