@@ -10,7 +10,6 @@ import { initPrometheusSetup } from '@dendreth/utils/ts-utils/prometheus-utils';
 import JSONbig from 'json-bigint';
 import { publishTransaction } from '@dendreth/relay/implementations/publish_evm_transaction';
 import Web3 from 'web3';
-import assert from 'assert';
 import http from 'http';
 import { RequestOptions } from 'https';
 
@@ -47,6 +46,7 @@ task('balance-verifier-publisher', 'Run relayer')
     undefined,
     true,
   )
+  .addParam('rpcUrl', 'The RPC URL for the network')
   .setAction(async (args, { ethers, network }) => {
     const config = {
       REDIS_HOST: process.env.REDIS_HOST,
@@ -54,6 +54,14 @@ task('balance-verifier-publisher', 'Run relayer')
     };
 
     checkConfig(config);
+
+    const url = (
+      args.rpcUrl ? args.rpcUrl : (network.config as any).url
+    ) as string;
+
+    const provider = args.rpcUrl
+      ? new ethers.providers.JsonRpcProvider(args.rpcUrl)
+      : ethers.provider;
 
     if (args.prometheusPort) {
       console.log(`Initializing Prometheus on port ${args.prometheusPort}`);
@@ -75,7 +83,7 @@ task('balance-verifier-publisher', 'Run relayer')
     if (!args.privateKey) {
       [publisher] = await ethers.getSigners();
     } else {
-      publisher = new ethers.Wallet(args.privateKey, ethers.provider);
+      publisher = new ethers.Wallet(args.privateKey, provider);
     }
 
     logger.info(`Publishing updates with the account: ${publisher.address}`);
@@ -91,9 +99,9 @@ task('balance-verifier-publisher', 'Run relayer')
       publisher,
     );
 
-    const web3 = new Web3((network.config as any).url);
+    const web3 = new Web3(url);
 
-    console.log('url', (network.config as any).url);
+    console.log('url', url);
 
     if (
       args.transactionSpeed &&
@@ -115,10 +123,6 @@ task('balance-verifier-publisher', 'Run relayer')
       ))!;
 
       const final_layer_proof_json = JSON.parse(final_layer_proof_string);
-
-      const final_layer_proof = S.decodeUnknownSync(FinalProof)(
-        final_layer_proof_json,
-      );
 
       let final_layer_proof_input = JSON.parse(
         (await redis.get(`${protocol}:final_proof_input`))!,
@@ -159,15 +163,15 @@ task('balance-verifier-publisher', 'Run relayer')
         });
 
         res.on('end', async () => {
-          let balanceSum = final_layer_proof.balanceSum;
+          let balanceSum = final_layer_proof_json.balanceSum;
           let numberOfNonActivatedValidators =
-            final_layer_proof.numberOfNonActivatedValidators;
+            final_layer_proof_json.numberOfNonActivatedValidators;
           let numberOfActiveValidators =
-            final_layer_proof.numberOfActiveValidators;
+            final_layer_proof_json.numberOfActiveValidators;
           let numberOfExitedValidators =
-            final_layer_proof.numberOfExitedValidators;
+            final_layer_proof_json.numberOfExitedValidators;
           let numberOfSlashedValidators =
-            final_layer_proof.numberOfSlashedValidators;
+            final_layer_proof_json.numberOfSlashedValidators;
 
           await publishTransaction(
             balanceVerifierContract,
