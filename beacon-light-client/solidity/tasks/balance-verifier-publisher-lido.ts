@@ -94,7 +94,7 @@ task('balance-verifier-publisher', 'Run relayer')
     logger.info(`Contract address ${args.balanceVerifier}`);
 
     const balanceVerifierContract = await ethers.getContractAt(
-      'contracts/balance_verifier/BalanceVerifierDiva.sol:BalanceVerifierDiva',
+      'contracts/balance_verifier/BalanceVerifierLido.sol:BalanceVerifierLido',
       args.balanceVerifier,
       publisher,
     );
