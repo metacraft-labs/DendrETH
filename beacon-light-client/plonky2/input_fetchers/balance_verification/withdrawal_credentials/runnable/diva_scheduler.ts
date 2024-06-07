@@ -60,7 +60,7 @@ snapshot.on('SnapshotTaken', async (_: number, currentSlot: number) => {
   });
 
   let run_everywhere_output = await promisified_exec(
-    '../../../../crates/circuits_executables/scripts/run_everywhere.sh --proof-storage-dir /mnt/solunka-server-dendreth/diva_new_devnet --redis-address redis://solunska-server:6379/ --protocol $PROTOCOL',
+    '../../../../crates/circuits_executables/scripts/run_everywhere.sh --proof-storage-dir /mnt/solunka-server-dendreth/diva_new_devnet --redis-address redis://solunska-server:6379/ --protocol diva',
   );
 
   console.log(run_everywhere_output);

@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
 import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
-import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
+import { bytesToHex, formatHex } from '@dendreth/utils/ts-utils/bls';
 import { hexToBits } from '@dendreth/utils/ts-utils/hex-utils';
 import { KeyPrefix, WorkQueue, Item } from '@mevitae/redis-work-queue';
 import CONSTANTS from '../../../../kv_db_constants.json';
@@ -55,7 +55,9 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
   const { ssz } = await import('@lodestar/types');
   const redis = new RedisLocal(config.redisHost, config.redisPort);
 
-  const withdrawalCredentials = config.withdrawalCredentials.padEnd(64, '0');
+  const withdrawalCredentials = formatHex(
+    config.withdrawalCredentials.padEnd(64, '0'),
+  );
   const protocol = config.protocol;
 
   const queues: any[] = [];
