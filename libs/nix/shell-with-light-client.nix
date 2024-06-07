@@ -16,7 +16,6 @@ in
     shellHook = ''
       set -e
 
-      export NODE_OPTIONS="--experimental-vm-modules"
       export PATH="$PATH:$PWD/node_modules/.bin";
       export CC=clang
       export LOCAL_NIM_LIB="$PWD/vendor/nim/lib"

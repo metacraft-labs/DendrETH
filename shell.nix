@@ -24,7 +24,6 @@
         shellHook = ''
           set -e
 
-          export NODE_OPTIONS="--experimental-vm-modules"
           export CC=clang
           export LOCAL_NIM_LIB="$PWD/vendor/nim/lib"
           export CIRCOM_LIB="$(find $PWD/.yarn/unplugged -maxdepth 1 -type d -name 'circomlib-*')/node_modules/circomlib/circuits"
