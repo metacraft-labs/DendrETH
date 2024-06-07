@@ -15,276 +15,94 @@ env:
   ETHERSCAN_API_KEY: '${{ secrets.ETHERSCAN_API_KEY }}'
   ETHEREUM_MAINNET_RPC: https://eth.llamarpc.com
 jobs:
-  Linter:
+  test:
+    strategy:
+      matrix:
+        jobs:
+          - name: Lint
+            command: yarn format:check
+
+          - name: Typecheck
+            command: yarn check:build
+
+          - name: EOS_Relayer_Test
+            command: yarn test './tests/eosLightClient/test-verifier-in-EOS-relay.ts'
+            disabled: true
+
+          - name: Solidity_Validators_Accumulator_Test
+            command: make test-validator-accumulator
+
+          - name: Nim_Light_Client_Compiled_with_Emsctipten_Tests
+            command: yarn test-emcc './tests/test-nim-to-wasm.ts' 'test-nim-light-client.ts'
+            disabled: true
+
+          - name: Nim_Light_Client_Clang_Test
+            command: yarn test './tests/test-nim-to-wasm.ts' 'test-nim-light-client.ts'
+
+          - name: Nim_Groth16_Verifier_Tests
+            command: make test-groth16-verifier
+
+          - name: Run_Light_Client_In_Cosmos_Test
+            command: yarn test './tests/cosmosLightClient/test-nim-light-client-in-cosmos.ts'
+            disabled: true
+
+          - name: Run_Verifier_In_Cosmos_Test
+            command: yarn test './tests/cosmosLightClient/test-verifier-in-cosmos.ts'
+            disabled: true
+
+          - name: Run_Verifier_In_Cosmos_Relay_Tests
+            command: yarn test './tests/cosmosLightClient/test-verifier-in-cosmos-relay.ts'
+            disabled: true
+
+          - name: Run_Circom_Tests
+            command: make test-circom-circuits
+
+          - name: Run_Plonky2_Tests
+            command: make test-plonky2-circuits
+
+          - name: Run_Verify_Given_Proof
+            command: nim c -r 'tests/verify_proof/verify_given_proof_test.nim'
+
+          - name: Run_Verify_Given_Proof_ffJS
+            command: yarn test './tests/verify_proof/verify_given_proof_test.ts'
+
+          - name: Solidity_Verifier_Tests
+            command: make evm-simulation
+
+          - name: OneShot_Syncing_Simulation
+            command: make one-shot-syncing-simulation
+
+          - name: Bash_Scripts_Building_Circom_Circuits
+            command: ./scripts/build-circom-compress-circuits.sh
+
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - name: Use local my-action
-        uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
-      - name: Run yarn format check
-        run: nix develop -c yarn format:check
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v12
+        if: ${{ runner.environment == 'github-hosted' }}
+        with:
+          extra-conf: accept-flake-config = true
 
-  Build_All:
+      - uses: cachix/cachix-action@v15
+        with:
+          name: ${{ vars.CACHIX_CACHE }}
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Build & activate the Nix Dev Shell
+        run: |
+          eval "$(nix print-dev-env .#devShells.x86_64-linux.default)"
+          env >> "$GITHUB_ENV"
+
+      - name: ${{ matrix.name }}
+        run: ${{ matrix.command }}
+        continue-on-error: ${{ matrix.disabled }}
+
+  final-success:
+    needs: test
     runs-on: self-hosted
+    if: success()
     steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - name: Use local my-action
-        uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-      - name: Build all
-        run: nix develop -c yarn check:build
-
-  # EOS_Relayer_Test:
-  #   runs-on: self-hosted
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         submodules: recursive
-  #     - name: Use local my-action
-  #       uses: ./.github/actions/setup
-  #       with:
-  #         cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-  #     - name: Run Verifier in EOS - Relayer test
-  #       run: nix develop -c yarn test './tests/eosLightClient/test-verifier-in-EOS-relay.ts'
-
-  Solidity_Validators_Accumulator_Test:
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - name:
-        uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-      - name: Run Solidity Validators accumulator tests
-        run: nix develop -c make test-validator-accumulator
-
-  # Nim_Light_Client_Compiled_with_Emsctipten_Tests:
-  #   runs-on: self-hosted
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         submodules: recursive
-  #     - name: Use local my-action
-  #       uses: ./.github/actions/setup
-  #       with:
-  #         cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-  #
-  #     - name: Run Nim Light Client compiled with emsctipten tests
-  #       run: nix develop -c yarn test-emcc './tests/test-nim-to-wasm.ts' 'test-nim-light-client.ts'
-
-  Nim_Light_Client_Clang_Test:
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - name: Use local my-action
-        uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-      - name: Run Nim Light Client compiled with clang tests
-        run: nix develop -c yarn test './tests/test-nim-to-wasm.ts' 'test-nim-light-client.ts'
-
-  Nim_Groth16_Verifier_Tests:
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - name: Use local my-action
-        uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-      - name: Run Nim groth16 verifier tests
-        run: nix develop -c make test-groth16-verifier
-
-  # Disable temporary till we find way to have docker in local setup
-  # Run_Light_Client_In_Cosmos_Test:
-  #   runs-on: self-hosted
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         submodules: recursive
-  #     - name: Use local my-action
-  #       uses: ./.github/actions/setup
-  #       with:
-  #         cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-  #     - name: Run Light Client in Cosmos test
-  #       run: nix develop -c yarn test './tests/cosmosLightClient/test-nim-light-client-in-cosmos.ts'
-
-  # Run_Verifier_In_Cosmos_Test:
-  #   runs-on: self-hosted
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         submodules: recursive
-  #     - name: Use local my-action
-  #       uses: ./.github/actions/setup
-  #       with:
-  #         cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-  #     - name: Run Verifier in Cosmos test
-  #       run: nix develop -c yarn test './tests/cosmosLightClient/test-verifier-in-cosmos.ts'
-
-  # Run_Verifier_In_Cosmos_Relay_Tests:
-  #   runs-on: self-hosted
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         submodules: recursive
-  #     - name: Use local my-action
-  #       uses: ./.github/actions/setup
-  #       with:
-  #         cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-  #     - name: Run Verifier in Cosmos - Relayer test
-  #       run: nix develop -c yarn test './tests/cosmosLightClient/test-verifier-in-cosmos-relay.ts'
-
-  Run_Circom_Tests:
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Use local my-action
-        uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-      - name: Run circom tests
-        run: nix develop -c make test-circom-circuits
-
-  Run_Plonky2_Tests:
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Use local my-action
-        uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-      - name: Run plonky2 circuit tests
-        run: nix develop -c make test-plonky2-circuits
-
-  Run_Verify_Given_Proof:
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - name: Use local my-action
-        uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-      - name: Run Verify given proof - test using bncurve and constantine
-        run: nix develop -c nim c -r 'tests/verify_proof/verify_given_proof_test.nim'
-
-  Run_Verify_Given_Proof_ffJS:
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - name: Use local my-action
-        uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-      - name: Run Verify given proof - test using ffJavascript
-        run: nix develop -c yarn test ./tests/verify_proof/verify_given_proof_test.ts
-
-  Solidity_Verifier_Tests:
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - name: Use local my-action
-        uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-      - name: Run Solidity verifier tests
-        run: nix develop -c make evm-simulation
-
-  OneShot_Syncing_Simulation:
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - name: Use local my-action
-        uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-      - name: Run one shot syncing simulation
-        run: nix develop -c make one-shot-syncing-simulation
-
-  Bash_Scripts_Building_Circom_Circuits:
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - name: Use local my-action
-        uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-      - name: Run one of the scripts building the circom circuits
-        run: nix develop -c ./scripts/build-circom-compress-circuits.sh
-
-  check:
-    if: always()
-
-    needs:
-      - Linter
-      # - EOS_Relayer_Test
-      - Solidity_Validators_Accumulator_Test
-      # - Nim_Light_Client_Compiled_with_Emsctipten_Tests
-      - Nim_Light_Client_Clang_Test
-      - Nim_Groth16_Verifier_Tests
-      # - Run_Light_Client_In_Cosmos_Test
-      # - Run_Verifier_In_Cosmos_Test
-      - Run_Circom_Tests
-      # - Run_Verifier_In_Cosmos_Relay_Tests
-      - Run_Verify_Given_Proof
-      - Run_Verify_Given_Proof_ffJS
-      - Solidity_Verifier_Tests
-      - OneShot_Syncing_Simulation
-      - Run_Plonky2_Tests
-
-    runs-on: self-hosted
-
-    steps:
-      - name: Check if any job failed or was cancelled
-        if: >-
-          ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
-        run: exit 1
-
-      - name: Success
-        if: >-
-          ${{ !(contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')) }}
-        run: echo "All dependent jobs succeeded!"
+      - name: All matrix jobs succeeded
+        run: echo "All matrix jobs succeeded."
