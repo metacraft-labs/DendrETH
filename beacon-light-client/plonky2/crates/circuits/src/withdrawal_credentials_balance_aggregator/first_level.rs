@@ -2,7 +2,6 @@ use crate::{
     common_targets::{SSZTarget, ValidatorTarget},
     serializers::{serde_bool_array_to_hex_string, serde_bool_array_to_hex_string_nested},
     utils::circuit::{
-        bool_arrays_are_equal,
         hashing::merkle::{
             poseidon::{hash_tree_root_poseidon, hash_validator_poseidon_or_zeroes},
             sha256::hash_tree_root_sha256,
@@ -33,6 +32,7 @@ use crate::{
 
 #[derive(PublicInputsReadable, TargetPrimitive, SerdeCircuitTarget)]
 pub struct AccumulatedValidatorsData {
+    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
     pub balance: BigUintTarget,
     pub non_activated_count: Target,
     pub active_count: Target,
@@ -157,11 +157,8 @@ fn accumulate_data<F: RichField + Extendable<D>, const D: usize>(
             withdrawal_credentials
                 .iter()
                 .fold(builder._false(), |acc, credentials| {
-                    let credentials_match = bool_arrays_are_equal(
-                        builder,
-                        &validator.withdrawal_credentials,
-                        credentials,
-                    );
+                    let credentials_match =
+                        builder.targets_are_equal(&validator.withdrawal_credentials, credentials);
                     builder.or(acc, credentials_match)
                 })
         })
@@ -194,11 +191,8 @@ fn accumulate_data<F: RichField + Extendable<D>, const D: usize>(
             let mut summed_balance = builder.add_biguint(&acc.balance, balance);
             summed_balance.limbs.pop().unwrap();
 
-            let new_balance =
-                builder.select_target(should_sum_balance, &summed_balance, &acc.balance);
-
             let new_accumulated_data = AccumulatedValidatorsData {
-                balance: new_balance,
+                balance: builder.select_target(should_sum_balance, &summed_balance, &acc.balance),
                 non_activated_count: builder.add(acc.non_activated_count, is_non_activated.target),
                 active_count: builder.add(acc.active_count, is_active.target),
                 exited_count: builder.add(acc.exited_count, is_exited.target),
