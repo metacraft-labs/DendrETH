@@ -6,6 +6,7 @@ pub mod array;
 pub mod circuit;
 pub mod circuit_builder_extensions;
 pub mod public_inputs;
+pub mod serde;
 pub mod serde_circuit_target;
 pub mod set_witness;
 pub mod ssz_hash_tree_root;
