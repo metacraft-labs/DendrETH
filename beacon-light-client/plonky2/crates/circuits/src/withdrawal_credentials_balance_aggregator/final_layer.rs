@@ -123,7 +123,7 @@ impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
         assert_slot_is_in_epoch(builder, &input.slot, &balance_verification_pi.current_epoch);
 
         let accumulated_balance_bits =
-            biguint_to_bits_target(builder, &balance_verification_pi.range_total_value);
+            biguint_to_bits_target(builder, &balance_verification_pi.accumulated_data.balance);
 
         let flattened_withdrawal_credentials = balance_verification_pi
             .withdrawal_credentials
@@ -134,15 +134,19 @@ impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
 
         let number_of_non_activated_validators_bits = target_to_le_bits(
             builder,
-            balance_verification_pi.number_of_non_activated_validators,
+            balance_verification_pi.accumulated_data.non_activated_count,
         );
-        let number_of_active_validators_bits =
-            target_to_le_bits(builder, balance_verification_pi.number_of_active_validators);
-        let number_of_exited_validators_bits =
-            target_to_le_bits(builder, balance_verification_pi.number_of_exited_validators);
+        let number_of_active_validators_bits = target_to_le_bits(
+            builder,
+            balance_verification_pi.accumulated_data.active_count,
+        );
+        let number_of_exited_validators_bits = target_to_le_bits(
+            builder,
+            balance_verification_pi.accumulated_data.exited_count,
+        );
         let number_of_slashed_validators_bits = target_to_le_bits(
             builder,
-            balance_verification_pi.number_of_slashed_validators,
+            balance_verification_pi.accumulated_data.slashed_count,
         );
 
         let mut public_inputs_hash = sha256(

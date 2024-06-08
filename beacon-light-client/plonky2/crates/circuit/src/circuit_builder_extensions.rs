@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use plonky2::{
     field::extension::Extendable,
     hash::hash_types::RichField,
@@ -37,7 +38,7 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderExtensions
         let a_targets = a.to_targets();
         let b_targets = b.to_targets();
 
-        let pairs = a_targets.iter().zip(b_targets.iter());
+        let pairs = a_targets.iter().zip_eq(b_targets.iter());
 
         let targets = pairs.fold(vec![], |mut acc, (&a_target, &b_target)| {
             acc.push(self._if(selector, a_target, b_target));

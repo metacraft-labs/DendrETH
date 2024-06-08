@@ -18,6 +18,8 @@ use plonky2::{
 };
 use plonky2_crypto::biguint::CircuitBuilderBiguint;
 
+use super::first_level::AccumulatedValidatorsData;
+
 pub struct WithdrawalCredentialsBalanceAggregatorInnerLevel<
     const VALIDATORS_COUNT: usize,
     const WITHDRAWAL_CREDENTIALS_COUNT: usize,
@@ -72,31 +74,31 @@ where
             &r_input.range_balances_root,
         );
 
-        let number_of_non_activated_validators = builder.add(
-            l_input.number_of_non_activated_validators,
-            r_input.number_of_non_activated_validators,
+        let mut accumulated_balance = builder.add_biguint(
+            &l_input.accumulated_data.balance,
+            &r_input.accumulated_data.balance,
         );
+        accumulated_balance.limbs.pop();
 
-        let number_of_active_validators = builder.add(
-            l_input.number_of_active_validators,
-            r_input.number_of_active_validators,
-        );
-
-        let number_of_exited_validators = builder.add(
-            l_input.number_of_exited_validators,
-            r_input.number_of_exited_validators,
-        );
-
-        let number_of_slashed_validators = builder.add(
-            l_input.number_of_slashed_validators,
-            r_input.number_of_slashed_validators,
-        );
-
-        let mut range_total_value =
-            builder.add_biguint(&l_input.range_total_value, &r_input.range_total_value);
-
-        // pop carry
-        range_total_value.limbs.pop();
+        let accumulated_data = AccumulatedValidatorsData {
+            balance: accumulated_balance,
+            non_activated_count: builder.add(
+                l_input.accumulated_data.non_activated_count,
+                r_input.accumulated_data.non_activated_count,
+            ),
+            active_count: builder.add(
+                l_input.accumulated_data.active_count,
+                r_input.accumulated_data.active_count,
+            ),
+            exited_count: builder.add(
+                l_input.accumulated_data.exited_count,
+                r_input.accumulated_data.exited_count,
+            ),
+            slashed_count: builder.add(
+                l_input.accumulated_data.slashed_count,
+                r_input.accumulated_data.slashed_count,
+            ),
+        };
 
         for i in 0..WITHDRAWAL_CREDENTIALS_COUNT {
             connect_bool_arrays(
@@ -115,14 +117,10 @@ where
             >,
         > {
             current_epoch: l_input.current_epoch,
-            range_total_value,
             range_balances_root,
             withdrawal_credentials: l_input.withdrawal_credentials,
             range_validator_commitment,
-            number_of_non_activated_validators,
-            number_of_active_validators,
-            number_of_exited_validators,
-            number_of_slashed_validators,
+            accumulated_data,
         };
 
         output_target.register_public_inputs(builder);
