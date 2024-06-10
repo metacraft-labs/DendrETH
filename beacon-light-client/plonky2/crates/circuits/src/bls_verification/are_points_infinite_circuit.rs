@@ -242,8 +242,8 @@ pub mod tests {
         let miller_loop_circuit_data =
             load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/miller_loop"));
 
-        let params = (pairing_precomp_circuit_data, miller_loop_circuit_data);
-        let pairing_precomp_public_inputs: [Target; 48] = params
+        let params = (miller_loop_circuit_data, pairing_precomp_circuit_data);
+        let miller_loop_public_inputs: [Target; 48] = params
             .0
             .prover_only
             .public_inputs
@@ -251,7 +251,7 @@ pub mod tests {
             .collect::<Vec<_>>()
             .try_into()
             .unwrap();
-        let miller_loop_public_inputs: [Target; 96] = params
+        let pairing_precomp_public_inputs: [Target; 96] = params
             .1
             .prover_only
             .public_inputs
@@ -261,8 +261,8 @@ pub mod tests {
             .unwrap();
 
         let (_, circuit) = VerifyIsNotAtInfinityCircuit::build(&(
-            pairing_precomp_public_inputs,
             miller_loop_public_inputs,
+            pairing_precomp_public_inputs,
         ));
         let pw = PartialWitness::new();
         let proof = circuit.prove(pw).unwrap();
