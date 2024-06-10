@@ -1,12 +1,13 @@
 use anyhow::Result;
 use ark_bls12_381::{G1Affine, G1Projective, G2Affine};
-use ark_ec::Group;
+use ark_ec::{CurveGroup, Group};
 use ark_serialize::CanonicalDeserialize;
 use circuit::SerdeCircuitTarget;
 use circuit_executables::{
     bls_components::{
-        convert_ecp2_to_g2affine, handle_final_exponentiation, handle_fp12_mul, handle_miller_loop,
-        handle_pairing_precomp,
+        compute_native_miller_loop_from, convert_ecp2_to_g2affine, handle_final_exponentiation,
+        handle_fp12_mul, handle_miller_loop, handle_pairing_precomp, set_bls_witness,
+        BlsComponents, BlsProofs, Input,
     },
     constants::SERIALIZED_CIRCUITS_DIR,
     crud::{
@@ -17,15 +18,12 @@ use circuit_executables::{
 };
 use circuits::bls_verification::bls12_381_circuit::BlsCircuitTargets;
 use futures_lite::future;
-use num_bigint::BigUint;
 use plonky2::{
-    field::{goldilocks_field::GoldilocksField, types::Field},
-    iop::witness::{PartialWitness, WitnessWrite},
+    field::goldilocks_field::GoldilocksField, iop::witness::PartialWitness,
     util::serialization::Buffer,
 };
 use snowbridge_amcl::bls381::bls381::utils::hash_to_curve_g2;
-use starky_bls12_381::native::{miller_loop, Fp, Fp2};
-use std::{ops::Neg, str::FromStr};
+use std::ops::Neg;
 
 async fn async_main() -> Result<()> {
     let matches = CommandLineOptionsBuilder::new("bls12_381_components_proofs")
@@ -36,9 +34,10 @@ async fn async_main() -> Result<()> {
     let signature = "b735d0d0b03f51fcf3e5bc510b5a2cb266075322f5761a6954778714f5ab8831bc99454380d330f5c19d93436f0c4339041bfeecd2161a122c1ce8428033db8dda142768a48e582f5f9bde7d40768ac5a3b6a80492b73719f1523c5da35de275";
     let msg = "5bb03392c9c8a8b92c840338f619bb060b109b254c9ab75d4dddc6d00932bce3";
 
-    let message_g2 = hash_to_curve_g2(&hex::decode(msg).unwrap(), DST.as_bytes());
-    let message_g2 = convert_ecp2_to_g2affine(message_g2);
-
+    let message_g2 = convert_ecp2_to_g2affine(hash_to_curve_g2(
+        &hex::decode(&msg).unwrap(),
+        DST.as_bytes(),
+    ));
     let pubkey_g1 =
         G1Affine::deserialize_compressed_unchecked(&*hex::decode(pubkey).unwrap()).unwrap();
     let signature_g2 =
@@ -46,47 +45,18 @@ async fn async_main() -> Result<()> {
     let g1 = G1Projective::generator();
     let neg_g1 = g1.neg();
 
-    let miller_loop1 = miller_loop(
-        Fp::get_fp_from_biguint(pubkey_g1.x.to_string().parse::<BigUint>().unwrap()),
-        Fp::get_fp_from_biguint(pubkey_g1.y.to_string().parse::<BigUint>().unwrap()),
-        Fp2([
-            Fp::get_fp_from_biguint(message_g2.x.c0.to_string().parse::<BigUint>().unwrap()),
-            Fp::get_fp_from_biguint(message_g2.x.c1.to_string().parse::<BigUint>().unwrap()),
-        ]),
-        Fp2([
-            Fp::get_fp_from_biguint(message_g2.y.c0.to_string().parse::<BigUint>().unwrap()),
-            Fp::get_fp_from_biguint(message_g2.y.c1.to_string().parse::<BigUint>().unwrap()),
-        ]),
-        Fp2([
-            Fp::get_fp_from_biguint(BigUint::from_str("1").unwrap()),
-            Fp::get_fp_from_biguint(BigUint::from_str("0").unwrap()),
-        ]),
-    );
+    let miller_loop1 = compute_native_miller_loop_from(pubkey_g1, message_g2);
 
-    let miller_loop2 = miller_loop(
-        Fp::get_fp_from_biguint(neg_g1.x.to_string().parse::<BigUint>().unwrap()),
-        Fp::get_fp_from_biguint(neg_g1.y.to_string().parse::<BigUint>().unwrap()),
-        Fp2([
-            Fp::get_fp_from_biguint(signature_g2.x.c0.to_string().parse::<BigUint>().unwrap()),
-            Fp::get_fp_from_biguint(signature_g2.x.c1.to_string().parse::<BigUint>().unwrap()),
-        ]),
-        Fp2([
-            Fp::get_fp_from_biguint(signature_g2.y.c0.to_string().parse::<BigUint>().unwrap()),
-            Fp::get_fp_from_biguint(signature_g2.y.c1.to_string().parse::<BigUint>().unwrap()),
-        ]),
-        Fp2([
-            Fp::get_fp_from_biguint(BigUint::from_str("1").unwrap()),
-            Fp::get_fp_from_biguint(BigUint::from_str("0").unwrap()),
-        ]),
-    );
+    let miller_loop2 = compute_native_miller_loop_from(neg_g1.into_affine(), signature_g2);
 
     let fp12_mull = miller_loop1 * miller_loop2;
     // PROVING HAPPENS HERE
 
     let mut proof_storage = create_proof_storage(&matches).await;
-    let (pp1, pp2) = handle_pairing_precomp(&message_g2, &signature_g2).await;
+    let (pairing_prec_proof1, pairing_prec_proof2) =
+        handle_pairing_precomp(&message_g2, &signature_g2).await;
 
-    let (ml1, ml2) =
+    let (miller_loop_proof1, miller_loop_proof2) =
         handle_miller_loop(&pubkey_g1, &message_g2, &neg_g1.into(), &signature_g2).await;
 
     let fp12_mul_proof = handle_fp12_mul(&miller_loop1, &miller_loop2).await;
@@ -103,37 +73,26 @@ async fn async_main() -> Result<()> {
     let targets = BlsCircuitTargets::deserialize(&mut target_buffer).unwrap();
     let mut pw = PartialWitness::<GoldilocksField>::new();
 
-    pw.set_target_arr(
-        &targets.pubkey,
-        &hex::decode(pubkey)
-            .unwrap()
-            .iter()
-            .map(|x| GoldilocksField::from_canonical_usize(*x as usize))
-            .collect::<Vec<GoldilocksField>>(),
+    set_bls_witness(
+        &mut pw,
+        &targets,
+        &BlsComponents {
+            input: Input {
+                pubkey: pubkey.to_string(),
+                signature: signature.to_string(),
+                message: msg.to_string(),
+            },
+            output: true,
+        },
+        &BlsProofs {
+            pairing_prec_proof1,
+            pairing_prec_proof2,
+            miller_loop_proof2,
+            miller_loop_proof1,
+            fp12_mul_proof,
+            final_exp_proof,
+        },
     );
-    pw.set_target_arr(
-        &targets.sig,
-        &hex::decode(signature)
-            .unwrap()
-            .iter()
-            .map(|x| GoldilocksField::from_canonical_usize(*x as usize))
-            .collect::<Vec<GoldilocksField>>(),
-    );
-    pw.set_target_arr(
-        &targets.msg,
-        &hex::decode(msg)
-            .unwrap()
-            .iter()
-            .map(|x| GoldilocksField::from_canonical_usize(*x as usize))
-            .collect::<Vec<GoldilocksField>>(),
-    );
-
-    pw.set_proof_with_pis_target(&targets.pt_pp1, &pp1);
-    pw.set_proof_with_pis_target(&targets.pt_pp2, &pp2);
-    pw.set_proof_with_pis_target(&targets.pt_ml1, &ml1);
-    pw.set_proof_with_pis_target(&targets.pt_ml2, &ml2);
-    pw.set_proof_with_pis_target(&targets.pt_fp12m, &fp12_mul_proof);
-    pw.set_proof_with_pis_target(&targets.pt_fe, &final_exp_proof);
 
     println!("Starting proof generation");
 

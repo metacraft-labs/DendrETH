@@ -48,8 +48,8 @@ pub struct BlsComponents {
 pub struct BlsProofs {
     pub pairing_prec_proof1: ProofWithPublicInputs<F, C, D>,
     pub pairing_prec_proof2: ProofWithPublicInputs<F, C, D>,
-    pub miller_loop_proof1: ProofWithPublicInputs<F, C, D>,
     pub miller_loop_proof2: ProofWithPublicInputs<F, C, D>,
+    pub miller_loop_proof1: ProofWithPublicInputs<F, C, D>,
     pub fp12_mul_proof: ProofWithPublicInputs<F, C, D>,
     pub final_exp_proof: ProofWithPublicInputs<F, C, D>,
 }
@@ -60,54 +60,6 @@ impl BlsComponents {
         self.input.signature = self.input.signature.chars().skip(2).collect();
         self.input.message = self.input.message.chars().skip(2).collect();
     }
-}
-
-pub fn read_yaml_file<P: AsRef<Path>>(
-    path: P,
-) -> Result<BlsComponents, Box<dyn std::error::Error>> {
-    let file_content = fs::read_to_string(path)?;
-    let mut components: BlsComponents = serde_yaml::from_str(&file_content)?;
-    components.remove_first_two_chars();
-    Ok(components)
-}
-
-pub fn set_bls_witness(
-    pw: &mut PartialWitness<F>,
-    targets: &BlsCircuitTargets,
-    components: &BlsComponents,
-    proofs: &BlsProofs,
-) {
-    pw.set_target_arr(
-        &targets.pubkey,
-        &hex::decode(&components.input.pubkey)
-            .unwrap()
-            .iter()
-            .map(|x| F::from_canonical_usize(*x as usize))
-            .collect::<Vec<F>>(),
-    );
-    pw.set_target_arr(
-        &targets.sig,
-        &hex::decode(&components.input.signature)
-            .unwrap()
-            .iter()
-            .map(|x| F::from_canonical_usize(*x as usize))
-            .collect::<Vec<F>>(),
-    );
-    pw.set_target_arr(
-        &targets.msg,
-        &hex::decode(&components.input.message)
-            .unwrap()
-            .iter()
-            .map(|x| F::from_canonical_usize(*x as usize))
-            .collect::<Vec<F>>(),
-    );
-
-    pw.set_proof_with_pis_target(&targets.pt_pp1, &proofs.pairing_prec_proof1);
-    pw.set_proof_with_pis_target(&targets.pt_pp2, &proofs.pairing_prec_proof2);
-    pw.set_proof_with_pis_target(&targets.pt_ml1, &proofs.miller_loop_proof1);
-    pw.set_proof_with_pis_target(&targets.pt_ml2, &proofs.miller_loop_proof2);
-    pw.set_proof_with_pis_target(&targets.pt_fp12m, &proofs.fp12_mul_proof);
-    pw.set_proof_with_pis_target(&targets.pt_fe, &proofs.final_exp_proof);
 }
 
 pub async fn bls12_381_components_proofs(
@@ -267,6 +219,54 @@ pub async fn handle_pairing_precomp(
     (pp1, pp2)
 }
 
+pub fn read_yaml_file<P: AsRef<Path>>(
+    path: P,
+) -> Result<BlsComponents, Box<dyn std::error::Error>> {
+    let file_content = fs::read_to_string(path)?;
+    let mut components: BlsComponents = serde_yaml::from_str(&file_content)?;
+    components.remove_first_two_chars();
+    Ok(components)
+}
+
+pub fn set_bls_witness(
+    pw: &mut PartialWitness<F>,
+    targets: &BlsCircuitTargets,
+    components: &BlsComponents,
+    proofs: &BlsProofs,
+) {
+    pw.set_target_arr(
+        &targets.pubkey,
+        &hex::decode(&components.input.pubkey)
+            .unwrap()
+            .iter()
+            .map(|x| F::from_canonical_usize(*x as usize))
+            .collect::<Vec<F>>(),
+    );
+    pw.set_target_arr(
+        &targets.sig,
+        &hex::decode(&components.input.signature)
+            .unwrap()
+            .iter()
+            .map(|x| F::from_canonical_usize(*x as usize))
+            .collect::<Vec<F>>(),
+    );
+    pw.set_target_arr(
+        &targets.msg,
+        &hex::decode(&components.input.message)
+            .unwrap()
+            .iter()
+            .map(|x| F::from_canonical_usize(*x as usize))
+            .collect::<Vec<F>>(),
+    );
+
+    pw.set_proof_with_pis_target(&targets.pt_pp1, &proofs.pairing_prec_proof1);
+    pw.set_proof_with_pis_target(&targets.pt_pp2, &proofs.pairing_prec_proof2);
+    pw.set_proof_with_pis_target(&targets.pt_ml1, &proofs.miller_loop_proof1);
+    pw.set_proof_with_pis_target(&targets.pt_ml2, &proofs.miller_loop_proof2);
+    pw.set_proof_with_pis_target(&targets.pt_fp12m, &proofs.fp12_mul_proof);
+    pw.set_proof_with_pis_target(&targets.pt_fe, &proofs.final_exp_proof);
+}
+
 pub fn compute_native_miller_loop_from(
     g1_affine_point: G1Affine,
     g2_affine_point: G2Affine,
@@ -330,11 +330,10 @@ pub mod tests {
             panic!("Expected a file path as argument");
         }
 
-        let file_path = &args[3];
-        let x = format!("{}/{}", PATH_TO_VERIFY_ETH_TEST_CASES, file_path);
-        println!("file path is: {:?}", x);
+        let current_file_path = format!("{}/{}", PATH_TO_VERIFY_ETH_TEST_CASES, &args[3]);
+        println!("current file path is: {:?}", &current_file_path);
         let bls_components =
-            read_yaml_file(format!("{}/{}", PATH_TO_VERIFY_ETH_TEST_CASES, file_path)).unwrap();
+            read_yaml_file(format!("{}/{}", PATH_TO_VERIFY_ETH_TEST_CASES, &args[3])).unwrap();
         let standard_recursion_config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(standard_recursion_config);
 

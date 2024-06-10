@@ -1,6 +1,7 @@
 use anyhow::Result;
 use circuit::SerdeCircuitTarget;
 use circuit_executables::{
+    bls_components::{set_bls_witness, BlsComponents, BlsProofs, Input},
     constants::SERIALIZED_CIRCUITS_DIR,
     crud::{
         common::{load_circuit_data_starky, load_common_circuit_data_starky, read_from_file},
@@ -12,8 +13,8 @@ use circuits::bls_verification::bls12_381_circuit::BlsCircuitTargets;
 use futures_lite::future;
 
 use plonky2::{
-    field::{goldilocks_field::GoldilocksField, types::Field},
-    iop::witness::{PartialWitness, WitnessWrite},
+    field::goldilocks_field::GoldilocksField,
+    iop::witness::PartialWitness,
     plonk::{config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs},
     util::serialization::Buffer,
 };
@@ -41,44 +42,33 @@ async fn async_main() -> Result<()> {
 
     let mut proof_storage = create_proof_storage(&matches).await;
 
-    let mut pw = PartialWitness::<GoldilocksField>::new();
-
-    pw.set_target_arr(
-        &targets.pubkey,
-        &hex::decode(pubkey)
-            .unwrap()
-            .iter()
-            .map(|x| GoldilocksField::from_canonical_usize(*x as usize))
-            .collect::<Vec<GoldilocksField>>(),
-    );
-    pw.set_target_arr(
-        &targets.sig,
-        &hex::decode(signature)
-            .unwrap()
-            .iter()
-            .map(|x| GoldilocksField::from_canonical_usize(*x as usize))
-            .collect::<Vec<GoldilocksField>>(),
-    );
-    pw.set_target_arr(
-        &targets.msg,
-        &hex::decode(msg)
-            .unwrap()
-            .iter()
-            .map(|x| GoldilocksField::from_canonical_usize(*x as usize))
-            .collect::<Vec<GoldilocksField>>(),
-    );
-
-    let (pp1, pp2) = get_pairing_precomp_proofs(&mut proof_storage).await;
-    let (ml1, ml2) = get_miller_loop_proofs(&mut proof_storage).await;
+    let (pairing_prec_proof1, pairing_prec_proof2) =
+        get_pairing_precomp_proofs(&mut proof_storage).await;
+    let (miller_loop_proof1, miller_loop_proof2) = get_miller_loop_proofs(&mut proof_storage).await;
     let fp12_mul_proof = get_fp12_mul_proof(&mut proof_storage).await;
     let final_exp_proof = get_final_exp_proof(&mut proof_storage).await;
 
-    pw.set_proof_with_pis_target(&targets.pt_pp1, &pp1);
-    pw.set_proof_with_pis_target(&targets.pt_pp2, &pp2);
-    pw.set_proof_with_pis_target(&targets.pt_ml1, &ml1);
-    pw.set_proof_with_pis_target(&targets.pt_ml2, &ml2);
-    pw.set_proof_with_pis_target(&targets.pt_fp12m, &fp12_mul_proof);
-    pw.set_proof_with_pis_target(&targets.pt_fe, &final_exp_proof);
+    let mut pw = PartialWitness::<GoldilocksField>::new();
+    set_bls_witness(
+        &mut pw,
+        &targets,
+        &BlsComponents {
+            input: Input {
+                pubkey: pubkey.to_string(),
+                signature: signature.to_string(),
+                message: msg.to_string(),
+            },
+            output: true,
+        },
+        &BlsProofs {
+            pairing_prec_proof1,
+            pairing_prec_proof2,
+            miller_loop_proof2,
+            miller_loop_proof1,
+            fp12_mul_proof,
+            final_exp_proof,
+        },
+    );
 
     println!("Starting proof generation");
 
