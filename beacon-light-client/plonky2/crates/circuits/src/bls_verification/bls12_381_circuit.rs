@@ -28,7 +28,7 @@ use starky_bls12_381::{
 
 use crate::utils::circuit::verify_proof;
 
-const N: usize = 12;
+pub const N: usize = 12;
 
 #[derive(CircuitTarget, SerdeCircuitTarget)]
 pub struct BlsCircuitTargets {
