@@ -213,12 +213,10 @@ pub mod tests {
             final_exponentiate_circuit_data,
         );
 
-        BLSVerificationCircuit::define(&mut builder, &params);
-
+        let (targets, circuit) = BLSVerificationCircuit::build(&params);
         let pw = PartialWitness::new();
-        let data = builder.build::<C>();
-        let proof = data.prove(pw)?;
+        let proof = circuit.prove(pw).unwrap();
 
-        data.verify(proof)
+        circuit.verify(proof)
     }
 }
