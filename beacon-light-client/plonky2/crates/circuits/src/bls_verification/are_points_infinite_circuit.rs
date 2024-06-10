@@ -159,8 +159,7 @@ pub mod tests {
     use plonky2::{
         iop::witness::PartialWitness,
         plonk::{
-            circuit_builder::CircuitBuilder,
-            circuit_data::{CircuitConfig, CircuitData},
+            circuit_data::CircuitData,
             config::{GenericConfig, PoseidonGoldilocksConfig},
         },
     };
@@ -193,9 +192,6 @@ pub mod tests {
 
     #[test]
     fn test_bls12_381_circuit() -> std::result::Result<(), anyhow::Error> {
-        let standard_recursion_config = CircuitConfig::standard_recursion_config();
-        let mut builder = CircuitBuilder::<F, D>::new(standard_recursion_config);
-
         let pairing_precomp_circuit_data =
             load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/pairing_precomp"));
         let miller_loop_circuit_data =
@@ -213,7 +209,7 @@ pub mod tests {
             final_exponentiate_circuit_data,
         );
 
-        let (targets, circuit) = BLSVerificationCircuit::build(&params);
+        let (_, circuit) = BLSVerificationCircuit::build(&params);
         let pw = PartialWitness::new();
         let proof = circuit.prove(pw).unwrap();
 
