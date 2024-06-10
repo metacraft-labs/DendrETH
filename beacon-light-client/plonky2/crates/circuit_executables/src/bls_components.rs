@@ -83,7 +83,7 @@ pub async fn bls12_381_components_proofs(
 
     let miller_loop2 = compute_native_miller_loop_from(neg_g1.into_affine(), signature_g2);
 
-    let fp12_mull = miller_loop1 * miller_loop2;
+    let fp12_mul = miller_loop1 * miller_loop2;
 
     // PROVING HAPPENS HERE
     let (pairing_prec_proof1, pairing_prec_proof2) =
@@ -94,7 +94,7 @@ pub async fn bls12_381_components_proofs(
 
     let fp12_mul_proof = handle_fp12_mul(&miller_loop1, &miller_loop2).await;
 
-    let final_exp_proof = handle_final_exponentiation(&fp12_mull).await;
+    let final_exp_proof = handle_final_exponentiation(&fp12_mul).await;
 
     let circuit_data = load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/bls12_381"));
     let target_bytes = read_from_file(&format!(
