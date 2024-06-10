@@ -15,7 +15,7 @@ import { RequestOptions } from 'https';
 
 const logger = getGenericLogger();
 
-task('balance-verifier-publisher-lido', 'Run relayer')
+task('balance-verifier-publisher-diva', 'Run relayer')
   .addParam('balanceVerifier', 'The address of the BalanceVerifier contract')
   .addParam(
     'privateKey',
@@ -94,7 +94,7 @@ task('balance-verifier-publisher-lido', 'Run relayer')
     logger.info(`Contract address ${args.balanceVerifier}`);
 
     const balanceVerifierContract = await ethers.getContractAt(
-      'contracts/balance_verifier/BalanceVerifierLido.sol',
+      'contracts/balance_verifier/BalanceVerifierDiva.sol',
       args.balanceVerifier,
       publisher,
     );
@@ -119,15 +119,13 @@ task('balance-verifier-publisher-lido', 'Run relayer')
     redis.subscribeForGnarkProofs(protocol, async () => {
       console.log('Received new proof');
       let final_layer_proof_string = (await redis.get(
-        `${protocol}:deposit_balance_verification_final_proof`,
+        `${protocol}:final_layer_proof`,
       ))!;
 
       const final_layer_proof_json = JSON.parse(final_layer_proof_string);
 
       let final_layer_proof_input = JSON.parse(
-        (await redis.get(
-          `${protocol}:deposit_balance_verification_final_proof_input`,
-        ))!,
+        (await redis.get(`${protocol}:final_proof_input`))!,
       );
 
       let balance_wrapper_proof_with_public_inputs =
@@ -181,7 +179,7 @@ task('balance-verifier-publisher-lido', 'Run relayer')
             [
               proof,
               final_layer_proof_input.slot,
-              final_layer_proof_input.executionBlockNumber,
+              final_layer_proof_input.blockNumber,
               balanceSum,
               numberOfNonActivatedValidators,
               numberOfActiveValidators,
