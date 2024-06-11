@@ -17,7 +17,12 @@ async function publishTask() {
   const contractAddress = process.argv[3];
   const followNetwork = process.argv[4];
 
-  if (followNetwork !== 'mainnet' && followNetwork !== 'pratter') {
+  if (
+    followNetwork !== 'mainnet' &&
+    followNetwork !== 'pratter' &&
+    followNetwork !== 'sepolia' &&
+    followNetwork !== 'sepolia'
+  ) {
     console.warn('This follownetwork is not specified in networkconfig');
     return;
   }
