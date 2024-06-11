@@ -1223,6 +1223,8 @@ version = "0.1.0"
 dependencies = [
  "ahash 0.8.11",
  "anyhow",
+ "ark-bls12-381",
+ "ark-serialize",
  "circuit",
  "circuit_derive",
  "hex",
