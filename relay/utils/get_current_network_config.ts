@@ -21,14 +21,36 @@ const defaultConfig: Config = {
 };
 
 export async function getNetworkConfig(
-  network: 'pratter' | 'mainnet',
+  network: 'pratter' | 'mainnet' | 'sepolia' | 'chiado',
 ): Promise<Config> {
   let config: Config = { ...defaultConfig, NETWORK_NAME: network };
   config.NETWORK_NAME = network;
-  config.BEACON_REST_API[0] =
-    network === 'mainnet'
-      ? process.env.BEACON_REST_API_MAINNET ?? 'default_mainnet_rest_api_url'
-      : process.env.BEACON_REST_API_PRATER ?? 'default_prater_rest_api_url';
+  switch (network) {
+    case 'pratter': {
+      config.BEACON_REST_API[0] =
+        process.env.BEACON_REST_API_PRATER || 'default_prater_rest_api_url';
+      break;
+    }
+    case 'mainnet': {
+      config.BEACON_REST_API[0] =
+        process.env.BEACON_REST_API_MAINNET || 'default_mainnet_rest_api_url';
+      break;
+    }
+    case 'sepolia': {
+      config.BEACON_REST_API[0] =
+        process.env.BEACON_REST_API_SEPOLIA || 'default_sepolia_rest_api_url';
+      break;
+    }
+    case 'chiado': {
+      config.BEACON_REST_API[0] =
+        process.env.BEACON_REST_API_CHIADO || 'default_chiado_rest_api_url';
+      break;
+    }
+    default: {
+      throw new Error('Network not supported');
+      break;
+    }
+  }
 
   const response = await fetch(config.BEACON_REST_API + '/eth/v1/config/spec');
   if (!response.ok) {
