@@ -1,7 +1,7 @@
-use crate::serializers::{biguint_to_str, parse_biguint, serde_bool_array_to_hex_string};
+use crate::serializers::serde_bool_array_to_hex_string;
+use circuit::{serde::serde_u64_str, targets::uint::Uint64Target};
 use circuit_derive::{PublicInputsReadable, SerdeCircuitTarget, TargetPrimitive};
 use plonky2::iop::target::{BoolTarget, Target};
-use plonky2_crypto::biguint::BigUintTarget;
 
 use crate::common_targets::PubkeyTarget;
 
@@ -17,8 +17,8 @@ pub struct ValidatorStatusStatsTarget {
 #[derive(Clone, Debug, TargetPrimitive, PublicInputsReadable, SerdeCircuitTarget)]
 #[serde(rename_all = "camelCase")]
 pub struct AccumulatedDataTarget {
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub balance: BigUintTarget,
+    #[serde(with = "serde_u64_str")]
+    pub balance: Uint64Target,
     pub deposits_count: Target,
     pub validator_status_stats: ValidatorStatusStatsTarget,
 }
@@ -26,8 +26,8 @@ pub struct AccumulatedDataTarget {
 #[derive(Clone, Debug, TargetPrimitive, PublicInputsReadable, SerdeCircuitTarget)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidatorDataTarget {
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub balance: BigUintTarget,
+    #[serde(with = "serde_u64_str")]
+    pub balance: Uint64Target,
 
     pub is_non_activated: BoolTarget,
     pub is_active: BoolTarget,
@@ -41,8 +41,8 @@ pub struct DepositDataTarget {
     #[serde(with = "serde_bool_array_to_hex_string")]
     pub pubkey: PubkeyTarget,
     pub validator: ValidatorDataTarget,
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub deposit_index: BigUintTarget,
+    #[serde(with = "serde_u64_str")]
+    pub deposit_index: Uint64Target,
     pub is_counted: BoolTarget,
     pub is_dummy: BoolTarget,
 }

@@ -1,17 +1,14 @@
 use crate::{
     common_targets::{PoseidonMerkleBranchTarget, Sha256MerkleBranchTarget},
     pubkey_commitment_mapper::first_level::PubkeyCommitmentMapperFL,
-    serializers::{
-        biguint_to_str, parse_biguint, serde_bool_array_to_hex_string,
-        serde_bool_array_to_hex_string_nested,
-    },
+    serializers::{serde_bool_array_to_hex_string, serde_bool_array_to_hex_string_nested},
     utils::circuit::{
         assert_slot_is_in_epoch::assert_slot_is_in_epoch,
-        biguint_to_bits_target, bits_to_bytes_target,
+        bits_to_bytes_target,
         hashing::{
             merkle::{
                 poseidon::assert_merkle_proof_is_valid_const_poseidon,
-                sha256::assert_merkle_proof_is_valid_const_sha256, ssz::ssz_num_to_bits,
+                sha256::assert_merkle_proof_is_valid_const_sha256,
             },
             sha256::sha256,
         },
@@ -19,7 +16,10 @@ use crate::{
     },
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
 };
-use circuit::{Circuit, CircuitInputTarget, CircuitOutputTarget};
+use circuit::{
+    serde::serde_u64_str, targets::uint::Uint64Target, Circuit, CircuitInputTarget,
+    CircuitOutputTarget, SSZHashTreeRoot,
+};
 use circuit_derive::{CircuitTarget, SerdeCircuitTarget};
 use plonky2::{
     field::{extension::Extendable, goldilocks_field::GoldilocksField},
@@ -32,7 +32,6 @@ use plonky2::{
         proof::ProofWithPublicInputsTarget,
     },
 };
-use plonky2_crypto::biguint::BigUintTarget;
 
 use crate::common_targets::Sha256Target;
 
@@ -68,16 +67,16 @@ pub struct DepositAccumulatorBalanceAggregatorDivaFinalLayerTarget {
 
     // Public input
     #[target(in)]
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub execution_block_number: BigUintTarget,
+    #[serde(with = "serde_u64_str")]
+    pub execution_block_number: Uint64Target,
     #[target(in)]
     #[serde(with = "serde_bool_array_to_hex_string_nested")]
     pub execution_block_number_branch: Sha256MerkleBranchTarget<10>,
 
     // Public input
     #[target(in)]
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub slot: BigUintTarget,
+    #[serde(with = "serde_u64_str")]
+    pub slot: Uint64Target,
     #[target(in)]
     #[serde(with = "serde_bool_array_to_hex_string_nested")]
     pub slot_branch: Sha256MerkleBranchTarget<5>,
@@ -169,7 +168,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorDivaFinalLayer {
             &validators_commitment_mapper_root_pis.sha256_hash_tree_root,
         );
 
-        assert_slot_is_in_epoch(builder, &input.slot, &balance_aggregation_pis.current_epoch);
+        assert_slot_is_in_epoch(builder, input.slot, balance_aggregation_pis.current_epoch);
 
         let mut public_inputs_hash = hash_public_inputs(
             builder,
@@ -236,7 +235,7 @@ fn validate_data_against_block_root<F: RichField + Extendable<D>, const D: usize
         5767168,
     );
 
-    let slot_ssz = ssz_num_to_bits(builder, &input.slot, 64);
+    let slot_ssz = input.slot.ssz_hash_tree_root(builder);
 
     assert_merkle_proof_is_valid_const_sha256(
         builder,
@@ -246,7 +245,7 @@ fn validate_data_against_block_root<F: RichField + Extendable<D>, const D: usize
         34,
     );
 
-    let block_number_ssz = ssz_num_to_bits(builder, &input.execution_block_number, 64);
+    let block_number_ssz = input.execution_block_number.ssz_hash_tree_root(builder);
 
     assert_merkle_proof_is_valid_const_sha256(
         builder,
@@ -265,10 +264,12 @@ fn hash_public_inputs<F: RichField + Extendable<D>, const D: usize>(
     >,
     pubkey_commitment_mapper_pis: &CircuitOutputTarget<PubkeyCommitmentMapperFL>,
 ) -> Sha256Target {
-    let balance_bits =
-        biguint_to_bits_target(builder, &balance_aggregation_pis.accumulated_data.balance);
+    let balance_bits = balance_aggregation_pis
+        .accumulated_data
+        .balance
+        .to_be_bits(builder);
 
-    let block_number_bits = biguint_to_bits_target(builder, &input.execution_block_number);
+    let block_number_bits = input.execution_block_number.to_be_bits(builder);
 
     let number_of_non_activated_validators_bits = target_to_be_bits(
         builder,

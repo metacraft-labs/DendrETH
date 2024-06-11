@@ -5,7 +5,10 @@ use crate::{
         assert_bool_arrays_are_equal, hashing::poseidon::poseidon_pair, verify_proof,
     },
 };
-use circuit::{Circuit, CircuitOutputTarget};
+use circuit::{
+    circuit_builder_extensions::CircuitBuilderExtensions, targets::uint::ops::arithmetic::Add,
+    Circuit, CircuitOutputTarget,
+};
 use plonky2::{
     field::{extension::Extendable, goldilocks_field::GoldilocksField},
     hash::hash_types::RichField,
@@ -15,7 +18,6 @@ use plonky2::{
         config::PoseidonGoldilocksConfig,
     },
 };
-use plonky2_crypto::biguint::CircuitBuilderBiguint;
 
 use super::first_level::{
     DepositAccumulatorBalanceAggregatorDivaFirstLevel, DivaAccumulatedDataTarget,
@@ -80,16 +82,11 @@ fn accumulate_data<F: RichField + Extendable<D>, const D: usize>(
     left_range: &CircuitOutputTarget<DepositAccumulatorBalanceAggregatorDivaFirstLevel>,
     right_range: &CircuitOutputTarget<DepositAccumulatorBalanceAggregatorDivaFirstLevel>,
 ) -> DivaAccumulatedDataTarget {
-    let mut balance = builder.add_biguint(
-        &left_range.accumulated_data.balance,
-        &right_range.accumulated_data.balance,
-    );
-
-    // pop carry
-    balance.limbs.pop();
-
     DivaAccumulatedDataTarget {
-        balance,
+        balance: left_range
+            .accumulated_data
+            .balance
+            .add(right_range.accumulated_data.balance, builder),
         validator_status_stats: accumulate_validator_stats(
             builder,
             &left_range.accumulated_data.validator_status_stats,
@@ -116,7 +113,7 @@ fn connect_pass_through_data<F: RichField + Extendable<D>, const D: usize>(
     l_input: &CircuitOutputTarget<DepositAccumulatorBalanceAggregatorDivaFirstLevel>,
     r_input: &CircuitOutputTarget<DepositAccumulatorBalanceAggregatorDivaFirstLevel>,
 ) {
-    builder.connect_biguint(&l_input.current_epoch, &r_input.current_epoch);
+    builder.assert_targets_are_equal(&l_input.current_epoch, &r_input.current_epoch);
     builder.connect_hashes(
         l_input.validators_commitment_mapper_root,
         r_input.validators_commitment_mapper_root,

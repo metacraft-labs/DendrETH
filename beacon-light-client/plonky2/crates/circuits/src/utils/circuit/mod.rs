@@ -1,6 +1,11 @@
-use circuit::circuit_builder_extensions::CircuitBuilderExtensions;
+use circuit::{
+    circuit_builder_extensions::CircuitBuilderExtensions,
+    targets::uint::{
+        ops::{arithmetic::Zero, comparison::EqualTo},
+        Uint64Target,
+    },
+};
 use itertools::Itertools;
-use num::BigUint;
 use plonky2::{
     field::extension::Extendable,
     hash::hash_types::RichField,
@@ -18,8 +23,6 @@ use plonky2_crypto::{
 };
 
 use crate::common_targets::SSZTarget;
-
-use self::hashing::merkle::ssz::ssz_num_from_bits;
 
 pub mod assert_slot_is_in_epoch;
 pub mod hashing;
@@ -238,7 +241,7 @@ pub fn biguint_is_equal_non_equal_limbs<F: RichField + Extendable<D>, const D: u
     ret
 }
 
-pub fn split_into_chunks(leaf: &[BoolTarget; 256]) -> [[BoolTarget; 64]; 4] {
+fn split_into_chunks(leaf: &[BoolTarget; 256]) -> [[BoolTarget; 64]; 4] {
     let mut chunks = Vec::new();
 
     for i in 0..4 {
@@ -251,22 +254,18 @@ pub fn split_into_chunks(leaf: &[BoolTarget; 256]) -> [[BoolTarget; 64]; 4] {
 pub fn get_balance_from_leaf<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     leaf: &SSZTarget,
-    balance_index: BigUintTarget,
-) -> BigUintTarget {
+    balance_index: Uint64Target,
+) -> Uint64Target {
     let balances_in_leaf = split_into_chunks(leaf);
-    let mut accumulator = ssz_num_from_bits(builder, &balances_in_leaf[0].clone());
-    for i in 1..balances_in_leaf.len() {
-        let current_index_t = builder.constant_biguint(&BigUint::from(i as u32));
-        let current_balance_in_leaf = ssz_num_from_bits(builder, &balances_in_leaf[i].clone());
+    let mut accumulator = Uint64Target::zero(builder);
+    for i in 0..balances_in_leaf.len() {
+        let current_index_t = Uint64Target::constant(i as u64, builder);
+        let current_balance_in_leaf = Uint64Target::from_le_bytes(&balances_in_leaf[i], builder);
 
-        let selector_enabled =
-            biguint_is_equal_non_equal_limbs(builder, &current_index_t, &balance_index);
-        accumulator = select_biguint(
-            builder,
-            selector_enabled,
-            &current_balance_in_leaf,
-            &accumulator,
-        );
+        let selector_enabled = current_index_t.equal_to(balance_index, builder);
+
+        accumulator =
+            builder.select_target(selector_enabled, &current_balance_in_leaf, &accumulator);
     }
 
     accumulator
@@ -298,6 +297,10 @@ pub fn biguint_is_equal<F: RichField + Extendable<D>, const D: usize>(
 #[cfg(test)]
 mod test_ssz_num_from_bits {
     use anyhow::Result;
+    use circuit::{
+        circuit_builder_extensions::CircuitBuilderExtensions,
+        targets::uint::{ops::arithmetic::Zero, Uint64Target},
+    };
     use itertools::Itertools;
     use num::{BigUint, Num};
     use plonky2::{
@@ -478,10 +481,11 @@ mod test_ssz_num_from_bits {
         .try_into()
         .unwrap();
 
-        let balance_index_0 = builder.zero_biguint();
-        let balance_index_1 = builder.constant_biguint(&BigUint::from(1 as u32));
-        let balance_index_2 = builder.constant_biguint(&BigUint::from(2 as u32));
-        let balance_index_3 = builder.constant_biguint(&BigUint::from(3 as u32));
+        let balance_index_0 = Uint64Target::zero(&mut builder);
+        let balance_index_1 = Uint64Target::constant(1, &mut builder);
+        let balance_index_2 = Uint64Target::constant(2, &mut builder);
+        let balance_index_3 = Uint64Target::constant(3, &mut builder);
+
         let balance_from_leaf_at_index_0 =
             get_balance_from_leaf(&mut builder, &leaf, balance_index_0);
         let balance_from_leaf_at_index_1 =
@@ -491,19 +495,19 @@ mod test_ssz_num_from_bits {
         let balance_from_leaf_at_index_3 =
             get_balance_from_leaf(&mut builder, &leaf, balance_index_3);
 
-        let expected_balance_at_index_0 =
-            builder.constant_biguint(&BigUint::from(32000579388 as u64));
-        let expected_balance_at_index_1 =
-            builder.constant_biguint(&BigUint::from(32000574671 as u64));
-        let expected_balance_at_index_2 =
-            builder.constant_biguint(&BigUint::from(32000579312 as u64));
-        let expected_balance_at_index_3 =
-            builder.constant_biguint(&BigUint::from(32000581683 as u64));
+        let expected_balance_at_index_0 = Uint64Target::constant(32000579388, &mut builder);
+        let expected_balance_at_index_1 = Uint64Target::constant(32000574671, &mut builder);
+        let expected_balance_at_index_2 = Uint64Target::constant(32000579312, &mut builder);
+        let expected_balance_at_index_3 = Uint64Target::constant(32000581683, &mut builder);
 
-        builder.connect_biguint(&balance_from_leaf_at_index_0, &expected_balance_at_index_0);
-        builder.connect_biguint(&balance_from_leaf_at_index_1, &expected_balance_at_index_1);
-        builder.connect_biguint(&balance_from_leaf_at_index_2, &expected_balance_at_index_2);
-        builder.connect_biguint(&balance_from_leaf_at_index_3, &expected_balance_at_index_3);
+        builder
+            .assert_targets_are_equal(&balance_from_leaf_at_index_0, &expected_balance_at_index_0);
+        builder
+            .assert_targets_are_equal(&balance_from_leaf_at_index_1, &expected_balance_at_index_1);
+        builder
+            .assert_targets_are_equal(&balance_from_leaf_at_index_2, &expected_balance_at_index_2);
+        builder
+            .assert_targets_are_equal(&balance_from_leaf_at_index_3, &expected_balance_at_index_3);
 
         let pw = PartialWitness::new();
         let data = builder.build::<PoseidonGoldilocksConfig>();

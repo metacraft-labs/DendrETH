@@ -1,26 +1,22 @@
-use circuit::circuit_builder_extensions::CircuitBuilderExtensions;
+use circuit::{
+    circuit_builder_extensions::CircuitBuilderExtensions, targets::uint::Uint64Target,
+    SSZHashTreeRoot,
+};
 use itertools::Itertools;
-use num_bigint::BigUint;
 use plonky2::{
     field::extension::Extendable, hash::hash_types::RichField, iop::target::BoolTarget,
     plonk::circuit_builder::CircuitBuilder,
 };
-use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint};
 
 use crate::{
     common_targets::{
         MerklelizedValidatorTarget, SSZTarget, Sha256MerkleBranchTarget, Sha256Target,
         ValidatorTarget,
     },
-    utils::circuit::{
-        biguint_to_le_bits_target, bool_arrays_are_equal, hashing::sha256::sha256_pair,
-    },
+    utils::circuit::{bool_arrays_are_equal, hashing::sha256::sha256_pair},
 };
 
-use super::{
-    pick_left_and_right_hash,
-    ssz::{ssz_merklelize_bool, ssz_num_to_bits},
-};
+use super::{pick_left_and_right_hash, ssz::ssz_merklelize_bool};
 
 pub fn restore_merkle_root_sha256<
     const DEPTH: usize,
@@ -30,9 +26,9 @@ pub fn restore_merkle_root_sha256<
     builder: &mut CircuitBuilder<F, D>,
     leaf: &Sha256Target,
     branch: &Sha256MerkleBranchTarget<DEPTH>,
-    gindex: &BigUintTarget,
+    gindex: Uint64Target,
 ) -> Sha256Target {
-    let bits = biguint_to_le_bits_target(builder, &gindex);
+    let bits = gindex.to_le_bits(builder);
     let mut current = leaf.clone();
 
     for level in 0..DEPTH {
@@ -53,7 +49,7 @@ pub fn validate_merkle_proof_sha256<
     leaf: &Sha256Target,
     root: &Sha256Target,
     branch: &Sha256MerkleBranchTarget<DEPTH>,
-    gindex: &BigUintTarget,
+    gindex: Uint64Target,
 ) -> BoolTarget {
     let restored_root = restore_merkle_root_sha256(builder, leaf, branch, gindex);
     bool_arrays_are_equal(builder, root, &restored_root)
@@ -68,7 +64,7 @@ pub fn assert_merkle_proof_is_valid_sha256<
     leaf: &Sha256Target,
     root: &Sha256Target,
     branch: &Sha256MerkleBranchTarget<DEPTH>,
-    gindex: &BigUintTarget,
+    gindex: Uint64Target,
 ) {
     let is_valid = validate_merkle_proof_sha256(builder, leaf, root, branch, gindex);
     builder.assert_true(is_valid);
@@ -85,8 +81,8 @@ pub fn validate_merkle_proof_const_sha256<
     branch: &Sha256MerkleBranchTarget<DEPTH>,
     gindex: u64,
 ) -> BoolTarget {
-    let gindex_target = builder.constant_biguint(&BigUint::from(gindex));
-    let restored_root = restore_merkle_root_sha256(builder, leaf, branch, &gindex_target);
+    let gindex_target = Uint64Target::constant(gindex, builder);
+    let restored_root = restore_merkle_root_sha256(builder, leaf, branch, gindex_target);
     bool_arrays_are_equal(builder, root, &restored_root)
 }
 
@@ -166,15 +162,13 @@ pub fn merklelize_validator_target<F: RichField + Extendable<D>, const D: usize>
     MerklelizedValidatorTarget {
         pubkey: [first_pubkey_leaf, second_pubkey_leaf],
         withdrawal_credentials: validator.withdrawal_credentials,
-        effective_balance: ssz_num_to_bits(builder, &validator.effective_balance, 64),
+        effective_balance: validator.effective_balance.ssz_hash_tree_root(builder),
         slashed: ssz_merklelize_bool(builder, validator.slashed),
-        activation_eligibility_epoch: ssz_num_to_bits(
-            builder,
-            &validator.activation_eligibility_epoch,
-            64,
-        ),
-        activation_epoch: ssz_num_to_bits(builder, &validator.activation_epoch, 64),
-        exit_epoch: ssz_num_to_bits(builder, &validator.exit_epoch, 64),
-        withdrawable_epoch: ssz_num_to_bits(builder, &validator.withdrawable_epoch, 64),
+        activation_eligibility_epoch: validator
+            .activation_eligibility_epoch
+            .ssz_hash_tree_root(builder),
+        activation_epoch: validator.activation_epoch.ssz_hash_tree_root(builder),
+        exit_epoch: validator.exit_epoch.ssz_hash_tree_root(builder),
+        withdrawable_epoch: validator.withdrawable_epoch.ssz_hash_tree_root(builder),
     }
 }

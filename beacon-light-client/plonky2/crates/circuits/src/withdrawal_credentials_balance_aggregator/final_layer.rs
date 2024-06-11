@@ -1,22 +1,18 @@
 use crate::{
     common_targets::{Sha256MerkleBranchTarget, Sha256Target},
-    serializers::{
-        biguint_to_str, parse_biguint, serde_bool_array_to_hex_string,
-        serde_bool_array_to_hex_string_nested,
-    },
+    serializers::{serde_bool_array_to_hex_string, serde_bool_array_to_hex_string_nested},
     utils::circuit::{
         assert_slot_is_in_epoch::assert_slot_is_in_epoch,
-        biguint_to_bits_target, bits_to_bytes_target,
-        hashing::{
-            merkle::{sha256::assert_merkle_proof_is_valid_const_sha256, ssz::ssz_num_to_bits},
-            sha256::sha256,
-        },
+        bits_to_bytes_target,
+        hashing::{merkle::sha256::assert_merkle_proof_is_valid_const_sha256, sha256::sha256},
         target_to_be_bits, verify_proof,
     },
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
     withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
-use circuit::{Circuit, CircuitInputTarget};
+use circuit::{
+    serde::serde_u64_str, targets::uint::Uint64Target, Circuit, CircuitInputTarget, SSZHashTreeRoot,
+};
 use circuit_derive::CircuitTarget;
 use itertools::Itertools;
 use plonky2::{
@@ -30,7 +26,6 @@ use plonky2::{
         proof::ProofWithPublicInputsTarget,
     },
 };
-use plonky2_crypto::biguint::BigUintTarget;
 
 const D: usize = 2;
 
@@ -38,8 +33,8 @@ const D: usize = 2;
 #[serde(rename_all = "camelCase")]
 pub struct FinalCircuitTargets<const WITHDRAWAL_CREDENTIALS_COUNT: usize> {
     #[target(in)]
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub slot: BigUintTarget,
+    #[serde(with = "serde_u64_str")]
+    pub slot: Uint64Target,
 
     #[target(in)]
     #[serde(with = "serde_bool_array_to_hex_string_nested")]
@@ -124,10 +119,11 @@ impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
             &validators_commitment_mapper_pi.sha256_hash_tree_root,
         );
 
-        assert_slot_is_in_epoch(builder, &input.slot, &balance_verification_pi.current_epoch);
+        assert_slot_is_in_epoch(builder, input.slot, balance_verification_pi.current_epoch);
 
-        let accumulated_balance_bits =
-            biguint_to_bits_target(builder, &balance_verification_pi.range_total_value);
+        let accumulated_balance_bits = balance_verification_pi
+            .range_total_value
+            .to_be_bits(builder);
 
         let flattened_withdrawal_credentials = balance_verification_pi
             .withdrawal_credentials
@@ -221,7 +217,7 @@ fn validate_input_against_block_root<
         88,
     );
 
-    let slot_ssz = ssz_num_to_bits(builder, &input.slot, 64);
+    let slot_ssz = input.slot.ssz_hash_tree_root(builder);
 
     assert_merkle_proof_is_valid_const_sha256(
         builder,

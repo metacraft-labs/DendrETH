@@ -7,7 +7,10 @@ use crate::{
     },
     withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
 };
-use circuit::{Circuit, CircuitOutputTarget};
+use circuit::{
+    circuit_builder_extensions::CircuitBuilderExtensions, targets::uint::ops::arithmetic::Add,
+    Circuit, CircuitOutputTarget,
+};
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     plonk::{
@@ -16,7 +19,6 @@ use plonky2::{
         config::PoseidonGoldilocksConfig,
     },
 };
-use plonky2_crypto::biguint::CircuitBuilderBiguint;
 
 pub struct WithdrawalCredentialsBalanceAggregatorInnerLevel<
     const VALIDATORS_COUNT: usize,
@@ -92,11 +94,9 @@ where
             r_input.number_of_slashed_validators,
         );
 
-        let mut range_total_value =
-            builder.add_biguint(&l_input.range_total_value, &r_input.range_total_value);
-
-        // pop carry
-        range_total_value.limbs.pop();
+        let range_total_value = l_input
+            .range_total_value
+            .add(r_input.range_total_value, builder);
 
         for i in 0..WITHDRAWAL_CREDENTIALS_COUNT {
             connect_bool_arrays(
@@ -106,7 +106,7 @@ where
             );
         }
 
-        builder.connect_biguint(&l_input.current_epoch, &r_input.current_epoch);
+        builder.assert_targets_are_equal(&l_input.current_epoch, &r_input.current_epoch);
 
         let output_target = CircuitOutputTarget::<
             WithdrawalCredentialsBalanceAggregatorFirstLevel<
