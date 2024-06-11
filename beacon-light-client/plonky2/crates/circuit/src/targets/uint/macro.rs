@@ -30,6 +30,24 @@ macro_rules! make_uint32_n {
                 }
             }
 
+            pub fn truncate_biguint<F: RichField + Extendable<D>, const D: usize>(
+                biguint: &BigUintTarget,
+                builder: &mut CircuitBuilder<F, D>,
+            ) -> Self {
+                let zero = U32Target(builder.zero());
+                Self {
+                    limbs: biguint
+                        .limbs
+                        .iter()
+                        .take($c)
+                        .pad_using($c, |_| &zero)
+                        .copied()
+                        .collect_vec()
+                        .try_into()
+                        .unwrap(),
+                }
+            }
+
             pub fn from_le_bits<F: RichField + Extendable<D>, const D: usize>(
                 bits: &[BoolTarget],
                 builder: &mut CircuitBuilder<F, D>,
