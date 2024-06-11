@@ -29,6 +29,34 @@ macro_rules! make_uint32_n {
                     limbs: self.limbs.to_vec(),
                 }
             }
+
+            pub fn from_le_bits<F: RichField + Extendable<D>, const D: usize>(
+                bits: &[BoolTarget],
+                builder: &mut CircuitBuilder<F, D>,
+            ) -> Self {
+                assert_eq!(bits.len(), $c * 32);
+
+                Self {
+                    limbs: bits
+                        .into_iter()
+                        .chunks(32)
+                        .into_iter()
+                        .map(|limb_bits| U32Target(builder.le_sum(limb_bits)))
+                        .collect_vec()
+                        .try_into()
+                        .unwrap(),
+                }
+            }
+
+            pub fn to_le_bits<F: RichField + Extendable<D>, const D: usize>(
+                self,
+                builder: &mut CircuitBuilder<F, D>,
+            ) -> Vec<BoolTarget> {
+                self.limbs
+                    .into_iter()
+                    .flat_map(|limb| builder.split_le(limb.0, 32))
+                    .collect_vec()
+            }
         }
 
         impl TargetPrimitive for $a {
