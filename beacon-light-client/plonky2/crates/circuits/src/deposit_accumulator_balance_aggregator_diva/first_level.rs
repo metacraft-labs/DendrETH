@@ -1,10 +1,7 @@
 use crate::{
     common_targets::{PubkeyTarget, Sha256MerkleBranchTarget},
     deposits_accumulator_balance_aggregator::common_targets::ValidatorStatusStatsTarget,
-    serializers::{
-        biguint_to_str, parse_biguint, serde_bool_array_to_hex_string,
-        serde_bool_array_to_hex_string_nested,
-    },
+    serializers::{serde_bool_array_to_hex_string, serde_bool_array_to_hex_string_nested},
     utils::circuit::{
         assert_bool_arrays_are_equal, get_balance_from_leaf,
         hashing::{
@@ -14,13 +11,19 @@ use crate::{
             },
             poseidon::poseidon_or_zeroes,
         },
-        select_biguint,
         validator_status::{get_validator_relevance, get_validator_status},
     },
 };
-use circuit::{circuit_builder_extensions::CircuitBuilderExtensions, Circuit, ToTargets};
+use circuit::{
+    circuit_builder_extensions::CircuitBuilderExtensions,
+    serde::serde_u64_str,
+    targets::uint::{
+        ops::arithmetic::{Div, Rem, Zero},
+        Uint64Target,
+    },
+    Circuit, ToTargets,
+};
 use circuit_derive::{CircuitTarget, PublicInputsReadable, SerdeCircuitTarget, TargetPrimitive};
-use num::{BigUint, FromPrimitive};
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     hash::hash_types::HashOutTarget,
@@ -30,7 +33,6 @@ use plonky2::{
         config::PoseidonGoldilocksConfig,
     },
 };
-use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint};
 
 use crate::common_targets::{PoseidonMerkleBranchTarget, Sha256Target, ValidatorTarget};
 
@@ -39,8 +41,8 @@ pub struct DepositAccumulatorBalanceAggregatorDivaFirstLevel {}
 #[derive(Clone, Debug, TargetPrimitive, PublicInputsReadable, SerdeCircuitTarget)]
 #[serde(rename_all = "camelCase")]
 pub struct DivaAccumulatedDataTarget {
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub balance: BigUintTarget,
+    #[serde(with = "serde_u64_str")]
+    pub balance: Uint64Target,
     pub validator_status_stats: ValidatorStatusStatsTarget,
 }
 
@@ -54,8 +56,8 @@ pub struct DepositAccumulatorBalanceAggregatorDivaFirstLevelTarget {
     pub validators_commitment_mapper_branch: PoseidonMerkleBranchTarget<24>,
 
     #[target(in)]
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub validator_gindex: BigUintTarget,
+    #[serde(with = "serde_u64_str")]
+    pub validator_gindex: Uint64Target,
 
     #[target(in)]
     #[serde(with = "serde_bool_array_to_hex_string")]
@@ -73,8 +75,8 @@ pub struct DepositAccumulatorBalanceAggregatorDivaFirstLevelTarget {
     pub is_dummy: BoolTarget,
 
     #[target(in, out)]
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub current_epoch: BigUintTarget,
+    #[serde(with = "serde_u64_str")]
+    pub current_epoch: Uint64Target,
 
     #[target(in, out)]
     pub validators_commitment_mapper_root: HashOutTarget,
@@ -117,33 +119,33 @@ impl Circuit for DepositAccumulatorBalanceAggregatorDivaFirstLevel {
             &validator_hash_tree_root,
             &input.validators_commitment_mapper_root,
             &input.validators_commitment_mapper_branch,
-            &input.validator_gindex,
+            input.validator_gindex,
         );
 
         builder.assert_implication(deposit_is_real, validator_proof_is_valid);
 
         assert_bool_arrays_are_equal(builder, &input.validator.pubkey, &input.deposit_pubkey);
 
-        let four = builder.constant_biguint(&BigUint::from_u64(4u64).unwrap());
-        let balance_inner_index = builder.rem_biguint(&input.validator_gindex, &four);
+        let four = Uint64Target::constant(4, builder);
+        let balance_inner_index = input.validator_gindex.rem(four, builder);
         let balance = get_balance_from_leaf(builder, &input.balance_leaf, balance_inner_index);
-        let balance_gindex = builder.div_biguint(&input.validator_gindex, &four);
+        let balance_gindex = input.validator_gindex.div(four, builder);
 
         let balance_proof_is_valid = validate_merkle_proof_sha256(
             builder,
             &input.balance_leaf,
             &input.balances_root,
             &input.balance_branch,
-            &balance_gindex,
+            balance_gindex,
         );
 
         builder.assert_implication(deposit_is_real, balance_proof_is_valid);
 
         let (is_non_activated, is_active, is_exited) = get_validator_status(
             builder,
-            &input.validator.activation_epoch,
-            &input.current_epoch,
-            &input.validator.exit_epoch,
+            input.validator.activation_epoch,
+            input.current_epoch,
+            input.validator.exit_epoch,
         );
 
         let zero_validator_status_stats: ValidatorStatusStatsTarget = builder.zero_init();
@@ -161,13 +163,13 @@ impl Circuit for DepositAccumulatorBalanceAggregatorDivaFirstLevel {
 
         let is_relevant = get_validator_relevance(
             builder,
-            &input.validator.activation_epoch,
-            &input.current_epoch,
-            &input.validator.withdrawable_epoch,
+            input.validator.activation_epoch,
+            input.current_epoch,
+            input.validator.withdrawable_epoch,
         );
 
-        let zero_biguint = builder.zero_biguint();
-        let validator_balance = select_biguint(builder, is_relevant, &balance, &zero_biguint);
+        let zero_u64 = Uint64Target::zero(builder);
+        let validator_balance = builder.select_target(is_relevant, &balance, &zero_u64);
 
         let zero_accumulated_data: DivaAccumulatedDataTarget = builder.zero_init();
         let mut accumulated_data = DivaAccumulatedDataTarget {
@@ -204,7 +206,6 @@ mod test {
     };
 
     use circuit::{Circuit, CircuitInput, SetWitness};
-    use num::{BigUint, FromPrimitive};
     use plonky2::{field::goldilocks_field::GoldilocksField, iop::witness::PartialWitness};
 
     use crate::utils::bytes_to_bits;
@@ -238,7 +239,7 @@ mod test {
             &proof.public_inputs,
         );
 
-        assert_eq!(result.current_epoch, BigUint::from_u64(158342).unwrap());
+        assert_eq!(result.current_epoch, 158342);
         assert_eq!(
             result.validators_commitment_mapper_root.0,
             [
@@ -257,10 +258,7 @@ mod test {
         .unwrap();
 
         assert_eq!(result.balances_root.0, balance_root_bools);
-        assert_eq!(
-            result.accumulated_data.balance,
-            BigUint::from_u64(31035128496).unwrap()
-        );
+        assert_eq!(result.accumulated_data.balance, 31035128496);
 
         assert_eq!(
             result
@@ -377,7 +375,7 @@ mod test {
         >(&json_str)
         .unwrap();
 
-        json_input.validator.activation_epoch = BigUint::from_u64(817).unwrap();
+        json_input.validator.activation_epoch = 817;
 
         let s = Instant::now();
         println!("Stared building circuit");
@@ -405,7 +403,7 @@ mod test {
         >(&json_str)
         .unwrap();
 
-        json_input.validator_gindex = BigUint::from_u64(817).unwrap();
+        json_input.validator_gindex = 817;
 
         let s = Instant::now();
         println!("Stared building circuit");
@@ -451,7 +449,7 @@ mod test {
             &proof.public_inputs,
         );
 
-        assert_eq!(result.current_epoch, BigUint::from_u64(158342).unwrap());
+        assert_eq!(result.current_epoch, 158342);
         assert_eq!(
             result.validators_commitment_mapper_root.0,
             [
@@ -470,10 +468,7 @@ mod test {
         .unwrap();
 
         assert_eq!(result.balances_root.0, balance_root_bools);
-        assert_eq!(
-            result.accumulated_data.balance,
-            BigUint::from_u64(0).unwrap()
-        );
+        assert_eq!(result.accumulated_data.balance, 0);
 
         assert_eq!(
             result
