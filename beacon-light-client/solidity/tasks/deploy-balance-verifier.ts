@@ -47,7 +47,7 @@ task('deploy-balance-verifier', 'Deploy the beacon light client contract')
       const redis = new Redis(config.REDIS_HOST!, config.REDIS_PORT);
 
       let balance_wrapper_verifier_only = await redis.get(
-        'balance_wrapper_verifier_only',
+        `${args.protocol}:balance_wrapper_verifier_only`,
       );
 
       if (balance_wrapper_verifier_only === null) {

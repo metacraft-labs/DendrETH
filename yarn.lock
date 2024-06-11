@@ -1607,6 +1607,7 @@ __metadata:
     ioredis: "npm:^5.3.2"
     json-bigint: "npm:^1.0.0"
     tsx: "npm:^4.7.1"
+    web3: "npm:1.10.4"
     yargs: "npm:^17.7.2"
   languageName: unknown
   linkType: soft
@@ -1679,7 +1680,7 @@ __metadata:
     dotenv: "npm:^16.4.4"
     effect: "npm:^3.1.5"
     env-paths: "npm:^3.0.0"
-    ethers: "npm:^5.7.0"
+    ethers: "npm:5.7.2"
     hardhat: "npm:^2.22.0"
     hardhat-gas-reporter: "npm:^1.0.8"
     json-bigint: "npm:^1.0.0"
@@ -8334,7 +8335,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ethers@npm:^5.5.1, ethers@npm:^5.7.0, ethers@npm:^5.7.2":
+"ethers@npm:5.7.2, ethers@npm:^5.5.1, ethers@npm:^5.7.0, ethers@npm:^5.7.2":
   version: 5.7.2
   resolution: "ethers@npm:5.7.2"
   dependencies:

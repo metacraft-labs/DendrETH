@@ -1,7 +1,7 @@
 import { CommandLineOptionsBuilder } from '../../../utils/cmdline';
 import { getBalancesInput } from '../lib/scheduler';
-import accountManagerAbi from '../../abi/account_manager_abi.json';
-import validatorManagerAbi from '../../abi/validator_manager_abi.json';
+import accountManagerAbi from '../../../abi/account_manager_abi.json';
+import validatorManagerAbi from '../../../abi/validator_manager_abi.json';
 import { ethers } from 'ethers';
 import { exec } from 'child_process';
 import { promisify } from 'util';

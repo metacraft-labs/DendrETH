@@ -5,7 +5,7 @@ import {
   purgePubkeyCommitmentMapperData,
   rebuildCommitmentMapperTree,
 } from '../lib/pubkey_commitment_mapper_scheduler';
-import validatorsAccumulatorAbi from '../../abi/validators_accumulator_abi.json';
+import validatorsAccumulatorAbi from '../../../abi/validators_accumulator_abi.json';
 
 import { CommandLineOptionsBuilder } from '../../../utils/cmdline';
 import config from '../../../../common_config.json';
