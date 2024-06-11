@@ -6,13 +6,19 @@ use crate::{
         hashing::merkle::{
             poseidon::{hash_tree_root_poseidon, hash_validator_poseidon_or_zeroes},
             sha256::hash_tree_root_sha256,
-            ssz::ssz_num_from_bits,
         },
-        select_biguint,
         validator_status::get_validator_status,
     },
 };
-use circuit::Circuit;
+use circuit::{
+    circuit_builder_extensions::CircuitBuilderExtensions,
+    serde::serde_u64_str,
+    targets::uint::{
+        ops::arithmetic::{Add, Zero},
+        Uint64Target,
+    },
+    Circuit,
+};
 use circuit_derive::{CircuitTarget, SerdeCircuitTarget};
 use itertools::Itertools;
 
@@ -25,12 +31,8 @@ use plonky2::{
         config::PoseidonGoldilocksConfig,
     },
 };
-use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint};
 
-use crate::{
-    common_targets::Sha256Target,
-    serializers::{biguint_to_str, parse_biguint},
-};
+use crate::common_targets::Sha256Target;
 
 #[derive(CircuitTarget, SerdeCircuitTarget)]
 #[serde(rename_all = "camelCase")]
@@ -55,12 +57,12 @@ pub struct ValidatorBalanceVerificationTargets<
     pub withdrawal_credentials: [Sha256Target; WITHDRAWAL_CREDENTIALS_COUNT],
 
     #[target(in, out)]
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub current_epoch: BigUintTarget,
+    #[serde(with = "serde_u64_str")]
+    pub current_epoch: Uint64Target,
 
     #[target(out)]
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub range_total_value: BigUintTarget,
+    #[serde(with = "serde_u64_str")]
+    pub range_total_value: Uint64Target,
 
     #[target(out)]
     #[serde(with = "serde_bool_array_to_hex_string")]
@@ -128,7 +130,7 @@ where
         let validators_hash_tree_root_poseidon =
             hash_tree_root_poseidon(builder, &validators_leaves);
 
-        let mut range_total_value = builder.zero_biguint();
+        let mut range_total_value = Uint64Target::zero(builder);
         let mut number_of_non_activated_validators = builder.zero();
         let mut number_of_active_validators = builder.zero();
         let mut number_of_exited_validators = builder.zero();
@@ -147,26 +149,26 @@ where
                 validator_is_considered = builder.or(is_equal_inner, validator_is_considered);
             }
 
-            let balance = ssz_num_from_bits(
-                builder,
+            let balance = Uint64Target::from_le_bytes(
                 &input.balances_leaves[i / 4][((i % 4) * 64)..(((i % 4) * 64) + 64)],
+                builder,
             );
 
-            let zero = builder.zero_biguint();
+            let zero_u64 = Uint64Target::zero(builder);
 
             let (is_non_activated_validator, is_valid_validator, is_exited_validator) =
                 get_validator_status(
                     builder,
-                    &input.validators[i].activation_epoch,
-                    &input.current_epoch,
-                    &input.validators[i].exit_epoch,
+                    input.validators[i].activation_epoch,
+                    input.current_epoch,
+                    input.validators[i].exit_epoch,
                 );
 
             let will_be_counted = builder.and(validator_is_considered, is_valid_validator);
 
-            let current = select_biguint(builder, will_be_counted, &balance, &zero);
+            let current = builder.select_target(will_be_counted, &balance, &zero_u64);
 
-            range_total_value = builder.add_biguint(&range_total_value, &current);
+            range_total_value = range_total_value.add(current, builder);
 
             number_of_active_validators =
                 builder.add(number_of_active_validators, will_be_counted.target);
@@ -187,8 +189,6 @@ where
                 number_of_slashed_validators,
                 validator_is_considered_and_is_slashed.target,
             );
-
-            range_total_value.limbs.pop();
         }
 
         Self::Target {

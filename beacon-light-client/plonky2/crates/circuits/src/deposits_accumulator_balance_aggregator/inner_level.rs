@@ -1,4 +1,11 @@
-use circuit::{circuit_builder_extensions::CircuitBuilderExtensions, Circuit, CircuitOutputTarget};
+use circuit::{
+    circuit_builder_extensions::CircuitBuilderExtensions,
+    targets::uint::ops::{
+        arithmetic::{Add, Sub},
+        comparison::Comparison,
+    },
+    Circuit, CircuitOutputTarget,
+};
 use plonky2::{
     field::{extension::Extendable, goldilocks_field::GoldilocksField},
     hash::hash_types::RichField,
@@ -15,8 +22,7 @@ use crate::{
     common_targets::{BasicRecursiveInnerCircuitTarget, PubkeyTarget},
     deposits_accumulator_balance_aggregator::first_level::DepositAccumulatorBalanceAggregatorFirstLevel,
     utils::circuit::{
-        assert_bool_arrays_are_equal, biguint_is_equal, bits_to_biguint_target,
-        bool_arrays_are_equal, verify_proof,
+        assert_bool_arrays_are_equal, bits_to_biguint_target, bool_arrays_are_equal, verify_proof,
     },
 };
 
@@ -96,11 +102,12 @@ fn connect_pass_through_data<F: RichField + Extendable<D>, const D: usize>(
     left_range: &CircuitOutputTarget<DepositAccumulatorBalanceAggregatorFirstLevel>,
     right_range: &CircuitOutputTarget<DepositAccumulatorBalanceAggregatorFirstLevel>,
 ) {
-    builder.connect_biguint(&left_range.current_epoch, &right_range.current_epoch);
-    builder.connect_biguint(
+    builder.assert_targets_are_equal(&left_range.current_epoch, &right_range.current_epoch);
+    builder.assert_targets_are_equal(
         &left_range.eth1_deposit_index,
         &right_range.eth1_deposit_index,
     );
+
     builder.connect_hashes(
         left_range.commitment_mapper_root,
         right_range.commitment_mapper_root,
@@ -226,10 +233,10 @@ fn accumulate_data<F: RichField + Extendable<D>, const D: usize>(
     right_range: &CircuitOutputTarget<DepositAccumulatorBalanceAggregatorFirstLevel>,
 ) -> AccumulatedDataTarget {
     AccumulatedDataTarget {
-        balance: builder.add_biguint(
-            &left_range.accumulated_data.balance,
-            &right_range.accumulated_data.balance,
-        ),
+        balance: left_range
+            .accumulated_data
+            .balance
+            .add(right_range.accumulated_data.balance, builder),
         deposits_count: builder.add(
             left_range.accumulated_data.deposits_count,
             right_range.accumulated_data.deposits_count,
@@ -272,10 +279,9 @@ fn account_for_double_counting<F: RichField + Extendable<D>, const D: usize>(
     right_range: &CircuitOutputTarget<DepositAccumulatorBalanceAggregatorFirstLevel>,
 ) -> AccumulatedDataTarget {
     let new_accumulated_data = AccumulatedDataTarget {
-        balance: builder.sub_biguint(
-            &accumulated_data.balance,
-            &left_range.accumulated_data.balance,
-        ),
+        balance: accumulated_data
+            .balance
+            .sub(left_range.accumulated_data.balance, builder),
         deposits_count: accumulated_data.deposits_count,
         validator_status_stats: ValidatorStatusStatsTarget {
             non_activated_count: builder.sub(
@@ -331,21 +337,10 @@ fn assert_deposits_are_sorted<F: RichField + Extendable<D>, const D: usize>(
         &right_range.leftmost_deposit.pubkey,
     );
 
-    let deposits_are_same = biguint_is_equal(
-        builder,
-        &left_range.rightmost_deposit.deposit_index,
-        &right_range.leftmost_deposit.deposit_index,
-    );
-
-    let deposits_are_different = builder.not(deposits_are_same);
-
-    let deposits_are_increasing = builder.cmp_biguint(
-        &left_range.rightmost_deposit.deposit_index,
-        &right_range.leftmost_deposit.deposit_index,
-    );
-
-    let deposits_are_strictly_increasing =
-        builder.and(deposits_are_increasing, deposits_are_different);
+    let deposits_are_strictly_increasing = left_range
+        .rightmost_deposit
+        .deposit_index
+        .lt(right_range.leftmost_deposit.deposit_index, builder);
 
     let if_pks_are_same_then_deposits_are_strictly_increasing =
         builder.imply(pks_are_same, deposits_are_strictly_increasing);

@@ -1,7 +1,5 @@
-use crate::serializers::{
-    biguint_to_str, parse_biguint, serde_bool_array_to_hex_string,
-    serde_bool_array_to_hex_string_nested,
-};
+use crate::serializers::{serde_bool_array_to_hex_string, serde_bool_array_to_hex_string_nested};
+use circuit::{serde::serde_u64_str, targets::uint::Uint64Target};
 use circuit_derive::{
     AddVirtualTarget, CircuitTarget, PublicInputsReadable, SerdeCircuitTarget, SetWitness,
     TargetPrimitive,
@@ -10,7 +8,6 @@ use plonky2::{
     hash::hash_types::HashOutTarget, iop::target::BoolTarget,
     plonk::proof::ProofWithPublicInputsTarget,
 };
-use plonky2_crypto::biguint::BigUintTarget;
 
 pub type Sha256Target = [BoolTarget; 256];
 pub type SSZTarget = [BoolTarget; 256];
@@ -42,22 +39,22 @@ pub struct ValidatorTarget {
     #[serde(with = "serde_bool_array_to_hex_string")]
     pub withdrawal_credentials: Sha256Target,
 
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub effective_balance: BigUintTarget,
+    #[serde(with = "serde_u64_str")]
+    pub effective_balance: Uint64Target,
 
     pub slashed: BoolTarget,
 
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub activation_eligibility_epoch: BigUintTarget,
+    #[serde(with = "serde_u64_str")]
+    pub activation_eligibility_epoch: Uint64Target,
 
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub activation_epoch: BigUintTarget,
+    #[serde(with = "serde_u64_str")]
+    pub activation_epoch: Uint64Target,
 
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub exit_epoch: BigUintTarget,
+    #[serde(with = "serde_u64_str")]
+    pub exit_epoch: Uint64Target,
 
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub withdrawable_epoch: BigUintTarget,
+    #[serde(with = "serde_u64_str")]
+    pub withdrawable_epoch: Uint64Target,
 }
 
 #[derive(TargetPrimitive, PublicInputsReadable)]
@@ -100,8 +97,8 @@ pub struct MerklelizedValidatorTarget {
 pub struct DepositTargets {
     #[serde(with = "serde_bool_array_to_hex_string")]
     pub pubkey: PubkeyTarget,
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub deposit_index: BigUintTarget,
+    #[serde(with = "serde_u64_str")]
+    pub deposit_index: Uint64Target,
     #[serde(with = "serde_bool_array_to_hex_string")]
     pub deposit_message_root: Sha256Target,
     #[serde(with = "serde_bool_array_to_hex_string")]
