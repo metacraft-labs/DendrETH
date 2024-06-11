@@ -17,7 +17,12 @@ async function publishTask() {
   const followNetwork = process.argv[4];
   const slotsJump = Number(process.argv[5]);
 
-  if (followNetwork !== 'mainnet' && followNetwork !== 'pratter') {
+  if (
+    followNetwork !== 'mainnet' &&
+    followNetwork !== 'pratter' &&
+    followNetwork !== 'sepolia' &&
+    followNetwork !== 'sepolia'
+  ) {
     console.warn('This follownetwork is not specified in networkconfig');
     return;
   }
