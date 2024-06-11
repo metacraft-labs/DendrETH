@@ -57,6 +57,43 @@ macro_rules! make_uint32_n {
                     .flat_map(|limb| builder.split_le(limb.0, 32))
                     .collect_vec()
             }
+
+            pub fn to_le_bytes<F: RichField + Extendable<D>, const D: usize>(
+                self,
+                builder: &mut CircuitBuilder<F, D>,
+            ) -> Vec<BoolTarget> {
+                self.to_le_bits(builder)
+                    .into_iter()
+                    .chunks(8)
+                    .into_iter()
+                    .flat_map(|chunk| chunk.collect_vec().into_iter().rev())
+                    .collect_vec()
+            }
+
+            pub fn from_le_bytes<F: RichField + Extendable<D>, const D: usize>(
+                bits: &[BoolTarget],
+                builder: &mut CircuitBuilder<F, D>,
+            ) -> Self {
+                assert_eq!(bits.len(), $c * 32);
+
+                Self {
+                    limbs: bits
+                        .chunks(32)
+                        .map(|limb_le_bytes| {
+                            let limb_le_bits = builder.le_sum(
+                                limb_le_bytes
+                                    .chunks(8)
+                                    .map(|byte| byte.into_iter().rev())
+                                    .flatten(),
+                            );
+
+                            U32Target(limb_le_bits)
+                        })
+                        .collect_vec()
+                        .try_into()
+                        .unwrap(),
+                }
+            }
         }
 
         impl TargetPrimitive for $a {
