@@ -1,4 +1,6 @@
+use ark_bls12_381::g1::{G1_GENERATOR_X, G1_GENERATOR_Y};
 use circuit_derive::{CircuitTarget, SerdeCircuitTarget};
+use num::BigUint;
 use plonky2::{
     iop::target::{BoolTarget, Target},
     plonk::{
@@ -17,11 +19,9 @@ use starky_bls12_381::{
 
 use circuit::{circuit_builder_extensions::CircuitBuilderExtensions, Circuit};
 
-use super::bls12_381_circuit::get_neg_generator;
-
-type F = <C as GenericConfig<2>>::F;
-type C = PoseidonGoldilocksConfig;
-const D: usize = 2;
+pub type F = <C as GenericConfig<2>>::F;
+pub type C = PoseidonGoldilocksConfig;
+pub const D: usize = 2;
 
 pub struct VerifyIsNotAtInfinityCircuit;
 
@@ -67,7 +67,7 @@ impl Circuit for VerifyIsNotAtInfinityCircuit {
 
         let pubkey_g1 = [pubkey_g1_x.to_owned(), pubkey_g1_y.to_owned()];
         pk_point_check(builder, &pubkey_g1, &pubkey_bytes);
-        assert_pk_ne_not_generator(builder, &pubkey_g1);
+        assert_pk_ne_g1_generator(builder, &pubkey_g1);
         let is_g1_point_is_at_infinity = is_g1_point_is_at_infinity(builder, &pubkey_g1);
 
         let sig_bytes = input.sig_bytes;
@@ -97,19 +97,15 @@ impl Circuit for VerifyIsNotAtInfinityCircuit {
     }
 }
 
-fn assert_pk_ne_not_generator(
-    builder: &mut CircuitBuilder<F, D>,
-    public_key_point: &PointG1Target,
-) {
-    let get_neg_generator = get_neg_generator(builder);
+fn assert_pk_ne_g1_generator(builder: &mut CircuitBuilder<F, D>, public_key_point: &PointG1Target) {
+    let g1_generator_x = builder.constant_biguint(&BigUint::from(G1_GENERATOR_X));
+    let g1_generator_y = builder.constant_biguint(&BigUint::from(G1_GENERATOR_Y));
 
-    let is_pk_point_x_eq_not_generator_x =
-        is_equal(builder, &public_key_point[0], &get_neg_generator[0]);
-    let is_pk_point_y_eq_not_generator_y =
-        is_equal(builder, &public_key_point[1], &get_neg_generator[1]);
+    let is_pk_point_x_eq_g1_generator_x = is_equal(builder, &public_key_point[0], &g1_generator_x);
+    let is_pk_point_y_eq_g1_generator_y = is_equal(builder, &public_key_point[1], &g1_generator_y);
     let pk_point_eq_not_generator = builder.and(
-        is_pk_point_x_eq_not_generator_x,
-        is_pk_point_y_eq_not_generator_y,
+        is_pk_point_x_eq_g1_generator_x,
+        is_pk_point_y_eq_g1_generator_y,
     );
     builder.assert_false(pk_point_eq_not_generator)
 }
@@ -152,45 +148,21 @@ pub mod tests {
     use ark_serialize::CanonicalDeserialize;
     use circuit::{Circuit, CircuitInput, SetWitness};
     use num::BigUint;
-    use plonky2::iop::witness::PartialWitness;
+    use plonky2::{iop::witness::PartialWitness, plonk::circuit_data::CircuitData};
     use plonky2_crypto::biguint::WitnessBigUint;
 
-    use super::VerifyIsNotAtInfinityCircuit;
+    use super::{
+        VerifyIsNotAtInfinityCircuit, VerifyIsNotAtInfinityCircuitTargets,
+        VerifyIsNotAtInfinityCircuitTargetsWitnessInput, C, D, F,
+    };
 
-    #[test]
-    fn test_g1_or_g2_are_at_infinity() {
-        let (targets, circuit) = VerifyIsNotAtInfinityCircuit::build(&());
-
-        let pubkey = "b781956110d24e4510a8b5500b71529f8635aa419a009d314898e8c572a4f923ba643ae94bdfdf9224509177aa8e6b73";
-        println!("pubkey_as_bytes are: {:?}", pubkey.as_bytes());
-        let signature = "b735d0d0b03f51fcf3e5bc510b5a2cb266075322f5761a6954778714f5ab8831bc99454380d330f5c19d93436f0c4339041bfeecd2161a122c1ce8428033db8dda142768a48e582f5f9bde7d40768ac5a3b6a80492b73719f1523c5da35de275";
-        println!("signature_as_bytes are: {:?}", signature.as_bytes());
-
-        let input = serde_json::from_str::<CircuitInput<VerifyIsNotAtInfinityCircuit>>(
-            r#"{
-            "pubkey_bytes": [
-                98, 55, 56, 49, 57, 53, 54, 49, 49, 48, 100, 50, 52, 101, 52, 53, 49, 48, 97, 56, 98,
-                53, 53, 48, 48, 98, 55, 49, 53, 50, 57, 102, 56, 54, 51, 53, 97, 97, 52, 49, 57, 97,
-                48, 48, 57, 100, 51, 49, 52, 56, 57, 56, 101, 56, 99, 53, 55, 50, 97, 52, 102, 57, 50,
-                51, 98, 97, 54, 52, 51, 97, 101, 57, 52, 98, 100, 102, 100, 102, 57, 50, 50, 52, 53,
-                48, 57, 49, 55, 55, 97, 97, 56, 101, 54, 98, 55, 51
-            ],
-            "sig_bytes": [
-                98, 55, 51, 53, 100, 48, 100, 48, 98, 48, 51, 102, 53, 49, 102, 99, 102, 51, 101, 53,
-                98, 99, 53, 49, 48, 98, 53, 97, 50, 99, 98, 50, 54, 54, 48, 55, 53, 51, 50, 50, 102,
-                53, 55, 54, 49, 97, 54, 57, 53, 52, 55, 55, 56, 55, 49, 52, 102, 53, 97, 98, 56, 56,
-                51, 49, 98, 99, 57, 57, 52, 53, 52, 51, 56, 48, 100, 51, 51, 48, 102, 53, 99, 49, 57,
-                100, 57, 51, 52, 51, 54, 102, 48, 99, 52, 51, 51, 57, 48, 52, 49, 98, 102, 101, 101,
-                99, 100, 50, 49, 54, 49, 97, 49, 50, 50, 99, 49, 99, 101, 56, 52, 50, 56, 48, 51, 51,
-                100, 98, 56, 100, 100, 97, 49, 52, 50, 55, 54, 56, 97, 52, 56, 101, 53, 56, 50, 102,
-                53, 102, 57, 98, 100, 101, 55, 100, 52, 48, 55, 54, 56, 97, 99, 53, 97, 51, 98, 54, 97,
-                56, 48, 52, 57, 50, 98, 55, 51, 55, 49, 57, 102, 49, 53, 50, 51, 99, 53, 100, 97, 51,
-                53, 100, 101, 50, 55, 53
-            ]
-          }"#,
-        )
-        .unwrap();
-
+    fn test_helper(
+        pubkey: &str,
+        signature: &str,
+        targets: VerifyIsNotAtInfinityCircuitTargets,
+        circuit: CircuitData<F, C, D>,
+        input: VerifyIsNotAtInfinityCircuitTargetsWitnessInput,
+    ) {
         let pubkey_g1: G1Affine =
             G1Affine::deserialize_compressed_unchecked(&*hex::decode(pubkey).unwrap()).unwrap();
         let signature_g2 =
@@ -225,5 +197,81 @@ pub mod tests {
 
         let proof = circuit.prove(pw).unwrap();
         let _ = circuit.verify(proof);
+    }
+
+    #[test]
+    fn test_valid_case_for_g1_and_g2_at_infinity() {
+        let (targets, circuit) = VerifyIsNotAtInfinityCircuit::build(&());
+
+        let pubkey = "b301803f8b5ac4a1133581fc676dfedc60d891dd5fa99028805e5ea5b08d3491af75d0707adab3b70c6a6a580217bf81";
+        let signature = "b23c46be3a001c63ca711f87a005c200cc550b9429d5f4eb38d74322144f1b63926da3388979e5321012fb1a0526bcd100b5ef5fe72628ce4cd5e904aeaa3279527843fae5ca9ca675f4f51ed8f83bbf7155da9ecc9663100a885d5dc6df96d9";
+
+        let input = serde_json::from_str::<CircuitInput<VerifyIsNotAtInfinityCircuit>>(
+            r#"{
+                "pubkey_bytes": [
+                    179, 1, 128, 63, 139, 90, 196, 161, 19, 53, 129, 252, 103, 109, 254, 220, 96, 216, 145, 221, 95, 169, 144, 40, 128,
+                    94, 94, 165, 176, 141, 52, 145, 175, 117, 208, 112, 122, 218, 179, 183, 12, 106, 106, 88, 2, 23, 191, 129
+                ],
+                "sig_bytes": [
+                    178, 60, 70, 190, 58, 0, 28, 99, 202, 113, 31, 135, 160, 5, 194, 0, 204, 85, 11, 148, 41, 213, 244, 235, 56, 215, 67,
+                    34, 20, 79, 27, 99, 146, 109, 163, 56, 137, 121, 229, 50, 16, 18, 251, 26, 5, 38, 188, 209, 0, 181, 239, 95, 231, 38,
+                    40, 206, 76, 213, 233, 4, 174, 170, 50, 121, 82, 120, 67, 250, 229, 202, 156, 166, 117, 244, 245, 30, 216, 248, 59, 191,
+                    113, 85, 218, 158, 204, 150, 99, 16, 10, 136, 93, 93, 198, 223, 150, 217
+                ]
+            }"#
+        )
+        .unwrap();
+
+        test_helper(pubkey, signature, targets, circuit, input);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_g1_or_g2_are_at_infinity() {
+        let (targets, circuit) = VerifyIsNotAtInfinityCircuit::build(&());
+
+        let pubkey = "c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+        let signature = "c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+
+        let input = serde_json::from_str::<CircuitInput<VerifyIsNotAtInfinityCircuit>>(
+            r#"{
+                "pubkey_bytes": [
+                    192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                ],
+                "sig_bytes": [
+                    192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                ]
+            }"#
+        )
+        .unwrap();
+
+        test_helper(pubkey, signature, targets, circuit, input);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_g1_is_not_the_g1_generator() {
+        let (targets, circuit) = VerifyIsNotAtInfinityCircuit::build(&());
+
+        let pubkey = "97f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb";
+        let signature = "a42ae16f1c2a5fa69c04cb5998d2add790764ce8dd45bf25b29b4700829232052b52352dcff1cf255b3a7810ad7269601810f03b2bc8b68cf289cf295b206770605a190b6842583e47c3d1c0f73c54907bfb2a602157d46a4353a20283018763";
+
+        let input = serde_json::from_str::<CircuitInput<VerifyIsNotAtInfinityCircuit>>(
+            r#"{
+                "pubkey_bytes": [
+                    151, 241, 211, 167, 49, 151, 215, 148, 38, 149, 99, 140, 79, 169, 172, 15, 195, 104, 140, 79, 151, 116, 185, 5, 161,
+                    78, 58, 63, 23, 27, 172, 88, 108, 85, 232, 63, 249, 122, 26, 239, 251, 58, 240, 10, 219, 34, 198, 187
+                ],
+                "sig_bytes": [
+                    164, 42, 225, 111, 28, 42, 95, 166, 156, 4, 203, 89, 152, 210, 173, 215, 144, 118, 76, 232, 221, 69, 191,
+                    37, 178, 155, 71, 0, 130, 146, 50, 5, 43, 82, 53, 45, 207, 241, 207, 37, 91, 58, 120, 16, 173, 114, 105,
+                    96, 24, 16, 240, 59, 43, 200, 182, 140, 242, 137, 207, 41, 91, 32, 103, 112, 96, 90, 25, 11, 104, 66, 88,
+                    62, 71, 195, 209, 192, 247, 60, 84, 144, 123, 251, 42, 96, 33, 87, 212, 106, 67, 83, 162, 2, 131, 1, 135, 99
+                ]
+            }"#
+        )
+        .unwrap();
+
+        test_helper(pubkey, signature, targets, circuit, input);
     }
 }

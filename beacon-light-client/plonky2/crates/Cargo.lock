@@ -1224,6 +1224,7 @@ dependencies = [
  "ahash 0.8.11",
  "anyhow",
  "ark-bls12-381",
+ "ark-ec",
  "ark-serialize",
  "circuit",
  "circuit_derive",

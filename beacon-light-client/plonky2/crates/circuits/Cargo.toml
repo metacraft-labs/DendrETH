@@ -29,6 +29,7 @@ plonky2-circuit-serializer = { git = "https://github.com/metacraft-labs/plonky2-
 num-bigint = "0.4.4"
 ark-bls12-381 = "0.4.0"
 ark-serialize = "0.4.2"
+ark-ec = "0.4.2"
 
 [dev-dependencies]
 serde_yaml = "0.9.34"
