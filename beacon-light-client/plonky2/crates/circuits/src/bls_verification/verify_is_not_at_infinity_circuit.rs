@@ -156,6 +156,36 @@ pub mod tests {
         VerifyIsNotAtInfinityCircuitTargetsWitnessInput, C, D, F,
     };
 
+    fn input_init(
+        pubkey: &str,
+        signature: &str,
+    ) -> VerifyIsNotAtInfinityCircuitTargetsWitnessInput {
+        let pubkey_bytes = hex::decode(pubkey).unwrap();
+        let pubkey_bytes: [u8; 48] = pubkey_bytes
+            .into_iter()
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+
+        let sig_bytes = hex::decode(signature).unwrap();
+        let sig_bytes: [u8; 96] = sig_bytes
+            .into_iter()
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+
+        let concatenated_str = format!(
+            r#"{{
+                "pubkey_bytes": {:?},
+                "sig_bytes": {:?}
+            }}"#,
+            pubkey_bytes, sig_bytes
+        );
+
+        serde_json::from_str::<CircuitInput<VerifyIsNotAtInfinityCircuit>>(&concatenated_str)
+            .unwrap()
+    }
+
     fn test_helper(
         pubkey: &str,
         signature: &str,
@@ -205,22 +235,7 @@ pub mod tests {
 
         let pubkey = "b301803f8b5ac4a1133581fc676dfedc60d891dd5fa99028805e5ea5b08d3491af75d0707adab3b70c6a6a580217bf81";
         let signature = "b23c46be3a001c63ca711f87a005c200cc550b9429d5f4eb38d74322144f1b63926da3388979e5321012fb1a0526bcd100b5ef5fe72628ce4cd5e904aeaa3279527843fae5ca9ca675f4f51ed8f83bbf7155da9ecc9663100a885d5dc6df96d9";
-
-        let input = serde_json::from_str::<CircuitInput<VerifyIsNotAtInfinityCircuit>>(
-            r#"{
-                "pubkey_bytes": [
-                    179, 1, 128, 63, 139, 90, 196, 161, 19, 53, 129, 252, 103, 109, 254, 220, 96, 216, 145, 221, 95, 169, 144, 40, 128,
-                    94, 94, 165, 176, 141, 52, 145, 175, 117, 208, 112, 122, 218, 179, 183, 12, 106, 106, 88, 2, 23, 191, 129
-                ],
-                "sig_bytes": [
-                    178, 60, 70, 190, 58, 0, 28, 99, 202, 113, 31, 135, 160, 5, 194, 0, 204, 85, 11, 148, 41, 213, 244, 235, 56, 215, 67,
-                    34, 20, 79, 27, 99, 146, 109, 163, 56, 137, 121, 229, 50, 16, 18, 251, 26, 5, 38, 188, 209, 0, 181, 239, 95, 231, 38,
-                    40, 206, 76, 213, 233, 4, 174, 170, 50, 121, 82, 120, 67, 250, 229, 202, 156, 166, 117, 244, 245, 30, 216, 248, 59, 191,
-                    113, 85, 218, 158, 204, 150, 99, 16, 10, 136, 93, 93, 198, 223, 150, 217
-                ]
-            }"#
-        )
-        .unwrap();
+        let input = input_init(pubkey, signature);
 
         test_helper(pubkey, signature, targets, circuit, input);
     }
@@ -232,18 +247,7 @@ pub mod tests {
 
         let pubkey = "c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
         let signature = "c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
-
-        let input = serde_json::from_str::<CircuitInput<VerifyIsNotAtInfinityCircuit>>(
-            r#"{
-                "pubkey_bytes": [
-                    192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-                ],
-                "sig_bytes": [
-                    192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-                ]
-            }"#
-        )
-        .unwrap();
+        let input = input_init(pubkey, signature);
 
         test_helper(pubkey, signature, targets, circuit, input);
     }
@@ -255,22 +259,7 @@ pub mod tests {
 
         let pubkey = "97f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb";
         let signature = "a42ae16f1c2a5fa69c04cb5998d2add790764ce8dd45bf25b29b4700829232052b52352dcff1cf255b3a7810ad7269601810f03b2bc8b68cf289cf295b206770605a190b6842583e47c3d1c0f73c54907bfb2a602157d46a4353a20283018763";
-
-        let input = serde_json::from_str::<CircuitInput<VerifyIsNotAtInfinityCircuit>>(
-            r#"{
-                "pubkey_bytes": [
-                    151, 241, 211, 167, 49, 151, 215, 148, 38, 149, 99, 140, 79, 169, 172, 15, 195, 104, 140, 79, 151, 116, 185, 5, 161,
-                    78, 58, 63, 23, 27, 172, 88, 108, 85, 232, 63, 249, 122, 26, 239, 251, 58, 240, 10, 219, 34, 198, 187
-                ],
-                "sig_bytes": [
-                    164, 42, 225, 111, 28, 42, 95, 166, 156, 4, 203, 89, 152, 210, 173, 215, 144, 118, 76, 232, 221, 69, 191,
-                    37, 178, 155, 71, 0, 130, 146, 50, 5, 43, 82, 53, 45, 207, 241, 207, 37, 91, 58, 120, 16, 173, 114, 105,
-                    96, 24, 16, 240, 59, 43, 200, 182, 140, 242, 137, 207, 41, 91, 32, 103, 112, 96, 90, 25, 11, 104, 66, 88,
-                    62, 71, 195, 209, 192, 247, 60, 84, 144, 123, 251, 42, 96, 33, 87, 212, 106, 67, 83, 162, 2, 131, 1, 135, 99
-                ]
-            }"#
-        )
-        .unwrap();
+        let input = input_init(pubkey, signature);
 
         test_helper(pubkey, signature, targets, circuit, input);
     }
