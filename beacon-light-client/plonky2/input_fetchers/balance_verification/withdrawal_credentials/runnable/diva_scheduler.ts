@@ -41,14 +41,18 @@ const snapshot = new ethers.Contract(
   provider,
 );
 
-const validatorManager = options['validator-manager-contract-address'] ? new ethers.Contract(
-  options['validator-manager-contract-address'],
-  validatorManagerAbi,
-  provider,
-) : undefined;
+const validatorManager = options['validator-manager-contract-address']
+  ? new ethers.Contract(
+      options['validator-manager-contract-address'],
+      validatorManagerAbi,
+      provider,
+    )
+  : undefined;
 
 snapshot.on('SnapshotTaken', async (_: number, currentSlot: number) => {
-  const withdrawalCredentials = validatorManager ? (await validatorManager.getWithdrawalCredentials()) : options['withdrawal-credentials'];
+  const withdrawalCredentials = validatorManager
+    ? await validatorManager.getWithdrawalCredentials()
+    : options['withdrawal-credentials'];
 
   await getBalancesInput({
     protocol: 'diva',

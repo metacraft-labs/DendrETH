@@ -98,7 +98,10 @@ export async function rebuildCommitmentMapperTree(
   ctx: SchedulerContext,
 ): Promise<void> {
   const contractDeploymentBlockNumber =
-    await queryContractDeploymentBlockNumber(ctx.ethJsonRPC, ctx.contract.address);
+    await queryContractDeploymentBlockNumber(
+      ctx.ethJsonRPC,
+      ctx.contract.address,
+    );
 
   if (contractDeploymentBlockNumber === null) {
     console.log('Error: Invalid contract address');

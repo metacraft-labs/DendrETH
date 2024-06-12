@@ -57,7 +57,6 @@ import { CommandLineOptionsBuilder } from '../utils/cmdline';
 
   console.log(`Contract address ${balanceVerifierAddress}`);
 
-
   const balanceVerifierContract = new ethers.Contract(
     balanceVerifierAddress,
     BalanceVerifierDivaAbi,
