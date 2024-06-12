@@ -9,8 +9,8 @@ macro_rules! make_uint32_n {
 
         impl $a {
             pub fn constant<F: RichField + Extendable<D>, const D: usize>(
-                builder: &mut CircuitBuilder<F, D>,
                 value: $b,
+                builder: &mut CircuitBuilder<F, D>,
             ) -> Self {
                 let mut limbs: Vec<U32Target> = Vec::new();
 
