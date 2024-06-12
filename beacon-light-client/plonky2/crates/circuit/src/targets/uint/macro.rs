@@ -112,6 +112,13 @@ macro_rules! make_uint32_n {
                         .unwrap(),
                 }
             }
+
+            pub fn to_be_bits<F: RichField + Extendable<D>, const D: usize>(
+                self,
+                builder: &mut CircuitBuilder<F, D>,
+            ) -> Vec<BoolTarget> {
+                self.to_le_bits(builder).into_iter().rev().collect_vec()
+            }
         }
 
         impl TargetPrimitive for $a {
