@@ -6,9 +6,6 @@ import {IBalanceVerifier} from './interfaces/IBalanceVerifierDiva.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 
 abstract contract BalanceVerifier is Ownable, IBalanceVerifier {
-  /// @notice the verifierDigest of the plonky2 circuit
-  uint256 public immutable VERIFIER_DIGEST;
-
   /// @notice The genesis block timestamp.
   uint256 public immutable GENESIS_BLOCK_TIMESTAMP;
 
@@ -22,19 +19,26 @@ abstract contract BalanceVerifier is Ownable, IBalanceVerifier {
 
   address internal verifier;
 
+  /// @notice the verifierDigest of the plonky2 circuit
+  uint256 public verifierDigest;
+
   constructor(
-    uint256 verifierDigest,
+    uint256 _verifierDigest,
     uint256 genesisBlockTimestamp,
     address _verifier,
     address _owner
   ) Ownable(_owner) {
-    VERIFIER_DIGEST = verifierDigest;
+    verifierDigest = _verifierDigest;
     GENESIS_BLOCK_TIMESTAMP = genesisBlockTimestamp;
     verifier = _verifier;
   }
 
-  function setVerifier(address _verifier) external override onlyOwner {
+  function setVerifier(
+    address _verifier,
+    uint256 newVerifierDigest
+  ) external override onlyOwner {
     verifier = _verifier;
+    verifierDigest = newVerifierDigest;
   }
 
   /// @notice Verifies the proof and writes the data for given slot if valid

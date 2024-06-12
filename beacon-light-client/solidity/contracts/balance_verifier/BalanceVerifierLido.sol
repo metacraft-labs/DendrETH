@@ -37,7 +37,7 @@ contract BalanceVerifierLido is BalanceVerifier, IBalanceVerifierLido {
     uint64 _numberOfSlashedValidators
   ) external override {
     uint256[] memory publicInputs = new uint256[](2);
-    publicInputs[0] = VERIFIER_DIGEST;
+    publicInputs[0] = verifierDigest;
     publicInputs[1] = (uint256(
       sha256(
         abi.encodePacked(
