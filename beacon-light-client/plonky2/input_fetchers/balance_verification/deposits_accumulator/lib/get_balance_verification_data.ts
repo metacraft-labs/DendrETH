@@ -19,6 +19,7 @@ import { getCommitmentMapperProof } from '../../../utils/common_utils';
 import ValidatorsAccumulator from '../../../../../solidity/artifacts/contracts/validators_accumulator/ValidatorsAccumulator.sol/ValidatorsAccumulator.json';
 import { getEvents } from './event_fetcher';
 import chalk from 'chalk';
+import { queryContractDeploymentBlockNumber } from './utils';
 
 enum Events {
   Deposited = 'Deposited',
@@ -33,7 +34,6 @@ export type StoreBalanceVerificationConfigRequiredFields = {
   // withdrawalCredentials: string;
   address: string;
   rpcUrl: string;
-  syncBlock: number;
   protocol: string;
 };
 
@@ -98,7 +98,15 @@ export async function storeBalanceVerificationData(
   beaconState.balances = beaconState.balances.slice(offset, take);
   beaconState.validators = beaconState.validators.slice(offset, take);
 
-  const firstBlock = config.syncBlock;
+  const firstBlock = await queryContractDeploymentBlockNumber(
+    provider,
+    config.address,
+  );
+
+  if (firstBlock === null) {
+    throw new Error('Contract not found');
+  }
+
   const lastBlock = beaconState.latestExecutionPayloadHeader.blockNumber!;
 
   const contract = new ethers.Contract(

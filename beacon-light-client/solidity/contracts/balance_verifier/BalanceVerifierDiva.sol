@@ -31,7 +31,7 @@ contract BalanceVerifierDiva is BalanceVerifier, IBalanceVerifierDiva {
   function verify(
     bytes calldata proof,
     uint256 slot,
-    uint256 blockNumber,
+    uint64 blockNumber,
     uint64 balanceSum,
     uint64 _numberOfNonActivatedValidators,
     uint64 _numberOfActiveValidators,

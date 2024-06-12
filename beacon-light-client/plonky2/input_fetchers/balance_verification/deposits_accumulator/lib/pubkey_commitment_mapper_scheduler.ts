@@ -4,6 +4,7 @@ import { sleep } from '@dendreth/utils/ts-utils/common-utils';
 import { Contract, ethers } from 'ethers';
 import { fetchEventsAsyncCB } from './event_fetcher';
 import { ChainableCommander } from 'ioredis';
+import { queryContractDeploymentBlockNumber } from './utils';
 
 const sharedPrefix = `pubkey_commitment_mapper`;
 
@@ -97,7 +98,7 @@ export async function rebuildCommitmentMapperTree(
   ctx: SchedulerContext,
 ): Promise<void> {
   const contractDeploymentBlockNumber =
-    await queryContractDeploymentBlockNumber(ctx);
+    await queryContractDeploymentBlockNumber(ctx.ethJsonRPC, ctx.contract.address);
 
   if (contractDeploymentBlockNumber === null) {
     console.log('Error: Invalid contract address');
@@ -141,31 +142,6 @@ async function updateDepositState(
   await pipeline.exec();
 
   console.log(`[${blockNumber}] ${pubkey}`);
-}
-
-async function queryContractDeploymentBlockNumber(
-  ctx: SchedulerContext,
-): Promise<number | null> {
-  const headBlock = await ctx.ethJsonRPC.getBlockNumber();
-
-  let left = 0;
-  let right = headBlock;
-
-  let deploymentBlockNumber: number | null = null;
-
-  while (left <= right) {
-    const middle = left + Math.floor((right - left) / 2);
-    const code = await ctx.ethJsonRPC.getCode(ctx.contract.address, middle);
-
-    if (code !== '0x') {
-      deploymentBlockNumber = middle;
-      right = middle - 1;
-    } else {
-      left = middle + 1;
-    }
-  }
-
-  return deploymentBlockNumber;
 }
 
 export async function purgePubkeyCommitmentMapperData(

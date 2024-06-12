@@ -43,9 +43,8 @@ export class BeaconApi implements IBeaconApi {
     const forkSchedule = await (
       await this.fetchWithFallback('/eth/v1/config/fork_schedule')
     ).json();
-    const forkEpoch = BigInt(
-      forkSchedule.data[forkSchedule.data.length - 1].epoch,
-    );
+    // the deneb epoch is the 5th fork (phase0, altair, bellatrix, capella, deneb, electra (in development))
+    const forkEpoch = BigInt(forkSchedule.data[4].epoch);
     const SLOTS_PER_EPOCH = 32n;
     return (
       slot >= forkEpoch * SLOTS_PER_EPOCH ? this.ssz.deneb : this.ssz.capella
