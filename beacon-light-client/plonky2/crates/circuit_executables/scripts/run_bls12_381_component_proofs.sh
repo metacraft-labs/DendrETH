@@ -3,8 +3,8 @@
 # Define variables
 REPO_URL="https://github.com/ethereum/bls12-381-tests"
 REPO_DIR="bls12-381-tests"
-OUTPUT_DIR="eth_tests/bls"
-VERIFY_DIR="$OUTPUT_DIR/verify"
+OUTPUT_DIR="eth_tests"
+VERIFY_DIR="$OUTPUT_DIR/bls/verify"
 SCRIPTS_DIR="scripts"
 SRC="src" 
 
@@ -48,7 +48,7 @@ cd "$VERIFY_DIR" || exit
 mapfile -t all_yaml_files_in_verify < <(ls *)
 
 # Navigate back to the root directory
-cd ../../../../../
+cd ../../../../
 
 # Navigate to the src directory
 cd "$SRC" || exit 
