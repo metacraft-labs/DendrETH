@@ -31,6 +31,15 @@ export async function getBeaconApi(
   return new BeaconApi(beaconRestApis, ssz);
 }
 
+export const BEACON_CHAIN_FORK_IDX = {
+  PHASE0: 0,
+  ALTAIR: 1,
+  BELLATRIX: 2,
+  CAPELLA: 3,
+  DENEB: 4,
+  ELECTRA: 5,
+};
+
 export class BeaconApi implements IBeaconApi {
   currentApiIndex = 0;
 
@@ -43,9 +52,11 @@ export class BeaconApi implements IBeaconApi {
     const forkSchedule = await (
       await this.fetchWithFallback('/eth/v1/config/fork_schedule')
     ).json();
-    // the deneb epoch is the 5th fork (phase0, altair, bellatrix, capella, deneb, electra (in development))
-    const forkEpoch = BigInt(forkSchedule.data[4].epoch);
+    const forkEpoch = BigInt(
+      forkSchedule.data[BEACON_CHAIN_FORK_IDX.DENEB].epoch,
+    );
     const SLOTS_PER_EPOCH = 32n;
+
     return (
       slot >= forkEpoch * SLOTS_PER_EPOCH ? this.ssz.deneb : this.ssz.capella
     ) as CapellaOrDeneb;

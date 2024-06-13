@@ -7,13 +7,11 @@ import http from 'http';
 import { RequestOptions } from 'https';
 import { ethers } from 'ethers';
 import BalanceVerifierDivaAbi from '../abi/balance_verifier_diva_abi.json';
+import CONSTANTS from '../../kv_db_constants.json';
 
 import { CommandLineOptionsBuilder } from '../utils/cmdline';
 (async () => {
   const commandOptions = new CommandLineOptionsBuilder()
-    .usage(
-      'Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>',
-    )
     .withRedisOpts()
     .option('rpc-url', {
       describe: 'The RPC URL',
@@ -26,11 +24,7 @@ import { CommandLineOptionsBuilder } from '../utils/cmdline';
       demandOption: true,
     })
     .withProtocolOpts()
-    .option('transaction-speed', {
-      describe: 'The speed you want the transactions to be included in a block',
-      type: 'string',
-      demandOption: true,
-    })
+    .withTransactionSpeedOpts()
     .option('balance-verifier', {
       describe: 'The address of the balance verifier contract',
       type: 'string',
@@ -45,7 +39,7 @@ import { CommandLineOptionsBuilder } from '../utils/cmdline';
   let privateKey = process.env.USER_PRIVATE_KEY;
 
   if (privateKey === undefined) {
-    throw new Error('Private key not found');
+    throw new Error('USER_PRIVATE_KEY unset');
   }
 
   let publisher = new ethers.Wallet(privateKey, provider);
@@ -65,13 +59,6 @@ import { CommandLineOptionsBuilder } from '../utils/cmdline';
 
   const web3 = new Web3(rpcUrl);
 
-  if (
-    commandOptions['transaction-speed'] &&
-    !['slow', 'avg', 'fast'].includes(commandOptions['transaction-speed'])
-  ) {
-    throw new Error('Invalid transaction speed');
-  }
-
   const redis = new Redis(
     commandOptions['redis-host'],
     commandOptions['redis-port'],
@@ -84,14 +71,14 @@ import { CommandLineOptionsBuilder } from '../utils/cmdline';
   redis.subscribeForGnarkProofs(protocol, async () => {
     console.log('Received new proof');
     let final_layer_proof_string = (await redis.get(
-      `${protocol}:deposit_balance_verification_final_proof`,
+      `${protocol}:${CONSTANTS.depositBalanceVerificationFinalProofKey}`,
     ))!;
 
     const final_layer_proof_json = JSON.parse(final_layer_proof_string);
 
     let final_layer_proof_input = JSON.parse(
       (await redis.get(
-        `${protocol}:deposit_balance_verification_final_proof_input`,
+        `${protocol}:${CONSTANTS.depositBalanceVerificationFinalProofInputKey}`,
       ))!,
     );
 
