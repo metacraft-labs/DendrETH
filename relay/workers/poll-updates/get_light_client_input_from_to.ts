@@ -51,6 +51,8 @@ export async function getInputFromTo(
 
   const forkSSZ = await beaconApi.getCurrentSSZ(BigInt(headSlot));
 
+  const slotsPerPeriod = await beaconApi.getSlotsPerSyncCommitteePeriod();
+
   return {
     proofInput: await getProofInput({
       prevBlockHeader,
@@ -67,6 +69,7 @@ export async function getInputFromTo(
       executionPayloadBranch,
       sync_aggregate,
       forkSSZ,
+      slotsPerPeriod,
     }),
     prevUpdateSlot: prevBlockHeader.slot,
     updateSlot: nextBlockHeader.slot,

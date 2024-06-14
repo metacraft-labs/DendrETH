@@ -1,10 +1,7 @@
 import { Queue } from 'bullmq';
 import { GetUpdate } from '../types/types';
 import { Config } from '../constants/constants';
-import {
-  SLOTS_PER_PERIOD,
-  computeSyncCommitteePeriodAt,
-} from '@dendreth/utils/ts-utils/ssz-utils';
+import { computeSyncCommitteePeriodAt } from '@dendreth/utils/ts-utils/ssz-utils';
 import { IBeaconApi } from '../abstraction/beacon-api-interface';
 import { findClosestValidBlock } from '../workers/poll-updates/get_light_client_input_from_to';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
@@ -73,10 +70,21 @@ async function getNextSlot(
   headSlot: number,
   beaconApi: IBeaconApi,
 ) {
-  const periodAtSlot = computeSyncCommitteePeriodAt(slot);
-  const periodAtHeadSlot = computeSyncCommitteePeriodAt(headSlot);
+  const slotsPerPeriod = await beaconApi.getSlotsPerSyncCommitteePeriod();
+  const slotsPerEpoch = await beaconApi.getSlotsPerEpoch();
+  const periodAtSlot = computeSyncCommitteePeriodAt(
+    BigInt(slot),
+    slotsPerPeriod,
+  );
+  const periodAtHeadSlot = computeSyncCommitteePeriodAt(
+    BigInt(headSlot),
+    slotsPerPeriod,
+  );
 
-  if (periodAtSlot + 1 >= periodAtHeadSlot) {
+  console.log('period at slot', periodAtSlot);
+  console.log('period at head slot', periodAtHeadSlot);
+
+  if (periodAtSlot + 1n >= periodAtHeadSlot) {
     // next slot will be the closest multiple of slotsJump to headSlot
     const potentialNewSlot = headSlot - (headSlot % slotsJump);
 
@@ -91,10 +99,15 @@ async function getNextSlot(
 
   // next slot will be the first slot of the last epoch of the next period
   const potentialNewSlot =
-    (periodAtSlot + 1) * SLOTS_PER_PERIOD + (SLOTS_PER_PERIOD - 32);
+    BigInt(periodAtSlot + 1n) * slotsPerPeriod +
+    (slotsPerPeriod - slotsPerEpoch);
+
+  console.log('potential new slot', potentialNewSlot);
+
+  console.log('head slot', headSlot);
 
   const result = await findClosestValidBlock(
-    potentialNewSlot,
+    Number(potentialNewSlot),
     beaconApi,
     headSlot,
   );
