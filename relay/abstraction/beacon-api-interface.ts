@@ -4,6 +4,10 @@ import { ExecutionPayloadHeader } from '@lodestar/types/deneb';
 import { SyncAggregate, SyncCommittee } from '@/types/types';
 import { CapellaOrDeneb } from '@dendreth/utils/ts-utils/ssz-utils';
 export interface IBeaconApi {
+  getSlotsPerEpoch(): Promise<bigint>;
+
+  getSlotsPerSyncCommitteePeriod(): Promise<bigint>;
+
   getCurrentSSZ(slot: bigint): Promise<CapellaOrDeneb>;
 
   getBeaconRestApis(): string[];
