@@ -54,6 +54,7 @@ export async function getProofInput({
   signature_slot,
   config,
   forkSSZ,
+  slotsPerPeriod,
 }: {
   syncCommittee: SyncCommittee;
   syncCommitteeBranch: string[];
@@ -69,6 +70,7 @@ export async function getProofInput({
   signature_slot: number;
   config: Config;
   forkSSZ: any;
+  slotsPerPeriod: bigint;
 }): Promise<WitnessGeneratorInput> {
   const { ssz } = await import('@lodestar/types');
 
@@ -171,10 +173,14 @@ export async function getProofInput({
 
     signatureSlot: signature_slot.toString(),
 
-    signatureSlotSyncCommitteePeriod:
-      computeSyncCommitteePeriodAt(signature_slot),
-    finalizedHeaderSlotSyncCommitteePeriod: computeSyncCommitteePeriodAt(
-      prevFinalizedHeader.slot,
+    signatureSlotSyncCommitteePeriod: Number(
+      computeSyncCommitteePeriodAt(BigInt(signature_slot), slotsPerPeriod),
+    ),
+    finalizedHeaderSlotSyncCommitteePeriod: Number(
+      computeSyncCommitteePeriodAt(
+        BigInt(prevFinalizedHeader.slot),
+        slotsPerPeriod,
+      ),
     ),
     finalizedHeaderRoot: hexToBits(bytesToHex(finalizedHeaderHash)),
     finalizedHeaderBranch: [
