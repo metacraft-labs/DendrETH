@@ -5,6 +5,10 @@ import { CapellaOrDeneb } from '@dendreth/utils/ts-utils/ssz-utils';
 
 import { SyncAggregate, SyncCommittee } from '@/types/types';
 export interface IBeaconApi {
+  getSlotsPerEpoch(): Promise<bigint>;
+
+  getSlotsPerSyncCommitteePeriod(): Promise<bigint>;
+
   getCurrentSSZ(slot: bigint): Promise<CapellaOrDeneb>;
 
   getBeaconRestApis(): string[];

@@ -1698,6 +1698,7 @@ __metadata:
     "@cosmjs/cosmwasm-stargate": "npm:0.30.1"
     "@cosmjs/proto-signing": "npm:^0.30.0"
     "@cosmjs/stargate": "npm:0.30.1"
+    "@dendreth/relay": "workspace:^"
     "@lodestar/params": "npm:^1.17.0"
     "@lodestar/types": "npm:^1.17.0"
     "@noble/bls12-381": "npm:^1.4.0"

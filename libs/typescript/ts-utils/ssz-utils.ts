@@ -107,10 +107,11 @@ export async function getBlockHeaderFromUpdate(head) {
   return blockHeader;
 }
 
-export const SLOTS_PER_PERIOD = 8192;
-
-export function computeSyncCommitteePeriodAt(slot: number) {
-  return Math.floor(slot / SLOTS_PER_PERIOD);
+export function computeSyncCommitteePeriodAt(
+  slot: bigint,
+  slots_per_period: bigint,
+) {
+  return slot / slots_per_period;
 }
 
 export function computeEpochAt(slot: number) {
