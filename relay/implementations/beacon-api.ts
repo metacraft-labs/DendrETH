@@ -190,7 +190,9 @@ export class BeaconApi implements IBeaconApi {
   > {
     while (slot <= limitSlot) {
       const blockHeaderResult = await (
-        await this.fetchWithFallback(`/eth/v1/beacon/headers/${slot}`)
+        await this.fetchWithFallbackNoRetryNotFound(
+          `/eth/v1/beacon/headers/${slot}`,
+        )
       ).json();
 
       if (blockHeaderResult.code !== 404) {
@@ -598,6 +600,43 @@ export class BeaconApi implements IBeaconApi {
     init?: RequestInit,
   ): Promise<Response> {
     return fetch(this.concatUrl(subUrl), init);
+  }
+
+  private async fetchWithFallbackNoRetryNotFound(
+    subUrl: string,
+    init?: RequestInit,
+  ): Promise<Response> {
+    let retries = 0;
+    const maxApiRetries = 5;
+
+    while (true) {
+      console.log(this.getCurrentApi());
+      try {
+        const result = await this.fetchWithFallbackNoRetry(subUrl, init);
+
+        if (result.status === 429) {
+          logger.warn('Rate limit exceeded');
+
+          logger.warn('Retrying with the next one');
+          this.nextApi();
+          continue;
+        }
+
+        return result;
+      } catch (error) {
+        retries++;
+        if (retries >= this.beaconRestApis.length * maxApiRetries) {
+          logger.error('All beacon rest apis failed');
+          throw error;
+        }
+
+        logger.error(`Beacon rest api failed: ${error}`);
+
+        logger.error('Retrying with the next one');
+
+        this.nextApi();
+      }
+    }
   }
 
   private async fetchWithFallback(
