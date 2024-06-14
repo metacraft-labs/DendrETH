@@ -35,6 +35,25 @@ export class BeaconApi implements IBeaconApi {
     public readonly ssz: SSZ,
   ) {}
 
+  async getSlotsPerEpoch(): Promise<bigint> {
+    const config = await (
+      await this.fetchWithFallback('/eth/v1/config/spec')
+    ).json();
+
+    const slotsPerEpoch = config.data.SLOTS_PER_EPOCH;
+    return BigInt(slotsPerEpoch);
+  }
+
+  async getSlotsPerSyncCommitteePeriod(): Promise<bigint> {
+    const config = await (
+      await this.fetchWithFallback('/eth/v1/config/spec')
+    ).json();
+
+    const slotsPerEpoch = config.data.SLOTS_PER_EPOCH;
+    const epochPerSyncCommitteePeriod =
+      config.data.EPOCHS_PER_SYNC_COMMITTEE_PERIOD;
+    return BigInt(slotsPerEpoch * epochPerSyncCommitteePeriod);
+  }
   async getCurrentSSZ(slot: bigint): Promise<CapellaOrDeneb> {
     const forkSchedule = await (
       await this.fetchWithFallback('/eth/v1/config/fork_schedule')
@@ -42,9 +61,9 @@ export class BeaconApi implements IBeaconApi {
     const forkEpoch = BigInt(
       forkSchedule.data[forkSchedule.data.length - 1].epoch,
     );
-    const SLOTS_PER_EPOCH = 32n;
+    const slotsPerEpoch = await this.getSlotsPerEpoch();
     return (
-      slot >= forkEpoch * SLOTS_PER_EPOCH ? this.ssz.deneb : this.ssz.capella
+      slot >= forkEpoch * slotsPerEpoch ? this.ssz.deneb : this.ssz.capella
     ) as CapellaOrDeneb;
   }
 
@@ -303,9 +322,13 @@ export class BeaconApi implements IBeaconApi {
       'getPrevFinalizedBeaconState',
     );
 
+    const slotsPerPeriod = await this.getSlotsPerSyncCommitteePeriod();
     const prevUpdateFinalizedSyncCommmitteePeriod =
-      computeSyncCommitteePeriodAt(finalityHeader.slot);
-    const currentSyncCommitteePeriod = computeSyncCommitteePeriodAt(nextSlot);
+      computeSyncCommitteePeriodAt(BigInt(finalityHeader.slot), slotsPerPeriod);
+    const currentSyncCommitteePeriod = computeSyncCommitteePeriodAt(
+      BigInt(nextSlot),
+      slotsPerPeriod,
+    );
 
     const syncCommitteeBranch = prevFinalizedBeaconStateTree
       .getSingleProof(
