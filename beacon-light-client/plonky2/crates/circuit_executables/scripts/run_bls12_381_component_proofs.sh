@@ -5,15 +5,8 @@ REPO_URL="https://github.com/ethereum/bls12-381-tests"
 REPO_DIR="bls12-381-tests"
 OUTPUT_DIR="eth_tests"
 VERIFY_DIR="$OUTPUT_DIR/bls/verify"
-FROM_CIRCUIT_EXECUTABLES_TO="../../../.."
-VENDOR="vendor"
-
-command pushd $GIT_ROOT/beacon-light-client/plonky2/crates/circuit_executables "$@" > /dev/null
-
-# Store the current directory
-CIRCUIT_EXECUTABLES_DIR=$(pwd)
-
-cd "$FROM_CIRCUIT_EXECUTABLES_TO/$VENDOR"
+SCRIPTS_DIR="scripts"
+SRC="src" 
 
 # Clone the repository
 if [ ! -d "$REPO_DIR" ]; then
@@ -48,12 +41,17 @@ python main.py --output-dir="$OUTPUT_DIR" --encoding=yaml
 # Deactivate the virtual environment
 deactivate
 
-# Navigate to the circuit executables directory
-cd "../.."
-cd "$CIRCUIT_EXECUTABLES_DIR"
+# Navigate to the verify directory
+cd "$VERIFY_DIR" || exit
 
 # Store all files in a variable
-mapfile -t all_yaml_files_in_verify < <(ls *) 
+mapfile -t all_yaml_files_in_verify < <(ls *)
+
+# Navigate back to the root directory
+cd ../../../../
+
+# Navigate to the src directory
+cd "$SRC" || exit 
 
 # Run the verify tests
 run_verify_tests() {
@@ -71,5 +69,3 @@ run_verify_tests() {
 for yaml_file in "${all_yaml_files_in_verify[@]}"; do
   run_verify_tests "test_bls12_381_components_proofs_with_verify_eth_cases" "$yaml_file"
 done
-
-command popd "$@" > /dev/null
