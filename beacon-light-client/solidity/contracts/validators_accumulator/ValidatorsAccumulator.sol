@@ -15,10 +15,9 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
 
   // A counter for the total number of validators
   uint256 internal validatorsCount;
-  // Start index of validators map
-  uint256 internal startIndex;
 
-  mapping(uint256 => DepositData) internal snapshots;
+  mapping(uint64 => bytes32) internal snapshots;
+  uint64[] internal blockNumbers;
 
   constructor(address _depositAddress) {
     depositAddress = _depositAddress;
@@ -81,28 +80,31 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
       size /= 2;
     }
 
-    snapshots[validatorsCount - 1] = DepositData({
-      blockNumber: block.number,
-      accumulator: _getRoot(validatorsCount)
-    });
+    uint64 blockNumber = uint64(block.number);
+    snapshots[blockNumber] = _getRoot(validatorsCount);
+    uint256 blockNumbersLength = blockNumbers.length;
+    if (
+      blockNumbersLength == 0 ||
+      blockNumbers[blockNumbersLength - 1] != blockNumber
+    ) {
+      blockNumbers.push(blockNumber);
+    }
   }
 
   function findAccumulatorByBlock(
-    uint256 blockNumber
-  ) external view override returns (uint256, bytes32) {
-    if (validatorsCount == 0) {
-      return (0, zeroHashes[VALIDATOR_ACCUMULATOR_TREE_DEPTH - 1]);
+    uint64 blockNumber
+  ) external view override returns (bytes32) {
+    if (blockNumbers.length == 0) {
+      return (zeroHashes[VALIDATOR_ACCUMULATOR_TREE_DEPTH - 1]);
     }
 
-    uint256 index = _binarySearchBlock(blockNumber);
+    uint64 foundBlockNumber = _binarySearchBlock(blockNumber);
 
-    DepositData memory snapshot = snapshots[index];
-
-    if (snapshot.blockNumber > blockNumber) {
-      return (0, zeroHashes[VALIDATOR_ACCUMULATOR_TREE_DEPTH - 1]);
+    if (foundBlockNumber > blockNumber) {
+      return (zeroHashes[VALIDATOR_ACCUMULATOR_TREE_DEPTH - 1]);
     }
 
-    return (index + 1, snapshot.accumulator);
+    return snapshots[foundBlockNumber];
   }
 
   function _getRoot(uint256 size) internal view returns (bytes32 node) {
@@ -125,32 +127,34 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
   }
 
   function _binarySearchBlock(
-    uint256 blockNumber
-  ) internal view returns (uint256) {
-    uint256 lower = startIndex;
-    uint256 upper = validatorsCount - 1;
+    uint64 blockNumber
+  ) internal view returns (uint64) {
+    uint256 lower;
+    uint256 upper = blockNumbers.length - 1;
 
-    if (snapshots[upper].blockNumber <= blockNumber) {
-      return upper;
+    uint64 upperBlockNumber = blockNumbers[upper];
+    if (upperBlockNumber <= blockNumber) {
+      return upperBlockNumber;
     }
 
-    if (snapshots[lower].blockNumber > blockNumber) {
-      return 0;
+    uint64 lowerBlockNumber = blockNumbers[lower];
+    if (lowerBlockNumber > blockNumber) {
+      return lowerBlockNumber;
     }
 
     while (upper > lower) {
       uint256 index = upper - (upper - lower) / 2; // ceil, avoiding overflow
-      DepositData memory snapshot = snapshots[index];
-      if (snapshot.blockNumber == blockNumber) {
-        return index;
-      } else if (snapshot.blockNumber < blockNumber) {
+      uint64 indexBlockNumber = blockNumbers[index];
+      if (indexBlockNumber == blockNumber) {
+        return indexBlockNumber;
+      } else if (indexBlockNumber < blockNumber) {
         lower = index;
       } else {
         upper = index - 1;
       }
     }
 
-    return lower;
+    return blockNumbers[lower];
   }
 
   function toLe64(uint64 value) internal pure returns (bytes memory ret) {

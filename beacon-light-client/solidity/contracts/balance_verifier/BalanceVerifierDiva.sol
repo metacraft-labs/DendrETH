@@ -31,16 +31,13 @@ contract BalanceVerifierDiva is BalanceVerifier, IBalanceVerifierDiva {
   function verify(
     bytes calldata proof,
     uint256 slot,
-    uint256 blockNumber,
+    uint64 blockNumber,
     uint64 balanceSum,
     uint64 _numberOfNonActivatedValidators,
     uint64 _numberOfActiveValidators,
     uint64 _numberOfExitedValidators,
     uint64 _numberOfSlashedValidators
   ) external override {
-    (, bytes32 accumulator) = IValidatorsAccumulator(ACCUMULATOR)
-      .findAccumulatorByBlock(blockNumber);
-
     uint256[] memory publicInputs = new uint256[](2);
     publicInputs[0] = VERIFIER_DIGEST;
     publicInputs[1] = (uint256(
@@ -48,7 +45,9 @@ contract BalanceVerifierDiva is BalanceVerifier, IBalanceVerifierDiva {
         abi.encodePacked(
           _findBlockRoot(slot),
           blockNumber,
-          accumulator,
+          IValidatorsAccumulator(ACCUMULATOR).findAccumulatorByBlock(
+            blockNumber
+          ),
           balanceSum,
           _numberOfNonActivatedValidators,
           _numberOfActiveValidators,
