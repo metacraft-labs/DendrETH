@@ -191,7 +191,7 @@ pub fn select_biguint<F: RichField + Extendable<D>, const D: usize>(
     result
 }
 
-pub fn target_to_le_bits<F: RichField + Extendable<D>, const D: usize>(
+pub fn target_to_be_bits<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     number: Target,
 ) -> [BoolTarget; 64] {
