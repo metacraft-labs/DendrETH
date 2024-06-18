@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import {IDeposit} from './interfaces/IDeposit.sol';
 import {IValidatorsAccumulator} from './interfaces/IValidatorsAccumulator.sol';
+import {ZeroAddressError} from '../Errors.sol';
 
 contract ValidatorsAccumulator is IValidatorsAccumulator {
   // The depth of the validator accumulator tree
@@ -21,6 +22,9 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
   uint256[] internal blockNumbers;
 
   constructor(address _depositAddress) {
+    if (_depositAddress == address(0)) {
+      revert ZeroAddressError();
+    }
     depositAddress = _depositAddress;
 
     // Compute hashes in empty Merkle tree

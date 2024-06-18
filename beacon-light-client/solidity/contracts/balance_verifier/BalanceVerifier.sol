@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {PlonkVerifier} from './verifier.sol';
 import {IBalanceVerifier} from './interfaces/IBalanceVerifierDiva.sol';
+import {ZeroAddressError} from '../Errors.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 
 abstract contract BalanceVerifier is Ownable, IBalanceVerifier {
@@ -28,12 +29,19 @@ abstract contract BalanceVerifier is Ownable, IBalanceVerifier {
     address _verifier,
     address _owner
   ) Ownable(_owner) {
+    if (_verifier == address(0)) {
+      revert ZeroAddressError();
+    }
+    verifier = _verifier;
+
     VERIFIER_DIGEST = verifierDigest;
     GENESIS_BLOCK_TIMESTAMP = genesisBlockTimestamp;
-    verifier = _verifier;
   }
 
   function setVerifier(address _verifier) external override onlyOwner {
+    if (_verifier == address(0)) {
+      revert ZeroAddressError();
+    }
     verifier = _verifier;
   }
 
