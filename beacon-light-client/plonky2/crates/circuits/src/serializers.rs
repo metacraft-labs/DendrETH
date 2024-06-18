@@ -209,7 +209,7 @@ pub mod serde_bool_array_to_hex_string_nested {
             type Value = Array<Array<bool, M>, N>;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("a sequence of sequences of 0s or 1s")
+                formatter.write_str("a sequence of hex strings")
             }
 
             fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
