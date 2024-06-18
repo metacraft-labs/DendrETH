@@ -32,6 +32,7 @@
     "json-bigint": "^1.0.0",
     "redis": "^4.6.10",
     "snarkjs": "https://github.com/metacraft-labs/snarkjs.git#commit=091ee9c3744c660b0ecd961f9197a8249a8f7d3b",
+    "telepathyx": "git@github.com/succinctlabs/telepathyx.git",
     "ts-node": "^10.9.1",
     "web3": "^1.10.0",
     "web3-eth": "^1.10.0",
