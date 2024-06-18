@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import {BalanceVerifier} from './BalanceVerifier.sol';
 import {IBalanceVerifierDiva} from './interfaces/IBalanceVerifierDiva.sol';
 import {IValidatorsAccumulator} from '../validators_accumulator/interfaces/IValidatorsAccumulator.sol';
+import {ZeroAddressError} from '../Errors.sol';
 
 contract BalanceVerifierDiva is BalanceVerifier, IBalanceVerifierDiva {
   /// @notice The address of the validators accumulator contract.
@@ -18,6 +19,9 @@ contract BalanceVerifierDiva is BalanceVerifier, IBalanceVerifierDiva {
     address _accumulator,
     address _owner
   ) BalanceVerifier(verifierDigest, genesisBlockTimestamp, _verifier, _owner) {
+    if (_accumulator == address(0)) {
+      revert ZeroAddressError();
+    }
     ACCUMULATOR = _accumulator;
   }
 
@@ -80,6 +84,9 @@ contract BalanceVerifierDiva is BalanceVerifier, IBalanceVerifierDiva {
   }
 
   function setAccumulator(address _accumulator) external override onlyOwner {
+    if (_accumulator == address(0)) {
+      revert ZeroAddressError();
+    }
     ACCUMULATOR = _accumulator;
   }
 
