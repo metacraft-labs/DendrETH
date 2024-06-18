@@ -2,8 +2,10 @@ import * as path from 'path';
 import { ethers } from 'hardhat';
 import { getFilesInDir, Proof } from './utils';
 import { convertProofToSolidityCalldata } from '@dendreth/utils/ts-utils/zk-utils';
-import INITIAL_UPDATE from '../../../vendor/eth2-light-client-updates/prater/capella-updates-94/update_5601823_5609044.json';
+import INITIAL_UPDATE from '../../../vendor/eth2-light-client-updates/mainnet/deneb-update-284/update_9265121_9273312.json';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
+import { sha256 } from 'ethers/lib/utils';
+import { getNetworkConfig } from '@dendreth/relay/utils/get_current_network_config';
 
 const logger = getGenericLogger();
 
@@ -22,8 +24,8 @@ describe('BeaconLightClientReadyProofs', async function () {
       '..',
       'vendor',
       'eth2-light-client-updates',
-      'prater',
-      'capella-updates-94',
+      'mainnet',
+      'deneb-update-284',
     );
 
     proofs = getFilesInDir(dir, 'proof*.json').map(p =>
@@ -40,6 +42,14 @@ describe('BeaconLightClientReadyProofs', async function () {
   });
 
   beforeEach(async function () {
+    const FORK_VERSION = '0x04000000';
+    const genesis_validators_root =
+      '0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95';
+    const DOMAIN_SYNC_COMMITTEE = '0x07000000';
+
+    let result = sha256(
+      FORK_VERSION.padEnd(66, '0') + genesis_validators_root.slice(2),
+    );
     blc = await (
       await ethers.getContractFactory('BeaconLightClient')
     ).deploy(
@@ -47,7 +57,7 @@ describe('BeaconLightClientReadyProofs', async function () {
       INITIAL_UPDATE.attestedHeaderSlot,
       INITIAL_UPDATE.finalizedHeaderRoot,
       INITIAL_UPDATE.finalizedExecutionStateRoot,
-      '0x07000000628941ef21d1fe8c7134720add10bb91e3b02c007e0046d2472c6695',
+      DOMAIN_SYNC_COMMITTEE + result.slice(2, 58),
     );
   });
 
