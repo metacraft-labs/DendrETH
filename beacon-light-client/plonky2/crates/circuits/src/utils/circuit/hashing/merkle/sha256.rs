@@ -16,7 +16,7 @@ use crate::{
     utils::circuit::{bool_arrays_are_equal, hashing::sha256::sha256_pair},
 };
 
-use super::{pick_left_and_right_hash, ssz::ssz_merklelize_bool};
+use super::pick_left_and_right_hash;
 
 pub fn restore_merkle_root_sha256<
     const DEPTH: usize,
@@ -164,7 +164,7 @@ pub fn merklelize_validator_target<F: RichField + Extendable<D>, const D: usize>
         pubkey: [first_pubkey_leaf, second_pubkey_leaf],
         withdrawal_credentials: validator.withdrawal_credentials,
         effective_balance: validator.effective_balance.ssz_hash_tree_root(builder),
-        slashed: ssz_merklelize_bool(builder, validator.slashed),
+        slashed: validator.slashed.ssz_hash_tree_root(builder),
         activation_eligibility_epoch: validator
             .activation_eligibility_epoch
             .ssz_hash_tree_root(builder),
