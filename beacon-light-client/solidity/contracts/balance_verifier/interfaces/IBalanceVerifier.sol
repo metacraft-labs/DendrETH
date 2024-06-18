@@ -14,5 +14,5 @@ interface IBalanceVerifier {
   /// @dev Verification failed
   error VerificationFailed();
 
-  function setVerifier(address newVerifier) external;
+  function setVerifier(address newVerifier, uint256 newVerifierDigest) external;
 }
