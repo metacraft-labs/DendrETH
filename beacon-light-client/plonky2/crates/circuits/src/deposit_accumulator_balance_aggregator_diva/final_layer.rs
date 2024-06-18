@@ -15,7 +15,7 @@ use crate::{
             },
             sha256::sha256,
         },
-        target_to_le_bits, verify_proof,
+        target_to_be_bits, verify_proof,
     },
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
 };
@@ -264,28 +264,28 @@ fn hash_public_inputs<F: RichField + Extendable<D>, const D: usize>(
 
     let block_number_bits = biguint_to_bits_target(builder, &input.execution_block_number);
 
-    let number_of_non_activated_validators_bits = target_to_le_bits(
+    let number_of_non_activated_validators_bits = target_to_be_bits(
         builder,
         balance_aggregation_pis
             .accumulated_data
             .validator_status_stats
             .non_activated_count,
     );
-    let number_of_active_validators_bits = target_to_le_bits(
+    let number_of_active_validators_bits = target_to_be_bits(
         builder,
         balance_aggregation_pis
             .accumulated_data
             .validator_status_stats
             .active_count,
     );
-    let number_of_exited_validators_bits = target_to_le_bits(
+    let number_of_exited_validators_bits = target_to_be_bits(
         builder,
         balance_aggregation_pis
             .accumulated_data
             .validator_status_stats
             .exited_count,
     );
-    let number_of_slashed_validators_bits = target_to_le_bits(
+    let number_of_slashed_validators_bits = target_to_be_bits(
         builder,
         balance_aggregation_pis
             .accumulated_data

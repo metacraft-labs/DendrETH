@@ -11,7 +11,7 @@ use crate::{
             merkle::{sha256::assert_merkle_proof_is_valid_const_sha256, ssz::ssz_num_to_bits},
             sha256::sha256,
         },
-        target_to_le_bits, verify_proof,
+        target_to_be_bits, verify_proof,
     },
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
     withdrawal_credentials_balance_aggregator::first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
@@ -132,15 +132,15 @@ impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
             .cloned()
             .collect_vec();
 
-        let number_of_non_activated_validators_bits = target_to_le_bits(
+        let number_of_non_activated_validators_bits = target_to_be_bits(
             builder,
             balance_verification_pi.number_of_non_activated_validators,
         );
         let number_of_active_validators_bits =
-            target_to_le_bits(builder, balance_verification_pi.number_of_active_validators);
+            target_to_be_bits(builder, balance_verification_pi.number_of_active_validators);
         let number_of_exited_validators_bits =
-            target_to_le_bits(builder, balance_verification_pi.number_of_exited_validators);
-        let number_of_slashed_validators_bits = target_to_le_bits(
+            target_to_be_bits(builder, balance_verification_pi.number_of_exited_validators);
+        let number_of_slashed_validators_bits = target_to_be_bits(
             builder,
             balance_verification_pi.number_of_slashed_validators,
         );
