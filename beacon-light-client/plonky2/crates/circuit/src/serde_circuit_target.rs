@@ -152,11 +152,7 @@ impl<const D: usize> SerdeCircuitTarget for StarkProofWithPublicInputsTarget<D> 
             buffer.write_target_merkle_cap(auxiliary_polys_cap)?;
         }
 
-        buffer.write_bool(self.proof.quotient_polys_cap.is_some())?;
-
-        if let Some(quotient_polys_cap) = &self.proof.quotient_polys_cap {
-            buffer.write_target_merkle_cap(quotient_polys_cap)?;
-        }
+        buffer.write_target_merkle_cap(&self.proof.quotient_polys_cap)?;
 
         buffer.write_target_ext_vec(&self.proof.openings.local_values)?;
         buffer.write_target_ext_vec(&self.proof.openings.next_values)?;
@@ -179,11 +175,7 @@ impl<const D: usize> SerdeCircuitTarget for StarkProofWithPublicInputsTarget<D> 
             buffer.write_target_vec(ctl_zs_first)?;
         }
 
-        buffer.write_bool(self.proof.openings.quotient_polys.is_some())?;
-
-        if let Some(quotient_polys) = &self.proof.openings.quotient_polys {
-            buffer.write_target_ext_vec(quotient_polys)?;
-        }
+        buffer.write_target_ext_vec(&self.proof.openings.quotient_polys)?;
 
         buffer.write_target_fri_proof(&self.proof.opening_proof)?;
 
@@ -204,11 +196,7 @@ impl<const D: usize> SerdeCircuitTarget for StarkProofWithPublicInputsTarget<D> 
                 } else {
                     None
                 },
-                quotient_polys_cap: if buffer.read_bool()? {
-                    Some(buffer.read_target_merkle_cap()?)
-                } else {
-                    None
-                },
+                quotient_polys_cap: buffer.read_target_merkle_cap()?,
                 openings: StarkOpeningSetTarget {
                     local_values: buffer.read_target_ext_vec()?,
                     next_values: buffer.read_target_ext_vec()?,
@@ -227,11 +215,7 @@ impl<const D: usize> SerdeCircuitTarget for StarkProofWithPublicInputsTarget<D> 
                     } else {
                         None
                     },
-                    quotient_polys: if buffer.read_bool()? {
-                        Some(buffer.read_target_ext_vec()?)
-                    } else {
-                        None
-                    },
+                    quotient_polys: buffer.read_target_ext_vec()?,
                 },
                 opening_proof: buffer.read_target_fri_proof()?,
             },

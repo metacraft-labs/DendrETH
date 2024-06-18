@@ -103,6 +103,16 @@ export class CommandLineOptionsBuilder {
     return this;
   }
 
+  withTransactionSpeedOpts() {
+    args.option('transaction-speed', {
+      describe: 'The speed you want the transactions to be included in a block',
+      choices: ['slow', 'avg', 'fast'],
+      default: 'avg',
+    });
+
+    return this;
+  }
+
   withBeaconNodeOpts() {
     args.option('beacon-node', {
       alias: 'beacon-node',

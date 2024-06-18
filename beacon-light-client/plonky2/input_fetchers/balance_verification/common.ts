@@ -22,8 +22,14 @@ export function convertValidatorToValidatorInput(
     withdrawalCredentials: bytesToHex(validator.withdrawalCredentials),
     effectiveBalance: validator.effectiveBalance.toString(),
     slashed: validator.slashed,
-    activationEligibilityEpoch: validator.activationEligibilityEpoch.toString(),
-    activationEpoch: validator.activationEpoch.toString(),
+    activationEligibilityEpoch:
+      validator.activationEligibilityEpoch === Infinity
+        ? (2n ** 64n - 1n).toString()
+        : validator.activationEligibilityEpoch.toString(),
+    activationEpoch:
+      validator.activationEpoch === Infinity
+        ? (2n ** 64n - 1n).toString()
+        : validator.activationEpoch.toString(),
     exitEpoch:
       validator.exitEpoch === Infinity
         ? (2n ** 64n - 1n).toString()

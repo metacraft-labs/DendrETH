@@ -52,8 +52,11 @@ pub async fn wrap_final_layer_in_poseidon_bn_128(
         )
         .await?;
 
-        con.set("balance_wrapper_verifier_only", verifier_only_circuit_data)
-            .await?;
+        con.set(
+            format!("{}:{}", protocol, "balance_wrapper_verifier_only"),
+            verifier_only_circuit_data,
+        )
+        .await?;
 
         con.publish(format!("{}:{}", protocol, "gnark_proofs_channel"), "start")
             .await?;

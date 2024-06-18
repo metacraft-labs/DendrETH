@@ -1,7 +1,7 @@
 import { CommandLineOptionsBuilder } from '../../../utils/cmdline';
 import { getBalancesInput } from '../lib/scheduler';
-import accountManagerAbi from '../../abi/account_manager_abi.json';
-import validatorManagerAbi from '../../abi/validator_manager_abi.json';
+import accountManagerAbi from '../../../abi/account_manager_abi.json';
+import validatorManagerAbi from '../../../abi/validator_manager_abi.json';
 import { ethers } from 'ethers';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -22,7 +22,12 @@ const options = new CommandLineOptionsBuilder()
   .option('validator-manager-contract-address', {
     describe: 'The validator manager contract address',
     type: 'string',
-    demandOption: true,
+    demandOption: false,
+  })
+  .option('withdrawal-credentials', {
+    describe: 'The withdrawal credentials',
+    type: 'string',
+    demandOption: false,
   })
   .withBeaconNodeOpts()
   .build();
@@ -36,16 +41,22 @@ const snapshot = new ethers.Contract(
   provider,
 );
 
-const validatorManager = new ethers.Contract(
-  options['validator-manager-contract-address'],
-  validatorManagerAbi,
-  provider,
-);
+const withdrawalCredentials = (() => {
+  if (options['withdrawal-credentials']) {
+    return options['withdrawal-credentials'];
+  } else if (options['validator-manager-contract-address']) {
+    const validatorManager = new ethers.Contract(
+      options['validator-manager-contract-address'],
+      validatorManagerAbi,
+      provider,
+    );
+    return validatorManager.getWithdrawalCredentials();
+  } else {
+    throw new Error('Withdrawal credentials not found');
+  }
+})();
 
 snapshot.on('SnapshotTaken', async (_: number, currentSlot: number) => {
-  const withdrawalCredentials =
-    await validatorManager.getWithdrawalCredentials();
-
   await getBalancesInput({
     protocol: 'diva',
     withdrawalCredentials,
@@ -56,7 +67,7 @@ snapshot.on('SnapshotTaken', async (_: number, currentSlot: number) => {
   });
 
   let run_everywhere_output = await promisified_exec(
-    './circuits_executables/run_everywhere.sh diva',
+    '../../../../crates/circuits_executables/scripts/run_everywhere.sh --proof-storage-dir /mnt/solunka-server-dendreth/diva_new_devnet --redis-address redis://solunska-server:6379/ --protocol diva',
   );
 
   console.log(run_everywhere_output);

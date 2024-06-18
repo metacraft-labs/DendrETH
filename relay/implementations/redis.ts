@@ -675,10 +675,10 @@ export class Redis implements IRedis {
     );
   }
 
-  async getBalanceWrapperVerifierOnly(): Promise<any> {
+  async getBalanceWrapperVerifierOnly(protocol: string): Promise<any> {
     await this.waitForConnection();
 
-    return this.client.get('balance_wrapper_verifier_only');
+    return this.client.get(`${protocol}:balance_wrapper_verifier_only`);
   }
 
   async set(key: string, value: string): Promise<void> {
