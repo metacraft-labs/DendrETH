@@ -17,8 +17,7 @@ redis = { version = "0.23", features = [
 num = { version = "0.4.0", features = ["serde"] }
 plonky2 = { git = "https://github.com/metacraft-labs/plonky2" }
 starky = { git = "https://github.com/metacraft-labs/plonky2" }
-plonky2-circuit-serializer = { git = "https://github.com/metacraft-labs/plonky2-circuit-serializer" }
-starky_bls12_381 = { git = "https://github.com/metacraft-labs/starky_bls12_381" }
+plonky2-circuit-serializer = { git = "https://github.com/metacraft-labs/plonky2-circuit-serializer", branch = "hax/remove-starky_bls12_381"}
 serde = "1.0.164"
 serde_json = "1.0.96"
 anyhow = "1.0.71"
@@ -80,50 +79,6 @@ path = "bin/wrapper.rs"
 [[bin]]
 name = "commitment_mapper_circuit_data_generation"
 path = "bin/commitment_mapper_circuit_data_generation.rs"
-
-[[bin]]
-name = "final_exponentiate"
-path = "bin/final_exponentiate.rs"
-
-[[bin]]
-name = "final_exponentiate_circuit_data_generation"
-path = "bin/final_exponentiate_circuit_data_generation.rs"
-
-[[bin]]
-name = "miller_loop_circuit_data_generation"
-path = "bin/miller_loop_circuit_data_generation.rs"
-
-[[bin]]
-name = "miller_loop"
-path = "bin/miller_loop.rs"
-
-[[bin]]
-name = "fp12_mul_circuit_data_generation"
-path = "bin/fp12_mul_circuit_data_generation.rs"
-
-[[bin]]
-name = "fp12_mul"
-path = "bin/fp12_mul.rs"
-
-[[bin]]
-name = "calc_pairing_precomp"
-path = "bin/calc_pairing_precomp.rs"
-
-[[bin]]
-name = "calc_pairing_precomp_circuit_data_generation"
-path = "bin/calc_pairing_precomp_circuit_data_generation.rs"
-
-[[bin]]
-name = "bls12_381_circuit_data_generation"
-path = "bin/bls12_381_circuit_data_generation.rs"
-
-[[bin]]
-name = "bls12_381_components_proofs"
-path = "bin/bls12_381_components_proofs.rs"
-
-[[bin]]
-name = "bls12_381"
-path = "bin/bls12_381.rs"
 
 [[bin]]
 name = "deposit_accumulator_balance_aggregator_diva"

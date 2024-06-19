@@ -7,7 +7,6 @@ use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use circuit::{Circuit, CircuitInput, SerdeCircuitTarget};
 use circuits::{
-    bls_verification::build_stark_proof_verifier::RecursiveStarkTargets,
     deposit_accumulator_balance_aggregator_diva::{
         final_layer::DepositAccumulatorBalanceAggregatorDivaFinalLayer,
         first_level::DepositAccumulatorBalanceAggregatorDivaFirstLevel,
@@ -917,14 +916,4 @@ pub fn load_common_circuit_data_starky(file_name: &str) -> CommonCircuitData<Gol
 
     CommonCircuitData::<GoldilocksField, 2>::from_bytes(circuit_data_bytes, &CustomGateSerializer)
         .unwrap()
-}
-
-pub fn get_recursive_stark_targets(
-    file_name: &str,
-) -> Result<RecursiveStarkTargets, anyhow::Error> {
-    let target_bytes = read_from_file(&format!("{file_name}.plonky2_targets"))?;
-
-    let mut target_buffer = Buffer::new(&target_bytes);
-
-    Ok(RecursiveStarkTargets::deserialize(&mut target_buffer).unwrap())
 }

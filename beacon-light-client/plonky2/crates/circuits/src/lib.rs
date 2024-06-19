@@ -1,7 +1,6 @@
 #![allow(incomplete_features)]
 #![feature(generic_const_exprs)]
 
-pub mod bls_verification;
 pub mod common_targets;
 pub mod deposit_accumulator_balance_aggregator_diva;
 pub mod deposits_accumulator_balance_aggregator;
