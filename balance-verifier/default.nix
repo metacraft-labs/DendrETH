@@ -38,7 +38,7 @@
       runCommandLocal "balance-verification-circuit-per-level-${level}" {} ''
         ${getExe balance-verifier-circuit-builder} ${lib.optionalString (level != "all") "--level ${level}"}
         mkdir -p $out/bin
-        mv *.plonky2_targets *.plonky2_circuit $out/bin
+        mv serialized_circuits/*.plonky2_targets serialized_circuits/*.plonky2_circuit $out/bin
       '';
 
     commitment-mapper-data = runCommandLocal "commitment-mapper-data" {} ''
