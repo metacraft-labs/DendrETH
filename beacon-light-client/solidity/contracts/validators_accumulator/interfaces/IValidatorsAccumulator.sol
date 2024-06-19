@@ -2,11 +2,6 @@
 pragma solidity ^0.8.18;
 
 interface IValidatorsAccumulator {
-  struct DepositData {
-    uint256 blockNumber;
-    bytes32 accumulator;
-  }
-
   event Deposited(bytes pubkey);
 
   error InvalidCaller();

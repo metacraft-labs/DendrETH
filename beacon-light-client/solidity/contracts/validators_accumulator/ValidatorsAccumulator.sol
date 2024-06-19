@@ -34,12 +34,7 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
   }
 
   // Function to calculate and return the Merkle accumulator root of the validators
-  function getValidatorsAccumulator()
-    external
-    view
-    override
-    returns (bytes32 node)
-  {
+  function getValidatorsAccumulator() external view override returns (bytes32) {
     return _getRoot(validatorsCount);
   }
 
@@ -66,7 +61,8 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
     validatorsCount += 1;
 
     // Insert the node into the Merkle accumulator tree
-    uint256 size = validatorsCount;
+    uint256 _validatorsCount = validatorsCount;
+    uint256 size = _validatorsCount;
     for (
       uint256 height = 0;
       height < VALIDATOR_ACCUMULATOR_TREE_DEPTH;
@@ -81,7 +77,7 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
     }
 
     uint64 blockNumber = uint64(block.number);
-    snapshots[blockNumber] = _getRoot(validatorsCount);
+    snapshots[blockNumber] = _getRoot(_validatorsCount);
     uint256 blockNumbersLength = blockNumbers.length;
     if (
       blockNumbersLength == 0 ||
