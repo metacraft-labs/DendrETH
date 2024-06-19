@@ -13,7 +13,7 @@
 
     nodejs = pkgs.nodejs_21;
 
-    rust-nightly = rust-bin.nightly."2023-06-12".default;
+    rust-nightly = rust-bin.nightly."2024-03-28".default;
 
     craneLib = (crane.mkLib pkgs).overrideToolchain rust-nightly;
 
