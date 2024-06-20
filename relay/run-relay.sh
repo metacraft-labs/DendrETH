@@ -3,9 +3,8 @@
 ZKEY_B3SUM_SUM='7bd1baf6e4aa1bb97933df06f68b26f8aa034e6743ff52c4dd7f6097d6e7d104'
 DAT_B3SUM_SUM='c94eb86af7c0451a4277a7bdfc90232a9db75c192d6852ad18baa9a46e1e52e5'
 source .env
-(cd beacon-light-client/solidity/ && yarn hardhat compile)
 
-process-compose -t=false &
+(cd "${GIT_ROOT} beacon-light-client/solidity/" && yarn hardhat compile)
 
 calculate_checksum() {
   local FILE_PATH=$1
@@ -42,31 +41,38 @@ download_dat_file() {
   fi
 }
 
-if [ ! -f "data/light_client.zkey" ]; then
-  download_zkey_file
-else
-  CALCULATED_ZKEY_SUM=$(calculate_checksum data/light_client.zkey)
-  echo "${CALCULATED_ZKEY_SUM}"
-  if [ "${ZKEY_B3SUM_SUM}" = "${CALCULATED_ZKEY_SUM}" ]; then
-    echo "Using cached zkey file at data/light_client.zkey"
-  else
-    echo "Wrong version of light_client.zkey cached downloading again..."
+look_for_light_client_zkey_file() {
+  if [ ! -f "${GIT_ROOT}/data/light_client.zkey" ]; then
     download_zkey_file
-  fi
-fi
-
-if [ ! -f "data/light_client.dat" ]; then
-  download_dat_file
-else
-  CALCULATED_DAT_SUM=$(calculate_checksum data/light_client.dat)
-  echo "${CALCULATED_DAT_SUM}"
-  if [ "${DAT_B3SUM_SUM}" = "${CALCULATED_DAT_SUM}" ]; then
-    echo "Using cached .dat file at data/light_client.dat"
   else
-    echo "Wrong version of light_client.dat cached downloading again..."
-    download_dat_file
+    CALCULATED_ZKEY_SUM=$(calculate_checksum "${GIT_ROOT}/data/light_client.zkey")
+    echo "${CALCULATED_ZKEY_SUM}"
+    if [ "${ZKEY_B3SUM_SUM}" = "${CALCULATED_ZKEY_SUM}" ]; then
+      echo "Using cached zkey file at data/light_client.zkey"
+    else
+      echo "Wrong version of light_client.zkey cached downloading again..."
+      download_zkey_file
+    fi
   fi
-fi
+}
+
+look_for_light_client_dat_file() {
+  if [ ! -f "${GIT_ROOT}/data/light_client.dat" ]; then
+    download_dat_file
+  else
+    CALCULATED_DAT_SUM=$(calculate_checksum "${GIT_ROOT}/data/light_client.dat")
+    echo "${CALCULATED_DAT_SUM}"
+    if [ "${DAT_B3SUM_SUM}" = "${CALCULATED_DAT_SUM}" ]; then
+      echo "Using cached .dat file at data/light_client.dat"
+    else
+      echo "Wrong version of light_client.dat cached downloading again..."
+      download_dat_file
+    fi
+  fi
+}
+
+look_for_light_client_zkey_file
+look_for_light_client_dat_file
 
 # rapidnskark prover server searches for the witness generator exe in build directory
 mkdir -p build
