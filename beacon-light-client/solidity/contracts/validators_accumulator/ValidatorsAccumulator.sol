@@ -8,6 +8,7 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
   // The depth of the validator accumulator tree
   uint8 internal constant VALIDATOR_ACCUMULATOR_TREE_DEPTH = 32;
   address internal immutable depositAddress;
+  uint64 internal constant MAX_VALUE = type(uint64).max;
 
   // An array to hold the branch hashes for the Merkle tree
   bytes32[VALIDATOR_ACCUMULATOR_TREE_DEPTH] internal branch;
@@ -96,7 +97,7 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
 
     uint64 foundBlockNumber = _binarySearchBlock(blockNumber);
 
-    if (foundBlockNumber > blockNumber) {
+    if (foundBlockNumber == MAX_VALUE) {
       return (zeroHashes[VALIDATOR_ACCUMULATOR_TREE_DEPTH - 1]);
     }
 
@@ -133,9 +134,8 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
       return upperBlockNumber;
     }
 
-    uint64 lowerBlockNumber = blockNumbers[lower];
-    if (lowerBlockNumber > blockNumber) {
-      return lowerBlockNumber;
+    if (blockNumbers[lower] > blockNumber) {
+      return MAX_VALUE;
     }
 
     while (upper > lower) {
