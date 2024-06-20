@@ -8,6 +8,7 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
   // The depth of the validator accumulator tree
   uint8 internal constant VALIDATOR_ACCUMULATOR_TREE_DEPTH = 32;
   address internal immutable depositAddress;
+  uint256 internal constant MAX_VALUE = type(uint256).max;
 
   // An array to hold the branch hashes for the Merkle tree
   bytes32[VALIDATOR_ACCUMULATOR_TREE_DEPTH] internal branch;
@@ -15,10 +16,9 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
 
   // A counter for the total number of validators
   uint256 internal validatorsCount;
-  // Start index of validators map
-  uint256 internal startIndex;
 
-  mapping(uint256 => DepositData) internal snapshots;
+  mapping(uint256 => bytes32) internal snapshots;
+  uint256[] internal blockNumbers;
 
   constructor(address _depositAddress) {
     depositAddress = _depositAddress;
@@ -35,12 +35,7 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
   }
 
   // Function to calculate and return the Merkle accumulator root of the validators
-  function getValidatorsAccumulator()
-    external
-    view
-    override
-    returns (bytes32 node)
-  {
+  function getValidatorsAccumulator() external view override returns (bytes32) {
     return _getRoot(validatorsCount);
   }
 
@@ -67,7 +62,8 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
     validatorsCount += 1;
 
     // Insert the node into the Merkle accumulator tree
-    uint256 size = validatorsCount;
+    uint256 _validatorsCount = validatorsCount;
+    uint256 size = _validatorsCount;
     for (
       uint256 height = 0;
       height < VALIDATOR_ACCUMULATOR_TREE_DEPTH;
@@ -81,28 +77,31 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
       size /= 2;
     }
 
-    snapshots[validatorsCount - 1] = DepositData({
-      blockNumber: block.number,
-      accumulator: _getRoot(validatorsCount)
-    });
+    uint256 blockNumber = block.number;
+    snapshots[blockNumber] = _getRoot(_validatorsCount);
+    uint256 blockNumbersLength = blockNumbers.length;
+    if (
+      blockNumbersLength == 0 ||
+      blockNumbers[blockNumbersLength - 1] != blockNumber
+    ) {
+      blockNumbers.push(blockNumber);
+    }
   }
 
   function findAccumulatorByBlock(
     uint256 blockNumber
-  ) external view override returns (uint256, bytes32) {
-    if (validatorsCount == 0) {
-      return (0, zeroHashes[VALIDATOR_ACCUMULATOR_TREE_DEPTH - 1]);
+  ) external view override returns (bytes32) {
+    if (blockNumbers.length == 0) {
+      return (zeroHashes[VALIDATOR_ACCUMULATOR_TREE_DEPTH - 1]);
     }
 
-    uint256 index = _binarySearchBlock(blockNumber);
+    uint256 foundBlockNumber = _binarySearchBlock(blockNumber);
 
-    DepositData memory snapshot = snapshots[index];
-
-    if (snapshot.blockNumber > blockNumber) {
-      return (0, zeroHashes[VALIDATOR_ACCUMULATOR_TREE_DEPTH - 1]);
+    if (foundBlockNumber == MAX_VALUE) {
+      return (zeroHashes[VALIDATOR_ACCUMULATOR_TREE_DEPTH - 1]);
     }
 
-    return (index + 1, snapshot.accumulator);
+    return snapshots[foundBlockNumber];
   }
 
   function _getRoot(uint256 size) internal view returns (bytes32 node) {
@@ -127,30 +126,31 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
   function _binarySearchBlock(
     uint256 blockNumber
   ) internal view returns (uint256) {
-    uint256 lower = startIndex;
-    uint256 upper = validatorsCount - 1;
+    uint256 lower;
+    uint256 upper = blockNumbers.length - 1;
 
-    if (snapshots[upper].blockNumber <= blockNumber) {
-      return upper;
+    uint256 upperBlockNumber = blockNumbers[upper];
+    if (upperBlockNumber <= blockNumber) {
+      return upperBlockNumber;
     }
 
-    if (snapshots[lower].blockNumber > blockNumber) {
-      return 0;
+    if (blockNumbers[lower] > blockNumber) {
+      return MAX_VALUE;
     }
 
     while (upper > lower) {
       uint256 index = upper - (upper - lower) / 2; // ceil, avoiding overflow
-      DepositData memory snapshot = snapshots[index];
-      if (snapshot.blockNumber == blockNumber) {
-        return index;
-      } else if (snapshot.blockNumber < blockNumber) {
+      uint256 indexBlockNumber = blockNumbers[index];
+      if (indexBlockNumber == blockNumber) {
+        return indexBlockNumber;
+      } else if (indexBlockNumber < blockNumber) {
         lower = index;
       } else {
         upper = index - 1;
       }
     }
 
-    return lower;
+    return blockNumbers[lower];
   }
 
   function toLe64(uint64 value) internal pure returns (bytes memory ret) {
