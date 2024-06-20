@@ -8,7 +8,7 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
   // The depth of the validator accumulator tree
   uint8 internal constant VALIDATOR_ACCUMULATOR_TREE_DEPTH = 32;
   address internal immutable depositAddress;
-  uint64 internal constant MAX_VALUE = type(uint64).max;
+  uint256 internal constant MAX_VALUE = type(uint256).max;
 
   // An array to hold the branch hashes for the Merkle tree
   bytes32[VALIDATOR_ACCUMULATOR_TREE_DEPTH] internal branch;
@@ -17,8 +17,8 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
   // A counter for the total number of validators
   uint256 internal validatorsCount;
 
-  mapping(uint64 => bytes32) internal snapshots;
-  uint64[] internal blockNumbers;
+  mapping(uint256 => bytes32) internal snapshots;
+  uint256[] internal blockNumbers;
 
   constructor(address _depositAddress) {
     depositAddress = _depositAddress;
@@ -77,7 +77,7 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
       size /= 2;
     }
 
-    uint64 blockNumber = uint64(block.number);
+    uint256 blockNumber = block.number;
     snapshots[blockNumber] = _getRoot(_validatorsCount);
     uint256 blockNumbersLength = blockNumbers.length;
     if (
@@ -89,13 +89,13 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
   }
 
   function findAccumulatorByBlock(
-    uint64 blockNumber
+    uint256 blockNumber
   ) external view override returns (bytes32) {
     if (blockNumbers.length == 0) {
       return (zeroHashes[VALIDATOR_ACCUMULATOR_TREE_DEPTH - 1]);
     }
 
-    uint64 foundBlockNumber = _binarySearchBlock(blockNumber);
+    uint256 foundBlockNumber = _binarySearchBlock(blockNumber);
 
     if (foundBlockNumber == MAX_VALUE) {
       return (zeroHashes[VALIDATOR_ACCUMULATOR_TREE_DEPTH - 1]);
@@ -124,12 +124,12 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
   }
 
   function _binarySearchBlock(
-    uint64 blockNumber
-  ) internal view returns (uint64) {
+    uint256 blockNumber
+  ) internal view returns (uint256) {
     uint256 lower;
     uint256 upper = blockNumbers.length - 1;
 
-    uint64 upperBlockNumber = blockNumbers[upper];
+    uint256 upperBlockNumber = blockNumbers[upper];
     if (upperBlockNumber <= blockNumber) {
       return upperBlockNumber;
     }
@@ -140,7 +140,7 @@ contract ValidatorsAccumulator is IValidatorsAccumulator {
 
     while (upper > lower) {
       uint256 index = upper - (upper - lower) / 2; // ceil, avoiding overflow
-      uint64 indexBlockNumber = blockNumbers[index];
+      uint256 indexBlockNumber = blockNumbers[index];
       if (indexBlockNumber == blockNumber) {
         return indexBlockNumber;
       } else if (indexBlockNumber < blockNumber) {

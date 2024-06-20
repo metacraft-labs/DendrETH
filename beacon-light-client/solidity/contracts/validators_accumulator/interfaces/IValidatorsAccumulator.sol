@@ -16,6 +16,6 @@ interface IValidatorsAccumulator {
   ) external payable;
 
   function findAccumulatorByBlock(
-    uint64 blockNumber
+    uint256 blockNumber
   ) external view returns (bytes32 accumulator);
 }
