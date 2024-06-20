@@ -2,7 +2,8 @@
 
 set -euo pipefail
 
-source "${BASH_SOURCE%/*}/../common.sh"
+source "${GIT_ROOT}/libs/bash/proving/circom.sh"
+source "${GIT_ROOT}/libs/bash/common-utils/common.sh"
 
 CIRCUIT_NAME="hash_tree_root"
 BUILD_DIR="${CIRCOM_DIR}/build/${CIRCUIT_NAME}"

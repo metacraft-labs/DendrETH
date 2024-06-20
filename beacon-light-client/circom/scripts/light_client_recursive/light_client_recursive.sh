@@ -2,7 +2,8 @@
 
 set -euo pipefail
 
-source "${BASH_SOURCE%/*}/../common.sh"
+source "${GIT_ROOT}/libs/bash/proving/circom.sh"
+source "${GIT_ROOT}/libs/bash/common-utils/common.sh"
 
 CIRCUIT_NAME="light_client_recursive"
 BUILD_DIR="${CIRCOM_DIR}/build/${CIRCUIT_NAME}"
