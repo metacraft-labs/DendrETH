@@ -79,7 +79,7 @@ processes:
   sepolia:
     description: sepolia
     log_location: ./logs/sepolia.log
-    command: yarn hardhat start-publishing --light-client ${LC_SEPOLIA} --network sepolia --follow-network ${FOLLOW_NETWORK_SEPOLIA} --slots-jump ${SLOTS_JUMP} --prometheus-port 3004
+    command: yarn hardhat start-publishing --light-client ${LC_SEPOLIA} --network sepolia --follow-network ${FOLLOW_NETWORK_SEPOLIA} --slots-jump ${SLOTS_JUMP} --hashi ${SEPOLIA_HASHI} --prometheus-port 3004
     working_dir: ./beacon-light-client/solidity
     depends_on:
       proverserver_check:
