@@ -9,8 +9,6 @@ interface IValidatorsAccumulator {
 
   event Deposited(bytes pubkey);
 
-  error InvalidCaller();
-
   function getValidatorsAccumulator() external view returns (bytes32 node);
 
   function deposit(
