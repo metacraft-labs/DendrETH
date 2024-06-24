@@ -896,7 +896,7 @@ mod test {
         pw.set_proof_with_pis_target(&targets.bls_verification_proof, &bls_proof);
 
         let s = Instant::now();
-        let proof = circuit.prove(pw).unwrap();
+        let _proof = circuit.prove(pw).unwrap();
         println!("Proof generated in {:?}", s.elapsed());
     }
 }
