@@ -102,8 +102,7 @@ pub fn assert_merkle_proof_is_valid_const_sha256<
     gindex: u64,
 ) {
     let is_valid = validate_merkle_proof_const_sha256(builder, leaf, root, branch, gindex);
-    let _true = builder._true();
-    builder.connect(is_valid.target, _true.target);
+    builder.assert_true(is_valid);
 }
 
 pub fn hash_tree_root_sha256<F: RichField + Extendable<D>, const D: usize>(
