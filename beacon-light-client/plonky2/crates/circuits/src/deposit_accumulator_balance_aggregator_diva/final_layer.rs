@@ -24,6 +24,7 @@ use circuit_derive::{CircuitTarget, SerdeCircuitTarget};
 use plonky2::{
     field::{extension::Extendable, goldilocks_field::GoldilocksField},
     hash::hash_types::{HashOut, RichField},
+    iop::target::Target,
     plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::{CircuitConfig, CircuitData},
@@ -80,6 +81,9 @@ pub struct DepositAccumulatorBalanceAggregatorDivaFinalLayerTarget {
     #[target(in)]
     #[serde(with = "serde_bool_array_to_hex_string_nested")]
     pub slot_branch: Sha256MerkleBranchTarget<5>,
+
+    #[target(out)]
+    pub public_inputs_hash_bytes: [Target; 32],
 }
 
 pub struct DepositAccumulatorBalanceAggregatorDivaFinalLayer;
@@ -179,8 +183,9 @@ impl Circuit for DepositAccumulatorBalanceAggregatorDivaFinalLayer {
         public_inputs_hash[1] = builder._false();
         public_inputs_hash[2] = builder._false();
 
-        let public_inputs_hash_bytes = bits_to_bytes_target(builder, &public_inputs_hash);
-        builder.register_public_inputs(&public_inputs_hash_bytes);
+        let public_inputs_hash_bytes = bits_to_bytes_target(builder, &public_inputs_hash)
+            .try_into()
+            .unwrap();
 
         Self::Target {
             balance_aggregation_proof,
@@ -196,6 +201,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorDivaFinalLayer {
             execution_block_number_branch: input.execution_block_number_branch,
             slot: input.slot,
             slot_branch: input.slot_branch,
+            public_inputs_hash_bytes,
         }
     }
 }
