@@ -44,7 +44,6 @@ abstract contract BalanceVerifier is Ownable, IBalanceVerifier {
     bytes calldata proof,
     uint256[] memory publicInputs
   ) internal {
-    // Make the call using `address(this).call`
     (bool success, bytes memory returnData) = verifier.call(
       // Encode the call to the `verify` function with the public inputs
       abi.encodeWithSelector(PlonkVerifier.Verify.selector, proof, publicInputs)

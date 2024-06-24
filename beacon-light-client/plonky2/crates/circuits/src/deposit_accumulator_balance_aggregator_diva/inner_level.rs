@@ -18,7 +18,7 @@ use plonky2::{
 use plonky2_crypto::biguint::CircuitBuilderBiguint;
 
 use super::first_level::{
-    DivaAccumulatedDataTarget, DepositAccumulatorBalanceAggregatorDivaFirstLevel,
+    DepositAccumulatorBalanceAggregatorDivaFirstLevel, DivaAccumulatedDataTarget,
 };
 
 pub struct DepositAccumulatorBalanceAggregatorDivaInnerLevel;
@@ -38,7 +38,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorDivaInnerLevel {
     fn define(
         builder: &mut CircuitBuilder<Self::F, D>,
         circuit_data: &Self::Params,
-    ) -> Self::Target where {
+    ) -> Self::Target {
         let proof1 = verify_proof(builder, &circuit_data);
         let proof2 = verify_proof(builder, &circuit_data);
 
