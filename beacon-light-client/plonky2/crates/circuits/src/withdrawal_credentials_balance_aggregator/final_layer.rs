@@ -6,7 +6,7 @@ use crate::{
     },
     utils::circuit::{
         assert_slot_is_in_epoch::assert_slot_is_in_epoch,
-        biguint_to_bits_target,
+        biguint_to_bits_target, bits_to_bytes_target,
         hashing::{
             merkle::{sha256::assert_merkle_proof_is_valid_const_sha256, ssz::ssz_num_to_bits},
             sha256::sha256,
@@ -22,6 +22,7 @@ use itertools::Itertools;
 use plonky2::{
     field::{extension::Extendable, goldilocks_field::GoldilocksField},
     hash::hash_types::RichField,
+    iop::target::Target,
     plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::{CircuitConfig, CircuitData},
@@ -63,6 +64,9 @@ pub struct FinalCircuitTargets<const WITHDRAWAL_CREDENTIALS_COUNT: usize> {
     #[target(in)]
     #[serde(with = "serde_bool_array_to_hex_string_nested")]
     pub balances_branch: Sha256MerkleBranchTarget<6>,
+
+    #[target(out)]
+    pub public_inputs_hash_bytes: [Target; 32],
 
     pub balance_verification_proof: ProofWithPublicInputsTarget<D>,
     pub validators_commitment_mapper_proof: ProofWithPublicInputsTarget<D>,
@@ -164,12 +168,9 @@ impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
         public_inputs_hash[1] = builder._false();
         public_inputs_hash[2] = builder._false();
 
-        let public_inputs_hash_bytes = public_inputs_hash
-            .chunks(8)
-            .map(|x| builder.le_sum(x.iter().rev()))
-            .collect_vec();
-
-        builder.register_public_inputs(&public_inputs_hash_bytes);
+        let public_inputs_hash_bytes = bits_to_bytes_target(builder, &public_inputs_hash)
+            .try_into()
+            .unwrap();
 
         Self::Target {
             block_root: input.block_root,
@@ -181,6 +182,7 @@ impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
             validators_branch: input.validators_branch,
             balance_verification_proof,
             validators_commitment_mapper_proof,
+            public_inputs_hash_bytes,
         }
     }
 }
