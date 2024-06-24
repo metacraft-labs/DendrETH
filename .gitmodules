@@ -58,3 +58,6 @@
 [submodule "vendor/snarkjs"]
 	path = vendor/snarkjs
 	url = git@github.com:iden3/snarkjs.git
+[submodule "vendor/bls12-381-tests"]
+	path = vendor/bls12-381-tests
+	url = https://github.com/ethereum/bls12-381-tests
