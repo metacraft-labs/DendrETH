@@ -42,11 +42,11 @@ in
       ''
     )
 
-    nlohmann_json
-    python-with-my-packages
-    gmp
-    nasm
-    libsodium
+    # nlohmann_json
+    # python-with-my-packages
+    # gmp
+    # nasm
+    # libsodium
 
     redis
 
@@ -56,10 +56,10 @@ in
     # Circom tests on macOS even when we specify CC=clang below:
     gcc
 
-    ccls
+    # ccls
 
     # Used for building the Nim beacon light client to WebAssembly
-    emscripten
+    # emscripten
 
     # Used for Nim compilations and for building node_modules
     # Please note that building native node bindings may require
@@ -69,7 +69,7 @@ in
 
     # llvm.llvm
     # llvm.lld
-    ldc
+    # ldc
 
     go
 
@@ -84,23 +84,23 @@ in
     python3
     # Process Compose is a simple and flexible scheduler and orchestrator
     #  to manage non-containerized applications.
-    process-compose
+    # process-compose
 
     # Monitoring system & time series database
-    prometheus
+    # prometheus
   ]
   ++ lib.optionals (stdenv.isx86_64) [
-    metacraft-labs.rapidsnark
+    # metacraft-labs.rapidsnark
   ]
   ++ lib.optionals (stdenv.isLinux && stdenv.isx86_64) [
-    nim # Compiling Nim 1.6.8 is currently broken on macOS/M1
-    nim-wasm
+    # nim # Compiling Nim 1.6.8 is currently broken on macOS/M1
+    # nim-wasm
 
     # EOS
-    metacraft-labs.leap
-    metacraft-labs.eos-vm
-    metacraft-labs.cdt
-    # A basic Cosmos SDK app to host WebAssembly smart contracts
-    metacraft-labs.wasmd
-    metacraft-labs.rapidsnark-server
+    # metacraft-labs.leap
+    # metacraft-labs.eos-vm
+    # metacraft-labs.cdt
+    # # A basic Cosmos SDK app to host WebAssembly smart contracts
+    # metacraft-labs.wasmd
+    # metacraft-labs.rapidsnark-server
   ]
