@@ -26,20 +26,19 @@ declare module 'ioredis' {
   }
 }
 
+function makeRedisURL(host: string, port: number, auth?: string): string {
+    const at: string = (auth != null && auth.length > 0) ? `${auth}@` : "";
+    return `redis://${at}${host}:${port}`;
+}
+
 export class Redis implements IRedis {
   public readonly client: RedisClient;
   private readonly pubSub: RedisClientType;
 
   constructor(redisHost: string, redisPort: number, redisAuth?: string) {
-    this.client = new RedisClient({
-      host: redisHost,
-      port: redisPort,
-    });
-
-    const auth: string = (redisAuth != null && redisAuth.length > 0) ? `${redisAuth}@` : "";
-    this.pubSub = createClient({
-      url: `redis://${auth}${redisHost}:${redisPort}`,
-    });
+    const url: string = makeRedisURL(redisHost, redisPort, redisAuth);
+    this.client = new RedisClient(url);
+    this.pubSub = createClient({ url });
 
     this.client.defineCommand('deletePattern', {
       numberOfKeys: 0,
