@@ -36,6 +36,18 @@ const snapshot = new ethers.Contract(
   provider,
 );
 
+console.log('Running diva_balance_aggregator_scheduler:');
+console.log('\ttake:', options['take']);
+console.log('\toffset:', options['offset']);
+console.log('\tredis-host:', options['redis-host']);
+console.log('\tredis-port:', options['redis-port']);
+console.log('\taddress:', options['address']);
+console.log('\tjson-rpc:', options['json-rpc']);
+console.log('\tprotocol:', options['protocol']);
+console.log('\tsnapshotContractAddress:', snapshotContractAddress);
+console.log();
+console.log('Binding to SnapshotTaken events...');
+
 snapshot.on('SnapshotTaken', async (_: BigNumber, currentSlot: BigNumber) => {
   await storeBalanceVerificationData({
     beaconNodeUrls: options['beacon-node'],
