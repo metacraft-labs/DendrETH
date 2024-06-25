@@ -25,6 +25,7 @@ interface SchedulerContext {
 interface SchedulerContextConfig {
   redisHost: string;
   redisPort: number;
+  redisAuth?: string;
   ethJsonRPCProviderURL: string;
   contractAddress: string;
   contractAbi: any;
@@ -34,7 +35,7 @@ interface SchedulerContextConfig {
 export function createSchedulerContext(
   config: SchedulerContextConfig,
 ): SchedulerContext {
-  const redis = new Redis(config.redisHost, config.redisPort);
+  const redis = new Redis(config.redisHost, config.redisPort, config.redisAuth);
 
   const ethJsonRPC = new ethers.providers.JsonRpcProvider(
     config.ethJsonRPCProviderURL,

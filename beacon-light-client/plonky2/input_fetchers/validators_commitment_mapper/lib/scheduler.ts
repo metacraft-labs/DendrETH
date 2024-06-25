@@ -44,7 +44,7 @@ export class CommitmentMapperScheduler {
 
   async init(options: any) {
     this.api = await getBeaconApi(options['beacon-node']);
-    this.redis = new Redis(options['redis-host'], options['redis-port']);
+    this.redis = new Redis(options['redis-host'], options['redis-port'], options['redis-auth']);
     this.queue = new WorkQueue(
       new KeyPrefix(`${CONSTANTS.validatorProofsQueue}`),
     );

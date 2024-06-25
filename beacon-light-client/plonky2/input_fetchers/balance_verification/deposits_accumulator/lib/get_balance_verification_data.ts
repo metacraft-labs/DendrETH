@@ -45,6 +45,7 @@ export type StoreBalanceVerificationConfig =
     offset?: number;
     redisHost: string;
     redisPort: number;
+    redisAuth?: string;
   };
 
 export type StoreBalanceVerificationParameterType =
@@ -70,7 +71,7 @@ export async function storeBalanceVerificationData(
 ) {
   const config = { ...getDefaultBalanceVerificationConfig(), ...options };
 
-  const redis = new RedisLocal(config.redisHost, config.redisPort);
+  const redis = new RedisLocal(config.redisHost, config.redisPort, options.redisAuth);
   const beaconApi = await getBeaconApi(config.beaconNodeUrls);
   const provider = new ethers.providers.JsonRpcProvider(config.rpcUrl);
 

@@ -5,7 +5,6 @@ import { storeBalanceVerificationData } from '../lib/get_balance_verification_da
 
 const options = new CommandLineOptionsBuilder()
   .withRedisOpts()
-  .withRedisOpts()
   .withBeaconNodeOpts()
   .option('json-rpc', {
     describe: 'The RPC URL',
@@ -41,14 +40,17 @@ console.log('\ttake:', options['take']);
 console.log('\toffset:', options['offset']);
 console.log('\tredis-host:', options['redis-host']);
 console.log('\tredis-port:', options['redis-port']);
+console.log('\tredis-auth:', options['redis-auth'].length);
 console.log('\taddress:', options['address']);
 console.log('\tjson-rpc:', options['json-rpc']);
 console.log('\tprotocol:', options['protocol']);
-console.log('\tsnapshotContractAddress:', snapshotContractAddress);
+console.log('\tsnapshot-contract-address:', snapshotContractAddress);
 console.log();
 console.log('Binding to SnapshotTaken events...');
 
 snapshot.on('SnapshotTaken', async (_: BigNumber, currentSlot: BigNumber) => {
+  const now: string = (new Date()).toISOString();
+  console.log(`${now} | SnapshotTaken received: slot+${currentSlot}`);
   await storeBalanceVerificationData({
     beaconNodeUrls: options['beacon-node'],
     slot: currentSlot.toNumber(),
@@ -56,6 +58,7 @@ snapshot.on('SnapshotTaken', async (_: BigNumber, currentSlot: BigNumber) => {
     offset: options['offset'],
     redisHost: options['redis-host'],
     redisPort: options['redis-port'],
+    redisAuth: options['redis-auth'],
     address: options['address'],
     rpcUrl: options['json-rpc'],
     protocol: options['protocol'],

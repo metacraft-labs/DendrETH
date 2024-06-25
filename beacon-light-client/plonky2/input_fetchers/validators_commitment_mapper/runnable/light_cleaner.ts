@@ -4,6 +4,7 @@ import { sleep } from '@dendreth/utils/ts-utils/common-utils';
 import CONSTANTS from '../../../kv_db_constants.json';
 import { lightClean } from '../../light_cleaner_common';
 import { CommandLineOptionsBuilder } from '../../utils/cmdline';
+import makeRedis from '../../utils/redis';
 
 (async () => {
   const options = new CommandLineOptionsBuilder()
@@ -16,10 +17,7 @@ import { CommandLineOptionsBuilder } from '../../utils/cmdline';
 
   const prefix = new KeyPrefix(`${CONSTANTS.validatorProofsQueue}`);
   const validatorProofs = new WorkQueue(prefix);
-
-  const redis = new Redis(
-    `redis://${options['redis-host']}:${options['redis-port']}`,
-  );
+  const redis: Redis = makeRedis(options);
 
   while (true) {
     console.log('Performing light clean');

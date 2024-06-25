@@ -30,14 +30,15 @@ export class Redis implements IRedis {
   public readonly client: RedisClient;
   private readonly pubSub: RedisClientType;
 
-  constructor(redisHost: string, redisPort: number) {
+  constructor(redisHost: string, redisPort: number, redisAuth?: string) {
     this.client = new RedisClient({
       host: redisHost,
       port: redisPort,
     });
 
+    const auth: string = (redisAuth != null && redisAuth.length > 0) ? `${redisAuth}@` : "";
     this.pubSub = createClient({
-      url: `redis://${redisHost}:${redisPort}`,
+      url: `redis://${auth}${redisHost}:${redisPort}`,
     });
 
     this.client.defineCommand('deletePattern', {

@@ -23,6 +23,12 @@ export class CommandLineOptionsBuilder {
         type: 'number',
         default: Number(config['redis-port']),
         description: 'Specifies the Redis port number',
+      })
+      .option('redis-auth', {
+        describe: 'TODO',
+        type: 'string',
+        default: '',
+        description: 'TODO',
       });
 
     return this;
