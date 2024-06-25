@@ -1,6 +1,6 @@
 import { CommandLineOptionsBuilder } from '../../../utils/cmdline';
 import accountManagerAbi from '../../../abi/account_manager_abi.json';
-import { ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import { storeBalanceVerificationData } from '../lib/get_balance_verification_data';
 
 const options = new CommandLineOptionsBuilder()
@@ -36,10 +36,10 @@ const snapshot = new ethers.Contract(
   provider,
 );
 
-snapshot.on('SnapshotTaken', async (_: number, currentSlot: number) => {
+snapshot.on('SnapshotTaken', async (_: BigNumber, currentSlot: BigNumber) => {
   await storeBalanceVerificationData({
     beaconNodeUrls: options['beacon-node'],
-    slot: currentSlot,
+    slot: currentSlot.toNumber(),
     take: options['take'],
     offset: options['offset'],
     redisHost: options['redis-host'],
