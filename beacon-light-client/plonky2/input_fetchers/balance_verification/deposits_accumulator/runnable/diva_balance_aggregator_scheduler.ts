@@ -27,7 +27,7 @@ const options = new CommandLineOptionsBuilder()
   .build();
 
 const snapshotContractAddress = options['snapshot-contract-address'];
-const provider = new ethers.providers.JsonRpcProvider(options['rpc-url']);
+const provider = new ethers.providers.JsonRpcProvider(options['json-rpc']);
 
 const snapshot = new ethers.Contract(
   snapshotContractAddress,
