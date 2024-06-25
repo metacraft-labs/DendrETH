@@ -115,7 +115,7 @@ processes:
   chiado:
     description: chiado
     log_location: ./logs/chiado.log
-    command: yarn hardhat start-publishing --light-client ${LC_CHIADO} --network chiado --follow-network ${FOLLOW_NETWORK_CHIADO} --slots-jump ${SLOTS_JUMP} --prometheus-port 3010
+    command: yarn hardhat start-publishing --light-client ${LC_CHIADO} --network chiado --follow-network ${FOLLOW_NETWORK_CHIADO} --slots-jump ${SLOTS_JUMP} --hashi ${CHIADO_HASHI}  --prometheus-port 3010
     working_dir: ./beacon-light-client/solidity
     depends_on:
       proverserver_check:
@@ -142,7 +142,7 @@ processes:
   lukso:
     description: lukso
     log_location: ./logs/lukso.log
-    command: yarn hardhat start-publishing --light-client ${LC_LUKSO} --network lukso --follow-network ${FOLLOW_NETWORK_LUKSO} --slots-jump ${SLOTS_JUMP} --prometheus-port 3015
+    command: yarn hardhat start-publishing --light-client ${LC_LUKSO} --network lukso --follow-network ${FOLLOW_NETWORK_LUKSO} --slots-jump ${SLOTS_JUMP} --hashi ${LUKSO_HASHI} --prometheus-port 3015
     working_dir: ./beacon-light-client/solidity
     depends_on:
       proverserver_check:
