@@ -14,6 +14,7 @@ config satisfies CommonConfig;
 
 (async () => {
   const cmdlineOpts = new CommandLineOptionsBuilder()
+    .withRedisOpts()
     .option('rebuild', {
       describe: 'Rebuild pubkey commitment mapper tree',
       type: 'boolean',
@@ -40,9 +41,9 @@ config satisfies CommonConfig;
     .build();
 
   const context = createSchedulerContext({
-    redisHost: config['redis-host'],
-    redisPort: config['redis-port'],
-    redisAuth: config['redis-auth'],
+    redisHost: cmdlineOpts['redis-host'],
+    redisPort: cmdlineOpts['redis-port'],
+    redisAuth: cmdlineOpts['redis-auth'],
     ethJsonRPCProviderURL: cmdlineOpts['json-rpc'],
     contractAddress: cmdlineOpts['contract-address'],
     contractAbi: validatorsAccumulatorAbi,

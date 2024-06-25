@@ -162,7 +162,13 @@ impl<'a> CommandLineOptionsBuilder<'a> {
         Self { command }
     }
 
-    pub fn with_redis_options(self, host: &str, port: usize) -> Self {
+    pub fn with_redis_options(self, host: &str, port: usize, auth: &str) -> Self {
+        let at: String = if auth.len() > 0 {
+            format!("{auth}@")
+        } else {
+            auth.to_string()
+        };
+
         let command = self.command.arg(
             Arg::with_name("redis_connection")
                 .short('r')
@@ -170,7 +176,7 @@ impl<'a> CommandLineOptionsBuilder<'a> {
                 .value_name("Redis Connection")
                 .help("Sets a custom Redis connection")
                 .takes_value(true)
-                .default_value(Box::leak(Box::new(format!("redis://{host}:{port}/",)))),
+                .default_value(Box::leak(Box::new(format!("redis://{at}{host}:{port}",)))),
         );
 
         Self { command }
@@ -218,6 +224,7 @@ impl<'a> CommandLineOptionsBuilder<'a> {
 pub struct CommonConfigOptions {
     pub redis_host: String,
     pub redis_port: usize,
+    pub redis_auth: String,
 }
 
 pub fn parse_config_file(filepath: String) -> Result<CommonConfigOptions> {

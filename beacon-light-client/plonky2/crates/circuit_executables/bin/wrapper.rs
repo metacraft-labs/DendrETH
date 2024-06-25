@@ -32,7 +32,7 @@ async fn async_main() -> Result<()> {
     let common_config = parse_config_file("../../common_config.json".to_owned()).unwrap();
 
     let matches = CommandLineOptionsBuilder::new("wrapper")
-        .with_redis_options(&common_config.redis_host, common_config.redis_port)
+        .with_redis_options(&common_config.redis_host, common_config.redis_port, &common_config.redis_auth)
         .with_protocol_options()
         .arg(
             Arg::with_name("compile")
