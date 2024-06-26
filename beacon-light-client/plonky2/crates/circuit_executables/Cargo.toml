@@ -130,5 +130,9 @@ name = "deposit_accumulator_balance_aggregator_diva"
 path = "bin/deposit_accumulator_balance_aggregator_diva.rs"
 
 [[bin]]
+name = "deposit_accumulator_balance_aggregator_diva_circuit_data_generation"
+path = "bin/deposit_accumulator_balance_aggregator_diva_circuit_data_generation.rs"
+
+[[bin]]
 name = "deposit_accumulator_balance_aggregator_final_layer"
 path = "bin/deposit_accumulator_balance_aggregator_final_layer.rs"
