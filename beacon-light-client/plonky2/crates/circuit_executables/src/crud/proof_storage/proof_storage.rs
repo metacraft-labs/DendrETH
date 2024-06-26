@@ -69,7 +69,6 @@ pub async fn create_proof_storage(args: &ArgMatches) -> Box<dyn ProofStorage> {
             Box::new(AzureStorage::new(env::var("STORAGE_CONTAINER").unwrap()))
         }
         ProofStorageType::Aws => {
-            dotenv::from_path("../.env").ok();
             Box::new(
                 AwsStorage::new(
                     args.value_of("aws_endpoint_url").unwrap().to_string(),
