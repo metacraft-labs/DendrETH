@@ -2,6 +2,10 @@ import { CommandLineOptionsBuilder } from '../../../utils/cmdline';
 import accountManagerAbi from '../../../abi/account_manager_abi.json';
 import { BigNumber, ethers } from 'ethers';
 import { storeBalanceVerificationData } from '../lib/get_balance_verification_data';
+import { Redis } from '@dendreth/relay/implementations/redis';
+import CONSTANTS from '../../../../kv_db_constants.json';
+import { sleep } from '@dendreth/utils/ts-utils/common-utils';
+import JSONbig from 'json-bigint';
 
 const options = new CommandLineOptionsBuilder()
   .withRedisOpts()
@@ -49,7 +53,7 @@ console.log();
 console.log('Binding to SnapshotTaken events...');
 
 snapshot.on('SnapshotTaken', async (_: BigNumber, currentSlot: BigNumber) => {
-  const now: string = (new Date()).toISOString();
+  const now: string = new Date().toISOString();
   console.log(`${now} | SnapshotTaken received: slot+${currentSlot}`);
   await storeBalanceVerificationData({
     beaconNodeUrls: options['beacon-node'],
@@ -63,4 +67,26 @@ snapshot.on('SnapshotTaken', async (_: BigNumber, currentSlot: BigNumber) => {
     rpcUrl: options['json-rpc'],
     protocol: options['protocol'],
   });
+
+  let redis = new Redis(
+    options['redis-port'],
+    options['redis-host'],
+    options['redis-auth'],
+  );
+
+  let balance_aggregator_proof;
+
+  while (!balance_aggregator_proof || balance_aggregator_proof.needsChange) {
+    let proof_str = await redis.client.get(
+      `${options['protocol']}:${
+        CONSTANTS.depositBalanceVerificationProofKey
+      }:${32}:${0}`,
+    );
+
+    if (proof_str) {
+      balance_aggregator_proof = JSONbig.parse(proof_str);
+    }
+
+    await sleep(1000);
+  }
 });
