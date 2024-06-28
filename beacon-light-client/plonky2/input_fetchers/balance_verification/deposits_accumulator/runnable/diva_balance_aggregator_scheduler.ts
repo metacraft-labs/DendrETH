@@ -128,8 +128,8 @@ async function main() {
 
     // Detect when the final worker proof is committed.
     const redis: Redis = new Redis(
-      options["redis-port"],
       options["redis-host"],
+      options["redis-port"],
       options["redis-auth"],
     );
     const protocol: string = "" + options["protocol"];
