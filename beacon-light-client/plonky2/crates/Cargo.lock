@@ -1149,11 +1149,13 @@ dependencies = [
 name = "circuit"
 version = "0.1.0"
 dependencies = [
+ "circuit_derive",
  "deriving_via",
  "itertools 0.10.5",
  "num-bigint 0.4.5",
  "plonky2",
  "plonky2_crypto",
+ "primitive-types 0.12.2",
  "serde",
  "serde-big-array 0.5.1",
  "starky",

@@ -4,6 +4,7 @@ version = "0.1.0"
 edition.workspace = true
 
 [dependencies]
+circuit_derive = { path = "../circuit_derive" }
 plonky2 = { git = "https://github.com/metacraft-labs/plonky2" }
 plonky2_crypto = { git = "https://github.com/metacraft-labs/plonky2-crypto" }
 starky = { git = "https://github.com/metacraft-labs/plonky2" }
@@ -12,3 +13,4 @@ itertools = "0.10.5"
 deriving_via = "1.6.1"
 serde = "1.0.164"
 serde-big-array = "0.5.1"
+primitive-types = "0.12.2"
