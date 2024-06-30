@@ -214,33 +214,6 @@ pub fn is_equal_u32<F: RichField + Extendable<D>, const D: usize>(
     builder.is_equal(x.0, y.0)
 }
 
-pub fn biguint_is_equal_non_equal_limbs<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    a: &BigUintTarget,
-    b: &BigUintTarget,
-) -> BoolTarget {
-    let mut ret = builder._true();
-    let false_t = builder._false().target;
-
-    let min_limbs = a.num_limbs().min(b.num_limbs());
-    for i in 0..min_limbs {
-        let limb_equal = is_equal_u32(builder, a.get_limb(i), b.get_limb(i));
-        ret = BoolTarget::new_unsafe(builder.select(limb_equal, ret.target, false_t));
-    }
-
-    let zero_u32 = U32Target(builder.zero());
-    for i in min_limbs..a.num_limbs() {
-        let is_zero = is_equal_u32(builder, a.get_limb(i), zero_u32);
-        ret = BoolTarget::new_unsafe(builder.select(is_zero, ret.target, false_t));
-    }
-    for i in min_limbs..b.num_limbs() {
-        let is_zero = is_equal_u32(builder, b.get_limb(i), zero_u32);
-        ret = BoolTarget::new_unsafe(builder.select(is_zero, ret.target, false_t));
-    }
-
-    ret
-}
-
 fn split_into_chunks(leaf: &[BoolTarget; 256]) -> [[BoolTarget; 64]; 4] {
     let mut chunks = Vec::new();
 
