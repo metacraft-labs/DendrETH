@@ -1,7 +1,7 @@
 use crate::{
     self as circuit,
     circuit_builder_extensions::CircuitBuilderExtensions,
-    make_uint32_n,
+    define_uint_target_type,
     targets::uint::ops::{
         arithmetic::{Add, Div, Mul, One, Rem, Sub, Zero},
         comparison::{Comparison, EqualTo, LessThanOrEqual},
@@ -33,10 +33,10 @@ use primitive_types::{U256, U512};
 mod r#macro;
 pub mod ops;
 
-make_uint32_n!(Uint64Target, u64);
-make_uint32_n!(Uint128Target, u128);
-make_uint32_n!(Uint256Target, U256);
-make_uint32_n!(Uint512Target, U512);
+define_uint_target_type!(Uint64Target, u64);
+define_uint_target_type!(Uint128Target, u128);
+define_uint_target_type!(Uint256Target, U256);
+define_uint_target_type!(Uint512Target, U512);
 
 fn assert_limbs_are_valid<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
