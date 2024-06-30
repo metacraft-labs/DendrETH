@@ -22,7 +22,8 @@ use crate::{
     common_targets::{BasicRecursiveInnerCircuitTarget, PubkeyTarget},
     deposits_accumulator_balance_aggregator::first_level::DepositAccumulatorBalanceAggregatorFirstLevel,
     utils::circuit::{
-        assert_bool_arrays_are_equal, bits_to_biguint_target, bool_arrays_are_equal, verify_proof,
+        assert_bool_arrays_are_equal, biguint_target_from_le_bits, bool_arrays_are_equal,
+        verify_proof,
     },
 };
 
@@ -134,8 +135,8 @@ fn cmp_pubkey<F: RichField + Extendable<D>, const D: usize>(
     pk1: PubkeyTarget,
     pk2: PubkeyTarget,
 ) -> BoolTarget {
-    let pk1_bu = bits_to_biguint_target(builder, pk1.to_vec());
-    let pk2_bu = bits_to_biguint_target(builder, pk2.to_vec());
+    let pk1_bu = biguint_target_from_le_bits(builder, &pk1);
+    let pk2_bu = biguint_target_from_le_bits(builder, &pk2);
 
     builder.cmp_biguint(&pk1_bu, &pk2_bu)
 }
