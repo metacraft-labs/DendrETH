@@ -1,5 +1,5 @@
 #[macro_export]
-macro_rules! make_uint32_n {
+macro_rules! define_uint_target_type {
     ($ident:ident, $ty:ty) => {
         /// An unsigned integer type encoded as little-endian u32 limbs.
         /// Performs wrapping unsigned integer arithmetic.
