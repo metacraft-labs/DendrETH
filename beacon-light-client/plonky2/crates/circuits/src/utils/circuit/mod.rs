@@ -251,6 +251,7 @@ fn split_into_chunks(leaf: &[BoolTarget; 256]) -> [[BoolTarget; 64]; 4] {
     chunks.try_into().unwrap()
 }
 
+/// `balance_index` must be in the range [0, 3].
 pub fn get_balance_from_leaf<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     leaf: &SSZTarget,
