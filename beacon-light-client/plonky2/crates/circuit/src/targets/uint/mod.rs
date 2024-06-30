@@ -1,5 +1,7 @@
 use crate::{
-    self as circuit, make_uint32_n,
+    self as circuit,
+    circuit_builder_extensions::CircuitBuilderExtensions,
+    make_uint32_n,
     targets::uint::ops::{
         arithmetic::{Add, Div, Mul, One, Rem, Sub, Zero},
         comparison::{Comparison, EqualTo, LessThanOrEqual},
@@ -39,14 +41,11 @@ make_uint32_n!(Uint512Target, U512, 16);
 fn assert_limbs_are_valid<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     limbs: &[U32Target],
-) -> BoolTarget {
-    let mut is_valid = builder._true();
-
+) {
     for &limb in limbs {
         let upper_bound = builder.constant_biguint(&BigUint::from(2u64.pow(32) - 1));
         let limb_biguint = BigUintTarget { limbs: vec![limb] };
         let limb_is_valid = builder.cmp_biguint(&limb_biguint, &upper_bound);
-        is_valid = builder.and(is_valid, limb_is_valid)
+        builder.assert_true(limb_is_valid);
     }
-    is_valid
 }
