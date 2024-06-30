@@ -33,10 +33,10 @@ use primitive_types::{U256, U512};
 mod r#macro;
 pub mod ops;
 
-make_uint32_n!(Uint64Target, u64, 2);
-make_uint32_n!(Uint128Target, u128, 4);
-make_uint32_n!(Uint256Target, U256, 8);
-make_uint32_n!(Uint512Target, U512, 16);
+make_uint32_n!(Uint64Target, u64);
+make_uint32_n!(Uint128Target, u128);
+make_uint32_n!(Uint256Target, U256);
+make_uint32_n!(Uint512Target, U512);
 
 fn assert_limbs_are_valid<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
@@ -48,4 +48,9 @@ fn assert_limbs_are_valid<F: RichField + Extendable<D>, const D: usize>(
         let limb_is_valid = builder.cmp_biguint(&limb_biguint, &upper_bound);
         builder.assert_true(limb_is_valid);
     }
+}
+
+const fn num_limbs<T>() -> usize {
+    debug_assert!(std::mem::size_of::<T>() % 4 == 0);
+    std::mem::size_of::<T>() / 4
 }
