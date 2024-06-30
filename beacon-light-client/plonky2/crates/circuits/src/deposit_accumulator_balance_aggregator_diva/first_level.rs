@@ -112,7 +112,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorDivaFirstLevel {
 
         let validator_hash_tree_root = hash_validator_poseidon(builder, &input.validator);
 
-        let is_valid = validate_merkle_proof_poseidon(
+        let validator_proof_is_valid = validate_merkle_proof_poseidon(
             builder,
             &validator_hash_tree_root,
             &input.validators_commitment_mapper_root,
@@ -120,7 +120,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorDivaFirstLevel {
             &input.validator_gindex,
         );
 
-        builder.assert_implication(deposit_is_real, is_valid);
+        builder.assert_implication(deposit_is_real, validator_proof_is_valid);
 
         assert_bool_arrays_are_equal(builder, &input.validator.pubkey, &input.deposit_pubkey);
 
@@ -129,7 +129,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorDivaFirstLevel {
         let balance = get_balance_from_leaf(builder, &input.balance_leaf, balance_inner_index);
         let balance_gindex = builder.div_biguint(&input.validator_gindex, &four);
 
-        let is_valid = validate_merkle_proof_sha256(
+        let balance_proof_is_valid = validate_merkle_proof_sha256(
             builder,
             &input.balance_leaf,
             &input.balances_root,
@@ -137,7 +137,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorDivaFirstLevel {
             &balance_gindex,
         );
 
-        builder.assert_implication(deposit_is_real, is_valid);
+        builder.assert_implication(deposit_is_real, balance_proof_is_valid);
 
         let (is_non_activated, is_active, is_exited) = get_validator_status(
             builder,
