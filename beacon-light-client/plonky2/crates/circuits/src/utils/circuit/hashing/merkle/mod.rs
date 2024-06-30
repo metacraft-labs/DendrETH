@@ -8,7 +8,6 @@ use crate::common_targets::Sha256Target;
 
 pub mod poseidon;
 pub mod sha256;
-pub mod ssz;
 
 pub fn pick_left_and_right_hash<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
