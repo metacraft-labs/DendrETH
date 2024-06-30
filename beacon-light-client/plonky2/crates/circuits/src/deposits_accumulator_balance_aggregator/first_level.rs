@@ -4,10 +4,7 @@ use crate::{
     deposits_accumulator_balance_aggregator::common_targets::{
         AccumulatedDataTarget, DepositDataTarget, ValidatorStatusStatsTarget,
     },
-    serializers::{
-        biguint_to_str, parse_biguint, serde_bool_array_to_hex_string,
-        serde_bool_array_to_hex_string_nested,
-    },
+    serializers::{serde_bool_array_to_hex_string, serde_bool_array_to_hex_string_nested},
     utils::circuit::{
         assert_arrays_are_equal, assert_bool_arrays_are_equal, bits_to_bytes_target,
         get_balance_from_leaf,
@@ -19,16 +16,23 @@ use crate::{
             poseidon::poseidon,
             sha256::sha256_pair,
         },
-        select_biguint,
         validator_status::{get_validator_relevance, get_validator_status},
         verify_proof,
     },
 };
 use circuit::{
-    circuit_builder_extensions::CircuitBuilderExtensions, Circuit, CircuitInputTarget, ToTargets,
+    circuit_builder_extensions::CircuitBuilderExtensions,
+    serde::serde_u64_str,
+    targets::uint::{
+        ops::{
+            arithmetic::{Div, Rem, Zero},
+            comparison::LessThanOrEqual,
+        },
+        Uint64Target,
+    },
+    Circuit, CircuitInputTarget, ToTargets,
 };
 use circuit_derive::{CircuitTarget, SerdeCircuitTarget};
-use num::{BigUint, FromPrimitive};
 use plonky2::{
     field::{extension::Extendable, goldilocks_field::GoldilocksField},
     hash::hash_types::{HashOutTarget, RichField},
@@ -40,7 +44,6 @@ use plonky2::{
         proof::ProofWithPublicInputsTarget,
     },
 };
-use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint};
 
 use crate::common_targets::{
     DepositTargets, PoseidonMerkleBranchTarget, Sha256Target, ValidatorTarget,
@@ -60,8 +63,8 @@ pub struct DepositAccumulatorBalanceAggregatorFirstLevelTargets {
     pub commitment_mapper_proof: PoseidonMerkleBranchTarget<40>,
 
     #[target(in)]
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub validator_gindex: BigUintTarget,
+    #[serde(with = "serde_u64_str")]
+    pub validator_gindex: Uint64Target,
 
     #[target(in)]
     pub deposit: DepositTargets,
@@ -70,8 +73,8 @@ pub struct DepositAccumulatorBalanceAggregatorFirstLevelTargets {
     pub validator_deposit_proof: PoseidonMerkleBranchTarget<32>,
 
     #[target(in)]
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub validator_deposit_gindex: BigUintTarget,
+    #[serde(with = "serde_u64_str")]
+    pub validator_deposit_gindex: Uint64Target,
 
     #[target(in)]
     #[serde(with = "serde_bool_array_to_hex_string")]
@@ -85,12 +88,12 @@ pub struct DepositAccumulatorBalanceAggregatorFirstLevelTargets {
     pub is_dummy: BoolTarget,
 
     #[target(in, out)]
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub current_epoch: BigUintTarget,
+    #[serde(with = "serde_u64_str")]
+    pub current_epoch: Uint64Target,
 
     #[target(in, out)]
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub eth1_deposit_index: BigUintTarget,
+    #[serde(with = "serde_u64_str")]
+    pub eth1_deposit_index: Uint64Target,
 
     #[target(in, out)]
     pub commitment_mapper_root: HashOutTarget,
@@ -144,7 +147,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
             &deposit_hash_tree_root,
             &input.deposits_commitment_mapper_root,
             &input.validator_deposit_proof,
-            &input.validator_deposit_gindex,
+            input.validator_deposit_gindex,
         );
 
         builder.assert_implication(deposit_is_real, is_valid);
@@ -152,8 +155,10 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
         let (bls_verification_proof, signature_is_valid) =
             verify_bls_signature(builder, &input, &bls_circuit_data);
 
-        let deposit_is_processed =
-            builder.cmp_biguint(&input.deposit.deposit_index, &input.eth1_deposit_index);
+        let deposit_is_processed = input
+            .deposit
+            .deposit_index
+            .lte(input.eth1_deposit_index, builder);
 
         let validator_is_on_chain = builder.and(deposit_is_processed, signature_is_valid);
         let deposit_is_real_and_validator_is_on_chain =
@@ -166,7 +171,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
             &validator_hash_tree_root,
             &input.commitment_mapper_root,
             &input.commitment_mapper_proof,
-            &input.validator_gindex,
+            input.validator_gindex,
         );
 
         builder.assert_implication(
@@ -176,17 +181,17 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
 
         assert_bool_arrays_are_equal(builder, &input.validator.pubkey, &input.deposit.pubkey);
 
-        let four = builder.constant_biguint(&BigUint::from_u64(4u64).unwrap());
-        let balance_inner_index = builder.rem_biguint(&input.validator_gindex, &four);
+        let four = Uint64Target::constant(4, builder);
+        let balance_inner_index = input.validator_gindex.rem(four, builder);
         let balance = get_balance_from_leaf(builder, &input.balance_leaf, balance_inner_index);
-        let balance_gindex = builder.div_biguint(&input.validator_gindex, &four);
+        let balance_gindex = input.validator_gindex.div(four, builder);
 
         let balances_proof_is_valid = validate_merkle_proof_sha256(
             builder,
             &input.balance_leaf,
             &input.balances_root,
             &input.balance_proof,
-            &balance_gindex,
+            balance_gindex,
         );
 
         builder.assert_implication(
@@ -196,9 +201,9 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
 
         let (is_non_activated, is_active, is_exited) = get_validator_status(
             builder,
-            &input.validator.activation_epoch,
-            &input.current_epoch,
-            &input.validator.exit_epoch,
+            input.validator.activation_epoch,
+            input.current_epoch,
+            input.validator.exit_epoch,
         );
 
         let zero_validator_status_stats: ValidatorStatusStatsTarget = builder.zero_init();
@@ -216,15 +221,15 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
 
         let mut is_relevant = get_validator_relevance(
             builder,
-            &input.validator.activation_epoch,
-            &input.current_epoch,
-            &input.validator.withdrawable_epoch,
+            input.validator.activation_epoch,
+            input.current_epoch,
+            input.validator.withdrawable_epoch,
         );
 
         is_relevant = builder.and(is_relevant, deposit_is_real_and_validator_is_on_chain);
 
-        let zero_biguint = builder.zero_biguint();
-        let validator_balance = select_biguint(builder, is_relevant, &balance, &zero_biguint);
+        let zero_u64 = Uint64Target::zero(builder);
+        let validator_balance = builder.select_target(is_relevant, &balance, &zero_u64);
 
         let deposit_data = DepositDataTarget {
             pubkey: input.deposit.pubkey,
@@ -235,7 +240,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
                 is_exited,
                 is_slashed: input.validator.slashed,
             },
-            deposit_index: input.deposit.deposit_index.clone(),
+            deposit_index: input.deposit.deposit_index,
             is_counted: deposit_is_real_and_validator_is_on_chain,
             is_dummy: input.is_dummy,
         };
@@ -896,7 +901,7 @@ mod test {
         pw.set_proof_with_pis_target(&targets.bls_verification_proof, &bls_proof);
 
         let s = Instant::now();
-        let proof = circuit.prove(pw).unwrap();
+        let _proof = circuit.prove(pw).unwrap();
         println!("Proof generated in {:?}", s.elapsed());
     }
 }

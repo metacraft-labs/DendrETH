@@ -1,20 +1,17 @@
-use circuit::{circuit_builder_extensions::CircuitBuilderExtensions, ToTargets};
+use circuit::{
+    circuit_builder_extensions::CircuitBuilderExtensions, targets::uint::Uint64Target, ToTargets,
+};
 use itertools::Itertools;
-use num::BigUint;
 use plonky2::{
     field::extension::Extendable,
     hash::hash_types::{HashOutTarget, RichField, NUM_HASH_OUT_ELTS},
     iop::target::BoolTarget,
     plonk::circuit_builder::CircuitBuilder,
 };
-use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint};
 
 use crate::{
     common_targets::{PoseidonMerkleBranchTarget, ValidatorTarget},
-    utils::circuit::{
-        biguint_to_le_bits_target,
-        hashing::poseidon::{poseidon, poseidon_pair},
-    },
+    utils::circuit::hashing::poseidon::{poseidon, poseidon_pair},
 };
 
 pub fn hash_tree_root_poseidon<F: RichField + Extendable<D>, const D: usize>(
@@ -123,9 +120,9 @@ pub fn restore_merkle_root_poseidon<
     builder: &mut CircuitBuilder<F, D>,
     leaf: &HashOutTarget,
     branch: &PoseidonMerkleBranchTarget<DEPTH>,
-    gindex: &BigUintTarget,
+    gindex: Uint64Target,
 ) -> HashOutTarget {
-    let bits = biguint_to_le_bits_target(builder, &gindex);
+    let bits = gindex.to_le_bits(builder);
     let mut current = leaf.clone();
 
     for level in 0..DEPTH {
@@ -148,8 +145,8 @@ pub fn validate_merkle_proof_const_poseidon<
     branch: &PoseidonMerkleBranchTarget<DEPTH>,
     gindex: u64,
 ) -> BoolTarget {
-    let gindex_target = builder.constant_biguint(&BigUint::from(gindex));
-    let restored_root = restore_merkle_root_poseidon(builder, leaf, branch, &gindex_target);
+    let gindex_target = Uint64Target::constant(gindex, builder);
+    let restored_root = restore_merkle_root_poseidon(builder, leaf, branch, gindex_target);
     hash_outs_are_equal(builder, &restored_root, root)
 }
 
@@ -162,7 +159,7 @@ pub fn validate_merkle_proof_poseidon<
     leaf: &HashOutTarget,
     root: &HashOutTarget,
     branch: &PoseidonMerkleBranchTarget<DEPTH>,
-    gindex: &BigUintTarget,
+    gindex: Uint64Target,
 ) -> BoolTarget {
     let restored_root = restore_merkle_root_poseidon(builder, leaf, branch, gindex);
     hash_outs_are_equal(builder, &restored_root, root)
@@ -177,7 +174,7 @@ pub fn assert_merkle_proof_is_valid_poseidon<
     leaf: &HashOutTarget,
     root: &HashOutTarget,
     branch: &PoseidonMerkleBranchTarget<DEPTH>,
-    gindex: &BigUintTarget,
+    gindex: Uint64Target,
 ) {
     let is_valid = validate_merkle_proof_poseidon(builder, leaf, root, branch, gindex);
     builder.assert_true(is_valid);
@@ -194,7 +191,6 @@ pub fn assert_merkle_proof_is_valid_const_poseidon<
     branch: &PoseidonMerkleBranchTarget<DEPTH>,
     gindex: u64,
 ) {
-    let gindex_target = builder.constant_biguint(&BigUint::from(gindex));
-    let is_valid = validate_merkle_proof_poseidon(builder, leaf, root, branch, &gindex_target);
-    builder.assert_true(is_valid);
+    let gindex_target = Uint64Target::constant(gindex, builder);
+    assert_merkle_proof_is_valid_poseidon(builder, leaf, root, branch, gindex_target);
 }

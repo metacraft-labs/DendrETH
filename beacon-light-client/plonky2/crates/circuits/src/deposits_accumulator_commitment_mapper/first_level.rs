@@ -1,9 +1,7 @@
 use crate::{
     serializers::serde_bool_array_to_hex_string,
-    utils::circuit::{
-        biguint_to_bits_target,
-        hashing::{merkle::poseidon::hash_tree_root_poseidon, poseidon::poseidon, sha256::sha256},
-        reverse_endianness,
+    utils::circuit::hashing::{
+        merkle::poseidon::hash_tree_root_poseidon, poseidon::poseidon, sha256::sha256,
     },
 };
 use circuit::{Circuit, ToTargets};
@@ -85,10 +83,7 @@ impl Circuit for DepositsCommitmentMapperFirstLevel {
     ) -> Self::Target {
         let input = Self::read_circuit_input_target(builder);
 
-        let deposit_index_bits = reverse_endianness(&biguint_to_bits_target(
-            builder,
-            &input.deposit.deposit_index,
-        ));
+        let deposit_index_bits = &input.deposit.deposit_index.to_le_bytes(builder);
 
         let sha256_hash_tree_root = sha256(
             builder,

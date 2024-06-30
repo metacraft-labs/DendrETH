@@ -1,23 +1,20 @@
 use crate::{
-    common_targets::Sha256MerkleBranchTarget,
+    common_targets::{Sha256MerkleBranchTarget, Sha256Target},
     deposits_accumulator_balance_aggregator::first_level::DepositAccumulatorBalanceAggregatorFirstLevel,
     deposits_accumulator_commitment_mapper::first_level::DepositsCommitmentMapperFirstLevel,
-    serializers::{
-        biguint_to_str, parse_biguint, serde_bool_array_to_hex_string,
-        serde_bool_array_to_hex_string_nested,
-    },
+    serializers::{serde_bool_array_to_hex_string, serde_bool_array_to_hex_string_nested},
     utils::circuit::{
         assert_slot_is_in_epoch::assert_slot_is_in_epoch,
-        biguint_to_bits_target, bits_to_bytes_target,
-        hashing::{
-            merkle::{sha256::assert_merkle_proof_is_valid_const_sha256, ssz::ssz_num_to_bits},
-            sha256::sha256,
-        },
+        bits_to_bytes_target,
+        hashing::{merkle::sha256::assert_merkle_proof_is_valid_const_sha256, sha256::sha256},
         target_to_le_bits, verify_proof,
     },
     validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
 };
-use circuit::{Circuit, CircuitInputTarget, CircuitOutputTarget};
+use circuit::{
+    serde::serde_u64_str, targets::uint::Uint64Target, Circuit, CircuitInputTarget,
+    CircuitOutputTarget, SSZHashTreeRoot,
+};
 use circuit_derive::CircuitTarget;
 use plonky2::{
     field::{extension::Extendable, goldilocks_field::GoldilocksField},
@@ -29,9 +26,6 @@ use plonky2::{
         proof::ProofWithPublicInputsTarget,
     },
 };
-use plonky2_crypto::biguint::BigUintTarget;
-
-use crate::common_targets::Sha256Target;
 
 #[derive(CircuitTarget)]
 #[serde(rename_all = "camelCase")]
@@ -62,16 +56,16 @@ pub struct DepositAccumulatorBalanceAggregatorFinalLayerTargets {
 
     // Public input
     #[target(in)]
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub execution_block_number: BigUintTarget,
+    #[serde(with = "serde_u64_str")]
+    pub execution_block_number: Uint64Target,
     #[target(in)]
     #[serde(with = "serde_bool_array_to_hex_string_nested")]
     pub execution_block_number_branch: Sha256MerkleBranchTarget<10>,
 
     // Public input
     #[target(in)]
-    #[serde(serialize_with = "biguint_to_str", deserialize_with = "parse_biguint")]
-    pub slot: BigUintTarget,
+    #[serde(with = "serde_u64_str")]
+    pub slot: Uint64Target,
     #[target(in)]
     #[serde(with = "serde_bool_array_to_hex_string_nested")]
     pub slot_branch: Sha256MerkleBranchTarget<5>,
@@ -145,10 +139,10 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFinalLayer {
             &input,
             &balance_aggregation_pis.balances_root,
             &validators_commitment_mapper_pis.sha256_hash_tree_root,
-            &balance_aggregation_pis.eth1_deposit_index,
+            balance_aggregation_pis.eth1_deposit_index,
         );
 
-        assert_slot_is_in_epoch(builder, &input.slot, &balance_aggregation_pis.current_epoch);
+        assert_slot_is_in_epoch(builder, input.slot, balance_aggregation_pis.current_epoch);
 
         let mut public_inputs_hash = hash_public_inputs(
             builder,
@@ -188,7 +182,7 @@ fn validate_data_against_block_root<F: RichField + Extendable<D>, const D: usize
     input: &CircuitInputTarget<DepositAccumulatorBalanceAggregatorFinalLayer>,
     balances_root_level_22: &Sha256Target,
     validators_root_left: &Sha256Target,
-    eth1_deposit_index: &BigUintTarget,
+    eth1_deposit_index: Uint64Target,
 ) {
     assert_merkle_proof_is_valid_const_sha256(
         builder,
@@ -214,7 +208,7 @@ fn validate_data_against_block_root<F: RichField + Extendable<D>, const D: usize
         5767168,
     );
 
-    let slot_ssz = ssz_num_to_bits(builder, &input.slot, 64);
+    let slot_ssz = input.slot.ssz_hash_tree_root(builder);
 
     assert_merkle_proof_is_valid_const_sha256(
         builder,
@@ -224,7 +218,7 @@ fn validate_data_against_block_root<F: RichField + Extendable<D>, const D: usize
         34,
     );
 
-    let block_number_ssz = ssz_num_to_bits(builder, &input.execution_block_number, 64);
+    let block_number_ssz = input.execution_block_number.ssz_hash_tree_root(builder);
 
     assert_merkle_proof_is_valid_const_sha256(
         builder,
@@ -234,7 +228,7 @@ fn validate_data_against_block_root<F: RichField + Extendable<D>, const D: usize
         1798,
     );
 
-    let eth1_deposit_index_ssz = ssz_num_to_bits(builder, eth1_deposit_index, 64);
+    let eth1_deposit_index_ssz = eth1_deposit_index.ssz_hash_tree_root(builder);
 
     assert_merkle_proof_is_valid_const_sha256(
         builder,
@@ -251,10 +245,12 @@ fn hash_public_inputs<F: RichField + Extendable<D>, const D: usize>(
     balance_aggregation_pis: &CircuitOutputTarget<DepositAccumulatorBalanceAggregatorFirstLevel>,
     deposits_commitment_mapper_pis: &CircuitOutputTarget<DepositsCommitmentMapperFirstLevel>,
 ) -> Sha256Target {
-    let balance_bits =
-        biguint_to_bits_target(builder, &balance_aggregation_pis.accumulated_data.balance);
+    let balance_bits = balance_aggregation_pis
+        .accumulated_data
+        .balance
+        .to_be_bits(builder);
 
-    let block_number_bits = biguint_to_bits_target(builder, &input.execution_block_number);
+    let block_number_bits = input.execution_block_number.to_be_bits(builder);
 
     let deposits_count_bits = target_to_le_bits(
         builder,

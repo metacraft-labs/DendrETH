@@ -1,27 +1,22 @@
+use circuit::targets::uint::{
+    ops::comparison::{Comparison, LessThanOrEqual},
+    Uint64Target,
+};
 use plonky2::{
     field::extension::Extendable, hash::hash_types::RichField, iop::target::BoolTarget,
     plonk::circuit_builder::CircuitBuilder,
 };
-use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint};
-
-use crate::utils::circuit::biguint_is_equal;
 
 pub fn get_validator_status<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    activation_epoch: &BigUintTarget,
-    current_epoch: &BigUintTarget,
-    exit_epoch: &BigUintTarget,
+    activation_epoch: Uint64Target,
+    current_epoch: Uint64Target,
+    exit_epoch: Uint64Target,
 ) -> (BoolTarget, BoolTarget, BoolTarget) {
-    let activation_epoch_le_current_epoch = builder.cmp_biguint(&activation_epoch, &current_epoch);
+    let is_not_activated = current_epoch.lt(activation_epoch, builder);
 
-    let current_epoch_le_exit_epoch = builder.cmp_biguint(&current_epoch, &exit_epoch);
-
-    let is_equal = biguint_is_equal(builder, current_epoch, exit_epoch);
-    let not_equal = builder.not(is_equal);
-
-    let current_epoch_lt_exit_epoch = builder.and(current_epoch_le_exit_epoch, not_equal);
-
-    let is_not_activated = builder.not(activation_epoch_le_current_epoch);
+    let activation_epoch_le_current_epoch = activation_epoch.lte(current_epoch, builder);
+    let current_epoch_lt_exit_epoch = current_epoch.lt(exit_epoch, builder);
 
     let is_valid_validator = builder.and(
         activation_epoch_le_current_epoch,
@@ -35,12 +30,12 @@ pub fn get_validator_status<F: RichField + Extendable<D>, const D: usize>(
 
 pub fn get_validator_relevance<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    activation_epoch: &BigUintTarget,
-    current_epoch: &BigUintTarget,
-    withdrawable_epoch: &BigUintTarget,
+    activation_epoch: Uint64Target,
+    current_epoch: Uint64Target,
+    withdrawable_epoch: Uint64Target,
 ) -> BoolTarget {
-    let current_le_withdrawable_epoch = builder.cmp_biguint(&current_epoch, &withdrawable_epoch);
-    let activation_epoch_le_current_epoch = builder.cmp_biguint(&activation_epoch, &current_epoch);
+    let current_le_withdrawable_epoch = current_epoch.lte(withdrawable_epoch, builder);
+    let activation_epoch_le_current_epoch = activation_epoch.lte(current_epoch, builder);
 
     builder.and(
         current_le_withdrawable_epoch,
@@ -51,8 +46,10 @@ pub fn get_validator_relevance<F: RichField + Extendable<D>, const D: usize>(
 #[cfg(test)]
 mod test {
     use anyhow::Result;
-    use num::FromPrimitive;
-    use num_bigint::BigUint;
+    use circuit::{
+        circuit_builder_extensions::CircuitBuilderExtensions, targets::uint::Uint64Target,
+        AddVirtualTarget, SetWitness,
+    };
     use plonky2::{
         field::goldilocks_field::GoldilocksField,
         iop::witness::PartialWitness,
@@ -61,7 +58,6 @@ mod test {
             config::PoseidonGoldilocksConfig,
         },
     };
-    use plonky2_crypto::biguint::{CircuitBuilderBiguint, WitnessBigUint};
 
     use crate::utils::circuit::validator_status::get_validator_status;
 
@@ -71,17 +67,19 @@ mod test {
     fn test_get_validator_relevance() -> Result<()> {
         let mut builder =
             CircuitBuilder::<GoldilocksField, 2>::new(CircuitConfig::standard_recursion_config());
-        let activation_epoch = builder.constant_biguint(&BigUint::from(28551 as u32));
-        let current_epoch = builder.constant_biguint(&BigUint::from(285512 as u32));
-        let withdrawable_epoch = builder.constant_biguint(&BigUint::from(2855125512 as u32));
+
+        let activation_epoch = Uint64Target::constant(28551, &mut builder);
+        let current_epoch = Uint64Target::constant(285512, &mut builder);
+        let withdrawable_epoch = Uint64Target::constant(2855125512, &mut builder);
+
         let is_validator_relevant = get_validator_relevance(
             &mut builder,
-            &activation_epoch,
-            &current_epoch,
-            &withdrawable_epoch,
+            activation_epoch,
+            current_epoch,
+            withdrawable_epoch,
         );
 
-        builder.assert_one(is_validator_relevant.target);
+        builder.assert_true(is_validator_relevant);
 
         let pw = PartialWitness::new();
         let data = builder.build::<PoseidonGoldilocksConfig>();
@@ -100,28 +98,14 @@ mod test {
         type C = PoseidonGoldilocksConfig;
         type F = GoldilocksField;
 
-        let mut pw = PartialWitness::new();
-
         let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
 
-        let activation_epoch = builder.add_virtual_biguint_target(2);
-        let current_epoch = builder.add_virtual_biguint_target(2);
-        let exit_epoch = builder.add_virtual_biguint_target(2);
+        let activation_epoch = <Uint64Target as AddVirtualTarget>::add_virtual_target(&mut builder);
+        let current_epoch = <Uint64Target as AddVirtualTarget>::add_virtual_target(&mut builder);
+        let exit_epoch = <Uint64Target as AddVirtualTarget>::add_virtual_target(&mut builder);
 
         let (is_non_activated_validator, is_valid_validator, is_exited_validator) =
-            get_validator_status(&mut builder, &activation_epoch, &current_epoch, &exit_epoch);
-
-        pw.set_biguint_target(
-            &activation_epoch,
-            &BigUint::from_u64(activation_epoch_value).unwrap(),
-        );
-
-        pw.set_biguint_target(
-            &current_epoch,
-            &BigUint::from_u64(current_epoch_value).unwrap(),
-        );
-
-        pw.set_biguint_target(&exit_epoch, &BigUint::from_u64(exit_epoch_value).unwrap());
+            get_validator_status(&mut builder, activation_epoch, current_epoch, exit_epoch);
 
         if assert_result.0 {
             builder.assert_one(is_non_activated_validator.target);
@@ -142,8 +126,13 @@ mod test {
         }
 
         let data = builder.build::<C>();
-        let proof = data.prove(pw).unwrap();
 
+        let mut pw = PartialWitness::new();
+        activation_epoch.set_witness(&mut pw, &activation_epoch_value);
+        current_epoch.set_witness(&mut pw, &current_epoch_value);
+        exit_epoch.set_witness(&mut pw, &exit_epoch_value);
+
+        let proof = data.prove(pw).unwrap();
         data.verify(proof)
     }
 

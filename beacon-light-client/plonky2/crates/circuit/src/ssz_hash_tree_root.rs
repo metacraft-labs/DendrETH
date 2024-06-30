@@ -22,3 +22,11 @@ impl<F: RichField + Extendable<D>, const D: usize> SSZHashTreeRoot<F, D> for Uin
             .unwrap()
     }
 }
+
+impl<F: RichField + Extendable<D>, const D: usize> SSZHashTreeRoot<F, D> for BoolTarget {
+    fn ssz_hash_tree_root(self, builder: &mut CircuitBuilder<F, D>) -> [BoolTarget; 256] {
+        let mut ssz_leaf = [builder._false(); 256];
+        ssz_leaf[7] = self;
+        ssz_leaf
+    }
+}
