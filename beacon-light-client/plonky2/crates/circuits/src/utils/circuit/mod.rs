@@ -17,10 +17,7 @@ use plonky2::{
         proof::ProofWithPublicInputsTarget,
     },
 };
-use plonky2_crypto::{
-    biguint::{BigUintTarget, CircuitBuilderBiguint},
-    u32::arithmetic_u32::U32Target,
-};
+use plonky2_crypto::{biguint::BigUintTarget, u32::arithmetic_u32::U32Target};
 
 use crate::common_targets::SSZTarget;
 
@@ -118,46 +115,21 @@ pub fn arrays_are_equal<F: RichField + Extendable<D>, const D: usize>(
     result
 }
 
-pub fn bits_to_biguint_target<F: RichField + Extendable<D>, const D: usize>(
+pub fn biguint_target_from_le_bits<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    bits_target: Vec<BoolTarget>,
+    bits: &[BoolTarget],
 ) -> BigUintTarget {
-    let bit_len = bits_target.len();
+    let bit_len = bits.len();
     assert_eq!(bit_len % 32, 0);
 
     let mut u32_targets = Vec::new();
     for i in 0..bit_len / 32 {
         u32_targets.push(U32Target(
-            builder.le_sum(bits_target[i * 32..(i + 1) * 32].iter().rev()),
+            builder.le_sum(bits[i * 32..(i + 1) * 32].iter().rev()),
         ));
     }
     u32_targets.reverse();
     BigUintTarget { limbs: u32_targets }
-}
-
-pub fn biguint_to_bits_target<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    a: &BigUintTarget,
-) -> Vec<BoolTarget> {
-    let mut res = Vec::new();
-    for i in (0..a.num_limbs()).rev() {
-        let bit_targets = builder.split_le_base::<2>(a.get_limb(i).0, 32);
-        for j in (0..32).rev() {
-            res.push(BoolTarget::new_unsafe(bit_targets[j]));
-        }
-    }
-
-    res
-}
-
-pub fn biguint_to_le_bits_target<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    a: &BigUintTarget,
-) -> Vec<BoolTarget> {
-    biguint_to_bits_target(builder, a)
-        .into_iter()
-        .rev()
-        .collect_vec()
 }
 
 pub fn bits_to_bytes_target<F: RichField + Extendable<D>, const D: usize>(
@@ -168,30 +140,6 @@ pub fn bits_to_bytes_target<F: RichField + Extendable<D>, const D: usize>(
     bits.chunks(8)
         .map(|byte_bits| builder.le_sum(byte_bits.iter().rev()))
         .collect_vec()
-}
-
-pub fn reverse_endianness(bits: &[BoolTarget]) -> Vec<BoolTarget> {
-    bits.chunks(8).rev().flatten().cloned().collect()
-}
-
-pub fn select_biguint<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    b: BoolTarget,
-    x: &BigUintTarget,
-    y: &BigUintTarget,
-) -> BigUintTarget {
-    let not_b = builder.not(b);
-
-    let maybe_x = builder.mul_biguint_by_bool(x, b);
-
-    let maybe_y = builder.mul_biguint_by_bool(y, not_b);
-
-    let mut result = builder.add_biguint(&maybe_y, &maybe_x);
-
-    // trim the carry
-    result.limbs.pop();
-
-    result
 }
 
 pub fn target_to_le_bits<F: RichField + Extendable<D>, const D: usize>(
@@ -205,13 +153,6 @@ pub fn target_to_le_bits<F: RichField + Extendable<D>, const D: usize>(
         .collect_vec()
         .try_into()
         .unwrap()
-}
-pub fn is_equal_u32<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    x: U32Target,
-    y: U32Target,
-) -> BoolTarget {
-    builder.is_equal(x.0, y.0)
 }
 
 fn split_into_chunks(leaf: &[BoolTarget; 256]) -> [[BoolTarget; 64]; 4] {
@@ -245,35 +186,15 @@ pub fn get_balance_from_leaf<F: RichField + Extendable<D>, const D: usize>(
     accumulator
 }
 
-pub fn biguint_target_from_limbs(limbs: &[Target]) -> BigUintTarget {
-    BigUintTarget {
-        limbs: limbs.iter().cloned().map(|x| U32Target(x)).collect_vec(),
-    }
-}
-
-pub fn biguint_is_equal<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    a: &BigUintTarget,
-    b: &BigUintTarget,
-) -> BoolTarget {
-    assert!(a.limbs.len() == b.limbs.len());
-
-    let mut all_equal = builder._true();
-
-    for i in 0..a.limbs.len() {
-        let equal = builder.is_equal(a.limbs[i].0, b.limbs[i].0);
-        all_equal = builder.and(all_equal, equal);
-    }
-
-    all_equal
-}
-
 #[cfg(test)]
 mod test_ssz_num_from_bits {
     use anyhow::Result;
     use circuit::{
         circuit_builder_extensions::CircuitBuilderExtensions,
-        targets::uint::{ops::arithmetic::Zero, Uint64Target},
+        targets::uint::{
+            ops::{arithmetic::Zero, comparison::EqualTo},
+            Uint64Target,
+        },
     };
     use itertools::Itertools;
     use num::{BigUint, Num};
@@ -288,11 +209,8 @@ mod test_ssz_num_from_bits {
             config::PoseidonGoldilocksConfig,
         },
     };
-    use plonky2_crypto::biguint::CircuitBuilderBiguint;
     use serde::Deserialize;
     use std::{fs, iter::repeat, println};
-
-    use crate::utils::circuit::hashing::merkle::ssz::ssz_num_from_bits;
 
     use super::get_balance_from_leaf;
 
@@ -359,8 +277,8 @@ mod test_ssz_num_from_bits {
                 .parse::<usize>()
                 .unwrap();
 
-            if num_bits % 32 != 0 {
-                // For  now lets test only multiples of 32
+            if num_bits != 64 {
+                // For now lets test only test 64 bits
                 continue;
             }
 
@@ -379,9 +297,9 @@ mod test_ssz_num_from_bits {
                     .map(|_| builder.add_virtual_bool_target_safe())
                     .collect::<Vec<_>>();
 
-                let target = ssz_num_from_bits(&mut builder, &bits);
+                let target = Uint64Target::from_le_bytes(&bits, &mut builder);
 
-                let value = test_case.value.parse::<BigUint>().expect(
+                let value = test_case.value.parse::<u64>().expect(
                     format!(
                         "Unable to parse value: {}_{}",
                         test_case.r#type, test_case.tags[2]
@@ -389,9 +307,9 @@ mod test_ssz_num_from_bits {
                     .as_str(),
                 );
 
-                let expected_target = builder.constant_biguint(&value);
-
-                builder.connect_biguint(&target, &expected_target);
+                let expected_target = Uint64Target::constant(value, &mut builder);
+                let values_are_equal = target.equal_to(expected_target, &mut builder);
+                builder.assert_true(values_are_equal);
 
                 let data = builder.build::<C>();
 
