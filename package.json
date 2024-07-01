@@ -105,8 +105,10 @@
     "yargs": "^17.7.2"
   },
   "bin": {
-    "get-balances-input": "dist/beacon-light-client/plonky2/get_balances_input/get_balances_input.js",
-    "get-changed-validators": "dist/beacon-light-client/plonky2/validators_commitment_mapper_tree/get_changed_validators.js"
+    "diva_balance_aggregator_scheduler": "beacon-light-client/plonky2/input_fetchers/balance_verification/deposits_accumulator/runnable/diva_balance_aggregator_scheduler.js",
+    "light_cleaner": "beacon-light-client/plonky2/input_fetchers/validators_commitment_mapper/runnable/light_cleaner.js",
+    "run_pubkey_commitment_mapper_scheduler": "beacon-light-client/plonky2/input_fetchers/balance_verification/deposits_accumulator/runnable/run_pubkey_commitment_mapper_scheduler.js",
+    "run_scheduler": "beacon-light-client/plonky2/input_fetchers/validators_commitment_mapper/runnable/run_scheduler.js"
   },
   "dependenciesMeta": {
     "@openzeppelin/contracts@5.0.2": {
