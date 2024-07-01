@@ -1,12 +1,12 @@
 import { Worker, Queue } from 'bullmq';
 import { exec as _exec } from 'child_process';
-import { GetUpdate, ProofInputType } from '../../types/types';
+import { GetUpdate, ProofInputType } from '@/types/types';
 import {
   PROOF_GENERATOR_QUEUE,
   UPDATE_POLING_QUEUE,
-} from '../../constants/constants';
-import doUpdate from './do_update';
-import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
+} from '@/constants/constants';
+import doUpdate from '@/workers/poll-updates/do_update';
+import { getBeaconApi } from '@/implementations/beacon-api';
 import { checkConfig } from '@dendreth/utils/ts-utils/common-utils';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 import { initPrometheusSetup } from '@dendreth/utils/ts-utils/prometheus-utils';
