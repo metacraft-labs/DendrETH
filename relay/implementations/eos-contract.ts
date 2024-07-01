@@ -1,4 +1,4 @@
-import { ISmartContract } from '../abstraction/smart-contract-abstraction';
+import { ISmartContract } from '@/abstraction/smart-contract-abstraction';
 import { promisify } from 'node:util';
 import { exec as exec_ } from 'node:child_process';
 import { compileVerifierParseDataTool } from '../../tests/helpers/helpers';

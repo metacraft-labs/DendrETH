@@ -14,14 +14,14 @@ import {
   formatHex,
 } from '@dendreth/utils/ts-utils/bls';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
-import { Config } from '../../constants/constants';
+import { Config } from '@/constants/constants';
 import {
   BeaconBlockHeader,
   ExecutionPayloadHeader,
   SyncAggregate,
   SyncCommittee,
   WitnessGeneratorInput,
-} from '../../types/types';
+} from '@/types/types';
 import { computeSyncCommitteePeriodAt } from '@dendreth/utils/ts-utils/ssz-utils';
 
 const ExecutionPayload = new ContainerType({

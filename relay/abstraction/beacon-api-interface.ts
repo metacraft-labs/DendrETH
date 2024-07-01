@@ -3,7 +3,7 @@ import {
   ExecutionPayloadHeader,
   SyncAggregate,
   SyncCommittee,
-} from '../types/types';
+} from '@/types/types';
 
 export interface IBeaconApi {
   getBeaconRestApis(): string[];
