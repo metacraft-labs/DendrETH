@@ -1,11 +1,11 @@
 import { Contract } from 'ethers';
-import { ISmartContract } from '../abstraction/smart-contract-abstraction';
+import { ISmartContract } from '@/abstraction/smart-contract-abstraction';
 import Web3 from 'web3';
 import {
   TransactionSpeed,
   getSolidityProof,
   publishTransaction,
-} from './publish_evm_transaction';
+} from '@/implementations/publish_evm_transaction';
 
 export class SolidityContract implements ISmartContract {
   private lightClientContract: Contract;

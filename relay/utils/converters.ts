@@ -1,5 +1,5 @@
 import { hexToBytes } from '@dendreth/utils/ts-utils/bls';
-import { Validator } from '../types/types';
+import { Validator } from '@/types/types';
 
 function stringToNumber(str: string): number {
   return str == BigInt(2n ** 64n - 1n).toString() ? Infinity : Number(str);

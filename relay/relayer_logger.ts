@@ -3,7 +3,7 @@ import { checkConfig } from '@dendreth/utils/ts-utils/common-utils';
 import {
   PROOF_GENERATOR_QUEUE,
   UPDATE_POLING_QUEUE,
-} from './constants/constants';
+} from '@/constants/constants';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 
 const logger = getGenericLogger();
