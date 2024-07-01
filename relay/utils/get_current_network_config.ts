@@ -1,6 +1,6 @@
 import { checkConfig } from '@dendreth/utils/ts-utils/common-utils';
-import { Config } from '../constants/constants';
-import * as network_config from '../constants/network_config.json';
+import { Config } from '@/constants/constants';
+import * as network_config from '@/constants/network_config.json';
 
 export function getNetworkConfig(network: 'pratter' | 'mainnet'): Config {
   const config = {
