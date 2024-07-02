@@ -4,7 +4,7 @@ import { sha256 } from 'ethers/lib/utils';
 
 import { Type } from '@chainsafe/ssz';
 
-import { formatHex, hexToBytes } from './bls';
+import { formatHex, hexToBytes } from '@/ts-utils/bls';
 
 import type { ssz } from '@lodestar/types';
 
