@@ -1,11 +1,11 @@
 import { Queue } from 'bullmq';
-import { GetUpdate } from '../types/types';
-import { Config } from '../constants/constants';
+import { GetUpdate } from '@dendreth/relay/types/types';
+import { Config } from '@/constants/constants';
 import {
   SLOTS_PER_PERIOD,
   computeSyncCommitteePeriodAt,
 } from '@dendreth/utils/ts-utils/ssz-utils';
-import { IBeaconApi } from '../abstraction/beacon-api-interface';
+import { IBeaconApi } from '@dendreth/relay/abstraction/beacon-api-interface';
 import { findClosestValidBlock } from '../workers/poll-updates/get_light_client_input_from_to';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 

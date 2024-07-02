@@ -1,4 +1,4 @@
-import { formatHex } from './bls';
+import { formatHex } from '@/ts-utils/bls';
 
 export function arrayToHex(arr: Uint8Array): string {
   return '0x' + Buffer.from(arr).toString('hex');

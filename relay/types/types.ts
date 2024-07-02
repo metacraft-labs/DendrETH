@@ -5,7 +5,7 @@ import {
   UintBigintType,
 } from '@chainsafe/ssz';
 import { ValueOfFields } from '@chainsafe/ssz/lib/view/container';
-import { Config } from '../constants/constants';
+import { Config } from '@/constants/constants';
 
 export type BeaconBlockHeader = ValueOfFields<{
   slot: UintNumberType;

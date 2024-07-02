@@ -1,4 +1,4 @@
-import { ProofResultType, WitnessGeneratorInput } from '../types/types';
+import { ProofResultType, WitnessGeneratorInput } from '@/types/types';
 
 export interface IRedis {
   getNextProof(slot: number): Promise<ProofResultType | null>;

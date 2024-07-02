@@ -1,5 +1,5 @@
 'use strict';
-import { getGenericLogger } from './logger';
+import { getGenericLogger } from '@/ts-utils/logger';
 
 import client, { Histogram, Summary } from 'prom-client';
 import express from 'express';
