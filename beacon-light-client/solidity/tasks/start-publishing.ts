@@ -52,7 +52,12 @@ task('start-publishing', 'Run relayer')
 
     checkConfig(config);
 
-    if (args.followNetwork !== 'pratter' && args.followNetwork !== 'mainnet') {
+    if (
+      args.followNetwork !== 'pratter' &&
+      args.followNetwork !== 'mainnet' &&
+      args.followNetwork !== 'sepolia' &&
+      args.followNetwork !== 'chiado'
+    ) {
       logger.warn('This followNetwork is not specified in networkconfig');
       return;
     }
@@ -72,7 +77,7 @@ task('start-publishing', 'Run relayer')
       initPrometheusSetup(args.prometheusPort, networkName);
     }
 
-    const currentConfig = getNetworkConfig(args.followNetwork);
+    const currentConfig = await getNetworkConfig(args.followNetwork);
 
     let publisher;
 

@@ -1,5 +1,5 @@
 import { writeFile, writeFileSync } from 'fs';
-import { Redis } from './implementations/redis';
+import { Redis } from '@/implementations/redis';
 
 (async () => {
   const redis = new Redis('localhost', 6379);

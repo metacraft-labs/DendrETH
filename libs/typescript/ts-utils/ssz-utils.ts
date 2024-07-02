@@ -4,7 +4,7 @@ import { sha256 } from 'ethers/lib/utils';
 
 import { Type } from '@chainsafe/ssz';
 
-import { formatHex, hexToBytes } from './bls';
+import { formatHex, hexToBytes } from '@/ts-utils/bls';
 
 import type { ssz } from '@lodestar/types';
 
@@ -107,10 +107,11 @@ export async function getBlockHeaderFromUpdate(head) {
   return blockHeader;
 }
 
-export const SLOTS_PER_PERIOD = 8192;
-
-export function computeSyncCommitteePeriodAt(slot: number) {
-  return Math.floor(slot / SLOTS_PER_PERIOD);
+export function computeSyncCommitteePeriodAt(
+  slot: bigint,
+  slots_per_period: bigint,
+) {
+  return slot / slots_per_period;
 }
 
 export function computeEpochAt(slot: number) {

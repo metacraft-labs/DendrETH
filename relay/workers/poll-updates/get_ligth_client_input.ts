@@ -7,40 +7,26 @@ import {
   UintBigintType,
   UintNumberType,
 } from '@chainsafe/ssz';
+import { Tree } from '@chainsafe/persistent-merkle-tree';
+
 import { PointG1, PointG2 } from '@noble/bls12-381';
+
+import { BeaconBlockHeader } from '@lodestar/types/phase0';
+import { ExecutionPayloadHeader } from '@lodestar/types/deneb';
+
 import {
   bigint_to_array,
   bytesToHex,
   formatHex,
 } from '@dendreth/utils/ts-utils/bls';
-import { Tree } from '@chainsafe/persistent-merkle-tree';
-import { Config } from '../../constants/constants';
+import { computeSyncCommitteePeriodAt } from '@dendreth/utils/ts-utils/ssz-utils';
+
+import { Config } from '@/constants/constants';
 import {
-  BeaconBlockHeader,
-  ExecutionPayloadHeader,
   SyncAggregate,
   SyncCommittee,
   WitnessGeneratorInput,
-} from '../../types/types';
-import { computeSyncCommitteePeriodAt } from '@dendreth/utils/ts-utils/ssz-utils';
-
-const ExecutionPayload = new ContainerType({
-  parentHash: new ByteVectorType(32),
-  feeRecipient: new ByteVectorType(20),
-  stateRoot: new ByteVectorType(32),
-  receiptsRoot: new ByteVectorType(32),
-  logsBloom: new ByteVectorType(256),
-  prevRandao: new ByteVectorType(32),
-  blockNumber: new UintNumberType(8),
-  gasLimit: new UintNumberType(8),
-  gasUsed: new UintNumberType(8),
-  timestamp: new UintNumberType(8),
-  extraData: new ByteListType(32),
-  baseFeePerGas: new UintBigintType(32),
-  blockHash: new ByteVectorType(32),
-  transactionsRoot: new ByteVectorType(32),
-  withdrawalsRoot: new ByteVectorType(32),
-});
+} from '@/types/types';
 
 function getMerkleProof(container: any, path: JsonPath, value: any) {
   const view = container.toViewDU(value);
@@ -65,12 +51,14 @@ export async function getProofInput({
   nextBlockHeader,
   finalizedHeader,
   finalityBranch,
-  finalizedHeaderExecutionBranch,
+  executionPayloadBranch,
   prevFinalizedHeader,
   prevFinalityBranch,
-  executionPayload,
+  executionPayloadHeader,
   signature_slot,
   config,
+  forkSSZ,
+  slotsPerPeriod,
 }: {
   syncCommittee: SyncCommittee;
   syncCommitteeBranch: string[];
@@ -79,12 +67,14 @@ export async function getProofInput({
   nextBlockHeader: BeaconBlockHeader;
   finalizedHeader: BeaconBlockHeader;
   finalityBranch: string[];
-  finalizedHeaderExecutionBranch: string[];
+  executionPayloadBranch: string[];
   prevFinalizedHeader: BeaconBlockHeader;
   prevFinalityBranch: string[];
-  executionPayload: ExecutionPayloadHeader;
+  executionPayloadHeader: ExecutionPayloadHeader;
   signature_slot: number;
   config: Config;
+  forkSSZ: any;
+  slotsPerPeriod: bigint;
 }): Promise<WitnessGeneratorInput> {
   const { ssz } = await import('@lodestar/types');
 
@@ -154,9 +144,9 @@ export async function getProofInput({
   ).map(x => hexToBits(x));
 
   const executionPayloadStateProof = getMerkleProof(
-    ExecutionPayload,
-    ['stateRoot'],
-    executionPayload,
+    forkSSZ.BeaconBlockBody.fields.executionPayload,
+    ['state_root'],
+    executionPayloadHeader,
   );
 
   let dataView = new DataView(new ArrayBuffer(8));
@@ -187,10 +177,14 @@ export async function getProofInput({
 
     signatureSlot: signature_slot.toString(),
 
-    signatureSlotSyncCommitteePeriod:
-      computeSyncCommitteePeriodAt(signature_slot),
-    finalizedHeaderSlotSyncCommitteePeriod: computeSyncCommitteePeriodAt(
-      prevFinalizedHeader.slot,
+    signatureSlotSyncCommitteePeriod: Number(
+      computeSyncCommitteePeriodAt(BigInt(signature_slot), slotsPerPeriod),
+    ),
+    finalizedHeaderSlotSyncCommitteePeriod: Number(
+      computeSyncCommitteePeriodAt(
+        BigInt(prevFinalizedHeader.slot),
+        slotsPerPeriod,
+      ),
     ),
     finalizedHeaderRoot: hexToBits(bytesToHex(finalizedHeaderHash)),
     finalizedHeaderBranch: [
@@ -198,10 +192,12 @@ export async function getProofInput({
       ...nextBlockHeaderStateRootProof,
     ],
 
-    execution_state_root: hexToBits(bytesToHex(executionPayload.stateRoot)),
+    execution_state_root: hexToBits(
+      bytesToHex(executionPayloadHeader.stateRoot),
+    ),
     execution_state_root_branch: [
       ...executionPayloadStateProof,
-      ...finalizedHeaderExecutionBranch,
+      ...executionPayloadBranch,
       ...finalizedHeaderBodyRootProof,
     ].map(x => hexToBits(x)),
 

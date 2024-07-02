@@ -1,5 +1,5 @@
-import { IProver } from '../abstraction/prover-interface';
-import { ProofInputType, Proof, WitnessGeneratorInput } from '../types/types';
+import { IProver } from '@/abstraction/prover-interface';
+import { ProofInputType, Proof, WitnessGeneratorInput } from '@/types/types';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 
 const logger = getGenericLogger();

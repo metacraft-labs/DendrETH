@@ -1,14 +1,14 @@
+import EventSource from 'eventsource';
+
 import { UintNumberType, ByteVectorType } from '@chainsafe/ssz';
 import { ValueOfFields } from '@chainsafe/ssz/lib/view/container';
-import { IBeaconApi } from '../abstraction/beacon-api-interface';
-import {
-  BeaconBlockHeader,
-  ExecutionPayloadHeader,
-  SyncAggregate,
-  SyncCommittee,
-  Validator,
-} from '../types/types';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
+
+import { BeaconBlockHeader } from '@lodestar/types/phase0';
+import { ExecutionPayloadHeader } from '@lodestar/types/deneb';
+// @ts-ignore
+import { StateId } from '@lodestar/api/beacon/routes/beacon';
+
 import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import {
   SSZ,
@@ -18,9 +18,9 @@ import {
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 import { prometheusTiming } from '@dendreth/utils/ts-utils/prometheus-utils';
 import { panic, sleep } from '@dendreth/utils/ts-utils/common-utils';
-import EventSource from 'eventsource';
-// @ts-ignore
-import { StateId } from '@lodestar/api/beacon/routes/beacon';
+
+import { IBeaconApi } from '@/abstraction/beacon-api-interface';
+import { SyncAggregate, SyncCommittee, Validator } from '@/types/types';
 
 const logger = getGenericLogger();
 
@@ -39,6 +39,25 @@ export class BeaconApi implements IBeaconApi {
     public readonly ssz: SSZ,
   ) {}
 
+  async getSlotsPerEpoch(): Promise<bigint> {
+    const config = await (
+      await this.fetchWithFallback('/eth/v1/config/spec')
+    ).json();
+
+    const slotsPerEpoch = config.data.SLOTS_PER_EPOCH;
+    return BigInt(slotsPerEpoch);
+  }
+
+  async getSlotsPerSyncCommitteePeriod(): Promise<bigint> {
+    const config = await (
+      await this.fetchWithFallback('/eth/v1/config/spec')
+    ).json();
+
+    const slotsPerEpoch = config.data.SLOTS_PER_EPOCH;
+    const epochPerSyncCommitteePeriod =
+      config.data.EPOCHS_PER_SYNC_COMMITTEE_PERIOD;
+    return BigInt(slotsPerEpoch * epochPerSyncCommitteePeriod);
+  }
   async getCurrentSSZ(slot: bigint): Promise<CapellaOrDeneb> {
     const forkSchedule = await (
       await this.fetchWithFallback('/eth/v1/config/fork_schedule')
@@ -46,9 +65,9 @@ export class BeaconApi implements IBeaconApi {
     const forkEpoch = BigInt(
       forkSchedule.data[forkSchedule.data.length - 1].epoch,
     );
-    const SLOTS_PER_EPOCH = 32n;
+    const slotsPerEpoch = await this.getSlotsPerEpoch();
     return (
-      slot >= forkEpoch * SLOTS_PER_EPOCH ? this.ssz.deneb : this.ssz.capella
+      slot >= forkEpoch * slotsPerEpoch ? this.ssz.deneb : this.ssz.capella
     ) as CapellaOrDeneb;
   }
 
@@ -194,7 +213,9 @@ export class BeaconApi implements IBeaconApi {
   > {
     while (slot <= limitSlot) {
       const blockHeaderResult = await (
-        await this.fetchWithFallback(`/eth/v1/beacon/headers/${slot}`)
+        await this.fetchWithFallbackNoRetryNotFound(
+          `/eth/v1/beacon/headers/${slot}`,
+        )
       ).json();
 
       if (blockHeaderResult.code !== 404) {
@@ -305,9 +326,13 @@ export class BeaconApi implements IBeaconApi {
       'getPrevFinalizedBeaconState',
     );
 
+    const slotsPerPeriod = await this.getSlotsPerSyncCommitteePeriod();
     const prevUpdateFinalizedSyncCommmitteePeriod =
-      computeSyncCommitteePeriodAt(finalityHeader.slot);
-    const currentSyncCommitteePeriod = computeSyncCommitteePeriodAt(nextSlot);
+      computeSyncCommitteePeriodAt(BigInt(finalityHeader.slot), slotsPerPeriod);
+    const currentSyncCommitteePeriod = computeSyncCommitteePeriodAt(
+      BigInt(nextSlot),
+      slotsPerPeriod,
+    );
 
     const syncCommitteeBranch = prevFinalizedBeaconStateTree
       .getSingleProof(
@@ -385,7 +410,7 @@ export class BeaconApi implements IBeaconApi {
   }
 
   async getBlockExecutionPayloadAndProof(slot: number): Promise<{
-    executionPayloadHeader: ExecutionPayloadHeader;
+    executionPayloadHeader: any;
     executionPayloadBranch: string[];
   }> {
     const currentSszFork = await this.getCurrentSSZ(BigInt(slot));
@@ -422,8 +447,7 @@ export class BeaconApi implements IBeaconApi {
 
     return {
       executionPayloadBranch,
-      executionPayloadHeader:
-        finalizedBlockBody.executionPayload as any as ExecutionPayloadHeader,
+      executionPayloadHeader: finalizedBlockBody.executionPayload,
     };
   }
 
@@ -540,38 +564,7 @@ export class BeaconApi implements IBeaconApi {
     return BigInt(json.data.finalized.epoch);
   }
 
-  async getBeaconBlock(slot: bigint) {
-    logger.info('Getting Beacon block..');
-
-    const beaconBlockSSZ = await this.fetchWithFallback(
-      `/eth/v2/debug/beacon/blocks/${slot}`,
-      {
-        headers: {
-          Accept: 'application/octet-stream',
-        },
-      },
-    )
-      .then(response => {
-        if (response.status === 404) {
-          throw 'Could not fetch beacon state (404 not found)';
-        }
-        return response.arrayBuffer();
-      })
-      .then(buffer => new Uint8Array(buffer))
-      .catch(console.error);
-
-    if (!beaconBlockSSZ) {
-      return null;
-    }
-
-    const currentSszFork = await this.getCurrentSSZ(slot);
-    const beaconBlock = currentSszFork.BeaconBlock.deserialize(beaconBlockSSZ);
-
-    logger.info('Got Beacon block');
-    return beaconBlock;
-  }
-
-  async getBeaconState(slot: bigint) {
+  async getBeaconState(slot: bigint, retry: number = 0) {
     logger.info('Getting Beacon State..');
 
     const beaconStateSZZ = await this.fetchWithFallback(
@@ -584,12 +577,28 @@ export class BeaconApi implements IBeaconApi {
     )
       .then(response => {
         if (response.status === 404) {
+          logger.error(
+            `Url ${this.concatUrl(`/eth/v2/debug/beacon/states/${slot}`)}`,
+          );
           throw 'Could not fetch beacon state (404 not found)';
         }
+
+        if (response.status !== 200) {
+          logger.info('Got response status different than 200');
+          logger.info(`Response ${JSON.stringify(response)}`);
+        }
+
         return response.arrayBuffer();
       })
       .then(buffer => new Uint8Array(buffer))
-      .catch(console.error);
+      .catch(e => {
+        console.error(e);
+
+        if (retry < 10) {
+          logger.warn(`Retrying to get beacon state ${retry + 1}`);
+          return this.getBeaconState(slot, retry + 1);
+        }
+      });
 
     if (!beaconStateSZZ) {
       throw new Error('Could not fetch beacon state');
@@ -618,6 +627,43 @@ export class BeaconApi implements IBeaconApi {
     init?: RequestInit,
   ): Promise<Response> {
     return fetch(this.concatUrl(subUrl), init);
+  }
+
+  private async fetchWithFallbackNoRetryNotFound(
+    subUrl: string,
+    init?: RequestInit,
+  ): Promise<Response> {
+    let retries = 0;
+    const maxApiRetries = 5;
+
+    while (true) {
+      console.log(this.getCurrentApi());
+      try {
+        const result = await this.fetchWithFallbackNoRetry(subUrl, init);
+
+        if (result.status === 429) {
+          logger.warn('Rate limit exceeded');
+
+          logger.warn('Retrying with the next one');
+          this.nextApi();
+          continue;
+        }
+
+        return result;
+      } catch (error) {
+        retries++;
+        if (retries >= this.beaconRestApis.length * maxApiRetries) {
+          logger.error('All beacon rest apis failed');
+          throw error;
+        }
+
+        logger.error(`Beacon rest api failed: ${error}`);
+
+        logger.error('Retrying with the next one');
+
+        this.nextApi();
+      }
+    }
   }
 
   private async fetchWithFallback(
@@ -680,7 +726,6 @@ export class BeaconApi implements IBeaconApi {
       baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl
     }/${urlPath.startsWith('/') ? urlPath.slice(1) : urlPath}`;
 
-    console.log('url href', finalUrl);
     return finalUrl;
   }
 }
