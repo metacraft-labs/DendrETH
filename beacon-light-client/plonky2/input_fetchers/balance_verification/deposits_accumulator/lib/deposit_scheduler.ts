@@ -3,7 +3,7 @@ import { Item, KeyPrefix, WorkQueue } from '@mevitae/redis-work-queue';
 import CONSTANTS from '../../../../kv_db_constants.json';
 import { ethers } from 'ethers';
 import { getEvents } from './event_fetcher';
-import ValidatorsAccumulator from '../../../../../solidity/artifacts/contracts/validators_accumulator/ValidatorsAccumulator.sol/ValidatorsAccumulator.json';
+import ValidatorsAccumulator from '../../../abi/validators_accumulator_abi.json';
 import {
   bytesToHex,
   formatHex,
@@ -42,7 +42,7 @@ export class DepositScheduler {
     this.provider = new ethers.providers.JsonRpcProvider(options['rpc-url']);
     this.contract = new ethers.Contract(
       options['address'],
-      ValidatorsAccumulator.abi,
+      ValidatorsAccumulator,
       this.provider,
     );
 

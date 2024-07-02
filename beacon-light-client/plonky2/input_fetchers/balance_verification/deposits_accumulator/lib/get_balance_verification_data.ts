@@ -16,7 +16,7 @@ import { Redis } from '@dendreth/relay/implementations/redis';
 import CONSTANTS from '../../../../kv_db_constants.json';
 import commonConfig from '../../../../common_config.json';
 import { getCommitmentMapperProof } from '../../../utils/common_utils';
-import ValidatorsAccumulator from '../../../../../solidity/artifacts/contracts/validators_accumulator/ValidatorsAccumulator.sol/ValidatorsAccumulator.json';
+import ValidatorsAccumulator from '../../../abi/validators_accumulator_abi.json';
 import { getEvents } from './event_fetcher';
 import chalk from 'chalk';
 import { queryContractDeploymentBlockNumber } from './utils';
@@ -71,7 +71,11 @@ export async function storeBalanceVerificationData(
 ) {
   const config = { ...getDefaultBalanceVerificationConfig(), ...options };
 
-  const redis = new RedisLocal(config.redisHost, config.redisPort, options.redisAuth);
+  const redis = new RedisLocal(
+    config.redisHost,
+    config.redisPort,
+    options.redisAuth,
+  );
   const beaconApi = await getBeaconApi(config.beaconNodeUrls);
   const provider = new ethers.providers.JsonRpcProvider(config.rpcUrl);
 
@@ -112,7 +116,7 @@ export async function storeBalanceVerificationData(
 
   const contract = new ethers.Contract(
     config.address,
-    ValidatorsAccumulator.abi,
+    ValidatorsAccumulator,
     provider,
   );
 
