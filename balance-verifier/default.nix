@@ -8,7 +8,7 @@
     inherit (inputs.mcl-blockchain.inputs) crane;
     inherit (inputs'.mcl-blockchain.legacyPackages) nix2container pkgs-with-rust-overlay;
     pkgs = pkgs-with-rust-overlay;
-    inherit (pkgs) callPackage rust-bin runCommandLocal writeScriptBin;
+    inherit (pkgs) callPackage rust-bin runCommand runCommandLocal writeScriptBin;
     inherit (lib) getExe;
 
     nodejs = pkgs.nodejs_21;
@@ -34,18 +34,17 @@
     commitment-mapper-builder = circuit-executable "commitment_mapper_circuit_data_generation";
     final-layer = circuit-executable "final_layer";
 
-    balance-verification-circuit = level:
-      runCommandLocal "balance-verification-circuit-per-level-${level}" {} ''
-        ${getExe balance-verifier-circuit-builder} ${lib.optionalString (level != "all") "--level ${level}"}
+    build-circuit-data = pkg: args:
+      runCommand "balance-verification-circuit-per-level" {} ''
+        ${getExe pkg} ${args}
         mkdir -p $out/bin
         mv *.plonky2_targets *.plonky2_circuit $out/bin
       '';
 
-    commitment-mapper-data = runCommandLocal "commitment-mapper-data" {} ''
-      ${getExe commitment-mapper-builder}
-      mkdir -p $out/bin
-      mv *.plonky2_targets *.plonky2_circuit $out/bin
-    '';
+    balance-verification-circuit = level:
+      build-circuit-data balance-verifier-circuit-builder "--level ${level}";
+
+    commitment-mapper-data = build-circuit-data commitment-mapper-builder "";
 
     allLevels = builtins.map builtins.toString (lib.lists.range 0 37);
     balance-verifier-circuit-per-level = lib.genAttrs (allLevels ++ ["all"]) balance-verification-circuit;
