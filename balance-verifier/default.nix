@@ -17,22 +17,22 @@
 
     craneLib = (crane.mkLib pkgs).overrideToolchain rust-nightly;
 
-    circuits-executable = exeName: let
-      all = callPackage ../libs/nix/circuits_executables {
-        inherit craneLib;
-      };
-    in
+    all-circuit-executables = callPackage ../libs/nix/circuits_executables {
+      inherit craneLib;
+    };
+
+    circuit-executable = exeName:
       runCommandLocal exeName {
         meta.programName = exeName;
       } ''
-        install -Dm755 ${all}/bin/${exeName} -t $out/bin
+        install -Dm755 ${all-circuit-executables}/bin/${exeName} -t $out/bin
       '';
 
-    balance-verifier-circuit-builder = circuits-executable "balance_verification_circuit_data_generation";
-    balance-verifier = circuits-executable "balance_verification";
-    commitment-mapper = circuits-executable "commitment_mapper";
-    commitment-mapper-builder = circuits-executable "commitment_mapper_circuit_data_generation";
-    final-layer = circuits-executable "final_layer";
+    balance-verifier-circuit-builder = circuit-executable "balance_verification_circuit_data_generation";
+    balance-verifier = circuit-executable "balance_verification";
+    commitment-mapper = circuit-executable "commitment_mapper";
+    commitment-mapper-builder = circuit-executable "commitment_mapper_circuit_data_generation";
+    final-layer = circuit-executable "final_layer";
 
     balance-verification-circuit = level:
       runCommandLocal "balance-verification-circuit-per-level-${level}" {} ''
@@ -136,7 +136,7 @@
       inherit misc-images;
     };
     packages = {
-      inherit balance-verifier-circuit-builder input-fetchers;
+      inherit all-circuit-executables balance-verifier-circuit-builder input-fetchers;
     };
   };
 }
