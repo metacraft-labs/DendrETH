@@ -128,6 +128,22 @@
         "type": "github"
       }
     },
+    "dendreth-build-artifacts": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1714130370,
+        "narHash": "sha256-fgwPIzt3aF2iqWEOBbTYmi8wt99vTjvd/BkTAu22avc=",
+        "owner": "metacraft-labs",
+        "repo": "DendrETH-build-artifacts",
+        "rev": "46ef993a007175640b4ff5dd8855c12a26f57d7a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "metacraft-labs",
+        "repo": "DendrETH-build-artifacts",
+        "type": "github"
+      }
+    },
     "devenv": {
       "inputs": {
         "cachix": [
@@ -1155,6 +1171,7 @@
     },
     "root": {
       "inputs": {
+        "dendreth-build-artifacts": "dendreth-build-artifacts",
         "flake-parts": [
           "mcl-blockchain",
           "flake-parts"
