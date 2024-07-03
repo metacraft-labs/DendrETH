@@ -26,6 +26,11 @@
     mcl-blockchain.url = "github:metacraft-labs/nix-blockchain-development";
     nixpkgs.follows = "mcl-blockchain/nixpkgs-unstable";
     flake-parts.follows = "mcl-blockchain/flake-parts";
+
+    dendreth-build-artifacts = {
+      flake = false;
+      url = "github:metacraft-labs/DendrETH-build-artifacts";
+    };
   };
 
   outputs = inputs @ {
@@ -33,6 +38,7 @@
     flake-parts,
     nixpkgs,
     mcl-blockchain,
+    dendreth-build-artifacts,
     ...
   }:
     flake-parts.lib.mkFlake {inherit inputs;} {
@@ -54,6 +60,9 @@
         inherit (inputs'.mcl-blockchain.legacyPackages) nix2container rust-stable rust-nightly;
 
         docker-images = import ./libs/nix/docker-images.nix {inherit pkgs nix2container;};
+        light-client = pkgs.callPackage ./libs/nix/light-client/default.nix {
+          inherit dendreth-build-artifacts;
+        };
       in {
         _module.args.pkgs = import nixpkgs {
           inherit system;
@@ -72,11 +81,14 @@
         packages =
           {
             inherit (docker-images) docker-image-yarn;
+            inherit light-client;
           }
           // pkgs.lib.optionalAttrs (pkgs.hostPlatform.isLinux && pkgs.hostPlatform.isx86_64) {
             inherit (docker-images) docker-image-all;
           };
-        devShells.light-client = import ./libs/nix/shell-with-light-client.nix {inherit pkgs rust-stable;};
+        devShells.light-client = import ./libs/nix/shell-with-light-client.nix {
+          inherit pkgs rust-stable light-client;
+        };
       };
     };
 }
