@@ -756,6 +756,7 @@ async function getPoseidonInputs() {
     '0x89967e9697e52a661e266b52c1b42355d07826f01cc8bb7f7b22791bcb14100ad11e9d0f73f6035583a8c01915618f90',
     '0x85f2bd6f26482fd2bcfa861b42b06dc68d4a4866fd3ba05a5b58e005cfd96035a022723b446805ffe1f55ca9ad9ed0aa',
   ];
+
   let pubKeyPoints = pubkeys.map(x => PointG1.fromHex(formatHex(x)).toAffine());
   let pubKeysArray = pubKeyPoints.map(x => [
     bigint_to_array(55, 7, x[0].value),
@@ -785,17 +786,34 @@ async function getPoseidonInputs() {
   let poseidon = await buildPoseidonReference();
 
   let poseidonValFlat: string[] = [];
-  for (let i = 0; i < pubKeysArray.length; i++) {
-    for (let j = 0; j < pubKeysArray[i].length; j++)
-      for (let k = 0; k < pubKeysArray[i][j].length; k++) {
-        poseidonValFlat.push(pubKeysArray[i][j][k]);
+  for (let i = 0; i < 512; i++) {
+    for (let j = 0; j < 7; j++)
+      for (let l = 0; l < 2; l++) {
+        poseidonValFlat[i * 7 * 2 + j * 2 + l] = pubKeysArray[i][l][j];
       }
   }
-  let prev = poseidon(poseidonValFlat.slice(0, 16), 0, 1);
-  for (let i = 16; i < poseidonValFlat.length - 16; i += 16) {
-    prev = poseidon(poseidonValFlat.slice(i, i + 16), prev, 1);
+
+  let prev: any = 0;
+
+  const LENGTH = 512 * 2 * 7;
+  const NUM_ROUNDS = LENGTH / 16;
+  for (let i = 0; i < NUM_ROUNDS; i++) {
+    let inputs: any[] = [];
+    for (let j = 0; j < 16; j++) {
+      inputs.push(poseidonValFlat[i * 16 + j]);
+    }
+    if (i < NUM_ROUNDS - 1) {
+      prev = poseidon(inputs, prev, 1);
+    } else {
+      prev = poseidon(inputs, prev, 2);
+    }
   }
-  console.log(prev);
+
+  const res = poseidon.F.e(
+    '18983088820287088885850106087039471251611359596827931776044660470697434019038',
+  );
+  console.log('res', res);
+  console.log('eq', poseidon.F.eq(res, prev[1]));
 }
 
 getPoseidonInputs();
