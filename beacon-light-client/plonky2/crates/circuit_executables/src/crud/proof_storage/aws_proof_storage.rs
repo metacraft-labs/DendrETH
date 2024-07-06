@@ -32,7 +32,7 @@ impl AwsStorage {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl ProofStorage for AwsStorage {
     async fn get_proof(&mut self, key: String) -> Result<Vec<u8>> {
         let resp = self
