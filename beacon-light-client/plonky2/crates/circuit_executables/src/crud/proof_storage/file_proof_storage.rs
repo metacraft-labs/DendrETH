@@ -8,6 +8,9 @@ pub struct FileStorage {
     folder_name: String,
 }
 
+unsafe impl Send for FileStorage {}
+unsafe impl Sync for FileStorage {}
+
 impl FileStorage {
     pub fn new(folder_name: String) -> FileStorage {
         if !fs::metadata(&folder_name).is_ok() {
@@ -18,18 +21,14 @@ impl FileStorage {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl ProofStorage for FileStorage {
     async fn get_proof(&mut self, key: String) -> Result<Vec<u8>> {
-        let result = fs::read(format!("{}/{}", self.folder_name, key)).unwrap();
-
-        Ok(result)
+        Ok(fs::read(format!("{}/{}", self.folder_name, key))?)
     }
 
     async fn set_proof(&mut self, key: String, proof: &[u8]) -> Result<()> {
-        fs::write(format!("{}/{}", self.folder_name, key), proof).unwrap();
-
-        Ok(())
+        Ok(fs::write(format!("{}/{}", self.folder_name, key), proof)?)
     }
 
     async fn del_proof(&mut self, key: String) -> Result<()> {

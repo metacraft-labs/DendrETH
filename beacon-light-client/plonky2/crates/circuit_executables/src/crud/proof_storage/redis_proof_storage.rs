@@ -15,7 +15,7 @@ impl RedisStorage {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl ProofStorage for RedisStorage {
     async fn get_proof(&mut self, key: String) -> Result<Vec<u8>> {
         Ok(self.connection.get(&key).await?)

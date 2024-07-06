@@ -10,8 +10,8 @@ use super::{
     file_proof_storage::FileStorage, redis_proof_storage::RedisStorage,
 };
 
-#[async_trait(?Send)]
-pub trait ProofStorage {
+#[async_trait]
+pub trait ProofStorage: Send + Sync {
     async fn get_proof(&mut self, key: String) -> Result<Vec<u8>>;
 
     async fn set_proof(&mut self, key: String, proof: &[u8]) -> Result<()>;
@@ -68,15 +68,13 @@ pub async fn create_proof_storage(args: &ArgMatches) -> Box<dyn ProofStorage> {
             dotenv::from_path("../.env").ok();
             Box::new(AzureStorage::new(env::var("STORAGE_CONTAINER").unwrap()))
         }
-        ProofStorageType::Aws => {
-            Box::new(
-                AwsStorage::new(
-                    args.value_of("aws_endpoint_url").unwrap().to_string(),
-                    args.value_of("aws_region").unwrap().to_string(),
-                    args.value_of("aws_bucket_name").unwrap().to_string(),
-                )
-                .await,
+        ProofStorageType::Aws => Box::new(
+            AwsStorage::new(
+                args.value_of("aws_endpoint_url").unwrap().to_string(),
+                args.value_of("aws_region").unwrap().to_string(),
+                args.value_of("aws_bucket_name").unwrap().to_string(),
             )
-        }
+            .await,
+        ),
     }
 }
