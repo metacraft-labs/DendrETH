@@ -55,7 +55,7 @@
     "clean:normal": "yarn clean:jest && EXCL_NM='-e node_modules' yarn clean:untracked_artifacts",
     "clean:jest": "jest --clear-cache",
     "clean:untracked_artifacts": "git clean -fdx -e .env -e .direnv -e .yarn -e .vscode $EXCL_NM -- $(git rev-parse --show-toplevel)",
-    "check:build": "cd beacon-light-client/solidity/ && yarn build:sol && cd ../../ && yarn tsc",
+    "check:build": "cd beacon-light-client/solidity/ && yarn build:sol && cd ../../ && yarn tsc -b ./tsconfig.json",
     "format:check": "prettier --check . && alejandra --exclude ./.yarn --exclude ./node_modules --exclude ./yarn-project.nix --check .",
     "format:write": "prettier --write . && alejandra --exclude ./.yarn --exclude ./node_modules --exclude ./yarn-project.nix .",
     "test": "jest --verbose --silent -i",
