@@ -96,7 +96,8 @@
   },
   "exclude": [
     "node_modules",
-    "vendor"
+    "vendor",
+    "dist",
   ],
   "references": [
     {
