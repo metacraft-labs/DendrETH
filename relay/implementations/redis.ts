@@ -264,21 +264,11 @@ export class Redis implements IRedis {
 
     console.log(
       `Loaded ${chalk.bold.yellow(
-        this.validators.length,
+        allValidators.length,
       )} validators from database`,
     );
 
     return allValidators;
-  }
-
-  async isZeroValidatorEmpty() {
-    await this.waitForConnection();
-
-    const result = await this.client.keys(
-      `${CONSTANTS.validatorKey}:${CONSTANTS.validatorRegistryLimit}:*`,
-    );
-
-    return result.length === 0;
   }
 
   async isZeroBalanceEmpty() {
