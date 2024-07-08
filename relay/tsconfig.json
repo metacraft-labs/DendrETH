@@ -3,7 +3,8 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@/lodestar-types": ["../.yarn/unplugged/@lodestar-types-npm-1.17.0-1607a25762/node_modules/@lodestar/types/lib/utils/executionAddress"]
     }
   }
 }
