@@ -1598,6 +1598,7 @@ __metadata:
     "@noble/bls12-381": "npm:^1.4.0"
     "@types/circomlibjs": "npm:^0"
     "@types/json-bigint": "npm:^1"
+    "@types/node": "npm:^18.0.0"
     "@types/yargs": "npm:^17.0.32"
     chalk: "npm:^4.1.2"
     circom-pairing: "link:../../../vendor/circom-pairing/"
