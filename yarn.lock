@@ -5204,6 +5204,8 @@ __metadata:
     winston: "npm:^3.10.0"
     yargs: "npm:^17.7.2"
   dependenciesMeta:
+    "@lodestar/types@1.17.0":
+      unplugged: true
     "@openzeppelin/contracts@5.0.2":
       unplugged: true
     circomlib@2.0.2:
