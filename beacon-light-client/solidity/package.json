@@ -48,6 +48,7 @@
     "chai-as-promised": "^7.1.2",
     "dotenv": "^16.4.4",
     "env-paths": "^3.0.0",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "5.2.2"
   },
   "exports": {
