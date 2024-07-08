@@ -102,5 +102,8 @@
     {
       "path":"./relay"
     }],
-  "include": ["**/*.ts"]
+  "files": ["vendor/eth2-light-client-updates/mainnet/bootstrap.json",
+            "vendor/eth2-light-client-updates/mainnet/updates/00290.json",
+            "vendor/eth2-light-client-updates/prater/capella-updates-94/update_5601823_5609044.json"],
+  "include": ["**/*.ts", "**/*.json"]
 }
