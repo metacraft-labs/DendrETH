@@ -11,7 +11,7 @@ import {
 import { RedisClientType, createClient } from 'redis';
 import CONSTANTS from '../../beacon-light-client/plonky2/kv_db_constants.json';
 //
-import { Redis as RedisClient, Result } from 'ioredis';
+import { ChainableCommander, Redis as RedisClient, Result } from 'ioredis';
 import chalk from 'chalk';
 import {
   getDepthByGindex,
@@ -27,8 +27,8 @@ declare module 'ioredis' {
 }
 
 function makeRedisURL(host: string, port: number, auth?: string): string {
-    const at: string = (auth != null && auth.length > 0) ? `${auth}@` : "";
-    return `redis://${at}${host}:${port}`;
+  const at: string = (auth != null && auth.length > 0) ? `${auth}@` : "";
+  return `redis://${at}${host}:${port}`;
 }
 
 export class Redis implements IRedis {
@@ -64,25 +64,6 @@ export class Redis implements IRedis {
     await this.waitForConnection();
     await this.pubSub.quit();
     this.client.quit();
-  }
-
-  async addToSlotLookup(key: string, slot: bigint) {
-    await this.waitForConnection();
-
-    await this.client.zadd(
-      `${key}:${CONSTANTS.slotLookupKey}`,
-      Number(slot),
-      slot.toString(),
-    );
-  }
-
-  async removeFromSlotLookup(key: string, ...slots: bigint[]) {
-    await this.waitForConnection();
-
-    await this.client.zrem(
-      `${key}:${CONSTANTS.slotLookupKey}`,
-      slots.map(String),
-    );
   }
 
   async getSlotWithLatestChange(
@@ -130,27 +111,16 @@ export class Redis implements IRedis {
     return [];
   }
 
-  async pruneOldSlots(key: string, newOldestSlot: bigint): Promise<number> {
-    await this.waitForConnection();
+  // async pruneOldSlots(key: string, newOldestSlot: bigint): Promise<number> {
+  //   await this.waitForConnection();
+  //
+  //   const slots = await this.collectOutdatedSlots(key, newOldestSlot);
+  //   if (slots.length !== 0) {
+  //     await this.removeFromSlotLookup(key, ...slots);
+  //   }
+  //   return 0;
+  // }
 
-    const slots = await this.collectOutdatedSlots(key, newOldestSlot);
-    if (slots.length !== 0) {
-      await this.removeFromSlotLookup(key, ...slots);
-    }
-    return 0;
-  }
-
-  async updateLastVerifiedSlot(slot: bigint) {
-    await this.waitForConnection();
-
-    this.client.set(CONSTANTS.lastVerifiedSlotKey, slot.toString());
-  }
-
-  async updateLastProcessedSlot(slot: bigint) {
-    await this.waitForConnection();
-
-    this.client.set(CONSTANTS.lastProcessedSlotKey, slot.toString());
-  }
 
   async getAllKeys(pattern: string): Promise<string[]> {
     await this.waitForConnection();
@@ -292,6 +262,12 @@ export class Redis implements IRedis {
       );
     }
 
+    console.log(
+      `Loaded ${chalk.bold.yellow(
+        this.validators.length,
+      )} validators from database`,
+    );
+
     return allValidators;
   }
 
@@ -313,30 +289,6 @@ export class Redis implements IRedis {
     );
 
     return result == null;
-  }
-
-  async saveValidators(
-    validatorsWithIndices: { index: number; data: CommitmentMapperInput }[],
-    slot: bigint,
-  ) {
-    await this.waitForConnection();
-
-    const args = (
-      await Promise.all(
-        validatorsWithIndices.map(async validator => {
-          await this.addToSlotLookup(
-            `${CONSTANTS.validatorKey}:${validator.index}`,
-            slot,
-          );
-          return [
-            `${CONSTANTS.validatorKey}:${validator.index}:${slot}`,
-            JSON.stringify(validator.data),
-          ];
-        }),
-      )
-    ).flat();
-
-    await this.client.mset(...args);
   }
 
   async saveBalancesAccumulatorProof(
@@ -445,25 +397,6 @@ export class Redis implements IRedis {
     );
   }
 
-  async saveValidatorProof(
-    gindex: bigint,
-    slot: bigint,
-    proof: ValidatorProof = {
-      needsChange: true,
-      proofKey: '',
-      publicInputs: {
-        poseidonHashTreeRoot: [0, 0, 0, 0],
-        sha256HashTreeRoot: ''.padEnd(64, '0'),
-      },
-    },
-  ): Promise<void> {
-    await this.waitForConnection();
-    await this.client.set(
-      `${CONSTANTS.validatorProofKey}:${gindex}:${slot}`,
-      JSON.stringify(proof),
-    );
-  }
-
   async saveDummyValidatorProof(
     depth: bigint,
     proof: ValidatorProof = {
@@ -535,14 +468,6 @@ export class Redis implements IRedis {
     }
 
     return JSON.parse(proof);
-  }
-
-  public async setValidatorsLength(slot: bigint, length: number) {
-    await this.waitForConnection();
-    await this.client.set(
-      `${CONSTANTS.validatorsLengthKey}:${slot}`,
-      length.toString(),
-    );
   }
 
   async getDepositsCount(): Promise<number> {
