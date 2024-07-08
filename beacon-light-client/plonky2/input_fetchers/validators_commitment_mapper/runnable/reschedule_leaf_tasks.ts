@@ -43,25 +43,28 @@ import fs from 'fs';
     mapping[parentGindex].push(validatorIndex);
   }
 
-  const buggedInnerLevelGIndices: number[] = [];
-  for (const key in mapping) {
-    const children = mapping[key];
-    if (children.length > 1) {
-      buggedInnerLevelGIndices.push(Number(key));
-    }
-  }
+  // const buggedInnerLevelGIndices: number[] = [];
+  // for (const key in mapping) {
+  //   const children = mapping[key];
+  //   if (children.length > 1) {
+  //     buggedInnerLevelGIndices.push(Number(key));
+  //   }
+  // }
 
-  console.log(buggedInnerLevelGIndices);
-  console.log(buggedInnerLevelGIndices.length);
+  // console.log(buggedInnerLevelGIndices);
+  // console.log(buggedInnerLevelGIndices.length);
 
-  // const missingIndices: number[] = JSON.parse(missingIndicesContent);
+  const missingIndices: number[] = JSON.parse(missingIndicesContent);
 
   console.log(nonVerifiableIndices);
   // console.log(missingIndices);
 
-  // const combinedIndices = nonVerifiableIndices.concat(missingIndices);
-  // console.log(combinedIndices);
-  // console.log('len', combinedIndices.length);
+  const combinedIndices = nonVerifiableIndices.concat(missingIndices);
+  console.log(combinedIndices);
+  console.log('len', combinedIndices.length);
+
+  const index = combinedIndices.reverse().findIndex((idx) => idx == 1266346);
+  console.log(index);
 
   return;
 

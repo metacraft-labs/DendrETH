@@ -96,6 +96,10 @@ export default {
       url: 'http://127.0.0.1:8545',
       accounts: [conf.LOCAL_HARDHAT_PRIVATE_KEY],
     },
+    kurtosis: {
+      url: 'http://127.0.0.1:32774',
+      accounts: [conf.USER_PRIVATE_KEY],
+    },
     hardhat: {
       forking: {
         url: conf.ETHEREUM_MAINNET_RPC,
