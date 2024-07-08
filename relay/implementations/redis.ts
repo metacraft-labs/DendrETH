@@ -10,7 +10,7 @@ import {
 } from '@/types/types';
 import { RedisClientType, createClient } from 'redis';
 import CONSTANTS from '../../beacon-light-client/plonky2/kv_db_constants.json';
-//
+
 import { Redis as RedisClient, Result } from 'ioredis';
 import chalk from 'chalk';
 import {
