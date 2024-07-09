@@ -258,7 +258,7 @@ export class Redis implements IRedis {
       console.log(
         `Loaded batch ${chalk.bold.yellowBright(
           keyBatchIndex + 1,
-        )} /${chalk.bold.yellow(Math.ceil(keys.length / batchSize))}`,
+        )}/${chalk.bold.yellow(Math.ceil(keys.length / batchSize))}`,
       );
     }
 
