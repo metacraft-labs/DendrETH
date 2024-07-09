@@ -1704,6 +1704,7 @@ __metadata:
     "@lodestar/types": "npm:^1.17.0"
     "@noble/bls12-381": "npm:^1.4.0"
     "@types/express": "npm:^4"
+    "@types/node": "npm:^20.11.19"
     "@types/yargs": "npm:^17.0.32"
     colors: "npm:^1.4.0"
     ethers: "npm:^5.7.0"
@@ -1713,6 +1714,7 @@ __metadata:
     prom-client: "npm:^15.1.0"
     snarkjs: "https://github.com/metacraft-labs/snarkjs.git#commit=091ee9c3744c660b0ecd961f9197a8249a8f7d3b"
     tsx: "npm:^4.7.1"
+    typescript: "npm:^5.5.3"
     winston: "npm:^3.13.0"
     yargs: "npm:^17.7.2"
   languageName: unknown
@@ -14848,6 +14850,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"typescript@npm:^5.5.3":
+  version: 5.5.3
+  resolution: "typescript@npm:5.5.3"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10/11a867312419ed497929aafd2f1d28b2cd41810a5eb6c6e9e169559112e9ea073d681c121a29102e67cd4478d0a4ae37a306a5800f3717f59c4337e6a9bd5e8d
+  languageName: node
+  linkType: hard
+
 "typescript@patch:typescript@npm%3A5.2.2#optional!builtin<compat/typescript>":
   version: 5.2.2
   resolution: "typescript@patch:typescript@npm%3A5.2.2#optional!builtin<compat/typescript>::version=5.2.2&hash=f3b441"
@@ -14855,6 +14867,16 @@ __metadata:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 10/f79cc2ba802c94c2b78dbb00d767a10adb67368ae764709737dc277273ec148aa4558033a03ce901406b35fddf4eac46dabc94a1e1d12d2587e2b9cfe5707b4a
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@npm%3A^5.5.3#optional!builtin<compat/typescript>":
+  version: 5.5.3
+  resolution: "typescript@patch:typescript@npm%3A5.5.3#optional!builtin<compat/typescript>::version=5.5.3&hash=5adc0c"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10/b61b8bb4b4d6a8a00f9d5f931f8c67070eed6ad11feabf4c41744a326987080bfc806a621596c70fbf2e5974eca3ed65bafeeeb22a078071bdfb51d8abd7c013
   languageName: node
   linkType: hard
 
