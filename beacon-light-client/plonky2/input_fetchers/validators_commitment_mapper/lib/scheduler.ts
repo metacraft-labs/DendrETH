@@ -1,3 +1,4 @@
+import { Redis as IORedis } from 'ioredis';
 import {
   getFirstSlotInEpoch,
   getLastSlotInEpoch,
@@ -21,9 +22,9 @@ import {
 import { ChainableCommander } from 'ioredis';
 
 enum TaskTag {
-  CONCATENATE_HASHES = 0,
-  PROVE_DUMMY_FOR_DEPTH = 1,
-  VALIDATOR_HASH_PROOF = 2,
+  HASH_CONCATENATION_PROOF = 0,
+  DUMMY_PROOF_FOR_DEPTH = 1,
+  HASH_VALIDATOR_PROOF = 2,
   ZERO_OUT_VALIDATOR = 3,
 }
 
@@ -92,7 +93,7 @@ export class CommitmentMapperScheduler {
     console.log(chalk.bold.blue('Fetching validators from database...'));
     this.validators = await this.redis.getValidatorsBatched(this.currentSlot);
 
-    await this.ensureZeroes();
+    await this.ensureDummyProofs();
 
     // TODO: Rewrite log. Initial syncing must be logged just the first time the
     // script is ran
@@ -129,19 +130,19 @@ export class CommitmentMapperScheduler {
     });
   }
 
-  async scheduleDummyProofTasks(pipeline: ChainableCommander) {
+  scheduleDummyProofTasks(pipeline: ChainableCommander) {
     this.saveDummyInput(pipeline, this.currentSlot);
 
-    this.scheduleHashValidatorTask(
+    this.scheduleHashValidatorProofTask(
       pipeline,
       BigInt(CONSTANTS.validatorRegistryLimit),
       this.currentSlot,
     );
-    await this.redis.saveDummyValidatorProof(40n);
+    this.saveDummyProofPlaceholder(pipeline, 40n);
 
     for (let depth = 39n; depth >= 0n; depth--) {
-      this.scheduleProveDummyForDepth(pipeline, depth);
-      await this.redis.saveDummyValidatorProof(depth);
+      this.scheduleDummyProofForDepth(pipeline, depth);
+      this.saveDummyProofPlaceholder(pipeline, depth);
     }
   }
 
@@ -166,7 +167,7 @@ export class CommitmentMapperScheduler {
       ) {
         this.updateLastVerifiedSlot(pipeline, this.currentSlot);
       }
-      this.updateValidators(pipeline);
+      await this.updateValidators(pipeline);
 
       await pipeline.exec();
     }
@@ -185,7 +186,11 @@ export class CommitmentMapperScheduler {
       .map((validator, index) => ({ validator, index }))
       .filter(hasValidatorChanged(this.validators));
 
-    this.modifyValidators(pipeline, changedValidators, this.currentSlot);
+    if (changedValidators.length > 1000) {
+      await this.modifyValidators(changedValidators, this.currentSlot);
+    } else {
+      this.modifyValidatorsPipeline(pipeline, changedValidators, this.currentSlot);
+    }
 
     setValidatorsLength(
       pipeline,
@@ -201,11 +206,11 @@ export class CommitmentMapperScheduler {
     this.validators = newValidators;
   }
 
-  scheduleHashValidatorTask(pipeline: ChainableCommander, validatorIndex: bigint, slot: bigint) {
+  scheduleHashValidatorProofTask(pipeline: ChainableCommander, validatorIndex: bigint, slot: bigint) {
     const buffer = new ArrayBuffer(17);
     const dataView = new DataView(buffer);
 
-    dataView.setUint8(0, TaskTag.VALIDATOR_HASH_PROOF);
+    dataView.setUint8(0, TaskTag.HASH_VALIDATOR_PROOF);
     dataView.setBigUint64(1, validatorIndex, false);
     dataView.setBigUint64(9, slot, false);
 
@@ -225,7 +230,7 @@ export class CommitmentMapperScheduler {
     }
   }
 
-  async scheduleConcatenateHashesTask(pipeline: ChainableCommander, gindex: bigint, slot: bigint) {
+  async scheduleHashConcatenationTask(pipeline: ChainableCommander, gindex: bigint, slot: bigint) {
     const buffer = new ArrayBuffer(17);
     const dataView = new DataView(buffer);
 
@@ -235,7 +240,7 @@ export class CommitmentMapperScheduler {
       slot,
     );
 
-    dataView.setUint8(0, TaskTag.CONCATENATE_HASHES);
+    dataView.setUint8(0, TaskTag.HASH_CONCATENATION_PROOF);
     dataView.setBigUint64(1, gindex, false);
     dataView.setBigUint64(9, slot, false);
 
@@ -243,11 +248,11 @@ export class CommitmentMapperScheduler {
     this.queue.addItemToPipeline(pipeline, item);
   }
 
-  async scheduleProveDummyForDepth(pipeline: ChainableCommander, depth: bigint) {
+  async scheduleDummyProofForDepth(pipeline: ChainableCommander, depth: bigint) {
     const buffer = new ArrayBuffer(9);
     const dataView = new DataView(buffer);
 
-    dataView.setUint8(0, TaskTag.PROVE_DUMMY_FOR_DEPTH);
+    dataView.setUint8(0, TaskTag.DUMMY_PROOF_FOR_DEPTH);
     dataView.setBigUint64(1, depth, false);
 
     const item = new Item(Buffer.from(buffer));
@@ -280,14 +285,6 @@ export class CommitmentMapperScheduler {
       slots.map(String),
     );
   }
-
-  //   updateValidators() {
-  //     pipeline: ChainableCommander
-  //     indexedValidators: IndexedValidator[],
-  //       slot: bigint,
-  //   } {
-  //
-  // }
 
   saveInput(
     pipeline: ChainableCommander,
@@ -325,7 +322,7 @@ export class CommitmentMapperScheduler {
     this.saveInput(pipeline, index, input, slot);
   }
 
-  modifyValidators(
+  modifyValidatorsPipeline(
     pipeline: ChainableCommander,
     indexedValidators: IndexedValidator[],
     slot: bigint,
@@ -338,16 +335,57 @@ export class CommitmentMapperScheduler {
     let levelIterator = makeBranchIterator(validatorIndices.map(BigInt), 40n);
 
     let leaves = levelIterator.next().value!;
-    leaves.forEach(gindex => this.saveValidatorProof(pipeline, gindex, slot));
-    leaves.forEach(gindex => this.scheduleHashValidatorTask(pipeline, indexFromGindex(gindex, 40n), slot));
+    leaves.forEach(gindex => this.saveProofPlaceholder(pipeline, gindex, slot));
+    leaves.forEach(gindex => this.scheduleHashValidatorProofTask(pipeline, indexFromGindex(gindex, 40n), slot));
 
     for (const gindices of levelIterator) {
-      gindices.forEach(gindex => this.saveValidatorProof(pipeline, gindex, slot));
-      gindices.forEach(gindex => this.scheduleConcatenateHashesTask(pipeline, gindex, slot));
+      gindices.forEach(gindex => this.saveProofPlaceholder(pipeline, gindex, slot));
+      gindices.forEach(gindex => this.scheduleHashConcatenationTask(pipeline, gindex, slot));
     }
   }
 
-  saveValidatorProof(
+  async modifyValidators(
+    indexedValidators: IndexedValidator[],
+    slot: bigint,
+  ) {
+    await Promise.all(indexedValidators.map((indexedValidator) =>
+      executeInPipe(this.redis.client, (pipeline) => this.saveRealInput(pipeline, indexedValidator, slot))
+    ));
+
+    const validatorIndices = indexedValidators.map(x => x.index);
+    let levelIterator = makeBranchIterator(validatorIndices.map(BigInt), 40n);
+
+    let leaves = levelIterator.next().value!;
+    await Promise.all(leaves.map((gindex) =>
+      executeInPipe(
+        this.redis.client,
+        (pipeline) => this.saveProofPlaceholder(pipeline, gindex, slot)
+      )
+    ));
+
+    await Promise.all(leaves.map((gindex) =>
+      executeInPipe(
+        this.redis.client,
+        (pipeline) => this.scheduleHashValidatorProofTask(pipeline, indexFromGindex(gindex, 40n), slot)
+      )
+    ));
+
+    for (const gindices of levelIterator) {
+      await Promise.all(gindices.map((gindex) =>
+        executeInPipe(
+          this.redis.client,
+          (pipeline) => this.saveProofPlaceholder(pipeline, gindex, slot)
+        )
+      ));
+      await Promise.all(gindices.map((gindex) =>
+        executeInPipe(
+          this.redis.client,
+          (pipeline) => this.scheduleHashConcatenationTask(pipeline, gindex, slot))
+      ));
+    }
+  }
+
+  saveProofPlaceholder(
     pipeline: ChainableCommander,
     gindex: bigint,
     slot: bigint,
@@ -374,23 +412,60 @@ export class CommitmentMapperScheduler {
     pipeline.set(CONSTANTS.lastVerifiedSlotKey, slot.toString());
   }
 
-  async ensureZeroes() {
+  async ensureDummyProofs() {
     const pipeline = this.redis.client.pipeline();
 
-    if (await this.isInitialization()) {
-      console.log(chalk.bold.blue('Adding zero tasks...'));
+    if (!(await this.isInitialized())) {
+      console.log(chalk.bold.blue('Adding dummy tasks...'));
       this.scheduleDummyProofTasks(pipeline);
     }
     await pipeline.exec();
   }
 
-  async isInitialization() {
+  async isInitialized() {
     const result = await this.redis.client.exists(
-      `${CONSTANTS.lastProcessedSlotKey}`
+      `${CONSTANTS.validatorProofKey}:zeroes`
     );
 
     return result === 0;
   }
+
+  async saveDummyProofPlaceholder(
+    pipeline: ChainableCommander,
+    depth: bigint,
+    proof: ValidatorProof = {
+      needsChange: true,
+      proofKey: 'invalid',
+      publicInputs: {
+        poseidonHashTreeRoot: [0, 0, 0, 0],
+        sha256HashTreeRoot: ''.padEnd(64, '0'),
+      },
+    },
+  ) {
+    pipeline.set(
+      `${CONSTANTS.validatorProofKey}:zeroes:${depth}`,
+      JSON.stringify(proof),
+    );
+  }
+}
+
+function executeInPipe2<Args extends [...any[]]>(
+  redis: IORedis,
+  func: (pipeline: ChainableCommander, ...args: Args) => void,
+  ...args: Args
+) {
+  const pipeline = redis.pipeline();
+  func(pipeline, ...args);
+  return pipeline.exec();
+}
+
+function executeInPipe<Args extends [...any[]]>(
+  redis: IORedis,
+  func: (pipeline: ChainableCommander) => void,
+) {
+  const pipeline = redis.pipeline();
+  func(pipeline);
+  return pipeline.exec();
 }
 
 async function setValidatorsLength(pipeline: ChainableCommander, slot: bigint, length: number) {

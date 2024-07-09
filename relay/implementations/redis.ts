@@ -387,24 +387,6 @@ export class Redis implements IRedis {
     );
   }
 
-  async saveDummyValidatorProof(
-    depth: bigint,
-    proof: ValidatorProof = {
-      needsChange: true,
-      proofKey: 'invalid',
-      publicInputs: {
-        poseidonHashTreeRoot: [0, 0, 0, 0],
-        sha256HashTreeRoot: ''.padEnd(64, '0'),
-      },
-    },
-  ): Promise<void> {
-    await this.waitForConnection();
-    await this.client.set(
-      `${CONSTANTS.validatorProofKey}:zeroes:${depth}`,
-      JSON.stringify(proof),
-    );
-  }
-
   async saveBalanceProof(
     protocol: string,
     level: bigint,
