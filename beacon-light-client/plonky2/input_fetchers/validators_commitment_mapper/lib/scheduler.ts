@@ -312,6 +312,12 @@ function saveInput(
   input: CommitmentMapperInput,
   slot: bigint,
 ): void {
+  recordStateModification(
+    pipeline,
+    `${CONSTANTS.validatorKey}:${index}`,
+    slot,
+  );
+
   pipeline.set(
     `${CONSTANTS.validatorKey}:${index}:${slot}`,
     JSON.stringify(input),
@@ -323,12 +329,6 @@ function saveRealInput(
   { validator, index }: IndexedValidator,
   slot: bigint,
 ): void {
-  recordStateModification(
-    pipeline,
-    `${CONSTANTS.validatorKey}:${index}`,
-    slot,
-  );
-
   const input = commitmentMapperInputFromValidator(validator);
   saveInput(pipeline, BigInt(index), input, slot);
 }
