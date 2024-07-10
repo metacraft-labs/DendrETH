@@ -134,10 +134,8 @@ export class CommitmentMapperScheduler {
 
     if (changedValidators.length <= 1000) {
       await this.modifyValidators(changedValidators, this.currentSlot);
-      console.log('non atomic');
     } else {
       this.modifyValidatorsPipeline(pipeline, changedValidators, this.currentSlot);
-      console.log('atomic');
     }
 
     console.log(
@@ -201,11 +199,11 @@ export class CommitmentMapperScheduler {
     }
   }
 
-  async modifyValidatorsPipeline(
+  modifyValidatorsPipeline(
     pipeline: ChainableCommander,
     indexedValidators: IndexedValidator[],
     slot: bigint,
-  ): Promise<void> {
+  ): void {
     indexedValidators.forEach((indexedValidator) => {
       this.scheduleHashValidatorProofTaskPipeline(pipeline, indexedValidator, slot);
     });
