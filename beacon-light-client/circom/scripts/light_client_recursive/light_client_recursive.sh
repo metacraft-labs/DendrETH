@@ -27,7 +27,7 @@ git submodule update --init --recursive
 (compile_cpp_witness "${BUILD_DIR}" "${CIRCUIT_NAME}")
 
 # ****CREATE FINAL ZKEY****
-(verify_final_key "${BUILD_DIR}" "${SNARKJS}" "${CIRCUIT_NAME}" "${PHASE1}")
+(generate_zkey "${BUILD_DIR}" "${SNARKJS}" "${PHASE1}" "${CIRCUIT_NAME}")
 
 # ****EXPORT ZKEY TO JSON****
 (export_vkey "${BUILD_DIR}" "${SNARKJS}" "${CIRCUIT_NAME}")
