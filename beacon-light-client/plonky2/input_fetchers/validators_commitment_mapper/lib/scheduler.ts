@@ -15,7 +15,7 @@ import { KeyPrefix, WorkQueue, Item } from '@mevitae/redis-work-queue';
 import CONSTANTS from '../../../kv_db_constants.json';
 import {
   commitmentMapperInputFromValidator,
-  getDummyCommitmentMapperInput as createDummyCommitmentMapperInput,
+  createDummyCommitmentMapperInput
 } from '../../utils/common_utils';
 import { ChainableCommander } from 'ioredis';
 
