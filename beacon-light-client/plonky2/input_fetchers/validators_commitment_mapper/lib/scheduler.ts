@@ -1,5 +1,4 @@
 import {
-  getFirstSlotInEpoch,
   getLastSlotInEpoch,
   gindexFromIndex,
   makeBranchIterator,
@@ -97,12 +96,12 @@ export class CommitmentMapperScheduler {
   }
 
   scheduleDummyProofTasks(pipeline: ChainableCommander, slot: bigint): void {
-    this.saveDummyInputPipeline(pipeline, this.currentSlot);
-    this.saveDummyProofPlaceholder(pipeline, 40n);
-    this.pushHashValidatorProofTaskPipeline(pipeline, BigInt(CONSTANTS.validatorRegistryLimit), slot);
+    saveDummyInput(pipeline, this.currentSlot);
+    saveDummyProofPlaceholder(pipeline, 40n);
+    this.pushHashValidatorProofTask(pipeline, BigInt(CONSTANTS.validatorRegistryLimit), slot);
 
     for (let depth = 39n; depth > 0n; depth--) {
-      this.saveDummyProofPlaceholder(pipeline, depth);
+      saveDummyProofPlaceholder(pipeline, depth);
       this.scheduleDummyProofForDepth(pipeline, depth);
     }
   }
@@ -119,7 +118,7 @@ export class CommitmentMapperScheduler {
     await this.updateValidators();
 
     const pipeline = this.redis.client.pipeline();
-    this.updateLastProcessedSlot(pipeline, this.currentSlot);
+    updateLastProcessedSlot(pipeline, this.currentSlot);
     setValidatorsLengthForSlot(
       pipeline,
       this.currentSlot,
@@ -149,7 +148,7 @@ export class CommitmentMapperScheduler {
     this.validators = newValidators;
   }
 
-  pushHashValidatorProofTaskPipeline(pipeline: ChainableCommander, validatorIndex: bigint, slot: bigint): void {
+  pushHashValidatorProofTask(pipeline: ChainableCommander, validatorIndex: bigint, slot: bigint): void {
     const buffer = new ArrayBuffer(17);
     const dataView = new DataView(buffer);
 
@@ -164,12 +163,12 @@ export class CommitmentMapperScheduler {
   scheduleHashValidatorProofTask(indexedValidator: IndexedValidator, slot: bigint): Promise<unknown> {
     const pipeline = this.redis.client.pipeline();
 
-    this.saveRealInputPipeline(pipeline, indexedValidator, slot);
-    this.pushHashValidatorProofTaskPipeline(pipeline, BigInt(indexedValidator.index), slot);
+    saveRealInput(pipeline, indexedValidator, slot);
+    this.pushHashValidatorProofTask(pipeline, BigInt(indexedValidator.index), slot);
 
     const gindex = gindexFromIndex(BigInt(indexedValidator.index), 40n);
-    this.saveProofPlaceholderPipeline(pipeline, gindex, slot);
-    this.recordStateModificationPipeline(pipeline, `${CONSTANTS.validatorProofKey}:${gindex}`, slot);
+    saveProofPlaceholder(pipeline, gindex, slot);
+    recordStateModification(pipeline, `${CONSTANTS.validatorProofKey}:${gindex}`, slot);
 
     return pipeline.exec();
   }
@@ -177,8 +176,8 @@ export class CommitmentMapperScheduler {
   scheduleHashConcatenationTask(gindex: bigint, slot: bigint): Promise<unknown> {
     const pipeline = this.redis.client.pipeline();
 
-    this.saveProofPlaceholderPipeline(pipeline, gindex, slot);
-    this.recordStateModificationPipeline(
+    saveProofPlaceholder(pipeline, gindex, slot);
+    recordStateModification(
       pipeline,
       `${CONSTANTS.validatorProofKey}:${gindex}`,
       slot,
@@ -220,49 +219,6 @@ export class CommitmentMapperScheduler {
     this.queue.addItemToPipeline(pipeline, item);
   }
 
-  recordStateModificationPipeline(pipeline: ChainableCommander, key: string, slot: bigint): void {
-    pipeline.zadd(
-      `${key}:${CONSTANTS.slotLookupKey}`,
-      Number(slot),
-      slot.toString(),
-    );
-  }
-
-  saveInputPipeline(
-    pipeline: ChainableCommander,
-    index: bigint,
-    input: CommitmentMapperInput,
-    slot: bigint,
-  ): void {
-    pipeline.set(
-      `${CONSTANTS.validatorKey}:${index}:${slot}`,
-      JSON.stringify(input),
-    );
-  }
-
-  saveRealInputPipeline(
-    pipeline: ChainableCommander,
-    { validator, index }: IndexedValidator,
-    slot: bigint,
-  ): void {
-    this.recordStateModificationPipeline(
-      pipeline,
-      `${CONSTANTS.validatorKey}:${index}`,
-      slot,
-    );
-
-    const input = commitmentMapperInputFromValidator(validator);
-    this.saveInputPipeline(pipeline, BigInt(index), input, slot);
-  }
-
-  saveDummyInputPipeline(
-    pipeline: ChainableCommander,
-    slot: bigint,
-  ): void {
-    const index = BigInt(CONSTANTS.validatorRegistryLimit);
-    const input = createDummyCommitmentMapperInput();
-    this.saveInputPipeline(pipeline, index, input, slot);
-  }
 
   async modifyValidators(
     indexedValidators: IndexedValidator[],
@@ -283,34 +239,6 @@ export class CommitmentMapperScheduler {
     }
   }
 
-  saveProofPlaceholderPipeline(
-    pipeline: ChainableCommander,
-    gindex: bigint,
-    slot: bigint,
-  ): void {
-    const obj: ValidatorProof = {
-      needsChange: true,
-      proofKey: '',
-      publicInputs: {
-        poseidonHashTreeRoot: [0, 0, 0, 0],
-        sha256HashTreeRoot: ''.padEnd(64, '0'),
-      }
-    };
-
-    pipeline.set(
-      `${CONSTANTS.validatorProofKey}:${gindex}:${slot}`,
-      JSON.stringify(obj),
-    );
-  }
-
-  updateLastProcessedSlot(pipeline: ChainableCommander, slot: bigint): void {
-    pipeline.set(CONSTANTS.lastProcessedSlotKey, slot.toString());
-  }
-
-  updateLastVerifiedSlot(pipeline: ChainableCommander, slot: bigint): void {
-    pipeline.set(CONSTANTS.lastVerifiedSlotKey, slot.toString());
-  }
-
   async ensureDummyProofs(slot: bigint): Promise<void> {
     const pipeline = this.redis.client.pipeline();
 
@@ -327,25 +255,6 @@ export class CommitmentMapperScheduler {
       `${CONSTANTS.validatorProofKey}:zeroes:1`
     );
     return result === 1;
-  }
-
-  async saveDummyProofPlaceholder(
-    pipeline: ChainableCommander,
-    depth: bigint,
-  ): Promise<void> {
-    const obj: ValidatorProof = {
-      needsChange: true,
-      proofKey: 'invalid',
-      publicInputs: {
-        poseidonHashTreeRoot: [0, 0, 0, 0],
-        sha256HashTreeRoot: ''.padEnd(64, '0'),
-      },
-    };
-
-    pipeline.set(
-      `${CONSTANTS.validatorProofKey}:zeroes:${depth}`,
-      JSON.stringify(obj),
-    );
   }
 
   registerEventListeners(): void {
@@ -384,6 +293,98 @@ async function setValidatorsLengthForSlot(pipeline: ChainableCommander, slot: bi
     length.toString(),
   );
 }
+
+function updateLastProcessedSlot(pipeline: ChainableCommander, slot: bigint): void {
+  pipeline.set(CONSTANTS.lastProcessedSlotKey, slot.toString());
+}
+
+function recordStateModification(pipeline: ChainableCommander, key: string, slot: bigint): void {
+  pipeline.zadd(
+    `${key}:${CONSTANTS.slotLookupKey}`,
+    Number(slot),
+    slot.toString(),
+  );
+}
+
+function saveInput(
+  pipeline: ChainableCommander,
+  index: bigint,
+  input: CommitmentMapperInput,
+  slot: bigint,
+): void {
+  pipeline.set(
+    `${CONSTANTS.validatorKey}:${index}:${slot}`,
+    JSON.stringify(input),
+  );
+}
+
+function saveRealInput(
+  pipeline: ChainableCommander,
+  { validator, index }: IndexedValidator,
+  slot: bigint,
+): void {
+  recordStateModification(
+    pipeline,
+    `${CONSTANTS.validatorKey}:${index}`,
+    slot,
+  );
+
+  const input = commitmentMapperInputFromValidator(validator);
+  saveInput(pipeline, BigInt(index), input, slot);
+}
+
+function saveDummyInput(
+  pipeline: ChainableCommander,
+  slot: bigint,
+): void {
+  const index = BigInt(CONSTANTS.validatorRegistryLimit);
+  const input = createDummyCommitmentMapperInput();
+  saveInput(pipeline, index, input, slot);
+}
+
+async function saveDummyProofPlaceholder(
+  pipeline: ChainableCommander,
+  depth: bigint,
+): Promise<void> {
+  const obj: ValidatorProof = {
+    needsChange: true,
+    proofKey: 'invalid',
+    publicInputs: {
+      poseidonHashTreeRoot: [0, 0, 0, 0],
+      sha256HashTreeRoot: ''.padEnd(64, '0'),
+    },
+  };
+
+  pipeline.set(
+    `${CONSTANTS.validatorProofKey}:zeroes:${depth}`,
+    JSON.stringify(obj),
+  );
+}
+
+function saveProofPlaceholder(
+  pipeline: ChainableCommander,
+  gindex: bigint,
+  slot: bigint,
+): void {
+  const obj: ValidatorProof = {
+    needsChange: true,
+    proofKey: '',
+    publicInputs: {
+      poseidonHashTreeRoot: [0, 0, 0, 0],
+      sha256HashTreeRoot: ''.padEnd(64, '0'),
+    }
+  };
+
+  pipeline.set(
+    `${CONSTANTS.validatorProofKey}:${gindex}:${slot}`,
+    JSON.stringify(obj),
+  );
+}
+
+// function updateLastVerifiedSlot(pipeline: ChainableCommander, slot: bigint): void {
+//   pipeline.set(CONSTANTS.lastVerifiedSlotKey, slot.toString());
+// }
+
 // Returns a function that checks whether a validator at validator index has
 // changed  (doesn't check for pubkey and withdrawalCredentials since those
 // never change according to the spec)
