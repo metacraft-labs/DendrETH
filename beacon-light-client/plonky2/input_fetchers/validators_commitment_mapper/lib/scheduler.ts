@@ -33,17 +33,6 @@ enum TaskTag {
   ZERO_OUT_VALIDATOR = 3,
 }
 
-interface ModifyValidatorVtable {
-  scheduleHashValidatorTaskFn: (
-    indexedValidator: IndexedValidator,
-    slot: bigint,
-  ) => Promise<unknown>;
-  scheduleHashConcatenationTaskFn: (
-    gindex: bigint,
-    slot: bigint,
-  ) => Promise<unknown>;
-}
-
 export class CommitmentMapperScheduler {
   private redis: Redis;
   private api: BeaconApi;
@@ -78,10 +67,10 @@ export class CommitmentMapperScheduler {
       lastProcessedSlot !== null
         ? BigInt(lastProcessedSlot)
         : (() => {
-            const finalizedSlot = getLastSlotInEpoch(this.lastFinalizedEpoch);
-            const slot = options['sync-slot'] || finalizedSlot;
-            return BigInt(Math.min(Number(slot), Number(finalizedSlot))) - 1n;
-          })();
+          const finalizedSlot = getLastSlotInEpoch(this.lastFinalizedEpoch);
+          const slot = options['sync-slot'] || finalizedSlot;
+          return BigInt(Math.min(Number(slot), Number(finalizedSlot))) - 1n;
+        })();
 
     const lastVerifiedSlot = await this.redis.get(
       CONSTANTS.lastVerifiedSlotKey,
@@ -354,6 +343,17 @@ export class CommitmentMapperScheduler {
   }
 }
 
+interface ModifyValidatorVtable {
+  scheduleHashValidatorTaskFn: (
+    indexedValidator: IndexedValidator,
+    slot: bigint,
+  ) => Promise<unknown>;
+  scheduleHashConcatenationTaskFn: (
+    gindex: bigint,
+    slot: bigint,
+  ) => Promise<unknown>;
+}
+
 /// A template for validators tree modification (currently used to create
 /// two implementations. One that uses a pipeline and one that executes each
 /// command separately)
@@ -361,7 +361,7 @@ function modifyValidatorsImpl({
   scheduleHashValidatorTaskFn: scheduleHashValidatorProofTaskFn,
   scheduleHashConcatenationTaskFn,
 }: ModifyValidatorVtable) {
-  return async function (indexedValidators: IndexedValidator[], slot: bigint) {
+  return async function(indexedValidators: IndexedValidator[], slot: bigint) {
     await Promise.all(
       indexedValidators.map(indexedValidator => {
         return scheduleHashValidatorProofTaskFn(indexedValidator, slot);
@@ -600,7 +600,7 @@ function hasValidatorChanged(prevValidators: Validator[]) {
     validator.effectiveBalance !== prevValidators[index].effectiveBalance ||
     validator.slashed !== prevValidators[index].slashed ||
     validator.activationEligibilityEpoch !==
-      prevValidators[index].activationEligibilityEpoch ||
+    prevValidators[index].activationEligibilityEpoch ||
     validator.activationEpoch !== prevValidators[index].activationEpoch ||
     validator.exitEpoch !== prevValidators[index].exitEpoch ||
     validator.withdrawableEpoch !== prevValidators[index].withdrawableEpoch;
