@@ -1,9 +1,9 @@
-import Redis from "ioredis";
-import { CommandLineOptionsBuilder } from "../../utils/cmdline";
-import { getBeaconApi } from "@dendreth/relay/implementations/beacon-api";
-import { bytesToHex } from "@dendreth/utils/ts-utils/bls";
+import Redis from 'ioredis';
+import { CommandLineOptionsBuilder } from '../../utils/cmdline';
+import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
+import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 
-(async function() {
+(async function () {
   const options = new CommandLineOptionsBuilder()
     .withBeaconNodeOpts()
     .withRedisOpts()
@@ -16,8 +16,8 @@ import { bytesToHex } from "@dendreth/utils/ts-utils/bls";
   const beaconApi = await getBeaconApi(options['beacon-node']);
   const headSlot = await beaconApi.getHeadSlot();
   const validators = await beaconApi.getValidators(headSlot);
-  console.log(validators)
-  console.log(validators.length)
+  console.log(validators);
+  console.log(validators.length);
 
   console.log(validators.map(validator => bytesToHex(validator.pubkey)));
 

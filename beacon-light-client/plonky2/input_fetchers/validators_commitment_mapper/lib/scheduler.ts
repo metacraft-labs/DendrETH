@@ -10,13 +10,18 @@ import {
   getBeaconApi,
 } from '@dendreth/relay/implementations/beacon-api';
 import { Redis } from '@dendreth/relay/implementations/redis';
-import { Validator, IndexedValidator, CommitmentMapperInput, ValidatorProof } from '@dendreth/relay/types/types';
+import {
+  Validator,
+  IndexedValidator,
+  CommitmentMapperInput,
+  ValidatorProof,
+} from '@dendreth/relay/types/types';
 import chalk from 'chalk';
 import { KeyPrefix, WorkQueue, Item } from '@mevitae/redis-work-queue';
 import CONSTANTS from '../../../kv_db_constants.json';
 import {
   commitmentMapperInputFromValidator,
-  createDummyCommitmentMapperInput
+  createDummyCommitmentMapperInput,
 } from '../../utils/common_utils';
 import { ChainableCommander } from 'ioredis';
 import { validatorFromValidatorJSON } from '@dendreth/relay/utils/converters';
@@ -29,8 +34,14 @@ enum TaskTag {
 }
 
 interface ModifyValidatorVtable {
-  scheduleHashValidatorTaskFn: (indexedValidator: IndexedValidator, slot: bigint) => Promise<unknown>;
-  scheduleHashConcatenationTaskFn: (gindex: bigint, slot: bigint) => Promise<unknown>;
+  scheduleHashValidatorTaskFn: (
+    indexedValidator: IndexedValidator,
+    slot: bigint,
+  ) => Promise<unknown>;
+  scheduleHashConcatenationTaskFn: (
+    gindex: bigint,
+    slot: bigint,
+  ) => Promise<unknown>;
 }
 
 export class CommitmentMapperScheduler {
@@ -46,8 +57,14 @@ export class CommitmentMapperScheduler {
 
   async init(options: any): Promise<void> {
     this.api = await getBeaconApi(options['beacon-node']);
-    this.redis = new Redis(options['redis-host'], options['redis-port'], options['redis-auth']);
-    this.queue = new WorkQueue(new KeyPrefix(`${CONSTANTS.validatorProofsQueue}`));
+    this.redis = new Redis(
+      options['redis-host'],
+      options['redis-port'],
+      options['redis-auth'],
+    );
+    this.queue = new WorkQueue(
+      new KeyPrefix(`${CONSTANTS.validatorProofsQueue}`),
+    );
     this.take = options['take'];
     this.offset = options['offset'];
     this.headSlot = await this.api.getHeadSlot();
@@ -57,15 +74,18 @@ export class CommitmentMapperScheduler {
       CONSTANTS.lastProcessedSlotKey,
     );
 
-    this.currentSlot = lastProcessedSlot !== null
-      ? BigInt(lastProcessedSlot)
-      : (() => {
-        const finalizedSlot = getLastSlotInEpoch(this.lastFinalizedEpoch);
-        const slot = options['sync-slot'] || finalizedSlot;
-        return BigInt(Math.min(Number(slot), Number(finalizedSlot))) - 1n;
-      })();
+    this.currentSlot =
+      lastProcessedSlot !== null
+        ? BigInt(lastProcessedSlot)
+        : (() => {
+            const finalizedSlot = getLastSlotInEpoch(this.lastFinalizedEpoch);
+            const slot = options['sync-slot'] || finalizedSlot;
+            return BigInt(Math.min(Number(slot), Number(finalizedSlot))) - 1n;
+          })();
 
-    const lastVerifiedSlot = await this.redis.get(CONSTANTS.lastVerifiedSlotKey);
+    const lastVerifiedSlot = await this.redis.get(
+      CONSTANTS.lastVerifiedSlotKey,
+    );
 
     if (lastVerifiedSlot === null) {
       await this.redis.set(
@@ -142,7 +162,11 @@ export class CommitmentMapperScheduler {
     if (changedValidators.length <= 1000) {
       await this.modifyValidators(changedValidators, this.currentSlot);
     } else {
-      this.modifyValidatorsPipeline(pipeline, changedValidators, this.currentSlot);
+      this.modifyValidatorsPipeline(
+        pipeline,
+        changedValidators,
+        this.currentSlot,
+      );
     }
 
     console.log(
@@ -156,7 +180,11 @@ export class CommitmentMapperScheduler {
   scheduleDummyProofTasks(pipeline: ChainableCommander, slot: bigint): void {
     saveDummyInput(pipeline, this.currentSlot);
     saveDummyProofPlaceholder(pipeline, 40n);
-    this.pushHashValidatorProofTask(pipeline, BigInt(CONSTANTS.validatorRegistryLimit), slot);
+    this.pushHashValidatorProofTask(
+      pipeline,
+      BigInt(CONSTANTS.validatorRegistryLimit),
+      slot,
+    );
 
     for (let depth = 39n; depth > 0n; depth--) {
       saveDummyProofPlaceholder(pipeline, depth);
@@ -164,7 +192,10 @@ export class CommitmentMapperScheduler {
     }
   }
 
-  async scheduleDummyProofForDepth(pipeline: ChainableCommander, depth: bigint): Promise<void> {
+  async scheduleDummyProofForDepth(
+    pipeline: ChainableCommander,
+    depth: bigint,
+  ): Promise<void> {
     const buffer = new ArrayBuffer(9);
     const dataView = new DataView(buffer);
 
@@ -175,7 +206,11 @@ export class CommitmentMapperScheduler {
     this.queue.addItemToPipeline(pipeline, item);
   }
 
-  async scheduleZeroOutValidatorTask(pipeline: ChainableCommander, validatorIndex: number, slot: bigint): Promise<void> {
+  async scheduleZeroOutValidatorTask(
+    pipeline: ChainableCommander,
+    validatorIndex: number,
+    slot: bigint,
+  ): Promise<void> {
     const buffer = new ArrayBuffer(17);
     const dataView = new DataView(buffer);
 
@@ -189,13 +224,19 @@ export class CommitmentMapperScheduler {
 
   modifyValidators = modifyValidatorsImpl({
     scheduleHashValidatorTaskFn: this.scheduleHashValidatorProofTask.bind(this),
-    scheduleHashConcatenationTaskFn: this.scheduleHashConcatenationTask.bind(this),
+    scheduleHashConcatenationTaskFn:
+      this.scheduleHashConcatenationTask.bind(this),
   });
 
-  modifyValidatorsPipeline(pipeline: ChainableCommander, ...args: Parameters<ReturnType<typeof modifyValidatorsImpl>>): Promise<void> {
+  modifyValidatorsPipeline(
+    pipeline: ChainableCommander,
+    ...args: Parameters<ReturnType<typeof modifyValidatorsImpl>>
+  ): Promise<void> {
     return modifyValidatorsImpl({
-      scheduleHashValidatorTaskFn: async () => this.scheduleHashValidatorTaskPipeline.bind(this, pipeline),
-      scheduleHashConcatenationTaskFn: async () => this.scheduleHashConcatenationTaskPipeline.bind(this, pipeline),
+      scheduleHashValidatorTaskFn: async () =>
+        this.scheduleHashValidatorTaskPipeline.bind(this, pipeline),
+      scheduleHashConcatenationTaskFn: async () =>
+        this.scheduleHashConcatenationTaskPipeline.bind(this, pipeline),
     })(...args);
   }
 
@@ -212,7 +253,7 @@ export class CommitmentMapperScheduler {
 
   async isInitialized(): Promise<boolean> {
     const result = await this.redis.client.exists(
-      `${CONSTANTS.validatorProofKey}:zeroes:1`
+      `${CONSTANTS.validatorProofKey}:zeroes:1`,
     );
     return result === 1;
   }
@@ -238,7 +279,11 @@ export class CommitmentMapperScheduler {
     });
   }
 
-  pushHashValidatorProofTask(pipeline: ChainableCommander, validatorIndex: bigint, slot: bigint): void {
+  pushHashValidatorProofTask(
+    pipeline: ChainableCommander,
+    validatorIndex: bigint,
+    slot: bigint,
+  ): void {
     const buffer = new ArrayBuffer(17);
     const dataView = new DataView(buffer);
 
@@ -247,27 +292,44 @@ export class CommitmentMapperScheduler {
     dataView.setBigUint64(9, slot, false);
 
     const item = new Item(Buffer.from(buffer));
-    this.queue.addItemToPipeline(pipeline, item)
+    this.queue.addItemToPipeline(pipeline, item);
   }
 
-  scheduleHashValidatorTaskPipeline(pipeline: ChainableCommander, indexedValidator: IndexedValidator, slot: bigint): void {
+  scheduleHashValidatorTaskPipeline(
+    pipeline: ChainableCommander,
+    indexedValidator: IndexedValidator,
+    slot: bigint,
+  ): void {
     saveRealInput(pipeline, indexedValidator, slot);
-    this.pushHashValidatorProofTask(pipeline, BigInt(indexedValidator.index), slot);
+    this.pushHashValidatorProofTask(
+      pipeline,
+      BigInt(indexedValidator.index),
+      slot,
+    );
 
     const gindex = gindexFromIndex(BigInt(indexedValidator.index), 40n);
     saveProofPlaceholder(pipeline, gindex, slot);
-    recordStateModification(pipeline, `${CONSTANTS.validatorProofKey
-      }:${gindex}`, slot);
-
+    recordStateModification(
+      pipeline,
+      `${CONSTANTS.validatorProofKey}:${gindex}`,
+      slot,
+    );
   }
 
-  scheduleHashValidatorProofTask(indexedValidator: IndexedValidator, slot: bigint): Promise<unknown> {
+  scheduleHashValidatorProofTask(
+    indexedValidator: IndexedValidator,
+    slot: bigint,
+  ): Promise<unknown> {
     const pipeline = this.redis.client.pipeline();
     this.scheduleHashValidatorTaskPipeline(pipeline, indexedValidator, slot);
     return pipeline.exec();
   }
 
-  scheduleHashConcatenationTaskPipeline(pipeline: ChainableCommander, gindex: bigint, slot: bigint): void {
+  scheduleHashConcatenationTaskPipeline(
+    pipeline: ChainableCommander,
+    gindex: bigint,
+    slot: bigint,
+  ): void {
     recordProofStateModification(pipeline, gindex, slot);
     saveProofPlaceholder(pipeline, gindex, slot);
 
@@ -282,7 +344,10 @@ export class CommitmentMapperScheduler {
     this.queue.addItemToPipeline(pipeline, item);
   }
 
-  async scheduleHashConcatenationTask(gindex: bigint, slot: bigint): Promise<unknown> {
+  async scheduleHashConcatenationTask(
+    gindex: bigint,
+    slot: bigint,
+  ): Promise<unknown> {
     const pipeline = this.redis.client.pipeline();
     this.scheduleHashConcatenationTaskPipeline(pipeline, gindex, slot);
     return pipeline.exec();
@@ -292,11 +357,16 @@ export class CommitmentMapperScheduler {
 /// A template for validators tree modification (currently used to create
 /// two implementations. One that uses a pipeline and one that executes each
 /// command separately)
-function modifyValidatorsImpl({ scheduleHashValidatorTaskFn: scheduleHashValidatorProofTaskFn, scheduleHashConcatenationTaskFn }: ModifyValidatorVtable) {
-  return async function(indexedValidators: IndexedValidator[], slot: bigint) {
-    await Promise.all(indexedValidators.map((indexedValidator) => {
-      return scheduleHashValidatorProofTaskFn(indexedValidator, slot);
-    }));
+function modifyValidatorsImpl({
+  scheduleHashValidatorTaskFn: scheduleHashValidatorProofTaskFn,
+  scheduleHashConcatenationTaskFn,
+}: ModifyValidatorVtable) {
+  return async function (indexedValidators: IndexedValidator[], slot: bigint) {
+    await Promise.all(
+      indexedValidators.map(indexedValidator => {
+        return scheduleHashValidatorProofTaskFn(indexedValidator, slot);
+      }),
+    );
 
     const validatorIndices = indexedValidators.map(x => x.index);
     let levelIterator = makeBranchIterator(validatorIndices.map(BigInt), 40n);
@@ -305,31 +375,42 @@ function modifyValidatorsImpl({ scheduleHashValidatorTaskFn: scheduleHashValidat
     levelIterator.next();
 
     for (const gindices of levelIterator) {
-      await Promise.all(gindices.map((gindex) => scheduleHashConcatenationTaskFn(gindex, slot)));
+      await Promise.all(
+        gindices.map(gindex => scheduleHashConcatenationTaskFn(gindex, slot)),
+      );
     }
   };
 }
 
 function logProgress(currentSlot: bigint, headSlot: bigint): void {
-  const progressMessage = currentSlot === headSlot
-    ? chalk.cyan(currentSlot)
-    : `${chalk.cyanBright(currentSlot)}/${chalk.cyan(headSlot)}`;
+  const progressMessage =
+    currentSlot === headSlot
+      ? chalk.cyan(currentSlot)
+      : `${chalk.cyanBright(currentSlot)}/${chalk.cyan(headSlot)}`;
 
   console.log(chalk.bold.blue(`Syncing ${progressMessage}...`));
 }
 
-async function setValidatorsLengthForSlot(pipeline: ChainableCommander, slot: bigint, length: number): Promise<void> {
-  pipeline.set(
-    `${CONSTANTS.validatorsLengthKey}:${slot}`,
-    length.toString(),
-  );
+async function setValidatorsLengthForSlot(
+  pipeline: ChainableCommander,
+  slot: bigint,
+  length: number,
+): Promise<void> {
+  pipeline.set(`${CONSTANTS.validatorsLengthKey}:${slot}`, length.toString());
 }
 
-function updateLastProcessedSlot(pipeline: ChainableCommander, slot: bigint): void {
+function updateLastProcessedSlot(
+  pipeline: ChainableCommander,
+  slot: bigint,
+): void {
   pipeline.set(CONSTANTS.lastProcessedSlotKey, slot.toString());
 }
 
-function recordStateModification(pipeline: ChainableCommander, key: string, slot: bigint): void {
+function recordStateModification(
+  pipeline: ChainableCommander,
+  key: string,
+  slot: bigint,
+): void {
   pipeline.zadd(
     `${key}:${CONSTANTS.slotLookupKey}`,
     Number(slot),
@@ -337,16 +418,19 @@ function recordStateModification(pipeline: ChainableCommander, key: string, slot
   );
 }
 
-function recordValidatorStateModification(pipeline: ChainableCommander, index: bigint, slot: bigint): void {
-  recordStateModification(
-    pipeline,
-    `${CONSTANTS.validatorKey
-    }:${index}`,
-    slot,
-  );
+function recordValidatorStateModification(
+  pipeline: ChainableCommander,
+  index: bigint,
+  slot: bigint,
+): void {
+  recordStateModification(pipeline, `${CONSTANTS.validatorKey}:${index}`, slot);
 }
 
-function recordProofStateModification(pipeline: ChainableCommander, gindex: bigint, slot: bigint): void {
+function recordProofStateModification(
+  pipeline: ChainableCommander,
+  gindex: bigint,
+  slot: bigint,
+): void {
   recordStateModification(
     pipeline,
     `${CONSTANTS.validatorProofKey}:${gindex}`,
@@ -377,10 +461,7 @@ function saveRealInput(
   saveInput(pipeline, BigInt(index), input, slot);
 }
 
-function saveDummyInput(
-  pipeline: ChainableCommander,
-  slot: bigint,
-): void {
+function saveDummyInput(pipeline: ChainableCommander, slot: bigint): void {
   const index = BigInt(CONSTANTS.validatorRegistryLimit);
   const input = createDummyCommitmentMapperInput();
   saveInput(pipeline, index, input, slot);
@@ -416,7 +497,7 @@ function saveProofPlaceholder(
     publicInputs: {
       poseidonHashTreeRoot: [0, 0, 0, 0],
       sha256HashTreeRoot: ''.padEnd(64, '0'),
-    }
+    },
   };
 
   pipeline.set(
@@ -425,12 +506,20 @@ function saveProofPlaceholder(
   );
 }
 
-export async function getValidatorsLengthForSlot(redis: Redis, slot: bigint): Promise<number | null> {
-  const result = await redis.client.get(`${CONSTANTS.validatorsLengthKey}:${slot}`);
+export async function getValidatorsLengthForSlot(
+  redis: Redis,
+  slot: bigint,
+): Promise<number | null> {
+  const result = await redis.client.get(
+    `${CONSTANTS.validatorsLengthKey}:${slot}`,
+  );
   return result !== null ? Number(result) : null;
 }
 
-export async function getValidatorKeysForSlot(redis: Redis, slot: bigint): Promise<string[]> {
+export async function getValidatorKeysForSlot(
+  redis: Redis,
+  slot: bigint,
+): Promise<string[]> {
   return (await redis.client.keys(`${CONSTANTS.validatorKey}:*:[0-9]*`))
     .filter(key => !key.includes(CONSTANTS.validatorRegistryLimit.toString()))
     .reduce((acc, key) => {
@@ -469,9 +558,9 @@ export async function getValidatorsBatched(
     if (res === null) {
       continue;
     }
-    const batchValidators = (res.filter((v: any) => v !== null) as string[]).map(
-      (json: any) => JSON.parse(json).validator,
-    );
+    const batchValidators = (
+      res.filter((v: any) => v !== null) as string[]
+    ).map((json: any) => JSON.parse(json).validator);
 
     for (const [index, redisValidator] of batchValidators.entries()) {
       try {
@@ -486,16 +575,14 @@ export async function getValidatorsBatched(
     console.log(
       `Loaded batch ${chalk.bold.yellowBright(
         keyBatchIndex + 1,
-      )
-      }/${chalk.bold.yellow(Math.ceil(keys.length / batchSize))}`,
+      )}/${chalk.bold.yellow(Math.ceil(keys.length / batchSize))}`,
     );
   }
 
   console.log(
     `Loaded ${chalk.bold.yellow(
       allValidators.length,
-    )
-    } validators from database`,
+    )} validators from database`,
   );
 
   return allValidators;
@@ -513,9 +600,8 @@ function hasValidatorChanged(prevValidators: Validator[]) {
     validator.effectiveBalance !== prevValidators[index].effectiveBalance ||
     validator.slashed !== prevValidators[index].slashed ||
     validator.activationEligibilityEpoch !==
-    prevValidators[index].activationEligibilityEpoch ||
+      prevValidators[index].activationEligibilityEpoch ||
     validator.activationEpoch !== prevValidators[index].activationEpoch ||
     validator.exitEpoch !== prevValidators[index].exitEpoch ||
     validator.withdrawableEpoch !== prevValidators[index].withdrawableEpoch;
 }
-

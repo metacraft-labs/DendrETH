@@ -1,37 +1,43 @@
 import CONSTANTS from '../../../kv_db_constants.json';
-import { Item, KeyPrefix, WorkQueue } from "@mevitae/redis-work-queue";
-import { CommandLineOptionsBuilder } from "../../utils/cmdline";
-import { Redis } from "@dendreth/relay/implementations/redis";
-import { lightClean } from "../../light_cleaner_common";
-import assert from "assert";
-import { ChainableCommander } from "ioredis";
-import { CommitmentMapperScheduler } from "../lib/scheduler";
+import { Item, KeyPrefix, WorkQueue } from '@mevitae/redis-work-queue';
+import { CommandLineOptionsBuilder } from '../../utils/cmdline';
+import { Redis } from '@dendreth/relay/implementations/redis';
+import { lightClean } from '../../light_cleaner_common';
+import assert from 'assert';
+import { ChainableCommander } from 'ioredis';
+import { CommitmentMapperScheduler } from '../lib/scheduler';
 import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
 import fs from 'fs';
 
-(async function() {
+(async function () {
   const args = new CommandLineOptionsBuilder()
     .withRedisOpts()
     .withBeaconNodeOpts()
     .option('clean', {
-      type: 'boolean'
+      type: 'boolean',
     })
     .option('push', {
-      type: 'boolean'
+      type: 'boolean',
     })
     .option('value', {
-      type: 'string'
+      type: 'string',
     })
     .option('lease-out', {
-      type: 'boolean'
+      type: 'boolean',
     })
     .build();
 
   const basePath = '../crates/circuit_executables/output';
-  const nonVerifiableIndicesContent = fs.readFileSync(`${basePath}/non_verifiable_indices_0_1450497_9332704.txt`).toString();
-  const missingIndicesContent = fs.readFileSync(`${basePath}/missing_indices_0_1450497_9332704.txt`).toString();
+  const nonVerifiableIndicesContent = fs
+    .readFileSync(`${basePath}/non_verifiable_indices_0_1450497_9332704.txt`)
+    .toString();
+  const missingIndicesContent = fs
+    .readFileSync(`${basePath}/missing_indices_0_1450497_9332704.txt`)
+    .toString();
 
-  const nonVerifiableIndices: number[] = JSON.parse(nonVerifiableIndicesContent);
+  const nonVerifiableIndices: number[] = JSON.parse(
+    nonVerifiableIndicesContent,
+  );
   const mapping: { [key: number]: number[] } = {};
 
   for (const validatorIndex of nonVerifiableIndices) {
@@ -63,7 +69,7 @@ import fs from 'fs';
   console.log(combinedIndices);
   console.log('len', combinedIndices.length);
 
-  const index = combinedIndices.reverse().findIndex((idx) => idx == 1266346);
+  const index = combinedIndices.reverse().findIndex(idx => idx == 1266346);
   console.log(index);
 
   return;
@@ -86,7 +92,11 @@ import fs from 'fs';
   await redis.quit();
 })();
 
-function pushItemInFront(pipeline: ChainableCommander, prefix: KeyPrefix, item: Item) {
+function pushItemInFront(
+  pipeline: ChainableCommander,
+  prefix: KeyPrefix,
+  item: Item,
+) {
   const itemDataKey = new KeyPrefix(prefix.of(':item:'));
   const mainQueueKey = prefix.of(':queue');
 
@@ -94,7 +104,12 @@ function pushItemInFront(pipeline: ChainableCommander, prefix: KeyPrefix, item: 
   pipeline.rpush(mainQueueKey, item.id);
 }
 
-async function scheduleValidatorProof(pipeline: ChainableCommander, prefix: KeyPrefix, validatorIndex: bigint, slot: bigint) {
+async function scheduleValidatorProof(
+  pipeline: ChainableCommander,
+  prefix: KeyPrefix,
+  validatorIndex: bigint,
+  slot: bigint,
+) {
   const buffer = new ArrayBuffer(17);
   const dataView = new DataView(buffer);
   dataView.setUint8(0, TaskTag.UPDATE_VALIDATOR_PROOF);
@@ -107,8 +122,8 @@ async function scheduleValidatorProof(pipeline: ChainableCommander, prefix: KeyP
 
 async function getValidatorsNeedingHashing(redis: Redis) {
   const allKeys = await redis.client.keys('validator_proof:*');
-  const keys = allKeys.filter((key) => !key.includes('slot_lookup'));
-  const proofs = keys.filter((key) => {
+  const keys = allKeys.filter(key => !key.includes('slot_lookup'));
+  const proofs = keys.filter(key => {
     const parts = key.split(':');
     const gindex = Number(parts[1]);
     const slot = Number(parts[2]);
@@ -127,7 +142,7 @@ async function getValidatorsNeedingHashing(redis: Redis) {
   objs.sort(([index1, _1], [index2, _2]) => index1 - index2);
 
   const uncalculatedLeaves = objs.filter(([_, leaf]) => leaf.needsChange);
-  return uncalculatedLeaves.map((entry) => entry[0]);
+  return uncalculatedLeaves.map(entry => entry[0]);
 }
 
 enum TaskTag {

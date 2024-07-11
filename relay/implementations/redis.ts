@@ -27,7 +27,7 @@ declare module 'ioredis' {
 }
 
 function makeRedisURL(host: string, port: number, auth?: string): string {
-  const at: string = (auth != null && auth.length > 0) ? `${auth}@` : "";
+  const at: string = auth != null && auth.length > 0 ? `${auth}@` : '';
   return `redis://${at}${host}:${port}`;
 }
 
@@ -121,7 +121,6 @@ export class Redis implements IRedis {
   //   return 0;
   // }
 
-
   async getAllKeys(pattern: string): Promise<string[]> {
     await this.waitForConnection();
     return this.client.keys(pattern);
@@ -195,7 +194,6 @@ export class Redis implements IRedis {
 
     this.pubSub.publish('proofs_channel', 'proof');
   }
-
 
   async isZeroBalanceEmpty() {
     await this.waitForConnection();
