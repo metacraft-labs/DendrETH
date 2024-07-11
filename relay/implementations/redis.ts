@@ -2,22 +2,15 @@ import { IRedis } from '../abstraction/redis-interface';
 import {
   BalanceProof,
   ProofResultType,
-  Validator,
-  ValidatorProof,
   BlsDepositData,
   BalancesAccumulatorInput,
-  CommitmentMapperInput,
 } from '../types/types';
 import { RedisClientType, createClient } from 'redis';
 import CONSTANTS from '../../beacon-light-client/plonky2/kv_db_constants.json';
-//
-import { ChainableCommander, Redis as RedisClient, Result } from 'ioredis';
-import chalk from 'chalk';
+import { Redis as RedisClient, Result } from 'ioredis';
 import {
   getDepthByGindex,
-  splitIntoBatches,
 } from '@dendreth/utils/ts-utils/common-utils';
-import { validatorFromValidatorJSON } from '../utils/converters';
 import JSONbig from 'json-bigint';
 
 declare module 'ioredis' {
