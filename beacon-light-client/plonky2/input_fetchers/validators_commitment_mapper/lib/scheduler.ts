@@ -67,10 +67,10 @@ export class CommitmentMapperScheduler {
       lastProcessedSlot !== null
         ? BigInt(lastProcessedSlot)
         : (() => {
-          const finalizedSlot = getLastSlotInEpoch(this.lastFinalizedEpoch);
-          const slot = options['sync-slot'] || finalizedSlot;
-          return BigInt(Math.min(Number(slot), Number(finalizedSlot))) - 1n;
-        })();
+            const finalizedSlot = getLastSlotInEpoch(this.lastFinalizedEpoch);
+            const slot = options['sync-slot'] || finalizedSlot;
+            return BigInt(Math.min(Number(slot), Number(finalizedSlot))) - 1n;
+          })();
 
     const lastVerifiedSlot = await this.redis.get(
       CONSTANTS.lastVerifiedSlotKey,
@@ -195,11 +195,11 @@ export class CommitmentMapperScheduler {
     this.queue.addItemToPipeline(pipeline, item);
   }
 
-  async scheduleZeroOutValidatorTask(
+  scheduleZeroOutValidatorTask(
     pipeline: ChainableCommander,
     validatorIndex: number,
     slot: bigint,
-  ): Promise<void> {
+  ): void {
     const buffer = new ArrayBuffer(17);
     const dataView = new DataView(buffer);
 
@@ -361,7 +361,7 @@ function modifyValidatorsImpl({
   scheduleHashValidatorTaskFn: scheduleHashValidatorProofTaskFn,
   scheduleHashConcatenationTaskFn,
 }: ModifyValidatorsVTable) {
-  return async function(indexedValidators: IndexedValidator[], slot: bigint) {
+  return async function (indexedValidators: IndexedValidator[], slot: bigint) {
     await Promise.all(
       indexedValidators.map(indexedValidator => {
         return scheduleHashValidatorProofTaskFn(indexedValidator, slot);
@@ -391,7 +391,7 @@ function logProgress(currentSlot: bigint, headSlot: bigint): void {
   console.log(chalk.bold.blue(`Syncing ${progressMessage}...`));
 }
 
-async function setValidatorsLengthForSlot(
+export async function setValidatorsLengthForSlot(
   pipeline: ChainableCommander,
   slot: bigint,
   length: number,
@@ -506,16 +506,6 @@ function saveProofPlaceholder(
   );
 }
 
-export async function getValidatorsLengthForSlot(
-  redis: Redis,
-  slot: bigint,
-): Promise<number | null> {
-  const result = await redis.client.get(
-    `${CONSTANTS.validatorsLengthKey}:${slot}`,
-  );
-  return result !== null ? Number(result) : null;
-}
-
 export async function getValidatorKeysForSlot(
   redis: Redis,
   slot: bigint,
@@ -600,7 +590,7 @@ function hasValidatorChanged(prevValidators: Validator[]) {
     validator.effectiveBalance !== prevValidators[index].effectiveBalance ||
     validator.slashed !== prevValidators[index].slashed ||
     validator.activationEligibilityEpoch !==
-    prevValidators[index].activationEligibilityEpoch ||
+      prevValidators[index].activationEligibilityEpoch ||
     validator.activationEpoch !== prevValidators[index].activationEpoch ||
     validator.exitEpoch !== prevValidators[index].exitEpoch ||
     validator.withdrawableEpoch !== prevValidators[index].withdrawableEpoch;

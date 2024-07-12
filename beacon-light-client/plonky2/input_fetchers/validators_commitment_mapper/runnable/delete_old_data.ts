@@ -1,4 +1,4 @@
-import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
+import { Redis } from '@dendreth/relay/implementations/redis';
 
 import CONSTANTS from '../../../kv_db_constants.json';
 import { createProofStorage } from '../../utils/proof_storage/proof_storage';
@@ -8,9 +8,6 @@ require('dotenv').config({ path: '../.env' });
 
 (async () => {
   const options = new CommandLineOptionsBuilder()
-    .usage(
-      'Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>',
-    )
     .withProofStorageOpts()
     .option('oldest-slot', {
       describe: 'The oldest slot to preserve data for',
@@ -21,7 +18,7 @@ require('dotenv').config({ path: '../.env' });
 
   const oldestSlot = BigInt(options['oldest-slot']);
 
-  const redis = new RedisLocal(options['redis-host'], options['redis-port']);
+  const redis = new Redis(options['redis-host'], options['redis-port']);
   const proofStorage = createProofStorage(options);
 
   let validatorKeys = await redis.getAllKeys(
@@ -57,7 +54,7 @@ require('dotenv').config({ path: '../.env' });
   const redisKeys = [...validatorKeys, ...validatorProofKeys];
   const deleted = await Promise.all(
     redisKeys.map(async key => {
-      return redis.pruneOldSlots(key, oldestSlot);
+      return pruneOldSlots(redis, key, oldestSlot);
     }),
   );
 
@@ -67,5 +64,50 @@ require('dotenv').config({ path: '../.env' });
   await proofStorage.quit();
   await redis.quit();
 })();
+
+async function pruneOldSlots(
+  redis: Redis,
+  key: string,
+  newOldestSlot: bigint,
+): Promise<number> {
+  const slots = await collectOutdatedSlots(redis, key, newOldestSlot);
+  if (slots.length !== 0) {
+    await removeFromSlotLookup(redis, key, ...slots);
+  }
+  return 0;
+}
+
+async function removeFromSlotLookup(
+  redis: Redis,
+  key: string,
+  ...slots: bigint[]
+) {
+  await redis.client.zrem(
+    `${key}:${CONSTANTS.slotLookupKey}`,
+    slots.map(String),
+  );
+}
+
+async function collectOutdatedSlots(
+  redis: Redis,
+  key: string,
+  newOldestSlot: bigint,
+): Promise<bigint[]> {
+  const slotWithLatestChange = await redis.getSlotWithLatestChange(
+    key,
+    newOldestSlot,
+  );
+  if (slotWithLatestChange !== null) {
+    return (
+      await redis.client.zrange(
+        `${key}:${CONSTANTS.slotLookupKey}`,
+        0,
+        (slotWithLatestChange - 1n).toString(),
+        'BYSCORE',
+      )
+    ).map(BigInt);
+  }
+  return [];
+}
 
 // TODO: Delete `validators_root` and `validators_length`
