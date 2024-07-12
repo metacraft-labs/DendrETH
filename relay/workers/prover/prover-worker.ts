@@ -7,8 +7,11 @@ import { Prover } from '@dendreth/relay/implementations/prover';
 import { PROOF_GENERATOR_QUEUE } from '../../constants/constants';
 import { checkConfig } from '@dendreth/utils/ts-utils/common-utils';
 import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
 
 (async () => {
+  const args = yargs(hideBin(process.argv));
+
   const proverConfig = {
     REDIS_HOST: process.env.REDIS_HOST,
     REDIS_PORT: Number(process.env.REDIS_PORT),
@@ -18,7 +21,7 @@ import yargs from 'yargs';
 
   const redis = new Redis(proverConfig.REDIS_HOST!, proverConfig.REDIS_PORT);
 
-  const options = yargs.usage('Usage: -prover <prover>').option('prover', {
+  const options = args.usage('Usage: -prover <prover>').option('prover', {
     alias: 'prover',
     describe: 'The prover server url',
     type: 'string',
