@@ -175,7 +175,7 @@ export class CommitmentMapperScheduler {
       slot,
     );
 
-    for (let depth = 39n; depth > 0n; depth--) {
+    for (let depth = 39n; depth >= 0n; depth--) {
       saveDummyProofPlaceholder(pipeline, depth);
       this.scheduleDummyProofForDepth(pipeline, depth);
     }
