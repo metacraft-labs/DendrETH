@@ -66,13 +66,14 @@ async function getStepUpdate(
   slot: number,
 ) {
   const step = await denebClient.getStepUpdate(slot);
+  let pubkeysBytes = step.currentSyncCommittee.pubkeys;
+
   let pubkeysX = step.currentSyncCommittee.pubkeys
     .map(x => PointG1.fromHex(x))
     .map(x => bigint_to_array(55, 7, x.toAffine()[0].value));
   let pubkeysY = step.currentSyncCommittee.pubkeys
     .map(x => PointG1.fromHex(x))
     .map(x => bigint_to_array(55, 7, x.toAffine()[1].value));
-  const SyncCommitteeBits = new BitVectorType(512);
 
   let aggregationBits = step.syncAggregate.syncCommitteeBits
     .toBoolArray()
@@ -109,7 +110,8 @@ async function getStepUpdate(
     toLittleEndian(BigInt(participation)),
     32,
   );
-  let syncCommitteePoseidon = await getPoseidonInputs(denebClient, slot);
+  let syncCommitteePoseidon = await getPoseidonInputs(pubkeysBytes);
+
   let syncCommitteePoseidonInHex = BigInt(syncCommitteePoseidon).toString(16);
   let syncCommitteePoseidonBytes = hexToBytes(syncCommitteePoseidonInHex);
 
@@ -184,7 +186,7 @@ async function getStepUpdate(
     domain: Array.from(Buffer.from(hexToBytes(domain))),
     signingRoot: Array.from(Buffer.from(hexToBytes(signing_root))),
     participation: getFirst253Bits(participationBytes),
-    syncCommitteePoseidon: getFirst253Bits(syncCommitteePoseidonBytes),
+    syncCommitteePoseidon: syncCommitteePoseidon,
     /* Finality Proof */
     finalityBranch: finalityBranch.map(finalityB =>
       Array.from(Buffer.from(finalityB)),
@@ -230,7 +232,8 @@ async function getRotateUpdate(
 
   let syncCommitteeBranch = rotate.nextSyncCommitteeBranch;
 
-  let syncCommitteePoseidon = await getPoseidonInputs(denebClient, slot);
+  let syncCommitteePoseidon = await getPoseidonInputs(pubkeysBytes);
+
   let syncCommitteePoseidonInHex = BigInt(syncCommitteePoseidon).toString(16);
   let syncCommitteePoseidonBytes = hexToBytes(syncCommitteePoseidonInHex);
 
@@ -257,7 +260,7 @@ async function getRotateUpdate(
     syncCommitteeBranch: syncCommitteeBranch.map(branch =>
       Array.from(Buffer.from(branch)),
     ),
-    syncCommitteePoseidon: getFirst253Bits(syncCommitteePoseidonBytes),
+    syncCommitteePoseidon,
     finalizedHeaderRoot: Array.from(Buffer.from(finalizedHeaderRoot)),
     finalizedSlot: Array.from(Buffer.from(finalizedSlot)),
     finalizedProposerIndex: Array.from(
@@ -278,9 +281,8 @@ async function getRotateUpdate(
   console.log(`JSON file has been written to ${outputFilePath}`);
 }
 
-async function getPoseidonInputs(denebClient: DenebClient, slot: number) {
-  const step = await denebClient.getStepUpdate(slot);
-  let pubkeys = step.currentSyncCommittee.pubkeys.map(pKeys =>
+async function getPoseidonInputs(pubkeysBytes: any) {
+  let pubkeys = pubkeysBytes.map(pKeys =>
     bytesToHex(Uint8Array.from(Buffer.from(pKeys))),
   );
 
@@ -295,28 +297,13 @@ async function getPoseidonInputs(denebClient: DenebClient, slot: number) {
     pair[1].map(bigInt => bigInt.toString()),
   ]);
 
-  let jsonObject = {
-    pubkeys: pubKeysArrayStr,
-  };
-
-  // // Convert the JSON object to a JSON string
-  // let jsonString = JSON.stringify(jsonObject, null, 2); // Pretty print with 2-space indentation
-
-  // // Write JSON string to a file
-  // fs.writeFile('poseidonInputs.json', jsonString, 'utf8', err => {
-  //   if (err) {
-  //     console.error('Error writing file:', err);
-  //   } else {
-  //     console.log('File has been saved.');
-  //   }
-  // });
   let poseidon = await buildPoseidonReference();
 
   let poseidonValFlat: string[] = [];
   for (let i = 0; i < 512; i++) {
     for (let j = 0; j < 7; j++)
       for (let l = 0; l < 2; l++) {
-        poseidonValFlat[i * 7 * 2 + j * 2 + l] = pubKeysArray[i][l][j];
+        poseidonValFlat[i * 7 * 2 + j * 2 + l] = pubKeysArrayStr[i][l][j];
       }
   }
 
@@ -336,9 +323,9 @@ async function getPoseidonInputs(denebClient: DenebClient, slot: number) {
     }
   }
 
-  const res = poseidon.F.e(
-    '18983088820287088885850106087039471251611359596827931776044660470697434019038',
-  );
+  // const res = poseidon.F.e(
+  //   '18983088820287088885850106087039471251611359596827931776044660470697434019038',
+  // );
   // console.log('res', res);
   // console.log('eq', poseidon.F.eq(res, prev[1]));
 
