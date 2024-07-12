@@ -8,9 +8,7 @@ import {
 import { RedisClientType, createClient } from 'redis';
 import CONSTANTS from '../../beacon-light-client/plonky2/kv_db_constants.json';
 import { Redis as RedisClient, Result } from 'ioredis';
-import {
-  getDepthByGindex,
-} from '@dendreth/utils/ts-utils/common-utils';
+import { getDepthByGindex } from '@dendreth/utils/ts-utils/common-utils';
 import JSONbig from 'json-bigint';
 
 declare module 'ioredis' {
@@ -104,16 +102,6 @@ export class Redis implements IRedis {
     return [];
   }
 
-  // async pruneOldSlots(key: string, newOldestSlot: bigint): Promise<number> {
-  //   await this.waitForConnection();
-  //
-  //   const slots = await this.collectOutdatedSlots(key, newOldestSlot);
-  //   if (slots.length !== 0) {
-  //     await this.removeFromSlotLookup(key, ...slots);
-  //   }
-  //   return 0;
-  // }
-
   async getAllKeys(pattern: string): Promise<string[]> {
     await this.waitForConnection();
     return this.client.keys(pattern);
@@ -159,10 +147,6 @@ export class Redis implements IRedis {
 
   async getValidatorsRoot(slot: bigint): Promise<String | null> {
     return this.client.get(`${CONSTANTS.validatorsRootKey}:${slot}`);
-  }
-
-  async deleteValidatorsRoot(slot: bigint): Promise<void> {
-    await this.client.del(`${CONSTANTS.validatorsRootKey}:${slot}`);
   }
 
   async getValidatorsCommitmentRoot(slot: bigint): Promise<string[] | null> {
