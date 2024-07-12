@@ -506,7 +506,7 @@ function saveProofPlaceholder(
   );
 }
 
-export async function getValidatorKeysForSlot(
+async function getValidatorKeysForSlot(
   redis: Redis,
   slot: bigint,
 ): Promise<string[]> {
@@ -532,7 +532,7 @@ export async function getValidatorKeysForSlot(
     .map((slot, index) => `${CONSTANTS.validatorKey}:${index}:${slot}`);
 }
 
-export async function getValidatorsBatched(
+async function getValidatorsBatched(
   redis: Redis,
   slot: bigint,
   batchSize = 1000,
