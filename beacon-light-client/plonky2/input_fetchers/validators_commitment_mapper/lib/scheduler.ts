@@ -343,7 +343,7 @@ export class CommitmentMapperScheduler {
   }
 }
 
-interface ModifyValidatorVtable {
+interface ModifyValidatorsVTable {
   scheduleHashValidatorTaskFn: (
     indexedValidator: IndexedValidator,
     slot: bigint,
@@ -360,7 +360,7 @@ interface ModifyValidatorVtable {
 function modifyValidatorsImpl({
   scheduleHashValidatorTaskFn: scheduleHashValidatorProofTaskFn,
   scheduleHashConcatenationTaskFn,
-}: ModifyValidatorVtable) {
+}: ModifyValidatorsVTable) {
   return async function(indexedValidators: IndexedValidator[], slot: bigint) {
     await Promise.all(
       indexedValidators.map(indexedValidator => {
