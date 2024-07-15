@@ -13,7 +13,7 @@
 
     nodejs = pkgs.nodejs_21;
 
-    rust-nightly = rust-bin.nightly."2023-06-12".default;
+    rust-nightly = rust-bin.nightly."2024-03-28".default;
 
     craneLib = (crane.mkLib pkgs).overrideToolchain rust-nightly;
 
@@ -119,15 +119,14 @@
         allLevels
       );
 
-    get-balances-input = callPackage ../libs/nix/get_balances_input {inherit nodejs;};
-    get-changed-validators = callPackage ../libs/nix/get_changed_validators {inherit nodejs;};
+    input-fetchers = callPackage ../libs/nix/input-fetchers {inherit nodejs;};
     misc-images =
       writeScriptBin "misc-images"
       (
         lib.concatMapStringsSep
         "\n"
         (image: getExe image.copyToDockerDaemon)
-        ((map buildToolImage [get-balances-input get-changed-validators])
+        ((map buildToolImage [input-fetchers])
           ++ [commitment-mapper-image])
       );
   in {
@@ -137,7 +136,7 @@
       inherit misc-images;
     };
     packages = {
-      inherit balance-verifier-circuit-builder get-balances-input get-changed-validators;
+      inherit balance-verifier-circuit-builder input-fetchers;
     };
   };
 }

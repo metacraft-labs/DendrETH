@@ -2144,6 +2144,7 @@ __metadata:
     "@noble/bls12-381": "npm:^1.4.0"
     "@types/circomlibjs": "npm:^0"
     "@types/json-bigint": "npm:^1"
+    "@types/node": "npm:^20.14.9"
     "@types/yargs": "npm:^17.0.32"
     chalk: "npm:^4.1.2"
     circom-pairing: "link:../../../vendor/circom-pairing/"
@@ -2177,6 +2178,7 @@ __metadata:
     "@types/json-bigint": "npm:^1"
     "@types/node": "npm:^20.11.19"
     "@types/snarkjs": "npm:^0.7.8"
+    "@types/yargs": "npm:^17.0.32"
     bullmq: "npm:^5.3.1"
     chalk: "npm:^4.1.2"
     discord.js: "npm:^14.12.1"
@@ -5983,6 +5985,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/node@npm:^20.14.9":
+  version: 20.14.9
+  resolution: "@types/node@npm:20.14.9"
+  dependencies:
+    undici-types: "npm:~5.26.4"
+  checksum: 10/f313b06c79be92f5d3541159ef813b9fc606941f951ecf826e940658c6d4952755ca2f06277b746326cef0697ed79a04676ecde053d32e1121b3352c8168d2e9
+  languageName: node
+  linkType: hard
+
 "@types/node@npm:^8.0.0":
   version: 8.10.66
   resolution: "@types/node@npm:8.10.66"
@@ -6212,8 +6223,10 @@ __metadata:
     circomlib@2.0.2:
       unplugged: true
   bin:
-    get-balances-input: dist/beacon-light-client/plonky2/get_balances_input/get_balances_input.js
-    get-changed-validators: dist/beacon-light-client/plonky2/validators_commitment_mapper_tree/get_changed_validators.js
+    diva_balance_aggregator_scheduler: beacon-light-client/plonky2/input_fetchers/balance_verification/deposits_accumulator/runnable/diva_balance_aggregator_scheduler.js
+    light_cleaner: beacon-light-client/plonky2/input_fetchers/validators_commitment_mapper/runnable/light_cleaner.js
+    run_pubkey_commitment_mapper_scheduler: beacon-light-client/plonky2/input_fetchers/balance_verification/deposits_accumulator/runnable/run_pubkey_commitment_mapper_scheduler.js
+    run_scheduler: beacon-light-client/plonky2/input_fetchers/validators_commitment_mapper/runnable/run_scheduler.js
   languageName: unknown
   linkType: soft
 

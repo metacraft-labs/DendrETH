@@ -1,8 +1,8 @@
 import {
-  getFirstSlotInEpoch,
   getLastSlotInEpoch,
   gindexFromIndex,
   makeBranchIterator,
+  sleep,
   splitIntoBatches,
 } from '@dendreth/utils/ts-utils/common-utils';
 import {
@@ -10,182 +10,134 @@ import {
   getBeaconApi,
 } from '@dendreth/relay/implementations/beacon-api';
 import { Redis } from '@dendreth/relay/implementations/redis';
-import { Validator, IndexedValidator } from '@dendreth/relay/types/types';
+import {
+  Validator,
+  IndexedValidator,
+  CommitmentMapperInput,
+  ValidatorProof,
+} from '@dendreth/relay/types/types';
 import chalk from 'chalk';
 import { KeyPrefix, WorkQueue, Item } from '@mevitae/redis-work-queue';
 import CONSTANTS from '../../../kv_db_constants.json';
 import {
   commitmentMapperInputFromValidator,
-  getDummyCommitmentMapperInput,
+  createDummyCommitmentMapperInput,
 } from '../../utils/common_utils';
+import { ChainableCommander } from 'ioredis';
+import { validatorFromValidatorJSON } from '@dendreth/relay/utils/converters';
 
 enum TaskTag {
-  UPDATE_PROOF_NODE = 0,
-  PROVE_ZERO_FOR_DEPTH = 1,
-  UPDATE_VALIDATOR_PROOF = 2,
+  HASH_CONCATENATION_PROOF = 0,
+  DUMMY_PROOF_FOR_DEPTH = 1,
+  HASH_VALIDATOR_PROOF = 2,
   ZERO_OUT_VALIDATOR = 3,
 }
 
 export class CommitmentMapperScheduler {
   private redis: Redis;
   private api: BeaconApi;
-  private queue: any;
+  private queue: WorkQueue;
   private currentSlot: bigint;
   private lastFinalizedEpoch: bigint;
   private headSlot: bigint;
-  private take: number | undefined = undefined;
-  private offset: number | undefined = undefined;
+  private take: number | undefined;
+  private offset: number | undefined;
   private validators: Validator[] = [];
-  // This is used to prevent spawning multiple async jobs on head event
-  private isSyncing = false;
-  // This is used to allow rerunning the script if it dies or is intentionally
-  // stopped
-  private isFirstTimeRunning: boolean;
 
-  async init(options: any) {
+  async init(options: any): Promise<void> {
     this.api = await getBeaconApi(options['beacon-node']);
-    this.redis = new Redis(options['redis-host'], options['redis-port'], options['redis-auth']);
+    this.redis = new Redis(
+      options['redis-host'],
+      options['redis-port'],
+      options['redis-auth'],
+    );
     this.queue = new WorkQueue(
       new KeyPrefix(`${CONSTANTS.validatorProofsQueue}`),
     );
-
     this.take = options['take'];
     this.offset = options['offset'];
     this.headSlot = await this.api.getHeadSlot();
-
     this.lastFinalizedEpoch = await this.api.getLastFinalizedCheckpoint();
-    const lastVerifiedSlot = await this.redis.get(
-      CONSTANTS.lastVerifiedSlotKey,
-    );
-    if (lastVerifiedSlot === null) {
-      this.isFirstTimeRunning = true;
-      await this.redis.set(
-        CONSTANTS.lastVerifiedSlotKey,
-        `${getLastSlotInEpoch(this.lastFinalizedEpoch)}`,
-      );
-    } else {
-      this.isFirstTimeRunning = false;
-    }
 
     const lastProcessedSlot = await this.redis.get(
       CONSTANTS.lastProcessedSlotKey,
     );
-    if (lastProcessedSlot === null) {
-      this.currentSlot = (() => {
-        const firstNonFinalizedSlot = getFirstSlotInEpoch(
-          this.lastFinalizedEpoch + 1n,
-        );
-        const slot = options['sync-slot'] || firstNonFinalizedSlot;
-        return BigInt(Math.min(Number(slot), Number(firstNonFinalizedSlot)));
-      })();
-    } else {
-      this.currentSlot = BigInt(lastProcessedSlot) + 1n;
+
+    this.currentSlot =
+      lastProcessedSlot !== null
+        ? BigInt(lastProcessedSlot)
+        : (() => {
+            const finalizedSlot = getLastSlotInEpoch(this.lastFinalizedEpoch);
+            const slot = options['sync-slot'] || finalizedSlot;
+            return BigInt(Math.min(Number(slot), Number(finalizedSlot))) - 1n;
+          })();
+
+    const lastVerifiedSlot = await this.redis.get(
+      CONSTANTS.lastVerifiedSlotKey,
+    );
+
+    if (lastVerifiedSlot === null) {
+      await this.redis.set(
+        CONSTANTS.lastVerifiedSlotKey,
+        `${this.currentSlot}`,
+      );
     }
   }
 
-  async dispose() {
+  dispose(): Promise<void> {
     return this.redis.quit();
   }
 
-  async start(runOnce: boolean = false) {
+  async start(runOnce: boolean = false): Promise<void> {
     console.log(chalk.bold.blue('Fetching validators from database...'));
-    this.validators = await this.redis.getValidatorsBatched(this.currentSlot);
-    console.log(
-      `Loaded ${chalk.bold.yellow(
-        this.validators.length,
-      )} validators from database`,
-    );
+    this.validators = await getValidatorsBatched(this.redis, this.currentSlot);
 
-    if (await this.redis.isZeroValidatorEmpty()) {
-      console.log(chalk.bold.blue('Adding zero tasks...'));
-      await this.scheduleZeroTasks();
-    }
-
-    console.log(
-      chalk.bold.blue(
-        `Initial syncing (${chalk.cyan(this.currentSlot)} slot)...`,
-      ),
-    );
-    await this.updateValidators();
+    await this.ensureDummyProofs(this.currentSlot);
 
     if (runOnce) {
+      this.currentSlot++;
+      logProgress(this.currentSlot, this.headSlot);
+      console.log(chalk.bold.blue(`Processing ${this.currentSlot} slot`));
+      await this.pushDataForCurrentSlot();
       return;
     }
 
-    await this.syncToHeadSlot(this.isFirstTimeRunning);
+    await this.syncToHeadSlot();
+    this.registerEventListeners();
 
-    const eventSource = this.api.subscribeForEvents([
-      'head',
-      'finalized_checkpoint',
-    ]);
-    eventSource.addEventListener('head', async (event: any) => {
-      this.headSlot = BigInt(JSON.parse(event.data).slot);
-      // Guarding against api taking too long to respond and firing two async
-      // calls to this function simultaneously
-      if (!this.isSyncing) {
-        await this.syncToHeadSlot(false);
-      }
-    });
-    eventSource.addEventListener('finalized_checkpoint', (event: any) => {
-      this.lastFinalizedEpoch = BigInt(JSON.parse(event.data).epoch);
-    });
-  }
-
-  async scheduleZeroTasks() {
-    await this.redis.saveValidators(
-      [
-        {
-          index: Number(CONSTANTS.validatorRegistryLimit),
-          data: getDummyCommitmentMapperInput(),
-        },
-      ],
-      this.currentSlot,
-    );
-
-    await this.scheduleValidatorProof(
-      BigInt(CONSTANTS.validatorRegistryLimit),
-      this.currentSlot,
-    );
-    await this.redis.saveDummyValidatorProof(40n);
-
-    for (let depth = 39n; depth >= 0n; depth--) {
-      this.scheduleProveZeroForDepth(depth);
-      await this.redis.saveDummyValidatorProof(depth);
+    while (true) {
+      await this.syncToHeadSlot();
+      await sleep(5000);
     }
   }
 
-  async syncToHeadSlot(isInitialSyncing: boolean) {
-    this.isSyncing = true;
-
+  async syncToHeadSlot(): Promise<void> {
     while (this.currentSlot < this.headSlot) {
       this.currentSlot++;
-
-      console.log(
-        chalk.bold.blue(
-          `Syncing ${
-            this.currentSlot === this.headSlot
-              ? chalk.cyan(this.currentSlot)
-              : `${chalk.cyanBright(this.currentSlot)}/${chalk.cyan(
-                  this.headSlot,
-                )}`
-          }...`,
-        ),
-      );
-
-      await this.redis.updateLastProcessedSlot(this.currentSlot);
-      if (
-        isInitialSyncing &&
-        this.currentSlot <= getLastSlotInEpoch(this.lastFinalizedEpoch)
-      ) {
-        this.redis.updateLastVerifiedSlot(this.currentSlot);
-      }
-      await this.updateValidators();
+      logProgress(this.currentSlot, this.headSlot);
+      await this.pushDataForCurrentSlot();
     }
-
-    this.isSyncing = false;
   }
 
-  async updateValidators() {
+  async pushDataForCurrentSlot(): Promise<void> {
+    const pipeline = this.redis.client.pipeline();
+
+    await this.updateValidators(pipeline);
+
+    updateLastProcessedSlot(pipeline, this.currentSlot);
+    setValidatorsLengthForSlot(
+      pipeline,
+      this.currentSlot,
+      this.validators.length,
+    );
+    await pipeline.exec();
+  }
+
+  /// Updates the validators tree for the new slot. The operation is atomic if below a
+  /// certain threshold of changes. Otherwise a long redis command string is
+  /// created that can't be handled by js. The operation should be atomic every
+  /// time except on the first run.
+  async updateValidators(pipeline: ChainableCommander): Promise<void> {
     const newValidators = await this.api.getValidators(
       this.currentSlot,
       this.take,
@@ -196,11 +148,15 @@ export class CommitmentMapperScheduler {
       .map((validator, index) => ({ validator, index }))
       .filter(hasValidatorChanged(this.validators));
 
-    await this.redis.setValidatorsLength(
-      this.currentSlot,
-      newValidators.length,
-    );
-    await this.saveValidatorsInBatches(changedValidators);
+    if (changedValidators.length <= 1000) {
+      await this.modifyValidators(changedValidators, this.currentSlot);
+    } else {
+      this.modifyValidatorsPipeline(
+        pipeline,
+        changedValidators,
+        this.currentSlot,
+      );
+    }
 
     console.log(
       `Changed validators count: ${chalk.bold.yellow(
@@ -210,96 +166,40 @@ export class CommitmentMapperScheduler {
     this.validators = newValidators;
   }
 
-  public async saveValidatorsInBatches(
-    validators: IndexedValidator[],
-    slot = this.currentSlot,
-    batchSize = 200,
-  ) {
-    for (const batch of splitIntoBatches(validators, batchSize)) {
-      await this.redis.saveValidators(
-        batch.map((indexedValidator: IndexedValidator) => ({
-          index: indexedValidator.index,
-          data: commitmentMapperInputFromValidator(indexedValidator.validator),
-        })),
-        slot,
-      );
-      await Promise.all(
-        batch.map(validator =>
-          this.scheduleValidatorProof(BigInt(validator.index), slot),
-        ),
-      );
-    }
-
-    const validatorIndices = validators.map(validator => validator.index);
-    await this.updateBranches(validatorIndices, slot);
-  }
-
-  async scheduleValidatorProof(validatorIndex: bigint, slot: bigint) {
-    const buffer = new ArrayBuffer(17);
-    const dataView = new DataView(buffer);
-    dataView.setUint8(0, TaskTag.UPDATE_VALIDATOR_PROOF);
-    dataView.setBigUint64(1, validatorIndex, false);
-    dataView.setBigUint64(9, slot, false);
-    this.queue.addItem(this.redis.client, new Item(Buffer.from(buffer)));
-
-    // Don't create a slot lookup for the zero validator proof
-    if (validatorIndex !== BigInt(CONSTANTS.validatorRegistryLimit)) {
-      await this.redis.addToSlotLookup(
-        `${CONSTANTS.validatorProofKey}:${gindexFromIndex(
-          validatorIndex,
-          40n,
-        )}`,
-        slot,
-      );
-    }
-  }
-
-  async scheduleUpdateProofNodeTask(gindex: bigint, slot: bigint) {
-    const buffer = new ArrayBuffer(17);
-    const dataView = new DataView(buffer);
-
-    await this.redis.addToSlotLookup(
-      `${CONSTANTS.validatorProofKey}:${gindex}`,
+  scheduleDummyProofTasks(pipeline: ChainableCommander, slot: bigint): void {
+    saveDummyInput(pipeline, this.currentSlot);
+    saveDummyProofPlaceholder(pipeline, 40n);
+    this.pushHashValidatorProofTask(
+      pipeline,
+      BigInt(CONSTANTS.validatorRegistryLimit),
       slot,
     );
 
-    dataView.setUint8(0, TaskTag.UPDATE_PROOF_NODE);
-    dataView.setBigUint64(1, gindex, false);
-    dataView.setBigUint64(9, slot, false);
-    this.queue.addItem(this.redis.client, new Item(Buffer.from(buffer)));
-  }
-
-  public async updateBranches(validatorIndices: number[], slot: bigint) {
-    let levelIterator = makeBranchIterator(validatorIndices.map(BigInt), 40n);
-
-    let leafs = levelIterator.next().value!;
-
-    await Promise.all(
-      leafs.map(gindex => this.redis.saveValidatorProof(gindex, slot)),
-    );
-
-    for (const gindices of levelIterator) {
-      await Promise.all(
-        gindices.map(gindex => this.redis.saveValidatorProof(gindex, slot)),
-      );
-
-      await Promise.all(
-        gindices.map(gindex => this.scheduleUpdateProofNodeTask(gindex, slot)),
-      );
+    for (let depth = 39n; depth >= 0n; depth--) {
+      saveDummyProofPlaceholder(pipeline, depth);
+      this.scheduleDummyProofForDepth(pipeline, depth);
     }
   }
 
-  async scheduleProveZeroForDepth(depth: bigint) {
+  async scheduleDummyProofForDepth(
+    pipeline: ChainableCommander,
+    depth: bigint,
+  ): Promise<void> {
     const buffer = new ArrayBuffer(9);
     const dataView = new DataView(buffer);
 
-    dataView.setUint8(0, TaskTag.PROVE_ZERO_FOR_DEPTH);
+    dataView.setUint8(0, TaskTag.DUMMY_PROOF_FOR_DEPTH);
     dataView.setBigUint64(1, depth, false);
 
-    this.queue.addItem(this.redis.client, new Item(Buffer.from(buffer)));
+    const item = new Item(Buffer.from(buffer));
+    this.queue.addItemToPipeline(pipeline, item);
   }
 
-  async scheduleZeroOutValidatorTask(validatorIndex: number, slot: bigint) {
+  scheduleZeroOutValidatorTask(
+    pipeline: ChainableCommander,
+    validatorIndex: number,
+    slot: bigint,
+  ): void {
     const buffer = new ArrayBuffer(17);
     const dataView = new DataView(buffer);
 
@@ -307,15 +207,385 @@ export class CommitmentMapperScheduler {
     dataView.setBigUint64(1, BigInt(validatorIndex), false);
     dataView.setBigUint64(9, slot, false);
 
-    this.queue.addItem(this.redis.client, new Item(Buffer.from(buffer)));
+    const item = new Item(Buffer.from(buffer));
+    this.queue.addItemToPipeline(pipeline, item);
+  }
+
+  modifyValidators = modifyValidatorsImpl({
+    scheduleHashValidatorTaskFn: this.scheduleHashValidatorProofTask.bind(this),
+    scheduleHashConcatenationTaskFn:
+      this.scheduleHashConcatenationTask.bind(this),
+  });
+
+  modifyValidatorsPipeline(
+    pipeline: ChainableCommander,
+    ...args: Parameters<ReturnType<typeof modifyValidatorsImpl>>
+  ): Promise<void> {
+    return modifyValidatorsImpl({
+      scheduleHashValidatorTaskFn: async () =>
+        this.scheduleHashValidatorTaskPipeline.bind(this, pipeline),
+      scheduleHashConcatenationTaskFn: async () =>
+        this.scheduleHashConcatenationTaskPipeline.bind(this, pipeline),
+    })(...args);
+  }
+
+  async ensureDummyProofs(slot: bigint): Promise<void> {
+    const pipeline = this.redis.client.pipeline();
+
+    const isInitialized = await this.isInitialized();
+    if (!isInitialized) {
+      console.log(chalk.bold.blue('Scheduling dummy proof tasks...'));
+      this.scheduleDummyProofTasks(pipeline, slot);
+    }
+    await pipeline.exec();
+  }
+
+  async isInitialized(): Promise<boolean> {
+    const result = await this.redis.client.exists(
+      `${CONSTANTS.validatorProofKey}:zeroes:1`,
+    );
+    return result === 1;
+  }
+
+  registerEventListeners(): void {
+    const eventSource = this.api.subscribeForEvents([
+      'head',
+      'finalized_checkpoint',
+    ]);
+
+    eventSource.addEventListener('head', (event: any) => {
+      const slot = BigInt(JSON.parse(event.data).slot);
+      if (slot > this.currentSlot) {
+        this.currentSlot = slot;
+      }
+    });
+
+    eventSource.addEventListener('finalized_checkpoint', (event: any) => {
+      const epoch = BigInt(JSON.parse(event.data).epoch);
+      if (epoch > this.lastFinalizedEpoch) {
+        this.lastFinalizedEpoch = epoch;
+      }
+    });
+  }
+
+  pushHashValidatorProofTask(
+    pipeline: ChainableCommander,
+    validatorIndex: bigint,
+    slot: bigint,
+  ): void {
+    const buffer = new ArrayBuffer(17);
+    const dataView = new DataView(buffer);
+
+    dataView.setUint8(0, TaskTag.HASH_VALIDATOR_PROOF);
+    dataView.setBigUint64(1, BigInt(validatorIndex), false);
+    dataView.setBigUint64(9, slot, false);
+
+    const item = new Item(Buffer.from(buffer));
+    this.queue.addItemToPipeline(pipeline, item);
+  }
+
+  scheduleHashValidatorTaskPipeline(
+    pipeline: ChainableCommander,
+    indexedValidator: IndexedValidator,
+    slot: bigint,
+  ): void {
+    saveRealInput(pipeline, indexedValidator, slot);
+    this.pushHashValidatorProofTask(
+      pipeline,
+      BigInt(indexedValidator.index),
+      slot,
+    );
+
+    const gindex = gindexFromIndex(BigInt(indexedValidator.index), 40n);
+    saveProofPlaceholder(pipeline, gindex, slot);
+    recordStateModification(
+      pipeline,
+      `${CONSTANTS.validatorProofKey}:${gindex}`,
+      slot,
+    );
+  }
+
+  scheduleHashValidatorProofTask(
+    indexedValidator: IndexedValidator,
+    slot: bigint,
+  ): Promise<unknown> {
+    const pipeline = this.redis.client.pipeline();
+    this.scheduleHashValidatorTaskPipeline(pipeline, indexedValidator, slot);
+    return pipeline.exec();
+  }
+
+  scheduleHashConcatenationTaskPipeline(
+    pipeline: ChainableCommander,
+    gindex: bigint,
+    slot: bigint,
+  ): void {
+    recordProofStateModification(pipeline, gindex, slot);
+    saveProofPlaceholder(pipeline, gindex, slot);
+
+    const buffer = new ArrayBuffer(17);
+    const dataView = new DataView(buffer);
+
+    dataView.setUint8(0, TaskTag.HASH_CONCATENATION_PROOF);
+    dataView.setBigUint64(1, gindex, false);
+    dataView.setBigUint64(9, slot, false);
+
+    const item = new Item(Buffer.from(buffer));
+    this.queue.addItemToPipeline(pipeline, item);
+  }
+
+  async scheduleHashConcatenationTask(
+    gindex: bigint,
+    slot: bigint,
+  ): Promise<unknown> {
+    const pipeline = this.redis.client.pipeline();
+    this.scheduleHashConcatenationTaskPipeline(pipeline, gindex, slot);
+    return pipeline.exec();
   }
 }
+
+interface ModifyValidatorsVTable {
+  scheduleHashValidatorTaskFn: (
+    indexedValidator: IndexedValidator,
+    slot: bigint,
+  ) => Promise<unknown>;
+  scheduleHashConcatenationTaskFn: (
+    gindex: bigint,
+    slot: bigint,
+  ) => Promise<unknown>;
+}
+
+/// A template for validators tree modification (currently used to create
+/// two implementations. One that uses a pipeline and one that executes each
+/// command separately)
+function modifyValidatorsImpl({
+  scheduleHashValidatorTaskFn: scheduleHashValidatorProofTaskFn,
+  scheduleHashConcatenationTaskFn,
+}: ModifyValidatorsVTable) {
+  return async function (indexedValidators: IndexedValidator[], slot: bigint) {
+    await Promise.all(
+      indexedValidators.map(indexedValidator => {
+        return scheduleHashValidatorProofTaskFn(indexedValidator, slot);
+      }),
+    );
+
+    const validatorIndices = indexedValidators.map(x => x.index);
+    let levelIterator = makeBranchIterator(validatorIndices.map(BigInt), 40n);
+
+    // ignore leaves
+    levelIterator.next();
+
+    for (const gindices of levelIterator) {
+      await Promise.all(
+        gindices.map(gindex => scheduleHashConcatenationTaskFn(gindex, slot)),
+      );
+    }
+  };
+}
+
+function logProgress(currentSlot: bigint, headSlot: bigint): void {
+  const progressMessage =
+    currentSlot === headSlot
+      ? chalk.cyan(currentSlot)
+      : `${chalk.cyanBright(currentSlot)}/${chalk.cyan(headSlot)}`;
+
+  console.log(chalk.bold.blue(`Syncing ${progressMessage}...`));
+}
+
+export async function setValidatorsLengthForSlot(
+  pipeline: ChainableCommander,
+  slot: bigint,
+  length: number,
+): Promise<void> {
+  pipeline.set(`${CONSTANTS.validatorsLengthKey}:${slot}`, length.toString());
+}
+
+function updateLastProcessedSlot(
+  pipeline: ChainableCommander,
+  slot: bigint,
+): void {
+  pipeline.set(CONSTANTS.lastProcessedSlotKey, slot.toString());
+}
+
+function recordStateModification(
+  pipeline: ChainableCommander,
+  key: string,
+  slot: bigint,
+): void {
+  pipeline.zadd(
+    `${key}:${CONSTANTS.slotLookupKey}`,
+    Number(slot),
+    slot.toString(),
+  );
+}
+
+function recordValidatorStateModification(
+  pipeline: ChainableCommander,
+  index: bigint,
+  slot: bigint,
+): void {
+  recordStateModification(pipeline, `${CONSTANTS.validatorKey}:${index}`, slot);
+}
+
+function recordProofStateModification(
+  pipeline: ChainableCommander,
+  gindex: bigint,
+  slot: bigint,
+): void {
+  recordStateModification(
+    pipeline,
+    `${CONSTANTS.validatorProofKey}:${gindex}`,
+    slot,
+  );
+}
+
+function saveInput(
+  pipeline: ChainableCommander,
+  index: bigint,
+  input: CommitmentMapperInput,
+  slot: bigint,
+): void {
+  recordValidatorStateModification(pipeline, index, slot);
+
+  pipeline.set(
+    `${CONSTANTS.validatorKey}:${index}:${slot}`,
+    JSON.stringify(input),
+  );
+}
+
+function saveRealInput(
+  pipeline: ChainableCommander,
+  { validator, index }: IndexedValidator,
+  slot: bigint,
+): void {
+  const input = commitmentMapperInputFromValidator(validator);
+  saveInput(pipeline, BigInt(index), input, slot);
+}
+
+function saveDummyInput(pipeline: ChainableCommander, slot: bigint): void {
+  const index = BigInt(CONSTANTS.validatorRegistryLimit);
+  const input = createDummyCommitmentMapperInput();
+  saveInput(pipeline, index, input, slot);
+}
+
+async function saveDummyProofPlaceholder(
+  pipeline: ChainableCommander,
+  depth: bigint,
+): Promise<void> {
+  const obj: ValidatorProof = {
+    needsChange: true,
+    proofKey: 'invalid',
+    publicInputs: {
+      poseidonHashTreeRoot: [0, 0, 0, 0],
+      sha256HashTreeRoot: ''.padEnd(64, '0'),
+    },
+  };
+
+  pipeline.set(
+    `${CONSTANTS.validatorProofKey}:zeroes:${depth}`,
+    JSON.stringify(obj),
+  );
+}
+
+function saveProofPlaceholder(
+  pipeline: ChainableCommander,
+  gindex: bigint,
+  slot: bigint,
+): void {
+  const obj: ValidatorProof = {
+    needsChange: true,
+    proofKey: '',
+    publicInputs: {
+      poseidonHashTreeRoot: [0, 0, 0, 0],
+      sha256HashTreeRoot: ''.padEnd(64, '0'),
+    },
+  };
+
+  pipeline.set(
+    `${CONSTANTS.validatorProofKey}:${gindex}:${slot}`,
+    JSON.stringify(obj),
+  );
+}
+
+async function getValidatorKeysForSlot(
+  redis: Redis,
+  slot: bigint,
+): Promise<string[]> {
+  return (await redis.client.keys(`${CONSTANTS.validatorKey}:*:[0-9]*`))
+    .filter(key => !key.includes(CONSTANTS.validatorRegistryLimit.toString()))
+    .reduce((acc, key) => {
+      const split = key.split(':');
+      const index = Number(split[1]);
+      const keySlot = Number(split[2]);
+
+      let latestSlot = 0;
+      if (keySlot <= slot) {
+        latestSlot = keySlot;
+      }
+
+      if (acc[index] && acc[index] > latestSlot) {
+        latestSlot = acc[index];
+      }
+
+      acc[index] = latestSlot;
+      return acc;
+    }, new Array())
+    .map((slot, index) => `${CONSTANTS.validatorKey}:${index}:${slot}`);
+}
+
+async function getValidatorsBatched(
+  redis: Redis,
+  slot: bigint,
+  batchSize = 1000,
+): Promise<Validator[]> {
+  const keys = await getValidatorKeysForSlot(redis, slot);
+  let allValidators: Validator[] = new Array(keys.length);
+
+  for (const [keyBatchIndex, batchKeys] of splitIntoBatches(
+    keys,
+    batchSize,
+  ).entries()) {
+    const res = await redis.client.mget(batchKeys);
+    if (res === null) {
+      continue;
+    }
+    const batchValidators = (
+      res.filter((v: any) => v !== null) as string[]
+    ).map((json: any) => JSON.parse(json).validator);
+
+    for (const [index, redisValidator] of batchValidators.entries()) {
+      try {
+        const validator = validatorFromValidatorJSON(redisValidator);
+        const validatorIndex = Number(batchKeys[index].split(':')[1]);
+        allValidators[validatorIndex] = validator;
+      } catch (e) {
+        console.error(e);
+        continue;
+      }
+    }
+    console.log(
+      `Loaded batch ${chalk.bold.yellowBright(
+        keyBatchIndex + 1,
+      )}/${chalk.bold.yellow(Math.ceil(keys.length / batchSize))}`,
+    );
+  }
+
+  console.log(
+    `Loaded ${chalk.bold.yellow(
+      allValidators.length,
+    )} validators from database`,
+  );
+
+  return allValidators;
+}
+// function updateLastVerifiedSlot(pipeline: ChainableCommander, slot: bigint): void {
+//   pipeline.set(CONSTANTS.lastVerifiedSlotKey, slot.toString());
+// }
 
 // Returns a function that checks whether a validator at validator index has
 // changed  (doesn't check for pubkey and withdrawalCredentials since those
 // never change according to the spec)
 function hasValidatorChanged(prevValidators: Validator[]) {
-  return ({ validator, index }: IndexedValidator) =>
+  return ({ validator, index }: IndexedValidator): boolean =>
     prevValidators[index] === undefined ||
     validator.effectiveBalance !== prevValidators[index].effectiveBalance ||
     validator.slashed !== prevValidators[index].slashed ||

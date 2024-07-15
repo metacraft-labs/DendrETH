@@ -7,7 +7,10 @@ import {
 import { Redis } from '@dendreth/relay/implementations/redis';
 import { IndexedValidator } from '@dendreth/relay/types/types';
 import config from '../../../common_config.json';
-import { CommitmentMapperScheduler } from '../lib/scheduler';
+import {
+  CommitmentMapperScheduler,
+  setValidatorsLengthForSlot,
+} from '../lib/scheduler';
 import { Tree, zeroNode } from '@chainsafe/persistent-merkle-tree';
 import CONSTANTS from '../../../kv_db_constants.json';
 // @ts-ignore
@@ -22,7 +25,8 @@ import {
 import chalk from 'chalk';
 import { bitsToHex } from '@dendreth/utils/ts-utils/hex-utils';
 import { CommandLineOptionsBuilder } from '../../utils/cmdline';
-import { getDummyCommitmentMapperInput } from '../../utils/common_utils';
+import { createDummyCommitmentMapperInput } from '../../utils/common_utils';
+import { ChainableCommander } from 'ioredis';
 
 let zeroHashes: string[] = [];
 
@@ -217,13 +221,17 @@ async function verifySlot(
           `Validators roots for slot ${slot} differ: expected "${validatorsRoot}", got "${storedValidatorsRoot}. Rescheduling tasks..."`,
         ),
       );
+
+      const pipeline = redis.client.pipeline();
+
       // reschedule tasks for slot
       let { changedValidators, expectedValidatorsLength } =
         await getValidatorsDiff(api, redis, beaconState, slot);
 
       const actualValidatorsLen =
-        (await redis.getValidatorsLengthForSlot(slot)) ||
+        (await getValidatorsLengthForSlot(redis, slot)) ||
         panic(`Could not fetch validators length for slot ${slot}`);
+
       if (expectedValidatorsLength < actualValidatorsLen) {
         // There are actually less validators in the current state than we know
         // about, so we zero out the obsolete ones
@@ -233,21 +241,27 @@ async function verifySlot(
         );
 
         for (const index of validatorsToBeZeroesIndices) {
-          await scheduler.scheduleZeroOutValidatorTask(index, slot);
+          scheduler.scheduleZeroOutValidatorTask(pipeline, index, slot);
         }
 
         const zeroValidators = validatorsToBeZeroesIndices.map(index => ({
           index,
           validator: validatorFromValidatorJSON(
-            getDummyCommitmentMapperInput().validator,
+            createDummyCommitmentMapperInput().validator,
           ),
         }));
         changedValidators = changedValidators.concat(zeroValidators);
       }
 
-      await scheduler.saveValidatorsInBatches(changedValidators, slot);
-      await redis.deleteValidatorsRoot(slot);
-      await redis.setValidatorsLength(slot, beaconState.validators.length);
+      await scheduler.modifyValidatorsPipeline(
+        pipeline,
+        changedValidators,
+        slot,
+      );
+      deleteValidatorsRoot(pipeline, slot);
+      setValidatorsLengthForSlot(pipeline, slot, beaconState.validators.length);
+
+      await pipeline.exec();
       return false;
     }
   } catch (error) {
@@ -256,4 +270,21 @@ async function verifySlot(
   }
 
   return true;
+}
+
+async function getValidatorsLengthForSlot(
+  redis: Redis,
+  slot: bigint,
+): Promise<number | null> {
+  const result = await redis.client.get(
+    `${CONSTANTS.validatorsLengthKey}:${slot}`,
+  );
+  return result !== null ? Number(result) : null;
+}
+
+function deleteValidatorsRoot(
+  pipeline: ChainableCommander,
+  slot: bigint,
+): void {
+  pipeline.del(`${CONSTANTS.validatorsRootKey}:${slot}`);
 }

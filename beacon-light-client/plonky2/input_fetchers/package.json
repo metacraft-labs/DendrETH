@@ -13,6 +13,7 @@
   "devDependencies": {
     "@types/circomlibjs": "^0",
     "@types/json-bigint": "^1",
+    "@types/node": "^20.14.9",
     "@types/yargs": "^17.0.32",
     "tsx": "^4.7.1"
   },

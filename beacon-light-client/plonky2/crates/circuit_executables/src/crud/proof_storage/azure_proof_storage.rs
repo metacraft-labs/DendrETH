@@ -30,7 +30,7 @@ impl AzureStorage {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl ProofStorage for AzureStorage {
     async fn get_proof(&mut self, key: String) -> Result<Vec<u8>> {
         let blob_client = self.container_client.blob_client(key);

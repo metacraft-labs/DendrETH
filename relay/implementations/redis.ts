@@ -2,22 +2,13 @@ import { IRedis } from '../abstraction/redis-interface';
 import {
   BalanceProof,
   ProofResultType,
-  Validator,
-  ValidatorProof,
   BlsDepositData,
   BalancesAccumulatorInput,
-  CommitmentMapperInput,
 } from '../types/types';
 import { RedisClientType, createClient } from 'redis';
 import CONSTANTS from '../../beacon-light-client/plonky2/kv_db_constants.json';
-//
 import { Redis as RedisClient, Result } from 'ioredis';
-import chalk from 'chalk';
-import {
-  getDepthByGindex,
-  splitIntoBatches,
-} from '@dendreth/utils/ts-utils/common-utils';
-import { validatorFromValidatorJSON } from '../utils/converters';
+import { getDepthByGindex } from '@dendreth/utils/ts-utils/common-utils';
 import JSONbig from 'json-bigint';
 
 declare module 'ioredis' {
@@ -27,8 +18,8 @@ declare module 'ioredis' {
 }
 
 function makeRedisURL(host: string, port: number, auth?: string): string {
-    const at: string = (auth != null && auth.length > 0) ? `${auth}@` : "";
-    return `redis://${at}${host}:${port}`;
+  const at: string = auth != null && auth.length > 0 ? `${auth}@` : '';
+  return `redis://${at}${host}:${port}`;
 }
 
 export class Redis implements IRedis {
@@ -64,25 +55,6 @@ export class Redis implements IRedis {
     await this.waitForConnection();
     await this.pubSub.quit();
     this.client.quit();
-  }
-
-  async addToSlotLookup(key: string, slot: bigint) {
-    await this.waitForConnection();
-
-    await this.client.zadd(
-      `${key}:${CONSTANTS.slotLookupKey}`,
-      Number(slot),
-      slot.toString(),
-    );
-  }
-
-  async removeFromSlotLookup(key: string, ...slots: bigint[]) {
-    await this.waitForConnection();
-
-    await this.client.zrem(
-      `${key}:${CONSTANTS.slotLookupKey}`,
-      slots.map(String),
-    );
   }
 
   async getSlotWithLatestChange(
@@ -128,28 +100,6 @@ export class Redis implements IRedis {
       ).map(BigInt);
     }
     return [];
-  }
-
-  async pruneOldSlots(key: string, newOldestSlot: bigint): Promise<number> {
-    await this.waitForConnection();
-
-    const slots = await this.collectOutdatedSlots(key, newOldestSlot);
-    if (slots.length !== 0) {
-      await this.removeFromSlotLookup(key, ...slots);
-    }
-    return 0;
-  }
-
-  async updateLastVerifiedSlot(slot: bigint) {
-    await this.waitForConnection();
-
-    this.client.set(CONSTANTS.lastVerifiedSlotKey, slot.toString());
-  }
-
-  async updateLastProcessedSlot(slot: bigint) {
-    await this.waitForConnection();
-
-    this.client.set(CONSTANTS.lastProcessedSlotKey, slot.toString());
   }
 
   async getAllKeys(pattern: string): Promise<string[]> {
@@ -199,10 +149,6 @@ export class Redis implements IRedis {
     return this.client.get(`${CONSTANTS.validatorsRootKey}:${slot}`);
   }
 
-  async deleteValidatorsRoot(slot: bigint): Promise<void> {
-    await this.client.del(`${CONSTANTS.validatorsRootKey}:${slot}`);
-  }
-
   async getValidatorsCommitmentRoot(slot: bigint): Promise<string[] | null> {
     const prefix = `${CONSTANTS.validatorProofKey}:1`;
     const latestRootChangeSlot = await this.getSlotWithLatestChange(
@@ -226,85 +172,6 @@ export class Redis implements IRedis {
     this.pubSub.publish('proofs_channel', 'proof');
   }
 
-  async getValidatorsLengthForSlot(slot: bigint): Promise<number | null> {
-    const result = await this.get(`${CONSTANTS.validatorsLengthKey}:${slot}`);
-    return result !== null ? Number(result) : null;
-  }
-
-  async getValidatorKeysForSlot(slot: bigint): Promise<string[]> {
-    return (await this.client.keys(`${CONSTANTS.validatorKey}:*:[0-9]*`))
-      .filter(key => !key.includes(CONSTANTS.validatorRegistryLimit.toString()))
-      .reduce((acc, key) => {
-        const split = key.split(':');
-        const index = Number(split[1]);
-        const keySlot = Number(split[2]);
-
-        let latestSlot = 0;
-        if (keySlot <= slot) {
-          latestSlot = keySlot;
-        }
-
-        if (acc[index] && acc[index] > latestSlot) {
-          latestSlot = acc[index];
-        }
-
-        acc[index] = latestSlot;
-        return acc;
-      }, new Array())
-      .map((slot, index) => `${CONSTANTS.validatorKey}:${index}:${slot}`);
-  }
-
-  async getValidatorsBatched(
-    slot: bigint,
-    batchSize = 1000,
-  ): Promise<Validator[]> {
-    await this.waitForConnection();
-
-    const keys = await this.getValidatorKeysForSlot(slot);
-    let allValidators: Validator[] = new Array(keys.length);
-
-    for (const [keyBatchIndex, batchKeys] of splitIntoBatches(
-      keys,
-      batchSize,
-    ).entries()) {
-      const res = await this.client.mget(batchKeys);
-      if (res === null) {
-        continue;
-      }
-      const batchValidators = (res.filter(v => v !== null) as string[]).map(
-        (json: any) => JSON.parse(json).validator,
-      );
-
-      for (const [index, redisValidator] of batchValidators.entries()) {
-        try {
-          const validator = validatorFromValidatorJSON(redisValidator);
-          const validatorIndex = Number(batchKeys[index].split(':')[1]);
-          allValidators[validatorIndex] = validator;
-        } catch (e) {
-          console.error(e);
-          continue;
-        }
-      }
-      console.log(
-        `Loaded batch ${chalk.bold.yellowBright(
-          keyBatchIndex + 1,
-        )} /${chalk.bold.yellow(Math.ceil(keys.length / batchSize))}`,
-      );
-    }
-
-    return allValidators;
-  }
-
-  async isZeroValidatorEmpty() {
-    await this.waitForConnection();
-
-    const result = await this.client.keys(
-      `${CONSTANTS.validatorKey}:${CONSTANTS.validatorRegistryLimit}:*`,
-    );
-
-    return result.length === 0;
-  }
-
   async isZeroBalanceEmpty() {
     await this.waitForConnection();
 
@@ -313,30 +180,6 @@ export class Redis implements IRedis {
     );
 
     return result == null;
-  }
-
-  async saveValidators(
-    validatorsWithIndices: { index: number; data: CommitmentMapperInput }[],
-    slot: bigint,
-  ) {
-    await this.waitForConnection();
-
-    const args = (
-      await Promise.all(
-        validatorsWithIndices.map(async validator => {
-          await this.addToSlotLookup(
-            `${CONSTANTS.validatorKey}:${validator.index}`,
-            slot,
-          );
-          return [
-            `${CONSTANTS.validatorKey}:${validator.index}:${slot}`,
-            JSON.stringify(validator.data),
-          ];
-        }),
-      )
-    ).flat();
-
-    await this.client.mset(...args);
   }
 
   async saveBalancesAccumulatorProof(
@@ -445,43 +288,6 @@ export class Redis implements IRedis {
     );
   }
 
-  async saveValidatorProof(
-    gindex: bigint,
-    slot: bigint,
-    proof: ValidatorProof = {
-      needsChange: true,
-      proofKey: '',
-      publicInputs: {
-        poseidonHashTreeRoot: [0, 0, 0, 0],
-        sha256HashTreeRoot: ''.padEnd(64, '0'),
-      },
-    },
-  ): Promise<void> {
-    await this.waitForConnection();
-    await this.client.set(
-      `${CONSTANTS.validatorProofKey}:${gindex}:${slot}`,
-      JSON.stringify(proof),
-    );
-  }
-
-  async saveDummyValidatorProof(
-    depth: bigint,
-    proof: ValidatorProof = {
-      needsChange: true,
-      proofKey: 'invalid',
-      publicInputs: {
-        poseidonHashTreeRoot: [0, 0, 0, 0],
-        sha256HashTreeRoot: ''.padEnd(64, '0'),
-      },
-    },
-  ): Promise<void> {
-    await this.waitForConnection();
-    await this.client.set(
-      `${CONSTANTS.validatorProofKey}:zeroes:${depth}`,
-      JSON.stringify(proof),
-    );
-  }
-
   async saveBalanceProof(
     protocol: string,
     level: bigint,
@@ -535,14 +341,6 @@ export class Redis implements IRedis {
     }
 
     return JSON.parse(proof);
-  }
-
-  public async setValidatorsLength(slot: bigint, length: number) {
-    await this.waitForConnection();
-    await this.client.set(
-      `${CONSTANTS.validatorsLengthKey}:${slot}`,
-      length.toString(),
-    );
   }
 
   async getDepositsCount(): Promise<number> {

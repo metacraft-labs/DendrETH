@@ -11,14 +11,13 @@ pub struct AwsStorage {
 }
 
 impl AwsStorage {
-    pub async fn new(endpoint_url: String, region: String, bucket_name: String) -> AwsStorage {
+    pub async fn new(region: String, bucket_name: String) -> AwsStorage {
         let aws_config = aws_config::from_env().load().await;
 
         let s3_config = Config::builder()
             .credentials_provider(aws_config.credentials_provider().unwrap())
             .behavior_version_latest()
             .region(Region::new(region))
-            // .endpoint_url(endpoint_url)
             .force_path_style(true)
             .clone()
             .build();
@@ -32,7 +31,7 @@ impl AwsStorage {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl ProofStorage for AwsStorage {
     async fn get_proof(&mut self, key: String) -> Result<Vec<u8>> {
         let resp = self

@@ -93,7 +93,7 @@ export function commitmentMapperInputFromValidator(
   };
 }
 
-export function getDummyCommitmentMapperInput(): CommitmentMapperInput {
+export function createDummyCommitmentMapperInput(): CommitmentMapperInput {
   return {
     validator: {
       pubkey: ''.padEnd(96, '0'),
