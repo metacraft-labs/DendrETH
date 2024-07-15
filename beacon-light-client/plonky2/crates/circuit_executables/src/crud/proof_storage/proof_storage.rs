@@ -70,7 +70,6 @@ pub async fn create_proof_storage(args: &ArgMatches) -> Box<dyn ProofStorage> {
         }
         ProofStorageType::Aws => Box::new(
             AwsStorage::new(
-                args.value_of("aws_endpoint_url").unwrap().to_string(),
                 args.value_of("aws_region").unwrap().to_string(),
                 args.value_of("aws_bucket_name").unwrap().to_string(),
             )
