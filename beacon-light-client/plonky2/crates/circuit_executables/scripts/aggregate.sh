@@ -7,7 +7,7 @@
 #
 # Expected variables:
 #
-# ROOT (optional): the top DendrETH repository directory
+# ROOT (optional): the top DendrETH directory, defaults to /app
 # AWS_ACCESS_KEY_ID
 # AWS_BUCKET_NAME
 # AWS_REGION
