@@ -239,6 +239,11 @@ pub async fn save_balance_aggregator_proof(
         public_inputs,
     };
 
+    let key = "asd".to_string();
+    proof_storage.set_proof(key.clone(), &[0, 1, 2]).await?;
+    let result = proof_storage.get_proof(key.clone()).await?;
+    println!("{result:?}");
+
     proof_storage
         .set_proof(proof_key, &proof.to_bytes())
         .await?;
