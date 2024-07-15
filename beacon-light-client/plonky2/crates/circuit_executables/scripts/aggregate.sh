@@ -9,7 +9,7 @@
 #
 # ROOT (optional): the top DendrETH directory, defaults to /app
 # AWS_ACCESS_KEY_ID
-# AWS_BUCKET_NAME
+# AWS_BUCKET
 # AWS_REGION
 # AWS_SECRET_ACCESS_KEY
 # REDIS_AUTH: e.g. default:PASSWORD
@@ -39,7 +39,7 @@ set -o pipefail
               --proof-storage-type aws \
               --folder-name /home/d/proofs \
               --redis "$REDIS" \
-              --aws-bucket-name "$AWS_BUCKET_NAME" \
+              --aws-bucket-name "$AWS_BUCKET" \
               --aws-region "$AWS_REGION" \
               --aws-endpoint-url ""
     done
