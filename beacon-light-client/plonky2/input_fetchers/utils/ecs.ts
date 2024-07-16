@@ -41,7 +41,7 @@ async function sleep(ms: number): Promise<void> {
   return new Promise<void>(executor);
 }
 
-async function retry<T>(f: () => PromiseLike<T>): Promise<T> {
+export async function retry<T>(f: () => PromiseLike<T>): Promise<T> {
   let lastError: unknown = '';
   for (let i = 1; i <= 3; i++) {
     try {
@@ -116,6 +116,9 @@ async function refreshTasksByArns(
   ecsClient: ECSClient,
   arns: string[],
 ): Promise<Task[]> {
+  if (arns.length <= 0) {
+    return [];
+  }
   const resp: DescribeTasksCommandOutput = await ecsClient.send(
     new DescribeTasksCommand({
       cluster: ENV.cluster,
@@ -212,7 +215,7 @@ export default async function runTask(count: number): Promise<number> {
 
   // Wait for tasks to complete.
   while (1) {
-    log(`[I] Checking ${data.tasks.length} tasks...`);
+    log(`[I] runTask: checking ${data.tasks.length}/${count} instances...`);
 
     const tasks: Task[] = await retry(() =>
       refreshTasks(ecsClient, data.tasks ?? []),

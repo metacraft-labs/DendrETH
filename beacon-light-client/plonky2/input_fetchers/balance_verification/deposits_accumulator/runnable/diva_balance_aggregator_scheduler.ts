@@ -1,5 +1,5 @@
 import { CommandLineOptionsBuilder } from '../../../utils/cmdline';
-import runTask from '../../../utils/ecs';
+import runTask, { retry } from '../../../utils/ecs';
 import accountManagerAbi from '../../../abi/account_manager_abi.json';
 import { BigNumber, ethers } from 'ethers';
 import { storeBalanceVerificationData } from '../lib/get_balance_verification_data';
@@ -8,7 +8,7 @@ import CONSTANTS from '../../../../kv_db_constants.json';
 import { sleep } from '@dendreth/utils/ts-utils/common-utils';
 import JSONbig from 'json-bigint';
 
-const MAX_INSTANCES: number = 32;
+const MAX_INSTANCES: number = 10; // TODO
 
 function level(n: number, w: number, d: number): number {
   return Math.ceil(n / w) * d;
@@ -42,6 +42,33 @@ function estimate(n: number, t: number = 3000): number {
   return low;
 }
 
+async function numTasks(redis: Redis, protocol: string): Promise<number> {
+  const key: string = `${protocol}:deposit_balance_verification_queue:0:queue`;
+  const length: number | null = await retry(() => redis.client.llen(key));
+  return (length != null) ? length : -1;
+}
+
+async function waitProofs(redis: Redis, key: string) {
+  let needsChange: boolean = true;
+  while (needsChange) {
+    await sleep(8000);
+
+    const value: string | null = await retry(() => redis.client.get(key));
+    if (value == null) {
+      console.log(`[I] waitProofs: value for ${key} does not yet exist.`);
+      continue;
+    }
+
+    const proof: any = JSONbig.parse(value || "{}");
+    if (proof.needsChange == null) {
+      console.log(`[W] waitProofs: unexpected value for ${key}:`, value);
+    } else {
+      needsChange = Boolean(proof.needsChange);
+      console.log(`[I] waitProofs: value for ${key} fetched, needsChange=${needsChange}`);
+    }
+  }
+}
+
 // +------+
 // | Main |
 // +------+
@@ -70,6 +97,12 @@ async function main() {
     .withBeaconNodeOpts()
     .build();
 
+  const redis: Redis = new Redis(
+    options['redis-host'],
+    options['redis-port'],
+    options['redis-auth'],
+  );
+
   const snapshotContractAddress = options['snapshot-contract-address'];
   const provider = new ethers.providers.JsonRpcProvider(options['json-rpc']);
 
@@ -94,7 +127,7 @@ async function main() {
 
   snapshot.on('SnapshotTaken', async (_: BigNumber, currentSlot: BigNumber) => {
     const now: string = new Date().toISOString();
-    console.log(`${now} | SnapshotTaken received: slot+${currentSlot}`);
+    console.log(`${now} | SnapshotTaken received: slot=${currentSlot}`);
     await storeBalanceVerificationData({
       beaconNodeUrls: options['beacon-node'],
       slot: currentSlot.toNumber(),
@@ -108,49 +141,34 @@ async function main() {
       protocol: options['protocol'],
     });
 
-    // TODO: Use the proper number of tasks to recalculate here!
-    const TODO_NUMBER_OF_TASKS = 16;
-    const instances: number = Math.min(
-      MAX_INSTANCES,
-      estimate(TODO_NUMBER_OF_TASKS),
-    );
-    console.log(`[I] Running ${instances} worker(s)...`);
-    let successful: number = 0;
+    const protocol: string = '' + options['protocol'];
+    const tasks: number = await numTasks(redis, protocol);
+    let instances: number = Math.min(MAX_INSTANCES, estimate(tasks));
+    console.log(`[I] Running ${instances} worker(s) for ${tasks} task(s)...`);
+    instances = 10;              // TODO
+    let completed: number = 0;
     try {
-      successful = await runTask(instances);
+      completed = await runTask(instances);
     } catch (e: unknown) {
       console.error(e);
     }
-    if (successful === instances) {
+    if (completed === instances) {
       console.log(
-        `[I] All workers have successfully completed their tasks: instances=${instances}`,
+        `[I] All workers have completed their tasks: instances=${instances}`,
       );
-      // TODO: Launch next step!
     } else {
       console.error(
-        `[W] Some workers failed: successful=${successful} total=${instances}`,
+        `[W] Some workers failed: completed=${completed} total=${instances}`,
       );
       // TODO: Handle error!
     }
 
     // Detect when the final worker proof is committed.
-    const redis: Redis = new Redis(
-      options['redis-host'],
-      options['redis-port'],
-      options['redis-auth'],
-    );
-    const protocol: string = '' + options['protocol'];
-    let balanceAggregatorProof: any = null;
-    while (!balanceAggregatorProof || balanceAggregatorProof.needsChange) {
-      const key: string = `${protocol}:${
-        CONSTANTS.depositBalanceVerificationProofKey
-      }:${32}:${0}`;
-      const value: string | null = await redis.client.get(key);
-      if (value) {
-        balanceAggregatorProof = JSONbig.parse(value);
-      }
-      await sleep(1000);
-    }
+    const key: string = `${protocol}:${CONSTANTS.depositBalanceVerificationProofKey}:32:0`;
+    await waitProofs(redis, key);
+
+    console.log('[I] All proofs were committed!');
+    // TODO: Launch next step!
   });
 }
 
