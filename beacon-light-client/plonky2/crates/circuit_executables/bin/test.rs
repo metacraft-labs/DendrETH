@@ -1,6 +1,6 @@
 #![feature(sync_unsafe_cell)]
 
-use std::{cmp::min, fs, sync::Arc};
+use std::{cmp::min, fs, sync::Arc, thread::available_parallelism};
 
 use anyhow::Result;
 use circuit::Circuit;
@@ -11,6 +11,7 @@ use circuit_executables::{
 use circuits::validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel;
 use clap::Arg;
 use futures::future::join_all;
+use itertools::Itertools;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     plonk::{config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs},
@@ -66,7 +67,15 @@ pub async fn main() -> Result<()> {
     let proof_dir_string = matches.value_of("folder_name").unwrap().to_owned();
     let proof_dir_str: &'static str = Box::leak(proof_dir_string.into_boxed_str());
 
-    let futures = (range_start..min(range_end + 1, validators_count)).map(|validator_index| {
+    let parallelism = available_parallelism().unwrap().get();
+
+    let validator_indices_range = range_start..min(range_end + 1, validators_count);
+    let range_size = validator_indices_range.len();
+
+    let chunks = validator_indices_range.chunks(range_size / parallelism);
+    let futures = chunks.into_iter().map(|validator_indices| {
+        let validator_indices = validator_indices.collect_vec();
+
         let non_verifiable_indices_arc = non_verifiable_indices.clone();
         let missing_indices_arc = missing_indices.clone();
         let data_fl = data_fl.clone();
@@ -75,36 +84,42 @@ pub async fn main() -> Result<()> {
         tokio::spawn(async move {
             let mut proof_storage = FileStorage::new(proof_dir_str.to_owned());
 
-            let proof_bytes_result = {
-                let gindex = 2usize.pow(40) + validator_index;
-                let proof_key = format!("validator_proof_storage:{gindex}:{slot}");
-                proof_storage.get_proof(proof_key.to_string()).await
-            };
+            for validator_index in validator_indices {
+                let proof_bytes_result = {
+                    let gindex = 2usize.pow(40) + validator_index;
+                    let proof_key = format!("validator_proof_storage:{gindex}:{slot}");
+                    proof_storage.get_proof(proof_key.to_string()).await
+                };
 
-            match proof_bytes_result {
-                Ok(proof_bytes) => {
-                    let proof = ProofWithPublicInputs::<
-                        GoldilocksField,
-                        PoseidonGoldilocksConfig,
-                        2,
-                    >::from_bytes(proof_bytes, &data_fl.common).unwrap();
+                match proof_bytes_result {
+                    Ok(proof_bytes) => {
+                        let proof = ProofWithPublicInputs::<
+                            GoldilocksField,
+                            PoseidonGoldilocksConfig,
+                            2,
+                        >::from_bytes(
+                            proof_bytes, &data_fl.common
+                        )
+                        .unwrap();
 
-                    if data_fl.verify(proof).is_err() {
-                        let mut non_verifiable_indices = non_verifiable_indices_arc.lock().await;
-                        non_verifiable_indices.push(validator_index);
+                        if data_fl.verify(proof).is_err() {
+                            let mut non_verifiable_indices =
+                                non_verifiable_indices_arc.lock().await;
+                            non_verifiable_indices.push(validator_index);
+                        }
                     }
-                }
-                Err(_) => {
-                    let mut missing_indices = missing_indices_arc.lock().await;
-                    missing_indices.push(validator_index);
-                }
-            };
+                    Err(_) => {
+                        let mut missing_indices = missing_indices_arc.lock().await;
+                        missing_indices.push(validator_index);
+                    }
+                };
 
-            let mut checked_proofs_count = checked_proofs_count_arc.lock().await;
-            *checked_proofs_count += 1;
+                let mut checked_proofs_count = checked_proofs_count_arc.lock().await;
+                *checked_proofs_count += 1;
 
-            if *checked_proofs_count % 10000 == 0 {
-                println!("Checked: {checked_proofs_count}/{total_proofs_to_check_count}");
+                if *checked_proofs_count % 1000 == 0 {
+                    println!("Checked: {checked_proofs_count}/{total_proofs_to_check_count}");
+                }
             }
         })
     });
