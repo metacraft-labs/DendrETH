@@ -429,7 +429,7 @@ export class Redis implements IRedis {
           signature: ''.padEnd(192, '0'),
           depositMessageRoot: ''.padEnd(64, '0'),
         },
-        commitmentMapperRoot: [''],
+        validatorsCommitmentMapperRoot: [''],
         commitmentMapperProof: [['']],
         validatorIndex: 0,
         validatorDepositRoot: [''],
