@@ -36,7 +36,6 @@ use std::{
 
 use anyhow::Result;
 
-use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     iop::witness::PartialWitness,
@@ -60,10 +59,6 @@ enum Targets {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    async_main().await
-}
-
-async fn async_main() -> Result<()> {
     let common_config = parse_config_file("../../common_config.json".to_owned()).unwrap();
 
     let matches = CommandLineOptionsBuilder::new("balance_verification")

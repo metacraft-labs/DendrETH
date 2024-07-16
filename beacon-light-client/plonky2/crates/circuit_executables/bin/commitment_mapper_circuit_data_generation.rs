@@ -8,7 +8,6 @@ use anyhow::Result;
 use circuit::{Circuit, CircuitTargetType, SerdeCircuitTarget};
 use circuits::validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel;
 use clap::{App, Arg};
-use futures_lite::future;
 
 use jemallocator::Jemalloc;
 use plonky2::plonk::config::PoseidonGoldilocksConfig;
@@ -24,10 +23,6 @@ fn write_to_file(file_path: &str, data: &[u8]) -> Result<()> {
 const CIRCUIT_NAME: &str = "commitment_mapper";
 
 fn main() -> Result<()> {
-    future::block_on(async_main())
-}
-
-pub async fn async_main() -> Result<()> {
     let matches = App::new("")
         .arg(
             Arg::with_name("circuit_level")

@@ -38,7 +38,6 @@ use std::{
 
 use anyhow::Result;
 
-use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     iop::witness::PartialWitness,
@@ -73,16 +72,17 @@ where
     InnerLevel(Option<BasicRecursiveInnerCircuitTarget>),
 }
 
-fn main() -> Result<()> {
-    future::block_on(async_main())
-}
-
-async fn async_main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let common_config = parse_config_file("../../common_config.json".to_owned()).unwrap();
 
     let matches = CommandLineOptionsBuilder::new("balance_verification")
         .with_balance_verification_options()
-        .with_redis_options(&common_config.redis_host, common_config.redis_port, &common_config.redis_auth)
+        .with_redis_options(
+            &common_config.redis_host,
+            common_config.redis_port,
+            &common_config.redis_auth,
+        )
         .with_work_queue_options()
         .with_proof_storage_options()
         .with_protocol_options()

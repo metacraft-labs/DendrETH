@@ -7,7 +7,6 @@ use circuit_executables::{
     utils::{parse_config_file, CommandLineOptionsBuilder},
 };
 use colored::Colorize;
-use futures_lite::future;
 use jemallocator::Jemalloc;
 
 use std::{format, println, thread::sleep, time::Duration};
@@ -15,11 +14,8 @@ use std::{format, println, thread::sleep, time::Duration};
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
-fn main() -> Result<()> {
-    future::block_on(async_main())
-}
-
-async fn async_main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let config = parse_config_file("../../common_config.json".to_owned())?;
 
     let matches = CommandLineOptionsBuilder::new("commitment_mapper")
