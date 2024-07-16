@@ -12,7 +12,7 @@ pub struct AwsStorage {
 
 impl AwsStorage {
     pub async fn new(region: String, bucket_name: String) -> AwsStorage {
-        let aws_config = aws_config::from_env().load().await;
+        let aws_config = aws_config::defaults(BehaviorVersion::latest()).load().await;
 
         let s3_config = Config::builder()
             .credentials_provider(aws_config.credentials_provider().unwrap())
