@@ -9,7 +9,6 @@ use circuit_executables::{
     utils::CommandLineOptionsBuilder,
 };
 use circuits::bls_verification::bls12_381_circuit::BlsCircuitTargets;
-use futures_lite::future;
 
 use plonky2::{
     field::{goldilocks_field::GoldilocksField, types::Field},
@@ -20,7 +19,8 @@ use plonky2::{
 
 const CIRCUIT_NAME: &str = "bls12_381";
 
-async fn async_main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let matches = CommandLineOptionsBuilder::new("bls12_381_components_proofs")
         .with_proof_storage_options()
         .get_matches();
@@ -178,8 +178,4 @@ async fn get_pairing_precomp_proofs(
     .unwrap();
 
     (pp1, pp2)
-}
-
-fn main() -> Result<()> {
-    future::block_on(async_main())
 }

@@ -222,6 +222,7 @@ async fn handle_miller_loop(
 
     (ml1, ml2)
 }
+
 fn main() {
     let _ = std::thread::Builder::new()
         .spawn(|| future::block_on(async_main()))

@@ -17,22 +17,22 @@ use circuits::{
     withdrawal_credentials_balance_aggregator::final_layer::BalanceVerificationFinalCircuit,
 };
 use clap::Arg;
-use futures_lite::future;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     plonk::{config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs},
 };
 use redis::AsyncCommands;
 
-fn main() -> Result<()> {
-    future::block_on(async_main())
-}
-
-async fn async_main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let common_config = parse_config_file("../../common_config.json".to_owned()).unwrap();
 
     let matches = CommandLineOptionsBuilder::new("wrapper")
-        .with_redis_options(&common_config.redis_host, common_config.redis_port, &common_config.redis_auth)
+        .with_redis_options(
+            &common_config.redis_host,
+            common_config.redis_port,
+            &common_config.redis_auth,
+        )
         .with_protocol_options()
         .arg(
             Arg::with_name("compile")

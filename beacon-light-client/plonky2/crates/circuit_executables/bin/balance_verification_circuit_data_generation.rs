@@ -13,7 +13,6 @@ use plonky2_circuit_serializer::serializer::{CustomGateSerializer, CustomGenerat
 use std::{fs, marker::PhantomData};
 
 use clap::{App, Arg};
-use futures_lite::future;
 
 use jemallocator::Jemalloc;
 use plonky2::{
@@ -34,11 +33,8 @@ const CIRCUIT_NAME: &str = "balance_verification";
 const VALIDATORS_COUNT: usize = 8;
 const WITHDRAWAL_CREDENTIALS_COUNT: usize = 1;
 
-fn main() -> Result<()> {
-    future::block_on(async_main())
-}
-
-pub async fn async_main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let matches = App::new("")
         .arg(
             Arg::with_name("circuit_level")
