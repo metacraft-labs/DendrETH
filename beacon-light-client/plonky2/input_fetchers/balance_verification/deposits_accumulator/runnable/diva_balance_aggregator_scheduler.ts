@@ -107,6 +107,19 @@ async function main() {
     .withBeaconNodeOpts()
     .build();
 
+  console.log('Running diva_balance_aggregator_scheduler:');
+  console.log('\ttake:', options['take']);
+  console.log('\toffset:', options['offset']);
+  console.log('\tredis-host:', options['redis-host']);
+  console.log('\tredis-port:', options['redis-port']);
+  console.log('\tredis-auth:', options['redis-auth'].length);
+  console.log('\taddress:', options['address']);
+  console.log('\tjson-rpc:', options['json-rpc']);
+  console.log('\tbeacon-node:', options['beacon-node']);
+  console.log('\tprotocol:', options['protocol']);
+  console.log('\tsnapshot-contract-address:', options['snapshot-contract-address']);
+  console.log();
+
   const beaconApi = await getBeaconApi(options['beacon-node']);
 
   const redis: Redis = new Redis(
@@ -124,17 +137,6 @@ async function main() {
     provider,
   );
 
-  console.log('Running diva_balance_aggregator_scheduler:');
-  console.log('\ttake:', options['take']);
-  console.log('\toffset:', options['offset']);
-  console.log('\tredis-host:', options['redis-host']);
-  console.log('\tredis-port:', options['redis-port']);
-  console.log('\tredis-auth:', options['redis-auth'].length);
-  console.log('\taddress:', options['address']);
-  console.log('\tjson-rpc:', options['json-rpc']);
-  console.log('\tprotocol:', options['protocol']);
-  console.log('\tsnapshot-contract-address:', snapshotContractAddress);
-  console.log();
   console.log('Binding to SnapshotTaken events...');
 
   snapshot.on('SnapshotTaken', async (_: BigNumber, referenceSlot: BigNumber) => {
