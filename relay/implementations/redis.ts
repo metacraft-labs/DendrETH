@@ -409,44 +409,22 @@ export class Redis implements IRedis {
     protocol: string,
     level: bigint,
     index: bigint,
-    proof = {
-      needsChange: true,
-      proofKey: '',
-      publicInputs: {
-        validator: {
-          pubkey: ''.padEnd(96, '0'),
-          withdrawalCredentials: ''.padEnd(64, '0'),
-          effectiveBalance: '0',
-          slashed: false,
-          activationEligibilityEpoch: '0',
-          activationEpoch: '0',
-          exitEpoch: '0',
-          withdrawableEpoch: '0',
-        },
-        validatorDeposit: {
-          pubkey: ''.padEnd(96, '0'),
-          depositIndex: '0',
-          signature: ''.padEnd(192, '0'),
-          depositMessageRoot: ''.padEnd(64, '0'),
-        },
-        validatorsCommitmentMapperRoot: [''],
-        commitmentMapperProof: [['']],
-        validatorIndex: 0,
-        validatorDepositRoot: [''],
-        validatorDepositProof: [['']],
-        balanceTreeRoot: ''.padEnd(64, '0'),
-        balanceLeaf: ''.padEnd(64, '0'),
-        balanceProof: [''.padEnd(64, '0')],
-        currentEpoch: '0',
-        isDummy: true,
-      },
-    },
   ): Promise<void> {
     await this.waitForConnection();
 
+    const obj = {
+      needsChange: true,
+      proofKey: '',
+      publicInputs: {
+        validatorsCommitmentMapperRoot: [0, 0, 0, 0],
+        balancesRoot: ''.padEnd(64, '0'),
+        currentEpoch: '0',
+      }
+    };
+
     await this.client.set(
       `${protocol}:${CONSTANTS.depositBalanceVerificationProofKey}:${level}:${index}`,
-      JSONbig.stringify(proof),
+      JSONbig.stringify(obj),
     );
   }
 
