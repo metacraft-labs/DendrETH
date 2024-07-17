@@ -7,6 +7,7 @@ import { Redis } from '@dendreth/relay/implementations/redis';
 import CONSTANTS from '../../../../kv_db_constants.json';
 import { sleep } from '@dendreth/utils/ts-utils/common-utils';
 import JSONbig from 'json-bigint';
+import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
 
 const MAX_INSTANCES: number = 10; // TODO
 
@@ -69,6 +70,14 @@ async function waitProofs(redis: Redis, key: string) {
   }
 }
 
+async function waitForSlot(currentSlot: bigint, referenceSlot: bigint): Promise<void> {
+  const slotsToWait = Number(referenceSlot - currentSlot);
+  if (slotsToWait > 0) {
+    console.log(`Waiting for ${slotsToWait} slots until slot ${referenceSlot}`);
+    await sleep(slotsToWait * 12000);
+  }
+}
+
 // +------+
 // | Main |
 // +------+
@@ -96,6 +105,8 @@ async function main() {
     })
     .withBeaconNodeOpts()
     .build();
+
+  const beaconApi = await getBeaconApi(options['beacon-node']);
 
   const redis: Redis = new Redis(
     options['redis-host'],
@@ -125,12 +136,14 @@ async function main() {
   console.log();
   console.log('Binding to SnapshotTaken events...');
 
-  snapshot.on('SnapshotTaken', async (_: BigNumber, currentSlot: BigNumber) => {
+  snapshot.on('SnapshotTaken', async (_: BigNumber, referenceSlot: BigNumber) => {
     const now: string = new Date().toISOString();
-    console.log(`${now} | SnapshotTaken received: slot=${currentSlot}`);
+    console.log(`${now} | SnapshotTaken received: slot=${referenceSlot}`);
+
+    await waitForSlot(await beaconApi.getHeadSlot(), BigInt(referenceSlot.toNumber()));
     await storeBalanceVerificationData({
       beaconNodeUrls: options['beacon-node'],
-      slot: currentSlot.toNumber(),
+      slot: referenceSlot.toNumber(),
       take: options['take'],
       offset: options['offset'],
       redisHost: options['redis-host'],
