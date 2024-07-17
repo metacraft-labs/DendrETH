@@ -7,6 +7,7 @@ import { Redis } from '@dendreth/relay/implementations/redis';
 import CONSTANTS from '../../../../kv_db_constants.json';
 import { sleep } from '@dendreth/utils/ts-utils/common-utils';
 import JSONbig from 'json-bigint';
+import 'dotenv/config';
 import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
 
 const MAX_INSTANCES: number = 10; // TODO
