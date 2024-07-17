@@ -5,11 +5,8 @@ import CONSTANTS from '../../../../kv_db_constants.json';
 import { lightClean } from '../../../light_cleaner_common';
 import { CommandLineOptionsBuilder } from '../../../utils/cmdline';
 
-(async () => {
+async function main() {
   const options = new CommandLineOptionsBuilder()
-    .usage(
-      'Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>',
-    )
     .withRedisOpts()
     .withLightCleanOpts()
     .withProtocolOpts()
@@ -18,31 +15,52 @@ import { CommandLineOptionsBuilder } from '../../../utils/cmdline';
   const redis = new Redis(
     `redis://${options['redis-host']}:${options['redis-port']}`,
   );
-  const queues: any[] = [];
 
-  let protocol = options['protocol'];
+  await lightCleanQueue({
+    redis,
+    protocol: options['protocol'],
+    cleanDuration: options['clean-duration'],
+    silent: false
+  });
+}
+
+if (require.main === module) {
+  main().catch(console.error);
+}
+
+interface LightCleanParams {
+  redis: Redis;
+  protocol: string;
+  cleanDuration: number;
+  silent: boolean;
+}
+
+export async function lightCleanQueue(params: LightCleanParams) {
+  const queues: any[] = [];
 
   for (let i = 0; i < 32; i++) {
     queues.push(
       new WorkQueue(
         new KeyPrefix(
-          `${protocol}:${CONSTANTS.depositBalanceVerificationQueue}:${i}`,
+          `${params.protocol}:${CONSTANTS.depositBalanceVerificationQueue}:${i}`,
         ),
       ),
     );
   }
 
   while (true) {
-    console.log('Performing light clean');
+    if (!params.silent) {
+      console.log('Performing light clean');
+    }
 
     for (let i = 0; i < queues.length; i++) {
       const prefix = new KeyPrefix(
-        `${protocol}:${CONSTANTS.depositBalanceVerificationQueue}:${i}`,
+        `${params.protocol}:${CONSTANTS.depositBalanceVerificationQueue}:${i}`,
       );
-      await lightClean.call(queues[i], redis, prefix);
+      await lightClean.call(queues[i], params.redis, prefix);
     }
 
-    console.log(`Waiting ${options['clean-duration'] / 1000} seconds`);
-    await sleep(options['clean-duration']);
+    await sleep(params.cleanDuration);
   }
-})();
+}
+

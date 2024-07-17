@@ -9,6 +9,7 @@ import { sleep } from '@dendreth/utils/ts-utils/common-utils';
 import JSONbig from 'json-bigint';
 import 'dotenv/config';
 import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
+import { lightCleanQueue } from './balance_aggregator_light_cleaner';
 
 const MAX_INSTANCES: number = 10; // TODO
 
@@ -136,6 +137,13 @@ async function main() {
     accountManagerAbi,
     provider,
   );
+
+  lightCleanQueue({
+    redis: redis.client,
+    protocol: options['protocol'],
+    cleanDuration: 5000,
+    silent: false,
+  });
 
   console.log('Binding to SnapshotTaken events...');
 
