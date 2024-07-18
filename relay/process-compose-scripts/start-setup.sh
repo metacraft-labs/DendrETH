@@ -16,34 +16,36 @@ calculate_checksum() {
 }
 
 download_zkey_file() {
-  echo "Downloading zkey file from http://dendreth.metacraft-labs.com/deneb_284.zkey ..."
+  echo "Downloading zkey file from https://dendrethstorage.blob.core.windows.net/light-client/light-client.zkey ..."
 
-  curl http://dendreth.metacraft-labs.com/deneb_284.zkey >"${GIT_ROOT}/data/light_client.zkey"
+  curl https://dendrethstorage.blob.core.windows.net/light-client/light-client.zkey >"${GIT_ROOT}/data/light_client.zkey"
 
   CALCULATED_ZKEY_SUM=$(calculate_checksum "${GIT_ROOT}/data/light_client.zkey")
 
   if [ "${ZKEY_B3SUM_SUM}" = "${CALCULATED_ZKEY_SUM}" ]; then
     echo "Zkey file downloaded successfully to ${GIT_ROOT}/data/light_client.zkey"
   else
-    echo "Failed to download zkey file from http://dendreth.metacraft-labs.com/deneb_284.zkey"
+    echo "Failed to download zkey file from https://dendrethstorage.blob.core.windows.net/light-client/light-client.zkey"
     exit 1
   fi
 }
 
 download_dat_file() {
-  echo "Downloading .dat file from https://media.githubusercontent.com/media/metacraft-labs/DendrETH-build-artifacts/master/light_client_cpp/light_client.dat ..."
+  echo "Downloading .dat file from https://dendrethstorage.blob.core.windows.net/light-client/light-client.dat ..."
 
-  curl -k https://media.githubusercontent.com/media/metacraft-labs/DendrETH-build-artifacts/master/light_client_cpp/light_client.dat >"data/light_client.dat"
+  curl -k https://dendrethstorage.blob.core.windows.net/light-client/light-client.dat >"data/light_client.dat"
 
   CALCULATED_DAT_SUM=$(calculate_checksum "${GIT_ROOT}/data/light_client.dat")
 
   if [ "${DAT_B3SUM_SUM}" = "${CALCULATED_DAT_SUM}" ]; then
     echo ".dat file downloaded successfully to ${GIT_ROOT}/data/light_client.dat"
   else
-    echo "Failed to download .dat file from https://media.githubusercontent.com/media/metacraft-labs/DendrETH-build-artifacts/master/light_client_cpp/light_client.dat"
+    echo "Failed to download .dat file from https://dendrethstorage.blob.core.windows.net/light-client/light-client.dat"
     exit 1
   fi
 }
+
+mkdir -p "${GIT_ROOT}/data"
 
 if [ ! -f "${GIT_ROOT}/data/light_client.zkey" ]; then
   download_zkey_file
