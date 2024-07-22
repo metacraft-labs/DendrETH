@@ -69,9 +69,7 @@ export async function pollEvents(
     `${ctx.protocol}:${lastLoggedBlockKey}`,
   );
   if (lastLoggedBlock === null) {
-    console.log('Error: Tree not initialized, use --rebuild');
-    await destroySchedulerContext(ctx);
-    process.exit(1);
+    await rebuildCommitmentMapperTree(ctx);
   }
 
   while (true) {
