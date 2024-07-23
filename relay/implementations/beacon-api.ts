@@ -250,7 +250,9 @@ export class BeaconApi implements IBeaconApi {
   ): Promise<{ sync_aggregate: SyncAggregate; slot: number }> {
     while (slot <= limitSlot) {
       const blockHeaderBodyResult = await (
-        await this.fetchWithFallback(`/eth/v2/beacon/blocks/${slot}`)
+        await this.fetchWithFallbackNoRetryNotFound(
+          `/eth/v2/beacon/blocks/${slot}`,
+        )
       ).json();
 
       if (blockHeaderBodyResult.code !== 404) {
