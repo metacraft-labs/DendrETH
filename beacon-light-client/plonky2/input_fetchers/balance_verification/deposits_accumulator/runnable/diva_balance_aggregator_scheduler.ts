@@ -51,7 +51,19 @@ async function numTasks(redis: Redis, protocol: string): Promise<number> {
   return (length != null) ? length : -1;
 }
 
-async function waitProofs(redis: Redis, key: string) {
+async function waitForKey(redis: Redis, key: string): Promise<void> {
+  console.log(`Waiting for ${key} to appear`);
+  while (true) {
+    const data = await redis.client.exists(key);
+    if (data !== null) {
+      console.log(`Key ${key} is present`);
+      return;
+    }
+    sleep(2000);
+  }
+}
+
+async function waitProof(redis: Redis, key: string) {
   let needsChange: boolean = true;
   while (needsChange) {
     await sleep(8000);
@@ -80,6 +92,53 @@ async function waitForSlot(currentSlot: bigint, referenceSlot: bigint): Promise<
   }
 }
 
+async function waitForPubkeyCommitmentMapperProof(redis: Redis, protocol: string, blockNumber: number): Promise<void> {
+  while (true) {
+    const processingQueueKey = `${protocol}:pubkey_commitment_mapper:processing_queue`;
+    const processingQueueHead = await redis.client.lindex(processingQueueKey, 0);
+
+    const lastLoggedBlock = Number(await redis.client.get(`${protocol}:pubkey_commitment_mapper:last_logged_block`));
+    console.log(`processingQueueHead: ${processingQueueHead}`);
+    console.log(`lastLoggedBlock: ${lastLoggedBlock}`);
+    console.log(`blockNumber: ${blockNumber}`);
+
+    const blockHasBeenPassed = processingQueueHead === null
+      ? lastLoggedBlock >= blockNumber
+      : (() => {
+        const headTaskBlockNumber = Number(processingQueueHead.split(',')[1]);
+        console.log(`head task block number: ${headTaskBlockNumber}`);
+        return lastLoggedBlock >= blockNumber && headTaskBlockNumber > blockNumber;
+      })();
+
+    if (blockHasBeenPassed) {
+      console.log('pubkey commitment mapper proof found');
+      return;
+    }
+    console.log('waiting for pubkey commitment mapper proof');
+
+    await sleep(12_000);
+  }
+}
+
+// use a different redis connection for validators commitment mapper
+async function waitForValidatorsCommitmentMapperProof(redis: Redis, slot: number): Promise<void> {
+  while (true) {
+    const lastProcessedSlot = Number(await redis.client.get('last_processed_slot'));
+
+    if (lastProcessedSlot >= slot) {
+      const validatorsRootProofKey = `validator_proof:1`;
+      const latestChangeSlot = await redis.getSlotWithLatestChange(validatorsRootProofKey, BigInt(slot));
+      const validatorsRootKey = `validators_root:${latestChangeSlot}`;
+      await waitForKey(redis, validatorsRootKey);
+
+      return;
+    }
+
+    console.log(`waiting for last commitment mapper to catch up ${lastProcessedSlot}/${slot}`);
+
+    await sleep(12_000);
+  }
+}
 // +------+
 // | Main |
 // +------+
@@ -142,7 +201,7 @@ async function main() {
     redis: redis.client,
     protocol: options['protocol'],
     cleanDuration: 5000,
-    silent: false,
+    silent: true,
   });
 
   console.log('Binding to SnapshotTaken events...');
@@ -169,13 +228,15 @@ async function main() {
     const tasks: number = await numTasks(redis, protocol);
     let instances: number = Math.min(MAX_INSTANCES, estimate(tasks));
     console.log(`[I] Running ${instances} worker(s) for ${tasks} task(s)...`);
-    instances = 10;              // TODO
+    instances = 5;              // TODO
     let completed: number = 0;
+
     try {
       completed = await runTask(instances);
     } catch (e: unknown) {
       console.error(e);
     }
+
     if (completed === instances) {
       console.log(
         `[I] All workers have completed their tasks: instances=${instances}`,
@@ -187,9 +248,14 @@ async function main() {
       // TODO: Handle error!
     }
 
-    // Detect when the final worker proof is committed.
-    const key: string = `${protocol}:${CONSTANTS.depositBalanceVerificationProofKey}:32:0`;
-    await waitProofs(redis, key);
+    // get block number from slot
+    const { beaconState } = await beaconApi.getBeaconState(BigInt(referenceSlot.toNumber()));
+    const blockNumber = beaconState.latestExecutionPayloadHeader.blockNumber;
+
+    // Wait for dependencies to get resolved before running the final layer
+    await waitProof(redis, `${protocol}:${CONSTANTS.depositBalanceVerificationProofKey}:32:0`);
+    await waitForPubkeyCommitmentMapperProof(redis, protocol, blockNumber);
+    await waitForValidatorsCommitmentMapperProof(redis, referenceSlot.toNumber());
 
     console.log('[I] All proofs were committed!');
     // TODO: Launch next step!
