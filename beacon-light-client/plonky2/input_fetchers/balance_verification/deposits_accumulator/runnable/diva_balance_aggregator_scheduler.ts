@@ -1,8 +1,9 @@
+import { spawn, exec } from 'node:child_process';
 import { CommandLineOptionsBuilder } from '../../../utils/cmdline';
 import runTask, { retry } from '../../../utils/ecs';
 import accountManagerAbi from '../../../abi/account_manager_abi.json';
 import { BigNumber, ethers } from 'ethers';
-import { storeBalanceVerificationData } from '../lib/get_balance_verification_data';
+import { StoreBalanceVerificationParameterType, storeBalanceVerificationData } from '../lib/get_balance_verification_data';
 import { Redis } from '@dendreth/relay/implementations/redis';
 import CONSTANTS from '../../../../kv_db_constants.json';
 import { sleep } from '@dendreth/utils/ts-utils/common-utils';
@@ -10,6 +11,8 @@ import JSONbig from 'json-bigint';
 import 'dotenv/config';
 import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
 import { lightCleanQueue } from './balance_aggregator_light_cleaner';
+const util = require('util');
+const execAsync = util.promisify(require('child_process').exec);
 
 const MAX_INSTANCES: number = 10; // TODO
 
@@ -139,6 +142,18 @@ async function waitForValidatorsCommitmentMapperProof(redis: Redis, slot: number
     await sleep(12_000);
   }
 }
+
+async function executeCommand(command: string, config: any = undefined): Promise<number> {
+  const promise = execAsync(command, config);
+
+  const child = promise.child;
+  child.stdout.on('data', (data: string) => console.log('stdout: ' + data));
+  child.stderr.on('data', (data: string) => console.log('stderr: ' + data));
+  child.on('close', (code: number) => console.log('exit code: ' + code));
+
+  return promise;
+}
+
 // +------+
 // | Main |
 // +------+
@@ -146,6 +161,9 @@ async function waitForValidatorsCommitmentMapperProof(redis: Redis, slot: number
 async function main() {
   const options = new CommandLineOptionsBuilder()
     .withRedisOpts()
+    .withBeaconNodeOpts()
+    .withRangeOpts()
+    .withProtocolOpts()
     .withBeaconNodeOpts()
     .option('json-rpc', {
       describe: 'The RPC URL',
@@ -157,14 +175,11 @@ async function main() {
       type: 'string',
       default: undefined,
     })
-    .withRangeOpts()
-    .withProtocolOpts()
     .option('snapshot-contract-address', {
       describe: 'The contract address',
       type: 'string',
       demandOption: true,
     })
-    .withBeaconNodeOpts()
     .build();
 
   console.log('Running diva_balance_aggregator_scheduler:');
@@ -179,8 +194,6 @@ async function main() {
   console.log('\tprotocol:', options['protocol']);
   console.log('\tsnapshot-contract-address:', options['snapshot-contract-address']);
   console.log();
-
-  const beaconApi = await getBeaconApi(options['beacon-node']);
 
   const redis: Redis = new Redis(
     options['redis-host'],
@@ -207,59 +220,103 @@ async function main() {
   console.log('Binding to SnapshotTaken events...');
 
   snapshot.on('SnapshotTaken', async (_: BigNumber, referenceSlot: BigNumber) => {
-    const now: string = new Date().toISOString();
-    console.log(`${now} | SnapshotTaken received: slot=${referenceSlot}`);
-
-    await waitForSlot(await beaconApi.getHeadSlot(), BigInt(referenceSlot.toNumber()));
-    await storeBalanceVerificationData({
-      beaconNodeUrls: options['beacon-node'],
-      slot: referenceSlot.toNumber(),
-      take: options['take'],
-      offset: options['offset'],
-      redisHost: options['redis-host'],
-      redisPort: options['redis-port'],
-      redisAuth: options['redis-auth'],
-      address: options['address'],
-      rpcUrl: options['json-rpc'],
-      protocol: options['protocol'],
-    });
-
-    const protocol: string = '' + options['protocol'];
-    const tasks: number = await numTasks(redis, protocol);
-    let instances: number = Math.min(MAX_INSTANCES, estimate(tasks));
-    console.log(`[I] Running ${instances} worker(s) for ${tasks} task(s)...`);
-    instances = 5;              // TODO
-    let completed: number = 0;
-
     try {
-      completed = await runTask(instances);
-    } catch (e: unknown) {
-      console.error(e);
-    }
-
-    if (completed === instances) {
-      console.log(
-        `[I] All workers have completed their tasks: instances=${instances}`,
+      await handleSnapshotEvent(
+        redis,
+        referenceSlot.toNumber(),
+        {
+          beaconNodeUrls: options['beacon-node'],
+          slot: referenceSlot.toNumber(),
+          take: options['take'],
+          offset: options['offset'],
+          redisHost: options['redis-host'],
+          redisPort: options['redis-port'],
+          redisAuth: options['redis-auth'],
+          address: options['address'],
+          rpcUrl: options['json-rpc'],
+          protocol: options['protocol'],
+        }
       );
-    } else {
-      console.error(
-        `[W] Some workers failed: completed=${completed} total=${instances}`,
-      );
-      // TODO: Handle error!
+    } catch (err) {
+      console.error(err);
     }
-
-    // get block number from slot
-    const { beaconState } = await beaconApi.getBeaconState(BigInt(referenceSlot.toNumber()));
-    const blockNumber = beaconState.latestExecutionPayloadHeader.blockNumber;
-
-    // Wait for dependencies to get resolved before running the final layer
-    await waitProof(redis, `${protocol}:${CONSTANTS.depositBalanceVerificationProofKey}:32:0`);
-    await waitForPubkeyCommitmentMapperProof(redis, protocol, blockNumber);
-    await waitForValidatorsCommitmentMapperProof(redis, referenceSlot.toNumber());
-
-    console.log('[I] All proofs were committed!');
-    // TODO: Launch next step!
   });
+}
+
+async function handleSnapshotEvent(
+  redis: Redis,
+  referenceSlot: number,
+  params: StoreBalanceVerificationParameterType
+): Promise<void> {
+  const beaconApi = await getBeaconApi(params['beacon-node']);
+
+  const now: string = new Date().toISOString();
+  console.log(`${now} | SnapshotTaken received: slot=${referenceSlot}`);
+
+  await waitForSlot(await beaconApi.getHeadSlot(), BigInt(referenceSlot));
+  await storeBalanceVerificationData({
+    beaconNodeUrls: params['beacon-node'],
+    slot: referenceSlot,
+    take: params['take'],
+    offset: params['offset'],
+    redisHost: params['redis-host'],
+    redisPort: params['redis-port'],
+    redisAuth: params['redis-auth'],
+    address: params['address'],
+    rpcUrl: params['json-rpc'],
+    protocol: params['protocol'],
+  });
+
+  const protocol: string = '' + params['protocol'];
+  const tasks: number = await numTasks(redis, protocol);
+  let instances: number = Math.min(MAX_INSTANCES, estimate(tasks));
+  console.log(`[I] Running ${instances} worker(s) for ${tasks} task(s)...`);
+  instances = 5;              // TODO
+  let completed: number = 0;
+
+  try {
+    completed = await runTask(instances);
+  } catch (e: unknown) {
+    console.error(e);
+  }
+
+  if (completed === instances) {
+    console.log(
+      `[I] All workers have completed their tasks: instances=${instances}`,
+    );
+  } else {
+    console.error(
+      `[W] Some workers failed: completed=${completed} total=${instances}`,
+    );
+    // TODO: Handle error!
+  }
+
+  // get block number from slot
+  const { beaconState } = await beaconApi.getBeaconState(BigInt(referenceSlot));
+  const blockNumber = beaconState.latestExecutionPayloadHeader.blockNumber;
+
+  // Wait for dependencies to get resolved before running the final layer
+  await waitProof(redis, `${protocol}:${CONSTANTS.depositBalanceVerificationProofKey}:32:0`);
+  await waitForPubkeyCommitmentMapperProof(redis, protocol, blockNumber);
+  await waitForValidatorsCommitmentMapperProof(redis, referenceSlot);
+
+  console.log('[I] All proofs were committed!');
+
+  // Generate final balance verification proof
+  console.log('Executing final layer');
+  const redisURI = `redis://${params['redis-auth']}@${params['redis-host']}:${params['redis-port']}`;
+  const command = `
+    RUST_BACKTRACE=full cargo run --bin deposit_accumulator_balance_aggregator_final_layer\
+      --\
+      --proof-storage-type file\
+      --folder-name proofs_test\
+      --protocol\ ${params['protocol']}\
+      --redis ${redisURI}
+  `;
+  const circuitExecutablesDir = '../crates/circuit_executables/';
+  await executeCommand(command, { cwd: circuitExecutablesDir });
+
+  console.log('Executed final layer');
 }
 
 main().catch(console.error);
