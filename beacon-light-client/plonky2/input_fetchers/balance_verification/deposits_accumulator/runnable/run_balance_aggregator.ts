@@ -36,6 +36,7 @@ import { storeBalanceVerificationData } from '../lib/get_balance_verification_da
     offset: options['offset'],
     redisHost: options['redis-host'],
     redisPort: options['redis-port'],
+    redisAuth: options['redis-auth'],
     address: options['address'],
     rpcUrl: options['json-rpc'],
     protocol: options['protocol'],
