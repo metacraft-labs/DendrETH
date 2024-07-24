@@ -140,20 +140,19 @@ export async function storeBalanceVerificationData(
 
   console.log(chalk.bold.blue('Adding zero tasks...'));
 
-  const buffer = new ArrayBuffer(8);
-  const dataView = new DataView(buffer);
+  for (let level = 0; level <= 31; level++) {
+    await redis.saveDepositBalanceVerificationProof(
+      config.protocol,
+      BigInt(level),
+      BigInt(CONSTANTS.validatorRegistryLimit),
+    );
 
-  dataView.setBigUint64(0, BigInt(CONSTANTS.validatorRegistryLimit), false);
-
-  await queues[0].addItem(redis.client, new Item(Buffer.from(buffer)));
-
-  for (let i = 0; i < 31; i++) {
-    const buffer = new ArrayBuffer(24);
+    const buffer = new ArrayBuffer(8);
     const dataView = new DataView(buffer);
-
     dataView.setBigUint64(0, BigInt(CONSTANTS.validatorRegistryLimit), false);
 
-    await queues[i + 1].addItem(redis.client, new Item(Buffer.from(buffer)));
+    const item = new Item(Buffer.from(buffer));
+    await queues[level].addItem(redis.client, item);
   }
 
   const { ssz } = await import('@lodestar/types');
@@ -208,55 +207,33 @@ export async function storeBalanceVerificationData(
       config.protocol,
       i,
     );
-
-    const buffer = new ArrayBuffer(8);
-    const view = new DataView(buffer);
-    view.setBigUint64(0, BigInt(i), false);
-
-    await queues[0].addItem(redis.client, new Item(Buffer.from(buffer)));
   }
 
   take = logs.length;
 
-  await redis.saveDepositBalanceVerificationProof(
-    config.protocol,
-    0n,
-    BigInt(CONSTANTS.validatorRegistryLimit),
-  );
-
-  for (let i = 0; i < take; i++) {
-    const buffer = new ArrayBuffer(8);
-    const view = new DataView(buffer);
-    view.setBigUint64(0, BigInt(i), false);
-
-    await redis.saveDepositBalanceVerificationProof(
-      config.protocol,
-      0n,
-      BigInt(i),
-    );
-  }
-
   console.log(chalk.bold.blue('Adding inner proofs...'));
-  for (let level = 1; level <= 32; level++) {
-    await redis.saveDepositBalanceVerificationProof(
-      config.protocol,
-      BigInt(level),
-      BigInt(CONSTANTS.validatorRegistryLimit),
-    );
 
-    const range = [...new Array(Math.ceil(take / 2 ** level)).keys()];
-    for (const key of range) {
-      const buffer = new ArrayBuffer(8);
-      const view = new DataView(buffer);
+  for (let level = 0; level <= 32; level++) {
+    let range = [...new Array(Math.ceil(take / 2 ** level)).keys()];
 
+    // always compute the root, even if no deposits are present
+    if (level === 32 && range.length === 0) {
+      range = [0];
+    }
+
+    for (const index of range) {
       await redis.saveDepositBalanceVerificationProof(
         config.protocol,
         BigInt(level),
-        BigInt(key),
+        BigInt(index),
       );
 
-      view.setBigUint64(0, BigInt(key), false);
-      await queues[level].addItem(redis.client, new Item(Buffer.from(buffer)));
+      const buffer = new ArrayBuffer(8);
+      const view = new DataView(buffer);
+      view.setBigUint64(0, BigInt(index), false);
+
+      const item = new Item(Buffer.from(buffer));
+      await queues[level].addItem(redis.client, item);
     }
   }
 
