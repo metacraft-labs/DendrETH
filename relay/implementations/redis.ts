@@ -416,9 +416,19 @@ export class Redis implements IRedis {
       needsChange: true,
       proofKey: '',
       publicInputs: {
+        currentEpoch: '0',
         validatorsCommitmentMapperRoot: [0, 0, 0, 0],
         balancesRoot: ''.padEnd(64, '0'),
-        currentEpoch: '0',
+        pubkeyCommitmentMapperRoot: [0, 0, 0, 0],
+        accumulatedData: {
+          balance: '0',
+          validatorStatusStats: {
+            nonActivatedCount: 0,
+            activeCount: 0,
+            exitedCount: 0,
+            slashedCount: 0,
+          },
+        },
       }
     };
 
