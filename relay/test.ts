@@ -15,6 +15,8 @@ import { buildPoseidon, buildPoseidonReference } from 'circomlibjs';
 
 import { numberToBytesBE } from '@noble/bls12-381/math';
 import { exit } from 'process';
+
+import { bitsToHex } from '@dendreth/utils/ts-utils/hex-utils';
 (async () => {
   const { DenebClient } = await import('telepathyx/src/operatorx/deneb');
   const { ChainId } = await import('telepathyx/src/operatorx/config');
@@ -22,12 +24,12 @@ import { exit } from 'process';
   const { ssz } = await import('@lodestar/types');
 
   const denebClient = new DenebClient(
-    'http://gpu-server-001:5052',
+    'http://unstable.sepolia.beacon-api.nimbus.team',
     ChainId.Sepolia,
   );
 
   await getStepUpdate(denebClient, ssz, 5239744);
-  await getRotateUpdate(denebClient, ssz, 5239744);
+  // await getRotateUpdate(denebClient, ssz, 5239744);
 
   // let rotate = await denebClient.getRotateUpdate(5239744);
   // let finalizedBlock = await denebClient.getBlock(5239744);
@@ -106,14 +108,17 @@ async function getStepUpdate(
   let participation = aggregationBits
     .map(x => Number(x))
     .reduce((a, b) => a + b, 0);
+  console.log(participation)
   let participationBytes = numberToBytesBE(
     toLittleEndian(BigInt(participation)),
     32,
   );
+  console.log(BigInt(bytesToHex(participationBytes)))
+  console.log(toLittleEndian(BigInt(participation)))
   let syncCommitteePoseidon = await getPoseidonInputs(pubkeysBytes);
-
+// console.log(syncCommitteePoseidon);
   let syncCommitteePoseidonInHex = BigInt(syncCommitteePoseidon).toString(16);
-  let syncCommitteePoseidonBytes = hexToBytes(syncCommitteePoseidonInHex);
+  // let syncCommitteePoseidonBytes = hexToBytes(syncCommitteePoseidonInHex);
 
   let finalityBranch = step.finalityBranch;
   let executionStateRoot = step.executionStateRoot;
@@ -159,7 +164,24 @@ async function getStepUpdate(
   let sha3 = sha256(sha2 + bytesToHex(executionStateRoot));
   let sha4 = sha256(sha3 + syncCommitteePoseidonInHex);
   let publicInputsRoot = getFirst253Bits(hexToBytes(sha4));
-
+  const bit_array = [
+    0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0,
+    1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0,
+    0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1,
+    0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1,
+    0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0,
+    0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0,
+    0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1,
+    1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0,
+    0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1,
+    0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1,
+    1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0,
+    0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1,
+    1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1,
+    1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1,
+    1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0,
+    0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0
+]
   // Create the JSON object in the specified order
   const jsonOutput = {
     /* Attested Header */
@@ -234,8 +256,8 @@ async function getRotateUpdate(
 
   let syncCommitteePoseidon = await getPoseidonInputs(pubkeysBytes);
 
-  let syncCommitteePoseidonInHex = BigInt(syncCommitteePoseidon).toString(16);
-  let syncCommitteePoseidonBytes = hexToBytes(syncCommitteePoseidonInHex);
+  // let syncCommitteePoseidonInHex = BigInt(syncCommitteePoseidon).toString(16);
+  // let syncCommitteePoseidonBytes = hexToBytes(syncCommitteePoseidonInHex);
 
   let finalizedHeaderRoot = ssz.deneb.BeaconBlock.hashTreeRoot(finalizedBlock);
   let finalizedSlot = ssz.deneb.BeaconBlock.fields.slot.hashTreeRoot(
@@ -405,3 +427,30 @@ function getFirst253Bits(arr: Uint8Array): string {
 
   return bigInt.toString();
 }
+
+// // 1
+// attestedSlot+
+// finalizedSlot+
+// finalizedHeaderRoot+
+// executionStateRoot+
+// participation
+// syncCommitteePoseidon+
+
+// publicInputsRoot
+
+
+// // 3.5
+// pubkeysX+
+// pubkeysY+
+// aggregationBits
+// signature
+// signingRoot+
+// syncCommitteePoseidon+
+
+// // 4
+// finalizedHeaderRoot+
+// finalityBranch
+// attestedStateRoot+
+
+
+
