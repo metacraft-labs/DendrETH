@@ -25,6 +25,7 @@
     "@noble/bls12-381": "^1.4.0",
     "bullmq": "^5.3.1",
     "chalk": "^4.1.2",
+    "circomlibjs": "^0.1.7",
     "discord.js": "^14.12.1",
     "ethers": "^5.7.0",
     "eventsource": "^2.0.2",
@@ -40,6 +41,7 @@
     "yargs": "^17.7.1"
   },
   "devDependencies": {
+    "@types/circomlibjs": "^0",
     "@types/eventsource": "^1.1.15",
     "@types/ioredis": "^4.27.6",
     "@types/json-bigint": "^1",
