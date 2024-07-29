@@ -184,6 +184,9 @@ export async function postUpdateOnChain(
       new Web3(rpcEndpoint!),
       transactionSpeed,
       true,
+      (
+        await hashiAdapterContract.provider.getNetwork()
+      ).chainId,
     );
   } else {
     await lightClientContract.postUpdateOnChain({
