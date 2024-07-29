@@ -1,5 +1,12 @@
 require('dotenv').config();
 
+require('tsconfig-paths').register({
+  baseUrl: './',
+  paths: {
+    '@/*': ['../../relay/*'],
+  },
+});
+
 // Disabled due to compatibility issues with pnpapi
 // TODO: Replace with modern alternative
 // import 'hardhat-gas-reporter';
