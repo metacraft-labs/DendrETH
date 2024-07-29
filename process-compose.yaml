@@ -1,15 +1,15 @@
 processes:
-  setup:
-    description: setup
+  downloadZkAndDatFiles:
+    description: download .zk and .dat files and verify their checksum
     working_dir: ./relay/process-compose-scripts/
-    command: ./start-setup.sh
+    command: ./download-zk-and-dat-files.sh
 
   proverserver_check:
     description: check if proverserver is live
     working_dir: ./relay/process-compose-scripts/
     command: ./check-proverserver.sh
     depends_on:
-      setup:
+      downloadZkAndDatFiles:
         condition: process_completed
 
   redis:
@@ -18,7 +18,7 @@ processes:
     working_dir: ./relay/process-compose-scripts/
     command: ./start-redis.sh
     depends_on:
-      setup:
+      downloadZkAndDatFiles:
         condition: process_completed
     availability:
       restart: always
@@ -29,7 +29,7 @@ processes:
     working_dir: ./relay/process-compose-scripts/
     command: ./start-proverserver.sh
     depends_on:
-      setup:
+      downloadZkAndDatFiles:
         condition: process_completed
     availability:
       restart: always
@@ -40,7 +40,7 @@ processes:
     command: ./start-prometheus.sh
     working_dir: ./relay/process-compose-scripts/
     depends_on:
-      setup:
+      downloadZkAndDatFiles:
         condition: process_completed
     availability:
       restart: always
@@ -73,7 +73,7 @@ processes:
     command: yarn ts ./workers/cleaner.ts
     working_dir: ./relay/workers
     depends_on:
-      setup:
+      downloadZkAndDatFiles:
         condition: process_completed
 
   sepolia:
