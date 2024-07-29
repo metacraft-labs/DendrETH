@@ -24,6 +24,7 @@ export async function publishTransaction(
   web3: Web3,
   transactionSpeed: TransactionSpeed,
   spread?: boolean,
+  chainId?: number,
 ) {
   const transactionCount = await contract.signer.getTransactionCount();
 
@@ -69,6 +70,32 @@ export async function publishTransaction(
           maxPriorityFeePerGas: transactionData.maxPriorityFeePerGas,
           gasLimit: estimateGas,
         });
+      }
+
+      switch (chainId) {
+        case 11155111: {
+          console.log(
+            `A transaction was uploaded, to see it go to: https://sepolia.etherscan.io/tx/${transaction.hash}`,
+          );
+          break;
+        }
+        case 10200: {
+          console.log(
+            `A transaction was uploaded, to see it go to: https://gnosis-chiado.blockscout.com/tx/${transaction.hash}`,
+          );
+          break;
+        }
+        case 4201: {
+          console.log(
+            `A transaction was uploaded, to see it go to: https://explorer.consensus.testnet.lukso.network/tx/${transaction.hash}`,
+          );
+          break;
+        }
+        default: {
+          console.log(
+            `A transaction was uploaded, cant send you to a explorer, because I dont have one for chainId: ${chainId}, transaction hash is: ${transaction.hash}`,
+          );
+        }
       }
 
       logger.info(JSON.stringify(transaction));
