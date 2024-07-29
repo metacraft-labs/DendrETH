@@ -16,31 +16,48 @@ calculate_checksum() {
 }
 
 download_zkey_file() {
-  echo "Downloading zkey file from https://dendrethstorage.blob.core.windows.net/light-client/light-client.zkey ..."
 
-  curl https://dendrethstorage.blob.core.windows.net/light-client/light-client.zkey >"${GIT_ROOT}/data/light_client.zkey"
+if [[ -z "${LIGHT_CLIENT_ZKEY_DOWNLOAD_LOCATION}" ]]; then
+  echo "Light_Client_ZKEY_DOWNLOAD_LOCATION  environment variables are not set. Using default values."
+  LIGHT_CLIENT_ZKEY_DOWNLOAD_LOCATION="https://dendrethstorage.blob.core.windows.net/light-client/light-client.zkey"
+  echo "This might take a while as the file is 52G"
+else
+  echo "Using download zkey settings from environment variables"
+fi
 
-  CALCULATED_ZKEY_SUM=$(calculate_checksum "${GIT_ROOT}/data/light_client.zkey")
+  echo "Downloading zkey file from "${LIGHT_CLIENT_ZKEY_DOWNLOAD_LOCATION}" ..."
+
+  curl "${LIGHT_CLIENT_ZKEY_DOWNLOAD_LOCATION}" >"data/light_client.zkey"
+
+  CALCULATED_ZKEY_SUM=$(calculate_checksum data/light_client.zkey)
 
   if [ "${ZKEY_B3SUM_SUM}" = "${CALCULATED_ZKEY_SUM}" ]; then
-    echo "Zkey file downloaded successfully to ${GIT_ROOT}/data/light_client.zkey"
+    echo "Zkey file downloaded successfully to data/light_client.zkey"
   else
-    echo "Failed to download zkey file from https://dendrethstorage.blob.core.windows.net/light-client/light-client.zkey"
+    echo "Failed to download zkey file from "${LIGHT_CLIENT_ZKEY_DOWNLOAD_LOCATION}
     exit 1
   fi
 }
 
 download_dat_file() {
-  echo "Downloading .dat file from https://dendrethstorage.blob.core.windows.net/light-client/light-client.dat ..."
 
-  curl -k https://dendrethstorage.blob.core.windows.net/light-client/light-client.dat >"data/light_client.dat"
+if [[ -z "${LIGHT_CLIENT_DAT_DOWNLOAD_LOCATION}" ]]; then
+  echo "LIGHT_CLIENT_DAT_DOWNLOAD_LOCATION  environment variables are not set. Using default values."
+  LIGHT_CLIENT_DAT_DOWNLOAD_LOCATION="https://dendrethstorage.blob.core.windows.net/light-client/light-client.dat"
+else
+  echo "Using download dat settings from environment variables"
+fi
 
-  CALCULATED_DAT_SUM=$(calculate_checksum "${GIT_ROOT}/data/light_client.dat")
+  echo "Downloading .dat file from "${LIGHT_CLIENT_DAT_DOWNLOAD_LOCATION}" ..."
+
+  curl -k "${LIGHT_CLIENT_DAT_DOWNLOAD_LOCATION}" >"data/light_client.dat"
+
+  CALCULATED_DAT_SUM=$(calculate_checksum data/light_client.dat)
 
   if [ "${DAT_B3SUM_SUM}" = "${CALCULATED_DAT_SUM}" ]; then
-    echo ".dat file downloaded successfully to ${GIT_ROOT}/data/light_client.dat"
+    echo ".dat file downloaded successfully to data/light_client.dat"
   else
-    echo "Failed to download .dat file from https://dendrethstorage.blob.core.windows.net/light-client/light-client.dat"
+    echo "Failed to download .dat file from "${LIGHT_CLIENT_DAT_DOWNLOAD_LOCATION}""
     exit 1
   fi
 }
