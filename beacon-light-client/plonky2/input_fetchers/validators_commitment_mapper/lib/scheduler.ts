@@ -149,13 +149,13 @@ export class CommitmentMapperScheduler {
       .filter(hasValidatorChanged(this.validators));
 
     if (changedValidators.length <= 1000) {
-      await this.modifyValidators(changedValidators, this.currentSlot);
-    } else {
-      this.modifyValidatorsPipeline(
+      await this.modifyValidatorsPipeline(
         pipeline,
         changedValidators,
         this.currentSlot,
       );
+    } else {
+      await this.modifyValidators(changedValidators, this.currentSlot);
     }
 
     console.log(
@@ -222,10 +222,13 @@ export class CommitmentMapperScheduler {
     ...args: Parameters<ReturnType<typeof modifyValidatorsImpl>>
   ): Promise<void> {
     return modifyValidatorsImpl({
-      scheduleHashValidatorTaskFn: async () =>
-        this.scheduleHashValidatorTaskPipeline.bind(this, pipeline),
-      scheduleHashConcatenationTaskFn: async () =>
-        this.scheduleHashConcatenationTaskPipeline.bind(this, pipeline),
+      scheduleHashValidatorTaskFn: async (...args) =>
+        this.scheduleHashValidatorTaskPipeline.bind(this, pipeline)(...args),
+      scheduleHashConcatenationTaskFn: async (...args) =>
+        this.scheduleHashConcatenationTaskPipeline.bind(
+          this,
+          pipeline,
+        )(...args),
     })(...args);
   }
 
@@ -358,13 +361,13 @@ interface ModifyValidatorsVTable {
 /// two implementations. One that uses a pipeline and one that executes each
 /// command separately)
 function modifyValidatorsImpl({
-  scheduleHashValidatorTaskFn: scheduleHashValidatorProofTaskFn,
+  scheduleHashValidatorTaskFn,
   scheduleHashConcatenationTaskFn,
 }: ModifyValidatorsVTable) {
   return async function (indexedValidators: IndexedValidator[], slot: bigint) {
     await Promise.all(
       indexedValidators.map(indexedValidator => {
-        return scheduleHashValidatorProofTaskFn(indexedValidator, slot);
+        return scheduleHashValidatorTaskFn(indexedValidator, slot);
       }),
     );
 
