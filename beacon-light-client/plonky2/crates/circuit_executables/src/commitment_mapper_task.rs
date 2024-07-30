@@ -153,15 +153,31 @@ async fn handle_update_validator_proof_task(
     validator_index: u64,
     slot: u64,
 ) -> Result<()> {
-    if let Ok(_) = save_validator_proof_data_if_computed(
+    // if let Ok(_) = save_validator_proof_data_if_computed(
+    //     ctx,
+    //     gindex_from_validator_index(validator_index, 40),
+    //     slot,
+    // )
+    // .await
+    // {
+    //     println!("Proof reused");
+    //     return Ok(());
+    // }
+
+    match save_validator_proof_data_if_computed(
         ctx,
         gindex_from_validator_index(validator_index, 40),
         slot,
     )
     .await
     {
-        println!("Proof reused");
-        return Ok(());
+        Ok(_) => {
+            println!("Proof reused");
+            return Ok(());
+        }
+        Err(err) => {
+            println!("Could not reuse proof: {err}");
+        }
     }
 
     match fetch_validator(&mut ctx.redis_con, validator_index, slot).await {
