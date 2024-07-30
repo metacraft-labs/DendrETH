@@ -3,7 +3,7 @@ require('dotenv').config();
 require('tsconfig-paths').register({
   baseUrl: './',
   paths: {
-    '@/*': ['../../relay/*'],
+    '@/*': ['../../relay/*', '../../libs/typescript/*'],
   },
 });
 
