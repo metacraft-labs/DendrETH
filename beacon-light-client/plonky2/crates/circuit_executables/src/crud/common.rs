@@ -1,7 +1,10 @@
 use std::{fs, marker::PhantomData, thread, time::Duration};
 
 use crate::{
-    constants::VALIDATOR_REGISTRY_LIMIT, db_constants::DB_CONSTANTS, utils::get_depth_for_gindex,
+    commitment_mapper_context::CommitmentMapperContext,
+    constants::VALIDATOR_REGISTRY_LIMIT,
+    db_constants::DB_CONSTANTS,
+    utils::{get_depth_for_gindex, gindex_from_validator_index},
 };
 use anyhow::{ensure, Result};
 use async_trait::async_trait;
@@ -599,28 +602,20 @@ pub async fn save_json_object<T: Serialize>(
     Ok(())
 }
 
-pub async fn save_validator_proof(
+pub async fn save_validator_proof_data(
     con: &mut Connection,
-    proof_storage: &mut dyn ProofStorage,
     proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    proof_key: &str,
     gindex: u64,
     slot: u64,
 ) -> Result<()> {
-    let proof_key = format!(
-        "{}:{}:{}",
-        DB_CONSTANTS.validator_proof_storage, gindex, slot
-    );
-    let validator_proof = ValidatorsCommitmentMapperProofData {
-        proof_key: proof_key.clone(),
+    let proof_data = ValidatorsCommitmentMapperProofData {
+        proof_key: proof_key.to_owned(),
         needs_change: false,
         public_inputs: ValidatorsCommitmentMapperFirstLevel::read_public_inputs(
             &proof.public_inputs,
         ),
     };
-
-    proof_storage
-        .set_proof(proof_key, &proof.to_bytes())
-        .await?;
 
     // fetch validators len
     if gindex == 1 {
@@ -629,7 +624,7 @@ pub async fn save_validator_proof(
             .await?;
 
         let validators_root_bytes: Vec<u8> = [
-            &bits_to_bytes(&validator_proof.public_inputs.sha256_hash_tree_root[..])[..],
+            &bits_to_bytes(&proof_data.public_inputs.sha256_hash_tree_root[..])[..],
             &u64_to_ssz_leaf(length)[..],
         ]
         .concat()
@@ -653,9 +648,64 @@ pub async fn save_validator_proof(
             gindex,
             slot
         ),
-        &validator_proof,
+        &proof_data,
     )
     .await?;
+
+    Ok(())
+}
+
+pub async fn save_validator_proof_data_if_computed(
+    ctx: &mut CommitmentMapperContext,
+    gindex: u64,
+    slot: u64,
+) -> Result<()> {
+    let proof_key = format!(
+        "{}:{}:{}",
+        DB_CONSTANTS.validator_proof_storage, gindex, slot
+    );
+
+    let proof_res = ctx.proof_storage.get_proof(proof_key.clone()).await;
+
+    if let Ok(proof_bytes) = proof_res {
+        let level = 40 - get_depth_for_gindex(gindex);
+        let common_circuit_data = if level == 0 {
+            &ctx.first_level_circuit.data.common
+        } else {
+            &ctx.inner_level_circuits[level as usize - 1].data.common
+        };
+
+        let proof_res =
+            ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
+                proof_bytes,
+                common_circuit_data,
+            );
+
+        if let Ok(proof) = proof_res {
+            save_validator_proof_data(&mut ctx.redis_con, proof, &proof_key, gindex, slot).await?;
+        }
+    }
+
+    Ok(())
+}
+
+pub async fn save_validator_proof(
+    con: &mut Connection,
+    proof_storage: &mut dyn ProofStorage,
+    proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    gindex: u64,
+    slot: u64,
+) -> Result<()> {
+    let proof_key = format!(
+        "{}:{}:{}",
+        DB_CONSTANTS.validator_proof_storage, gindex, slot
+    );
+
+    proof_storage
+        .set_proof(proof_key.clone(), &proof.to_bytes())
+        .await?;
+
+    save_validator_proof_data(con, proof, &proof_key, gindex, slot).await?;
 
     Ok(())
 }

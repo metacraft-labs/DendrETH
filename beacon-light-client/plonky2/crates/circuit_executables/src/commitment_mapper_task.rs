@@ -5,15 +5,20 @@ use colored::Colorize;
 
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
-use plonky2::iop::witness::PartialWitness;
+use plonky2::{
+    field::goldilocks_field::GoldilocksField,
+    iop::witness::PartialWitness,
+    plonk::{config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs},
+};
 
 use crate::{
     commitment_mapper_context::CommitmentMapperContext,
     constants::VALIDATOR_REGISTRY_LIMIT,
     crud::common::{
         fetch_proofs, fetch_validator, fetch_zero_proof, save_validator_proof,
-        save_zero_validator_proof, ProofProvider,
+        save_validator_proof_data_if_computed, save_zero_validator_proof, ProofProvider,
     },
+    db_constants::DB_CONSTANTS,
     provers::prove_inner_level,
     utils::{get_depth_for_gindex, gindex_from_validator_index},
 };
@@ -148,6 +153,17 @@ async fn handle_update_validator_proof_task(
     validator_index: u64,
     slot: u64,
 ) -> Result<()> {
+    if let Ok(_) = save_validator_proof_data_if_computed(
+        ctx,
+        gindex_from_validator_index(validator_index, 40),
+        slot,
+    )
+    .await
+    {
+        println!("Proof reused");
+        return Ok(());
+    }
+
     match fetch_validator(&mut ctx.redis_con, validator_index, slot).await {
         Ok(input) => {
             let mut pw = PartialWitness::new();
@@ -191,6 +207,11 @@ async fn handle_update_proof_node_task(
     gindex: u64,
     slot: u64,
 ) -> Result<()> {
+    if let Ok(_) = save_validator_proof_data_if_computed(ctx, gindex, slot).await {
+        println!("Proof reused");
+        return Ok(());
+    }
+
     let level = 39 - get_depth_for_gindex(gindex) as usize;
 
     let fetch_result = fetch_proofs::<ValidatorsCommitmentMapperProofData>(
