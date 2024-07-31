@@ -25,6 +25,7 @@ import {
 } from '../../utils/common_utils';
 import { ChainableCommander } from 'ioredis';
 import { validatorFromValidatorJSON } from '@dendreth/relay/utils/converters';
+import _ from 'underscore';
 
 enum TaskTag {
   HASH_CONCATENATION_PROOF = 0,
@@ -584,9 +585,7 @@ async function getValidatorsBatched(
 //   pipeline.set(CONSTANTS.lastVerifiedSlotKey, slot.toString());
 // }
 
-// Returns a function that checks whether a validator at validator index has
-// changed  (doesn't check for pubkey and withdrawalCredentials since those
-// never change according to the spec)
+// Returns a function that checks whether a validator at validator index has changed
 function hasValidatorChanged(prevValidators: Validator[]) {
   return ({ validator, index }: IndexedValidator): boolean =>
     prevValidators[index] === undefined ||
@@ -596,5 +595,9 @@ function hasValidatorChanged(prevValidators: Validator[]) {
       prevValidators[index].activationEligibilityEpoch ||
     validator.activationEpoch !== prevValidators[index].activationEpoch ||
     validator.exitEpoch !== prevValidators[index].exitEpoch ||
-    validator.withdrawableEpoch !== prevValidators[index].withdrawableEpoch;
+    validator.withdrawableEpoch !== prevValidators[index].withdrawableEpoch ||
+    _.zip(
+      prevValidators[index].withdrawalCredentials,
+      validator.withdrawalCredentials,
+    ).some(([a, b]) => a !== b);
 }

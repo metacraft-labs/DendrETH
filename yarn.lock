@@ -2145,6 +2145,7 @@ __metadata:
     "@types/circomlibjs": "npm:^0"
     "@types/json-bigint": "npm:^1"
     "@types/node": "npm:^20.14.9"
+    "@types/underscore": "npm:^1"
     "@types/yargs": "npm:^17.0.32"
     chalk: "npm:^4.1.2"
     circom-pairing: "link:../../../vendor/circom-pairing/"
@@ -2155,6 +2156,7 @@ __metadata:
     ioredis: "npm:^5.3.2"
     json-bigint: "npm:^1.0.0"
     tsx: "npm:^4.7.1"
+    underscore: "npm:^1.13.7"
     web3: "npm:1.10.4"
     yargs: "npm:^17.7.2"
   languageName: unknown
@@ -6115,6 +6117,13 @@ __metadata:
   dependencies:
     "@types/node": "npm:*"
   checksum: 10/53e23a1f9fb14a491c00425b2a4fc443817564d77be5e1b95fcbeb6d009551b62ea82ffc3e5ca0c6b9f6b186824ca6ec46e7450c1bcd6674a46d1325f0116e24
+  languageName: node
+  linkType: hard
+
+"@types/underscore@npm:^1":
+  version: 1.11.15
+  resolution: "@types/underscore@npm:1.11.15"
+  checksum: 10/5a9c262566551f61744e066d33578c0fad1139c2d5314ed77a8f867487a6d7dd18616f32df4c605070fbd569b942c6d2c083be9f9ae649f41a562b52812b06be
   languageName: node
   linkType: hard
 
@@ -15893,6 +15902,13 @@ __metadata:
   version: 1.13.6
   resolution: "underscore@npm:1.13.6"
   checksum: 10/58cf5dc42cb0ac99c146ae4064792c0a2cc84f3a3c4ad88f5082e79057dfdff3371d896d1ec20379e9ece2450d94fa78f2ef5bfefc199ba320653e32c009bd66
+  languageName: node
+  linkType: hard
+
+"underscore@npm:^1.13.7":
+  version: 1.13.7
+  resolution: "underscore@npm:1.13.7"
+  checksum: 10/1ce3368dbe73d1e99678fa5d341a9682bd27316032ad2de7883901918f0f5d50e80320ccc543f53c1862ab057a818abc560462b5f83578afe2dd8dd7f779766c
   languageName: node
   linkType: hard
 
