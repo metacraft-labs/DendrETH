@@ -66,7 +66,7 @@ abstract contract BalanceVerifier is Ownable, IBalanceVerifier {
   /// @param _slot The slot to get the block root for.
   /// @return blockRoot The beacon block root of the given slot.
   /// @dev BEACON_ROOTS returns a block root for a given parent block's timestamp. To get the block root for slot
-  ///      N, you use the timestamp of slot N+1. If N+1 is not avaliable, you use the timestamp of slot N+2, and
+  ///      N, you use the timestamp of slot N+1. If N+1 is not available, you use the timestamp of slot N+2, and
   //       so on.
   function _findBlockRoot(uint256 _slot) internal view returns (bytes32) {
     uint256 currBlockTimestamp = GENESIS_BLOCK_TIMESTAMP + ((_slot + 1) * 12);
