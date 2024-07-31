@@ -12,7 +12,7 @@ use crate::{
     constants::VALIDATOR_REGISTRY_LIMIT,
     crud::common::{
         fetch_proofs, fetch_validator, fetch_zero_proof, save_validator_proof,
-        save_validator_proof_data_if_computed, save_zero_validator_proof, ProofProvider,
+        save_zero_validator_proof, ProofProvider,
     },
     provers::prove_inner_level,
     utils::{get_depth_for_gindex, gindex_from_validator_index},
@@ -148,18 +148,6 @@ async fn handle_update_validator_proof_task(
     validator_index: u64,
     slot: u64,
 ) -> Result<()> {
-    let cached_result = save_validator_proof_data_if_computed(
-        ctx,
-        gindex_from_validator_index(validator_index, 40),
-        slot,
-    )
-    .await;
-
-    if let Ok(_) = cached_result {
-        println!("Proof bytes read from cache");
-        return Ok(());
-    }
-
     match fetch_validator(&mut ctx.redis_con, validator_index, slot).await {
         Ok(input) => {
             let mut pw = PartialWitness::new();
@@ -203,11 +191,6 @@ async fn handle_update_proof_node_task(
     gindex: u64,
     slot: u64,
 ) -> Result<()> {
-    if let Ok(_) = save_validator_proof_data_if_computed(ctx, gindex, slot).await {
-        println!("Proof reused");
-        return Ok(());
-    }
-
     let level = 39 - get_depth_for_gindex(gindex) as usize;
 
     let fetch_result = fetch_proofs::<ValidatorsCommitmentMapperProofData>(
