@@ -1,12 +1,10 @@
 use std::{fs, marker::PhantomData, thread, time::Duration};
 
 use crate::{
-    commitment_mapper_context::CommitmentMapperContext,
-    constants::VALIDATOR_REGISTRY_LIMIT,
-    db_constants::DB_CONSTANTS,
-    utils::{get_depth_for_gindex, gindex_from_validator_index},
+    commitment_mapper_context::CommitmentMapperContext, constants::VALIDATOR_REGISTRY_LIMIT,
+    db_constants::DB_CONSTANTS, utils::get_depth_for_gindex,
 };
-use anyhow::{ensure, Result};
+use anyhow::{bail, ensure, Result};
 use async_trait::async_trait;
 use circuit::{Circuit, CircuitInput, SerdeCircuitTarget};
 use circuits::{
@@ -665,24 +663,33 @@ pub async fn save_validator_proof_data_if_computed(
         DB_CONSTANTS.validator_proof_storage, gindex, slot
     );
 
-    let proof_res = ctx.proof_storage.get_proof(proof_key.clone()).await;
+    match ctx.proof_storage.get_proof(proof_key.clone()).await {
+        Ok(proof_bytes) => {
+            let level = 40 - get_depth_for_gindex(gindex);
+            let common_circuit_data = if level == 0 {
+                &ctx.first_level_circuit.data.common
+            } else {
+                &ctx.inner_level_circuits[level as usize - 1].data.common
+            };
 
-    if let Ok(proof_bytes) = proof_res {
-        let level = 40 - get_depth_for_gindex(gindex);
-        let common_circuit_data = if level == 0 {
-            &ctx.first_level_circuit.data.common
-        } else {
-            &ctx.inner_level_circuits[level as usize - 1].data.common
-        };
+            let proof_res =
+                ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
+                    proof_bytes,
+                    common_circuit_data,
+                );
 
-        let proof_res =
-            ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
-                proof_bytes,
-                common_circuit_data,
-            );
-
-        if let Ok(proof) = proof_res {
-            save_validator_proof_data(&mut ctx.redis_con, proof, &proof_key, gindex, slot).await?;
+            match proof_res {
+                Ok(proof) => {
+                    save_validator_proof_data(&mut ctx.redis_con, proof, &proof_key, gindex, slot)
+                        .await?;
+                }
+                Err(_) => {
+                    bail!("{proof_key} not computed!");
+                }
+            }
+        }
+        Err(_) => {
+            bail!("{proof_key} not computed!");
         }
     }
 

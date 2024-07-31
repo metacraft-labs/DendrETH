@@ -5,11 +5,7 @@ use colored::Colorize;
 
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
-use plonky2::{
-    field::goldilocks_field::GoldilocksField,
-    iop::witness::PartialWitness,
-    plonk::{config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs},
-};
+use plonky2::iop::witness::PartialWitness;
 
 use crate::{
     commitment_mapper_context::CommitmentMapperContext,
@@ -18,7 +14,6 @@ use crate::{
         fetch_proofs, fetch_validator, fetch_zero_proof, save_validator_proof,
         save_validator_proof_data_if_computed, save_zero_validator_proof, ProofProvider,
     },
-    db_constants::DB_CONSTANTS,
     provers::prove_inner_level,
     utils::{get_depth_for_gindex, gindex_from_validator_index},
 };
@@ -153,31 +148,16 @@ async fn handle_update_validator_proof_task(
     validator_index: u64,
     slot: u64,
 ) -> Result<()> {
-    // if let Ok(_) = save_validator_proof_data_if_computed(
-    //     ctx,
-    //     gindex_from_validator_index(validator_index, 40),
-    //     slot,
-    // )
-    // .await
-    // {
-    //     println!("Proof reused");
-    //     return Ok(());
-    // }
-
-    match save_validator_proof_data_if_computed(
+    let cached_result = save_validator_proof_data_if_computed(
         ctx,
         gindex_from_validator_index(validator_index, 40),
         slot,
     )
-    .await
-    {
-        Ok(_) => {
-            println!("Proof reused");
-            return Ok(());
-        }
-        Err(err) => {
-            println!("Could not reuse proof: {err}");
-        }
+    .await;
+
+    if let Ok(_) = cached_result {
+        println!("Proof bytes read from cache");
+        return Ok(());
     }
 
     match fetch_validator(&mut ctx.redis_con, validator_index, slot).await {
