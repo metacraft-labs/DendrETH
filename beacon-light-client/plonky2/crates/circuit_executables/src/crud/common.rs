@@ -599,7 +599,7 @@ pub async fn save_json_object<T: Serialize>(
     Ok(())
 }
 
-pub async fn save_validator_proof_data(
+async fn save_vcm_proof_data(
     con: &mut Connection,
     proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     proof_key: &str,
@@ -668,7 +668,7 @@ pub async fn save_validator_proof(
         .set_proof(proof_key.clone(), &proof.to_bytes())
         .await?;
 
-    save_validator_proof_data(con, proof, &proof_key, gindex, slot).await?;
+    save_vcm_proof_data(con, proof, &proof_key, gindex, slot).await?;
 
     Ok(())
 }

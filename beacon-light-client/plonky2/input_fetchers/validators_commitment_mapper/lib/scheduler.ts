@@ -76,10 +76,10 @@ export class CommitmentMapperScheduler {
       lastProcessedSlot !== null
         ? BigInt(lastProcessedSlot)
         : (() => {
-            const finalizedSlot = getLastSlotInEpoch(this.lastFinalizedEpoch);
-            const slot = options['sync-slot'] || finalizedSlot;
-            return BigInt(Math.min(Number(slot), Number(finalizedSlot))) - 1n;
-          })();
+          const finalizedSlot = getLastSlotInEpoch(this.lastFinalizedEpoch);
+          const slot = options['sync-slot'] || finalizedSlot;
+          return BigInt(Math.min(Number(slot), Number(finalizedSlot))) - 1n;
+        })();
 
     const lastVerifiedSlot = await this.redis.get(
       CONSTANTS.lastVerifiedSlotKey,
@@ -131,13 +131,12 @@ export class CommitmentMapperScheduler {
     const pipeline = this.redis.client.pipeline();
 
     await this.updateValidators(pipeline);
-
-    updateLastProcessedSlot(pipeline, this.currentSlot);
     setValidatorsLengthForSlot(
       pipeline,
       this.currentSlot,
       this.validators.length,
     );
+    updateLastProcessedSlot(pipeline, this.currentSlot);
     await pipeline.exec();
   }
 
@@ -146,15 +145,8 @@ export class CommitmentMapperScheduler {
   /// created that can't be handled by js. The operation should be atomic every
   /// time except on the first run.
   async updateValidators(pipeline: ChainableCommander): Promise<void> {
-    const newValidators = await this.api.getValidators(
-      this.currentSlot,
-      this.take,
-      this.offset,
-    );
-
-    const changedValidators = newValidators
-      .map((validator, index) => ({ validator, index }))
-      .filter(hasValidatorChanged(this.validators));
+    const changedValidators = await this.getValidatorsDiff();
+    this.applyValidatorsDiff(changedValidators);
 
     if (changedValidators.length <= 1000) {
       await this.modifyValidatorsPipeline(
@@ -171,7 +163,6 @@ export class CommitmentMapperScheduler {
         changedValidators.length,
       )}`,
     );
-    this.validators = newValidators;
   }
 
   scheduleDummyProofTasks(pipeline: ChainableCommander, slot: bigint): void {
@@ -357,6 +348,37 @@ export class CommitmentMapperScheduler {
     return pipeline.exec();
   }
 
+  async getValidatorsDiff(): Promise<IndexedValidator[]> {
+    const validatorsAreInitialized =
+      (await this.redis.client.exists(
+        `${CONSTANTS.validatorKey}:0:slot_lookup`,
+      )) !== 0;
+
+    if (validatorsAreInitialized) {
+      return this.api.getValidatorsDiffCustomEndpoint(
+        this.currentSlot,
+        this.offset,
+        this.take,
+      );
+    } else {
+      const newValidators = await this.api.getValidators(
+        this.currentSlot,
+        this.take,
+        this.offset,
+      );
+
+      return newValidators
+        .map((validator, index) => ({ validator, index }))
+        .filter(hasValidatorChanged(this.validators));
+    }
+  }
+
+  applyValidatorsDiff(diff: IndexedValidator[]): void {
+    diff.forEach(({ index, validator }) => {
+      this.validators[index] = validator;
+    });
+  }
+
   pushQueueItemPipeline(
     pipeline: ChainableCommander,
     item: Item,
@@ -385,7 +407,7 @@ function modifyValidatorsImpl({
   scheduleHashValidatorTaskFn,
   scheduleHashConcatenationTaskFn,
 }: ModifyValidatorsVTable) {
-  return async function (indexedValidators: IndexedValidator[], slot: bigint) {
+  return async function(indexedValidators: IndexedValidator[], slot: bigint) {
     await Promise.all(
       indexedValidators.map(indexedValidator => {
         return scheduleHashValidatorTaskFn(indexedValidator, slot);
@@ -613,7 +635,7 @@ function hasValidatorChanged(prevValidators: Validator[]) {
     validator.effectiveBalance !== prevValidators[index].effectiveBalance ||
     validator.slashed !== prevValidators[index].slashed ||
     validator.activationEligibilityEpoch !==
-      prevValidators[index].activationEligibilityEpoch ||
+    prevValidators[index].activationEligibilityEpoch ||
     validator.activationEpoch !== prevValidators[index].activationEpoch ||
     validator.exitEpoch !== prevValidators[index].exitEpoch ||
     validator.withdrawableEpoch !== prevValidators[index].withdrawableEpoch ||
