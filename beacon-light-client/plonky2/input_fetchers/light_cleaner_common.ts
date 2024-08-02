@@ -1,6 +1,7 @@
+import { WorkQueue } from '@mevitae/redis-work-queue';
 import Redis from 'ioredis';
 
-export async function lightClean(this: any, db: Redis, prefix: any) {
+export async function lightClean(this: WorkQueue, db: Redis, prefix: any) {
   const processingKey = prefix.of(':processing');
   const mainQueueKey = prefix.of(':queue');
   const cleaningKey = prefix.of(':cleaning');

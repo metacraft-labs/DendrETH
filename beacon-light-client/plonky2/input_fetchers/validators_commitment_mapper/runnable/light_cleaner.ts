@@ -15,13 +15,19 @@ import makeRedis from '../../utils/redis';
     .withLightCleanOpts()
     .build();
 
-  const prefix = new KeyPrefix(`${CONSTANTS.validatorProofsQueue}`);
-  const validatorProofs = new WorkQueue(prefix);
   const redis: Redis = makeRedis(options);
 
   while (true) {
     console.log('Performing light clean');
-    await lightClean.call(validatorProofs, redis, prefix);
+
+    for (let depth = 0; depth <= 40; ++depth) {
+      const prefix = new KeyPrefix(
+        `${CONSTANTS.validatorProofsQueue}:${depth}`,
+      );
+      const queue = new WorkQueue(prefix);
+      await lightClean.call(queue, redis, prefix);
+    }
+
     console.log(`Waiting ${options['clean-duration'] / 1000} seconds`);
     await sleep(options['clean-duration']);
   }

@@ -1,4 +1,6 @@
-use anyhow::{bail, Result};
+use std::time::Duration;
+
+use anyhow::{bail, Context, Result};
 use circuit::SetWitness;
 use circuits::redis_storage_types::ValidatorsCommitmentMapperProofData;
 use colored::Colorize;
@@ -6,6 +8,7 @@ use colored::Colorize;
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
 use plonky2::iop::witness::PartialWitness;
+use redis_work_queue::Item;
 
 use crate::{
     commitment_mapper_context::CommitmentMapperContext,
@@ -92,29 +95,32 @@ impl CommitmentMapperTask {
 }
 
 impl CommitmentMapperTask {
-    pub fn deserialize(bytes: &[u8]) -> Option<CommitmentMapperTask> {
-        match FromPrimitive::from_u8(u8::from_be_bytes(bytes[0..1].try_into().unwrap()))? {
+    pub fn deserialize(bytes: &[u8]) -> Result<CommitmentMapperTask> {
+        let task_tag = FromPrimitive::from_u8(u8::from_be_bytes(bytes[0..1].try_into()?))
+            .context("Invalid task tag")?;
+
+        match task_tag {
             CommitmentMapperTaskType::UpdateProofNode => {
-                let gindex = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
-                let slot = u64::from_be_bytes(bytes[9..17].try_into().unwrap());
-                Some(CommitmentMapperTask::UpdateProofNode(gindex, slot))
+                let gindex = u64::from_be_bytes(bytes[1..9].try_into()?);
+                let slot = u64::from_be_bytes(bytes[9..17].try_into()?);
+                Ok(CommitmentMapperTask::UpdateProofNode(gindex, slot))
             }
             CommitmentMapperTaskType::ProveZeroForDepth => {
-                let depth = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
-                Some(CommitmentMapperTask::ProveZeroForDepth(depth))
+                let depth = u64::from_be_bytes(bytes[1..9].try_into()?);
+                Ok(CommitmentMapperTask::ProveZeroForDepth(depth))
             }
             CommitmentMapperTaskType::UpdateValidatorProof => {
-                let validator_index = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
-                let slot = u64::from_be_bytes(bytes[9..17].try_into().unwrap());
-                Some(CommitmentMapperTask::UpdateValidatorProof(
+                let validator_index = u64::from_be_bytes(bytes[1..9].try_into()?);
+                let slot = u64::from_be_bytes(bytes[9..17].try_into()?);
+                Ok(CommitmentMapperTask::UpdateValidatorProof(
                     validator_index,
                     slot,
                 ))
             }
             CommitmentMapperTaskType::ZeroOutValidator => {
-                let validator_index = u64::from_be_bytes(bytes[1..9].try_into().unwrap());
-                let slot = u64::from_be_bytes(bytes[9..17].try_into().unwrap());
-                Some(CommitmentMapperTask::ZeroOutValidator(
+                let validator_index = u64::from_be_bytes(bytes[1..9].try_into()?);
+                let slot = u64::from_be_bytes(bytes[9..17].try_into()?);
+                Ok(CommitmentMapperTask::ZeroOutValidator(
                     validator_index,
                     slot,
                 ))
@@ -312,4 +318,33 @@ async fn handle_zero_out_validator_task(
         Err(_) => bail!("Could not fetch zero validator"),
     }
     Ok(())
+}
+
+pub struct VCMWorkQueueItem {
+    pub depth: usize,
+    pub item: Item,
+}
+
+pub async fn pick_work_queue_item_prioritize_lower_levels(
+    ctx: &mut CommitmentMapperContext,
+) -> Result<Option<VCMWorkQueueItem>> {
+    for depth in (0..=40).rev() {
+        let work_queue = &mut ctx.work_queues[depth];
+
+        if work_queue.queue_len(&mut ctx.redis_con).await? > 0 {
+            let item_opt = work_queue
+                .lease(
+                    &mut ctx.redis_con,
+                    Some(Duration::from_secs(ctx.work_queue_cfg.stop_after)),
+                    Duration::from_secs(ctx.work_queue_cfg.lease_for),
+                )
+                .await?;
+
+            if let Some(item) = item_opt {
+                return Ok(Some(VCMWorkQueueItem { depth, item }));
+            }
+        }
+    }
+
+    Ok(None)
 }
