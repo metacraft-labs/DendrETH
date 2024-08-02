@@ -1,4 +1,5 @@
 import {
+  getDepthByGindex,
   getLastSlotInEpoch,
   gindexFromIndex,
   makeBranchIterator,
@@ -26,6 +27,7 @@ import {
 import { ChainableCommander } from 'ioredis';
 import { validatorFromValidatorJSON } from '@dendreth/relay/utils/converters';
 import _ from 'underscore';
+import assert from 'assert';
 
 enum TaskTag {
   HASH_CONCATENATION_PROOF = 0,
@@ -37,7 +39,7 @@ enum TaskTag {
 export class CommitmentMapperScheduler {
   private redis: Redis;
   private api: BeaconApi;
-  private queue: WorkQueue;
+  private queues: WorkQueue[] = [];
   private currentSlot: bigint;
   private lastFinalizedEpoch: bigint;
   private headSlot: bigint;
@@ -52,9 +54,15 @@ export class CommitmentMapperScheduler {
       options['redis-port'],
       options['redis-auth'],
     );
-    this.queue = new WorkQueue(
-      new KeyPrefix(`${CONSTANTS.validatorProofsQueue}`),
-    );
+
+    for (let depth = 0; depth <= 40; ++depth) {
+      const prefix = new KeyPrefix(
+        `${CONSTANTS.validatorProofsQueue}:${depth}`,
+      );
+      const queue = new WorkQueue(prefix);
+      this.queues.push(queue);
+    }
+
     this.take = options['take'];
     this.offset = options['offset'];
     this.headSlot = await this.api.getHeadSlot();
@@ -97,8 +105,7 @@ export class CommitmentMapperScheduler {
 
     if (runOnce) {
       this.currentSlot++;
-      logProgress(this.currentSlot, this.headSlot);
-      console.log(chalk.bold.blue(`Processing ${this.currentSlot} slot`));
+      console.log(chalk.bold.blue(`Processing slot ${this.currentSlot}`));
       await this.pushDataForCurrentSlot();
       return;
     }
@@ -193,7 +200,7 @@ export class CommitmentMapperScheduler {
     dataView.setBigUint64(1, depth, false);
 
     const item = new Item(Buffer.from(buffer));
-    this.queue.addItemToPipeline(pipeline, item);
+    this.pushQueueItemPipeline(pipeline, item, Number(depth));
   }
 
   scheduleZeroOutValidatorTask(
@@ -209,7 +216,7 @@ export class CommitmentMapperScheduler {
     dataView.setBigUint64(9, slot, false);
 
     const item = new Item(Buffer.from(buffer));
-    this.queue.addItemToPipeline(pipeline, item);
+    this.pushQueueItemPipeline(pipeline, item, 40);
   }
 
   modifyValidators = modifyValidatorsImpl({
@@ -285,7 +292,7 @@ export class CommitmentMapperScheduler {
     dataView.setBigUint64(9, slot, false);
 
     const item = new Item(Buffer.from(buffer));
-    this.queue.addItemToPipeline(pipeline, item);
+    this.pushQueueItemPipeline(pipeline, item, 40);
   }
 
   scheduleHashValidatorTaskPipeline(
@@ -334,7 +341,11 @@ export class CommitmentMapperScheduler {
     dataView.setBigUint64(9, slot, false);
 
     const item = new Item(Buffer.from(buffer));
-    this.queue.addItemToPipeline(pipeline, item);
+    this.pushQueueItemPipeline(
+      pipeline,
+      item,
+      getDepthByGindex(Number(gindex)),
+    );
   }
 
   async scheduleHashConcatenationTask(
@@ -344,6 +355,15 @@ export class CommitmentMapperScheduler {
     const pipeline = this.redis.client.pipeline();
     this.scheduleHashConcatenationTaskPipeline(pipeline, gindex, slot);
     return pipeline.exec();
+  }
+
+  pushQueueItemPipeline(
+    pipeline: ChainableCommander,
+    item: Item,
+    depth: number,
+  ) {
+    assert(depth <= 40, 'The validators tree is 40 levels deep');
+    this.queues[depth].addItemToPipeline(pipeline, item);
   }
 }
 
@@ -581,6 +601,7 @@ async function getValidatorsBatched(
 
   return allValidators;
 }
+
 // function updateLastVerifiedSlot(pipeline: ChainableCommander, slot: bigint): void {
 //   pipeline.set(CONSTANTS.lastVerifiedSlotKey, slot.toString());
 // }

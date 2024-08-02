@@ -4,6 +4,7 @@ use circuits::validators_commitment_mapper::{
     first_level::ValidatorsCommitmentMapperFirstLevel,
     inner_level::ValidatorsCommitmentMapperInnerLevel,
 };
+use itertools::Itertools;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
     plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig},
@@ -25,7 +26,7 @@ const CIRCUIT_NAME: &str = "commitment_mapper";
 
 pub struct CommitmentMapperContext {
     pub redis_con: Connection,
-    pub work_queue: WorkQueue,
+    pub work_queues: Vec<WorkQueue>,
     pub work_queue_cfg: WorkQueueConfig,
     pub proof_storage: Box<dyn ProofStorage>,
     pub first_level_circuit: FirstLevelCircuit,
@@ -34,16 +35,19 @@ pub struct CommitmentMapperContext {
 
 impl CommitmentMapperContext {
     pub async fn new(
-        redis_connection: &str,
+        redis_uri: &str,
         work_queue_cfg: WorkQueueConfig,
         proof_storage: Box<dyn ProofStorage>,
     ) -> Result<Self> {
-        let client = redis::Client::open(redis_connection)?;
+        let client = redis::Client::open(redis_uri)?;
         let redis_con = client.get_async_connection().await?;
 
-        let work_queue = WorkQueue::new(KeyPrefix::new(
-            DB_CONSTANTS.validator_proofs_queue.to_owned(),
-        ));
+        let work_queues = (0..=40)
+            .map(|depth| {
+                let key_prefix_str = format!("{}:{}", DB_CONSTANTS.validator_proofs_queue, depth);
+                WorkQueue::new(KeyPrefix::new(key_prefix_str))
+            })
+            .collect_vec();
 
         let first_level_circuit = FirstLevelCircuit {
             targets: get_first_level_targets()?,
@@ -64,7 +68,7 @@ impl CommitmentMapperContext {
 
         let ctx = Self {
             redis_con,
-            work_queue,
+            work_queues,
             work_queue_cfg,
             proof_storage,
             first_level_circuit,
