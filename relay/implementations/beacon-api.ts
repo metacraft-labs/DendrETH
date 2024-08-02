@@ -4,6 +4,7 @@ import { IBeaconApi } from '../abstraction/beacon-api-interface';
 import {
   BeaconBlockHeader,
   ExecutionPayloadHeader,
+  IndexedValidator,
   SyncAggregate,
   SyncCommittee,
   Validator,
@@ -468,6 +469,34 @@ export class BeaconApi implements IBeaconApi {
       await this.fetchWithFallback('/eth/v1/beacon/headers/head')
     ).json();
     return BigInt(res.data.header.message.slot);
+  }
+
+  /// Gets a validators diff using a custom endpoint defined
+  /// in our modified nimbus consensus client
+  async getValidatorsDiffCustomEndpoint(
+    slot: bigint,
+    offset: number = 0,
+    take: number | undefined,
+  ): Promise<IndexedValidator[]> {
+    const response = await this.fetchWithFallback(
+      `/custom/eth/v1/beacon/diff/${slot}/validators`,
+    );
+    const json = await response.json();
+
+    const unfiltered: any[] = json.data.map((entry: any) => ({
+      index: Number(entry.index),
+      validator: entry.validator,
+    }));
+
+    const filtered = unfiltered.filter(
+      entry =>
+        entry.index >= offset && entry.index < offset + (take ?? Infinity),
+    );
+
+    return filtered.map((entry: any) => ({
+      index: entry.index - offset,
+      validator: this.ssz.phase0.Validator.fromJson(entry.validator),
+    }));
   }
 
   async getValidators(
