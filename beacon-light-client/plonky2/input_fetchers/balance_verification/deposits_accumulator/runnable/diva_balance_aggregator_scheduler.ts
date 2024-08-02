@@ -3,7 +3,10 @@ import { CommandLineOptionsBuilder } from '../../../utils/cmdline';
 import runTask, { retry } from '../../../utils/ecs';
 import accountManagerAbi from '../../../abi/account_manager_abi.json';
 import { BigNumber, ethers } from 'ethers';
-import { StoreBalanceVerificationParameterType, storeBalanceVerificationData } from '../lib/get_balance_verification_data';
+import {
+  StoreBalanceVerificationParameterType,
+  storeBalanceVerificationData,
+} from '../lib/get_balance_verification_data';
 import { Redis } from '@dendreth/relay/implementations/redis';
 import CONSTANTS from '../../../../kv_db_constants.json';
 import { sleep } from '@dendreth/utils/ts-utils/common-utils';
@@ -51,7 +54,7 @@ function estimate(n: number, t: number = 3000): number {
 async function numTasks(redis: Redis, protocol: string): Promise<number> {
   const key: string = `${protocol}:deposit_balance_verification_queue:0:queue`;
   const length: number | null = await retry(() => redis.client.llen(key));
-  return (length != null) ? length : -1;
+  return length != null ? length : -1;
 }
 
 async function waitForKey(redis: Redis, key: string): Promise<void> {
@@ -77,17 +80,22 @@ async function waitProof(redis: Redis, key: string) {
       continue;
     }
 
-    const proof: any = JSONbig.parse(value || "{}");
+    const proof: any = JSONbig.parse(value || '{}');
     if (proof.needsChange == null) {
       console.log(`[W] waitProofs: unexpected value for ${key}:`, value);
     } else {
       needsChange = Boolean(proof.needsChange);
-      console.log(`[I] waitProofs: value for ${key} fetched, needsChange=${needsChange}`);
+      console.log(
+        `[I] waitProofs: value for ${key} fetched, needsChange=${needsChange}`,
+      );
     }
   }
 }
 
-async function waitForSlot(currentSlot: bigint, referenceSlot: bigint): Promise<void> {
+async function waitForSlot(
+  currentSlot: bigint,
+  referenceSlot: bigint,
+): Promise<void> {
   const slotsToWait = Number(referenceSlot - currentSlot);
   if (slotsToWait > 0) {
     console.log(`Waiting for ${slotsToWait} slots until slot ${referenceSlot}`);
@@ -95,23 +103,40 @@ async function waitForSlot(currentSlot: bigint, referenceSlot: bigint): Promise<
   }
 }
 
-async function waitForPubkeyCommitmentMapperProof(redis: Redis, protocol: string, blockNumber: number): Promise<void> {
+async function waitForPubkeyCommitmentMapperProof(
+  redis: Redis,
+  protocol: string,
+  blockNumber: number,
+): Promise<void> {
   while (true) {
     const processingQueueKey = `${protocol}:pubkey_commitment_mapper:processing_queue`;
-    const processingQueueHead = await redis.client.lindex(processingQueueKey, 0);
+    const processingQueueHead = await redis.client.lindex(
+      processingQueueKey,
+      0,
+    );
 
-    const lastLoggedBlock = Number(await redis.client.get(`${protocol}:pubkey_commitment_mapper:last_logged_block`));
+    const lastLoggedBlock = Number(
+      await redis.client.get(
+        `${protocol}:pubkey_commitment_mapper:last_logged_block`,
+      ),
+    );
     console.log(`processingQueueHead: ${processingQueueHead}`);
     console.log(`lastLoggedBlock: ${lastLoggedBlock}`);
     console.log(`blockNumber: ${blockNumber}`);
 
-    const blockHasBeenPassed = processingQueueHead === null
-      ? lastLoggedBlock >= blockNumber
-      : (() => {
-        const headTaskBlockNumber = Number(processingQueueHead.split(',')[1]);
-        console.log(`head task block number: ${headTaskBlockNumber}`);
-        return lastLoggedBlock >= blockNumber && headTaskBlockNumber > blockNumber;
-      })();
+    const blockHasBeenPassed =
+      processingQueueHead === null
+        ? lastLoggedBlock >= blockNumber
+        : (() => {
+            const headTaskBlockNumber = Number(
+              processingQueueHead.split(',')[1],
+            );
+            console.log(`head task block number: ${headTaskBlockNumber}`);
+            return (
+              lastLoggedBlock >= blockNumber &&
+              headTaskBlockNumber > blockNumber
+            );
+          })();
 
     if (blockHasBeenPassed) {
       console.log('pubkey commitment mapper proof found');
@@ -124,26 +149,39 @@ async function waitForPubkeyCommitmentMapperProof(redis: Redis, protocol: string
 }
 
 // use a different redis connection for validators commitment mapper
-async function waitForValidatorsCommitmentMapperProof(redis: Redis, slot: number): Promise<void> {
+async function waitForValidatorsCommitmentMapperProof(
+  redis: Redis,
+  slot: number,
+): Promise<void> {
   while (true) {
-    const lastProcessedSlot = Number(await redis.client.get('last_processed_slot'));
+    const lastProcessedSlot = Number(
+      await redis.client.get('last_processed_slot'),
+    );
 
     if (lastProcessedSlot >= slot) {
       const validatorsRootProofKey = `validator_proof:1`;
-      const latestChangeSlot = await redis.getSlotWithLatestChange(validatorsRootProofKey, BigInt(slot));
+      const latestChangeSlot = await redis.getSlotWithLatestChange(
+        validatorsRootProofKey,
+        BigInt(slot),
+      );
       const validatorsRootKey = `validators_root:${latestChangeSlot}`;
       await waitForKey(redis, validatorsRootKey);
 
       return;
     }
 
-    console.log(`waiting for last commitment mapper to catch up ${lastProcessedSlot}/${slot}`);
+    console.log(
+      `waiting for last commitment mapper to catch up ${lastProcessedSlot}/${slot}`,
+    );
 
     await sleep(12_000);
   }
 }
 
-async function executeCommand(command: string, config: any = undefined): Promise<number> {
+async function executeCommand(
+  command: string,
+  config: any = undefined,
+): Promise<number> {
   const promise = execAsync(command, config);
 
   const child = promise.child;
@@ -192,7 +230,10 @@ async function main() {
   console.log('\tjson-rpc:', options['json-rpc']);
   console.log('\tbeacon-node:', options['beacon-node']);
   console.log('\tprotocol:', options['protocol']);
-  console.log('\tsnapshot-contract-address:', options['snapshot-contract-address']);
+  console.log(
+    '\tsnapshot-contract-address:',
+    options['snapshot-contract-address'],
+  );
   console.log();
 
   const redis: Redis = new Redis(
@@ -219,12 +260,11 @@ async function main() {
 
   console.log('Binding to SnapshotTaken events...');
 
-  snapshot.on('SnapshotTaken', async (_: BigNumber, referenceSlot: BigNumber) => {
-    try {
-      await handleSnapshotEvent(
-        redis,
-        referenceSlot.toNumber(),
-        {
+  snapshot.on(
+    'SnapshotTaken',
+    async (_: BigNumber, referenceSlot: BigNumber) => {
+      try {
+        await handleSnapshotEvent(redis, referenceSlot.toNumber(), {
           beaconNodeUrls: options['beacon-node'],
           slot: referenceSlot.toNumber(),
           take: options['take'],
@@ -235,18 +275,18 @@ async function main() {
           address: options['address'],
           rpcUrl: options['json-rpc'],
           protocol: options['protocol'],
-        }
-      );
-    } catch (err) {
-      console.error(err);
-    }
-  });
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    },
+  );
 }
 
 async function handleSnapshotEvent(
   redis: Redis,
   referenceSlot: number,
-  params: StoreBalanceVerificationParameterType
+  params: StoreBalanceVerificationParameterType,
 ): Promise<void> {
   const beaconApi = await getBeaconApi(params['beacon-node']);
 
@@ -271,7 +311,7 @@ async function handleSnapshotEvent(
   const tasks: number = await numTasks(redis, protocol);
   let instances: number = Math.min(MAX_INSTANCES, estimate(tasks));
   console.log(`[I] Running ${instances} worker(s) for ${tasks} task(s)...`);
-  instances = 5;              // TODO
+  instances = 5; // TODO
   let completed: number = 0;
 
   try {
@@ -296,7 +336,10 @@ async function handleSnapshotEvent(
   const blockNumber = beaconState.latestExecutionPayloadHeader.blockNumber;
 
   // Wait for dependencies to get resolved before running the final layer
-  await waitProof(redis, `${protocol}:${CONSTANTS.depositBalanceVerificationProofKey}:32:0`);
+  await waitProof(
+    redis,
+    `${protocol}:${CONSTANTS.depositBalanceVerificationProofKey}:32:0`,
+  );
   await waitForPubkeyCommitmentMapperProof(redis, protocol, blockNumber);
   await waitForValidatorsCommitmentMapperProof(redis, referenceSlot);
 

@@ -429,7 +429,7 @@ export class Redis implements IRedis {
             slashedCount: 0,
           },
         },
-      }
+      },
     };
 
     await this.client.set(
