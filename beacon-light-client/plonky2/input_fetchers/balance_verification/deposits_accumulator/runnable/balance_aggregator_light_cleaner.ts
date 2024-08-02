@@ -20,7 +20,7 @@ async function main() {
     redis,
     protocol: options['protocol'],
     cleanDuration: options['clean-duration'],
-    silent: false
+    silent: false,
   });
 }
 
@@ -63,4 +63,3 @@ export async function lightCleanQueue(params: LightCleanParams) {
     await sleep(params.cleanDuration);
   }
 }
-
