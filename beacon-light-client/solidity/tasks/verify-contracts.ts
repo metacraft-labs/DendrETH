@@ -11,12 +11,17 @@ task('verify-contracts', 'Verify')
   .addParam('slot', 'The slot ')
   .addParam('followNetwork', 'The network to follow')
   .setAction(async (args, { run }) => {
-    if (args.followNetwork !== 'pratter' && args.followNetwork !== 'mainnet') {
+    if (
+      args.followNetwork !== 'pratter' &&
+      args.followNetwork !== 'mainnet' &&
+      args.followNetwork !== 'sepolia' &&
+      args.followNetwork !== 'chiado'
+    ) {
       logger.warn('This followNetwork is not specified in networkconfig');
       return;
     }
 
-    const currentConfig = getNetworkConfig(args.followNetwork);
+    const currentConfig = await getNetworkConfig(args.followNetwork);
 
     const beaconApi = await getBeaconApi(currentConfig.BEACON_REST_API!);
 

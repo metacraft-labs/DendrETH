@@ -1,9 +1,10 @@
 import { Config } from '@/constants/constants';
 import { getProofInput } from '@/workers/poll-updates/get_ligth_client_input';
 import { IBeaconApi } from '@/abstraction/beacon-api-interface';
-import { BeaconBlockHeader, SyncAggregate } from '@/types/types';
+import { SyncAggregate } from '@/types/types';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 import { prometheusTiming } from '@dendreth/utils/ts-utils/prometheus-utils';
+import { BeaconBlockHeader } from '@lodestar/types/phase0';
 
 const logger = getGenericLogger();
 
@@ -41,14 +42,16 @@ export async function getInputFromTo(
   );
 
   logger.info('Getting getBlockExecutionPayloadAndProof..');
-  const {
-    executionPayloadHeader: executionPayload,
-    executionPayloadBranch: finalizedHeaderExecutionBranch,
-  } = await prometheusTiming(
-    async () =>
-      await beaconApi.getBlockExecutionPayloadAndProof(finalizedHeader.slot),
-    'getBlockExecutionPayloadAndProof',
-  );
+  const { executionPayloadHeader, executionPayloadBranch } =
+    await prometheusTiming(
+      async () =>
+        await beaconApi.getBlockExecutionPayloadAndProof(finalizedHeader.slot),
+      'getBlockExecutionPayloadAndProof',
+    );
+
+  const forkSSZ = await beaconApi.getCurrentSSZ(BigInt(headSlot));
+
+  const slotsPerPeriod = await beaconApi.getSlotsPerSyncCommitteePeriod();
 
   return {
     proofInput: await getProofInput({
@@ -59,12 +62,14 @@ export async function getInputFromTo(
       syncCommittee,
       config: networkConfig,
       prevFinalityBranch,
-      signature_slot: signature_slot,
+      signature_slot,
       finalizedHeader,
       finalityBranch,
-      executionPayload,
-      finalizedHeaderExecutionBranch,
+      executionPayloadHeader,
+      executionPayloadBranch,
       sync_aggregate,
+      forkSSZ,
+      slotsPerPeriod,
     }),
     prevUpdateSlot: prevBlockHeader.slot,
     updateSlot: nextBlockHeader.slot,
