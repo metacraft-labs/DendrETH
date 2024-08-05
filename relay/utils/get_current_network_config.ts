@@ -19,9 +19,19 @@ const defaultConfig: Config = {
   DOMAIN_SYNC_COMMITTEE: '',
   GENESIS_VALIDATORS_ROOT: '',
 };
+export enum NetworkConfig {
+  Pratter = 'pratter',
+  Mainnet = 'mainnet',
+  Sepolia = 'sepolia',
+  Chiado = 'chiado',
+}
+
+export function isSupportedFollowNetwork(network: string): boolean {
+  return Object.values(NetworkConfig).includes(network as NetworkConfig);
+}
 
 export async function getNetworkConfig(
-  network: 'pratter' | 'mainnet' | 'sepolia' | 'chiado',
+  network: NetworkConfig,
 ): Promise<Config> {
   let config: Config = { ...defaultConfig, NETWORK_NAME: network };
   config.NETWORK_NAME = network;

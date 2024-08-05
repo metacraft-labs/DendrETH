@@ -6,7 +6,10 @@ import { publishProofs } from '@dendreth/relay/on_chain_publisher';
 import { checkConfig } from '@dendreth/utils/ts-utils/common-utils';
 import { Contract, ethers } from 'ethers';
 import hashi_abi from './hashi_abi.json';
-import { getNetworkConfig } from '@dendreth/relay/utils/get_current_network_config';
+import {
+  getNetworkConfig,
+  isSupportedFollowNetwork,
+} from '@dendreth/relay/utils/get_current_network_config';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 import { initPrometheusSetup } from '@dendreth/utils/ts-utils/prometheus-utils';
 
@@ -52,12 +55,7 @@ task('start-publishing', 'Run relayer')
 
     checkConfig(config);
 
-    if (
-      args.followNetwork !== 'pratter' &&
-      args.followNetwork !== 'mainnet' &&
-      args.followNetwork !== 'sepolia' &&
-      args.followNetwork !== 'chiado'
-    ) {
+    if (!isSupportedFollowNetwork(args.followNetwork)) {
       logger.warn('This followNetwork is not specified in networkconfig');
       return;
     }
