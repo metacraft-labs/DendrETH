@@ -20,8 +20,16 @@ const defaultConfig: Config = {
   GENESIS_VALIDATORS_ROOT: '',
 };
 
+export type NetworkConfig = 'pratter' | 'mainnet' | 'sepolia' | 'chiado';
+
+export function isSupportedFollowNetwork(
+  network: string,
+): network is NetworkConfig {
+  return ['pratter', 'mainnet', 'sepolia', 'chiado'].includes(network);
+}
+
 export async function getNetworkConfig(
-  network: 'pratter' | 'mainnet' | 'sepolia' | 'chiado',
+  network: NetworkConfig,
 ): Promise<Config> {
   let config: Config = { ...defaultConfig, NETWORK_NAME: network };
   config.NETWORK_NAME = network;

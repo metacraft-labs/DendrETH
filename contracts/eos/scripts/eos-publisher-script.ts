@@ -2,7 +2,11 @@ import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
 import { Redis } from '@dendreth/relay/implementations/redis';
 import { EOSContract } from '@dendreth/relay/implementations/eos-contract';
 import { publishProofs } from '@dendreth/relay/on_chain_publisher';
-import { getNetworkConfig } from '@dendreth/relay/utils/get_current_network_config';
+import {
+  NetworkConfig,
+  getNetworkConfig,
+  isSupportedFollowNetwork,
+} from '@dendreth/relay/utils/get_current_network_config';
 import { checkConfig } from '@dendreth/utils/ts-utils/common-utils';
 
 async function publishTask() {
@@ -17,17 +21,12 @@ async function publishTask() {
   const contractAddress = process.argv[3];
   const followNetwork = process.argv[4];
 
-  if (
-    followNetwork !== 'mainnet' &&
-    followNetwork !== 'pratter' &&
-    followNetwork !== 'sepolia' &&
-    followNetwork !== 'sepolia'
-  ) {
+  if (!isSupportedFollowNetwork(followNetwork)) {
     console.warn('This follownetwork is not specified in networkconfig');
     return;
   }
 
-  const currentNetwork = await getNetworkConfig(followNetwork);
+  const currentNetwork = await getNetworkConfig(followNetwork as NetworkConfig);
 
   console.log('Account balance:');
 

@@ -1,7 +1,10 @@
 import { task } from 'hardhat/config';
 import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
 import { getConstructorArgs } from './utils';
-import { getNetworkConfig } from '@dendreth/relay/utils/get_current_network_config';
+import {
+  getNetworkConfig,
+  isSupportedFollowNetwork,
+} from '@dendreth/relay/utils/get_current_network_config';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 
 const logger = getGenericLogger();
@@ -10,12 +13,7 @@ task('deploy', 'Deploy the beacon light client contract')
   .addParam('slot', 'The slot ')
   .addParam('followNetwork', 'The network to follow')
   .setAction(async (args, { run, ethers }) => {
-    if (
-      args.followNetwork !== 'pratter' &&
-      args.followNetwork !== 'mainnet' &&
-      args.followNetwork !== 'sepolia' &&
-      args.followNetwork !== 'chiado'
-    ) {
+    if (!isSupportedFollowNetwork(args.followNetwork)) {
       logger.warn('This followNetwork is not specified in networkconfig');
       return;
     }
