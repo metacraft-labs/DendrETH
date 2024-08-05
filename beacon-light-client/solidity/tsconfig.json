@@ -1,7 +1,8 @@
 {
   "extends": "../../tsconfig.hardhat.json",
   "files": [
-    "./hardhat.config.ts"
+    "./hardhat.config.ts",
+    "tasks/hashi_abi.json"
   ],
   "include": [
     "./tasks",
