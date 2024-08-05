@@ -12,7 +12,7 @@ import {
 } from '@dendreth/utils/cosmos-utils/testnet-setup';
 import { CosmosContract } from '@dendreth/relay/implementations/cosmos-contract';
 import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
-import { getRootDir } from '@dendreth/utils/ts-utils/common-utils';
+import { rootDir } from '@dendreth/utils/ts-utils/common-utils';
 
 import { compileContractMain } from '../../contracts/cosmos/verifier/typescript/verifier-compile-contract-and-tools';
 import {
@@ -40,8 +40,6 @@ describe('Light Client Verifier In Cosmos', () => {
     'economy stock theory fatal elder harbor betray wasp final emotion task crumble siren bottom lizard educate guess current outdoor pair theory focus wife stone';
 
   beforeAll(async () => {
-    const rootDir = await getRootDir();
-
     contractDirVerifier =
       rootDir + `/contracts/cosmos/verifier/verifier-bncurve`;
     parseDataTool = `${contractDirVerifier}/nimcache/verifier_parse_data`;
