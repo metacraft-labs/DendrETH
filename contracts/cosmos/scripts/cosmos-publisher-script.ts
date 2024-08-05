@@ -3,7 +3,11 @@ import { Redis } from '@dendreth/relay/implementations/redis';
 import { CosmosContract } from '@dendreth/relay/implementations/cosmos-contract';
 import { publishProofs } from '@dendreth/relay/on_chain_publisher';
 import { checkConfig } from '@dendreth/utils/ts-utils/common-utils';
-import { getNetworkConfig } from '@dendreth/relay/utils/get_current_network_config';
+import {
+  NetworkConfig,
+  getNetworkConfig,
+  isSupportedFollowNetwork,
+} from '@dendreth/relay/utils/get_current_network_config';
 
 async function publishTask() {
   const config = {
@@ -17,17 +21,12 @@ async function publishTask() {
   const followNetwork = process.argv[4];
   const slotsJump = Number(process.argv[5]);
 
-  if (
-    followNetwork !== 'mainnet' &&
-    followNetwork !== 'pratter' &&
-    followNetwork !== 'sepolia' &&
-    followNetwork !== 'sepolia'
-  ) {
+  if (!isSupportedFollowNetwork(followNetwork)) {
     console.warn('This follownetwork is not specified in networkconfig');
     return;
   }
 
-  const currentNetwork = await getNetworkConfig(followNetwork);
+  const currentNetwork = await getNetworkConfig(followNetwork as NetworkConfig);
 
   let address;
   let rpcEndpoint;
