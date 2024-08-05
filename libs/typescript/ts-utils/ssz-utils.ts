@@ -110,7 +110,7 @@ export async function getBlockHeaderFromUpdate(head) {
 export function computeSyncCommitteePeriodAt(
   slot: bigint,
   slots_per_period: bigint,
-) {
+): bigint {
   return slot / slots_per_period;
 }
 
