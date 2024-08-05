@@ -7,7 +7,13 @@ use colored::Colorize;
 
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
-use plonky2::iop::witness::PartialWitness;
+use plonky2::{
+    field::goldilocks_field::GoldilocksField,
+    iop::witness::PartialWitness,
+    plonk::{
+        circuit_data::CircuitData, config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs,
+    },
+};
 use redis_work_queue::Item;
 
 use crate::{
@@ -158,7 +164,9 @@ async fn handle_update_validator_proof_task(
         Ok(input) => {
             let mut pw = PartialWitness::new();
             ctx.first_level_circuit.targets.set_witness(&mut pw, &input);
-            let proof = ctx.first_level_circuit.data.prove(pw)?;
+            let proof = prove_until_verifiable(&ctx.first_level_circuit.data, || {
+                ctx.first_level_circuit.data.prove(pw.clone())
+            })?;
 
             if input.is_real {
                 let save_result = save_validator_proof(
@@ -208,20 +216,22 @@ async fn handle_update_proof_node_task(
     .await;
 
     match fetch_result {
-        Ok(proofs) => {
+        Ok((left_proof, right_proof)) => {
             let inner_circuit_data = if level > 0 {
                 &ctx.inner_level_circuits[level - 1].data
             } else {
                 &ctx.first_level_circuit.data
             };
 
-            let proof = prove_inner_level(
-                proofs.0,
-                proofs.1,
-                inner_circuit_data,
-                &ctx.inner_level_circuits[level].targets,
-                &ctx.inner_level_circuits[level].data,
-            )?;
+            let proof = prove_until_verifiable(&ctx.inner_level_circuits[level].data, || {
+                prove_inner_level(
+                    left_proof.clone(),
+                    right_proof.clone(),
+                    inner_circuit_data,
+                    &ctx.inner_level_circuits[level].targets,
+                    &ctx.inner_level_circuits[level].data,
+                )
+            })?;
 
             let save_result = save_validator_proof(
                 &mut ctx.redis_con,
@@ -260,13 +270,15 @@ async fn handle_prove_zero_for_depth_task(
 
             let lower_proof_bytes = lower_proof.get_proof(ctx.proof_storage.as_mut()).await;
 
-            let proof = prove_inner_level(
-                lower_proof_bytes.clone(),
-                lower_proof_bytes,
-                inner_circuit_data,
-                &ctx.inner_level_circuits[level].targets,
-                &ctx.inner_level_circuits[level].data,
-            )?;
+            let proof = prove_until_verifiable(&ctx.inner_level_circuits[level].data, || {
+                prove_inner_level(
+                    lower_proof_bytes.clone(),
+                    lower_proof_bytes.clone(),
+                    inner_circuit_data,
+                    &ctx.inner_level_circuits[level].targets,
+                    &ctx.inner_level_circuits[level].data,
+                )
+            })?;
 
             let save_result = save_zero_validator_proof(
                 &mut ctx.redis_con,
@@ -347,4 +359,19 @@ pub async fn pick_work_queue_item_prioritize_lower_levels(
     }
 
     Ok(None)
+}
+
+fn prove_until_verifiable<F, E>(
+    circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    prove: F,
+) -> Result<ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>, E>
+where
+    F: Fn() -> Result<ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>, E>,
+{
+    let mut proof = prove()?;
+    while circuit_data.verify(proof.clone()).is_err() {
+        println!("{}", "Proof does not verify".bold().red());
+        proof = prove()?;
+    }
+    Ok(proof)
 }
