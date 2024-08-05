@@ -8,7 +8,7 @@ import {
   compileVerifierParseDataTool,
   replaceInTextProof,
 } from '../helpers/helpers';
-import { getRootDir, sleep } from '@dendreth/utils/ts-utils/common-utils';
+import { rootDir, sleep } from '@dendreth/utils/ts-utils/common-utils';
 import { EOSContract } from '@dendreth/relay/implementations/eos-contract';
 import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 
@@ -34,7 +34,6 @@ describe('Verifier in EOS', () => {
   const defaultDomain =
     '0x07000000628941ef21d1fe8c7134720add10bb91e3b02c007e0046d2472c6695';
   beforeAll(async () => {
-    const rootDir = await getRootDir();
     parseDataTool = await compileVerifierParseDataTool(
       'eos',
       'verifier',

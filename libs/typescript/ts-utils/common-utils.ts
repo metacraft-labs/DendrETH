@@ -6,6 +6,8 @@ import { assert } from 'console';
 
 const exec = promisify(exec_);
 
+export const rootDir = getEnvString('GIT_ROOT');
+
 export function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -127,13 +129,6 @@ export function appendJsonFile(filePath: string, data: any) {
   fs.writeFileSync(filePath, JSON.stringify(fileData, null, 2));
 }
 
-export async function getRootDir() {
-  return (await exec('git rev-parse --show-toplevel')).stdout.replace(
-    /\s/g,
-    '',
-  );
-}
-
 export function assertNotNull<T>(
   value: T | null | undefined,
   errorMessage?: string,
@@ -174,7 +169,6 @@ export function getSecretEnvString(varName: string) {
     return '';
   } else {
     let path = process.env[varName];
-    const rootDir = getEnvString('GIT_ROOT');
     return fs.readFileSync(rootDir + path, 'ascii').trim();
   }
 }
