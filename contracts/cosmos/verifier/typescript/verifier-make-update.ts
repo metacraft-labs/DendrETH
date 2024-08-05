@@ -3,7 +3,7 @@ import { exec as exec_ } from 'node:child_process';
 
 import { calculateFee, GasPrice } from '@cosmjs/stargate';
 import { CosmosClientWithWallet } from '@dendreth/utils/cosmos-utils/cosmos-utils';
-import { getRootDir } from '@dendreth/utils/ts-utils/common-utils';
+import { rootDir } from '@dendreth/utils/ts-utils/common-utils';
 
 const exec = promisify(exec_);
 
@@ -14,7 +14,6 @@ export async function updateVerifierContract(
   updateFile: string,
   target: string,
 ) {
-  const rootDir = await getRootDir();
   const contractDir = rootDir + `/contracts/cosmos/verifier/` + target;
 
   const pathToVerifyUtils =
