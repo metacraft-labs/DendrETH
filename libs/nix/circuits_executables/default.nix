@@ -6,7 +6,33 @@
   openssl,
   ...
 }: let
-  kv_db_constants = ../../../beacon-light-client/plonky2/kv_db_constants.json;
+  inherit (lib) fileset;
+
+  root = ../../../beacon-light-client/plonky2;
+  cargoDepsRoot = root + /crates;
+
+  cargoDepsSrc = fileset.toSource {
+    root = cargoDepsRoot;
+    fileset =
+      fileset.fileFilter (
+        file:
+          builtins.elem file.name [
+            "Cargo.toml"
+            "Cargo.lock"
+          ]
+      )
+      cargoDepsRoot;
+  };
+
+  src = fileset.toSource {
+    root = root;
+    fileset = fileset.unions [
+      (root + /common_config.json)
+      (root + /kv_db_constants.json)
+      (fileset.intersection root cargoDepsRoot)
+    ];
+  };
+
   sharedAttrs = rec {
     version = "0.1.0";
     nativeBuildInputs = [pkg-config];
@@ -14,7 +40,7 @@
     cargoLock = "${src}/Cargo.lock";
     cargoToml = "${src}/Cargo.toml";
     buildInputs = [openssl];
-    src = ../../../beacon-light-client/plonky2/crates;
+    src = cargoDepsSrc;
   };
 
   brokenTests = lib.concatStringsSep " --skip " ["test_ssz_num_from_bits"];
@@ -25,10 +51,8 @@ in
   craneLib.buildPackage (
     sharedAttrs
     // {
-      inherit cargoArtifacts;
+      inherit cargoArtifacts src;
+      sourceRoot = "source/crates";
       cargoTestExtraArgs = "-- --skip ${brokenTests} --skip ${slowTests}";
-      postUnpack = ''
-        sed -i 's|../../../kv_db_constants.json|${kv_db_constants}|g' crates/circuit_executables/src/db_constants.rs
-      '';
     }
   )
