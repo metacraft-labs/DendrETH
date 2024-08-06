@@ -1,6 +1,6 @@
-import { IProver } from '../../abstraction/prover-interface';
-import { IRedis } from '../../abstraction/redis-interface';
-import { ProofInputType } from '../../types/types';
+import { IProver } from '@/abstraction/prover-interface';
+import { IRedis } from '@/abstraction/redis-interface';
+import { ProofInputType } from '@/types/types';
 
 export default async function genProof(
   redis: IRedis,

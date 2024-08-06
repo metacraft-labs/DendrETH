@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, test } from '@jest/globals';
 
 import { VerifyFromPaths } from '@dendreth/utils/verify-utils/verify-given-proof-ffjavascript';
-import { getRootDir } from '@dendreth/utils/ts-utils/common-utils';
+import { rootDir } from '@dendreth/utils/ts-utils/common-utils';
 
 describe('Check verifier build on ffjavascript', () => {
   let keyPath: string;
@@ -10,8 +10,6 @@ describe('Check verifier build on ffjavascript', () => {
   let updatePath: string;
 
   beforeAll(async () => {
-    const rootDir = await getRootDir();
-
     keyPath =
       rootDir +
       '/vendor/eth2-light-client-updates/prater/capella-updates-94/vk.json';

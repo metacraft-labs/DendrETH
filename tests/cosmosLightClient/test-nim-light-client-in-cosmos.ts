@@ -15,7 +15,7 @@ import { compileNimFileToWasm } from '@dendreth/utils/ts-utils/compile-nim-to-wa
 import {
   byteArrayToNumber,
   appendJsonFile,
-  getRootDir,
+  rootDir,
 } from '@dendreth/utils/ts-utils/common-utils';
 import {
   setUpCosmosTestnet,
@@ -24,8 +24,6 @@ import {
 import { gasUsed } from '../helpers/helpers';
 
 const exec = promisify(exec_);
-
-let rootDir;
 
 describe('Light Client In Cosmos', () => {
   let gasArrayLightClient: gasUsed[] = [];
@@ -42,8 +40,6 @@ describe('Light Client In Cosmos', () => {
   const gasUsageFile = 'tests/cosmosLightClient/gasLightClient.json';
 
   beforeAll(async () => {
-    rootDir = await getRootDir();
-
     let contractDirLightClient = rootDir + `/contracts/cosmos/light-client`;
     let nimFilePathLightClient =
       contractDirLightClient + `/lib/nim/light_client_cosmos_wrapper.nim`;

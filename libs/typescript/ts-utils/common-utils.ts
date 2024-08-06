@@ -6,6 +6,8 @@ import { assert } from 'console';
 
 const exec = promisify(exec_);
 
+export const rootDir = getEnvString('GIT_ROOT');
+
 export function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -127,13 +129,6 @@ export function appendJsonFile(filePath: string, data: any) {
   fs.writeFileSync(filePath, JSON.stringify(fileData, null, 2));
 }
 
-export async function getRootDir() {
-  return (await exec('git rev-parse --show-toplevel')).stdout.replace(
-    /\s/g,
-    '',
-  );
-}
-
 export function assertNotNull<T>(
   value: T | null | undefined,
   errorMessage?: string,
@@ -148,11 +143,34 @@ export function assertNotNull<T>(
   return value;
 }
 
+export function checkIfNull(value: string | null | undefined, msg: string) {
+  if (
+    value === null ||
+    value === undefined ||
+    (typeof value === 'string' && !value.length)
+  ) {
+    console.log(msg);
+    return true;
+  }
+  return false;
+}
+
 export function getEnvString(varName: string) {
   return assertNotNull(
     process.env[varName],
     `Env variable '${varName}' is missing.`,
   );
+}
+
+export function getSecretEnvString(varName: string) {
+  if (
+    checkIfNull(process.env[varName], `Env variable '${varName}' is missing.`)
+  ) {
+    return '';
+  } else {
+    let path = process.env[varName];
+    return fs.readFileSync(rootDir + path, 'ascii').trim();
+  }
 }
 
 export function unstringifyBigInts(o) {

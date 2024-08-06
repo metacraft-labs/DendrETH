@@ -1,19 +1,19 @@
-import { GetUpdate, ProofResultType } from './types/types';
-import { IBeaconApi } from './abstraction/beacon-api-interface';
-import { IRedis } from './abstraction/redis-interface';
-import { ISmartContract } from './abstraction/smart-contract-abstraction';
+import { GetUpdate, ProofResultType } from '@/types/types';
+import { IBeaconApi } from '@/abstraction/beacon-api-interface';
+import { IRedis } from '@/abstraction/redis-interface';
+import { ISmartContract } from '@/abstraction/smart-contract-abstraction';
 import { Contract } from 'ethers';
 import {
   TransactionSpeed,
   getSolidityProof,
   publishTransaction,
-} from './implementations/publish_evm_transaction';
+} from '@/implementations/publish_evm_transaction';
 import Web3 from 'web3';
 import { checkConfig, sleep } from '@dendreth/utils/ts-utils/common-utils';
 import { Queue } from 'bullmq';
-import { Config, UPDATE_POLING_QUEUE } from './constants/constants';
-import { getSlotOnChain } from './utils/smart_contract_utils';
-import { addUpdate } from './utils/orchestrator';
+import { Config, UPDATE_POLING_QUEUE } from '@/constants/constants';
+import { getSlotOnChain } from '@/utils/smart_contract_utils';
+import { addUpdate } from '@/utils/orchestrator';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 
 const logger = getGenericLogger();
@@ -153,7 +153,7 @@ export async function postUpdateOnChain(
         .padStart(64, '0'),
   };
 
-  logger.info(update);
+  logger.info(JSON.stringify(update));
 
   if (hashiAdapterContract) {
     const finalizedHeaderSlot = await beaconApi.getBlockSlot(
@@ -184,6 +184,9 @@ export async function postUpdateOnChain(
       new Web3(rpcEndpoint!),
       transactionSpeed,
       true,
+      (
+        await hashiAdapterContract.provider.getNetwork()
+      ).chainId,
     );
   } else {
     await lightClientContract.postUpdateOnChain({

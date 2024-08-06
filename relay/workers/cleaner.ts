@@ -1,8 +1,8 @@
 import { Queue } from 'bullmq';
 import { checkConfig, sleep } from '@dendreth/utils/ts-utils/common-utils';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
-import { GetUpdate } from '../types/types';
-import { UPDATE_POLING_QUEUE } from '../constants/constants';
+import { GetUpdate } from '@/types/types';
+import { UPDATE_POLING_QUEUE } from '@/constants/constants';
 
 const logger = getGenericLogger();
 

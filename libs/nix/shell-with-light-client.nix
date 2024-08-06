@@ -1,17 +1,13 @@
 {
   pkgs,
   rust-stable,
+  light-client,
 }:
 with pkgs; let
-  light-client = callPackage ./light-client {};
   shell-pkgs = import ./common-shell-pkgs.nix {inherit pkgs rust-stable;};
 in
   mkShell {
-    packages =
-      shell-pkgs
-      ++ [
-        light-client
-      ];
+    packages = shell-pkgs ++ [light-client];
 
     shellHook = ''
       set -e

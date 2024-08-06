@@ -1,10 +1,9 @@
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
 import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
 import { GasPrice } from '@cosmjs/stargate';
-import { getRootDir } from '../ts-utils/common-utils';
+import { rootDir } from '../ts-utils/common-utils';
 
 export async function getCosmosContractArtifacts(contract: string) {
-  const rootDir = await getRootDir();
   var contractDir;
   if (contract == 'light-client') {
     contractDir = `${rootDir}/contracts/cosmos/${contract}`;

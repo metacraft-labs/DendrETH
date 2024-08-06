@@ -1,6 +1,6 @@
 import { promisify } from 'node:util';
 import { exec as exec_ } from 'node:child_process';
-import { getRootDir } from '@dendreth/utils/ts-utils/common-utils';
+import { rootDir } from '@dendreth/utils/ts-utils/common-utils';
 
 const exec = promisify(exec_);
 
@@ -26,7 +26,6 @@ async function getDirs(
   protocol: 'cosmos' | 'eos',
   contract: 'verifier' | 'light-client',
 ) {
-  const rootDir = await getRootDir();
   const contractDir = `${rootDir}/contracts/${protocol}/${contract}`;
   return { rootDir, contractDir };
 }
