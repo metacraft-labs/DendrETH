@@ -1,14 +1,14 @@
 use anyhow::Result;
 use circuit_executables::{
     crud::proof_storage::proof_storage::create_proof_storage,
-    utils::{parse_config_file, CommandLineOptionsBuilder},
+    utils::{get_default_config, CommandLineOptionsBuilder},
 };
 
 #[tokio::main]
 pub async fn main() -> Result<()> {
     dotenv::from_path(".env").unwrap();
 
-    let config = parse_config_file("../../common_config.json".to_owned())?;
+    let config = get_default_config()?;
 
     let matches = CommandLineOptionsBuilder::new("commitment_mapper")
         .with_redis_options(&config.redis_host, config.redis_port, &config.redis_auth)

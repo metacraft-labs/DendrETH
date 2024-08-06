@@ -9,7 +9,7 @@ use circuit_executables::{
         poll_processing_queue, save_branch, save_root_for_block_number,
         PubkeyCommitmentMapperContext,
     },
-    utils::{parse_config_file, CommandLineOptionsBuilder},
+    utils::{get_default_config, CommandLineOptionsBuilder},
 };
 use clap::Arg;
 use jemallocator::Jemalloc;
@@ -19,7 +19,7 @@ static GLOBAL: Jemalloc = Jemalloc;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let config = parse_config_file("../../common_config.json".to_owned())?;
+    let config = get_default_config()?;
 
     let matches = CommandLineOptionsBuilder::new("commitment_mapper")
         .with_redis_options(&config.redis_host, config.redis_port, &config.redis_auth)

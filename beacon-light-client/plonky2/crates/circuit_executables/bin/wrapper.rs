@@ -9,7 +9,7 @@ use circuit_executables::{
     cached_circuit_build::SERIALIZED_CIRCUITS_DIR,
     crud::common::load_circuit_data,
     db_constants::DB_CONSTANTS,
-    utils::{parse_config_file, CommandLineOptionsBuilder},
+    utils::{get_default_config, CommandLineOptionsBuilder},
     wrap_final_layer_in_poseidon_bn128::wrap_final_layer_in_poseidon_bn_128,
 };
 use circuits::{
@@ -25,7 +25,7 @@ use redis::AsyncCommands;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let common_config = parse_config_file("../../common_config.json".to_owned()).unwrap();
+    let common_config = get_default_config().unwrap();
 
     let matches = CommandLineOptionsBuilder::new("wrapper")
         .with_redis_options(

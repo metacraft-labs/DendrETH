@@ -18,7 +18,7 @@ use circuit_executables::{
     db_constants::DB_CONSTANTS,
     provers::prove_inner_level,
     utils::{
-        parse_balance_verification_command_line_options, parse_config_file,
+        parse_balance_verification_command_line_options, get_default_config,
         CommandLineOptionsBuilder,
     },
 };
@@ -74,7 +74,7 @@ where
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let common_config = parse_config_file("../../common_config.json".to_owned()).unwrap();
+    let common_config = get_default_config().unwrap();
 
     let matches = CommandLineOptionsBuilder::new("balance_verification")
         .with_balance_verification_options()
