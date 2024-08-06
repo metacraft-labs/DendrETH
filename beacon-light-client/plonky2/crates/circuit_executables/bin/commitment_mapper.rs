@@ -7,7 +7,7 @@ use circuit_executables::{
         VCMWorkQueueItem,
     },
     crud::proof_storage::proof_storage::create_proof_storage,
-    utils::{parse_config_file, CommandLineOptionsBuilder},
+    utils::{get_default_config, CommandLineOptionsBuilder},
 };
 use colored::Colorize;
 use jemallocator::Jemalloc;
@@ -19,7 +19,7 @@ static GLOBAL: Jemalloc = Jemalloc;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let config = parse_config_file("../../common_config.json".to_owned())?;
+    let config = get_default_config()?;
 
     let matches = CommandLineOptionsBuilder::new("commitment_mapper")
         .with_redis_options(&config.redis_host, config.redis_port, &config.redis_auth)

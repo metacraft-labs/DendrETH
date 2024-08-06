@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::{Arg, ArgMatches, Command};
 use ff::PrimeField;
 use serde::Deserialize;
-use std::{fs::File, io::Read, time::Duration};
+use std::{time::Duration};
 
 pub struct BalanceVerificationConfig {
     pub redis_connection: String,
@@ -227,11 +227,9 @@ pub struct CommonConfigOptions {
     pub redis_auth: String,
 }
 
-pub fn parse_config_file(filepath: String) -> Result<CommonConfigOptions> {
-    let mut content = String::new();
-    let mut file = File::open(filepath)?;
-    file.read_to_string(&mut content)?;
-    Ok(serde_json::from_str(&content.as_str())?)
+pub fn get_default_config() -> Result<CommonConfigOptions> {
+    const DEFAULT_CONFIG_JSON: &str = include_str!("../../../common_config.json");
+    Ok(serde_json::from_str(DEFAULT_CONFIG_JSON)?)
 }
 
 pub fn gindex_from_validator_index(index: u64, depth: u32) -> u64 {

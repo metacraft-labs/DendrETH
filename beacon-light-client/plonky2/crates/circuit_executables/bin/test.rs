@@ -6,7 +6,7 @@ use anyhow::Result;
 use circuit::Circuit;
 use circuit_executables::{
     crud::proof_storage::{file_proof_storage::FileStorage, proof_storage::ProofStorage},
-    utils::{parse_config_file, CommandLineOptionsBuilder},
+    utils::{get_default_config, CommandLineOptionsBuilder},
 };
 use circuits::validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel;
 use clap::Arg;
@@ -20,7 +20,7 @@ use tokio::sync::Mutex;
 
 #[tokio::main]
 pub async fn main() -> Result<()> {
-    let config = parse_config_file("../../common_config.json".to_owned())?;
+    let config = get_default_config()?;
 
     let matches = CommandLineOptionsBuilder::new("commitment_mapper")
         .with_redis_options(&config.redis_host, config.redis_port, &config.redis_auth)

@@ -11,7 +11,7 @@ use circuit_executables::{
         },
         proof_storage::proof_storage::create_proof_storage,
     },
-    utils::{parse_config_file, CommandLineOptionsBuilder},
+    utils::{get_default_config, CommandLineOptionsBuilder},
     wrap_final_layer_in_poseidon_bn128::wrap_final_layer_in_poseidon_bn_128,
 };
 use circuits::{
@@ -41,7 +41,7 @@ const WITHDRAWAL_CREDENTIALS_COUNT: usize = 1;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let common_config = parse_config_file("../../common_config.json".to_owned()).unwrap();
+    let common_config = get_default_config().unwrap();
 
     let matches = CommandLineOptionsBuilder::new("final_layer")
         .with_redis_options(
