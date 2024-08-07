@@ -257,8 +257,8 @@ export class CommitmentMapperScheduler {
 
     eventSource.addEventListener('head', (event: any) => {
       const slot = BigInt(JSON.parse(event.data).slot);
-      if (slot > this.currentSlot) {
-        this.currentSlot = slot;
+      if (slot > this.headSlot) {
+        this.headSlot = slot;
       }
     });
 
