@@ -81,11 +81,10 @@ fn main() -> Result<()> {
                 .to_bytes(&gate_serializer, &generator_serializer)
                 .unwrap();
 
+            let base_dir = format!("{SERIALIZED_CIRCUITS_DIR}/{CIRCUIT_NAME}");
+
             write_to_file(
-                &format!(
-                    "{}/{}_{}.plonky2_circuit",
-                    SERIALIZED_CIRCUITS_DIR, CIRCUIT_NAME, i
-                ),
+                &format!("{base_dir}_{i}.plonky2_circuit"),
                 &circuit_bytes,
             )
             .unwrap();
@@ -93,13 +92,12 @@ fn main() -> Result<()> {
             let inner_level_targets = targets.serialize().unwrap();
 
             write_to_file(
-                &format!(
-                    "{}/{}_{}.plonky2_targets",
-                    SERIALIZED_CIRCUITS_DIR, CIRCUIT_NAME, i
-                ),
+                &format!("{base_dir}_{i}.plonky2_targets"),
                 &inner_level_targets,
             )
             .unwrap();
+
+            println!("Wrote circuit and targets for level {} at '{}'", i, base_dir);
         }
 
         if level == Some(i) {
