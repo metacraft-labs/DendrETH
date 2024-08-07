@@ -2,140 +2,209 @@
   perSystem = {
     lib,
     inputs',
-    system,
     ...
   }: let
+    pkgs = pkgs-with-rust-overlay;
     inherit (inputs.mcl-blockchain.inputs) crane;
     inherit (inputs'.mcl-blockchain.legacyPackages) nix2container pkgs-with-rust-overlay;
-    pkgs = pkgs-with-rust-overlay;
     inherit (pkgs) callPackage rust-bin runCommand runCommandLocal writeScriptBin;
-    inherit (lib) getExe;
+    inherit (lib) getExe concatMapStringsSep range assertMsg hasSuffix removeSuffix mapAttrs last;
+
+    buildToolImage = {
+      name,
+      mainPackage,
+    }:
+      nix2container.buildImage {
+        inherit name;
+        tag = mainPackage.version or "latest";
+        copyToRoot = pkgs.buildEnv {
+          name = "root";
+          paths = [mainPackage];
+          pathsToLink = ["/bin"];
+        };
+        config = {
+          entrypoint = ["/bin/${mainPackage.meta.mainProgram}"];
+          workingdir = "/bin";
+        };
+      };
 
     nodejs = pkgs.nodejs_21;
 
     rust-nightly = rust-bin.nightly."2024-03-28".default;
-
     craneLib = (crane.mkLib pkgs).overrideToolchain rust-nightly;
 
-    all-circuit-executables = callPackage ../libs/nix/circuits_executables {
-      inherit craneLib;
-    };
+    all-circuit-executables = callPackage ../libs/nix/circuits_executables {inherit craneLib;};
 
-    circuit-executable = exeName:
-      runCommandLocal exeName {
-        meta.programName = exeName;
-      } ''
-        install -Dm755 ${all-circuit-executables}/bin/${exeName} -t $out/bin
-      '';
-
-    balance-verifier-circuit-builder = circuit-executable "balance_verification_circuit_data_generation";
-    balance-verifier = circuit-executable "balance_verification";
-    commitment-mapper = circuit-executable "commitment_mapper";
-    commitment-mapper-builder = circuit-executable "commitment_mapper_circuit_data_generation";
-    final-layer = circuit-executable "final_layer";
-
-    build-circuit-data = pkg: args:
-      runCommand "balance-verification-circuit-per-level" {} ''
-        ${getExe pkg} ${args}
-        mkdir -p $out/bin
-        mv *.plonky2_targets *.plonky2_circuit $out/bin
-      '';
-
-    balance-verification-circuit = level:
-      build-circuit-data balance-verifier-circuit-builder "--level ${level}";
-
-    commitment-mapper-data = build-circuit-data commitment-mapper-builder "";
-
-    allLevels = builtins.map builtins.toString (lib.lists.range 0 37);
-    balance-verifier-circuit-per-level = lib.genAttrs (allLevels ++ ["all"]) balance-verification-circuit;
-
-    buildImage = level: let
-      levelBefore = toString (lib.toInt level - 1);
+    buildCircuit = pkg: levels: let
+      outputs = ["out"] ++ (map (i: "level_${toString i}") levels);
     in
-      nix2container.buildImage {
-        name = "balance-verifier-for-level-${level}";
-        tag = "latest";
-        copyToRoot = pkgs.buildEnv {
-          name = "root";
-          paths = [balance-verifier balance-verifier-circuit-per-level."${level}" pkgs.bash pkgs.coreutils (lib.optionalString (level != "0") balance-verifier-circuit-per-level."${levelBefore}")];
-          pathsToLink = ["/bin"];
-        };
-        config = {
-          entrypoint = ["/bin/${balance-verifier.meta.programName}"];
-          workingdir = "/bin";
-        };
-      };
+      assert assertMsg (hasSuffix "-builder" pkg.name)
+      "The package name must end with '-builder', but got: ${pkg.name}";
+        runCommand "${(removeSuffix "-builder" pkg.name)}-data" {inherit outputs;} (
+          ''
+            ${getExe pkg}
+          ''
+          + lib.concatMapStringsSep "\n" (i: ''
+            mkdir $level_${toString i}
+            mv serialized_circuits/*_${toString i}.plonky2_{targets,circuit} $level_${toString i}
+            mkdir -p $out
+            for f in $level_${toString i}/*; do
+              ln -s $f $out/$(basename $f)
+            done
+          '')
+          levels
+        );
 
-    buildToolImage = tool:
-      nix2container.buildImage {
-        name = "${builtins.replaceStrings ["-"] ["_"] tool.name}";
-        tag = "latest";
-        copyToRoot = pkgs.buildEnv {
-          name = "root";
-          paths = [tool];
-          pathsToLink = ["/bin"];
-        };
-        config = {
-          workingdir = "/bin";
-        };
-      };
+    installRustBinary = pname: exeName:
+      runCommandLocal pname {meta.mainProgram = exeName;} ''
+        install -Dm755 ${all-circuit-executables}/bin/${exeName} -t $out/bin/
+      '';
 
-    commitment-mapper-image = nix2container.buildImage {
-      name = "commitment_mapper";
-      tag = "latest";
-      copyToRoot = pkgs.buildEnv {
-        name = "root";
-        paths = [commitment-mapper commitment-mapper-data];
-        pathsToLink = ["/bin"];
+    packageCircuitExecuable = level: executable: circuit-data: let
+      name = "${executable.name}-${level}";
+      pkg = runCommand name {inherit (executable) meta;} ''
+        mkdir -p $out/bin
+        install -Dm755 ${getExe executable} -t $out/bin/
+        ${concatMapStringsSep "\n" (data: "ln -s ${data}/* $out/bin/") circuit-data}
+      '';
+      image = buildToolImage {
+        inherit name;
+        mainPackage = pkg;
       };
-      config = {
-        workingdir = "/bin";
+    in {
+      inherit pkg image;
+    };
+
+    mapping = {
+      balance-verifier = {
+        binaryName = "balance_verification";
+        builderName = "balance_verification_circuit_data_generation";
+        range = range 0 37;
+        argsBuilder = level: let
+          mkLevel = level: toString level;
+        in
+          if level == 0
+          then [(mkLevel level)]
+          else [
+            (mkLevel level)
+            (mkLevel (level - 1))
+          ];
+      };
+      commitment-mapper = {
+        binaryName = "commitment_mapper";
+        builderName = "commitment_mapper_circuit_data_generation";
+        range = range 0 40;
+      };
+      deposit-accumulator-balance-aggregator-diva = {
+        binaryName = "deposit_accumulator_balance_aggregator_diva";
+        builderName = "deposit_accumulator_balance_aggregator_diva_circuit_data_generation";
+      };
+      deposit-accumulator-balance-aggregator-final-layer = {
+        binaryName = "deposit_accumulator_balance_aggregator_final_layer";
+      };
+      pubkey-commitment-mapper = {
+        binaryName = "pubkey_commitment_mapper";
+      };
+      final-layer = {
+        binaryName = "final_layer";
+        linkCircuitData = circuits:
+          circuits.balance-verifier.circuit-data."37" ++ circuits.commitment-mapper.circuit-data."0";
       };
     };
 
-    final-layer-image = nix2container.buildImage {
-      name = "final-layer";
-      tag = "latest";
-      copyToRoot = pkgs.buildEnv {
-        name = "root";
-        paths = [final-layer];
-        pathsToLink = ["/bin"];
-      };
-      config = {
-        entrypoint = ["/bin/${final-layer.meta.programName}"];
-        workingdir = "/bin";
-      };
-    };
+    packageAllCircuitExecutables = mapping: let
+      buildCircuitData = mapping:
+        mapAttrs (
+          name: {
+            binaryName,
+            builderName ? null,
+            range ? null,
+            argsBuilder ? null,
+            ...
+          }: let
+            binary = installRustBinary name binaryName;
+            circuit-builder = installRustBinary "${name}-builder" builderName;
+            circuit-data =
+              if builderName == null
+              then {}
+              else if range == null
+              then {"0" = [(buildCircuit circuit-builder [0])];}
+              else if argsBuilder == null
+              then {"0" = [(buildCircuit circuit-builder range)];}
+              else let
+                circuit-data = buildCircuit circuit-builder range;
+              in
+                lib.pipe range [
+                  (map (
+                    level: let
+                      args = argsBuilder level;
+                    in {
+                      name = toString level;
+                      value = map (l: circuit-data."level_${toString l}") args;
+                    }
+                  ))
+                  lib.listToAttrs
+                ];
+            levels = lib.mapAttrs (level: data: packageCircuitExecuable level binary data) circuit-data;
+          in
+            {
+              inherit binary;
+              levels."0" = packageCircuitExecuable "0" binary [];
+            }
+            // lib.optionalAttrs (builderName != null) {inherit circuit-builder circuit-data levels;}
+        )
+        mapping;
 
-    balance-verifier-circuit-per-level-docker = lib.genAttrs allLevels buildImage;
+      all-deps-free-circuit-data = buildCircuitData mapping;
 
-    balance-verifier-all-images =
-      writeScriptBin "balance-verifier-all-images"
-      (
-        lib.concatMapStringsSep
-        "\n"
-        (level: getExe (buildImage level).copyToDockerDaemon)
-        allLevels
-      );
+      linkCircuitData = mapping:
+        mapAttrs (
+          name: {linkCircuitData ? null, ...}: let
+            circuit-info = all-deps-free-circuit-data.${name};
+            linked-circuit-data =
+              if linkCircuitData == null
+              then circuit-info.circuit-data
+              else linkCircuitData all-deps-free-circuit-data;
+          in
+            circuit-info // {circuit-data = linked-circuit-data;}
+        )
+        mapping;
+    in
+      linkCircuitData mapping;
+
+    circuit-executables = packageAllCircuitExecutables mapping;
+
+    all-images = lib.pipe circuit-executables [
+      builtins.attrValues
+      (map (executable: lib.mapAttrsToList (name: level: level.image) executable.levels))
+      lib.flatten
+    ];
+
+    copy-all-circuit-executable-images-to-docker = writeScriptBin "all-circuit-executable-images" (
+      concatMapStringsSep "\n" (level: getExe level.copyToDockerDaemon) all-images
+    );
 
     input-fetchers = callPackage ../libs/nix/input-fetchers {inherit nodejs;};
-    misc-images =
-      writeScriptBin "misc-images"
-      (
-        lib.concatMapStringsSep
-        "\n"
-        (image: getExe image.copyToDockerDaemon)
-        ((map buildToolImage [input-fetchers])
-          ++ [commitment-mapper-image])
-      );
+    input-fetchers-image = buildToolImage {
+      name = "input-fetchers";
+      mainPackage = input-fetchers;
+    };
+    misc-images = writeScriptBin "misc-images" (
+      concatMapStringsSep "\n" (image: getExe image.copyToDockerDaemon) [input-fetchers-image]
+    );
   in {
     legacyPackages = {
-      inherit balance-verifier-circuit-per-level balance-verifier-circuit-per-level-docker commitment-mapper-data;
-      inherit balance-verifier commitment-mapper balance-verifier-all-images final-layer final-layer-image commitment-mapper-image;
-      inherit misc-images;
+      inherit
+        mapping
+        circuit-executables
+        all-images
+        copy-all-circuit-executable-images-to-docker
+        # misc-images
+        
+        ;
     };
     packages = {
-      inherit all-circuit-executables balance-verifier-circuit-builder input-fetchers;
+      # inherit all-circuit-executables balance-verifier-circuit-builder input-fetchers;
     };
   };
 }
