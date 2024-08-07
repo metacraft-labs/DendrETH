@@ -33,6 +33,13 @@ pub struct CommitmentMapperContext {
     pub inner_level_circuits: Vec<InnerLevelCircuit>,
 }
 
+fn get_circuit_data_path(level: usize) -> String {
+    let exe_dir = std::env::current_exe().unwrap();
+    let exe_dir = exe_dir.parent().unwrap();
+    let exe_dir = exe_dir.to_str().unwrap();
+    return format!("{exe_dir}/{SERIALIZED_CIRCUITS_DIR}/{CIRCUIT_NAME}_{level}");
+}
+
 impl CommitmentMapperContext {
     pub async fn new(
         redis_uri: &str,
@@ -51,17 +58,14 @@ impl CommitmentMapperContext {
 
         let first_level_circuit = FirstLevelCircuit {
             targets: get_first_level_targets()?,
-            data: load_circuit_data(&format!("{}/{}_0", SERIALIZED_CIRCUITS_DIR, CIRCUIT_NAME))?,
+            data: load_circuit_data(&get_circuit_data_path(0))?,
         };
 
         let mut inner_level_circuits: Vec<InnerLevelCircuit> = Vec::new();
         for i in 1..41 {
             let inner_level_circuit = InnerLevelCircuit {
                 targets: get_inner_targets(i)?,
-                data: load_circuit_data(&format!(
-                    "{}/{}_{}",
-                    SERIALIZED_CIRCUITS_DIR, CIRCUIT_NAME, i
-                ))?,
+                data: load_circuit_data(&get_circuit_data_path(i))?,
             };
             inner_level_circuits.push(inner_level_circuit);
         }
@@ -94,11 +98,18 @@ pub struct InnerLevelCircuit {
     pub data: CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
 }
 
+fn get_circuit_target_path(level: usize) -> String {
+    let exe_dir = std::env::current_exe().unwrap();
+    let exe_dir = exe_dir.parent().unwrap();
+    let exe_dir = exe_dir.to_str().unwrap();
+    let res = format!("{exe_dir}/{SERIALIZED_CIRCUITS_DIR}/{CIRCUIT_NAME}_{level}.plonky2_targets");
+    println!("get_circuit_target_path: {}", res);
+
+    return res;
+}
+
 fn get_inner_targets(i: usize) -> Result<CircuitTargetType<ValidatorsCommitmentMapperInnerLevel>> {
-    let target_bytes = read_from_file(&format!(
-        "{}/{}_{}.plonky2_targets",
-        SERIALIZED_CIRCUITS_DIR, CIRCUIT_NAME, i
-    ))?;
+    let target_bytes = read_from_file(&get_circuit_target_path(i))?;
     let mut target_buffer = Buffer::new(&target_bytes);
 
     Ok(
@@ -108,10 +119,7 @@ fn get_inner_targets(i: usize) -> Result<CircuitTargetType<ValidatorsCommitmentM
 }
 
 fn get_first_level_targets() -> Result<CircuitTargetType<ValidatorsCommitmentMapperFirstLevel>> {
-    let target_bytes = read_from_file(&format!(
-        "{}/{}_0.plonky2_targets",
-        SERIALIZED_CIRCUITS_DIR, CIRCUIT_NAME
-    ))?;
+    let target_bytes = read_from_file(&get_circuit_target_path(0))?;
     let mut target_buffer = Buffer::new(&target_bytes);
 
     Ok(
