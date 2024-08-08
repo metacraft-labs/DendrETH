@@ -1,23 +1,16 @@
-{inputs, ...}: {
+{...}: {
   perSystem = {
-    lib,
-    inputs',
+    self',
     pkgs,
-    system,
     ...
   }: let
-    inherit (inputs'.mcl-blockchain.legacyPackages) pkgs-with-rust-overlay rust-stable;
-    inherit (pkgs-with-rust-overlay) rust-bin;
-
-    rust-nightly = rust-bin.nightly."2024-03-28".default.override {
-      extensions = ["rust-src" "rust-analyzer"];
-    };
+    inherit (self'.legacyPackages) rustToolchain;
   in {
     devShells.default = with pkgs; let
-      shell-pkgs = import ./nix/common-shell-pkgs.nix {inherit pkgs rust-stable;};
+      shell-pkgs = import ./nix/common-shell-pkgs.nix {inherit pkgs self';};
     in
       mkShell {
-        packages = [rust-nightly] ++ shell-pkgs;
+        packages = [rustToolchain.rust] ++ shell-pkgs;
 
         nativeBuildInputs = [pkg-config openssl];
 

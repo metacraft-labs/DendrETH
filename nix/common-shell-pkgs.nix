@@ -1,8 +1,9 @@
 {
   pkgs,
-  rust-stable,
+  self',
 }:
 with pkgs; let
+  inherit (self'.legacyPackages) rustToolchain;
   llvm = llvmPackages_14;
   emscripten = metacraft-labs.emscripten;
   nim = pkgs.nim1;
@@ -73,8 +74,7 @@ in
 
     go
 
-    rustup
-    rust-stable
+    rustToolchain.rust
     # Developer tool to help you get up and running quickly with a new Rust
     # project by leveraging a pre-existing git repository as a template.
     cargo-generate
