@@ -11,6 +11,7 @@
     inherit (inputs'.mcl-blockchain.legacyPackages) nix2container;
 
     all-circuit-executables = self'.packages.circuit-executables;
+    inherit (self'.packages) gnark-plonky2-verifier;
 
     buildToolImage = {
       mainPackage,
@@ -177,10 +178,15 @@
       lib.flatten
     ];
 
+    gnark-plonky2-verifier-image = buildToolImage {
+      mainPackage = gnark-plonky2-verifier;
+    };
+
     copy-images-to-docker-daemon = writeScriptBin "circuit-executable-images" (
       concatMapStringsSep "\n" (level: getExe level.copyToDockerDaemon) (
         circuit-executable-images
         ++ [
+          gnark-plonky2-verifier-image
         ]
       )
     );
