@@ -6,15 +6,15 @@
     pkgs,
     ...
   }: let
-    inherit (inputs'.mcl-blockchain.legacyPackages) nix2container;
-    inherit (pkgs) callPackage runCommand runCommandLocal writeScriptBin;
     inherit (lib) getExe concatMapStringsSep range assertMsg hasSuffix removeSuffix mapAttrs;
+    inherit (pkgs) callPackage runCommand runCommandLocal writeScriptBin;
+    inherit (inputs'.mcl-blockchain.legacyPackages) nix2container;
 
     all-circuit-executables = self'.packages.circuit-executables;
 
     buildToolImage = {
-      name,
       mainPackage,
+      name ? mainPackage.pname,
     }:
       nix2container.buildImage {
         inherit name;
