@@ -173,57 +173,63 @@ function countSuccessful(tasks: Task[]): number {
 // Run the task with `count` many instances, return the number of
 // successfully completed tasks.
 export default async function runTask(count: number): Promise<number> {
-  const ecsClient: ECSClient = makeClient();
+  const BATCH: number = 10;     // 10 tasks at most per request.
 
-  const params: RunTaskCommandInput = {
-    cluster: ENV.cluster,
-    capacityProviderStrategy: [
-      {
-        capacityProvider: 'FARGATE',
-        weight: 1,
-        base: 0,
-      },
-    ],
-    taskDefinition: ENV.taskdef,
-    count,
-    networkConfiguration: {
-      awsvpcConfiguration: {
-        subnets: ENV.subnets,
-        assignPublicIp: 'ENABLED',
-      },
-    },
-    overrides: {
-      containerOverrides: [
+  const ecsClient: ECSClient = makeClient();
+  let tasks: Task[] = [];
+
+  // A single request can start up to 10 tasks.
+  for (let left = count; left > 0; left -= BATCH) {
+    let batch = Math.min(left, BATCH);
+
+    const params: RunTaskCommandInput = {
+      cluster: ENV.cluster,
+      capacityProviderStrategy: [
         {
-          name: ENV.container,
+          capacityProvider: 'FARGATE',
+          weight: 1,
+          base: 0,
         },
       ],
-    },
-  };
+      taskDefinition: ENV.taskdef,
+      count: batch,
+      networkConfiguration: {
+        awsvpcConfiguration: {
+          subnets: ENV.subnets,
+          assignPublicIp: 'ENABLED',
+        },
+      },
+      overrides: {
+        containerOverrides: [
+          {
+            name: ENV.container,
+          },
+        ],
+      },
+    };
 
-  // Run ECS tasks.
-  let data: RunTaskCommandOutput;
-  try {
-    data = await retry(() => ecsClient.send(new RunTaskCommand(params)));
-  } catch (e: unknown) {
-    throw e;
-  }
+    // Run ECS tasks.
+    let data: RunTaskCommandOutput;
+    try {
+      data = await retry(() => ecsClient.send(new RunTaskCommand(params)));
+    } catch (e: unknown) {
+      throw e;
+    }
 
-  if (data.tasks == null) {
-    throw new Error('TODO');
+    if (data.tasks != null) {
+      tasks = tasks.concat(data.tasks);
+    }
   }
 
   // Wait for tasks to complete.
   while (1) {
-    log(`[I] runTask: checking ${data.tasks.length}/${count} instances...`);
+    log(`[I] runTask: checking ${tasks.length} instances...`);
 
-    const tasks: Task[] = await retry(() =>
-      refreshTasks(ecsClient, data.tasks ?? []),
-    );
-    const stopped: boolean = allStopped(tasks);
+    const snapshot: Task[] = await retry(() => refreshTasks(ecsClient, tasks));
+    const stopped: boolean = allStopped(snapshot);
 
     if (stopped) {
-      return countSuccessful(tasks);
+      return countSuccessful(snapshot);
     }
 
     await sleep(30_000);

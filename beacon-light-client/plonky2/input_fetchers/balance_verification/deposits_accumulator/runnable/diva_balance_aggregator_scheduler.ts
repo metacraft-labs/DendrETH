@@ -1,4 +1,3 @@
-import { spawn, exec } from 'node:child_process';
 import { CommandLineOptionsBuilder } from '../../../utils/cmdline';
 import runTask, { retry } from '../../../utils/ecs';
 import accountManagerAbi from '../../../abi/account_manager_abi.json';
@@ -14,10 +13,13 @@ import JSONbig from 'json-bigint';
 import 'dotenv/config';
 import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
 import { lightCleanQueue } from './balance_aggregator_light_cleaner';
-const util = require('util');
+import util from 'util';
+
 const execAsync = util.promisify(require('child_process').exec);
 
-const MAX_INSTANCES: number = 10; // TODO
+// We're currently allowed to run 256 vCPUs in total.  Our main worker
+// image uses 8, hence 32 task instances at most.
+const MAX_INSTANCES: number = 32 ;
 
 function level(n: number, w: number, d: number): number {
   return Math.ceil(n / w) * d;
@@ -311,9 +313,7 @@ async function handleSnapshotEvent(
   const tasks: number = await numTasks(redis, protocol);
   let instances: number = Math.min(MAX_INSTANCES, estimate(tasks));
   console.log(`[I] Running ${instances} worker(s) for ${tasks} task(s)...`);
-  instances = 5; // TODO
   let completed: number = 0;
-
   try {
     completed = await runTask(instances);
   } catch (e: unknown) {
