@@ -29,7 +29,6 @@
   };
 
   outputs = inputs @ {
-    self,
     flake-parts,
     nixpkgs,
     mcl-blockchain,
@@ -50,7 +49,7 @@
         inputs',
         ...
       }: let
-        inherit (inputs'.mcl-blockchain.legacyPackages) nix2container rust-stable rust-nightly;
+        inherit (inputs'.mcl-blockchain.legacyPackages) nix2container;
 
         docker-images = import ./nix/docker-images.nix {inherit pkgs nix2container self';};
       in {
@@ -75,7 +74,7 @@
           // pkgs.lib.optionalAttrs (pkgs.hostPlatform.isLinux && pkgs.hostPlatform.isx86_64) {
             inherit (docker-images) docker-image-all;
           };
-        devShells.light-client = import ./nix/shell-with-light-client.nix {inherit pkgs rust-stable self';};
+        devShells.light-client = import ./nix/shell-with-light-client.nix {inherit pkgs self';};
       };
     };
 }

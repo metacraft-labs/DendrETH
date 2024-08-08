@@ -1,16 +1,12 @@
 {
   pkgs,
-  rust-stable,
   self',
 }: let
-  shell-pkgs = import ./common-shell-pkgs.nix {inherit pkgs rust-stable;};
+  inherit (self'.packages) light-client;
+  shell-pkgs = import ./common-shell-pkgs.nix {inherit pkgs self';};
 in
   pkgs.mkShell {
-    packages =
-      shell-pkgs
-      ++ [
-        self'.packages.light-client
-      ];
+    packages = shell-pkgs ++ [light-client];
 
     shellHook = ''
       set -e

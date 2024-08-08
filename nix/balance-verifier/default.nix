@@ -1,14 +1,16 @@
 {inputs, ...}: {
   perSystem = {
     lib,
+    self',
     inputs',
+    pkgs,
     ...
   }: let
-    pkgs = pkgs-with-rust-overlay;
-    inherit (inputs.mcl-blockchain.inputs) crane;
-    inherit (inputs'.mcl-blockchain.legacyPackages) nix2container pkgs-with-rust-overlay;
-    inherit (pkgs) callPackage rust-bin runCommand runCommandLocal writeScriptBin;
-    inherit (lib) getExe concatMapStringsSep range assertMsg hasSuffix removeSuffix mapAttrs last;
+    inherit (inputs'.mcl-blockchain.legacyPackages) nix2container;
+    inherit (pkgs) callPackage runCommand runCommandLocal writeScriptBin;
+    inherit (lib) getExe concatMapStringsSep range assertMsg hasSuffix removeSuffix mapAttrs;
+
+    all-circuit-executables = self'.packages.circuit-executables;
 
     buildToolImage = {
       name,
@@ -29,11 +31,6 @@
       };
 
     nodejs = pkgs.nodejs_21;
-
-    rust-nightly = rust-bin.nightly."2024-03-28".default;
-    craneLib = (crane.mkLib pkgs).overrideToolchain rust-nightly;
-
-    all-circuit-executables = callPackage ../pkgs/circuits_executables {inherit craneLib;};
 
     buildCircuit = pkg: levels: let
       outputs = ["out"] ++ (map (i: "level_${toString i}") levels);
