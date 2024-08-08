@@ -1,12 +1,11 @@
 {
   pkgs,
   nix2container,
+  self'
 }:
 with pkgs; let
   nodejs = nodejs-18_x;
-  llvm = llvmPackages_13;
   corepack = metacraft-labs.corepack-shims;
-  light-client = callPackage ./light-client {};
   python-with-my-packages = python3.withPackages (ps:
     with ps; [
       supervisor
@@ -26,7 +25,7 @@ with pkgs; let
   runtime_packages =
     yarn_install_pkgs
     ++ [
-      light-client
+      self'.packages.light-client
       gmp
       nasm
       libsodium

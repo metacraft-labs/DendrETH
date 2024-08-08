@@ -14,7 +14,7 @@
     };
   in {
     devShells.default = with pkgs; let
-      shell-pkgs = import ./libs/nix/common-shell-pkgs.nix {inherit pkgs rust-stable;};
+      shell-pkgs = import ./nix/common-shell-pkgs.nix {inherit pkgs rust-stable;};
     in
       mkShell {
         packages = [rust-nightly] ++ shell-pkgs;

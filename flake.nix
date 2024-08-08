@@ -36,7 +36,7 @@
     ...
   }:
     flake-parts.lib.mkFlake {inherit inputs;} {
-      imports = [./balance-verifier ./shell.nix];
+      imports = [./nix ./shell.nix];
       systems = [
         "x86_64-linux"
         "aarch64-linux"
@@ -44,8 +44,7 @@
         "aarch64-darwin"
       ];
       perSystem = {
-        config,
-        lib,
+        self',
         system,
         pkgs,
         inputs',
@@ -53,7 +52,7 @@
       }: let
         inherit (inputs'.mcl-blockchain.legacyPackages) nix2container rust-stable rust-nightly;
 
-        docker-images = import ./libs/nix/docker-images.nix {inherit pkgs nix2container;};
+        docker-images = import ./nix/docker-images.nix {inherit pkgs nix2container self';};
       in {
         _module.args.pkgs = import nixpkgs {
           inherit system;
@@ -76,7 +75,7 @@
           // pkgs.lib.optionalAttrs (pkgs.hostPlatform.isLinux && pkgs.hostPlatform.isx86_64) {
             inherit (docker-images) docker-image-all;
           };
-        devShells.light-client = import ./libs/nix/shell-with-light-client.nix {inherit pkgs rust-stable;};
+        devShells.light-client = import ./nix/shell-with-light-client.nix {inherit pkgs rust-stable self';};
       };
     };
 }

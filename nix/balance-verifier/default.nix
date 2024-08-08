@@ -33,7 +33,7 @@
     rust-nightly = rust-bin.nightly."2024-03-28".default;
     craneLib = (crane.mkLib pkgs).overrideToolchain rust-nightly;
 
-    all-circuit-executables = callPackage ../libs/nix/circuits_executables {inherit craneLib;};
+    all-circuit-executables = callPackage ../pkgs/circuits_executables {inherit craneLib;};
 
     buildCircuit = pkg: levels: let
       outputs = ["out"] ++ (map (i: "level_${toString i}") levels);
@@ -184,7 +184,7 @@
       concatMapStringsSep "\n" (level: getExe level.copyToDockerDaemon) all-images
     );
 
-    input-fetchers = callPackage ../libs/nix/input-fetchers {inherit nodejs;};
+    input-fetchers = callPackage ../pkgs/input-fetchers {inherit nodejs;};
     input-fetchers-image = buildToolImage {
       name = "input-fetchers";
       mainPackage = input-fetchers;
