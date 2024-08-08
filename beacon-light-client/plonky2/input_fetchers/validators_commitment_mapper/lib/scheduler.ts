@@ -46,6 +46,7 @@ export class CommitmentMapperScheduler {
   private take: number | undefined;
   private offset: number | undefined;
   private validators: Validator[] = [];
+  private useFastDiffEndpoint: boolean;
 
   async init(options: any): Promise<void> {
     this.api = await getBeaconApi(options['beacon-node']);
@@ -91,6 +92,8 @@ export class CommitmentMapperScheduler {
         `${this.currentSlot}`,
       );
     }
+
+    this.useFastDiffEndpoint = (process.env.USE_FAST_DIFF_ENDPOINT ?? "false") === "true";
   }
 
   dispose(): Promise<void> {
@@ -349,12 +352,14 @@ export class CommitmentMapperScheduler {
   }
 
   async getValidatorsDiff(): Promise<IndexedValidator[]> {
-    const validatorsAreInitialized =
+    const validatorsAreInitializedLazy = async () =>
       (await this.redis.client.exists(
         `${CONSTANTS.validatorKey}:0:slot_lookup`,
       )) !== 0;
 
-    if (validatorsAreInitialized) {
+    const useCustomEndpoint = this.useFastDiffEndpoint && await validatorsAreInitializedLazy();
+
+    if (useCustomEndpoint) {
       return this.api.getValidatorsDiffCustomEndpoint(
         this.currentSlot,
         this.offset,
