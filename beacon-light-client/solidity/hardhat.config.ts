@@ -11,6 +11,7 @@ import '@nomiclabs/hardhat-ethers';
 import './tasks';
 
 const conf = {
+  EXECUTION_NODE: process.env.EXECUTION_NODE || 'http://127.0.0.1:8545',
   USER_PRIVATE_KEY: process.env.USER_PRIVATE_KEY,
   ALCHEMY_API_KEY: process.env.ALCHEMY_API_KEY,
   BASE_ETHERSCAN_API_KEY: process.env.BASE_ETHERSCAN_API_KEY,
@@ -93,7 +94,7 @@ export default {
   defaultNetwork: 'hardhat',
   networks: {
     local: {
-      url: 'http://127.0.0.1:8545',
+      url: conf.EXECUTION_NODE,
       accounts: [conf.LOCAL_HARDHAT_PRIVATE_KEY],
     },
     kurtosis: {
