@@ -171,14 +171,18 @@
 
     circuit-executables = packageAllCircuitExecutables mapping;
 
-    all-images = lib.pipe circuit-executables [
+    circuit-executable-images = lib.pipe circuit-executables [
       builtins.attrValues
       (map (executable: lib.mapAttrsToList (name: level: level.image) executable.levels))
       lib.flatten
     ];
 
-    copy-all-circuit-executable-images-to-docker = writeScriptBin "all-circuit-executable-images" (
-      concatMapStringsSep "\n" (level: getExe level.copyToDockerDaemon) all-images
+    copy-images-to-docker-daemon = writeScriptBin "circuit-executable-images" (
+      concatMapStringsSep "\n" (level: getExe level.copyToDockerDaemon) (
+        circuit-executable-images
+        ++ [
+        ]
+      )
     );
 
     input-fetchers = callPackage ../pkgs/input-fetchers {inherit nodejs;};
@@ -194,8 +198,8 @@
       inherit
         mapping
         circuit-executables
-        all-images
-        copy-all-circuit-executable-images-to-docker
+        circuit-executable-images
+        copy-images-to-docker-daemon
         # misc-images
         ;
     };
