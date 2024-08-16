@@ -18,8 +18,8 @@ processes:
   proverserver:
     description: proverserver
     log_location: ./logs/prover_server.log
-    working_dir: ./relay/process-compose-scripts/
-    command: ./start-proverserver.sh
+    working_dir: ./
+    command: proverServer ${PROVER_SERVER_PORT} data/light_client.zkey
     depends_on:
       downloadZkAndDatFiles:
         condition: process_completed
