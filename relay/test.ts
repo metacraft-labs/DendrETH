@@ -1,11 +1,12 @@
-import { PointG1, PointG2 } from '@noble/bls12-381';
+import { PointG1, PointG2, verify } from '@noble/bls12-381';
 import {
   bigint_to_array,
   bytesToHex,
   formatHex,
   hexToBytes,
+  utils,
 } from '@dendreth/utils/ts-utils/bls';
-import { hexToBits } from '@dendreth/utils/ts-utils/hex-utils';
+import { hexToBits, reverseEndianness } from '@dendreth/utils/ts-utils/hex-utils';
 import { BitVectorType } from '@chainsafe/ssz';
 import { sha256 } from 'ethers/lib/utils';
 import { DenebClient } from 'telepathyx/src/operatorx/deneb';
@@ -32,7 +33,7 @@ import { bitsToHex } from '@dendreth/utils/ts-utils/hex-utils';
   // await getRotateUpdate(denebClient, ssz, 5239744);
 
   // let rotate = await denebClient.getRotateUpdate(5239744);
-  // let finalizedBlock = await denebClient.getBlock(5239744);
+  let finalizedBlock = await denebClient.getBlock(5239744);
 
   // let pubkeysBytes = rotate.nextSyncCommittee.pubkeys;
   // let aggregatePubkeyBytesX = rotate.nextSyncCommittee.aggregatePubkey;
@@ -51,7 +52,7 @@ import { bitsToHex } from '@dendreth/utils/ts-utils/hex-utils';
 
   // let syncCommitteePoseidon = getPoseidonInputs();
 
-  // let finalizedHeaderRoot = ssz.deneb.BeaconBlock.hashTreeRoot(finalizedBlock);
+  let finalizedHeaderRoot = ssz.deneb.BeaconBlock.hashTreeRoot(finalizedBlock);
   // let finalizedSlot = ssz.deneb.BeaconBlock.fields.slot.hashTreeRoot(
   //   finalizedBlock.slot,
   // );
@@ -77,6 +78,20 @@ async function getStepUpdate(
     .map(x => PointG1.fromHex(x))
     .map(x => bigint_to_array(55, 7, x.toAffine()[1].value));
 
+  let points = step.currentSyncCommittee.pubkeys.map(x => PointG1.fromHex(x));
+
+  let agg = PointG1.ZERO;
+
+  for (let i = 0; i < points.length; i++) {
+    agg = agg.add(points[i]);
+  }
+
+  let aggX = bigint_to_array(55, 7, agg.toAffine()[0].value);
+  let aggY = bigint_to_array(55, 7, agg.toAffine()[1].value);
+
+  console.log('aggX', aggX);
+  console.log('aggY', aggY);
+
   let aggregationBits = step.syncAggregate.syncCommitteeBits
     .toBoolArray()
     .map(x => (x ? '1' : '0'));
@@ -94,30 +109,35 @@ async function getStepUpdate(
       bigint_to_array(55, 7, signaturePoint.toAffine()[1].c1.value),
     ],
   ];
+
+  console.log('Fork version', step.forkVersion);
+
   let sha256_fork_version = sha256(
     '0x' +
-      bytesToHex(step.forkVersion) +
-      bytesToHex(step.genesisValidatorsRoot),
+    bytesToHex(step.forkVersion).padEnd(64, '0') +
+    bytesToHex(step.genesisValidatorsRoot),
   );
 
-  const DOMAIN_SYNC_COMMITTEE = '07000000'; //removed the x0
-  let domain = DOMAIN_SYNC_COMMITTEE + sha256_fork_version.slice(2, 58);
+  const DOMAIN_SYNC_COMMITTEE = '0x07000000';
+  let domain = formatHex(DOMAIN_SYNC_COMMITTEE) + formatHex(sha256_fork_version).slice(0, 56);
   let signing_root = sha256(
-    '0x' + bytesToHex(step.attestedHeaderRoot) + domain,
+    "0x" + bytesToHex(step.attestedHeaderRoot) + domain,
   );
+
+  let aggHex = agg.toHex(true);
+
+  console.log("Params", bytesToHex(step.syncAggregate.syncCommitteeSignature), signing_root, aggHex);
+
+  const result = await verify(bytesToHex(step.syncAggregate.syncCommitteeSignature), formatHex(signing_root), aggHex);
+
+  console.log("Verify bls result", result);
+
   let participation = aggregationBits
     .map(x => Number(x))
     .reduce((a, b) => a + b, 0);
-  console.log(participation)
-  let participationBytes = numberToBytesBE(
-    toLittleEndian(BigInt(participation)),
-    32,
-  );
-  console.log(BigInt(bytesToHex(participationBytes)))
-  console.log(toLittleEndian(BigInt(participation)))
   let syncCommitteePoseidon = await getPoseidonInputs(pubkeysBytes);
-// console.log(syncCommitteePoseidon);
-  let syncCommitteePoseidonInHex = BigInt(syncCommitteePoseidon).toString(16);
+  let syncCommitteePoseidonInHex = reverseEndianness(BigInt(syncCommitteePoseidon).toString(16));
+  console.log("Sync Committee Bytes", hexToBytes(syncCommitteePoseidonInHex));
   // let syncCommitteePoseidonBytes = hexToBytes(syncCommitteePoseidonInHex);
 
   let finalityBranch = step.finalityBranch;
@@ -160,10 +180,26 @@ async function getStepUpdate(
     '0x' + bytesToHex(attestedSlotBytes) + bytesToHex(finalizedSlotBytes),
   );
   let sha1 = sha256(sha0 + bytesToHex(finalizedHeaderRoot));
-  let sha2 = sha256(sha1 + bytesToHex(participationBytes));
+  console.log("Participation:", BigInt(participation));
+  // console.log('Participation little endian:', toLittleEndian(BigInt(participation)));
+  let participationHex = reverseEndianness(BigInt(participation).toString(16).padStart(64, '0'));
+
+  console.log('participation bytes', participationHex);
+
+  let sha2 = sha256(sha1 + participationHex);
+
+  console.log('Sha2', hexToBytes(sha2));
+
   let sha3 = sha256(sha2 + bytesToHex(executionStateRoot));
   let sha4 = sha256(sha3 + syncCommitteePoseidonInHex);
-  let publicInputsRoot = getFirst253Bits(hexToBytes(sha4));
+
+  console.log('sha4', sha4);
+
+  let bits = hexToBits(sha4);
+
+  let publicInputsRoot = hexToBits(sha4).reduce((acc, _, i) => (i % 8 === 0 ? acc.push(bits.slice(i, i + 8)) : acc, acc), [] as number[][]).flatMap(x => x.reverse()).slice(0, 253);
+
+  let publicInputRootNumber = BigInt('0b' + publicInputsRoot.reverse().join(''));
   const bit_array = [
     0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0,
     1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0,
@@ -181,45 +217,45 @@ async function getStepUpdate(
     1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1,
     1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0,
     0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0
-]
+  ]
   // Create the JSON object in the specified order
   const jsonOutput = {
-    /* Attested Header */
-    attestedHeaderRoot: Array.from(Buffer.from(attestedHeaderRoot)),
-    attestedSlot: Array.from(Buffer.from(attestedSlotBytes)),
-    attestedProposerIndex: Array.from(Buffer.from(attestedProposerIndexBytes)),
-    attestedParentRoot: Array.from(Buffer.from(attestedParentRoot)),
-    attestedStateRoot: Array.from(Buffer.from(attestedStateRoot)),
-    attestedBodyRoot: Array.from(Buffer.from(attestedBodyRoot)),
-    /* Finalized Header */
-    finalizedHeaderRoot: Array.from(Buffer.from(finalizedHeaderRoot)),
-    finalizedSlot: Array.from(Buffer.from(finalizedSlotBytes)),
-    finalizedProposerIndex: Array.from(
-      Buffer.from(finalizedProposerIndexBytes),
-    ),
-    finalizedParentRoot: Array.from(Buffer.from(finalizedParentRoot)),
-    finalizedStateRoot: Array.from(Buffer.from(finalizedStateRoot)),
-    finalizedBodyRoot: Array.from(Buffer.from(finalizedBodyRoot)),
+    // /* Attested Header */
+    // attestedHeaderRoot: Array.from(Buffer.from(attestedHeaderRoot)),
+    // attestedSlot: Array.from(Buffer.from(attestedSlotBytes)),
+    // attestedProposerIndex: Array.from(Buffer.from(attestedProposerIndexBytes)),
+    // attestedParentRoot: Array.from(Buffer.from(attestedParentRoot)),
+    // attestedStateRoot: Array.from(Buffer.from(attestedStateRoot)),
+    // attestedBodyRoot: Array.from(Buffer.from(attestedBodyRoot)),
+    // /* Finalized Header */
+    // finalizedHeaderRoot: Array.from(Buffer.from(finalizedHeaderRoot)),
+    // finalizedSlot: Array.from(Buffer.from(finalizedSlotBytes)),
+    // finalizedProposerIndex: Array.from(
+    //   Buffer.from(finalizedProposerIndexBytes),
+    // ),
+    // finalizedParentRoot: Array.from(Buffer.from(finalizedParentRoot)),
+    // finalizedStateRoot: Array.from(Buffer.from(finalizedStateRoot)),
+    // finalizedBodyRoot: Array.from(Buffer.from(finalizedBodyRoot)),
     /* Sync Committee Protocol */
     pubkeysX,
     pubkeysY,
     aggregationBits,
     signature,
-    domain: Array.from(Buffer.from(hexToBytes(domain))),
+    // domain: Array.from(Buffer.from(hexToBytes(domain))),
     signingRoot: Array.from(Buffer.from(hexToBytes(signing_root))),
-    participation: getFirst253Bits(participationBytes),
+    // executionStateRoot: Array.from(Buffer.from(executionStateRoot)),
+    // participation: participation,
     syncCommitteePoseidon: syncCommitteePoseidon,
     /* Finality Proof */
-    finalityBranch: finalityBranch.map(finalityB =>
-      Array.from(Buffer.from(finalityB)),
-    ),
+    // finalityBranch: finalityBranch.map(finalityB =>
+    //   Array.from(Buffer.from(finalityB)),
+    // ),
     /* Execution State Proof */
-    executionStateRoot: Array.from(Buffer.from(executionStateRoot)),
-    executionStateBranch: executionStateBranch.map(
-      executionSB => Array.from(Buffer.from(executionSB)), //9 not 8
-    ),
-    /* Commitment to Public Inputs */
-    publicInputsRoot: publicInputsRoot,
+    // executionStateBranch: executionStateBranch.map(
+    //   executionSB => Array.from(Buffer.from(executionSB)), //9 not 8
+    // ),
+    // /* Commitment to Public Inputs */
+    // publicInputsRoot: publicInputRootNumber.toString(),
   };
   // Write the JSON output to a file
   const outputFilePath = 'InputForStepUpdate.json';
@@ -404,6 +440,7 @@ function toLittleEndian(value: bigint): bigint {
 }
 
 function getFirst253Bits(arr: Uint8Array): string {
+  console.log("arr", arr);
   if (arr.length !== 32) {
     throw new Error('Input array must be exactly 32 bytes long');
   }

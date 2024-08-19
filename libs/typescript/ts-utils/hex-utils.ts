@@ -32,3 +32,7 @@ export function bitsToHex(bits: number[]) {
 
   return bytesStr;
 }
+
+export function reverseEndianness(hex: string): string {
+  return formatHex(hex).match(/.{2}/g)!.reverse().join('');
+}
