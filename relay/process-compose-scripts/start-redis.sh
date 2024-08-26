@@ -19,7 +19,12 @@ else
 
   if [[ "${REDIS_HOST}" == "localhost" ]] && [[ "${REDIS_PORT}" == "6379" ]]; then
     echo "Starting local Redis server..."
+    mkdir "${GIT_ROOT}/redis-server"
+  (
+    cd "${GIT_ROOT}/redis-server" || exit 1
     redis-server --appendonly yes
+
+  )
     echo "Local Redis server started"
   else
     echo "Using remote Redis server at ${REDIS_HOST}:${REDIS_PORT}"
