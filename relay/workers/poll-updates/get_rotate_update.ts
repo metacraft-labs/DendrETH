@@ -1,7 +1,7 @@
 import { PointG1 } from '@noble/bls12-381';
 import { bigint_to_array, bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import { DenebClient } from 'telepathyx/src/operatorx/deneb';
-import { getPoseidonInputs, toLittleEndianBytes } from '@/utils/succinct_utils';
+import { getPoseidonInputs, toLittleEndianBytes } from '../../utils/telepathy_utils';
 import { writeFileSync } from 'fs';
 
 (async () => {

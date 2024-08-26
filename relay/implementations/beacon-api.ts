@@ -35,25 +35,31 @@ export class BeaconApi implements IBeaconApi {
     public readonly ssz: SSZ,
   ) {}
 
-  async getSlotsPerEpoch(): Promise<bigint> {
+  async getSpecConfig() {
     const config = await (
       await this.fetchWithFallback('/eth/v1/config/spec')
     ).json();
 
-    const slotsPerEpoch = config.data.SLOTS_PER_EPOCH;
+    return config.data;
+  }
+
+  async;
+
+  async getSlotsPerEpoch(): Promise<bigint> {
+    const config = await this.getSpecConfig();
+
+    const slotsPerEpoch = config.SLOTS_PER_EPOCH;
     return BigInt(slotsPerEpoch);
   }
 
   async getSlotsPerSyncCommitteePeriod(): Promise<bigint> {
-    const config = await (
-      await this.fetchWithFallback('/eth/v1/config/spec')
-    ).json();
+    const config = await this.getSpecConfig();
 
-    const slotsPerEpoch = config.data.SLOTS_PER_EPOCH;
-    const epochPerSyncCommitteePeriod =
-      config.data.EPOCHS_PER_SYNC_COMMITTEE_PERIOD;
+    const slotsPerEpoch = config.SLOTS_PER_EPOCH;
+    const epochPerSyncCommitteePeriod = config.EPOCHS_PER_SYNC_COMMITTEE_PERIOD;
     return BigInt(slotsPerEpoch * epochPerSyncCommitteePeriod);
   }
+
   async getCurrentSSZ(slot: bigint): Promise<CapellaOrDeneb> {
     const forkSchedule = await (
       await this.fetchWithFallback('/eth/v1/config/fork_schedule')
@@ -562,7 +568,7 @@ export class BeaconApi implements IBeaconApi {
     return BigInt(json.data.finalized.epoch);
   }
 
-  async getBeaconState(slot: bigint, retry: number = 0) {
+  async getBeaconState(slot: bigint) {
     logger.info('Getting Beacon State..');
 
     const beaconStateSZZ = await this.fetchWithFallback(
@@ -591,11 +597,6 @@ export class BeaconApi implements IBeaconApi {
       .then(buffer => new Uint8Array(buffer))
       .catch(e => {
         console.error(e);
-
-        if (retry < 10) {
-          logger.warn(`Retrying to get beacon state ${retry + 1}`);
-          return this.getBeaconState(slot, retry + 1);
-        }
       });
 
     if (!beaconStateSZZ) {

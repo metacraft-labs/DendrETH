@@ -1,3 +1,6 @@
+import { BeaconApi, getBeaconApi } from '@/implementations/beacon-api';
+import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
+
 interface Config {
   NETWORK_NAME: string;
   BEACON_REST_API: string[];
@@ -62,28 +65,21 @@ export async function getNetworkConfig(
     }
   }
 
-  const response = await fetch(config.BEACON_REST_API + '/eth/v1/config/spec');
-  if (!response.ok) {
-    throw new Error('Network response was not ok ' + response.statusText);
-  }
-  const responseGenesis = await fetch(
-    config.BEACON_REST_API + '/eth/v1/beacon/genesis',
-  );
-  if (!responseGenesis.ok) {
-    throw new Error(
-      'Network response was not ok ' + responseGenesis.statusText,
-    );
-  }
-  const config_ = await response.json();
-  const config_genesis = await responseGenesis.json();
+  const beaconApi = await getBeaconApi(config.BEACON_REST_API);
 
-  config.SLOTS_PER_EPOCH = config_.data.SLOTS_PER_EPOCH;
+  const specConfig = await beaconApi.getSpecConfig();
+
+  const genesisConfig = await beaconApi.getGenesisData();
+
+  config.SLOTS_PER_EPOCH = specConfig.SLOTS_PER_EPOCH;
   config.EPOCHS_PER_SYNC_COMMITTEE_PERIOD =
-    config_.data.EPOCHS_PER_SYNC_COMMITTEE_PERIOD;
-  config.GENESIS_FORK_VERSION = config_.data.GENESIS_FORK_VERSION;
-  config.FORK_VERSION = config_.data.DENEB_FORK_VERSION;
-  config.DOMAIN_SYNC_COMMITTEE = config_.data.DOMAIN_SYNC_COMMITTEE;
-  config.GENESIS_VALIDATORS_ROOT = config_genesis.data.genesis_validators_root;
+    specConfig.EPOCHS_PER_SYNC_COMMITTEE_PERIOD;
+  config.GENESIS_FORK_VERSION = specConfig.GENESIS_FORK_VERSION;
+  config.FORK_VERSION = specConfig.DENEB_FORK_VERSION;
+  config.DOMAIN_SYNC_COMMITTEE = specConfig.DOMAIN_SYNC_COMMITTEE;
+  config.GENESIS_VALIDATORS_ROOT = bytesToHex(
+    genesisConfig.genesisValidatorsRoot,
+  );
 
   return config;
 }

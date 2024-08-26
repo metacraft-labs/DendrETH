@@ -1,9 +1,13 @@
-import { bigint_to_array, formatHex, hexToBytes } from '@dendreth/utils/ts-utils/bls';
+import {
+  bigint_to_array,
+  formatHex,
+  hexToBytes,
+} from '@dendreth/utils/ts-utils/bls';
 import { reverseEndianness } from '@dendreth/utils/ts-utils/hex-utils';
 import { PointG1 } from '@noble/bls12-381';
 import { buildPoseidonReference } from 'circomlibjs';
 
-export async function getPoseidonInputs(pubkeys: string[]) {
+export async function getPoseidonInputs(pubkeys: string[]): Promise<string> {
   let pubkeyPoints = pubkeys.map(x => PointG1.fromHex(formatHex(x)).toAffine());
   let pubkeyArrays = pubkeyPoints.map(x => [
     bigint_to_array(55, 7, x[0].value),
@@ -41,8 +45,6 @@ export async function getPoseidonInputs(pubkeys: string[]) {
 
 export function toLittleEndianBytes(value: bigint): Uint8Array {
   return hexToBytes(
-    reverseEndianness(
-      BigInt(value).toString(16).padStart(64, '0'),
-    ),
-  )
+    reverseEndianness(BigInt(value).toString(16).padStart(64, '0')),
+  );
 }

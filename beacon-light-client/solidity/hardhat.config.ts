@@ -84,6 +84,16 @@ export default {
         },
       },
       {
+        version: '0.8.16',
+        settings: {
+          viaIR: true,
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
+      {
         version: '0.8.18',
         settings: {
           viaIR: true,
@@ -202,7 +212,7 @@ export default {
       bscTestnet: conf.BSC_ETHERSCAN_API_KEY,
       chiado: conf.CHIADO_ETHERSCAN_API,
       gnosis: conf.GNOSIS_ETHERSCAN_API,
-      lukso: conf.ETHERSCAN_API_KEY,
+      // lukso: conf.ETHERSCAN_API_KEY,
     },
     customChains: [
       {

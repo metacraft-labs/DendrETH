@@ -14,7 +14,7 @@ import { DenebClient } from 'telepathyx/src/operatorx/deneb';
 import {
   getPoseidonInputs,
   toLittleEndianBytes,
-} from '@/utils/succinct_utils';
+} from '../../utils/telepathy_utils';
 import { writeFileSync } from 'fs';
 
 (async () => {
