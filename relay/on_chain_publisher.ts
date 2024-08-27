@@ -153,8 +153,6 @@ export async function postUpdateOnChain(
         .padStart(64, '0'),
   };
 
-  logger.info(JSON.stringify(update));
-
   if (hashiAdapterContract) {
     const finalizedHeaderSlot = await beaconApi.getBlockSlot(
       update.finalizedHeaderRoot,
@@ -168,13 +166,23 @@ export async function postUpdateOnChain(
       c: proofResult.proof.pi_c,
     });
 
-    await publishTransaction(
-      hashiAdapterContract,
-      'storeBlockHeader(uint32,uint64,bytes32[],uint256,bytes32[],bytes32,bytes32[],(bytes32,uint256,bytes32,bytes32,uint256[2],uint256[2][2],uint256[2]))',
-      [
+    logger.info(
+      JSON.stringify([
         (await hashiAdapterContract.provider.getNetwork()).chainId,
         finalizedHeaderSlot,
         hashiInfo.slotProof.map(x => '0x' + x),
+        hashiInfo.blockNumber,
+        hashiInfo.blockNumberProof.map(x => '0x' + x),
+        '0x' + hashiInfo.blockHash,
+        hashiInfo.blockHashProof.map(x => '0x' + x),
+        { ...update, ...solidityProof },
+      ]),
+    );
+
+    await publishTransaction(
+      hashiAdapterContract,
+      'storeBlockHeader(uint256,bytes32[],bytes32,bytes32[],(bytes32,uint256,bytes32,bytes32,uint256[2],uint256[2][2],uint256[2]))',
+      [
         hashiInfo.blockNumber,
         hashiInfo.blockNumberProof.map(x => '0x' + x),
         '0x' + hashiInfo.blockHash,

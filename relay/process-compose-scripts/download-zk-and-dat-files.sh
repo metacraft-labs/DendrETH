@@ -43,7 +43,7 @@ download_dat_file() {
 
 if [[ -z "${LIGHT_CLIENT_DAT_DOWNLOAD_LOCATION}" ]]; then
   echo "LIGHT_CLIENT_DAT_DOWNLOAD_LOCATION  environment variables are not set. Using default values."
-  LIGHT_CLIENT_DAT_DOWNLOAD_LOCATION="https://dendrethstorage.blob.core.windows.net/light-client/light-client.zkey"
+  LIGHT_CLIENT_DAT_DOWNLOAD_LOCATION="https://dendrethstorage.blob.core.windows.net/light-client/light-client.dat"
 else
   echo "Using download dat settings from environment variables"
 fi
@@ -64,6 +64,7 @@ fi
 
 mkdir -p "${GIT_ROOT}/data"
 
+# TODO: this if should also check if we have the correct version
 if [ ! -f "${GIT_ROOT}/data/light_client.zkey" ]; then
   download_zkey_file
 else
@@ -77,6 +78,7 @@ else
   fi
 fi
 
+# TODO: this if should also check if we have the correct version
 if [ ! -f "${GIT_ROOT}/data/light_client.dat" ]; then
   download_dat_file
 else
