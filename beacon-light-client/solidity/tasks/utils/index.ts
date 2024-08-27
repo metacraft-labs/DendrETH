@@ -1,6 +1,7 @@
 import { sha256 } from 'ethers/lib/utils';
 import { IBeaconApi } from '@dendreth/relay/abstraction/beacon-api-interface';
 import { Config } from '@dendreth/relay/constants/constants';
+import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 
 export const getConstructorArgs = async (
   beaconApi: IBeaconApi,
@@ -21,9 +22,9 @@ export const getConstructorArgs = async (
   );
 
   return [
-    finalizedHeaderRoot,
+    '0x' + bytesToHex(finalizedHeaderRoot),
     finalizedBlockHeader.slot,
-    finalizedHeaderRoot,
+    '0x' + bytesToHex(finalizedHeaderRoot),
     executioStateRoot,
     config.DOMAIN_SYNC_COMMITTEE + result.slice(2, 58),
   ];
