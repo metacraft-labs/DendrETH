@@ -1,3 +1,5 @@
+use std::env;
+
 use anyhow::Result;
 use async_trait::async_trait;
 use aws_config::{BehaviorVersion, Region};
@@ -14,15 +16,15 @@ impl AwsStorage {
     pub async fn new(region: String, bucket_name: String) -> AwsStorage {
         let aws_config = aws_config::defaults(BehaviorVersion::latest()).load().await;
 
-        let s3_config = Config::builder()
+        let mut s3_config_builder = Config::builder()
             .credentials_provider(aws_config.credentials_provider().unwrap())
             .behavior_version_latest()
             .region(Region::new(region))
-            .force_path_style(true)
-            .clone()
-            .build();
+            .force_path_style(true);
 
-        let client = Client::from_conf(s3_config);
+        s3_config_builder.set_endpoint_url(env::var("AWS_S3_ENDPOINT_URL").ok());
+
+        let client = Client::from_conf(s3_config_builder.build());
 
         AwsStorage {
             client,
