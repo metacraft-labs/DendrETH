@@ -11,8 +11,8 @@ task('remove-repeat-job', 'Run update recuring task')
   .addParam('jobKey', 'The job key')
   .setAction(async args => {
     const config = {
-      REDIS_HOST: process.env.REDIS_HOST,
-      REDIS_PORT: Number(process.env.REDIS_PORT),
+      REDIS_HOST: process.env.REDIS_HOST || 'localhost',
+      REDIS_PORT: Number(process.env.REDIS_PORT) || 6379,
     };
 
     checkConfig(config);

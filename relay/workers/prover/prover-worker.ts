@@ -10,8 +10,8 @@ import yargs from 'yargs';
 
 (async () => {
   const proverConfig = {
-    REDIS_HOST: process.env.REDIS_HOST,
-    REDIS_PORT: Number(process.env.REDIS_PORT),
+    REDIS_HOST: process.env.REDIS_HOST || 'localhost',
+    REDIS_PORT: Number(process.env.REDIS_PORT) || 6379,
   };
 
   checkConfig(proverConfig);
