@@ -11,8 +11,8 @@ import { checkConfig } from '@dendreth/utils/ts-utils/common-utils';
 
 async function publishTask() {
   const config = {
-    REDIS_HOST: process.env.REDIS_HOST,
-    REDIS_PORT: Number(process.env.REDIS_PORT),
+    REDIS_HOST: process.env.REDIS_HOST || 'localhost',
+    REDIS_PORT: Number(process.env.REDIS_PORT) || 6379,
     SLOT_JUMP: Number(process.env.SLOT_JUMP),
   };
 
