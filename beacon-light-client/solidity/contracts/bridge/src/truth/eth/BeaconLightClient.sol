@@ -7,16 +7,6 @@ import '../../interfaces/ILightClient.sol';
 uint256 constant BUFER_SIZE = 32;
 
 contract BeaconLightClient is LightClientUpdateVerifier, ILightClient {
-  struct LightClientUpdate {
-    bytes32 attestedHeaderRoot;
-    uint256 attestedHeaderSlot;
-    bytes32 finalizedHeaderRoot;
-    bytes32 finalizedExecutionStateRoot;
-    uint256[2] a;
-    uint256[2][2] b;
-    uint256[2] c;
-  }
-
   bytes32[BUFER_SIZE] public optimisticHeaders;
 
   uint256[BUFER_SIZE] public optimisticSlots;
@@ -62,7 +52,7 @@ contract BeaconLightClient is LightClientUpdateVerifier, ILightClient {
   }
 
   // TODO: fix name to lightClientUpdate
-  function light_client_update(LightClientUpdate calldata update)
+  function lightClientUpdate(LightClientUpdate calldata update)
     external
     payable
   {

@@ -23,6 +23,8 @@ task('verify-contracts', 'Verify')
 
     const beaconApi = await getBeaconApi(currentConfig.BEACON_REST_API!);
 
+    console.log(await getConstructorArgs(beaconApi, args.slot, currentConfig));
+
     await run('verify:verify', {
       address: args.lightClient,
       constructorArguments: await getConstructorArgs(
