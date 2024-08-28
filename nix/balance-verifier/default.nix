@@ -40,7 +40,7 @@
       "The package name must end with '-builder', but got: ${pkg.name}";
         runCommand "${(removeSuffix "-builder" pkg.name)}-data" {inherit outputs;} (
           ''
-            ${getExe pkg}
+            RUST_BACKTRACE=1 ${getExe pkg} --serialized-circuits-dir ./serialized_circuits
           ''
           + lib.concatMapStringsSep "\n" (i: ''
             mkdir $level_${toString i}
@@ -61,9 +61,18 @@
     packageCircuitExecuable = level: executable: circuit-data: let
       name = "${executable.name}-${level}";
       pkg = runCommand name {inherit (executable) meta;} ''
-        mkdir -p $out/bin/serialized_circuits
-        install -Dm755 ${getExe executable} -t $out/bin/
-        ${concatMapStringsSep "\n" (data: "ln -s ${data}/* $out/bin/serialized_circuits") circuit-data}
+        BIN=$out/bin/${executable.meta.mainProgram}
+        CIRCUIT_DIR=$out/data/serialized_circuits
+        mkdir -p $CIRCUIT_DIR $out/bin
+
+        cat << EOF > $BIN
+        #!${pkgs.runtimeShell}
+        set -x
+        RUST_BACKTRACE=1 ${getExe executable} --serialized-circuits-dir $CIRCUIT_DIR "\$@"
+        EOF
+        chmod +x $BIN
+
+        ${concatMapStringsSep "\n" (data: "ln -s ${data}/* $CIRCUIT_DIR") circuit-data}
       '';
       image = buildToolImage {
         inherit name;
