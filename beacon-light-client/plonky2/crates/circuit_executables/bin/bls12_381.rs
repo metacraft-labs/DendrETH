@@ -1,7 +1,6 @@
 use anyhow::Result;
 use circuit::SerdeCircuitTarget;
 use circuit_executables::{
-    cached_circuit_build::SERIALIZED_CIRCUITS_DIR,
     crud::{
         common::{load_circuit_data_starky, load_common_circuit_data_starky, read_from_file},
         proof_storage::proof_storage::{create_proof_storage, ProofStorage},
@@ -21,15 +20,17 @@ const CIRCUIT_NAME: &str = "bls12_381";
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let matches = CommandLineOptionsBuilder::new("bls12_381_components_proofs")
+    let matches = CommandLineOptionsBuilder::new("bls12_381")
         .with_proof_storage_options()
         .get_matches();
 
+    let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
+
     let circuit_data =
-        load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/{CIRCUIT_NAME}"));
+        load_circuit_data_starky(&format!("{serialized_circuits_dir}/{CIRCUIT_NAME}"));
     let target_bytes = read_from_file(&format!(
         "{}/{}.plonky2_targets",
-        SERIALIZED_CIRCUITS_DIR, CIRCUIT_NAME
+        serialized_circuits_dir, CIRCUIT_NAME
     ))?;
     let mut target_buffer = Buffer::new(&target_bytes);
 
@@ -68,10 +69,10 @@ async fn main() -> Result<()> {
             .collect::<Vec<GoldilocksField>>(),
     );
 
-    let (pp1, pp2) = get_pairing_precomp_proofs(&mut proof_storage).await;
-    let (ml1, ml2) = get_miller_loop_proofs(&mut proof_storage).await;
-    let fp12_mul_proof = get_fp12_mul_proof(&mut proof_storage).await;
-    let final_exp_proof = get_final_exp_proof(&mut proof_storage).await;
+    let (pp1, pp2) = get_pairing_precomp_proofs(serialized_circuits_dir, &mut proof_storage).await;
+    let (ml1, ml2) = get_miller_loop_proofs(serialized_circuits_dir, &mut proof_storage).await;
+    let fp12_mul_proof = get_fp12_mul_proof(serialized_circuits_dir, &mut proof_storage).await;
+    let final_exp_proof = get_final_exp_proof(serialized_circuits_dir, &mut proof_storage).await;
 
     pw.set_proof_with_pis_target(&targets.pt_pp1, &pp1);
     pw.set_proof_with_pis_target(&targets.pt_pp2, &pp2);
@@ -94,10 +95,11 @@ async fn main() -> Result<()> {
 }
 
 async fn get_final_exp_proof(
+    serialized_circuits_dir: &str,
     proof_storage: &mut Box<dyn ProofStorage>,
 ) -> ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> {
     let final_exp_circuit_data = load_common_circuit_data_starky(&format!(
-        "{SERIALIZED_CIRCUITS_DIR}/final_exponentiate_circuit"
+        "{serialized_circuits_dir}/final_exponentiate_circuit"
     ));
     let final_exp_proof =
         ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
@@ -110,10 +112,11 @@ async fn get_final_exp_proof(
 }
 
 async fn get_fp12_mul_proof(
+    serialized_circuits_dir: &str,
     proof_storage: &mut Box<dyn ProofStorage>,
 ) -> ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> {
     let fp12_mul_circuit_data =
-        load_common_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/fp12_mul"));
+        load_common_circuit_data_starky(&format!("{serialized_circuits_dir}/fp12_mul"));
     let fp12_mul_proof =
         ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
             (proof_storage.get_proof("fp12_mul_proof".to_string()).await).unwrap(),
@@ -125,13 +128,14 @@ async fn get_fp12_mul_proof(
 }
 
 async fn get_miller_loop_proofs(
+    serialized_circuits_dir: &str,
     proof_storage: &mut Box<dyn ProofStorage>,
 ) -> (
     ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
 ) {
     let miller_loop_circuit_data =
-        load_common_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/miller_loop"));
+        load_common_circuit_data_starky(&format!("{serialized_circuits_dir}/miller_loop"));
     let ml1 = ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
         (proof_storage
             .get_proof("miller_loop_proof_1".to_string())
@@ -153,13 +157,14 @@ async fn get_miller_loop_proofs(
 }
 
 async fn get_pairing_precomp_proofs(
+    serialized_circuits_dir: &str,
     proof_storage: &mut Box<dyn ProofStorage>,
 ) -> (
     ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
 ) {
     let pairing_precomp_circuit_data =
-        load_common_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/pairing_precomp"));
+        load_common_circuit_data_starky(&format!("{serialized_circuits_dir}/pairing_precomp"));
     let pp1 = ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
         (proof_storage
             .get_proof("pairing_precomp_proof1".to_string())

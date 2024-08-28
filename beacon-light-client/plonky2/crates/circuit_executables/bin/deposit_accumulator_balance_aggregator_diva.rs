@@ -3,7 +3,7 @@
 
 use circuit::{set_witness::SetWitness, Circuit, CircuitTargetType};
 use circuit_executables::{
-    cached_circuit_build::{build_recursive_circuit_single_level_cached, SERIALIZED_CIRCUITS_DIR},
+    cached_circuit_build::build_recursive_circuit_single_level_cached,
     constants::VALIDATOR_REGISTRY_LIMIT,
     crud::{
         common::{
@@ -16,7 +16,7 @@ use circuit_executables::{
     db_constants::DB_CONSTANTS,
     provers::prove_inner_level,
     utils::{
-        parse_balance_verification_command_line_options, get_default_config,
+        get_default_config, parse_balance_verification_command_line_options,
         CommandLineOptionsBuilder,
     },
 };
@@ -71,7 +71,10 @@ async fn main() -> Result<()> {
         .with_work_queue_options()
         .with_proof_storage_options()
         .with_protocol_options()
+        .with_serialized_circuits_dir()
         .get_matches();
+
+    let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
 
     let config = parse_balance_verification_command_line_options(&matches);
 
@@ -87,12 +90,10 @@ async fn main() -> Result<()> {
         None
     } else {
         Some(
-            load_circuit_data(&format!(
-                "{}/{}_{}",
-                SERIALIZED_CIRCUITS_DIR,
-                CIRCUIT_NAME,
-                &config.circuit_level - 1
-            ))
+            load_circuit_data::<DepositAccumulatorBalanceAggregatorDivaFirstLevel>(
+                serialized_circuits_dir,
+                &format!("{}_{}", CIRCUIT_NAME, &config.circuit_level - 1),
+            )
             .unwrap(),
         )
     };
@@ -100,6 +101,7 @@ async fn main() -> Result<()> {
     let (targets, circuit_data) = match inner_circuit_data {
         Some(ref inner_circuit_data) => {
             let circuit = build_recursive_circuit_single_level_cached(
+                serialized_circuits_dir,
                 CIRCUIT_NAME,
                 config.circuit_level as usize,
                 &|| DepositAccumulatorBalanceAggregatorDivaInnerLevel::build(&inner_circuit_data),
@@ -109,6 +111,7 @@ async fn main() -> Result<()> {
         }
         None => {
             let circuit = build_recursive_circuit_single_level_cached(
+                serialized_circuits_dir,
                 CIRCUIT_NAME,
                 config.circuit_level as usize,
                 &|| DepositAccumulatorBalanceAggregatorDivaFirstLevel::build(&()),

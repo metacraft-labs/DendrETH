@@ -2,27 +2,20 @@
 #![feature(generic_const_exprs)]
 
 use anyhow::{bail, Result};
-use circuit::{Circuit, SerdeCircuitTarget};
-use circuit_executables::cached_circuit_build::SERIALIZED_CIRCUITS_DIR;
+use circuit::Circuit;
+use circuit_executables::{
+    cached_circuit_build::serialize_recursive_circuit_single_level,
+    utils::CommandLineOptionsBuilder,
+};
 use circuits::withdrawal_credentials_balance_aggregator::{
     first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
     inner_level::WithdrawalCredentialsBalanceAggregatorInnerLevel,
 };
 use num::clamp;
-use plonky2_circuit_serializer::serializer::{CustomGateSerializer, CustomGeneratorSerializer};
-use std::{fs, marker::PhantomData};
 
-use clap::{App, Arg};
+use clap::Arg;
 
 use jemallocator::Jemalloc;
-use plonky2::{
-    field::extension::Extendable,
-    hash::hash_types::RichField,
-    plonk::{
-        circuit_data::CircuitData,
-        config::{AlgebraicHasher, GenericConfig},
-    },
-};
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -35,7 +28,7 @@ const WITHDRAWAL_CREDENTIALS_COUNT: usize = 1;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let matches = App::new("")
+    let matches = CommandLineOptionsBuilder::new("balance_verification_circuit_data_generation")
         .arg(
             Arg::with_name("circuit_level")
                 .short('l')
@@ -52,7 +45,10 @@ async fn main() -> Result<()> {
                     }
                 }),
         )
+        .with_serialized_circuits_dir()
         .get_matches();
+
+    let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
 
     let level = match matches.value_of("circuit_level").unwrap() {
         "all" => None,
@@ -66,8 +62,6 @@ async fn main() -> Result<()> {
         );
     }
 
-    fs::create_dir_all(SERIALIZED_CIRCUITS_DIR).unwrap();
-
     let (first_level_target, first_level_data) = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
         VALIDATORS_COUNT,
         WITHDRAWAL_CREDENTIALS_COUNT,
@@ -77,6 +71,7 @@ async fn main() -> Result<()> {
         serialize_recursive_circuit_single_level(
             &first_level_target,
             &first_level_data,
+            serialized_circuits_dir,
             CIRCUIT_NAME,
             0,
         );
@@ -101,7 +96,13 @@ async fn main() -> Result<()> {
                 WITHDRAWAL_CREDENTIALS_COUNT,
             >::build(&prev_circuit_data);
 
-            serialize_recursive_circuit_single_level(&target, &data, CIRCUIT_NAME, i);
+            serialize_recursive_circuit_single_level(
+                &target,
+                &data,
+                serialized_circuits_dir,
+                CIRCUIT_NAME,
+                i,
+            );
             prev_circuit_data = data;
         }
 
@@ -111,47 +112,4 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
-}
-
-fn serialize_recursive_circuit_single_level<
-    T: SerdeCircuitTarget,
-    F: RichField + Extendable<D>,
-    C: GenericConfig<D, F = F> + 'static,
-    const D: usize,
->(
-    target: &T,
-    circuit_data: &CircuitData<F, C, D>,
-    circuit_name: &str,
-    level: usize,
-) where
-    <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
-{
-    let data_bytes = circuit_data
-        .to_bytes(
-            &CustomGateSerializer,
-            &CustomGeneratorSerializer {
-                _phantom: PhantomData::<C>,
-            },
-        )
-        .unwrap();
-
-    fs::write(
-        &format!(
-            "{}/{}_{}.plonky2_circuit",
-            SERIALIZED_CIRCUITS_DIR, circuit_name, level
-        ),
-        &data_bytes,
-    )
-    .unwrap();
-
-    let target_bytes = target.serialize().unwrap();
-
-    fs::write(
-        &format!(
-            "{}/{}_{}.plonky2_targets",
-            SERIALIZED_CIRCUITS_DIR, circuit_name, level
-        ),
-        &target_bytes,
-    )
-    .unwrap();
 }

@@ -5,7 +5,6 @@ use ark_ff::PrimeField;
 use ark_serialize::CanonicalDeserialize;
 use circuit::SerdeCircuitTarget;
 use circuit_executables::{
-    cached_circuit_build::SERIALIZED_CIRCUITS_DIR,
     crud::{
         common::{get_recursive_stark_targets, load_circuit_data_starky, read_from_file},
         proof_storage::proof_storage::create_proof_storage,
@@ -33,6 +32,9 @@ async fn async_main() -> Result<()> {
     let matches = CommandLineOptionsBuilder::new("bls12_381_components_proofs")
         .with_proof_storage_options()
         .get_matches();
+
+    let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
+
     const DST: &str = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
     let pubkey = "b781956110d24e4510a8b5500b71529f8635aa419a009d314898e8c572a4f923ba643ae94bdfdf9224509177aa8e6b73";
     let signature = "b735d0d0b03f51fcf3e5bc510b5a2cb266075322f5761a6954778714f5ab8831bc99454380d330f5c19d93436f0c4339041bfeecd2161a122c1ce8428033db8dda142768a48e582f5f9bde7d40768ac5a3b6a80492b73719f1523c5da35de275";
@@ -84,19 +86,27 @@ async fn async_main() -> Result<()> {
     // PROVING HAPPENS HERE
 
     let mut proof_storage = create_proof_storage(&matches).await;
-    let (pp1, pp2) = handle_pairing_precomp(&message_g2, &signature_g2).await;
+    let (pp1, pp2) =
+        handle_pairing_precomp(serialized_circuits_dir, &message_g2, &signature_g2).await;
 
-    let (ml1, ml2) =
-        handle_miller_loop(&pubkey_g1, &message_g2, &neg_g1.into(), &signature_g2).await;
+    let (ml1, ml2) = handle_miller_loop(
+        serialized_circuits_dir,
+        &pubkey_g1,
+        &message_g2,
+        &neg_g1.into(),
+        &signature_g2,
+    )
+    .await;
 
-    let fp12_mul_proof = handle_fp12_mul(&miller_loop1, &miller_loop2).await;
+    let fp12_mul_proof =
+        handle_fp12_mul(serialized_circuits_dir, &miller_loop1, &miller_loop2).await;
 
-    let final_exp_proof = handle_final_exponentiation(&fp12_mull).await;
+    let final_exp_proof = handle_final_exponentiation(serialized_circuits_dir, &fp12_mull).await;
 
-    let circuit_data = load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/bls12_381"));
+    let circuit_data = load_circuit_data_starky(&format!("{serialized_circuits_dir}/bls12_381"));
     let target_bytes = read_from_file(&format!(
         "{}/{}.plonky2_targets",
-        SERIALIZED_CIRCUITS_DIR, "bls12_381"
+        serialized_circuits_dir, "bls12_381"
     ))?;
     let mut target_buffer = Buffer::new(&target_bytes);
 
@@ -154,14 +164,15 @@ async fn async_main() -> Result<()> {
 }
 
 async fn handle_final_exponentiation(
+    serialized_circuits_dir: &str,
     fp12_mull: &Fp12,
 ) -> ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> {
     let final_exp_circuit_data = load_circuit_data_starky(&format!(
-        "{SERIALIZED_CIRCUITS_DIR}/final_exponentiate_circuit"
+        "{serialized_circuits_dir}/final_exponentiate_circuit"
     ));
 
     let final_exp_targets = get_recursive_stark_targets(&format!(
-        "{SERIALIZED_CIRCUITS_DIR}/final_exponentiate_circuit"
+        "{serialized_circuits_dir}/final_exponentiate_circuit"
     ))
     .unwrap();
 
@@ -172,14 +183,15 @@ async fn handle_final_exponentiation(
 }
 
 async fn handle_fp12_mul(
+    serialized_circuits_dir: &str,
     miller_loop1: &Fp12,
     miller_loop2: &Fp12,
 ) -> ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> {
     let fp12_mul_circuit_data =
-        load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/fp12_mul"));
+        load_circuit_data_starky(&format!("{serialized_circuits_dir}/fp12_mul"));
 
     let fp12_mul_targets =
-        get_recursive_stark_targets(&format!("{SERIALIZED_CIRCUITS_DIR}/fp12_mul")).unwrap();
+        get_recursive_stark_targets(&format!("{serialized_circuits_dir}/fp12_mul")).unwrap();
 
     let fp12_mul_proof = generate_fp12_mul_proof(
         &miller_loop1,
@@ -192,6 +204,7 @@ async fn handle_fp12_mul(
 }
 
 async fn handle_miller_loop(
+    serialized_circuits_dir: &str,
     pubkey_g1: &G1Affine,
     message_g2: &G2Affine,
     neg_g1: &G1Affine,
@@ -201,10 +214,10 @@ async fn handle_miller_loop(
     ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
 ) {
     let miller_loop_circuit_data =
-        load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/miller_loop"));
+        load_circuit_data_starky(&format!("{serialized_circuits_dir}/miller_loop"));
 
     let miller_loop_targets =
-        get_recursive_stark_targets(&format!("{SERIALIZED_CIRCUITS_DIR}/miller_loop")).unwrap();
+        get_recursive_stark_targets(&format!("{serialized_circuits_dir}/miller_loop")).unwrap();
 
     let ml1 = generate_miller_loop_proof(
         &pubkey_g1,
@@ -232,6 +245,7 @@ fn main() {
 }
 
 async fn handle_pairing_precomp(
+    serialized_circuits_dir: &str,
     message_g2: &G2Affine,
     signature_g2: &G2Affine,
 ) -> (
@@ -239,10 +253,10 @@ async fn handle_pairing_precomp(
     ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
 ) {
     let pairing_precomp_circuit_data =
-        load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/pairing_precomp"));
+        load_circuit_data_starky(&format!("{serialized_circuits_dir}/pairing_precomp"));
 
     let pairing_precomp_targets =
-        get_recursive_stark_targets(&format!("{SERIALIZED_CIRCUITS_DIR}/pairing_precomp")).unwrap();
+        get_recursive_stark_targets(&format!("{serialized_circuits_dir}/pairing_precomp")).unwrap();
 
     let pp1 = generate_pairing_precomp_proof(
         &message_g2,

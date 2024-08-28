@@ -3,7 +3,6 @@
 
 use circuit::{Circuit, SetWitness};
 use circuit_executables::{
-    cached_circuit_build::SERIALIZED_CIRCUITS_DIR,
     crud::{
         common::{
             fetch_final_layer_input, fetch_proof, fetch_proof_balances, load_circuit_data,
@@ -19,9 +18,11 @@ use circuits::{
         ValidatorsCommitmentMapperProofData, WithdrawalCredentialsBalanceVerificationProofData,
     },
     utils::bits_to_bytes,
+    validators_commitment_mapper::inner_level::ValidatorsCommitmentMapperInnerLevel,
     withdrawal_credentials_balance_aggregator::{
         final_layer::BalanceVerificationFinalCircuit,
         first_level::WithdrawalCredentialsBalanceAggregatorFirstLevel,
+        inner_level::WithdrawalCredentialsBalanceAggregatorInnerLevel,
     },
 };
 use colored::Colorize;
@@ -51,7 +52,10 @@ async fn main() -> Result<()> {
         )
         .with_proof_storage_options()
         .with_protocol_options()
+        .with_serialized_circuits_dir()
         .get_matches();
+
+    let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
 
     let redis_connection = matches.value_of("redis_connection").unwrap();
     let protocol = matches.value_of("protocol").unwrap();
@@ -80,9 +84,11 @@ async fn main() -> Result<()> {
         .get_proof(balance_proof_data.proof_key)
         .await?;
 
-    let balance_verification_circuit_data = load_circuit_data(&format!(
-        "{SERIALIZED_CIRCUITS_DIR}/balance_verification_37",
-    ))
+    let balance_verification_circuit_data = load_circuit_data::<
+        WithdrawalCredentialsBalanceAggregatorInnerLevel<8, 1>,
+    >(
+        serialized_circuits_dir, "balance_verification_37"
+    )
     .unwrap();
 
     let balance_verification_proof =
@@ -99,7 +105,11 @@ async fn main() -> Result<()> {
         .await?;
 
     let validators_commitment_mapper_circuit_data =
-        load_circuit_data(&format!("{SERIALIZED_CIRCUITS_DIR}/commitment_mapper_40")).unwrap();
+        load_circuit_data::<ValidatorsCommitmentMapperInnerLevel>(
+            serialized_circuits_dir,
+            "commitment_mapper_40",
+        )
+        .unwrap();
 
     let validators_commitment_mapper_proof =
         ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(

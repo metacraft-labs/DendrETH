@@ -6,7 +6,6 @@ use std::{println, time::Instant};
 use anyhow::Result;
 use circuit::Circuit;
 use circuit_executables::{
-    cached_circuit_build::SERIALIZED_CIRCUITS_DIR,
     crud::common::load_circuit_data,
     db_constants::DB_CONSTANTS,
     utils::{get_default_config, CommandLineOptionsBuilder},
@@ -14,6 +13,7 @@ use circuit_executables::{
 };
 use circuits::{
     redis_storage_types::BalanceVerificationFinalProofData,
+    validators_commitment_mapper::first_level::ValidatorsCommitmentMapperFirstLevel,
     withdrawal_credentials_balance_aggregator::final_layer::BalanceVerificationFinalCircuit,
 };
 use clap::Arg;
@@ -34,6 +34,7 @@ async fn main() -> Result<()> {
             &common_config.redis_auth,
         )
         .with_protocol_options()
+        .with_serialized_circuits_dir()
         .arg(
             Arg::with_name("compile")
                 .short('c')
@@ -42,6 +43,8 @@ async fn main() -> Result<()> {
                 .takes_value(false),
         )
         .get_matches();
+
+    let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
 
     let redis_connection = matches.value_of("redis_connection").unwrap();
     let compile_circuit = matches.is_present("compile");
@@ -53,11 +56,14 @@ async fn main() -> Result<()> {
     let elapsed = start.elapsed();
     println!("Redis connection took: {:?}", elapsed);
     let verification_circuit_data = (
-        load_circuit_data(&format!(
-            "{SERIALIZED_CIRCUITS_DIR}/balance_verification_37",
-        ))
-        .unwrap(),
-        load_circuit_data(&format!("{SERIALIZED_CIRCUITS_DIR}/commitment_mapper_40")).unwrap(),
+        load_circuit_data::<BalanceVerificationFinalCircuit<1>>(
+            serialized_circuits_dir,
+            "balance_verification_37",
+        )?,
+        load_circuit_data::<ValidatorsCommitmentMapperFirstLevel>(
+            serialized_circuits_dir,
+            "commitment_mapper_40",
+        )?,
     );
 
     let (_, circuit_data) = BalanceVerificationFinalCircuit::<1>::build(&verification_circuit_data);

@@ -50,11 +50,13 @@ impl PubkeyCommitmentMapperContext {
         redis_connection: &str,
         mut proof_storage: Box<dyn ProofStorage>,
         protocol: String,
+        serialized_circuits_dir: &str,
     ) -> Result<Self> {
         let client = redis::Client::open(redis_connection)?;
         let mut redis = client.get_async_connection().await?;
 
         let (first_level_circuit, inner_level_circuits) = build_recursive_circuit_cached(
+            serialized_circuits_dir,
             "pubkey_commitment_mapper",
             DEPTH,
             &|| PubkeyCommitmentMapperFL::build(&()),
@@ -77,7 +79,7 @@ impl PubkeyCommitmentMapperContext {
         if deposit_count == 0 {
             let mut pipe = redis::pipe();
             pipe.atomic();
-            save_branch(&mut pipe.atomic(), &protocol, &zero_hash_proofs);
+            save_branch(&mut pipe, &protocol, &zero_hash_proofs);
             pipe.query_async(&mut redis).await?;
         }
 

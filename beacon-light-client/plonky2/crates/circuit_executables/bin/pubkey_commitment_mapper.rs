@@ -25,6 +25,7 @@ async fn main() -> Result<()> {
         .with_redis_options(&config.redis_host, config.redis_port, &config.redis_auth)
         .with_proof_storage_options()
         .with_protocol_options()
+        .with_serialized_circuits_dir()
         .arg(
             Arg::with_name("fast_sync_to")
                 .long("fast-sync-to")
@@ -32,6 +33,8 @@ async fn main() -> Result<()> {
                 .takes_value(true),
         )
         .get_matches();
+
+    let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
 
     let fast_sync_block_number: u64 = if matches.contains_id("fast_sync_to") {
         matches.get_one::<String>("fast_sync_to").unwrap().parse()?
@@ -45,8 +48,13 @@ async fn main() -> Result<()> {
         let redis_connection = matches.value_of("redis_connection").unwrap();
         let protocol = matches.value_of("protocol").unwrap();
         let proof_storage = create_proof_storage(&matches).await;
-        PubkeyCommitmentMapperContext::new(redis_connection, proof_storage, protocol.to_owned())
-            .await?
+        PubkeyCommitmentMapperContext::new(
+            redis_connection,
+            proof_storage,
+            protocol.to_owned(),
+            serialized_circuits_dir,
+        )
+        .await?
     };
 
     println!("Polling tasks...");
