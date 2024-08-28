@@ -1,6 +1,6 @@
 use circuit::{Circuit, SetWitness};
 use circuit_executables::{
-    cached_circuit_build::{build_circuit_cached, SERIALIZED_CIRCUITS_DIR},
+    cached_circuit_build::build_circuit_cached,
     crud::{
         common::{
             fetch_deposit_accumulator_final_layer_input, fetch_proof, fetch_proof_balances,
@@ -16,11 +16,14 @@ use circuits::{
     deposit_accumulator_balance_aggregator_diva::{
         final_layer::DepositAccumulatorBalanceAggregatorDivaFinalLayer,
         first_level::DepositAccumulatorBalanceAggregatorDivaFirstLevel,
+        inner_level::DepositAccumulatorBalanceAggregatorDivaInnerLevel,
     },
+    pubkey_commitment_mapper::inner_level::PubkeyCommitmentMapperIL,
     redis_storage_types::{
         DepositAccumulatorBalanceAggregatorDivaProofData, ValidatorsCommitmentMapperProofData,
     },
     utils::bits_to_bytes,
+    validators_commitment_mapper::inner_level::ValidatorsCommitmentMapperInnerLevel,
 };
 use colored::Colorize;
 use std::{println, time::Instant};
@@ -45,7 +48,10 @@ async fn main() -> Result<()> {
         )
         .with_proof_storage_options()
         .with_protocol_options()
+        .with_serialized_circuits_dir()
         .get_matches();
+
+    let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
 
     let redis_connection = matches.value_of("redis_connection").unwrap();
     let protocol = matches.value_of("protocol").unwrap();
@@ -75,10 +81,12 @@ async fn main() -> Result<()> {
         .get_proof(balance_proof_data.proof_key)
         .await?;
 
-    let balance_verification_circuit_data = load_circuit_data(&format!(
-        "{SERIALIZED_CIRCUITS_DIR}/deposit_accumulator_balance_aggregator_diva_32",
-    ))
-    .unwrap();
+    let balance_verification_circuit_data =
+        load_circuit_data::<DepositAccumulatorBalanceAggregatorDivaInnerLevel>(
+            serialized_circuits_dir,
+            "deposit_accumulator_balance_aggregator_diva_32",
+        )
+        .unwrap();
 
     let balance_verification_proof =
         ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
@@ -101,10 +109,18 @@ async fn main() -> Result<()> {
         .await?;
 
     let validators_commitment_mapper_root_circuit_data =
-        load_circuit_data(&format!("{SERIALIZED_CIRCUITS_DIR}/commitment_mapper_40")).unwrap();
+        load_circuit_data::<ValidatorsCommitmentMapperInnerLevel>(
+            serialized_circuits_dir,
+            "commitment_mapper_40",
+        )
+        .unwrap();
 
     let validators_commitment_mapper_65536gindex_circuit_data =
-        load_circuit_data(&format!("{SERIALIZED_CIRCUITS_DIR}/commitment_mapper_24")).unwrap();
+        load_circuit_data::<ValidatorsCommitmentMapperInnerLevel>(
+            serialized_circuits_dir,
+            "commitment_mapper_24",
+        )
+        .unwrap();
 
     let validators_commitment_root_mapper_proof =
         ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
@@ -126,9 +142,10 @@ async fn main() -> Result<()> {
         .get_proof(pubkey_commitment_mapper_proof.proof_key)
         .await?;
 
-    let pubkey_commitment_mapper_circuit_data = load_circuit_data(&format!(
-        "{SERIALIZED_CIRCUITS_DIR}/pubkey_commitment_mapper_32"
-    ))
+    let pubkey_commitment_mapper_circuit_data = load_circuit_data::<PubkeyCommitmentMapperIL>(
+        serialized_circuits_dir,
+        "pubkey_commitment_mapper_32",
+    )
     .unwrap();
 
     let pubkey_commitment_mapper_proof =
@@ -144,10 +161,11 @@ async fn main() -> Result<()> {
         pubkey_commitment_mapper_circuit_data,
     );
 
-    let (circuit_target, circuit_data) =
-        build_circuit_cached("deposit_accumulator_final_layer", &|| {
-            DepositAccumulatorBalanceAggregatorDivaFinalLayer::build(&verification_circuit_data)
-        });
+    let (circuit_target, circuit_data) = build_circuit_cached(
+        serialized_circuits_dir,
+        "deposit_accumulator_final_layer",
+        &|| DepositAccumulatorBalanceAggregatorDivaFinalLayer::build(&verification_circuit_data),
+    );
 
     let mut pw = PartialWitness::new();
 

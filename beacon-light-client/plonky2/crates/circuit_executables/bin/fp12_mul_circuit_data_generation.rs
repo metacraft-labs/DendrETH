@@ -1,5 +1,5 @@
 use circuit::SerdeCircuitTarget;
-use circuit_executables::cached_circuit_build::SERIALIZED_CIRCUITS_DIR;
+use circuit_executables::utils::CommandLineOptionsBuilder;
 use std::{fs, marker::PhantomData, time::Instant};
 
 use ark_std::UniformRand;
@@ -22,6 +22,12 @@ type F = <C as GenericConfig<D>>::F;
 type Fp12MulStark = FP12MulStark<F, D>;
 
 fn main_thread() {
+    let matches = CommandLineOptionsBuilder::new("fp12_mul_circuit_data_generation")
+        .with_serialized_circuits_dir()
+        .get_matches();
+
+    let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
+
     let rng = &mut ark_std::rand::thread_rng();
 
     let fq = ark_bls12_381::Fq12::rand(rng);
@@ -91,7 +97,7 @@ fn main_thread() {
         .unwrap();
 
     fs::write(
-        format!("{SERIALIZED_CIRCUITS_DIR}/fp12_mul.plonky2_circuit"),
+        format!("{serialized_circuits_dir}/fp12_mul.plonky2_circuit"),
         &circuit_bytes,
     )
     .unwrap();
@@ -99,7 +105,7 @@ fn main_thread() {
     let common_data_bytes = data.common.to_bytes(&CustomGateSerializer).unwrap();
 
     fs::write(
-        format!("{SERIALIZED_CIRCUITS_DIR}/fp12_mul.plonky2_common_data"),
+        format!("{serialized_circuits_dir}/fp12_mul.plonky2_common_data"),
         &common_data_bytes,
     )
     .unwrap();
@@ -107,7 +113,7 @@ fn main_thread() {
     let targets = recursive_stark_targets.serialize().unwrap();
 
     fs::write(
-        format!("{SERIALIZED_CIRCUITS_DIR}/fp12_mul.plonky2_targets"),
+        format!("{serialized_circuits_dir}/fp12_mul.plonky2_targets"),
         &targets,
     )
     .unwrap();

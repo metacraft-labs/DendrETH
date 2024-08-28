@@ -25,6 +25,7 @@ async fn main() -> Result<()> {
         .with_redis_options(&config.redis_host, config.redis_port, &config.redis_auth)
         .with_work_queue_options()
         .with_proof_storage_options()
+        .with_serialized_circuits_dir()
         .get_matches();
 
     let redis_uri = matches.value_of("redis_connection").unwrap();
@@ -42,9 +43,17 @@ async fn main() -> Result<()> {
             .unwrap(),
     };
 
+    let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
+
     let proof_storage = create_proof_storage(&matches).await;
 
-    let mut ctx = CommitmentMapperContext::new(redis_uri, work_queue_cfg, proof_storage).await?;
+    let mut ctx = CommitmentMapperContext::new(
+        redis_uri,
+        work_queue_cfg,
+        proof_storage,
+        serialized_circuits_dir,
+    )
+    .await?;
 
     loop {
         match pick_work_queue_item_prioritize_lower_levels(&mut ctx).await {

@@ -1,43 +1,31 @@
 use anyhow::Result;
-use circuit::{serde_circuit_target::deserialize_circuit_target, CircuitTargetType};
 use circuits::validators_commitment_mapper::{
     first_level::ValidatorsCommitmentMapperFirstLevel,
     inner_level::ValidatorsCommitmentMapperInnerLevel,
 };
 use itertools::Itertools;
-use plonky2::{
-    field::goldilocks_field::GoldilocksField,
-    plonk::{circuit_data::CircuitData, config::PoseidonGoldilocksConfig},
-    util::serialization::Buffer,
-};
 use redis::aio::Connection;
 use redis_work_queue::{KeyPrefix, WorkQueue};
 
 use crate::{
-    cached_circuit_build::SERIALIZED_CIRCUITS_DIR,
-    crud::{
-        common::{load_circuit_data, read_from_file},
-        proof_storage::proof_storage::ProofStorage,
-    },
+    cached_circuit_build::CircuitTargetAndData, crud::proof_storage::proof_storage::ProofStorage,
     db_constants::DB_CONSTANTS,
 };
 
 const CIRCUIT_NAME: &str = "commitment_mapper";
+
+pub struct WorkQueueConfig {
+    pub stop_after: u64,
+    pub lease_for: u64,
+}
 
 pub struct CommitmentMapperContext {
     pub redis_con: Connection,
     pub work_queues: Vec<WorkQueue>,
     pub work_queue_cfg: WorkQueueConfig,
     pub proof_storage: Box<dyn ProofStorage>,
-    pub first_level_circuit: FirstLevelCircuit,
-    pub inner_level_circuits: Vec<InnerLevelCircuit>,
-}
-
-fn get_circuit_data_path(level: usize) -> String {
-    let exe_dir = std::env::current_exe().unwrap();
-    let exe_dir = exe_dir.parent().unwrap();
-    let exe_dir = exe_dir.to_str().unwrap();
-    return format!("{exe_dir}/{SERIALIZED_CIRCUITS_DIR}/{CIRCUIT_NAME}_{level}");
+    pub first_level_circuit: CircuitTargetAndData<ValidatorsCommitmentMapperFirstLevel>,
+    pub inner_level_circuits: Vec<CircuitTargetAndData<ValidatorsCommitmentMapperInnerLevel>>,
 }
 
 impl CommitmentMapperContext {
@@ -45,6 +33,7 @@ impl CommitmentMapperContext {
         redis_uri: &str,
         work_queue_cfg: WorkQueueConfig,
         proof_storage: Box<dyn ProofStorage>,
+        serialized_circuits_dir: &str,
     ) -> Result<Self> {
         let client = redis::Client::open(redis_uri)?;
         let redis_con = client.get_async_connection().await?;
@@ -56,18 +45,17 @@ impl CommitmentMapperContext {
             })
             .collect_vec();
 
-        let first_level_circuit = FirstLevelCircuit {
-            targets: get_first_level_targets()?,
-            data: load_circuit_data(&get_circuit_data_path(0))?,
-        };
+        let first_level_circuit =
+            CircuitTargetAndData::load_recursive(serialized_circuits_dir, CIRCUIT_NAME, 0)?;
 
-        let mut inner_level_circuits: Vec<InnerLevelCircuit> = Vec::new();
-        for i in 1..41 {
-            let inner_level_circuit = InnerLevelCircuit {
-                targets: get_inner_targets(i)?,
-                data: load_circuit_data(&get_circuit_data_path(i))?,
-            };
-            inner_level_circuits.push(inner_level_circuit);
+        let mut inner_level_circuits = Vec::new();
+
+        for level in 1..=40 {
+            inner_level_circuits.push(CircuitTargetAndData::load_recursive(
+                serialized_circuits_dir,
+                CIRCUIT_NAME,
+                level,
+            )?);
         }
 
         let ctx = Self {
@@ -81,49 +69,4 @@ impl CommitmentMapperContext {
 
         Ok(ctx)
     }
-}
-
-pub struct WorkQueueConfig {
-    pub stop_after: u64,
-    pub lease_for: u64,
-}
-
-pub struct FirstLevelCircuit {
-    pub targets: CircuitTargetType<ValidatorsCommitmentMapperFirstLevel>,
-    pub data: CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-}
-
-pub struct InnerLevelCircuit {
-    pub targets: CircuitTargetType<ValidatorsCommitmentMapperInnerLevel>,
-    pub data: CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-}
-
-fn get_circuit_target_path(level: usize) -> String {
-    let exe_dir = std::env::current_exe().unwrap();
-    let exe_dir = exe_dir.parent().unwrap();
-    let exe_dir = exe_dir.to_str().unwrap();
-    let res = format!("{exe_dir}/{SERIALIZED_CIRCUITS_DIR}/{CIRCUIT_NAME}_{level}.plonky2_targets");
-    println!("get_circuit_target_path: {}", res);
-
-    return res;
-}
-
-fn get_inner_targets(i: usize) -> Result<CircuitTargetType<ValidatorsCommitmentMapperInnerLevel>> {
-    let target_bytes = read_from_file(&get_circuit_target_path(i))?;
-    let mut target_buffer = Buffer::new(&target_bytes);
-
-    Ok(
-        deserialize_circuit_target::<ValidatorsCommitmentMapperInnerLevel>(&mut target_buffer)
-            .unwrap(),
-    )
-}
-
-fn get_first_level_targets() -> Result<CircuitTargetType<ValidatorsCommitmentMapperFirstLevel>> {
-    let target_bytes = read_from_file(&get_circuit_target_path(0))?;
-    let mut target_buffer = Buffer::new(&target_bytes);
-
-    Ok(
-        deserialize_circuit_target::<ValidatorsCommitmentMapperFirstLevel>(&mut target_buffer)
-            .unwrap(),
-    )
 }

@@ -163,7 +163,7 @@ async fn handle_update_validator_proof_task(
     match fetch_validator(&mut ctx.redis_con, validator_index, slot).await {
         Ok(input) => {
             let mut pw = PartialWitness::new();
-            ctx.first_level_circuit.targets.set_witness(&mut pw, &input);
+            ctx.first_level_circuit.target.set_witness(&mut pw, &input);
             let proof = prove_until_verifiable(&ctx.first_level_circuit.data, || {
                 ctx.first_level_circuit.data.prove(pw.clone())
             })?;
@@ -228,7 +228,7 @@ async fn handle_update_proof_node_task(
                     left_proof.clone(),
                     right_proof.clone(),
                     inner_circuit_data,
-                    &ctx.inner_level_circuits[level].targets,
+                    &ctx.inner_level_circuits[level].target,
                     &ctx.inner_level_circuits[level].data,
                 )
             })?;
@@ -275,7 +275,7 @@ async fn handle_prove_zero_for_depth_task(
                     lower_proof_bytes.clone(),
                     lower_proof_bytes.clone(),
                     inner_circuit_data,
-                    &ctx.inner_level_circuits[level].targets,
+                    &ctx.inner_level_circuits[level].target,
                     &ctx.inner_level_circuits[level].data,
                 )
             })?;
@@ -307,7 +307,7 @@ async fn handle_zero_out_validator_task(
     match fetch_validator(&mut ctx.redis_con, VALIDATOR_REGISTRY_LIMIT as u64, slot).await {
         Ok(input) => {
             let mut pw = PartialWitness::new();
-            ctx.first_level_circuit.targets.set_witness(&mut pw, &input);
+            ctx.first_level_circuit.target.set_witness(&mut pw, &input);
             let proof = ctx.first_level_circuit.data.prove(pw)?;
 
             let save_result = save_validator_proof(

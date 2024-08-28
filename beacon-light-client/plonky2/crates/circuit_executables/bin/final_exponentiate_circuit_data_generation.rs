@@ -1,5 +1,5 @@
 use circuit::SerdeCircuitTarget;
-use circuit_executables::cached_circuit_build::SERIALIZED_CIRCUITS_DIR;
+use circuit_executables::utils::CommandLineOptionsBuilder;
 use std::{fs, marker::PhantomData, time::Instant};
 
 use ark_std::UniformRand;
@@ -22,6 +22,12 @@ type F = <C as GenericConfig<D>>::F;
 type FeStark = FinalExponentiateStark<F, D>;
 
 fn main_thread() {
+    let matches = CommandLineOptionsBuilder::new("final_exponentiate_circuit_data_generation")
+        .with_serialized_circuits_dir()
+        .get_matches();
+
+    let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
+
     // let (validators_balance_verification_targets, first_level_data) = build_final_exponentiate();
     let rng = &mut ark_std::rand::thread_rng();
 
@@ -82,7 +88,7 @@ fn main_thread() {
         .unwrap();
 
     fs::write(
-        format!("{SERIALIZED_CIRCUITS_DIR}/final_exponentiate_circuit.plonky2_circuit"),
+        format!("{serialized_circuits_dir}/final_exponentiate_circuit.plonky2_circuit"),
         &circuit_bytes,
     )
     .unwrap();
@@ -90,7 +96,7 @@ fn main_thread() {
     let common_circuit_bytes = data.common.to_bytes(&CustomGateSerializer).unwrap();
 
     fs::write(
-        format!("{SERIALIZED_CIRCUITS_DIR}/final_exponentiate_circuit.plonky2_common_data"),
+        format!("{serialized_circuits_dir}/final_exponentiate_circuit.plonky2_common_data"),
         &common_circuit_bytes,
     )
     .unwrap();
@@ -98,7 +104,7 @@ fn main_thread() {
     let targets = recursive_stark_targets.serialize().unwrap();
 
     fs::write(
-        format!("{SERIALIZED_CIRCUITS_DIR}/final_exponentiate_circuit.plonky2_targets"),
+        format!("{serialized_circuits_dir}/final_exponentiate_circuit.plonky2_targets"),
         &targets,
     )
     .unwrap();

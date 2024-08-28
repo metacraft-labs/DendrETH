@@ -3,9 +3,7 @@ use std::{marker::PhantomData, str::FromStr, time::Instant};
 use ark_bls12_381::{G1Affine, G2Affine};
 use ark_std::UniformRand;
 use circuit::SerdeCircuitTarget;
-use circuit_executables::{
-    cached_circuit_build::SERIALIZED_CIRCUITS_DIR, crud::common::read_from_file,
-};
+use circuit_executables::{crud::common::read_from_file, utils::CommandLineOptionsBuilder};
 use circuits::bls_verification::build_stark_proof_verifier::RecursiveStarkTargets;
 use num_bigint::BigUint;
 use plonky2::{
@@ -30,10 +28,16 @@ type F = <C as GenericConfig<D>>::F;
 const CIRCUIT_NAME: &str = "miller_loop";
 
 fn main_thread() {
+    let matches = CommandLineOptionsBuilder::new("miller_loop")
+        .with_serialized_circuits_dir()
+        .get_matches();
+
+    let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
+
     println!("Starting to deserialize circuit");
 
     let circuit_data_bytes = read_from_file(&format!(
-        "{SERIALIZED_CIRCUITS_DIR}/{CIRCUIT_NAME}.plonky2_circuit"
+        "{serialized_circuits_dir}/{CIRCUIT_NAME}.plonky2_circuit"
     ))
     .unwrap();
 
@@ -46,7 +50,7 @@ fn main_thread() {
     )
     .unwrap();
 
-    let targets = get_targets().unwrap();
+    let targets = get_targets(serialized_circuits_dir).unwrap();
 
     println!("Deserialized circuit");
 
@@ -104,11 +108,8 @@ fn main() {
         .unwrap();
 }
 
-fn get_targets() -> Result<RecursiveStarkTargets, anyhow::Error> {
-    let target_bytes = read_from_file(&format!(
-        "{}/{}.plonky2_targets",
-        SERIALIZED_CIRCUITS_DIR, CIRCUIT_NAME
-    ))?;
+fn get_targets(dir: &str) -> Result<RecursiveStarkTargets, anyhow::Error> {
+    let target_bytes = read_from_file(&format!("{dir}/{CIRCUIT_NAME}.plonky2_targets",))?;
 
     let mut target_buffer = Buffer::new(&target_bytes);
 

@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::{Arg, ArgMatches, Command};
 use ff::PrimeField;
 use serde::Deserialize;
-use std::{time::Duration};
+use std::time::Duration;
 
 pub struct BalanceVerificationConfig {
     pub redis_connection: String,
@@ -68,6 +68,18 @@ impl<'a> CommandLineOptionsBuilder<'a> {
         Self {
             command: self.command.arg(a),
         }
+    }
+
+    pub fn with_serialized_circuits_dir(self) -> Self {
+        let command = self.command.arg(
+            Arg::with_name("serialized_circuits_dir")
+                .long("serialized-circuits-dir")
+                .value_name("dir")
+                .takes_value(true)
+                .required(true),
+        );
+
+        Self { command }
     }
 
     pub fn with_balance_verification_options(self) -> Self {

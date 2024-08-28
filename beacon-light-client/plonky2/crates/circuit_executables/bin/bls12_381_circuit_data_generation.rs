@@ -2,8 +2,8 @@ use std::marker::PhantomData;
 
 use circuit::{Circuit, SerdeCircuitTarget};
 use circuit_executables::{
-    cached_circuit_build::SERIALIZED_CIRCUITS_DIR,
     crud::common::{load_circuit_data_starky, write_to_file},
+    utils::CommandLineOptionsBuilder,
 };
 use circuits::bls_verification::bls12_381_circuit::BLSVerificationCircuit;
 use plonky2::plonk::config::PoseidonGoldilocksConfig;
@@ -12,14 +12,20 @@ use plonky2_circuit_serializer::serializer::{CustomGateSerializer, CustomGenerat
 const CIRCUIT_NAME: &str = "bls12_381";
 
 fn main() {
+    let matches = CommandLineOptionsBuilder::new("bls12_381_circuit_data_generation")
+        .with_serialized_circuits_dir()
+        .get_matches();
+
+    let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
+
     let pairing_precomp_circuit_data =
-        load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/pairing_precomp"));
+        load_circuit_data_starky(&format!("{serialized_circuits_dir}/pairing_precomp"));
     let miller_loop_circuit_data =
-        load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/miller_loop"));
+        load_circuit_data_starky(&format!("{serialized_circuits_dir}/miller_loop"));
     let fp12_mul_circuit_data =
-        load_circuit_data_starky(&format!("{SERIALIZED_CIRCUITS_DIR}/fp12_mul"));
+        load_circuit_data_starky(&format!("{serialized_circuits_dir}/fp12_mul"));
     let final_exponentiate_circuit_data = load_circuit_data_starky(&format!(
-        "{SERIALIZED_CIRCUITS_DIR}/final_exponentiate_circuit"
+        "{serialized_circuits_dir}/final_exponentiate_circuit"
     ));
 
     let (targets, data) = BLSVerificationCircuit::build(&(
@@ -41,7 +47,7 @@ fn main() {
     write_to_file(
         &format!(
             "{}/{}.plonky2_circuit",
-            SERIALIZED_CIRCUITS_DIR, CIRCUIT_NAME
+            serialized_circuits_dir, CIRCUIT_NAME
         ),
         &circuit_bytes,
     )
@@ -52,7 +58,7 @@ fn main() {
     write_to_file(
         &format!(
             "{}/{}.plonky2_targets",
-            SERIALIZED_CIRCUITS_DIR, CIRCUIT_NAME
+            serialized_circuits_dir, CIRCUIT_NAME
         ),
         &target_bytes,
     )

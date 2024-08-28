@@ -1,5 +1,5 @@
 use circuit::SerdeCircuitTarget;
-use circuit_executables::cached_circuit_build::SERIALIZED_CIRCUITS_DIR;
+use circuit_executables::utils::CommandLineOptionsBuilder;
 use std::{fs, marker::PhantomData, str::FromStr, time::Instant};
 
 use ark_bls12_381::G2Affine;
@@ -23,6 +23,12 @@ type F = <C as GenericConfig<D>>::F;
 type PpStark = PairingPrecompStark<F, D>;
 
 fn main_thread() {
+    let matches = CommandLineOptionsBuilder::new("calc_pairing_precomp_circuit_data_generation")
+        .with_serialized_circuits_dir()
+        .get_matches();
+
+    let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
+
     let rng = &mut ark_std::rand::thread_rng();
     let g2 = G2Affine::rand(rng);
 
@@ -75,13 +81,13 @@ fn main_thread() {
     let common_circuit_bytes = data.common.to_bytes(&CustomGateSerializer).unwrap();
 
     fs::write(
-        format!("{SERIALIZED_CIRCUITS_DIR}/pairing_precomp.plonky2_common_data"),
+        format!("{serialized_circuits_dir}/pairing_precomp.plonky2_common_data"),
         &common_circuit_bytes,
     )
     .unwrap();
 
     fs::write(
-        format!("{SERIALIZED_CIRCUITS_DIR}/pairing_precomp.plonky2_circuit"),
+        format!("{serialized_circuits_dir}/pairing_precomp.plonky2_circuit"),
         &circuit_bytes,
     )
     .unwrap();
@@ -89,7 +95,7 @@ fn main_thread() {
     let targets = recursive_stark_targets.serialize().unwrap();
 
     fs::write(
-        format!("{SERIALIZED_CIRCUITS_DIR}/pairing_precomp.plonky2_targets"),
+        format!("{serialized_circuits_dir}/pairing_precomp.plonky2_targets"),
         &targets,
     )
     .unwrap();

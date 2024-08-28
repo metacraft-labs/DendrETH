@@ -6,7 +6,6 @@ use circuit::{
     SerdeCircuitTarget,
 };
 use circuit_executables::{
-    cached_circuit_build::SERIALIZED_CIRCUITS_DIR,
     constants::VALIDATOR_REGISTRY_LIMIT,
     crud::{
         common::{
@@ -18,7 +17,7 @@ use circuit_executables::{
     db_constants::DB_CONSTANTS,
     provers::prove_inner_level,
     utils::{
-        parse_balance_verification_command_line_options, get_default_config,
+        get_default_config, parse_balance_verification_command_line_options,
         CommandLineOptionsBuilder,
     },
 };
@@ -86,7 +85,10 @@ async fn main() -> Result<()> {
         .with_work_queue_options()
         .with_proof_storage_options()
         .with_protocol_options()
+        .with_serialized_circuits_dir()
         .get_matches();
+
+    let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
 
     let config = parse_balance_verification_command_line_options(&matches);
 
@@ -97,22 +99,25 @@ async fn main() -> Result<()> {
     let mut proof_storage = create_proof_storage(&matches).await;
 
     println!("{}", "Loading circuit data...".yellow());
-    let circuit_data = load_circuit_data(&format!(
-        "{}/{}_{}",
-        SERIALIZED_CIRCUITS_DIR, CIRCUIT_NAME, &config.circuit_level
-    ))?;
+    let circuit_data = load_circuit_data::<WithdrawalCredentialsBalanceAggregatorFirstLevel<8, 1>>(
+        serialized_circuits_dir,
+        &format!("{}_{}", CIRCUIT_NAME, &config.circuit_level),
+    )?;
 
     let (inner_circuit_data, targets) = if config.circuit_level == 0 {
-        (None, get_first_level_targets::<8, 1>()?)
+        (
+            None,
+            get_first_level_targets::<8, 1>(serialized_circuits_dir)?,
+        )
     } else {
         (
-            Some(load_circuit_data(&format!(
-                "{}/{}_{}",
-                SERIALIZED_CIRCUITS_DIR,
-                CIRCUIT_NAME,
-                config.circuit_level - 1
-            ))?),
-            get_inner_level_targets::<8, 1>(config.circuit_level)?,
+            Some(load_circuit_data::<
+                WithdrawalCredentialsBalanceAggregatorFirstLevel<1, 8>,
+            >(
+                serialized_circuits_dir,
+                &format!("{}_{}", CIRCUIT_NAME, config.circuit_level - 1),
+            )?),
+            get_inner_level_targets::<8, 1>(serialized_circuits_dir, config.circuit_level)?,
         )
     };
 
@@ -434,13 +439,15 @@ where
 fn get_first_level_targets<
     const VALIDATORS_COUNT: usize,
     const WITHDRAWAL_CREDENTIALS_COUNT: usize,
->() -> Result<Targets<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>, anyhow::Error>
+>(
+    serialized_circuits_dir: &str,
+) -> Result<Targets<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>, anyhow::Error>
 where
     [(); VALIDATORS_COUNT / 4]:,
 {
     let target_bytes = read_from_file(&format!(
         "{}/{}_0.plonky2_targets",
-        SERIALIZED_CIRCUITS_DIR, CIRCUIT_NAME
+        serialized_circuits_dir, CIRCUIT_NAME
     ))?;
     let mut target_buffer = Buffer::new(&target_bytes);
 
@@ -459,6 +466,7 @@ fn get_inner_level_targets<
     const VALIDATORS_COUNT: usize,
     const WITHDRAWAL_CREDENTIALS_COUNT: usize,
 >(
+    serialized_circuits_dir: &str,
     level: u64,
 ) -> Result<Targets<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>>
 where
@@ -466,7 +474,7 @@ where
 {
     let target_bytes = read_from_file(&format!(
         "{}/{}_{}.plonky2_targets",
-        SERIALIZED_CIRCUITS_DIR, CIRCUIT_NAME, level
+        serialized_circuits_dir, CIRCUIT_NAME, level
     ))?;
     let mut target_buffer = Buffer::new(&target_bytes);
 

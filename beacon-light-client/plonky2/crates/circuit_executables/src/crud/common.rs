@@ -28,7 +28,7 @@ use plonky2::{
     field::goldilocks_field::GoldilocksField,
     plonk::{
         circuit_data::{CircuitData, CommonCircuitData},
-        config::PoseidonGoldilocksConfig,
+        config::{AlgebraicHasher, GenericConfig, PoseidonGoldilocksConfig},
         proof::ProofWithPublicInputs,
     },
     util::serialization::Buffer,
@@ -890,24 +890,24 @@ pub fn write_to_file(file_path: &str, data: &[u8]) -> Result<()> {
     Ok(())
 }
 
-pub fn load_circuit_data(
-    file_name: &str,
-) -> Result<CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>> {
+pub fn load_circuit_data<T: Circuit>(dir: &str, name: &str) -> Result<CircuitData<T::F, T::C, 2>>
+where
+    <<T as Circuit>::C as GenericConfig<2>>::Hasher: AlgebraicHasher<<T as Circuit>::F>,
+    <T as Circuit>::C: 'static,
+{
     let gate_serializer = CustomGateSerializer;
     let generator_serializer = CustomGeneratorSerializer {
-        _phantom: PhantomData::<PoseidonGoldilocksConfig>,
+        _phantom: PhantomData::<T::C>,
     };
 
-    let circuit_data_bytes = read_from_file(&format!("{}.plonky2_circuit", file_name))?;
+    let circuit_data_bytes = read_from_file(&format!("{dir}/{name}.plonky2_circuit"))?;
 
-    Ok(
-        CircuitData::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
-            &circuit_data_bytes,
-            &gate_serializer,
-            &generator_serializer,
-        )
-        .unwrap(),
+    Ok(CircuitData::<T::F, T::C, 2>::from_bytes(
+        &circuit_data_bytes,
+        &gate_serializer,
+        &generator_serializer,
     )
+    .unwrap())
 }
 
 pub fn load_circuit_data_starky(
