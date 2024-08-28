@@ -98,7 +98,7 @@ export default {
       accounts: [conf.LOCAL_HARDHAT_PRIVATE_KEY],
     },
     kurtosis: {
-      url: 'http://127.0.0.1:32774',
+      url: process.env.KURTOSIS_EXECUTION_RPC,
       accounts: [conf.USER_PRIVATE_KEY],
     },
     hardhat: {
