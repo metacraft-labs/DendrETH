@@ -290,23 +290,23 @@ async function handleSnapshotEvent(
   referenceSlot: number,
   params: StoreBalanceVerificationParameterType,
 ): Promise<void> {
-  const beaconApi = await getBeaconApi(params['beacon-node']);
+  const beaconApi = await getBeaconApi(params.beaconNodeUrls!);
 
   const now: string = new Date().toISOString();
   console.log(`${now} | SnapshotTaken received: slot=${referenceSlot}`);
 
   await waitForSlot(await beaconApi.getHeadSlot(), BigInt(referenceSlot));
   await storeBalanceVerificationData({
-    beaconNodeUrls: params['beacon-node'],
+    beaconNodeUrls: params.beaconNodeUrls,
     slot: referenceSlot,
-    take: params['take'],
-    offset: params['offset'],
-    redisHost: params['redis-host'],
-    redisPort: params['redis-port'],
-    redisAuth: params['redis-auth'],
-    address: params['address'],
-    rpcUrl: params['json-rpc'],
-    protocol: params['protocol'],
+    take: params.take,
+    offset: params.offset,
+    redisHost: params.redisHost,
+    redisPort: params.redisPort,
+    redisAuth: params.redisAuth,
+    address: params.address,
+    rpcUrl: params.rpcUrl,
+    protocol: params.protocol,
   });
 
   const protocol: string = '' + params['protocol'];
