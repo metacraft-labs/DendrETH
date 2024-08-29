@@ -72,7 +72,7 @@
         EOF
         chmod +x $BIN
 
-        ${concatMapStringsSep "\n" (data: "ln -s ${data}/* $CIRCUIT_DIR") circuit-data}
+        ${concatMapStringsSep "\n" (data: "ln -fs ${data}/* $CIRCUIT_DIR") circuit-data}
       '';
       image = buildToolImage {
         inherit name;
@@ -105,9 +105,14 @@
       deposit-accumulator-balance-aggregator-diva = {
         binaryName = "deposit_accumulator_balance_aggregator_diva";
         builderName = "deposit_accumulator_balance_aggregator_diva_circuit_data_generation";
+        range = range 0 32;
       };
       deposit-accumulator-balance-aggregator-final-layer = {
         binaryName = "deposit_accumulator_balance_aggregator_final_layer";
+        linkCircuitData = circuits:
+          circuits.deposit-accumulator-balance-aggregator-diva.circuit-data."32"
+          ++ circuits.commitment-mapper.circuit-data."24"
+          ++ circuits.commitment-mapper.circuit-data."40";
       };
       pubkey-commitment-mapper = {
         binaryName = "pubkey_commitment_mapper";
@@ -115,7 +120,8 @@
       final-layer = {
         binaryName = "final_layer";
         linkCircuitData = circuits:
-          circuits.balance-verifier.circuit-data."37" ++ circuits.commitment-mapper.circuit-data."0";
+          circuits.balance-verifier.circuit-data."37"
+          ++ circuits.commitment-mapper.circuit-data."40";
       };
     };
 
@@ -137,7 +143,11 @@
               else if range == null
               then {"0" = [(buildCircuit circuit-builder [0])];}
               else if argsBuilder == null
-              then {"0" = [(buildCircuit circuit-builder range)];}
+              then let
+                circuit-data-drv = buildCircuit circuit-builder range;
+                levels = map toString range;
+              in
+                lib.genAttrs levels (l: [circuit-data-drv."level_${toString l}"])
               else let
                 circuit-data = buildCircuit circuit-builder range;
               in
@@ -152,13 +162,11 @@
                   ))
                   lib.listToAttrs
                 ];
-            levels = lib.mapAttrs (level: data: packageCircuitExecuable level binary data) circuit-data;
           in
             {
               inherit binary;
-              levels."0" = packageCircuitExecuable "0" binary [];
             }
-            // lib.optionalAttrs (builderName != null) {inherit circuit-builder circuit-data levels;}
+            // lib.optionalAttrs (builderName != null) {inherit circuit-builder circuit-data;}
         )
         mapping;
 
@@ -173,11 +181,37 @@
               then circuit-info.circuit-data
               else linkCircuitData all-deps-free-circuit-data;
           in
-            circuit-info // {circuit-data = linked-circuit-data;}
+            if linkCircuitData == null
+            then circuit-info
+            else circuit-info // {circuit-data."0" = linked-circuit-data;}
         )
         mapping;
+
+      linked-circuits = linkCircuitData mapping;
+
+      circuits-with-levels =
+        mapAttrs (
+          name: value @ {
+            binary,
+            circuit-data ? null,
+            levels ? {},
+            ...
+          }:
+            value
+            // {
+              levels =
+                {
+                  all = packageCircuitExecuable "all" binary (
+                    lib.flatten (builtins.attrValues
+                      circuit-data)
+                  );
+                }
+                // (lib.mapAttrs (level: data: packageCircuitExecuable level binary data) circuit-data);
+            }
+        )
+        linked-circuits;
     in
-      linkCircuitData mapping;
+      circuits-with-levels;
 
     circuit-executables = packageAllCircuitExecutables mapping;
 
@@ -217,6 +251,8 @@
         copy-images-to-docker-daemon
         # misc-images
         ;
+
+      wrapper = installRustBinary "wrapper" "wrapper";
     };
     packages = {
       # inherit all-circuit-executables balance-verifier-circuit-builder input-fetchers;
