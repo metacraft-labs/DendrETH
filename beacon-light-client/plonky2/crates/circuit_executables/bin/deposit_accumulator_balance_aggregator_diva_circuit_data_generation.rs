@@ -11,7 +11,6 @@ use circuits::deposit_accumulator_balance_aggregator_diva::{
     first_level::DepositAccumulatorBalanceAggregatorDivaFirstLevel,
     inner_level::DepositAccumulatorBalanceAggregatorDivaInnerLevel,
 };
-use itertools::Itertools;
 use std::println;
 
 use jemallocator::Jemalloc;
@@ -31,49 +30,36 @@ fn main() -> Result<()> {
 
     let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
 
-    let levels_arg: &String = matches.get_one("levels").unwrap();
-
-    let levels = levels_arg
-        .split_terminator(',')
-        .map(|level_str| level_str.parse::<usize>().unwrap())
-        .collect_vec();
-
-    let max_level = *levels.iter().max().unwrap_or(&RECURSION_DEPTH);
-
     println!("Building level 0 circuit...");
 
     let (first_level_target, first_level_data) =
         DepositAccumulatorBalanceAggregatorDivaFirstLevel::build(&());
 
-    if levels.is_empty() || levels.contains(&0) {
-        println!("Serializing level 0 circuit...");
-        serialize_recursive_circuit_single_level(
-            &first_level_target,
-            &first_level_data,
-            serialized_circuits_dir,
-            CIRCUIT_NAME,
-            0,
-        );
-    }
+    println!("Serializing level 0 circuit...");
+    serialize_recursive_circuit_single_level(
+        &first_level_target,
+        &first_level_data,
+        serialized_circuits_dir,
+        CIRCUIT_NAME,
+        0,
+    );
 
     let mut prev_circuit_data = first_level_data;
 
-    for current_level in 1..=max_level {
+    for current_level in 1..=RECURSION_DEPTH {
         println!("Building level {current_level} circuit...");
 
         let (inner_target, inner_data) =
             DepositAccumulatorBalanceAggregatorDivaInnerLevel::build(&prev_circuit_data);
 
-        if levels.is_empty() || levels.contains(&current_level) {
-            println!("Serializing level {current_level} circuit...");
-            serialize_recursive_circuit_single_level(
-                &inner_target,
-                &inner_data,
-                serialized_circuits_dir,
-                CIRCUIT_NAME,
-                current_level,
-            );
-        }
+        println!("Serializing level {current_level} circuit...");
+        serialize_recursive_circuit_single_level(
+            &inner_target,
+            &inner_data,
+            serialized_circuits_dir,
+            CIRCUIT_NAME,
+            current_level,
+        );
 
         prev_circuit_data = inner_data;
     }
