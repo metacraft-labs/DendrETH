@@ -4,7 +4,7 @@ import { Tree } from '@chainsafe/persistent-merkle-tree/lib/tree';
 import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import { CommandLineOptionsBuilder } from './utils/cmdline';
 
-(async function() {
+(async function () {
   const args = new CommandLineOptionsBuilder()
     .option('slot', {
       type: 'number',
@@ -18,16 +18,11 @@ import { CommandLineOptionsBuilder } from './utils/cmdline';
   const { beaconState } = (await api.getBeaconState(args['slot']))!;
   const validators = beaconState.validators;
 
-  const validatorsViewDU = ssz.deneb.BeaconState.fields.validators.toViewDU(validators);
+  const validatorsViewDU =
+    ssz.deneb.BeaconState.fields.validators.toViewDU(validators);
 
   const tree = new Tree(validatorsViewDU.node);
-  console.log(
-    'validators root',
-    bytesToHex(tree.getRoot(1n)),
-  );
-  console.log(
-    'proof root',
-    bytesToHex(tree.getRoot(2n)),
-  );
-  console.log('validators length', validators.length)
+  console.log('validators root', bytesToHex(tree.getRoot(1n)));
+  console.log('proof root', bytesToHex(tree.getRoot(2n)));
+  console.log('validators length', validators.length);
 })();

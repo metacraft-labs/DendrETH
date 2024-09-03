@@ -19,7 +19,7 @@ const execAsync = util.promisify(require('child_process').exec);
 
 // We're currently allowed to run 256 vCPUs in total.  Our main worker
 // image uses 8, hence 32 task instances at most.
-const MAX_INSTANCES: number = 32 ;
+const MAX_INSTANCES: number = 32;
 
 function level(n: number, w: number, d: number): number {
   return Math.ceil(n / w) * d;

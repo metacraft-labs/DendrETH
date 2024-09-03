@@ -27,7 +27,7 @@ import makeRedis from '../../utils/redis';
       const queue = new WorkQueue(prefix);
       try {
         await lightClean.call(queue, redis, prefix);
-      } catch { }
+      } catch {}
     }
 
     console.log(`Waiting ${options['clean-duration'] / 1000} seconds`);

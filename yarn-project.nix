@@ -6,7 +6,10 @@
 
 let
 
-  yarnBin = ./.yarn/releases/yarn-4.1.1.cjs;
+  yarnBin = fetchurl {
+    url = "https://repo.yarnpkg.com/4.4.1/packages/yarnpkg-cli/bin/yarn.js";
+    hash = "sha512-+CUnPQaJzJ6tMlnBSZgDdmLx3NBpEmN7IaRQ6Np8/rSxllu+5z0WknuqEgEFQSa8OFxvQ/9KpwXIYx0m4SRg8Q==";
+  };
 
   cacheFolder = ".yarn/cache";
   lockfile = ./yarn.lock;

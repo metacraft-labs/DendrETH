@@ -173,7 +173,7 @@ function countSuccessful(tasks: Task[]): number {
 // Run the task with `count` many instances, return the number of
 // successfully completed tasks.
 export default async function runTask(count: number): Promise<number> {
-  const BATCH: number = 10;     // 10 tasks at most per request.
+  const BATCH: number = 10; // 10 tasks at most per request.
 
   const ecsClient: ECSClient = makeClient();
   let tasks: Task[] = [];

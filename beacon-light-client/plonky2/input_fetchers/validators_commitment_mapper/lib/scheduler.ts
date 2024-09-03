@@ -53,7 +53,9 @@ export class CommitmentMapperScheduler {
   private offset: number | undefined;
   private validators: Validator[] = [];
   private useFastDiffEndpoint: boolean;
-  private getValidatorsDiff: () => ReturnType<typeof this.getValidatorsDiffUnwrapped>;
+  private getValidatorsDiff: () => ReturnType<
+    typeof this.getValidatorsDiffUnwrapped
+  >;
 
   async init(options: any): Promise<void> {
     this.api = await getBeaconApi(options['beacon-node']);
@@ -84,14 +86,16 @@ export class CommitmentMapperScheduler {
       lastProcessedSlot !== null
         ? BigInt(lastProcessedSlot)
         : (() => {
-          const finalizedSlot = getLastSlotInEpoch(this.lastFinalizedEpoch);
-          const slot = options['sync-slot'] || finalizedSlot;
-          const baseSlot = BigInt(Math.min(Number(slot), Number(finalizedSlot)));
+            const finalizedSlot = getLastSlotInEpoch(this.lastFinalizedEpoch);
+            const slot = options['sync-slot'] || finalizedSlot;
+            const baseSlot = BigInt(
+              Math.min(Number(slot), Number(finalizedSlot)),
+            );
 
-          this.redis.client.set('base_slot', baseSlot.toString());
-          this.redis.client.set('last_computed_slot', `${baseSlot - 1n}`);
-          return baseSlot - 1n;
-        })();
+            this.redis.client.set('base_slot', baseSlot.toString());
+            this.redis.client.set('last_computed_slot', `${baseSlot - 1n}`);
+            return baseSlot - 1n;
+          })();
 
     const lastVerifiedSlot = await this.redis.get(
       CONSTANTS.lastVerifiedSlotKey,
@@ -104,14 +108,15 @@ export class CommitmentMapperScheduler {
       );
     }
 
-    this.useFastDiffEndpoint = (process.env.USE_FAST_DIFF_ENDPOINT ?? "false") === "true";
+    this.useFastDiffEndpoint =
+      (process.env.USE_FAST_DIFF_ENDPOINT ?? 'false') === 'true';
     this.getValidatorsDiff = (() => {
       let forceStandardEndpoint = true;
-      return function(this: CommitmentMapperScheduler) {
+      return function (this: CommitmentMapperScheduler) {
         const result = this.getValidatorsDiffUnwrapped(forceStandardEndpoint);
         forceStandardEndpoint = false;
         return result;
-      }
+      };
     })();
   }
 
@@ -127,7 +132,9 @@ export class CommitmentMapperScheduler {
 
   async rebase(rebaseSlot: number): Promise<void> {
     console.log(chalk.yellow(`Rebasing onto ${rebaseSlot}`));
-    const result = await this.redis.client.rebaseValidatorsCommitmentMapper(rebaseSlot);
+    const result = await this.redis.client.rebaseValidatorsCommitmentMapper(
+      rebaseSlot,
+    );
     console.log(result);
   }
 
@@ -167,7 +174,7 @@ export class CommitmentMapperScheduler {
   async syncToHeadSlot(): Promise<void> {
     while (this.currentSlot < this.headSlot) {
       if (!(await this.shouldPushMoreTasks())) {
-        await sleep(20000)
+        await sleep(20000);
         continue;
       }
 
@@ -398,8 +405,11 @@ export class CommitmentMapperScheduler {
     return pipeline.exec();
   }
 
-  async getValidatorsDiffUnwrapped(forceStandardEndpoint: boolean): Promise<IndexedValidator[]> {
-    const useCustomEndpoint = !forceStandardEndpoint && this.useFastDiffEndpoint;
+  async getValidatorsDiffUnwrapped(
+    forceStandardEndpoint: boolean,
+  ): Promise<IndexedValidator[]> {
+    const useCustomEndpoint =
+      !forceStandardEndpoint && this.useFastDiffEndpoint;
 
     if (useCustomEndpoint) {
       return this.api.getValidatorsDiffCustomEndpoint(
@@ -454,7 +464,7 @@ function modifyValidatorsImpl({
   scheduleHashValidatorTaskFn,
   scheduleHashConcatenationTaskFn,
 }: ModifyValidatorsVTable) {
-  return async function(indexedValidators: IndexedValidator[], slot: bigint) {
+  return async function (indexedValidators: IndexedValidator[], slot: bigint) {
     await Promise.all(
       indexedValidators.map(indexedValidator => {
         return scheduleHashValidatorTaskFn(indexedValidator, slot);
@@ -682,7 +692,7 @@ function hasValidatorChanged(prevValidators: Validator[]) {
     validator.effectiveBalance !== prevValidators[index].effectiveBalance ||
     validator.slashed !== prevValidators[index].slashed ||
     validator.activationEligibilityEpoch !==
-    prevValidators[index].activationEligibilityEpoch ||
+      prevValidators[index].activationEligibilityEpoch ||
     validator.activationEpoch !== prevValidators[index].activationEpoch ||
     validator.exitEpoch !== prevValidators[index].exitEpoch ||
     validator.withdrawableEpoch !== prevValidators[index].withdrawableEpoch ||

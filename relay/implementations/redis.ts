@@ -37,17 +37,30 @@ export class Redis implements IRedis {
 
     this.client.defineCommand('deletePattern', {
       numberOfKeys: 0,
-      lua: fs.readFileSync(path.resolve(__dirname, 'redis-scripts', 'deletePattern.lua'), 'utf8'),
+      lua: fs.readFileSync(
+        path.resolve(__dirname, 'redis-scripts', 'deletePattern.lua'),
+        'utf8',
+      ),
     });
 
     this.client.defineCommand('rebaseValidatorsCommitmentMapper', {
       numberOfKeys: 0,
-      lua: fs.readFileSync(path.resolve(__dirname, 'redis-scripts', 'rebaseValidatorsCommitmentMapper.lua'), 'utf8'),
+      lua: fs.readFileSync(
+        path.resolve(
+          __dirname,
+          'redis-scripts',
+          'rebaseValidatorsCommitmentMapper.lua',
+        ),
+        'utf8',
+      ),
     });
 
     this.client.defineCommand('recomputeSlot', {
       numberOfKeys: 0,
-      lua: fs.readFileSync(path.resolve(__dirname, 'redis-scripts', 'recomputeSlot.lua'), 'utf8'),
+      lua: fs.readFileSync(
+        path.resolve(__dirname, 'redis-scripts', 'recomputeSlot.lua'),
+        'utf8',
+      ),
     });
   }
 
