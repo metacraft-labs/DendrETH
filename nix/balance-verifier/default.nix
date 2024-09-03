@@ -124,6 +124,7 @@
         binaryName = "deposit_accumulator_balance_aggregator_final_layer";
         linkCircuitData = circuits:
           circuits.deposit-accumulator-balance-aggregator-diva.circuit-data."32"
+          ++ circuits.pubkey-commitment-mapper.circuit-data."32"
           ++ circuits.commitment-mapper.circuit-data."24"
           ++ circuits.commitment-mapper.circuit-data."40";
       };
