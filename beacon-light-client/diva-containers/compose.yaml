@@ -1,0 +1,64 @@
+x-network: &network
+  network_mode: host
+
+x-base: &base
+  <<: *network
+  restart: unless-stopped
+  environment:
+    BEACON_NODE: "$BEACON_NODE"
+    EXECUTION_NODE: "$EXECUTION_NODE"
+    REDIS_AUTH: "$REDIS_AUTH"
+    REDIS_HOST: "$REDIS_HOST"
+    REDIS_PORT: "$REDIS_PORT"
+    SNAPSHOT_CONTRACT: "$SNAPSHOT_CONTRACT"
+    VALIDATORS_ACCUM_CONTRACT: "$VALIDATORS_ACCUM_CONTRACT"
+    ECS_REGION: "$ECS_REGION"
+    ECS_CLUSTER: "$ECS_CLUSTER"
+    ECS_TASKDEF: "$ECS_TASKDEF"
+    ECS_CONTAINER: "$ECS_CONTAINER"
+    ECS_SUBNETS: "$ECS_SUBNETS"
+
+services:
+  vcm-fetcher:
+    <<: *base
+    build:
+      context: images/vcm-fetcher
+
+  dcm-fetcher:
+    <<: *base
+    build:
+      context: images/dcm-fetcher
+
+  vcm-gen:
+    <<: *base
+    build:
+      context: images/vcm-gen
+    volumes:
+      - proofs:/app/proofs
+    depends_on:
+      - vcm-fetcher
+
+  dcm-gen:
+    <<: *base
+    build:
+      context: images/dcm-gen
+    volumes:
+      - proofs:/app/proofs
+    depends_on:
+      - dcm-fetcher
+
+  balance-fetcher:
+    <<: *base
+    build:
+      context: images/balance-fetcher
+      args:
+        AWS_ACCESS_KEY_ID: "$AWS_ACCESS_KEY_ID"
+        AWS_SECRET_ACCESS_KEY: "$AWS_SECRET_ACCESS_KEY"
+
+  light-cleaner:
+    <<: *base
+    build:
+      context: images/light-cleaner
+
+volumes:
+  proofs:
