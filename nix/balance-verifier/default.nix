@@ -62,7 +62,20 @@
       name = "${executable.name}-${level}";
       pkg = runCommand name {inherit (executable) meta;} ''
         BIN=$out/bin/${executable.meta.mainProgram}
-        CIRCUIT_DIR=$out/data/serialized_circuits
+
+        # Some circuit executables (like the pubkey-commitment-mapper) don't
+        # have pre-built circuit data and instead build their circuits on
+        # startup. In such case, instead of pointing the
+        # `--serialized-circuits-dir` to the Nix package containing the
+        # pre-built circuits, point to ./serialized_circuits (relative to the
+        # working directory of the circuit-executable). That way, when the
+        # executable starts, it will create this directory and store its files
+        # there.
+        CIRCUIT_DIR=${
+          if circuit-data == []
+          then "./serialized_circuits"
+          else "$out/data/serialized_circuits"
+        }
         mkdir -p $CIRCUIT_DIR $out/bin
 
         cat << EOF > $BIN
@@ -193,7 +206,7 @@
         mapAttrs (
           name: value @ {
             binary,
-            circuit-data ? null,
+            circuit-data ? {},
             levels ? {},
             ...
           }:
