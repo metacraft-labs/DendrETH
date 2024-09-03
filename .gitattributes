@@ -1,6 +1,7 @@
-/.yarn/**            linguist-vendored
-/.yarn/releases/*    binary
-/.yarn/plugins/**/*  binary
-/.pnp.*              binary linguist-generated
-
-beacon-light-client/plonky2/mock_data/beaconState.bin filter=lfs diff=lfs merge=lfs -text
+/.yarn/**                   linguist-vendored
+/.yarn/sdks/*/*/*           binary
+/.yarn/sdks/*/*.js          binary
+/.yarn/sdks/*/package.json  text
+/.yarn/plugins/**/*         binary
+/.yarn/releases/*           binary
+/.pnp.*                     binary linguist-generated
