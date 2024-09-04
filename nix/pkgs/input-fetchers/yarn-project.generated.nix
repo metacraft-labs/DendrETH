@@ -12,7 +12,7 @@ let
   };
 
   cacheFolder = ".yarn/cache";
-  lockfile = ./yarn.lock;
+  lockfile = ./../../../yarn.lock;
 
   # Call overrideAttrs on a derivation if a function is provided.
   optionalOverride = fn: drv:

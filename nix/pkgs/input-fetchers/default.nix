@@ -11,7 +11,7 @@
   };
 
   project =
-    callPackage ../../../yarn-project.nix {
+    callPackage ./yarn-project.generated.nix {
       inherit nodejs;
     } {
       src = lib.cleanSource ../../..;
