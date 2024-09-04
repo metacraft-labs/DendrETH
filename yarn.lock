@@ -2156,6 +2156,7 @@ __metadata:
     ioredis: "npm:^5.3.2"
     json-bigint: "npm:^1.0.0"
     tsx: "npm:^4.7.1"
+    typescript: "npm:5.2.2"
     underscore: "npm:^1.13.7"
     web3: "npm:1.10.4"
     yargs: "npm:^17.7.2"
