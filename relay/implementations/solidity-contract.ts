@@ -43,7 +43,7 @@ export class SolidityContract implements ISmartContract {
 
     await publishTransaction(
       this.lightClientContract,
-      'light_client_update',
+      'lightClientUpdate',
       {
         ...update,
         a,
