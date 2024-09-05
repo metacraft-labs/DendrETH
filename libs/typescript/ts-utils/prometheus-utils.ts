@@ -7,17 +7,17 @@ import express from 'express';
 const register = new client.Registry();
 const logger = getGenericLogger();
 
-let network: string;
+let followNetwork: string;
 
-export function initPrometheusSetup(port?: number, curNetwork?: string) {
+export function initPrometheusSetup(port?: number, curFollowNetwork?: string) {
   const app = express();
 
   if (!port) {
     // Only for pollUpdates
     port = 2999;
   }
-  if (curNetwork) {
-    network = curNetwork;
+  if (curFollowNetwork) {
+    followNetwork = curFollowNetwork;
   }
 
   app.get('/metrics', async (req, res) => {
@@ -53,13 +53,18 @@ export async function prometheusTiming<T>(func: () => T, funcName: string) {
   } finally {
     const end = process.hrtime(start);
     const durationSeconds = end[0] + end[1] / 1e9;
-    logger.info(
-      `Logging ${funcName} on ${network} - duration: ${durationSeconds}`,
-    );
-
+    if (followNetwork == undefined) {
+      logger.info(
+        `Executing method: ${funcName} with duration: ${durationSeconds}`,
+      );
+    } else {
+      logger.info(
+        `Executing method: ${funcName} on follow-network: ${followNetwork} with duration: ${durationSeconds}`,
+      );
+    }
     if (functionExecutionTimeSummary) {
       functionExecutionTimeSummary
-        .labels(funcName, network)
+        .labels(funcName, followNetwork)
         .observe(durationSeconds);
     }
   }
