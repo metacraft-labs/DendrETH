@@ -66,7 +66,7 @@ task('start-publishing', 'Run relayer')
       let networkName: string = '';
       for (let i = 0; i < process.argv.length; i++) {
         const arg = process.argv[i];
-        if (arg === '--network' && i + 1 < process.argv.length) {
+        if (arg === '--follow-network' && i + 1 < process.argv.length) {
           networkName = process.argv[i + 1];
           break;
         }
