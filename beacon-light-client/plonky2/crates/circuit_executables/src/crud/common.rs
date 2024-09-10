@@ -635,6 +635,8 @@ async fn save_vcm_proof_data(
             validators_root,
         )
         .await?;
+
+        update_last_computed_slot(con, slot).await?;
     }
 
     save_json_object(
@@ -647,6 +649,22 @@ async fn save_vcm_proof_data(
         ),
         &proof_data,
     )
+    .await?;
+
+    Ok(())
+}
+
+async fn update_last_computed_slot(con: &mut Connection, current_slot: u64) -> Result<()> {
+    redis::Script::new(
+        r"
+        local last_computed_slot = tonumber(redis.call('GET', 'last_computed_slot'))
+        if tonumber(ARGV[1]) > last_computed_slot then
+            redis.call('SET', 'last_computed_slot', ARGV[1])
+        end
+    ",
+    )
+    .arg(current_slot)
+    .invoke_async(con)
     .await?;
 
     Ok(())

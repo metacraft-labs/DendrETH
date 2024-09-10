@@ -10,10 +10,14 @@ import CONSTANTS from '../../beacon-light-client/plonky2/kv_db_constants.json';
 import { Redis as RedisClient, Result } from 'ioredis';
 import { getDepthByGindex } from '@dendreth/utils/ts-utils/common-utils';
 import JSONbig from 'json-bigint';
+import fs from 'fs';
+import path from 'path';
 
 declare module 'ioredis' {
   interface RedisCommander<Context> {
     deletePattern(pattern: string): Result<string, Context>;
+    rebaseValidatorsCommitmentMapper(gindex: number): Result<string, Context>;
+    recomputeSlot(slot: number): Result<string, Context>;
   }
 }
 
@@ -33,21 +37,17 @@ export class Redis implements IRedis {
 
     this.client.defineCommand('deletePattern', {
       numberOfKeys: 0,
-      lua: `
-      local cursor = 0
-      local calls = 0
-      local dels = 0
-      repeat
-          local result = redis.call('SCAN', cursor, 'MATCH', ARGV[1])
-          calls = calls + 1
-          for _,key in ipairs(result[2]) do
-              redis.call('DEL', key)
-              dels = dels + 1
-          end
-          cursor = tonumber(result[1])
-      until cursor == 0
-      return "Calls " .. calls .. " Dels " .. dels
-  `,
+      lua: fs.readFileSync(path.resolve(__dirname, 'redis-scripts', 'deletePattern.lua'), 'utf8'),
+    });
+
+    this.client.defineCommand('rebaseValidatorsCommitmentMapper', {
+      numberOfKeys: 0,
+      lua: fs.readFileSync(path.resolve(__dirname, 'redis-scripts', 'rebaseValidatorsCommitmentMapper.lua'), 'utf8'),
+    });
+
+    this.client.defineCommand('recomputeSlot', {
+      numberOfKeys: 0,
+      lua: fs.readFileSync(path.resolve(__dirname, 'redis-scripts', 'recomputeSlot.lua'), 'utf8'),
     });
   }
 
