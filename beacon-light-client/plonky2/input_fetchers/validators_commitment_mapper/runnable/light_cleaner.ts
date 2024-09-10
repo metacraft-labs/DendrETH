@@ -25,7 +25,9 @@ import makeRedis from '../../utils/redis';
         `${CONSTANTS.validatorProofsQueue}:${depth}`,
       );
       const queue = new WorkQueue(prefix);
-      await lightClean.call(queue, redis, prefix);
+      try {
+        await lightClean.call(queue, redis, prefix);
+      } catch { }
     }
 
     console.log(`Waiting ${options['clean-duration'] / 1000} seconds`);

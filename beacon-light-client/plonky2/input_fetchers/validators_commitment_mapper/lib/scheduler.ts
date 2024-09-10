@@ -36,6 +36,12 @@ enum TaskTag {
   ZERO_OUT_VALIDATOR = 3,
 }
 
+interface StartOptions {
+  runOnce: boolean;
+  rebase?: number;
+  recompute?: number;
+}
+
 export class CommitmentMapperScheduler {
   private redis: Redis;
   private api: BeaconApi;
@@ -47,6 +53,7 @@ export class CommitmentMapperScheduler {
   private offset: number | undefined;
   private validators: Validator[] = [];
   private useFastDiffEndpoint: boolean;
+  private getValidatorsDiff: () => ReturnType<typeof this.getValidatorsDiffUnwrapped>;
 
   async init(options: any): Promise<void> {
     this.api = await getBeaconApi(options['beacon-node']);
@@ -79,7 +86,11 @@ export class CommitmentMapperScheduler {
         : (() => {
           const finalizedSlot = getLastSlotInEpoch(this.lastFinalizedEpoch);
           const slot = options['sync-slot'] || finalizedSlot;
-          return BigInt(Math.min(Number(slot), Number(finalizedSlot))) - 1n;
+          const baseSlot = BigInt(Math.min(Number(slot), Number(finalizedSlot)));
+
+          this.redis.client.set('base_slot', baseSlot.toString());
+          this.redis.client.set('last_computed_slot', `${baseSlot - 1n}`);
+          return baseSlot - 1n;
         })();
 
     const lastVerifiedSlot = await this.redis.get(
@@ -94,13 +105,39 @@ export class CommitmentMapperScheduler {
     }
 
     this.useFastDiffEndpoint = (process.env.USE_FAST_DIFF_ENDPOINT ?? "false") === "true";
+    this.getValidatorsDiff = (() => {
+      let forceStandardEndpoint = true;
+      return function(this: CommitmentMapperScheduler) {
+        const result = this.getValidatorsDiffUnwrapped(forceStandardEndpoint);
+        forceStandardEndpoint = false;
+        return result;
+      }
+    })();
   }
 
   dispose(): Promise<void> {
     return this.redis.quit();
   }
 
-  async start(runOnce: boolean = false): Promise<void> {
+  async start(opts: StartOptions = { runOnce: false }): Promise<void> {
+    if (opts.recompute !== undefined) return this.recompute(opts.recompute);
+    if (opts.rebase !== undefined) return this.rebase(opts.rebase);
+    return this.runScheduleLoop(opts.runOnce);
+  }
+
+  async rebase(rebaseSlot: number): Promise<void> {
+    console.log(chalk.yellow(`Rebasing onto ${rebaseSlot}`));
+    const result = await this.redis.client.rebaseValidatorsCommitmentMapper(rebaseSlot);
+    console.log(result);
+  }
+
+  async recompute(recomputeSlot: number): Promise<void> {
+    console.log(chalk.yellow(`Recomputing slot ${recomputeSlot}`));
+    const result = await this.redis.client.recomputeSlot(recomputeSlot);
+    console.log(result);
+  }
+
+  async runScheduleLoop(runOnce: boolean): Promise<void> {
     console.log(chalk.bold.blue('Fetching validators from database...'));
     this.validators = await getValidatorsBatched(this.redis, this.currentSlot);
 
@@ -122,8 +159,18 @@ export class CommitmentMapperScheduler {
     }
   }
 
+  async shouldPushMoreTasks(): Promise<boolean> {
+    const rootTasksQueueLen = await getRootTasksQueueLength(this.redis);
+    return rootTasksQueueLen < 100;
+  }
+
   async syncToHeadSlot(): Promise<void> {
     while (this.currentSlot < this.headSlot) {
+      if (!(await this.shouldPushMoreTasks())) {
+        await sleep(20000)
+        continue;
+      }
+
       this.currentSlot++;
       logProgress(this.currentSlot, this.headSlot);
       await this.pushDataForCurrentSlot();
@@ -351,13 +398,8 @@ export class CommitmentMapperScheduler {
     return pipeline.exec();
   }
 
-  async getValidatorsDiff(): Promise<IndexedValidator[]> {
-    const validatorsAreInitializedLazy = async () =>
-      (await this.redis.client.exists(
-        `${CONSTANTS.validatorKey}:0:slot_lookup`,
-      )) !== 0;
-
-    const useCustomEndpoint = this.useFastDiffEndpoint && await validatorsAreInitializedLazy();
+  async getValidatorsDiffUnwrapped(forceStandardEndpoint: boolean): Promise<IndexedValidator[]> {
+    const useCustomEndpoint = !forceStandardEndpoint && this.useFastDiffEndpoint;
 
     if (useCustomEndpoint) {
       return this.api.getValidatorsDiffCustomEndpoint(
@@ -557,6 +599,10 @@ function saveProofPlaceholder(
   );
 }
 
+async function getRootTasksQueueLength(redis: Redis): Promise<number> {
+  return redis.client.llen('validator_proof_queue:0:queue');
+}
+
 async function getValidatorKeysForSlot(
   redis: Redis,
   slot: bigint,
@@ -628,10 +674,6 @@ async function getValidatorsBatched(
 
   return allValidators;
 }
-
-// function updateLastVerifiedSlot(pipeline: ChainableCommander, slot: bigint): void {
-//   pipeline.set(CONSTANTS.lastVerifiedSlotKey, slot.toString());
-// }
 
 // Returns a function that checks whether a validator at validator index has changed
 function hasValidatorChanged(prevValidators: Validator[]) {

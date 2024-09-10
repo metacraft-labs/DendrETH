@@ -2,9 +2,6 @@ import { CommandLineOptionsBuilder } from '../../utils/cmdline';
 import { CommitmentMapperScheduler } from '../lib/scheduler';
 (async () => {
   const options = new CommandLineOptionsBuilder()
-    .usage(
-      'Usage: -redis-host <Redis host> -redis-port <Redis port> -take <number of validators>',
-    )
     .withRedisOpts()
     .withBeaconNodeOpts()
     .withRangeOpts()
@@ -19,10 +16,24 @@ import { CommitmentMapperScheduler } from '../lib/scheduler';
       type: 'boolean',
       default: false,
     })
+    .option('rebase', {
+      describe: 'The slot to rebase onto',
+      type: 'number',
+      default: undefined,
+    })
+    .option('recompute', {
+      describe: 'The slot to recompute',
+      type: 'number',
+      default: undefined,
+    })
     .build();
 
   const scheduler = new CommitmentMapperScheduler();
   await scheduler.init(options);
-  await scheduler.start(options['run-once']);
+  await scheduler.start({
+    runOnce: options['run-once'],
+    rebase: options['rebase'],
+    recompute: options['recompute'],
+  });
   await scheduler.dispose();
 })();
