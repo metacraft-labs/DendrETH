@@ -153,6 +153,15 @@ processes:
       proverserver:
         condition: process_healthy
 
+  mainnet:
+    description: Start generating proofs for the contract on ${LC_MAINNET} and update it with them
+    log_location: ./logs/mainnet.log
+    command: yarn hardhat start-publishing --light-client ${LC_MAINNET} --network mainnet --follow-network ${FOLLOW_NETWORK_MAINNET} --slots-jump ${SLOTS_JUMP} --hashi ${MAINNET_HASHI} --prometheus-port 3015
+    working_dir: ./beacon-light-client/solidity
+    depends_on:
+      proverserver:
+        condition: process_healthy
+
   general_logs:
     description: general_logs
     log_location: ./logs/general_logs.log
