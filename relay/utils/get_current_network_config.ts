@@ -20,12 +20,19 @@ const defaultConfig: Config = {
   GENESIS_VALIDATORS_ROOT: '',
 };
 
-export type NetworkConfig = 'pratter' | 'mainnet' | 'sepolia' | 'chiado';
+export type NetworkConfig =
+  | 'pratter'
+  | 'mainnet'
+  | 'sepolia'
+  | 'chiado'
+  | 'gnosis';
 
 export function isSupportedFollowNetwork(
   network: string,
 ): network is NetworkConfig {
-  return ['pratter', 'mainnet', 'sepolia', 'chiado'].includes(network);
+  return ['pratter', 'mainnet', 'sepolia', 'chiado', 'gnosis'].includes(
+    network,
+  );
 }
 
 export async function getNetworkConfig(
@@ -52,6 +59,11 @@ export async function getNetworkConfig(
     case 'chiado': {
       config.BEACON_REST_API[0] =
         process.env.BEACON_REST_API_CHIADO || 'default_chiado_rest_api_url';
+      break;
+    }
+    case 'gnosis': {
+      config.BEACON_REST_API[0] =
+        process.env.BEACON_REST_API_GNOSIS || 'default_gnosis_rest_api_url';
       break;
     }
     default: {

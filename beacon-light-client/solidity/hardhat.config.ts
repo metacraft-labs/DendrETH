@@ -44,7 +44,7 @@ const conf = {
     '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
   INFURA_API_KEY: getSecretEnvString('INFURA_API_KEY_FILE'),
   ETHERSCAN_API_KEY: getSecretEnvString('ETHERSCAN_API_KEY_FILE'),
-  ETHEREUM_MAINNET_RPC: process.env.ETHEREUM_MAINNET_RPC || '',
+  MAINNET_RPC: process.env.MAINNET_RPC || '',
   ROPSTEN_RPC: process.env.ROPSTEN_RPC || '',
   SEPOLIA_RPC: process.env.SEPOLIA_RPC || '',
   GOERLI_RPC: process.env.GOERLI_RPC || '',
@@ -113,9 +113,13 @@ export default {
     },
     hardhat: {
       forking: {
-        url: conf.ETHEREUM_MAINNET_RPC,
+        url: conf.MAINNET_RPC,
         blockNumber: 19931139,
       },
+    },
+    mainnet: {
+      url: conf.MAINNET_RPC,
+      accounts: [conf.USER_PRIVATE_KEY],
     },
     ropsten: {
       url: conf.ROPSTEN_RPC,
@@ -196,6 +200,7 @@ export default {
       baseGoerli: conf.BASE_ETHERSCAN_API_KEY,
       sepolia: conf.ETHERSCAN_API_KEY,
       goerli: conf.ETHERSCAN_API_KEY,
+      mainnet: conf.ETHERSCAN_API_KEY,
       avalancheFujiTestnet: conf.AVALANCHE_FUJI_ETHERSCAN_API_KEY,
       ftmTestnet: conf.FTM_ETHERSCAN_API_KEY,
       celo: conf.CELO_ETHERSCAN_API_KEY,
