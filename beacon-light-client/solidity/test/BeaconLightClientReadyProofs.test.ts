@@ -69,7 +69,7 @@ describe('BeaconLightClientReadyProofs', async function () {
 
       logger.info(` >>> Importing update ${i}...`);
 
-      const transaction = await blc.light_client_update(
+      const transaction = await blc.lightClientUpdate(
         { ...proof, ...updates[i] },
         {
           gasLimit: 30000000,
