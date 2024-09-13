@@ -56,7 +56,7 @@ async function checkContractUpdate(
     }
 
     if (delayInMinutes >= alertThresholdMinutes) {
-      const message = `⚠️ Alert: Contract on **${network}** hasn't been updated in ${delayInMinutes.toFixed(
+      const message = `@DendrETH Support Relay ⚠️ Alert: Contract on **${network}** hasn't been updated in ${delayInMinutes.toFixed(
         2,
       )} minutes.`;
       await channel.send(message);
