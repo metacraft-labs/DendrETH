@@ -32,7 +32,7 @@
     "@mevitae/redis-work-queue": "^0.1.5",
     "@noble/bls12-381": "^1.4.0",
     "chalk": "^4.1.2",
-    "circom-pairing": "link:../../../vendor/circom-pairing/",
+    "circom-pairing": "git@github.com/metacraft-labs/circom-pairing.git#commit=52db7a21544219e7b734e7f683d1f11328a0dc4e",
     "circomlibjs": "^0.1.7",
     "colors": "^1.4.0",
     "dotenv": "^16.4.5",

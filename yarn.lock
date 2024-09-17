@@ -15,6 +15,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@assemblyscript/loader@npm:^0.9.2":
+  version: 0.9.4
+  resolution: "@assemblyscript/loader@npm:0.9.4"
+  checksum: 10/a212bd629f0b044597c2f0d039ea4a11f2ee4a68c5a0758f2fcebdb168c6f8c2f50297a63f72ebb5eb12c9e023bdc9a8c730cd6c981158cb5df44c6aacb83b60
+  languageName: node
+  linkType: hard
+
 "@aws-crypto/crc32@npm:3.0.0":
   version: 3.0.0
   resolution: "@aws-crypto/crc32@npm:3.0.0"
@@ -1770,6 +1777,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@chainsafe/as-sha256@npm:^0.2.3, @chainsafe/as-sha256@npm:^0.2.4":
+  version: 0.2.4
+  resolution: "@chainsafe/as-sha256@npm:0.2.4"
+  dependencies:
+    "@assemblyscript/loader": "npm:^0.9.2"
+    buffer: "npm:^5.4.3"
+  checksum: 10/6455b514d6da1368b9accab9d0ade446931642cbf1683cc77e8c3b3a3642f3152e4025d8a31329b6905621ffe296c1df4e9196bb22287f2837f3933d82a65ee1
+  languageName: node
+  linkType: hard
+
+"@chainsafe/as-sha256@npm:^0.3.1":
+  version: 0.3.1
+  resolution: "@chainsafe/as-sha256@npm:0.3.1"
+  checksum: 10/3bae7b4bc6e307baa3cf1f9d2c75827874cd0fb458bc592656d741d374b48e71c042fe21616a506cb821487a5abfc6b92181e4b7fbf49b7370cee4df0b67d95a
+  languageName: node
+  linkType: hard
+
 "@chainsafe/as-sha256@npm:^0.4.1":
   version: 0.4.1
   resolution: "@chainsafe/as-sha256@npm:0.4.1"
@@ -1835,6 +1859,52 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@chainsafe/lodestar-config@npm:^0.34.4":
+  version: 0.34.4
+  resolution: "@chainsafe/lodestar-config@npm:0.34.4"
+  dependencies:
+    "@chainsafe/lodestar-params": "npm:^0.34.4"
+    "@chainsafe/lodestar-types": "npm:^0.34.4"
+    "@chainsafe/ssz": "npm:^0.8.20"
+  checksum: 10/11c1d7fc7697af2593ade71e565edb37d68b23a7ee5826a93feee73d675cb30e73db729f887f90d20076b68561542e8ec5b28f8104367c2eea73214013d02783
+  languageName: node
+  linkType: hard
+
+"@chainsafe/lodestar-params@npm:^0.34.4":
+  version: 0.34.4
+  resolution: "@chainsafe/lodestar-params@npm:0.34.4"
+  checksum: 10/fda1f6e12e9d46717c6ad62eedebae6e310aa2418d9456e0f0d16bd5bdec1218294676d6c9eedbb3f345a8dfee43acd6e8d72839b0597cafa9f6ed05584f0102
+  languageName: node
+  linkType: hard
+
+"@chainsafe/lodestar-types@npm:^0.34.4":
+  version: 0.34.4
+  resolution: "@chainsafe/lodestar-types@npm:0.34.4"
+  dependencies:
+    "@chainsafe/lodestar-params": "npm:^0.34.4"
+    "@chainsafe/ssz": "npm:^0.8.20"
+  checksum: 10/532018421158e2eb806358038c669a48f939fcf94ea5771ebf8425da369f288d000ec2fe5283c46974d1451b9ed64bd3377eac45e044b0a06ae77bcfdcec14a5
+  languageName: node
+  linkType: hard
+
+"@chainsafe/persistent-merkle-tree@npm:^0.3.7":
+  version: 0.3.7
+  resolution: "@chainsafe/persistent-merkle-tree@npm:0.3.7"
+  dependencies:
+    "@chainsafe/as-sha256": "npm:^0.2.3"
+  checksum: 10/b1dede5abd7af14ef258efbd1003b3e9ab56fd3d7d3846a464dc0720ffa8a2ce545afdf85427a1710a0df1a89ff12b5c4b594931ea99431614ede7fe6454c3ec
+  languageName: node
+  linkType: hard
+
+"@chainsafe/persistent-merkle-tree@npm:^0.4.2":
+  version: 0.4.2
+  resolution: "@chainsafe/persistent-merkle-tree@npm:0.4.2"
+  dependencies:
+    "@chainsafe/as-sha256": "npm:^0.3.1"
+  checksum: 10/a7e59f80be3ce0a86fe452a3c003bd159a1719ed22cae22e9841668f0eda8c35412fa16b3b150d96f583a24f430a5cc2a1bfcabafc1b9cf6e1fdb227e98c4dc7
+  languageName: node
+  linkType: hard
+
 "@chainsafe/persistent-merkle-tree@npm:^0.6.1":
   version: 0.6.1
   resolution: "@chainsafe/persistent-merkle-tree@npm:0.6.1"
@@ -1862,6 +1932,28 @@ __metadata:
     "@chainsafe/as-sha256": "npm:^0.4.1"
     "@chainsafe/persistent-merkle-tree": "npm:^0.6.1"
   checksum: 10/a69cfb2499c1cb377fcd6669ba1f63fc7d3b0d5909e2e0b0b2553a8cb894cb064549fed5f7f7dd2136262686a2439675868a64668066120d28c935c0b74203e9
+  languageName: node
+  linkType: hard
+
+"@chainsafe/ssz@npm:^0.8.20":
+  version: 0.8.20
+  resolution: "@chainsafe/ssz@npm:0.8.20"
+  dependencies:
+    "@chainsafe/as-sha256": "npm:^0.2.4"
+    "@chainsafe/persistent-merkle-tree": "npm:^0.3.7"
+    case: "npm:^1.6.3"
+  checksum: 10/dda86dd9f8e6668d573e524bbcd38233374b81b809bb4dcfc544196222b1c62c0cf707fa90d6e3df410709c22d3d9aab79e3c5bcb87e6db6e0a743ffcf729c22
+  languageName: node
+  linkType: hard
+
+"@chainsafe/ssz@npm:^0.9.1":
+  version: 0.9.4
+  resolution: "@chainsafe/ssz@npm:0.9.4"
+  dependencies:
+    "@chainsafe/as-sha256": "npm:^0.3.1"
+    "@chainsafe/persistent-merkle-tree": "npm:^0.4.2"
+    case: "npm:^1.6.3"
+  checksum: 10/2fe83d0b3ef131e14b51b88bb3343b14e7a02185fa9fd3da84b4726dbd857daaa4f7f6f4840fe3772fc1380352b1675a13b5f6153c4211c0f00ffa542b62bf2f
   languageName: node
   linkType: hard
 
@@ -2148,7 +2240,7 @@ __metadata:
     "@types/underscore": "npm:^1"
     "@types/yargs": "npm:^17.0.32"
     chalk: "npm:^4.1.2"
-    circom-pairing: "link:../../../vendor/circom-pairing/"
+    circom-pairing: "git@github.com/metacraft-labs/circom-pairing.git#commit=52db7a21544219e7b734e7f683d1f11328a0dc4e"
     circomlibjs: "npm:^0.1.7"
     colors: "npm:^1.4.0"
     dotenv: "npm:^16.4.5"
@@ -3693,7 +3785,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@noble/bls12-381@npm:^1.3.0, @noble/bls12-381@npm:^1.4.0":
+"@noble/bls12-381@npm:^1.2.0, @noble/bls12-381@npm:^1.3.0, @noble/bls12-381@npm:^1.4.0":
   version: 1.4.0
   resolution: "@noble/bls12-381@npm:1.4.0"
   checksum: 10/508b5115f8cbd3e1e4c0b1d6677280fae2a05568edd007217cb5324ec53faa96d6468a403bed4a28be678dd626674978249f5aac38545f042beb717307dda96e
@@ -3730,7 +3822,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@noble/secp256k1@npm:1.7.1, @noble/secp256k1@npm:~1.7.0":
+"@noble/secp256k1@npm:1.7.1, @noble/secp256k1@npm:^1.5.5, @noble/secp256k1@npm:~1.7.0":
   version: 1.7.1
   resolution: "@noble/secp256k1@npm:1.7.1"
   checksum: 10/214d4756c20ed20809d948d0cc161e95664198cb127266faf747fd7deffe5444901f05fe9f833787738f2c6e60b09e544c2f737f42f73b3699e3999ba15b1b63
@@ -7707,11 +7799,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"circom-pairing@link:../../../vendor/circom-pairing/::locator=%40dendreth%2Fbalance-verification%40workspace%3Abeacon-light-client%2Fplonky2%2Finput_fetchers":
-  version: 0.0.0-use.local
-  resolution: "circom-pairing@link:../../../vendor/circom-pairing/::locator=%40dendreth%2Fbalance-verification%40workspace%3Abeacon-light-client%2Fplonky2%2Finput_fetchers"
+"circom-pairing@git@github.com/metacraft-labs/circom-pairing.git#commit=52db7a21544219e7b734e7f683d1f11328a0dc4e":
+  version: 0.0.1
+  resolution: "circom-pairing@git@github.com/metacraft-labs/circom-pairing.git#commit=52db7a21544219e7b734e7f683d1f11328a0dc4e"
+  dependencies:
+    "@chainsafe/lodestar-config": "npm:^0.34.4"
+    "@chainsafe/lodestar-types": "npm:^0.34.4"
+    "@chainsafe/ssz": "npm:^0.9.1"
+    "@noble/bls12-381": "npm:^1.2.0"
+    "@noble/secp256k1": "npm:^1.5.5"
+    circomlib: "npm:^2.0.2"
+    snarkjs: "npm:^0.4.10"
+  checksum: 10/3763b31289760c079cf0e70de4e4c27f5884f6724db532507bf3202df59a559666e52f989d4497cb21c5c9998ce46bb76d947b9bf3e39c250dd6b5d3fb7e847f
   languageName: node
-  linkType: soft
+  linkType: hard
 
 "circom@workspace:beacon-light-client/circom":
   version: 0.0.0-use.local
@@ -7770,6 +7871,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"circom_runtime@npm:0.1.20":
+  version: 0.1.20
+  resolution: "circom_runtime@npm:0.1.20"
+  dependencies:
+    ffjavascript: "npm:0.2.55"
+  bin:
+    calcwit: calcwit.js
+  checksum: 10/f84e429485139b48b111b597f353d1857f3764f6af392576eb5579b54ca6acd0fef5e8792534eae751ed65e2ffeca1c35f861369b6087430b778d2f6ba175750
+  languageName: node
+  linkType: hard
+
 "circom_runtime@npm:0.1.22":
   version: 0.1.22
   resolution: "circom_runtime@npm:0.1.22"
@@ -7801,6 +7913,13 @@ __metadata:
   version: 2.0.2
   resolution: "circomlib@npm:2.0.2"
   checksum: 10/948d223c23e86bc2acac07a4a569da66206023de6c967fa93308a96ea4d02a8b9c4a23187d38ef3b16e6178126bcf7045597edde136892e554c7575234094dc7
+  languageName: node
+  linkType: hard
+
+"circomlib@npm:^2.0.2":
+  version: 2.0.5
+  resolution: "circomlib@npm:2.0.5"
+  checksum: 10/eb9413d2deb5664345c5a74b293d18ffd89c92262d403bdb568a2294f80fc6b0d300f54252607d57c2fc7f6732c62d017ed417eea385fa0d36a82a9937a1a790
   languageName: node
   linkType: hard
 
@@ -14075,6 +14194,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"r1csfile@npm:0.0.40, r1csfile@npm:^0.0.40":
+  version: 0.0.40
+  resolution: "r1csfile@npm:0.0.40"
+  dependencies:
+    "@iden3/bigarray": "npm:0.0.2"
+    "@iden3/binfileutils": "npm:0.0.11"
+    fastfile: "npm:0.0.20"
+    ffjavascript: "npm:0.2.55"
+  checksum: 10/83ab7e92a61b2b8d69f268ba76cc806e588ddf6523d6a2c38aadf6b1ae2db3bdd21aca9ca80c7625889c743d6727ec07baaaa9a27e8b031eff9d3151b57d5020
+  languageName: node
+  linkType: hard
+
 "r1csfile@npm:0.0.45":
   version: 0.0.45
   resolution: "r1csfile@npm:0.0.45"
@@ -14084,18 +14215,6 @@ __metadata:
     fastfile: "npm:0.0.20"
     ffjavascript: "npm:0.2.57"
   checksum: 10/fa7ab753d0b14ebf7505f1242c409254a0eb3acf739260929b61a93d57b76b695aaca4104996cc7d05f742a14933f1614f173b0d40f70f21d93751b35ea51791
-  languageName: node
-  linkType: hard
-
-"r1csfile@npm:^0.0.40":
-  version: 0.0.40
-  resolution: "r1csfile@npm:0.0.40"
-  dependencies:
-    "@iden3/bigarray": "npm:0.0.2"
-    "@iden3/binfileutils": "npm:0.0.11"
-    fastfile: "npm:0.0.20"
-    ffjavascript: "npm:0.2.55"
-  checksum: 10/83ab7e92a61b2b8d69f268ba76cc806e588ddf6523d6a2c38aadf6b1ae2db3bdd21aca9ca80c7625889c743d6727ec07baaaa9a27e8b031eff9d3151b57d5020
   languageName: node
   linkType: hard
 
@@ -14957,6 +15076,26 @@ __metadata:
   bin:
     snarkjs: build/cli.cjs
   checksum: 10/35ca76fb922faa6e9709c3011d315a1b346f9d122351e797ba0665afb4d0f3125c637dfddec710f824e83f119d40fb5fa030c463d9eb648c983ce648600aac0a
+  languageName: node
+  linkType: hard
+
+"snarkjs@npm:^0.4.10":
+  version: 0.4.27
+  resolution: "snarkjs@npm:0.4.27"
+  dependencies:
+    "@iden3/binfileutils": "npm:0.0.11"
+    bfj: "npm:^7.0.2"
+    blake2b-wasm: "npm:^2.4.0"
+    circom_runtime: "npm:0.1.20"
+    ejs: "npm:^3.1.6"
+    fastfile: "npm:0.0.20"
+    ffjavascript: "npm:0.2.55"
+    js-sha3: "npm:^0.8.0"
+    logplease: "npm:^1.2.15"
+    r1csfile: "npm:0.0.40"
+  bin:
+    snarkjs: build/cli.cjs
+  checksum: 10/d4fefc9e00a9abfdb8064df2a8cccf211731690425518c6a025d2c7110b5fde2fd1655eb49a02bf3c93086764823c1cc419f667b242ec7f0171d70b89d9f70b7
   languageName: node
   linkType: hard
 
