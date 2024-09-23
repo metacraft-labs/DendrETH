@@ -12,14 +12,11 @@ use circuit_executables::{
             delete_balance_verification_proof_dependencies, fetch_proofs_balances,
             fetch_validator_balance_input, load_circuit_data, read_from_file, save_balance_proof,
         },
-        proof_storage::proof_storage::{create_proof_storage, ProofStorage},
+        proof_storage::proof_storage::RedisBlobStorage,
     },
     db_constants::DB_CONSTANTS,
     provers::prove_inner_level,
-    utils::{
-        get_default_config, parse_balance_verification_command_line_options,
-        CommandLineOptionsBuilder,
-    },
+    utils::{parse_balance_verification_command_line_options, CommandLineOptionsBuilder},
 };
 use circuits::{
     common_targets::BasicRecursiveInnerCircuitTarget,
@@ -44,7 +41,6 @@ use plonky2::{
     util::serialization::Buffer,
 };
 
-use redis::aio::Connection;
 use redis_work_queue::{Item, KeyPrefix, WorkQueue};
 
 use jemallocator::Jemalloc;
@@ -73,30 +69,21 @@ where
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let common_config = get_default_config().unwrap();
-
     let matches = CommandLineOptionsBuilder::new("balance_verification")
         .with_balance_verification_options()
-        .with_redis_options(
-            &common_config.redis_host,
-            common_config.redis_port,
-            &common_config.redis_auth,
-        )
         .with_work_queue_options()
-        .with_proof_storage_options()
-        .with_protocol_options()
         .with_serialized_circuits_dir()
+        .with_proof_storage_config()
         .get_matches();
 
     let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
+    let storage_config_filepath = matches.value_of("proof_storage_cfg").unwrap();
 
     let config = parse_balance_verification_command_line_options(&matches);
 
-    println!("{}", "Connecting to Redis...".yellow());
-    let client = redis::Client::open(config.redis_connection)?;
-    let mut con = client.get_async_connection().await?;
-
-    let mut proof_storage = create_proof_storage(&matches).await;
+    println!("{}", "Initializing storage connection...".yellow());
+    let mut storage =
+        RedisBlobStorage::from_file(storage_config_filepath, "balance_verification").await?;
 
     println!("{}", "Loading circuit data...".yellow());
     let circuit_data = load_circuit_data::<WithdrawalCredentialsBalanceAggregatorFirstLevel<8, 1>>(
@@ -143,8 +130,7 @@ async fn main() -> Result<()> {
 
     let start: Instant = Instant::now();
     process_queue(
-        &mut con,
-        proof_storage.as_mut(),
+        &mut storage,
         &queue,
         &circuit_data,
         inner_circuit_data.as_ref(),
@@ -161,8 +147,7 @@ async fn main() -> Result<()> {
 }
 
 async fn process_queue<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIALS_COUNT: usize>(
-    con: &mut redis::aio::Connection,
-    proof_storage: &mut dyn ProofStorage,
+    storage: &mut RedisBlobStorage,
     queue: &WorkQueue,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     inner_circuit_data: Option<&CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>>,
@@ -181,7 +166,7 @@ where
     while time_to_run.is_none() || start.elapsed() < time_to_run.unwrap() {
         let queue_item = match queue
             .lease(
-                con,
+                &mut storage.metadata,
                 Some(Duration::from_secs(stop_after)),
                 Duration::from_secs(lease_for),
             )
@@ -197,7 +182,7 @@ where
 
         if queue_item.data.is_empty() {
             println!("{}", "Skipping empty data task".yellow());
-            queue.complete(con, &queue_item).await?;
+            queue.complete(&mut storage.metadata, &queue_item).await?;
 
             continue;
         }
@@ -205,8 +190,7 @@ where
         match targets {
             Targets::FirstLevel(targets) => {
                 match process_first_level_task(
-                    con,
-                    proof_storage,
+                    storage,
                     queue,
                     queue_item,
                     circuit_data,
@@ -229,8 +213,7 @@ where
             }
             Targets::InnerLevel(inner_circuit_targets) => {
                 match process_inner_level_job::<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>(
-                    con,
-                    proof_storage,
+                    storage,
                     queue,
                     queue_item,
                     circuit_data,
@@ -264,8 +247,7 @@ async fn process_first_level_task<
     const VALIDATORS_COUNT: usize,
     const WITHDRAWAL_CREDENTIALS_COUNT: usize,
 >(
-    con: &mut Connection,
-    proof_storage: &mut dyn ProofStorage,
+    storage: &mut RedisBlobStorage,
     queue: &WorkQueue,
     queue_item: Item,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
@@ -297,8 +279,12 @@ where
     }
 
     let start = Instant::now();
-    let validator_balance_input =
-        fetch_validator_balance_input(con, protocol.to_owned(), balance_input_index).await?;
+    let validator_balance_input = fetch_validator_balance_input(
+        &mut storage.metadata,
+        protocol.to_owned(),
+        balance_input_index,
+    )
+    .await?;
 
     let elapsed = start.elapsed();
 
@@ -309,8 +295,8 @@ where
     let proof = circuit_data.prove(pw)?;
 
     match save_balance_proof::<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>(
-        con,
-        proof_storage,
+        &mut storage.metadata,
+        storage.blob.as_mut(),
         protocol.to_owned(),
         proof,
         0,
@@ -329,7 +315,7 @@ where
             return Err(err);
         }
         Ok(_) => {
-            queue.complete(con, &queue_item).await?;
+            queue.complete(&mut storage.metadata, &queue_item).await?;
         }
     }
 
@@ -340,8 +326,7 @@ async fn process_inner_level_job<
     const VALIDATORS_COUNT: usize,
     const WITHDRAWAL_CREDENTIALS_COUNT: usize,
 >(
-    con: &mut Connection,
-    proof_storage: &mut dyn ProofStorage,
+    storage: &mut RedisBlobStorage,
     queue: &WorkQueue,
     queue_item: Item,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
@@ -375,7 +360,13 @@ where
             VALIDATORS_COUNT,
             WITHDRAWAL_CREDENTIALS_COUNT,
         >,
-    >(con, proof_storage, protocol.to_owned(), level, index)
+    >(
+        &mut storage.metadata,
+        storage.blob.as_mut(),
+        protocol.to_owned(),
+        level,
+        index,
+    )
     .await
     {
         Err(err) => {
@@ -397,8 +388,8 @@ where
             )?;
 
             match save_balance_proof::<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>(
-                con,
-                proof_storage,
+                &mut storage.metadata,
+                storage.blob.as_mut(),
                 protocol.to_owned(),
                 proof,
                 level,
@@ -417,12 +408,12 @@ where
                     return Err(err);
                 }
                 Ok(_) => {
-                    queue.complete(con, &queue_item).await?;
+                    queue.complete(&mut storage.metadata, &queue_item).await?;
                     if !preserve_intermediary_proofs {
                         // delete child nodes
                         delete_balance_verification_proof_dependencies(
-                            con,
-                            proof_storage,
+                            &mut storage.metadata,
+                            storage.blob.as_mut(),
                             protocol,
                             level,
                             index,

@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, ensure, Context, Result};
 use circuit::SetWitness;
 use circuits::redis_storage_types::ValidatorsCommitmentMapperProofData;
 use colored::Colorize;
@@ -102,6 +102,8 @@ impl CommitmentMapperTask {
 
 impl CommitmentMapperTask {
     pub fn deserialize(bytes: &[u8]) -> Result<CommitmentMapperTask> {
+        ensure!(bytes.len() > 0, "Task buffer is empty");
+
         let task_tag = FromPrimitive::from_u8(u8::from_be_bytes(bytes[0..1].try_into()?))
             .context("Invalid task tag")?;
 
@@ -160,7 +162,7 @@ async fn handle_update_validator_proof_task(
     validator_index: u64,
     slot: u64,
 ) -> Result<()> {
-    match fetch_validator(&mut ctx.redis_con, validator_index, slot).await {
+    match fetch_validator(&mut ctx.storage.metadata, validator_index, slot).await {
         Ok(input) => {
             let mut pw = PartialWitness::new();
             ctx.first_level_circuit.target.set_witness(&mut pw, &input);
@@ -170,8 +172,8 @@ async fn handle_update_validator_proof_task(
 
             if input.is_real {
                 let save_result = save_validator_proof(
-                    &mut ctx.redis_con,
-                    ctx.proof_storage.as_mut(),
+                    &mut ctx.storage.metadata,
+                    ctx.storage.blob.as_mut(),
                     proof,
                     gindex_from_validator_index(validator_index, 40),
                     slot,
@@ -183,8 +185,8 @@ async fn handle_update_validator_proof_task(
                 };
             } else {
                 let save_result = save_zero_validator_proof(
-                    &mut ctx.redis_con,
-                    ctx.proof_storage.as_mut(),
+                    &mut ctx.storage.metadata,
+                    ctx.storage.blob.as_mut(),
                     proof,
                     40,
                 )
@@ -208,8 +210,8 @@ async fn handle_update_proof_node_task(
     let level = 39 - get_depth_for_gindex(gindex) as usize;
 
     let fetch_result = fetch_proofs::<ValidatorsCommitmentMapperProofData>(
-        &mut ctx.redis_con,
-        ctx.proof_storage.as_mut(),
+        &mut ctx.storage.metadata,
+        ctx.storage.blob.as_mut(),
         gindex,
         slot,
     )
@@ -234,8 +236,8 @@ async fn handle_update_proof_node_task(
             })?;
 
             let save_result = save_validator_proof(
-                &mut ctx.redis_con,
-                ctx.proof_storage.as_mut(),
+                &mut ctx.storage.metadata,
+                ctx.storage.blob.as_mut(),
                 proof,
                 gindex,
                 slot,
@@ -258,8 +260,11 @@ async fn handle_prove_zero_for_depth_task(
     // the level in the inner proofs tree
     let level = 39 - depth as usize;
 
-    match fetch_zero_proof::<ValidatorsCommitmentMapperProofData>(&mut ctx.redis_con, depth + 1)
-        .await
+    match fetch_zero_proof::<ValidatorsCommitmentMapperProofData>(
+        &mut ctx.storage.metadata,
+        depth + 1,
+    )
+    .await
     {
         Ok(lower_proof) => {
             let inner_circuit_data = if level > 0 {
@@ -268,7 +273,7 @@ async fn handle_prove_zero_for_depth_task(
                 &ctx.first_level_circuit.data
             };
 
-            let lower_proof_bytes = lower_proof.get_proof(ctx.proof_storage.as_mut()).await;
+            let lower_proof_bytes = lower_proof.get_proof(ctx.storage.blob.as_mut()).await;
 
             let proof = prove_until_verifiable(&ctx.inner_level_circuits[level].data, || {
                 prove_inner_level(
@@ -281,8 +286,8 @@ async fn handle_prove_zero_for_depth_task(
             })?;
 
             let save_result = save_zero_validator_proof(
-                &mut ctx.redis_con,
-                ctx.proof_storage.as_mut(),
+                &mut ctx.storage.metadata,
+                ctx.storage.blob.as_mut(),
                 proof,
                 depth,
             )
@@ -304,15 +309,21 @@ async fn handle_zero_out_validator_task(
     validator_index: u64,
     slot: u64,
 ) -> Result<()> {
-    match fetch_validator(&mut ctx.redis_con, VALIDATOR_REGISTRY_LIMIT as u64, slot).await {
+    match fetch_validator(
+        &mut ctx.storage.metadata,
+        VALIDATOR_REGISTRY_LIMIT as u64,
+        slot,
+    )
+    .await
+    {
         Ok(input) => {
             let mut pw = PartialWitness::new();
             ctx.first_level_circuit.target.set_witness(&mut pw, &input);
             let proof = ctx.first_level_circuit.data.prove(pw)?;
 
             let save_result = save_validator_proof(
-                &mut ctx.redis_con,
-                ctx.proof_storage.as_mut(),
+                &mut ctx.storage.metadata,
+                ctx.storage.blob.as_mut(),
                 proof,
                 gindex_from_validator_index(validator_index, 40),
                 slot,
@@ -332,6 +343,7 @@ async fn handle_zero_out_validator_task(
     Ok(())
 }
 
+#[derive(Debug)]
 pub struct VCMWorkQueueItem {
     pub depth: usize,
     pub item: Item,
@@ -343,10 +355,10 @@ pub async fn pick_work_queue_item_prioritize_lower_levels(
     for depth in (0..=40).rev() {
         let work_queue = &mut ctx.work_queues[depth];
 
-        if work_queue.queue_len(&mut ctx.redis_con).await? > 0 {
+        if work_queue.queue_len(&mut ctx.storage.metadata).await? > 0 {
             let item_opt = work_queue
                 .lease(
-                    &mut ctx.redis_con,
+                    &mut ctx.storage.metadata,
                     Some(Duration::from_secs(ctx.work_queue_cfg.stop_after)),
                     Duration::from_secs(ctx.work_queue_cfg.lease_for),
                 )

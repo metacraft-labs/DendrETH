@@ -140,7 +140,3 @@ path = "bin/deposit_accumulator_balance_aggregator_final_layer.rs"
 [[bin]]
 name = "test"
 path = "bin/test.rs"
-
-[[bin]]
-name = "cloud_healthcheck"
-path = "bin/cloud_healthcheck.rs"

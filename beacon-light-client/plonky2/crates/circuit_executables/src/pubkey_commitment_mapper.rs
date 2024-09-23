@@ -21,7 +21,7 @@ use serde_json::json;
 
 use crate::{
     cached_circuit_build::{build_recursive_circuit_cached, CircuitTargetAndData},
-    crud::proof_storage::proof_storage::ProofStorage,
+    crud::proof_storage::proof_storage::{ProofStorage, RedisBlobStorage},
     provers::prove_inner_level2,
 };
 
@@ -35,8 +35,7 @@ pub type PubkeyCommitmentMapperProof = ProofWithPublicInputs<F, C, D>;
 pub type PubkeyCommitmentMapperCircuitData = CircuitData<F, C, D>;
 
 pub struct PubkeyCommitmentMapperContext {
-    pub redis: Connection,
-    pub proof_storage: Box<dyn ProofStorage>,
+    pub storage: RedisBlobStorage,
     pub protocol: String,
     pub deposit_count: u64,
     pub zero_hash_proofs: Vec<PubkeyCommitmentMapperProof>,
@@ -47,13 +46,13 @@ pub struct PubkeyCommitmentMapperContext {
 
 impl PubkeyCommitmentMapperContext {
     pub async fn new(
-        redis_connection: &str,
-        mut proof_storage: Box<dyn ProofStorage>,
         protocol: String,
+        storage_config_filepath: &str,
         serialized_circuits_dir: &str,
     ) -> Result<Self> {
-        let client = redis::Client::open(redis_connection)?;
-        let mut redis = client.get_async_connection().await?;
+        let mut storage =
+            RedisBlobStorage::from_file(storage_config_filepath, "pubkey-commitment-mapper")
+                .await?;
 
         let (first_level_circuit, inner_level_circuits) = build_recursive_circuit_cached(
             serialized_circuits_dir,
@@ -63,14 +62,15 @@ impl PubkeyCommitmentMapperContext {
             &|prev_circuit_data| PubkeyCommitmentMapperIL::build(prev_circuit_data),
         );
 
-        let deposit_count: u64 = redis
+        let deposit_count: u64 = storage
+            .metadata
             .get(format!(
                 "{protocol}:pubkey_commitment_mapper:currently_computed_pubkey_mapping"
             ))
             .await?;
 
         let zero_hash_proofs = get_zero_hash_proofs(
-            proof_storage.as_mut(),
+            storage.blob.as_mut(),
             &first_level_circuit,
             &inner_level_circuits,
         )
@@ -80,11 +80,11 @@ impl PubkeyCommitmentMapperContext {
             let mut pipe = redis::pipe();
             pipe.atomic();
             save_branch(&mut pipe, &protocol, &zero_hash_proofs);
-            pipe.query_async(&mut redis).await?;
+            pipe.query_async(&mut storage.metadata).await?;
         }
 
         let branch = load_branch(
-            &mut redis,
+            &mut storage.metadata,
             &protocol,
             &first_level_circuit,
             &inner_level_circuits,
@@ -92,8 +92,7 @@ impl PubkeyCommitmentMapperContext {
         .await?;
 
         Ok(Self {
-            redis,
-            proof_storage,
+            storage,
             protocol,
             deposit_count,
             zero_hash_proofs,

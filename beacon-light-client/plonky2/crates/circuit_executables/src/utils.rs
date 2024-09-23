@@ -82,6 +82,18 @@ impl<'a> CommandLineOptionsBuilder<'a> {
         Self { command }
     }
 
+    pub fn with_proof_storage_config(self) -> Self {
+        let command = self.command.arg(
+            Arg::with_name("proof_storage_cfg")
+                .long("proof-storage-cfg")
+                .value_name("filepath")
+                .takes_value(true)
+                .required(true),
+        );
+
+        Self { command }
+    }
+
     pub fn with_balance_verification_options(self) -> Self {
         let command = self
             .command
@@ -111,64 +123,6 @@ impl<'a> CommandLineOptionsBuilder<'a> {
                     .long("protocol")
                     .takes_value(true)
                     .required(true),
-            );
-
-        Self { command }
-    }
-
-    pub fn with_proof_storage_options(self) -> Self {
-        let command = self
-            .command
-            .arg(
-                Arg::with_name("proof_storage_type")
-                    .long("proof-storage-type")
-                    .value_name("proof_storage_type")
-                    .help("Sets the type of proof storage")
-                    .takes_value(true)
-                    .required(true)
-                    .possible_values(&["redis", "file", "azure", "aws"]),
-            )
-            .arg(
-                Arg::with_name("folder_name")
-                    .long("folder-name")
-                    .value_name("folder_name")
-                    .help("Sets the name of the folder proofs will be stored in")
-                    .takes_value(true),
-            )
-            .arg(
-                Arg::with_name("azure_account")
-                    .long("azure-account-name")
-                    .value_name("azure_account")
-                    .help("Sets the name of the azure account")
-                    .takes_value(true),
-            )
-            .arg(
-                Arg::with_name("azure_container")
-                    .long("azure-container-name")
-                    .value_name("azure_container")
-                    .help("Sets the name of the azure container")
-                    .takes_value(true),
-            )
-            .arg(
-                Arg::with_name("aws_endpoint_url")
-                    .long("aws-endpoint-url")
-                    .value_name("aws_endpoint_url")
-                    .help("Sets the aws endpoint url")
-                    .takes_value(true),
-            )
-            .arg(
-                Arg::with_name("aws_region")
-                    .long("aws-region")
-                    .value_name("aws_region")
-                    .help("Sets the aws region")
-                    .takes_value(true),
-            )
-            .arg(
-                Arg::with_name("aws_bucket_name")
-                    .long("aws-bucket-name")
-                    .value_name("aws_bucket_name")
-                    .help("Sets the aws bucket name")
-                    .takes_value(true),
             );
 
         Self { command }

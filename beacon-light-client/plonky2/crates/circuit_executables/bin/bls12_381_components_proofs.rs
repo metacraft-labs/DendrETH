@@ -7,7 +7,7 @@ use circuit::SerdeCircuitTarget;
 use circuit_executables::{
     crud::{
         common::{get_recursive_stark_targets, load_circuit_data_starky, read_from_file},
-        proof_storage::proof_storage::create_proof_storage,
+        proof_storage::proof_storage::RedisBlobStorage,
     },
     provers::{
         generate_final_exponentiate, generate_fp12_mul_proof, generate_miller_loop_proof,
@@ -30,7 +30,8 @@ use std::{ops::Neg, str::FromStr};
 
 async fn async_main() -> Result<()> {
     let matches = CommandLineOptionsBuilder::new("bls12_381_components_proofs")
-        .with_proof_storage_options()
+        .with_serialized_circuits_dir()
+        .with_proof_storage_config()
         .get_matches();
 
     let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
@@ -85,7 +86,10 @@ async fn async_main() -> Result<()> {
     let fp12_mull = miller_loop1 * miller_loop2;
     // PROVING HAPPENS HERE
 
-    let mut proof_storage = create_proof_storage(&matches).await;
+    let storage_config_filepath = matches.get_one::<String>("proof_storage_cfg").unwrap();
+    let mut storage =
+        RedisBlobStorage::from_file(&storage_config_filepath, "bls-verification").await?;
+
     let (pp1, pp2) =
         handle_pairing_precomp(serialized_circuits_dir, &message_g2, &signature_g2).await;
 
@@ -156,7 +160,8 @@ async fn async_main() -> Result<()> {
         proof.public_inputs[proof.public_inputs.len() - 1]
     );
 
-    proof_storage
+    storage
+        .blob
         .set_proof("bls12_381_proof".to_string(), &proof.to_bytes())
         .await?;
 

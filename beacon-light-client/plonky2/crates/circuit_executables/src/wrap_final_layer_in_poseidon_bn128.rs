@@ -11,12 +11,12 @@ use plonky2::{
         proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
     },
 };
-use redis::AsyncCommands;
+use redis::{aio::Connection, AsyncCommands};
 
 use crate::poseidon_bn128_config::PoseidonBN128GoldilocksConfig;
 
 pub async fn wrap_final_layer_in_poseidon_bn_128(
-    mut con: redis::aio::Connection,
+    con: &mut Connection,
     compile_circuit: bool,
     final_layer_circuit: CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     final_layer_proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
