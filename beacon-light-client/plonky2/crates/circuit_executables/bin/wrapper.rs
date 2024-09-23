@@ -83,7 +83,7 @@ async fn main() -> Result<()> {
         ProofWithPublicInputs::from_bytes(final_layer_proof, &circuit_data.common)?;
 
     wrap_final_layer_in_poseidon_bn_128(
-        con,
+        &mut con,
         compile_circuit,
         circuit_data,
         final_layer_proof,

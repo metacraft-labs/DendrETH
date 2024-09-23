@@ -3,13 +3,12 @@ use std::{thread::sleep, time::Duration};
 
 use anyhow::Result;
 use circuit_executables::{
-    crud::proof_storage::proof_storage::create_proof_storage,
     pubkey_commitment_mapper::{
         append_pubkey_and_recalc_merkle_branch, complete_task, compute_merkle_root, finished_block,
         poll_processing_queue, save_branch, save_root_for_block_number,
         PubkeyCommitmentMapperContext,
     },
-    utils::{get_default_config, CommandLineOptionsBuilder},
+    utils::CommandLineOptionsBuilder,
 };
 use clap::Arg;
 use jemallocator::Jemalloc;
@@ -19,13 +18,10 @@ static GLOBAL: Jemalloc = Jemalloc;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let config = get_default_config()?;
-
     let matches = CommandLineOptionsBuilder::new("commitment_mapper")
-        .with_redis_options(&config.redis_host, config.redis_port, &config.redis_auth)
-        .with_proof_storage_options()
         .with_protocol_options()
         .with_serialized_circuits_dir()
+        .with_proof_storage_config()
         .arg(
             Arg::with_name("fast_sync_to")
                 .long("fast-sync-to")
@@ -44,24 +40,18 @@ async fn main() -> Result<()> {
 
     println!("Initializing context...");
 
-    let mut ctx = {
-        let redis_connection = matches.value_of("redis_connection").unwrap();
-        let protocol = matches.value_of("protocol").unwrap();
-        let proof_storage = create_proof_storage(&matches).await;
-        PubkeyCommitmentMapperContext::new(
-            redis_connection,
-            proof_storage,
-            protocol.to_owned(),
-            serialized_circuits_dir,
-        )
-        .await?
-    };
+    let mut ctx = PubkeyCommitmentMapperContext::new(
+        matches.value_of("protocol").unwrap().to_owned(),
+        &matches.get_one::<String>("proof_storage_cfg").unwrap(),
+        serialized_circuits_dir,
+    )
+    .await?;
 
     println!("Polling tasks...");
 
     loop {
         // poll the pubkey processing queue (the result is in the format "pubkey,block_number")
-        match poll_processing_queue(&mut ctx.redis, &ctx.protocol).await {
+        match poll_processing_queue(&mut ctx.storage.metadata, &ctx.protocol).await {
             Ok((pubkey, block_number)) => {
                 println!(
                     "{}",
@@ -76,7 +66,8 @@ async fn main() -> Result<()> {
 
                 // Don't save the root if it's not the last deposit for the block
                 let should_save_merkle_root = block_number >= fast_sync_block_number
-                    && finished_block(&mut ctx.redis, &ctx.protocol, block_number).await?;
+                    && finished_block(&mut ctx.storage.metadata, &ctx.protocol, block_number)
+                        .await?;
 
                 if should_save_merkle_root {
                     println!(
@@ -87,7 +78,7 @@ async fn main() -> Result<()> {
 
                     save_root_for_block_number(
                         &mut pipe,
-                        ctx.proof_storage.as_mut(),
+                        ctx.storage.blob.as_mut(),
                         &ctx.protocol,
                         &merkle_root,
                         block_number,
@@ -96,7 +87,7 @@ async fn main() -> Result<()> {
                 }
 
                 complete_task(&mut pipe, &ctx.protocol);
-                _ = pipe.query_async(&mut ctx.redis).await?;
+                _ = pipe.query_async(&mut ctx.storage.metadata).await?;
             }
             Err(_) => sleep(Duration::from_secs(5)),
         }

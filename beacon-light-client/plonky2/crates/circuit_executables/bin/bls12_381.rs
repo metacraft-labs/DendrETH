@@ -3,7 +3,7 @@ use circuit::SerdeCircuitTarget;
 use circuit_executables::{
     crud::{
         common::{load_circuit_data_starky, load_common_circuit_data_starky, read_from_file},
-        proof_storage::proof_storage::{create_proof_storage, ProofStorage},
+        proof_storage::proof_storage::{ProofStorage, RedisBlobStorage},
     },
     utils::CommandLineOptionsBuilder,
 };
@@ -21,7 +21,8 @@ const CIRCUIT_NAME: &str = "bls12_381";
 #[tokio::main]
 async fn main() -> Result<()> {
     let matches = CommandLineOptionsBuilder::new("bls12_381")
-        .with_proof_storage_options()
+        .with_serialized_circuits_dir()
+        .with_proof_storage_config()
         .get_matches();
 
     let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
@@ -40,7 +41,9 @@ async fn main() -> Result<()> {
     let signature = "882730e5d03f6b42c3abc26d3372625034e1d871b65a8a6b900a56dae22da98abbe1b68f85e49fe7652a55ec3d0591c20767677e33e5cbb1207315c41a9ac03be39c2e7668edc043d6cb1d9fd93033caa8a1c5b0e84bedaeb6c64972503a43eb";
     let msg = "5656565656565656565656565656565656565656565656565656565656565656";
 
-    let mut proof_storage = create_proof_storage(&matches).await;
+    let storage_config_filepath = matches.get_one::<String>("proof_storage_cfg").unwrap();
+    let mut storage =
+        RedisBlobStorage::from_file(&storage_config_filepath, "bls-verification").await?;
 
     let mut pw = PartialWitness::<GoldilocksField>::new();
 
@@ -69,10 +72,10 @@ async fn main() -> Result<()> {
             .collect::<Vec<GoldilocksField>>(),
     );
 
-    let (pp1, pp2) = get_pairing_precomp_proofs(serialized_circuits_dir, &mut proof_storage).await;
-    let (ml1, ml2) = get_miller_loop_proofs(serialized_circuits_dir, &mut proof_storage).await;
-    let fp12_mul_proof = get_fp12_mul_proof(serialized_circuits_dir, &mut proof_storage).await;
-    let final_exp_proof = get_final_exp_proof(serialized_circuits_dir, &mut proof_storage).await;
+    let (pp1, pp2) = get_pairing_precomp_proofs(serialized_circuits_dir, &mut storage.blob).await;
+    let (ml1, ml2) = get_miller_loop_proofs(serialized_circuits_dir, &mut storage.blob).await;
+    let fp12_mul_proof = get_fp12_mul_proof(serialized_circuits_dir, &mut storage.blob).await;
+    let final_exp_proof = get_final_exp_proof(serialized_circuits_dir, &mut storage.blob).await;
 
     pw.set_proof_with_pis_target(&targets.pt_pp1, &pp1);
     pw.set_proof_with_pis_target(&targets.pt_pp2, &pp2);

@@ -1,11 +1,26 @@
-use std::env;
-
 use anyhow::Result;
 use async_trait::async_trait;
-use aws_config::{BehaviorVersion, Region};
-use aws_sdk_s3::{primitives::ByteStream, Client, Config};
+use aws_config::Region;
+use aws_sdk_s3::{config::Credentials, primitives::ByteStream, Client, Config};
+use serde::{Deserialize, Serialize};
 
 use super::proof_storage::ProofStorage;
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct S3Credentials {
+    pub access_key_id: String,
+    pub secret_access_key: String,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct S3BlobStorageDefinition {
+    pub region: String,
+    pub bucket_name: String,
+    pub endpoint_url: Option<String>,
+    pub credentials: S3Credentials,
+}
 
 pub struct AwsStorage {
     client: Client,
@@ -13,16 +28,27 @@ pub struct AwsStorage {
 }
 
 impl AwsStorage {
-    pub async fn new(region: String, bucket_name: String) -> AwsStorage {
-        let aws_config = aws_config::defaults(BehaviorVersion::latest()).load().await;
+    pub async fn new(
+        region: String,
+        bucket_name: String,
+        endpoint_url: Option<String>,
+        credentials: &S3Credentials,
+    ) -> AwsStorage {
+        let credentials = Credentials::new(
+            &credentials.access_key_id,
+            &credentials.secret_access_key,
+            None,
+            None,
+            "custom_provider",
+        );
 
         let mut s3_config_builder = Config::builder()
-            .credentials_provider(aws_config.credentials_provider().unwrap())
+            .credentials_provider(credentials)
             .behavior_version_latest()
             .region(Region::new(region))
             .force_path_style(true);
 
-        s3_config_builder.set_endpoint_url(env::var("AWS_S3_ENDPOINT_URL").ok());
+        s3_config_builder.set_endpoint_url(endpoint_url);
 
         let client = Client::from_conf(s3_config_builder.build());
 

@@ -6,8 +6,8 @@ use circuit_executables::{
         handle_task, pick_work_queue_item_prioritize_lower_levels, CommitmentMapperTask,
         VCMWorkQueueItem,
     },
-    crud::proof_storage::proof_storage::create_proof_storage,
-    utils::{get_default_config, CommandLineOptionsBuilder},
+    crud::proof_storage::proof_storage::load_storage_config,
+    utils::CommandLineOptionsBuilder,
 };
 use colored::Colorize;
 use jemallocator::Jemalloc;
@@ -19,16 +19,11 @@ static GLOBAL: Jemalloc = Jemalloc;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let config = get_default_config()?;
-
     let matches = CommandLineOptionsBuilder::new("commitment_mapper")
-        .with_redis_options(&config.redis_host, config.redis_port, &config.redis_auth)
         .with_work_queue_options()
-        .with_proof_storage_options()
         .with_serialized_circuits_dir()
+        .with_proof_storage_config()
         .get_matches();
-
-    let redis_uri = matches.value_of("redis_connection").unwrap();
 
     let work_queue_cfg = WorkQueueConfig {
         stop_after: matches
@@ -43,14 +38,19 @@ async fn main() -> Result<()> {
             .unwrap(),
     };
 
+    let storage_cfg_filepath = matches.value_of("proof_storage_cfg").unwrap();
+    let storage_cfg = load_storage_config(&storage_cfg_filepath)?;
+
+    println!(
+        "storage config: {}",
+        serde_json::to_string_pretty(&storage_cfg).unwrap()
+    );
+
     let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
 
-    let proof_storage = create_proof_storage(&matches).await;
-
     let mut ctx = CommitmentMapperContext::new(
-        redis_uri,
         work_queue_cfg,
-        proof_storage,
+        &storage_cfg_filepath,
         serialized_circuits_dir,
     )
     .await?;
@@ -89,7 +89,7 @@ async fn handle_work_queue_item(ctx: &mut CommitmentMapperContext, item: &VCMWor
 
 async fn complete_task(ctx: &mut CommitmentMapperContext, item: &VCMWorkQueueItem) {
     if ctx.work_queues[item.depth]
-        .complete(&mut ctx.redis_con, &item.item)
+        .complete(&mut ctx.storage.metadata, &item.item)
         .await
         .is_err()
     {

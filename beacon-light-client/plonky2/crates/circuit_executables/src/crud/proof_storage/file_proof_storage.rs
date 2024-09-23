@@ -2,7 +2,14 @@ use super::proof_storage::ProofStorage;
 use anyhow::Result;
 use async_trait::async_trait;
 use glob::glob;
+use serde::{Deserialize, Serialize};
 use std::fs;
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct FilesystemBlobStorageDefinition {
+    pub directory: String,
+}
 
 pub struct FileStorage {
     folder_name: String,
