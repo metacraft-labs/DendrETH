@@ -81,7 +81,7 @@
         cat << EOF > $BIN
         #!${pkgs.runtimeShell}
         set -x
-        RUST_BACKTRACE=1 ${getExe executable} --serialized-circuits-dir $CIRCUIT_DIR "\$@"
+        RUST_BACKTRACE=1 ${getExe executable} --serialized-circuits-dir $CIRCUIT_DIR --proof-storage-cfg ${proof-storage-config} "\$@"
         EOF
         chmod +x $BIN
 
@@ -256,9 +256,15 @@
     misc-images = writeScriptBin "misc-images" (
       concatMapStringsSep "\n" (image: getExe image.copyToDockerDaemon) [input-fetchers-image]
     );
+
+    proof-storage-config = pkgs.writeTextFile {
+      name = "proof-storage-config";
+      text = builtins.toJSON (import ./proof-storage-config.nix);
+    };
   in {
     legacyPackages = {
       inherit
+        proof-storage-config
         mapping
         circuit-executables
         circuit-executable-images
