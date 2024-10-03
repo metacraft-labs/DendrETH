@@ -3,6 +3,7 @@ import Web3 from 'web3';
 import { FeeHistoryResult } from 'web3-eth';
 import { groth16 } from 'snarkjs';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
+import { explorerUrls } from '@dendreth/utils/ts-utils/evm';
 
 const logger = getGenericLogger();
 
@@ -72,32 +73,16 @@ export async function publishTransaction(
         });
       }
       if (chainName) {
-        switch (chainName) {
-          case 'sepolia': {
-            console.log(
-              `A transaction was uploaded, to see it go to: https://sepolia.etherscan.io/tx/${transaction.hash}`,
-            );
-            break;
-          }
-          case 'chiado': {
-            console.log(
-              `A transaction was uploaded, to see it go to: https://gnosis-chiado.blockscout.com/tx/${transaction.hash}`,
-            );
-            break;
-          }
-          case 'lukso': {
-            console.log(
-              `A transaction was uploaded, to see it go to: https://explorer.consensus.testnet.lukso.network/tx/${transaction.hash}`,
-            );
-            break;
-          }
-          default: {
-            console.log(
-              `A transaction was uploaded, cant send you to a explorer, because I dont have one for ${chainName}, transaction hash is: ${transaction.hash}`,
-            );
-          }
-        }
+        logger.info(
+          'Transaction uploaded at: ',
+          explorerUrls[chainName].tx(transaction.hash),
+        );
+        logger.info(
+          'Contract address: ',
+          explorerUrls[chainName].address(contract.address),
+        );
       }
+
       logger.info(JSON.stringify(transaction));
 
       transactionPromise = transaction.wait();
