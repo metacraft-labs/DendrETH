@@ -1,6 +1,6 @@
 import { Redis } from '@dendreth/relay/implementations/redis';
 import JSONbig from 'json-bigint';
-import CONSTANTS from '/home/xearty/code/repos/DendrETH/beacon-light-client/plonky2/kv_db_constants.json';
+import CONSTANTS from '../kv_db_constants.json';
 import { getDepthByGindex } from '@dendreth/utils/ts-utils/common-utils';
 import {
   BalanceProof,
