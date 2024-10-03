@@ -1,4 +1,5 @@
 {
+  pkgs,
   lib,
   nodejs,
   python3,
@@ -17,6 +18,12 @@
     "tsconfig.json"
   ];
 
+  packageJsonFiles = with lib.fileset;
+    toSource {
+      inherit root;
+      fileset = fileFilter (file: file.name == "package.json") root;
+    };
+
   npmDepsSrc = with lib.fileset;
     toSource {
       inherit root;
@@ -30,12 +37,17 @@
   yarnProject = callPackage ./yarn-project.generated.nix {inherit nodejs;} {
     src = npmDepsSrc;
   };
-  inherit (yarnProject) cacheDrv project;
 in
-  project.overrideAttrs (oldAttrs: {
+  yarnProject.overrideAttrs (oldAttrs: {
     name = "input-fetchers";
     buildInputs = oldAttrs.buildInputs ++ [python3 sqlite];
-    # buildPhase = ''
-    #   yarn workspace @dendreth/balance-verification build:tsc
-    # '';
+    buildPhase = ''
+      yarn build-plonky-2
+      # CURR_DIR=$(pwd)
+      # (cd ${packageJsonFiles}; cp -r --parents . $CURR_DIR/dist)
+      # chmod -R 666 $CURR_DIR/dist/
+      (cd ${packageJsonFiles} && find . -type f -exec install -Dm666 "{}" "./dist/{}" \;)
+    '';
   })
+# git ls-files | grep "package.json" | tr '\n' '\0' | xargs -0 -n1 sh -c 'x="$out/libexec/input-fetchers/dist/$1" && mkdir -p "${x%/*}" && cat "$1" > "$x"' -s
+

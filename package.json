@@ -99,16 +99,16 @@
     "redis": "^4.6.10",
     "redis-commander": "^0.8.0",
     "snarkit2": "^0.2.0",
-    "snarkjs": "https://github.com/metacraft-labs/snarkjs.git#commit=091ee9c3744c660b0ecd961f9197a8249a8f7d3b",
+    "snarkjs": "https://github.com/metacraft-labs/snarkjs.git#commit=0ddd56f9be79ca561e72b85ced3223cb66a2bbb4",
     "uuid": "^9.0.0",
     "winston": "^3.10.0",
     "yargs": "^17.7.2"
   },
   "bin": {
-    "diva_balance_aggregator_scheduler": "beacon-light-client/plonky2/input_fetchers/balance_verification/deposits_accumulator/runnable/diva_balance_aggregator_scheduler.js",
-    "light_cleaner": "beacon-light-client/plonky2/input_fetchers/validators_commitment_mapper/runnable/light_cleaner.js",
-    "run_pubkey_commitment_mapper_scheduler": "beacon-light-client/plonky2/input_fetchers/balance_verification/deposits_accumulator/runnable/run_pubkey_commitment_mapper_scheduler.js",
-    "run_scheduler": "beacon-light-client/plonky2/input_fetchers/validators_commitment_mapper/runnable/run_scheduler.js"
+    "diva_balance_aggregator_scheduler": "dist/beacon-light-client/plonky2/input_fetchers/balance_verification/deposits_accumulator/runnable/diva_balance_aggregator_scheduler.js",
+    "light_cleaner": "dist/beacon-light-client/plonky2/input_fetchers/validators_commitment_mapper/runnable/light_cleaner.js",
+    "run_pubkey_commitment_mapper_scheduler": "dist/beacon-light-client/plonky2/input_fetchers/balance_verification/deposits_accumulator/runnable/run_pubkey_commitment_mapper_scheduler.js",
+    "run_scheduler": "dist/beacon-light-client/plonky2/input_fetchers/validators_commitment_mapper/runnable/run_scheduler.js"
   },
   "dependenciesMeta": {
     "@openzeppelin/contracts@5.0.2": {

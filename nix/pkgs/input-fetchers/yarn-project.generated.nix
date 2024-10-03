@@ -55,7 +55,7 @@ let
       rm $out/.gitignore
     '';
     outputHashMode = "recursive";
-    outputHash = "sha512-rkEAKZZos5pPSzV7Lby/dNwMycP51aFr2xjYOwQeASEsS7al8EUf6GTOoWWbnk8hSAKdUpFZfrsSXGtDMOxGsw==";
+    outputHash = "sha512-Z11qyRIeyezh9Lxv7rpclrzXrHzTgQn3GOiXcnOmmc/lwzAN/aJRmiYrVUhBYdsfAkXN8iiPQVwsJ7MZ8qhg4g==";
   };
 
   # Main project derivation.
@@ -144,6 +144,4 @@ let
 
   overriddenProject = optionalOverride overrideAttrs project;
 
-in {
-  inherit cacheDrv project overriddenProject;
-}
+in overriddenProject
