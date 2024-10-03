@@ -71,33 +71,33 @@ export async function publishTransaction(
           gasLimit: estimateGas,
         });
       }
-
-      switch (chainName) {
-        case 'sepolia': {
-          console.log(
-            `A transaction was uploaded, to see it go to: https://sepolia.etherscan.io/tx/${transaction.hash}`,
-          );
-          break;
-        }
-        case 'chiado': {
-          console.log(
-            `A transaction was uploaded, to see it go to: https://gnosis-chiado.blockscout.com/tx/${transaction.hash}`,
-          );
-          break;
-        }
-        case 'lukso': {
-          console.log(
-            `A transaction was uploaded, to see it go to: https://explorer.consensus.testnet.lukso.network/tx/${transaction.hash}`,
-          );
-          break;
-        }
-        default: {
-          console.log(
-            `A transaction was uploaded, cant send you to a explorer, because I dont have one for ${chainName}, transaction hash is: ${transaction.hash}`,
-          );
+      if (chainName) {
+        switch (chainName) {
+          case 'sepolia': {
+            console.log(
+              `A transaction was uploaded, to see it go to: https://sepolia.etherscan.io/tx/${transaction.hash}`,
+            );
+            break;
+          }
+          case 'chiado': {
+            console.log(
+              `A transaction was uploaded, to see it go to: https://gnosis-chiado.blockscout.com/tx/${transaction.hash}`,
+            );
+            break;
+          }
+          case 'lukso': {
+            console.log(
+              `A transaction was uploaded, to see it go to: https://explorer.consensus.testnet.lukso.network/tx/${transaction.hash}`,
+            );
+            break;
+          }
+          default: {
+            console.log(
+              `A transaction was uploaded, cant send you to a explorer, because I dont have one for ${chainName}, transaction hash is: ${transaction.hash}`,
+            );
+          }
         }
       }
-
       logger.info(JSON.stringify(transaction));
 
       transactionPromise = transaction.wait();
