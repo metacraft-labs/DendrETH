@@ -14,6 +14,7 @@ import 'dotenv/config';
 import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
 import { lightCleanQueue } from './balance_aggregator_light_cleaner';
 import util from 'util';
+import { getSlotWithLatestChange } from '../../../redis_interactions';
 
 const execAsync = util.promisify(require('child_process').exec);
 
@@ -162,7 +163,8 @@ async function waitForValidatorsCommitmentMapperProof(
 
     if (lastProcessedSlot >= slot) {
       const validatorsRootProofKey = `validator_proof:1`;
-      const latestChangeSlot = await redis.getSlotWithLatestChange(
+      const latestChangeSlot = await getSlotWithLatestChange(
+        redis,
         validatorsRootProofKey,
         BigInt(slot),
       );

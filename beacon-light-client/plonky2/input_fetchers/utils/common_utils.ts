@@ -2,6 +2,10 @@ import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
 import { CommitmentMapperInput, Validator } from '@dendreth/relay/types/types';
 import { bitsToHex } from '@dendreth/utils/ts-utils/hex-utils';
+import {
+  extractHashFromCommitmentMapperProof,
+  extractHashFromDepositCommitmentMapperProof,
+} from '../redis_interactions';
 
 type PoseidonOrSha256<T extends 'sha256' | 'poseidon'> = T extends 'sha256'
   ? string[]
@@ -18,7 +22,8 @@ export async function getCommitmentMapperProof<T extends 'sha256' | 'poseidon'>(
   while (gindex !== 1n) {
     const siblingGindex = gindex % 2n === 0n ? gindex + 1n : gindex - 1n;
 
-    const hash = await redis.extractHashFromCommitmentMapperProof(
+    const hash = await extractHashFromCommitmentMapperProof(
+      redis,
       siblingGindex,
       epoch,
       hashAlg,
@@ -50,7 +55,8 @@ export async function getDepositCommitmentMapperProof<
   while (gindex !== 1n) {
     const siblingGindex = gindex % 2n === 0n ? gindex + 1n : gindex - 1n;
 
-    const hash = await redis.extractHashFromDepositCommitmentMapperProof(
+    const hash = await extractHashFromDepositCommitmentMapperProof(
+      redis,
       protocol,
       siblingGindex,
       hashAlg,

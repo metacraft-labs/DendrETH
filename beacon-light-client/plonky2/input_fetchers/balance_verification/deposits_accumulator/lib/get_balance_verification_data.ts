@@ -20,6 +20,12 @@ import ValidatorsAccumulator from '../../../abi/validators_accumulator_abi.json'
 import { getEvents } from './event_fetcher';
 import chalk from 'chalk';
 import { queryContractDeploymentBlockNumber } from './utils';
+import {
+  extractHashFromCommitmentMapperProof,
+  saveBalanceAggregatorFinalProofInput,
+  saveDepositBalanceVerificationInput,
+  saveDepositBalanceVerificationProof,
+} from '../../../redis_interactions';
 
 enum Events {
   Deposited = 'Deposited',
@@ -141,7 +147,8 @@ export async function storeBalanceVerificationData(
   console.log(chalk.bold.blue('Adding zero tasks...'));
 
   for (let level = 0; level <= 31; level++) {
-    await redis.saveDepositBalanceVerificationProof(
+    await saveDepositBalanceVerificationProof(
+      redis,
       config.protocol,
       BigInt(level),
       BigInt(CONSTANTS.validatorRegistryLimit),
@@ -161,7 +168,8 @@ export async function storeBalanceVerificationData(
   );
   const balancesTree = new Tree(balancesView.node);
 
-  await redis.saveDepositBalanceVerificationInput(
+  await saveDepositBalanceVerificationInput(
+    redis,
     config.protocol,
     BigInt(CONSTANTS.validatorRegistryLimit),
     {
@@ -177,7 +185,8 @@ export async function storeBalanceVerificationData(
       },
       depositPubkey: '0'.padStart(96, '0'),
       validatorsCommitmentMapperRoot:
-        await redis.extractHashFromCommitmentMapperProof(
+        await extractHashFromCommitmentMapperProof(
+          redis,
           65536n,
           BigInt(beaconState.slot),
           'poseidon',
@@ -222,7 +231,8 @@ export async function storeBalanceVerificationData(
     }
 
     for (const index of range) {
-      await redis.saveDepositBalanceVerificationProof(
+      await saveDepositBalanceVerificationProof(
+        redis,
         config.protocol,
         BigInt(level),
         BigInt(index),
@@ -285,7 +295,7 @@ export async function storeBalanceVerificationData(
     )
     .map(bytesToHex);
 
-  await redis.saveBalanceAggregatorFinalProofInput(config.protocol, {
+  await saveBalanceAggregatorFinalProofInput(redis, config.protocol, {
     blockRoot: bytesToHex(
       ssz.phase0.BeaconBlockHeader.hashTreeRoot(beaconBlockHeader),
     ),
@@ -357,12 +367,12 @@ async function generateLeafLevelData(
   const deposit_accumulator_input = {
     validator: dataValidator,
     depositPubkey: formatHex(pubkey),
-    validatorsCommitmentMapperRoot:
-      await redis.extractHashFromCommitmentMapperProof(
-        65536n,
-        BigInt(beaconState.slot),
-        'poseidon',
-      ),
+    validatorsCommitmentMapperRoot: await extractHashFromCommitmentMapperProof(
+      redis,
+      65536n,
+      BigInt(beaconState.slot),
+      'poseidon',
+    ),
     validatorsCommitmentMapperBranch: (
       await getCommitmentMapperProof(
         BigInt(beaconState.slot),
@@ -388,7 +398,8 @@ async function generateLeafLevelData(
     isDummy: false,
   };
 
-  await redis.saveDepositBalanceVerificationInput(
+  await saveDepositBalanceVerificationInput(
+    redis,
     protocol,
     BigInt(index),
     deposit_accumulator_input,

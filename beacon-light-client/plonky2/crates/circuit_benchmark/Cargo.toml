@@ -1,0 +1,23 @@
+[package]
+name = "circuit_benchmark"
+version = "0.1.0"
+edition.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+circuit = { path = "../circuit" }
+circuit_derive = { path = "../circuit_derive" }
+circuits = { path = "../circuits" }
+plonky2 = { git = "https://github.com/metacraft-labs/plonky2" }
+
+[[bin]]
+name = "bin"
+path = "bin/bin.rs"
+
+[dev-dependencies]
+criterion = { version = "0.4", features = ["html_reports"] }
+
+[[bench]]
+name = "my_benchmark"
+harness = false

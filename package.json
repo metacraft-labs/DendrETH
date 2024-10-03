@@ -61,7 +61,7 @@
     "test": "jest --verbose --silent -i",
     "test-emcc": "USE_EMCC=1 jest --verbose --silent",
     "ts": "yarn node --import tsx",
-    "build-plonky-2": "tsc -p beacon-light-client/plonky2/input_fetchers/tsconfig.json"
+    "build": "yarn tsc -p beacon-light-client/plonky2/input_fetchers/tsconfig.json && yarn tsc -p relay/tsconfig.json"
   },
   "dependencies": {
     "@chainsafe/bls": "^6.0.3",
@@ -105,10 +105,10 @@
     "yargs": "^17.7.2"
   },
   "bin": {
-    "diva_balance_aggregator_scheduler": "dist/beacon-light-client/plonky2/input_fetchers/balance_verification/deposits_accumulator/runnable/diva_balance_aggregator_scheduler.js",
-    "light_cleaner": "dist/beacon-light-client/plonky2/input_fetchers/validators_commitment_mapper/runnable/light_cleaner.js",
-    "run_pubkey_commitment_mapper_scheduler": "dist/beacon-light-client/plonky2/input_fetchers/balance_verification/deposits_accumulator/runnable/run_pubkey_commitment_mapper_scheduler.js",
-    "run_scheduler": "dist/beacon-light-client/plonky2/input_fetchers/validators_commitment_mapper/runnable/run_scheduler.js"
+    "diva_balance_aggregator_scheduler": "dist/input_fetchers/balance_verification/deposits_accumulator/runnable/diva_balance_aggregator_scheduler.js",
+    "light_cleaner": "dist/input_fetchers/validators_commitment_mapper/runnable/light_cleaner.js",
+    "run_pubkey_commitment_mapper_scheduler": "dist/input_fetchers/balance_verification/deposits_accumulator/runnable/run_pubkey_commitment_mapper_scheduler.js",
+    "run_scheduler": "/dist/input_fetchers/validators_commitment_mapper/runnable/run_scheduler.js"
   },
   "dependenciesMeta": {
     "@openzeppelin/contracts@5.0.2": {

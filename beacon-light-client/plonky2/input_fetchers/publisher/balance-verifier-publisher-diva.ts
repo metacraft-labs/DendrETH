@@ -10,6 +10,10 @@ import BalanceVerifierDivaAbi from '../abi/balance_verifier_diva_abi.json';
 import CONSTANTS from '../../kv_db_constants.json';
 
 import { CommandLineOptionsBuilder } from '../utils/cmdline';
+import {
+  getBalanceWrapperProofWithPublicInputs,
+  getBalanceWrapperVerifierOnly,
+} from '../redis_interactions';
 (async () => {
   const commandOptions = new CommandLineOptionsBuilder()
     .withRedisOpts()
@@ -83,9 +87,11 @@ import { CommandLineOptionsBuilder } from '../utils/cmdline';
     );
 
     let balance_wrapper_proof_with_public_inputs =
-      await redis.getBalanceWrapperProofWithPublicInputs(protocol);
-    let balance_wrapper_verifier_only =
-      await redis.getBalanceWrapperVerifierOnly(protocol);
+      await getBalanceWrapperProofWithPublicInputs(redis, protocol);
+    let balance_wrapper_verifier_only = await getBalanceWrapperVerifierOnly(
+      redis,
+      protocol,
+    );
 
     const postData = {
       verifier_only_circuit_data: JSONbig.parse(balance_wrapper_verifier_only),

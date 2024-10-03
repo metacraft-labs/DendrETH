@@ -6336,10 +6336,10 @@ __metadata:
     circomlib@2.0.2:
       unplugged: true
   bin:
-    diva_balance_aggregator_scheduler: dist/beacon-light-client/plonky2/input_fetchers/balance_verification/deposits_accumulator/runnable/diva_balance_aggregator_scheduler.js
-    light_cleaner: dist/beacon-light-client/plonky2/input_fetchers/validators_commitment_mapper/runnable/light_cleaner.js
-    run_pubkey_commitment_mapper_scheduler: dist/beacon-light-client/plonky2/input_fetchers/balance_verification/deposits_accumulator/runnable/run_pubkey_commitment_mapper_scheduler.js
-    run_scheduler: dist/beacon-light-client/plonky2/input_fetchers/validators_commitment_mapper/runnable/run_scheduler.js
+    diva_balance_aggregator_scheduler: dist/input_fetchers/balance_verification/deposits_accumulator/runnable/diva_balance_aggregator_scheduler.js
+    light_cleaner: dist/input_fetchers/validators_commitment_mapper/runnable/light_cleaner.js
+    run_pubkey_commitment_mapper_scheduler: dist/input_fetchers/balance_verification/deposits_accumulator/runnable/run_pubkey_commitment_mapper_scheduler.js
+    run_scheduler: /dist/input_fetchers/validators_commitment_mapper/runnable/run_scheduler.js
   languageName: unknown
   linkType: soft
 

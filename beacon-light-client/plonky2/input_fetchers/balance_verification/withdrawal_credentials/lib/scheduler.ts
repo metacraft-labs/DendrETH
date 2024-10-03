@@ -3,7 +3,6 @@ import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
 import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
 import { bytesToHex, formatHex } from '@dendreth/utils/ts-utils/bls';
-import { hexToBits } from '@dendreth/utils/ts-utils/hex-utils';
 import { KeyPrefix, WorkQueue, Item } from '@mevitae/redis-work-queue';
 import CONSTANTS from '../../../../kv_db_constants.json';
 import { computeEpochAt } from '@dendreth/utils/ts-utils/ssz-utils';
@@ -13,6 +12,11 @@ import {
   getDummyValidatorInput,
 } from '../../common';
 import commonConfig from '../../../../common_config.json';
+import {
+  saveBalanceProof,
+  saveFinalProofInput,
+  saveValidatorBalancesInput,
+} from '../../../redis_interactions';
 
 const commonConfigChecked = commonConfig satisfies CommonConfig;
 
@@ -112,7 +116,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
     balancesLeaves.push(''.padStart(64, '0'));
   }
 
-  await redis.saveValidatorBalancesInput(protocol, [
+  await saveValidatorBalancesInput(redis, protocol, [
     {
       index: Number(CONSTANTS.validatorRegistryLimit),
       input: {
@@ -186,10 +190,11 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
       });
     }
 
-    await redis.saveValidatorBalancesInput(protocol, batch);
+    await saveValidatorBalancesInput(redis, protocol, batch);
   }
 
-  await redis.saveBalanceProof(
+  await saveBalanceProof(
+    redis,
     protocol,
     0n,
     BigInt(CONSTANTS.validatorRegistryLimit),
@@ -200,14 +205,15 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
     const view = new DataView(buffer);
     view.setBigUint64(0, BigInt(i), false);
 
-    await redis.saveBalanceProof(protocol, 0n, BigInt(i));
+    await saveBalanceProof(redis, protocol, 0n, BigInt(i));
 
     await queues[0].addItem(redis.client, new Item(Buffer.from(buffer)));
   }
 
   console.log(chalk.bold.blue('Adding inner proofs...'));
   for (let level = 1; level < 38; level++) {
-    await redis.saveBalanceProof(
+    await saveBalanceProof(
+      redis,
       protocol,
       BigInt(level),
       BigInt(CONSTANTS.validatorRegistryLimit),
@@ -220,7 +226,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
       const buffer = new ArrayBuffer(8);
       const view = new DataView(buffer);
 
-      await redis.saveBalanceProof(protocol, BigInt(level), BigInt(key));
+      await saveBalanceProof(redis, protocol, BigInt(level), BigInt(key));
 
       view.setBigUint64(0, BigInt(key), false);
       await queues[level].addItem(redis.client, new Item(Buffer.from(buffer)));
@@ -258,7 +264,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
   );
 
   console.log(chalk.bold.blue('Adding final proof input...'));
-  await redis.saveFinalProofInput(protocol, {
+  await saveFinalProofInput(redis, protocol, {
     stateRoot: bytesToHex(currentSSZFork.BeaconState.hashTreeRoot(beaconState)),
     stateRootBranch,
     blockRoot: bytesToHex(

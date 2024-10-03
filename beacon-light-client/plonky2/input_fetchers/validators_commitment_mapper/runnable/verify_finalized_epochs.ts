@@ -27,6 +27,10 @@ import { bitsToHex } from '@dendreth/utils/ts-utils/hex-utils';
 import { CommandLineOptionsBuilder } from '../../utils/cmdline';
 import { createDummyCommitmentMapperInput } from '../../utils/common_utils';
 import { ChainableCommander } from 'ioredis';
+import {
+  getSlotWithLatestChange,
+  getValidatorsRoot,
+} from '../../redis_interactions';
 
 let zeroHashes: string[] = [];
 
@@ -100,7 +104,8 @@ async function nodesAreSame(
   gindex: bigint,
   slot: bigint,
 ): Promise<boolean> {
-  const lastChangeSlot = await redis.getSlotWithLatestChange(
+  const lastChangeSlot = await getSlotWithLatestChange(
+    redis,
     `${CONSTANTS.validatorProofKey}:${gindex}`,
     slot,
   );
@@ -203,12 +208,14 @@ async function verifySlot(
 
     let storedValidatorsRoot: String | null = null;
     while (storedValidatorsRoot === null) {
-      const latestValidatorChangeSlot = await redis.getSlotWithLatestChange(
+      const latestValidatorChangeSlot = await getSlotWithLatestChange(
+        redis,
         `${CONSTANTS.validatorProofKey}:1`,
         BigInt(slot),
       );
       if (latestValidatorChangeSlot !== null) {
-        storedValidatorsRoot = await redis.getValidatorsRoot(
+        storedValidatorsRoot = await getValidatorsRoot(
+          redis,
           latestValidatorChangeSlot,
         );
       }

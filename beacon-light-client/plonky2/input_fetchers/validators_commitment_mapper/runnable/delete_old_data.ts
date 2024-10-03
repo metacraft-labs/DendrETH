@@ -3,6 +3,7 @@ import { Redis } from '@dendreth/relay/implementations/redis';
 import CONSTANTS from '../../../kv_db_constants.json';
 import { createProofStorage } from '../../utils/proof_storage/proof_storage';
 import { CommandLineOptionsBuilder } from '../../utils/cmdline';
+import { getSlotWithLatestChange } from '../../redis_interactions';
 
 require('dotenv').config({ path: '../.env' });
 
@@ -41,7 +42,8 @@ require('dotenv').config({ path: '../.env' });
   );
   await Promise.all(
     proofKeys.map(async (proofKey, index) => {
-      const outdatedSlots = await redis.collectOutdatedSlots(
+      const outdatedSlots = await collectOutdatedSlots(
+        redis,
         validatorProofKeys[index],
         oldestSlot,
       );
@@ -93,7 +95,8 @@ async function collectOutdatedSlots(
   key: string,
   newOldestSlot: bigint,
 ): Promise<bigint[]> {
-  const slotWithLatestChange = await redis.getSlotWithLatestChange(
+  const slotWithLatestChange = await getSlotWithLatestChange(
+    redis,
     key,
     newOldestSlot,
   );

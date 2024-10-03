@@ -10,6 +10,7 @@
   root = ../../..;
   yarnPlugins = root + /.yarn/plugins;
   plonky2 = root + /beacon-light-client/plonky2;
+  relay = root + /relay;
 
   yarnFilenames = [
     "yarn.lock"
@@ -31,6 +32,7 @@
         (fileFilter (file: (builtins.elem file.name yarnFilenames) || file.hasExt "ts") root)
         yarnPlugins
         (fileFilter (file: file.hasExt "json") plonky2)
+        (fileFilter (file: file.hasExt "json") relay)
       ];
     };
 
@@ -42,12 +44,10 @@ in
     name = "input-fetchers";
     buildInputs = oldAttrs.buildInputs ++ [python3 sqlite];
     buildPhase = ''
-      yarn build-plonky-2
-      # CURR_DIR=$(pwd)
-      # (cd ${packageJsonFiles}; cp -r --parents . $CURR_DIR/dist)
-      # chmod -R 666 $CURR_DIR/dist/
-      (cd ${packageJsonFiles} && find . -type f -exec install -Dm666 "{}" "./dist/{}" \;)
+      yarn tsc -p beacon-light-client/plonky2/input_fetchers/tsconfig.json
+      yarn tsc -p relay/tsconfig.json
+      CURR_DIR=$(pwd)
+      (cd ${packageJsonFiles} && find . -type f -exec install -Dm666 "{}" "$CURR_DIR/dist/{}" \;)
     '';
   })
-# git ls-files | grep "package.json" | tr '\n' '\0' | xargs -0 -n1 sh -c 'x="$out/libexec/input-fetchers/dist/$1" && mkdir -p "${x%/*}" && cat "$1" > "$x"' -s
 
