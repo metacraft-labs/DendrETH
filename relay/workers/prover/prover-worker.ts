@@ -7,12 +7,18 @@ import { Prover } from '@/implementations/prover';
 import { PROOF_GENERATOR_QUEUE } from '@/constants/constants';
 import { checkConfig } from '@dendreth/utils/ts-utils/common-utils';
 import yargs from 'yargs';
+import {
+  initPrometheusSetup,
+  registerGaugesForProver,
+} from '@dendreth/utils/ts-utils/prometheus-utils';
 
 (async () => {
   const proverConfig = {
     REDIS_HOST: process.env.REDIS_HOST || 'localhost',
     REDIS_PORT: Number(process.env.REDIS_PORT) || 6379,
   };
+  initPrometheusSetup(3000);
+  registerGaugesForProver();
 
   checkConfig(proverConfig);
 

@@ -4,6 +4,7 @@ import { FeeHistoryResult } from 'web3-eth';
 import { groth16 } from 'snarkjs';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 import { explorerUrls } from '@dendreth/utils/ts-utils/evm';
+import { incrementProofPublished } from '@dendreth/utils/ts-utils/prometheus-utils';
 
 const logger = getGenericLogger();
 
@@ -73,6 +74,7 @@ export async function publishTransaction(
         });
       }
       if (chainName) {
+        incrementProofPublished(chainName);
         logger.info(
           'Transaction uploaded at: ',
           explorerUrls[chainName].tx(transaction.hash),

@@ -11,7 +11,7 @@ let followNetwork: string;
 
 export function initPrometheusSetup(port?: number, curFollowNetwork?: string) {
   const app = express();
-
+  prometheusInitProving();
   if (!port) {
     // Only for pollUpdates
     port = 2999;
@@ -20,12 +20,14 @@ export function initPrometheusSetup(port?: number, curFollowNetwork?: string) {
     followNetwork = curFollowNetwork;
   }
 
+  // Only expose the metrics endpoint if not already initialized
   app.get('/metrics', async (req, res) => {
+    res.set('Content-Type', register.contentType);
     res.end(await register.metrics());
   });
 
   app.listen(port, () => {
-    console.log(`Express listening on port ${port}`);
+    console.log(`Prometheus metrics exposed on port ${port}`);
   });
 
   return client;
@@ -69,3 +71,89 @@ export async function prometheusTiming<T>(func: () => T, funcName: string) {
     }
   }
 }
+
+export function registerGaugesForProver() {
+  register.registerMetric(timesGettingInputsForProofGeneration);
+  register.registerMetric(numberOfProofGenerated);
+}
+
+export function registerGaugesForStartPublishing() {
+  register.registerMetric(accountBalanceGauge);
+  register.registerMetric(previousSlot);
+  register.registerMetric(transactionForSlot);
+  register.registerMetric(currentNetworkSlot);
+  register.registerMetric(minutesDelayPrevSlot);
+  register.registerMetric(minutesDelayTransaction);
+  register.registerMetric(numberOfProofPublished);
+}
+
+export const accountBalanceGauge = new client.Gauge({
+  name: 'account_balance',
+  help: 'Current balance of the account',
+  labelNames: ['network'],
+});
+
+export const previousSlot = new client.Gauge({
+  name: 'previous_slot',
+  help: 'Previous slot on the chain',
+  labelNames: ['network'],
+});
+
+export const transactionForSlot = new client.Gauge({
+  name: 'transaction_slot',
+  help: 'Transaction publishing for slot',
+  labelNames: ['network'],
+});
+
+export const currentNetworkSlot = new client.Gauge({
+  name: 'current_network_slot',
+  help: 'Current slot on chian',
+  labelNames: ['network'],
+});
+
+export const minutesDelayPrevSlot = new client.Gauge({
+  name: 'minutes_delay_prev_slot',
+  help: 'How behind is the last slot',
+  labelNames: ['network'],
+});
+
+export const minutesDelayTransaction = new client.Gauge({
+  name: 'minutes_delay_transaction',
+  help: 'How behind is the transaction',
+  labelNames: ['network'],
+});
+
+export async function prometheusInitProving() {
+  timesGettingInputsForProofGeneration.reset();
+  numberOfProofGenerated.reset();
+  numberOfProofPublished.reset();
+}
+
+export function incrementInputsForProofGeneration() {
+  timesGettingInputsForProofGeneration.inc();
+}
+
+export function incrementProofGenerated() {
+  numberOfProofGenerated.inc();
+}
+
+export function incrementProofPublished(network) {
+  numberOfProofPublished.labels(network).inc();
+}
+export const timesGettingInputsForProofGeneration = new client.Counter({
+  name: 'times_getting_inputs_for_proof_generation',
+  help: 'The number of times inputs for proof generation were requested(since last restart)',
+  labelNames: ['network'],
+});
+
+export const numberOfProofGenerated = new client.Counter({
+  name: 'number_of_proof_generated',
+  help: 'The number of proofs generated(since last restart)',
+  labelNames: ['network'],
+});
+
+export const numberOfProofPublished = new client.Counter({
+  name: 'number_of_proof_published',
+  help: 'The number of proofs published(since last restart)',
+  labelNames: ['network'],
+});
