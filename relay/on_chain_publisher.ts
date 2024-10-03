@@ -181,7 +181,7 @@ export async function postUpdateOnChain(
       true,
       (
         await hashiAdapterContract.provider.getNetwork()
-      ).chainId,
+      ).name,
     );
   } else {
     await lightClientContract.postUpdateOnChain({
