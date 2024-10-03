@@ -11,7 +11,11 @@ import {
   isSupportedFollowNetwork,
 } from '@dendreth/relay/utils/get_current_network_config';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
-import { initPrometheusSetup } from '@dendreth/utils/ts-utils/prometheus-utils';
+import {
+  accountBalanceGauge,
+  initPrometheusSetup,
+  registerGaugesForStartPublishing,
+} from '@dendreth/utils/ts-utils/prometheus-utils';
 
 const logger = getGenericLogger();
 
@@ -59,11 +63,11 @@ task('start-publishing', 'Run relayer')
       logger.warn('This followNetwork is not specified in networkconfig');
       return;
     }
+    let networkName: string = '';
 
     if (args.prometheusPort) {
       console.log(`Initializing Prometheus on port ${args.prometheusPort}`);
 
-      let networkName: string = '';
       for (let i = 0; i < process.argv.length; i++) {
         const arg = process.argv[i];
         if (arg === '--follow-network' && i + 1 < process.argv.length) {
@@ -73,6 +77,7 @@ task('start-publishing', 'Run relayer')
       }
 
       initPrometheusSetup(args.prometheusPort, networkName);
+      registerGaugesForStartPublishing();
     }
 
     const currentConfig = await getNetworkConfig(args.followNetwork);
@@ -86,9 +91,10 @@ task('start-publishing', 'Run relayer')
     }
 
     logger.info(`Publishing updates with the account: ${publisher.address}`);
-    logger.info(
-      `Account balance: ${(await publisher.getBalance()).toString()}`,
-    );
+    const accountBalance = await publisher.getBalance();
+
+    logger.info(`Account balance: ${accountBalance.toString()}`);
+    accountBalanceGauge.labels(networkName).set(Number(accountBalance));
 
     logger.info(`Contract address ${args.lightClient}`);
 
@@ -129,6 +135,7 @@ task('start-publishing', 'Run relayer')
       hashiAdapterContract,
       (network.config as any).url,
       args.transactionSpeed,
+      networkName,
     );
 
     // never resolving promise to block the task

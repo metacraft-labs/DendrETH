@@ -1,6 +1,10 @@
 import { IProver } from '@/abstraction/prover-interface';
 import { ProofInputType, Proof, WitnessGeneratorInput } from '@/types/types';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
+import {
+  incrementInputsForProofGeneration,
+  incrementProofGenerated,
+} from '@dendreth/utils/ts-utils/prometheus-utils';
 
 const logger = getGenericLogger();
 export class Prover implements IProver {
@@ -24,6 +28,7 @@ export class Prover implements IProver {
     await this.callInput(proofInput.proofInput);
 
     logger.info('Input send waiting for proof generation');
+    incrementInputsForProofGeneration();
 
     st = await this.getStatus();
 
@@ -35,6 +40,7 @@ export class Prover implements IProver {
     }
 
     logger.info('Proof successfully generated');
+    incrementProofGenerated();
 
     const proof = JSON.parse(st.proof);
 

@@ -15,6 +15,13 @@ import { Config, UPDATE_POLING_QUEUE } from '@/constants/constants';
 import { getSlotOnChain } from '@/utils/smart_contract_utils';
 import { addUpdate } from '@/utils/orchestrator';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
+import {
+  currentNetworkSlot,
+  minutesDelayPrevSlot,
+  minutesDelayTransaction,
+  previousSlot,
+  transactionForSlot,
+} from '@dendreth/utils/ts-utils/prometheus-utils';
 
 const logger = getGenericLogger();
 
@@ -29,6 +36,7 @@ export async function publishProofs(
   hashiAdapterContract?: Contract | undefined,
   rpcEndpoint?: string,
   transactionSpeed: TransactionSpeed = 'avg',
+  networkName?: string,
 ) {
   const config = {
     REDIS_HOST: process.env.REDIS_HOST || 'localhost',
@@ -47,6 +55,7 @@ export async function publishProofs(
       hashiAdapterContract,
       rpcEndpoint,
       transactionSpeed,
+      networkName,
     );
 
     await redis.subscribeForProofs(async () => {
@@ -76,6 +85,7 @@ export async function drainUpdatesInRedis(
   hashiAdapterContract: Contract | undefined,
   rpcEndpoint?: string,
   transactionSpeed: TransactionSpeed = 'avg',
+  networkName?: string,
 ) {
   if (isDrainRunning) {
     logger.info('Publishing transactions is already running');
@@ -104,6 +114,7 @@ export async function drainUpdatesInRedis(
           hashiAdapterContract,
           rpcEndpoint,
           transactionSpeed,
+          networkName,
         );
         // Slow down broadcasting
         await sleep(2000);
@@ -133,6 +144,7 @@ export async function postUpdateOnChain(
   hashiAdapterContract: Contract | undefined,
   rpcEndpoint?: string,
   transactionSpeed: TransactionSpeed = 'avg',
+  networkName?: string,
 ) {
   const update = {
     attestedHeaderRoot:
@@ -202,17 +214,19 @@ export async function postUpdateOnChain(
 
   logger.info(`Current slot on the network is ${currentHeadSlot}`);
 
-  logger.info(
-    `Prev slot is ${
-      ((currentHeadSlot - lastSlotOnChain) * 12) / 60
-    } minutes behind`,
-  );
+  let prevSlotBehind = ((currentHeadSlot - lastSlotOnChain) * 12) / 60;
+  logger.info(`Prev slot is ${prevSlotBehind} minutes behind`);
 
-  logger.info(
-    `Transaction is ${
-      ((currentHeadSlot - transactionSlot) * 12) / 60
-    } minutes behind`,
-  );
+  let transactionBehind = ((currentHeadSlot - transactionSlot) * 12) / 60;
+  logger.info(`Transaction is ${transactionBehind} minutes behind`);
+
+  if (networkName) {
+    previousSlot.labels(networkName).set(Number(lastSlotOnChain));
+    transactionForSlot.labels(networkName).set(Number(transactionSlot));
+    currentNetworkSlot.labels(networkName).set(Number(currentHeadSlot));
+    minutesDelayPrevSlot.labels(networkName).set(Number(prevSlotBehind));
+    minutesDelayTransaction.labels(networkName).set(Number(transactionBehind));
+  }
 }
 
 async function handleFailure(
