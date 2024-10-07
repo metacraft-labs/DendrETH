@@ -9,10 +9,14 @@ import doUpdate from '@/workers/poll-updates/do_update';
 import { getBeaconApi } from '@/implementations/beacon-api';
 import { checkConfig } from '@dendreth/utils/ts-utils/common-utils';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
-import { initPrometheusSetup } from '@dendreth/utils/ts-utils/prometheus-utils';
+import {
+  initPrometheusSetup,
+  startResourceMetricsUpdate,
+} from '@dendreth/utils/ts-utils/prometheus-utils';
 
 const logger = getGenericLogger();
 initPrometheusSetup();
+startResourceMetricsUpdate('poll-update-worker');
 
 (async () => {
   const updatePollingConfig = {

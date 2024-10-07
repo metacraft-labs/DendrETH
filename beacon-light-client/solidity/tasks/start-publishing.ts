@@ -15,6 +15,7 @@ import {
   accountBalanceGauge,
   initPrometheusSetup,
   registerGaugesForStartPublishing,
+  startResourceMetricsUpdate,
 } from '@dendreth/utils/ts-utils/prometheus-utils';
 
 const logger = getGenericLogger();
@@ -78,6 +79,7 @@ task('start-publishing', 'Run relayer')
 
       initPrometheusSetup(args.prometheusPort, networkName);
       registerGaugesForStartPublishing();
+      startResourceMetricsUpdate(networkName);
     }
 
     const currentConfig = await getNetworkConfig(args.followNetwork);

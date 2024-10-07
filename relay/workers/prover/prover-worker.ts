@@ -10,6 +10,7 @@ import yargs from 'yargs';
 import {
   initPrometheusSetup,
   registerGaugesForProver,
+  startResourceMetricsUpdate,
 } from '@dendreth/utils/ts-utils/prometheus-utils';
 
 (async () => {
@@ -19,6 +20,7 @@ import {
   };
   initPrometheusSetup(3000);
   registerGaugesForProver();
+  startResourceMetricsUpdate('proofGenerationWorker');
 
   checkConfig(proverConfig);
 
