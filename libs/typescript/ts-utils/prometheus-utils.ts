@@ -157,3 +157,63 @@ export const numberOfProofPublished = new client.Counter({
   help: 'The number of proofs published(since last restart)',
   labelNames: ['network'],
 });
+
+const gaugeCpuUser = new client.Gauge({
+  name: 'process_cpu_user_seconds_total',
+  help: 'Total user CPU time spent by the process in seconds.',
+  labelNames: ['label'], // Adding label
+});
+
+const gaugeCpuSystem = new client.Gauge({
+  name: 'process_cpu_system_seconds_total',
+  help: 'Total system CPU time spent by the process in seconds.',
+  labelNames: ['label'], // Adding label
+});
+
+const gaugeMemoryUsage = new client.Gauge({
+  name: 'process_memory_bytes',
+  help: 'Memory usage of the process in bytes.',
+  labelNames: ['label'], // Adding label
+});
+
+const gaugeHeapTotal = new client.Gauge({
+  name: 'process_heap_total_bytes',
+  help: 'Total heap memory allocated by the process in bytes.',
+  labelNames: ['label'], // Adding label
+});
+
+const gaugeHeapUsed = new client.Gauge({
+  name: 'process_heap_used_bytes',
+  help: 'Heap memory used by the process in bytes.',
+  labelNames: ['label'], // Adding label
+});
+
+const gaugeRss = new client.Gauge({
+  name: 'process_rss_bytes',
+  help: 'Resident set size (RSS) memory used by the process in bytes.',
+  labelNames: ['label'], // Adding label
+});
+
+export function startResourceMetricsUpdate(label: string) {
+  register.registerMetric(gaugeCpuUser);
+  register.registerMetric(gaugeCpuSystem);
+  register.registerMetric(gaugeMemoryUsage);
+  register.registerMetric(gaugeHeapTotal);
+  register.registerMetric(gaugeRss);
+
+  // Set an interval to regularly update the resource metrics
+  setInterval(() => {
+    const memoryUsage = process.memoryUsage();
+    const cpuUsage = process.cpuUsage();
+
+    // Update CPU metrics
+    gaugeCpuUser.labels(label).set(cpuUsage.user / 1e6); // Convert from microseconds to seconds
+    gaugeCpuSystem.labels(label).set(cpuUsage.system / 1e6); // Convert from microseconds to seconds
+
+    // Update memory metrics
+    gaugeMemoryUsage.labels(label).set(memoryUsage.rss); // Resident set size (RSS)
+    gaugeHeapTotal.labels(label).set(memoryUsage.heapTotal); // Total heap allocated
+    gaugeHeapUsed.labels(label).set(memoryUsage.heapUsed); // Heap memory in use
+    gaugeRss.labels(label).set(memoryUsage.rss); // RSS memory in bytes
+  }, 5000); // Update metrics every 5 seconds
+}
