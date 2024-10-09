@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-ZKEY_B3SUM_SUM='7bd1baf6e4aa1bb97933df06f68b26f8aa034e6743ff52c4dd7f6097d6e7d104'
+ZKEY_B3SUM_SUM='e5cb635fd494414d599fb22fc132f8ff9ecbc811d7cfc2557b1d8af55165fdad'
 DAT_B3SUM_SUM='c94eb86af7c0451a4277a7bdfc90232a9db75c192d6852ad18baa9a46e1e52e5'
 
 source "${GIT_ROOT}/.env"
