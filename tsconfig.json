@@ -105,6 +105,6 @@
     }],
   "files": ["vendor/eth2-light-client-updates/mainnet/bootstrap.json",
             "vendor/eth2-light-client-updates/mainnet/updates/00290.json",
-            "vendor/eth2-light-client-updates/mainnet/deneb-update-284/update_9265121_9273312.json"],
+            "vendor/eth2-light-client-updates/mainnet/trusted-setup/update_6069888_6078433.json"],
   "include": ["**/*.ts", "**/*.json"]
 }

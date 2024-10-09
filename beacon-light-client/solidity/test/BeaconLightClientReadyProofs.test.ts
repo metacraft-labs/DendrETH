@@ -6,7 +6,7 @@ import { getFilesInDir, Proof } from './utils';
 import { convertProofToSolidityCalldata } from '@dendreth/utils/ts-utils/zk-utils';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 
-import INITIAL_UPDATE from '../../../vendor/eth2-light-client-updates/mainnet/deneb-update-284/update_9265121_9273312.json';
+import INITIAL_UPDATE from '../../../vendor/eth2-light-client-updates/mainnet/trusted-setup/update_6069888_6078433.json';
 
 const logger = getGenericLogger();
 
@@ -26,7 +26,7 @@ describe('BeaconLightClientReadyProofs', async function () {
       'vendor',
       'eth2-light-client-updates',
       'mainnet',
-      'deneb-update-284',
+      'trusted-setup',
     );
 
     proofs = getFilesInDir(dir, 'proof*.json').map(p =>
@@ -43,9 +43,9 @@ describe('BeaconLightClientReadyProofs', async function () {
   });
 
   beforeEach(async function () {
-    const FORK_VERSION = '0x04000000';
+    const FORK_VERSION = '0x90000073';
     const genesis_validators_root =
-      '0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95';
+      '0xd8ea171f3c94aea21ebc42a1ed61052acf3f9209c00e4efbaaddac09ed9b8078';
     const DOMAIN_SYNC_COMMITTEE = '0x07000000';
 
     let result = sha256(
