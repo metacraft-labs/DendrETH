@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.20;
 
 import '../../utils/LightClientUpdateVerifier.sol';
 import '../../interfaces/ILightClient.sol';
+import '@openzeppelin/contracts/access/Ownable.sol';
 
 uint256 constant BUFER_SIZE = 32;
 
-contract BeaconLightClient is LightClientUpdateVerifier, ILightClient {
+contract BeaconLightClient is Ownable, LightClientUpdateVerifier, ILightClient {
+  error ProofVerificationFailed();
+  error InvalidAccessControll();
+
   bytes32[BUFER_SIZE] public optimisticHeaders;
 
   uint256[BUFER_SIZE] public optimisticSlots;
@@ -19,13 +23,15 @@ contract BeaconLightClient is LightClientUpdateVerifier, ILightClient {
 
   bytes32 domain;
 
+  address adapterAddress;
+
   constructor(
     bytes32 _optimisticHeaderRoot,
     uint256 _optimisticHeaderSlot,
     bytes32 _finalizedHeaderRoot,
     bytes32 _executionStateRoot,
     bytes32 _domain
-  ) {
+  ) Ownable(msg.sender) {
     currentIndex = 0;
 
     optimisticHeaders[currentIndex] = _optimisticHeaderRoot;
@@ -51,13 +57,17 @@ contract BeaconLightClient is LightClientUpdateVerifier, ILightClient {
     return executionStateRoots[currentIndex];
   }
 
-  // TODO: fix name to lightClientUpdate
-  function lightClientUpdate(LightClientUpdate calldata update)
-    external
-    payable
-  {
-    require(
-      verifyUpdate(
+  function changeAdapterAddress(address _adapterAddress) external onlyOwner {
+    adapterAddress = _adapterAddress;
+  }
+
+  function lightClientUpdate(LightClientUpdate calldata update) external {
+    if (msg.sender != adapterAddress && msg.sender != owner()) {
+      revert InvalidAccessControll();
+    }
+
+    if (
+      !verifyUpdate(
         update.a,
         update.b,
         update.c,
@@ -67,9 +77,10 @@ contract BeaconLightClient is LightClientUpdateVerifier, ILightClient {
         update.finalizedHeaderRoot,
         update.finalizedExecutionStateRoot,
         domain
-      ),
-      '!proof'
-    );
+      )
+    ) {
+      revert ProofVerificationFailed();
+    }
 
     currentIndex = (currentIndex + 1) % BUFER_SIZE;
 

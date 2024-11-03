@@ -99,8 +99,3 @@ if [ -z "${SLOTS_JUMP}" ]; then
   echo "Error: SLOTS_JUMP environment variable is not set. Exiting..."
   exit 1
 fi
-
-if [[ "${PRATTER}" != "TRUE" && "${MAINNET}" != "TRUE" ]]; then
-  echo "Neither PRATTER nor MAINNET is set or true."
-  exit 1
-fi

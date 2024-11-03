@@ -138,7 +138,7 @@ processes:
   gnosis:
     description: Start generating proofs for the contract on ${LC_GNOSIS} and update it with them
     log_location: ./logs/gnosis.log
-    command: yarn hardhat start-publishing --light-client ${LC_GNOSIS} --network gnosis --follow-network ${FOLLOW_NETWORK_GNOSIS} --slots-jump ${SLOTS_JUMP} --prometheus-port 3014
+    command: yarn hardhat start-publishing --light-client ${LC_GNOSIS} --network gnosis --follow-network ${FOLLOW_NETWORK_GNOSIS} --slots-jump ${SLOTS_JUMP} --hashi ${GNOSIS_HASHI} --prometheus-port 3014
     working_dir: ./beacon-light-client/solidity
     depends_on:
       proverserver:
