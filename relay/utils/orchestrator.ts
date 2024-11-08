@@ -29,8 +29,12 @@ export async function addUpdate(
     }
   }
 
+  const finalizedSlot = (
+    await beaconApi.getFinalizedBlockHeader(optimisticSlot)
+  ).slot;
+
   const nextSlot = await getNextSlot(
-    optimisticSlot,
+    finalizedSlot,
     slotsJump,
     headSlot,
     beaconApi,
