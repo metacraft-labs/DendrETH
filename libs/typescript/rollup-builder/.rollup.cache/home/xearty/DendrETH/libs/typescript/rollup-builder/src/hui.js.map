@@ -1,0 +1,1 @@
+{"version":3,"file":"hui.js","sourceRoot":"","sources":["hui.ts"],"names":[],"mappings":"AAAA,OAAO,CAAC,GAAG,CAAC,UAAU,CAAC,CAAC","sourcesContent":["console.log('dig bick');\n\nexport interface BigDick {\n    girthLength: number;\n    middleOut: () => void;\n}"]}
