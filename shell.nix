@@ -17,7 +17,7 @@
         shellHook = ''
           set -e
 
-          export NODE_OPTIONS="--experimental-vm-modules --max-old-space-size=32768"
+          export NODE_OPTIONS="--experimental-vm-modules --max-old-space-size=32768 --experimental-import-meta-resolve"
           export CC=clang
           export LOCAL_NIM_LIB="$PWD/vendor/nim/lib"
           export CIRCOM_LIB="$(find $PWD/.yarn/unplugged -maxdepth 1 -type d -name 'circomlib-*')/node_modules/circomlib/circuits"

@@ -25,6 +25,11 @@ import { StateId } from '@lodestar/api/beacon/routes/beacon';
 
 const logger = getGenericLogger();
 
+import type { BeaconBlock as CapellaBeaconBlock } from '@lodestar/types/capella';
+import type { BeaconBlock as DenebBeaconBlock } from '@lodestar/types/deneb';
+import type { BeaconState as CapellaBeaconState } from '@lodestar/types/capella'
+import type { BeaconState as DenebBeaconState } from '@lodestar/types/deneb'
+
 export async function getBeaconApi(
   beaconRestApis: string[],
 ): Promise<BeaconApi> {
@@ -579,7 +584,7 @@ export class BeaconApi implements IBeaconApi {
     return BigInt(json.data.finalized.epoch);
   }
 
-  async getBeaconBlock(slot: bigint) {
+  async getBeaconBlock(slot: bigint): Promise<CapellaBeaconBlock | DenebBeaconBlock | null> {
     logger.info('Getting Beacon block..');
 
     const beaconBlockSSZ = await this.fetchWithFallback(
@@ -610,7 +615,10 @@ export class BeaconApi implements IBeaconApi {
     return beaconBlock;
   }
 
-  async getBeaconState(slot: bigint) {
+  async getBeaconState(slot: bigint): Promise<{
+    beaconState: CapellaBeaconState | DenebBeaconState | null,
+    stateTree: Tree,
+  }> {
     logger.info('Getting Beacon State..');
 
     const beaconStateSZZ = await this.fetchWithFallback(

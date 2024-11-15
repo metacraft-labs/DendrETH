@@ -2138,15 +2138,12 @@ __metadata:
     "@chainsafe/persistent-merkle-tree": "npm:^0.7.1"
     "@chainsafe/ssz": "npm:0.14.3"
     "@dendreth/relay": "workspace:^"
+    "@dendreth/rollup-builder": "workspace:^"
     "@dendreth/utils": "workspace:^"
     "@lodestar/types": "npm:^1.17.0"
     "@mevitae/redis-work-queue": "npm:^0.1.5"
     "@noble/bls12-381": "npm:^1.4.0"
-    "@types/circomlibjs": "npm:^0"
-    "@types/json-bigint": "npm:^1"
-    "@types/node": "npm:^20.14.9"
-    "@types/underscore": "npm:^1"
-    "@types/yargs": "npm:^17.0.32"
+    "@types/node": "npm:^22.9.0"
     chalk: "npm:^4.1.2"
     circom-pairing: "link:../../../vendor/circom-pairing/"
     circomlibjs: "npm:^0.1.7"
@@ -2155,7 +2152,6 @@ __metadata:
     ethers: "npm:^5.7.0"
     ioredis: "npm:^5.3.2"
     json-bigint: "npm:^1.0.0"
-    tsx: "npm:^4.7.1"
     underscore: "npm:^1.13.7"
     web3: "npm:1.10.4"
     yargs: "npm:^17.7.2"
@@ -2206,12 +2202,14 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@dendreth/rollup-builder@workspace:libs/typescript/rollup-builder"
   dependencies:
+    "@lodestar/params": "npm:^1.23.0"
     "@rollup/plugin-commonjs": "npm:^28.0.0"
     "@rollup/plugin-json": "npm:^6.1.0"
     "@rollup/plugin-node-resolve": "npm:^15.2.1"
     "@rollup/plugin-typescript": "npm:^11.1.6"
     "@types/rollup-plugin-peer-deps-external": "npm:^2"
     glob: "npm:^11.0.0"
+    import-meta-resolve: "npm:^4.1.0"
     rollup: "npm:^4.20.0"
     rollup-plugin-delete: "npm:^2.0.0"
     rollup-plugin-peer-deps-external: "npm:^2.2.4"
@@ -2273,6 +2271,7 @@ __metadata:
     "@cosmjs/cosmwasm-stargate": "npm:0.30.1"
     "@cosmjs/proto-signing": "npm:^0.30.0"
     "@cosmjs/stargate": "npm:0.30.1"
+    "@dendreth/rollup-builder": "workspace:^"
     "@lodestar/params": "npm:^1.17.0"
     "@lodestar/types": "npm:^1.17.0"
     "@noble/bls12-381": "npm:^1.4.0"
@@ -3609,6 +3608,13 @@ __metadata:
   version: 1.17.0
   resolution: "@lodestar/params@npm:1.17.0"
   checksum: 10/c9a9bc64dd5e357eab4fb7635385c0efc87a2f5f629dad8e95bbde878110222ba8b054432cf29dc416c87fca0ca9bb22cc1b08f82a1aa3ced77ac56963a31d19
+  languageName: node
+  linkType: hard
+
+"@lodestar/params@npm:^1.23.0":
+  version: 1.23.0
+  resolution: "@lodestar/params@npm:1.23.0"
+  checksum: 10/dec9d8b3441cec240f366b288033babc22b0f5fcf8ef4a8229878c77ec4171f3380c9fa107b9116eb9a3c5ba576faab150890d513c16a4e8f2e07d01790f885c
   languageName: node
   linkType: hard
 
@@ -5976,13 +5982,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/circomlibjs@npm:^0":
-  version: 0.1.6
-  resolution: "@types/circomlibjs@npm:0.1.6"
-  checksum: 10/96ca981b7f9eda119200f3513055c7c17f030a4eca51faf9d2c7325a3627e21c99a9e1b8833688fcbf0560b9efe753b68fbbf286e9041319be00c2d7edd0025a
-  languageName: node
-  linkType: hard
-
 "@types/concat-stream@npm:^1.6.0":
   version: 1.6.1
   resolution: "@types/concat-stream@npm:1.6.1"
@@ -6280,12 +6279,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^20.14.9":
-  version: 20.14.9
-  resolution: "@types/node@npm:20.14.9"
+"@types/node@npm:^22.9.0":
+  version: 22.9.0
+  resolution: "@types/node@npm:22.9.0"
   dependencies:
-    undici-types: "npm:~5.26.4"
-  checksum: 10/f313b06c79be92f5d3541159ef813b9fc606941f951ecf826e940658c6d4952755ca2f06277b746326cef0697ed79a04676ecde053d32e1121b3352c8168d2e9
+    undici-types: "npm:~6.19.8"
+  checksum: 10/a7df3426891868b0f5fb03e46aeddd8446178233521c624a44531c92a040cf08a82d8235f7e1e02af731fd16984665d4d71f3418caf9c2788313b10f040d615d
   languageName: node
   linkType: hard
 
@@ -6425,13 +6424,6 @@ __metadata:
   dependencies:
     "@types/node": "npm:*"
   checksum: 10/53e23a1f9fb14a491c00425b2a4fc443817564d77be5e1b95fcbeb6d009551b62ea82ffc3e5ca0c6b9f6b186824ca6ec46e7450c1bcd6674a46d1325f0116e24
-  languageName: node
-  linkType: hard
-
-"@types/underscore@npm:^1":
-  version: 1.11.15
-  resolution: "@types/underscore@npm:1.11.15"
-  checksum: 10/5a9c262566551f61744e066d33578c0fad1139c2d5314ed77a8f867487a6d7dd18616f32df4c605070fbd569b942c6d2c083be9f9ae649f41a562b52812b06be
   languageName: node
   linkType: hard
 
@@ -11232,6 +11224,13 @@ __metadata:
   bin:
     import-local-fixture: fixtures/cli.js
   checksum: 10/bfcdb63b5e3c0e245e347f3107564035b128a414c4da1172a20dc67db2504e05ede4ac2eee1252359f78b0bfd7b19ef180aec427c2fce6493ae782d73a04cddd
+  languageName: node
+  linkType: hard
+
+"import-meta-resolve@npm:^4.1.0":
+  version: 4.1.0
+  resolution: "import-meta-resolve@npm:4.1.0"
+  checksum: 10/40162f67eb406c8d5d49266206ef12ff07b54f5fad8cfd806db9efe3a055958e9969be51d6efaf82e34b8bea6758113dcc17bb79ff148292a4badcabc3472f22
   languageName: node
   linkType: hard
 
@@ -16637,6 +16636,13 @@ __metadata:
   version: 5.26.5
   resolution: "undici-types@npm:5.26.5"
   checksum: 10/0097779d94bc0fd26f0418b3a05472410408877279141ded2bd449167be1aed7ea5b76f756562cb3586a07f251b90799bab22d9019ceba49c037c76445f7cddd
+  languageName: node
+  linkType: hard
+
+"undici-types@npm:~6.19.8":
+  version: 6.19.8
+  resolution: "undici-types@npm:6.19.8"
+  checksum: 10/cf0b48ed4fc99baf56584afa91aaffa5010c268b8842f62e02f752df209e3dea138b372a60a963b3b2576ed932f32329ce7ddb9cb5f27a6c83040d8cd74b7a70
   languageName: node
   linkType: hard
 

@@ -1,18 +1,14 @@
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
-import { createRequire } from 'node:module';
-
 import { rollup } from 'rollup';
 import commonjs from '@rollup/plugin-commonjs';
 import json from '@rollup/plugin-json';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
-// import typescript from 'rollup-plugin-typescript2';
 import typescript from '@rollup/plugin-typescript';
 import peerDepsExternal from 'rollup-plugin-peer-deps-external';
 import del from 'rollup-plugin-delete';
-
 import { glob } from 'glob';
+import { createRequire } from 'node:module';
 
 if (process.argv.length !== 3) {
   console.log(`
@@ -24,27 +20,57 @@ if (process.argv.length !== 3) {
   process.exit(1);
 }
 
-const dir = path.resolve(process.argv[2]);
-console.log({ dir });
+const packageDir = `${path.resolve(process.argv[2])}/`;
+
+function tryResolve(id, parentId) {
+  const cjsResolve = (id, parentId) => {
+    const require = createRequire(parentId);
+    return require.resolve(id);
+  };
+
+  for (const resolve of [import.meta.resolve, cjsResolve]) {
+    try {
+      return resolve(id, parentId);
+    } catch (err) {
+      if (process.env.DEBUG_PACKAGE_RESOLUTION?.toLowerCase() === 'yes') {
+        console.log(
+          '----------------------------------------------------------------------------------------------------------',
+        );
+        console.log(resolve.name);
+        console.log({ id, parentId });
+        console.log(err);
+        console.log(
+          '----------------------------------------------------------------------------------------------------------',
+        );
+      }
+    }
+  }
+
+  return null;
+}
 
 await Promise.all([
-  build(dir, 'esm'), //
-  build(dir, 'cjs'),
+  build(packageDir, 'esm'), //
+  build(packageDir, 'cjs'),
 ])
-  .then(() => fs.rename(`${dir}/dist/esm/types`, `${dir}/dist/types`))
-  .then(() => console.log('Build finished successfully'));
+  .then(() =>
+    fs.rename(`${packageDir}/dist/esm/types`, `${packageDir}/dist/types`),
+  )
+  .then(() => console.log('Build finished successfully'))
+  .catch(console.error);
 
 async function build(dir, format) {
+  console.log(`Building ${packageDir} in ${format} format...`);
+
   let bundle;
   try {
     const config = createConfig(dir, format);
-
-    console.log(`rollup(${format})...`);
     bundle = await rollup(config);
-    console.log(`rollup(${format}) done.`);
 
     for (const outputOptions of config.output) {
-      const { output } = await bundle.write(outputOptions);
+      console.log(`Writing ${format}...`);
+      await bundle.write(outputOptions);
+      console.log(`Wrote ${format}`);
     }
   } catch (error) {
     console.error(error);
@@ -55,24 +81,27 @@ async function build(dir, format) {
 }
 
 function createConfig(dir, format) {
-  const require = createRequire(import.meta.url);
+  const require = createRequire(dir);
+
   return {
     input: Object.fromEntries(
       glob
-        .globSync(`${dir}/src/**/*.ts`)
-        .filter(file => !file.endsWith('spec.ts'))
+        .globSync(`${dir}/**/*.ts`)
+        .filter(
+          file =>
+            !(
+              file.endsWith('spec.ts') ||
+              file.endsWith('.d.ts') ||
+              file.endsWith('.d.ts.map')
+            ),
+        )
         .map(file => {
           return [
-            // This remove `src/` as well as the file extension from each
-            // file, so e.g. src/nested/foo.js becomes nested/foo
             path.relative(
-              `${dir}/src`,
+              dir,
               file.slice(0, file.length - path.extname(file).length),
             ),
-            // This expands the relative paths to absolute paths, so e.g.
-            // src/nested/foo becomes /project/src/nested/foo.js
-            fileURLToPath(new URL(file, `file://${dir}`)),
-            //path.resolve(dir, file),
+            file,
           ];
         }),
     ),
@@ -82,7 +111,7 @@ function createConfig(dir, format) {
         ? id
         : id.startsWith('.')
         ? path.resolve(parentId, id)
-        : require.resolve(id);
+        : tryResolve(id, parentId);
 
       const internal = absPath.startsWith(dir);
 
@@ -99,7 +128,7 @@ function createConfig(dir, format) {
       json(),
       commonjs(),
       peerDepsExternal({
-        packageJsonPath: `${dir}/package.json`,
+        packageJsonPath: path.join(dir, 'package.json'),
       }),
       nodeResolve({
         extensions: ['.mjs', '.cjs', '.js', '.ts', '.json'],
@@ -108,7 +137,7 @@ function createConfig(dir, format) {
         mainFields: ['module', 'main'],
         modulesOnly: true,
       }),
-      del({ targets: `${dir}/dist` }),
+      del({ targets: `${dir}/dist`, force: true }),
       typescript({
         tsconfig: `${dir}/tsconfig.json`,
         composite: false,

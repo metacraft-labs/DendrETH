@@ -11,12 +11,8 @@
   },
   "type": "commonjs",
   "devDependencies": {
-    "@types/circomlibjs": "^0",
-    "@types/json-bigint": "^1",
-    "@types/node": "^20.14.9",
-    "@types/underscore": "^1",
-    "@types/yargs": "^17.0.32",
-    "tsx": "^4.7.1"
+    "@dendreth/rollup-builder": "workspace:^",
+    "@types/node": "^22.9.0"
   },
   "dependencies": {
     "@aws-sdk/client-ecs": "^3.600.0",

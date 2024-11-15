@@ -97,7 +97,8 @@
   "exclude": [
     "node_modules",
     "vendor",
-    "dist"
+    "dist",
+    "casper-finality-proofs"
   ],
   "references": [
     {
