@@ -2,7 +2,7 @@ use std::{collections::HashMap, fs};
 
 use async_trait::async_trait;
 
-use anyhow::{Context, Result};
+use anyhow::{ensure, Context, Result};
 use redis::aio::Connection;
 use serde::{Deserialize, Serialize};
 
@@ -27,7 +27,7 @@ pub trait ProofStorage: Send + Sync {
 pub struct RedisConnectionDefinition {
     pub host: String,
     pub port: u64,
-    pub auth: Option<String>,
+    pub auth_filepath: Option<String>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -80,7 +80,7 @@ pub async fn blob_storage_from_definition(
                 cfg.endpoint_url.clone(),
                 &cfg.credentials,
             )
-            .await,
+            .await?,
         ),
         BlobStorageDefinition::Filesystem(cfg) => Box::new(FileStorage::new(cfg.directory.clone())),
     })
@@ -110,18 +110,19 @@ pub fn load_storage_config(filepath: &str) -> Result<ProofStorageConfig> {
 pub async fn redis_connection_from_definition(
     def: &RedisConnectionDefinition,
 ) -> Result<Connection> {
-    let url = redis_url_from_definition(def);
+    let url = redis_url_from_definition(def)?;
     let client = redis::Client::open(url)?;
     Ok(client.get_async_connection().await?)
 }
 
-pub fn redis_url_from_definition(def: &RedisConnectionDefinition) -> String {
-    let at = if def.auth.as_ref().is_some_and(|x| x.len() > 0) {
-        format!("{}@", def.auth.as_ref().unwrap())
-    } else {
-        String::new()
+pub fn redis_url_from_definition(def: &RedisConnectionDefinition) -> Result<String> {
+    let auth = match &def.auth_filepath {
+        Some(path) => format!("{}@", fs::read_to_string(path)?),
+        None => String::new(),
     };
-    format!("redis://{}{}:{}", at, def.host, def.port)
+    ensure!(auth != "@", "Redis authentication string is empty");
+
+    Ok(format!("redis://{}{}:{}", auth, def.host, def.port))
 }
 
 pub type ProofStorageConfig = HashMap<String, RedisBlobStorageDefinition>;
