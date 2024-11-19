@@ -1,8 +1,9 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use aws_config::Region;
-use aws_sdk_s3::{config::Credentials, primitives::ByteStream, Client, Config};
+use aws_config::{default_provider::credentials, BehaviorVersion, ConfigLoader, Region};
+use aws_sdk_s3::{config::Credentials, primitives::ByteStream, Client};
 use serde::{Deserialize, Serialize};
+use std::fs;
 
 use super::proof_storage::ProofStorage;
 
@@ -10,7 +11,7 @@ use super::proof_storage::ProofStorage;
 #[serde(rename_all = "kebab-case")]
 pub struct S3Credentials {
     pub access_key_id: String,
-    pub secret_access_key: String,
+    pub secret_access_key_filepath: String,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -33,29 +34,35 @@ impl AwsStorage {
         bucket_name: String,
         endpoint_url: Option<String>,
         credentials: &S3Credentials,
-    ) -> AwsStorage {
+    ) -> Result<AwsStorage> {
+        let secret_access_key = fs::read_to_string(&credentials.secret_access_key_filepath)?;
+
         let credentials = Credentials::new(
             &credentials.access_key_id,
-            &credentials.secret_access_key,
+            &secret_access_key,
             None,
             None,
             "custom_provider",
         );
 
-        let mut s3_config_builder = Config::builder()
-            .credentials_provider(credentials)
-            .behavior_version_latest()
-            .region(Region::new(region))
-            .force_path_style(true);
+        let credentials_provider = credentials::DefaultCredentialsChain::builder()
+            .with_custom_credential_source("custom_credentials_source", credentials)
+            .build()
+            .await;
 
-        s3_config_builder.set_endpoint_url(endpoint_url);
+        let mut config_loader = ConfigLoader::default()
+            .behavior_version(BehaviorVersion::latest())
+            .credentials_provider(credentials_provider)
+            .region(Region::new(region));
 
-        let client = Client::from_conf(s3_config_builder.build());
-
-        AwsStorage {
-            client,
-            bucket_name,
+        if let Some(url) = endpoint_url {
+            config_loader = config_loader.endpoint_url(url);
         }
+
+        Ok(AwsStorage {
+            client: Client::new(&config_loader.load().await),
+            bucket_name,
+        })
     }
 }
 
