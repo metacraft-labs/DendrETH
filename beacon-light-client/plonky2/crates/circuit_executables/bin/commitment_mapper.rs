@@ -6,7 +6,6 @@ use circuit_executables::{
         handle_task, pick_work_queue_item_prioritize_lower_levels, CommitmentMapperTask,
         VCMWorkQueueItem,
     },
-    crud::proof_storage::proof_storage::load_storage_config,
     utils::CommandLineOptionsBuilder,
 };
 use colored::Colorize;
@@ -39,13 +38,6 @@ async fn main() -> Result<()> {
     };
 
     let storage_cfg_filepath = matches.value_of("proof_storage_cfg").unwrap();
-    let storage_cfg = load_storage_config(&storage_cfg_filepath)?;
-
-    println!(
-        "storage config: {}",
-        serde_json::to_string_pretty(&storage_cfg).unwrap()
-    );
-
     let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
 
     let mut ctx = CommitmentMapperContext::new(
