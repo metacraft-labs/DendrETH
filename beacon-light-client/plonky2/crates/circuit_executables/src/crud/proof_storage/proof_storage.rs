@@ -6,6 +6,8 @@ use anyhow::{ensure, Context, Result};
 use redis::aio::Connection;
 use serde::{Deserialize, Serialize};
 
+use crate::crud::common::read_file_to_string;
+
 use super::{
     aws_proof_storage::{AwsStorage, S3BlobStorageDefinition},
     file_proof_storage::{FileStorage, FilesystemBlobStorageDefinition},
@@ -117,7 +119,7 @@ pub async fn redis_connection_from_definition(
 
 pub fn redis_url_from_definition(def: &RedisConnectionDefinition) -> Result<String> {
     let auth = match &def.auth_filepath {
-        Some(path) => format!("{}@", fs::read_to_string(path)?),
+        Some(path) => format!("{}@", read_file_to_string(path)?),
         None => String::new(),
     };
     ensure!(auth != "@", "Redis authentication string is empty");

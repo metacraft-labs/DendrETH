@@ -5,6 +5,8 @@ use aws_sdk_s3::{config::Credentials, primitives::ByteStream, Client};
 use serde::{Deserialize, Serialize};
 use std::fs;
 
+use crate::crud::common::read_file_to_string;
+
 use super::proof_storage::ProofStorage;
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -35,7 +37,7 @@ impl AwsStorage {
         endpoint_url: Option<String>,
         credentials: &S3Credentials,
     ) -> Result<AwsStorage> {
-        let secret_access_key = fs::read_to_string(&credentials.secret_access_key_filepath)?;
+        let secret_access_key = read_file_to_string(&credentials.secret_access_key_filepath)?;
 
         let credentials = Credentials::new(
             &credentials.access_key_id,

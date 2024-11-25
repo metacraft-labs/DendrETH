@@ -3,7 +3,7 @@ use std::{fs, marker::PhantomData, thread, time::Duration};
 use crate::{
     constants::VALIDATOR_REGISTRY_LIMIT, db_constants::DB_CONSTANTS, utils::get_depth_for_gindex,
 };
-use anyhow::{ensure, Result};
+use anyhow::{ensure, Context, Result};
 use async_trait::async_trait;
 use circuit::{Circuit, CircuitInput, SerdeCircuitTarget};
 use circuits::{
@@ -906,6 +906,18 @@ pub fn read_from_file(file_path: &str) -> Result<Vec<u8>> {
 pub fn write_to_file(file_path: &str, data: &[u8]) -> Result<()> {
     fs::write(file_path, data)?;
     Ok(())
+}
+
+pub fn write_file(file_path: &str, data: &[u8]) -> Result<()> {
+    fs::write(file_path, data).context(format!("Could not write file `{file_path}`"))
+}
+
+pub fn read_file(file_path: &str) -> Result<Vec<u8>> {
+    Ok(fs::read(file_path).context(format!("Could not read file `{file_path}`"))?)
+}
+
+pub fn read_file_to_string(file_path: &str) -> Result<String> {
+    Ok(fs::read_to_string(file_path).context(format!("Could not read file `{file_path}`"))?)
 }
 
 pub fn load_circuit_data<T: Circuit>(dir: &str, name: &str) -> Result<CircuitData<T::F, T::C, 2>>
