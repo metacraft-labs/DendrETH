@@ -293,6 +293,52 @@ where
     (first_level_circuit, inner_level_circuits)
 }
 
+pub fn serialize_recursive_circuit<FL, IL>(
+    circuit_name: &str,
+    serialized_circuits_dir: &str,
+    levels: usize,
+    params: &<FL as Circuit>::Params,
+) where
+    FL: Circuit,
+    <FL as Circuit>::Target: SerdeCircuitTarget,
+    <FL as Circuit>::C: 'static,
+
+    IL: Circuit<Params = CircuitData<<FL as Circuit>::F, <FL as Circuit>::C, 2>>,
+    IL: Circuit<F = <FL as Circuit>::F, C = <FL as Circuit>::C>,
+    <IL as Circuit>::Target: SerdeCircuitTarget,
+    <<IL as Circuit>::C as GenericConfig<2>>::Hasher: AlgebraicHasher<<IL as Circuit>::F>,
+{
+    println!("Building level 0 circuit...");
+
+    let (first_level_target, first_level_data) = FL::build(&params);
+
+    println!("Serializing level 0 circuit...");
+    serialize_recursive_circuit_single_level(
+        &first_level_target,
+        &first_level_data,
+        serialized_circuits_dir,
+        circuit_name,
+        0,
+    );
+
+    (1..=levels).fold(first_level_data, |prev_circuit_data, current_level| {
+        println!("Building level {current_level} circuit...");
+
+        let (inner_target, inner_data) = IL::build(&prev_circuit_data);
+
+        println!("Serializing level {current_level} circuit...");
+        serialize_recursive_circuit_single_level(
+            &inner_target,
+            &inner_data,
+            serialized_circuits_dir,
+            circuit_name,
+            current_level,
+        );
+
+        inner_data
+    });
+}
+
 fn path_exists(path: &str) -> bool {
     fs::metadata(path).is_ok()
 }
