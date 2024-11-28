@@ -43,7 +43,7 @@ config satisfies CommonConfig;
   const context = createSchedulerContext({
     redisHost: cmdlineOpts['redis-host'],
     redisPort: cmdlineOpts['redis-port'],
-    redisAuth: cmdlineOpts['redis-auth'],
+    redisAuth: cmdlineOpts['redis-auth-filepath'],
     ethJsonRPCProviderURL: cmdlineOpts['json-rpc'],
     contractAddress: cmdlineOpts['contract-address'],
     contractAbi: validatorsAccumulatorAbi,

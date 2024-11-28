@@ -6,7 +6,10 @@ import {
   StoreBalanceVerificationParameterType,
   storeBalanceVerificationData,
 } from '../lib/get_balance_verification_data';
-import { Redis } from '@dendreth/relay/implementations/redis';
+import {
+  Redis,
+  makeRedisURLSecret,
+} from '@dendreth/relay/implementations/redis';
 import CONSTANTS from '../../../../kv_db_constants.json';
 import { sleep } from '@dendreth/utils/ts-utils/common-utils';
 import JSONbig from 'json-bigint';
@@ -227,7 +230,7 @@ async function main() {
   console.log('\toffset:', options['offset']);
   console.log('\tredis-host:', options['redis-host']);
   console.log('\tredis-port:', options['redis-port']);
-  console.log('\tredis-auth:', options['redis-auth'].length);
+  console.log('\tredis-auth-filepath:', options['redis-auth-filepath'].length);
   console.log('\taddress:', options['address']);
   console.log('\tjson-rpc:', options['json-rpc']);
   console.log('\tbeacon-node:', options['beacon-node']);
@@ -241,7 +244,7 @@ async function main() {
   const redis: Redis = new Redis(
     options['redis-host'],
     options['redis-port'],
-    options['redis-auth'],
+    options['redis-auth-filepath'],
   );
 
   const snapshotContractAddress = options['snapshot-contract-address'];
@@ -273,7 +276,7 @@ async function main() {
           offset: options['offset'],
           redisHost: options['redis-host'],
           redisPort: options['redis-port'],
-          redisAuth: options['redis-auth'],
+          redisAuth: options['redis-auth-filepath'],
           address: options['address'],
           rpcUrl: options['json-rpc'],
           protocol: options['protocol'],
@@ -347,14 +350,19 @@ async function handleSnapshotEvent(
 
   // Generate final balance verification proof
   console.log('Executing final layer');
-  const redisURI = `redis://${params['redis-auth']}@${params['redis-host']}:${params['redis-port']}`;
+  const redisURL = makeRedisURLSecret(
+    params['redis-host'],
+    params['redis-port'],
+    params['redis-auth-filepath'],
+  );
+  // TODO: Don't use the auth string directly (use proof-storage-cfg)
   const command = `
     RUST_BACKTRACE=full cargo run --bin deposit_accumulator_balance_aggregator_final_layer\
       --\
       --proof-storage-type file\
       --folder-name proofs_test\
       --protocol\ ${params['protocol']}\
-      --redis ${redisURI}
+      --redis ${redisURL}
   `;
   const circuitExecutablesDir = '../crates/circuit_executables/';
   await executeCommand(command, { cwd: circuitExecutablesDir });
