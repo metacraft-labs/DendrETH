@@ -60,7 +60,7 @@ export class CommitmentMapperScheduler {
     this.redis = new Redis(
       options['redis-host'],
       options['redis-port'],
-      options['redis-auth'],
+      options['redis-auth-filepath'],
     );
 
     for (let depth = 0; depth <= 40; ++depth) {

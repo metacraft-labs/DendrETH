@@ -24,11 +24,10 @@ export class CommandLineOptionsBuilder {
         default: Number(config['redis-port']),
         description: 'Specifies the Redis port number',
       })
-      .option('redis-auth', {
-        describe: 'TODO',
+      .option('redis-auth-filepath', {
+        describe: 'The file path to the redis authentication string',
         type: 'string',
-        default: '',
-        description: 'TODO',
+        demandOption: false,
       });
 
     return this;

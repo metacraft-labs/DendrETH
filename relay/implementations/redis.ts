@@ -21,17 +21,33 @@ declare module 'ioredis' {
   }
 }
 
-function makeRedisURL(host: string, port: number, auth?: string): string {
+export function makeRedisURL(
+  host: string,
+  port: number,
+  auth?: string,
+): string {
   const at: string = auth != null && auth.length > 0 ? `${auth}@` : '';
   return `redis://${at}${host}:${port}`;
+}
+
+function readRedisAuth(filepath?: string): string | undefined {
+  return filepath != null ? fs.readFileSync(filepath, 'utf-8') : undefined;
+}
+
+export function makeRedisURLSecret(
+  host: string,
+  port: number,
+  authFilepath?: string,
+): string {
+  return makeRedisURL(host, port, readRedisAuth(authFilepath));
 }
 
 export class Redis implements IRedis {
   public readonly client: RedisClient;
   private readonly pubSub: RedisClientType;
 
-  constructor(redisHost: string, redisPort: number, redisAuth?: string) {
-    const url: string = makeRedisURL(redisHost, redisPort, redisAuth);
+  constructor(host: string, port: number, authFilepath?: string) {
+    const url: string = makeRedisURLSecret(host, port, authFilepath);
     this.client = new RedisClient(url);
     this.pubSub = createClient({ url });
 

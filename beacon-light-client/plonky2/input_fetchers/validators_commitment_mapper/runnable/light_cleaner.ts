@@ -1,10 +1,9 @@
 import { KeyPrefix, WorkQueue } from '@mevitae/redis-work-queue';
-import Redis from 'ioredis';
 import { sleep } from '@dendreth/utils/ts-utils/common-utils';
 import CONSTANTS from '../../../kv_db_constants.json';
 import { lightClean } from '../../light_cleaner_common';
 import { CommandLineOptionsBuilder } from '../../utils/cmdline';
-import makeRedis from '../../utils/redis';
+import { Redis } from '@dendreth/relay/implementations/redis';
 
 (async () => {
   const options = new CommandLineOptionsBuilder()
@@ -15,7 +14,11 @@ import makeRedis from '../../utils/redis';
     .withLightCleanOpts()
     .build();
 
-  const redis: Redis = makeRedis(options);
+  const redis = new Redis(
+    options['redis-host'],
+    options['redis-port'],
+    options['redis-auth-filepath'],
+  );
 
   while (true) {
     console.log('Performing light clean');
