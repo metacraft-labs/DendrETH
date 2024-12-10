@@ -1,3 +1,6 @@
+import { BeaconApi, getBeaconApi } from '@/implementations/beacon-api';
+import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
+
 interface Config {
   NETWORK_NAME: string;
   BEACON_REST_API: string[];
@@ -40,60 +43,30 @@ export async function getNetworkConfig(
 ): Promise<Config> {
   let config: Config = { ...defaultConfig, NETWORK_NAME: network };
   config.NETWORK_NAME = network;
-  switch (network) {
-    case 'pratter': {
-      config.BEACON_REST_API[0] =
-        process.env.BEACON_REST_API_PRATER || 'default_prater_rest_api_url';
-      break;
-    }
-    case 'mainnet': {
-      config.BEACON_REST_API[0] =
-        process.env.BEACON_REST_API_MAINNET || 'default_mainnet_rest_api_url';
-      break;
-    }
-    case 'sepolia': {
-      config.BEACON_REST_API[0] =
-        process.env.BEACON_REST_API_SEPOLIA || 'default_sepolia_rest_api_url';
-      break;
-    }
-    case 'chiado': {
-      config.BEACON_REST_API[0] =
-        process.env.BEACON_REST_API_CHIADO || 'default_chiado_rest_api_url';
-      break;
-    }
-    case 'gnosis': {
-      config.BEACON_REST_API[0] =
-        process.env.BEACON_REST_API_GNOSIS || 'default_gnosis_rest_api_url';
-      break;
-    }
-    default: {
-      throw new Error('Network not supported');
-      break;
-    }
+
+  const envVarName = `BEACON_REST_API_${network.toUpperCase()}`;
+  const envVarValue = process.env[envVarName];
+
+  if (!envVarValue) {
+    throw new Error(`${envVarName} is not defined`);
   }
 
-  const response = await fetch(config.BEACON_REST_API + '/eth/v1/config/spec');
-  if (!response.ok) {
-    throw new Error('Network response was not ok ' + response.statusText);
-  }
-  const responseGenesis = await fetch(
-    config.BEACON_REST_API + '/eth/v1/beacon/genesis',
+  config.BEACON_REST_API = envVarValue.split(',');
+
+  const beaconApi = await getBeaconApi(config.BEACON_REST_API);
+
+  const config_genesis = await beaconApi.getGenesisData();
+
+  config.SLOTS_PER_EPOCH = Number(await beaconApi.getSlotsPerEpoch());
+  config.EPOCHS_PER_SYNC_COMMITTEE_PERIOD = Number(
+    await beaconApi.getSlotsPerSyncCommitteePeriod(),
   );
-  if (!responseGenesis.ok) {
-    throw new Error(
-      'Network response was not ok ' + responseGenesis.statusText,
-    );
-  }
-  const config_ = await response.json();
-  const config_genesis = await responseGenesis.json();
-
-  config.SLOTS_PER_EPOCH = config_.data.SLOTS_PER_EPOCH;
-  config.EPOCHS_PER_SYNC_COMMITTEE_PERIOD =
-    config_.data.EPOCHS_PER_SYNC_COMMITTEE_PERIOD;
-  config.GENESIS_FORK_VERSION = config_.data.GENESIS_FORK_VERSION;
-  config.FORK_VERSION = config_.data.DENEB_FORK_VERSION;
-  config.DOMAIN_SYNC_COMMITTEE = config_.data.DOMAIN_SYNC_COMMITTEE;
-  config.GENESIS_VALIDATORS_ROOT = config_genesis.data.genesis_validators_root;
+  config.GENESIS_FORK_VERSION = bytesToHex(config_genesis.genesisForkVersion);
+  config.FORK_VERSION = await beaconApi.getForkVersion();
+  config.DOMAIN_SYNC_COMMITTEE = await beaconApi.getDomainSyncCommittee();
+  config.GENESIS_VALIDATORS_ROOT = bytesToHex(
+    config_genesis.genesisValidatorsRoot,
+  );
 
   return config;
 }
