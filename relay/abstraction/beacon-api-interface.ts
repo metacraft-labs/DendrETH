@@ -62,4 +62,8 @@ export interface IBeaconApi {
   getFinalizedBlockHeader(slot: number): Promise<BeaconBlockHeader>;
 
   getExecutionStateRoot(slot: number): Promise<string>;
+
+  getDomainSyncCommittee(): Promise<string>;
+
+  getForkVersion(): Promise<string>;
 }

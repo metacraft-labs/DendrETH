@@ -150,6 +150,7 @@ export class BeaconApi implements IBeaconApi {
         (await this.fetchWithFallback('/eth/v1/beacon/headers/head')).json(),
       'getCurrentHeadSlot',
     );
+    logger.info('CurrentHeadSlot: ', currentHead.data.header.message.slot);
 
     return Number(currentHead.data.header.message.slot);
   }
@@ -173,7 +174,10 @@ export class BeaconApi implements IBeaconApi {
       await this.fetchWithFallback(`/eth/v1/beacon/headers/${blockHash}`)
     ).json();
 
-    logger.info('Got CurrentHeadSlot..');
+    logger.info(
+      'Got CurrentHeadSlot..',
+      await Number(headResult.data.header.message.slot),
+    );
     return Number(headResult.data.header.message.slot);
   }
 
@@ -611,6 +615,23 @@ export class BeaconApi implements IBeaconApi {
     return { beaconState, stateTree };
   }
 
+  async getDomainSyncCommittee(): Promise<string> {
+    const config = await (
+      await this.fetchWithFallback('/eth/v1/config/spec')
+    ).json();
+
+    const domainSyncCommittee = config.data.DOMAIN_SYNC_COMMITTEE;
+    return domainSyncCommittee;
+  }
+
+  async getForkVersion(): Promise<string> {
+    const config = await (
+      await this.fetchWithFallback('/eth/v1/config/spec')
+    ).json();
+
+    const forkVersion = config.data.DENEB_FORK_VERSION;
+    return forkVersion;
+  }
   private nextApi(): void {
     this.currentApiIndex =
       (this.currentApiIndex + 1) % this.beaconRestApis.length;
