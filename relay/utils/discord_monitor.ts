@@ -12,7 +12,7 @@ async function getLastEventTime(
 
   const events = await contract.queryFilter(
     filter,
-    latestBlock - 10000,
+    latestBlock - 100000,
     latestBlock,
   );
   if (events.length === 0) {
