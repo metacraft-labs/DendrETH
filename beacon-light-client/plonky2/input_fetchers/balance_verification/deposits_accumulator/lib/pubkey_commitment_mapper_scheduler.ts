@@ -12,6 +12,7 @@ const pubkeyProcessingQueueKey = `${sharedPrefix}:processing_queue`;
 const pubkeysKey = `${sharedPrefix}:pubkeys`;
 const currentlyComputedPubkeyMappingKey = `${sharedPrefix}:currently_computed_pubkey_mapping`;
 const lastLoggedBlockKey = `${sharedPrefix}:last_logged_block`;
+const readyKey = `${sharedPrefix}:ready`;
 
 const depositEventName = 'Deposited';
 
@@ -113,6 +114,8 @@ export async function rebuildCommitmentMapperTree(
   await setCurrentlyComputedPubkeyMapping(ctx, 0);
   await setLastLoggedBlock(ctx, contractDeploymentBlockNumber - 1);
 
+  await setReady(ctx.redis, ctx.protocol);
+
   const headBlockNumber = await ctx.ethJsonRPC.getBlockNumber();
 
   await fetchEventsAsyncCB(
@@ -150,6 +153,10 @@ export async function purgePubkeyCommitmentMapperData(
   ctx: SchedulerContext,
 ): Promise<void> {
   await ctx.redis.client.deletePattern(`${ctx.protocol}:${sharedPrefix}:*`);
+}
+
+async function setReady(redis: Redis, protocol: string): Promise<void> {
+  await redis.client.set(`${protocol}:${readyKey}`, '1');
 }
 
 async function setLastLoggedBlock(
@@ -206,3 +213,4 @@ function pushPubkeyToRegistryPipe(
 ): void {
   pipeline.rpush(`${protocol}:${pubkeysKey}`, pubkey);
 }
+
