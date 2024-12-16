@@ -1,5 +1,6 @@
 use colored::Colorize;
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
+use tokio::time::sleep;
 
 use anyhow::{bail, Result};
 use circuit::{Array, Circuit, CircuitInput, SetWitness};
@@ -50,10 +51,6 @@ impl PubkeyCommitmentMapperContext {
         storage_config_filepath: &str,
         serialized_circuits_dir: &str,
     ) -> Result<Self> {
-        let mut storage =
-            RedisBlobStorage::from_file(storage_config_filepath, "pubkey-commitment-mapper")
-                .await?;
-
         let (first_level_circuit, inner_level_circuits) = build_recursive_circuit_cached(
             serialized_circuits_dir,
             "pubkey_commitment_mapper",
@@ -61,6 +58,12 @@ impl PubkeyCommitmentMapperContext {
             &|| PubkeyCommitmentMapperFL::build(&()),
             &|prev_circuit_data| PubkeyCommitmentMapperIL::build(prev_circuit_data),
         );
+
+        let mut storage =
+            RedisBlobStorage::from_file(storage_config_filepath, "pubkey-commitment-mapper")
+                .await?;
+
+        poll_ready(&mut storage.metadata, &protocol).await;
 
         let deposit_count: u64 = storage
             .metadata
@@ -100,6 +103,22 @@ impl PubkeyCommitmentMapperContext {
             first_level_circuit,
             inner_level_circuits,
         })
+    }
+}
+
+async fn poll_ready(redis: &mut Connection, protocol: &str) {
+    let ready_key = format!("{protocol}:pubkey_commitment_mapper:ready");
+    let ready_set = Ok("1".to_owned());
+
+    if redis.get(&ready_key).await != ready_set {
+        println!(
+            "{}",
+            format!("Redis context is not ready. {ready_key} must be set to \"1\"")
+        );
+    }
+
+    while redis.get(&ready_key).await != ready_set {
+        sleep(Duration::from_secs(1)).await;
     }
 }
 
