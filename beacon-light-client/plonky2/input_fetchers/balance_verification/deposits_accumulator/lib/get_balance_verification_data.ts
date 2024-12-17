@@ -11,7 +11,6 @@ import {
   gindexFromIndex,
 } from '@dendreth/utils/ts-utils/common-utils';
 import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
-import { panic } from '@dendreth/utils/ts-utils/common-utils';
 import { Redis } from '@dendreth/relay/implementations/redis';
 import CONSTANTS from '../../../../kv_db_constants.json';
 import commonConfig from '../../../../common_config.json';
@@ -50,7 +49,7 @@ export type StoreBalanceVerificationConfig =
 
 export type StoreBalanceVerificationParameterType =
   StoreBalanceVerificationConfigRequiredFields &
-    Partial<StoreBalanceVerificationConfig>;
+  Partial<StoreBalanceVerificationConfig>;
 
 function getDefaultBalanceVerificationConfig(): Omit<
   StoreBalanceVerificationConfig,
@@ -94,9 +93,7 @@ export async function storeBalanceVerificationData(
     config.slot !== undefined
       ? BigInt(config.slot)
       : await beaconApi.getHeadSlot();
-  const { beaconState } =
-    (await beaconApi.getBeaconState(slot)) ||
-    panic('Could not fetch beacon state');
+  const { beaconState } = await beaconApi.getBeaconState(slot);
 
   const offset = Number(config.offset) || 0;
   let take = config.take !== Infinity ? config.take + offset : Infinity;

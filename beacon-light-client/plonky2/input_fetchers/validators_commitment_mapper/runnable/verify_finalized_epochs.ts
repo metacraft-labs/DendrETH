@@ -191,9 +191,7 @@ async function verifySlot(
   const currentSSZFork = await api.getCurrentSSZ(slot);
 
   try {
-    const { beaconState } =
-      (await api.getBeaconState(slot)) ||
-      panic('Could not fetch beacon state!');
+    const { beaconState } = await api.getBeaconState(slot);
     beaconState.validators = beaconState.validators.slice(0, take);
     const validatorsRoot = bytesToHex(
       currentSSZFork.BeaconState.fields.validators.hashTreeRoot(

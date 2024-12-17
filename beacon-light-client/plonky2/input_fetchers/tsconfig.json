@@ -1,3 +1,14 @@
 {
-  "extends": "../../../tsconfig.json"
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "baseUrl": "."
+  },
+  "exclude": ["dist"],
+  "files": [
+    "../kv_db_constants.json"
+  ]
+  // "files": [
+  //   "../beacon-light-client/plonky2/kv_db_constants.json"
+  // ]
 }

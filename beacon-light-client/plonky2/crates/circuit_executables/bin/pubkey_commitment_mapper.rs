@@ -89,7 +89,10 @@ async fn main() -> Result<()> {
                 complete_task(&mut pipe, &ctx.protocol);
                 _ = pipe.query_async(&mut ctx.storage.metadata).await?;
             }
-            Err(_) => sleep(Duration::from_secs(5)),
+            Err(_) => {
+                println!("Sleeping");
+                sleep(Duration::from_secs(5));
+            }
         }
     }
 }

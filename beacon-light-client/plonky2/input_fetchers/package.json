@@ -12,7 +12,8 @@
   "type": "commonjs",
   "devDependencies": {
     "@dendreth/rollup-builder": "workspace:^",
-    "@types/node": "^22.9.0"
+    "@types/node": "^22.9.0",
+    "tsx": "^4.19.2"
   },
   "dependencies": {
     "@aws-sdk/client-ecs": "^3.600.0",

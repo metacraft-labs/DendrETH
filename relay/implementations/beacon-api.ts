@@ -52,7 +52,7 @@ export class BeaconApi implements IBeaconApi {
   constructor(
     public readonly beaconRestApis: string[],
     public readonly ssz: SSZ,
-  ) {}
+  ) { }
 
   async getCurrentSSZ(slot: bigint): Promise<CapellaOrDeneb> {
     const forkSchedule = await (
@@ -293,8 +293,7 @@ export class BeaconApi implements IBeaconApi {
 
     const prevFinalizedHeaderResult = await (
       await this.fetchWithFallback(
-        `/eth/v1/beacon/headers/${
-          '0x' + bytesToHex(prevBeaconSate.finalizedCheckpoint.root)
+        `/eth/v1/beacon/headers/${'0x' + bytesToHex(prevBeaconSate.finalizedCheckpoint.root)
         }`,
       )
     ).json();
@@ -346,7 +345,7 @@ export class BeaconApi implements IBeaconApi {
         bytesToHex(
           prevFinalizedBeaconState[
             prevUpdateFinalizedSyncCommmitteePeriod ===
-            currentSyncCommitteePeriod
+              currentSyncCommitteePeriod
               ? 'currentSyncCommittee'
               : 'nextSyncCommittee'
           ].aggregatePubkey,
@@ -380,8 +379,7 @@ export class BeaconApi implements IBeaconApi {
 
     const finalizedHeaderResult = await (
       await this.fetchWithFallback(
-        `/eth/v1/beacon/headers/${
-          '0x' + bytesToHex(beaconState.finalizedCheckpoint.root)
+        `/eth/v1/beacon/headers/${'0x' + bytesToHex(beaconState.finalizedCheckpoint.root)
         }`,
       )
     ).json();
@@ -532,9 +530,7 @@ export class BeaconApi implements IBeaconApi {
       );
     } else {
       // fetch an ssz beacon state to extract the validators from it
-      const { beaconState } =
-        (await this.getBeaconState(slot)) ||
-        panic('Could not fetch beacon state');
+      const { beaconState } = await this.getBeaconState(slot);
       return beaconState.validators.slice(offset || 0, validatorsCount);
     }
   }
@@ -616,7 +612,7 @@ export class BeaconApi implements IBeaconApi {
   }
 
   async getBeaconState(slot: bigint): Promise<{
-    beaconState: CapellaBeaconState | DenebBeaconState | null,
+    beaconState: CapellaBeaconState | DenebBeaconState,
     stateTree: Tree,
   }> {
     logger.info('Getting Beacon State..');
@@ -723,9 +719,8 @@ export class BeaconApi implements IBeaconApi {
 
   private concatUrl(urlPath: string): string {
     const baseUrl = this.getCurrentApi();
-    const finalUrl = `${
-      baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl
-    }/${urlPath.startsWith('/') ? urlPath.slice(1) : urlPath}`;
+    const finalUrl = `${baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl
+      }/${urlPath.startsWith('/') ? urlPath.slice(1) : urlPath}`;
 
     console.log('url href', finalUrl);
     return finalUrl;

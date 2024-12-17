@@ -1,5 +1,5 @@
 import { CommandLineOptionsBuilder } from '../../../utils/cmdline';
-import runTask, { retry } from '../../../utils/ecs';
+import { runTask, retry } from '../../../utils/ecs';
 import accountManagerAbi from '../../../abi/account_manager_abi.json';
 import { BigNumber, ethers } from 'ethers';
 import {
@@ -22,7 +22,7 @@ const execAsync = util.promisify(require('child_process').exec);
 
 // We're currently allowed to run 256 vCPUs in total.  Our main worker
 // image uses 8, hence 32 task instances at most.
-const MAX_INSTANCES: number = 32 ;
+const MAX_INSTANCES: number = 32;
 
 function level(n: number, w: number, d: number): number {
   return Math.ceil(n / w) * d;
@@ -133,15 +133,15 @@ async function waitForPubkeyCommitmentMapperProof(
       processingQueueHead === null
         ? lastLoggedBlock >= blockNumber
         : (() => {
-            const headTaskBlockNumber = Number(
-              processingQueueHead.split(',')[1],
-            );
-            console.log(`head task block number: ${headTaskBlockNumber}`);
-            return (
-              lastLoggedBlock >= blockNumber &&
-              headTaskBlockNumber > blockNumber
-            );
-          })();
+          const headTaskBlockNumber = Number(
+            processingQueueHead.split(',')[1],
+          );
+          console.log(`head task block number: ${headTaskBlockNumber}`);
+          return (
+            lastLoggedBlock >= blockNumber &&
+            headTaskBlockNumber > blockNumber
+          );
+        })();
 
     if (blockHasBeenPassed) {
       console.log('pubkey commitment mapper proof found');

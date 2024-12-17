@@ -10,79 +10,55 @@ import del from 'rollup-plugin-delete';
 import { glob } from 'glob';
 import { createRequire } from 'node:module';
 
-if (process.argv.length !== 3) {
-  console.log(`
+main().catch(console.error);
+
+async function main() {
+  if (process.argv.length !== 3) {
+    console.log(`
     Usage:
         |yarn dendreth-bundle PATH|
 
       Called with:
         |yarn dendreth-bundle${process.argv.slice(2).join(' ')}|`);
-  process.exit(1);
-}
-
-const packageDir = `${path.resolve(process.argv[2])}/`;
-
-function tryResolve(id, parentId) {
-  const cjsResolve = (id, parentId) => {
-    const require = createRequire(parentId);
-    return require.resolve(id);
-  };
-
-  for (const resolve of [import.meta.resolve, cjsResolve]) {
-    try {
-      return resolve(id, parentId);
-    } catch (err) {
-      if (process.env.DEBUG_PACKAGE_RESOLUTION?.toLowerCase() === 'yes') {
-        console.log(
-          '----------------------------------------------------------------------------------------------------------',
-        );
-        console.log(resolve.name);
-        console.log({ id, parentId });
-        console.log(err);
-        console.log(
-          '----------------------------------------------------------------------------------------------------------',
-        );
-      }
-    }
+    process.exit(1);
   }
 
-  return null;
-}
+  const packageDir = `${path.resolve(process.argv[2])}/`;
+  process.chdir(packageDir);
 
-await Promise.all([
-  build(packageDir, 'esm'), //
-  build(packageDir, 'cjs'),
-])
-  .then(() =>
-    fs.rename(`${packageDir}/dist/esm/types`, `${packageDir}/dist/types`),
-  )
-  .then(() => console.log('Build finished successfully'))
-  .catch(console.error);
+  await Promise.all([
+    build(packageDir, 'esm'), //
+    build(packageDir, 'cjs'),
+  ])
+    .then(() =>
+      fs.rename(`${packageDir}/dist/esm/types`, `${packageDir}/dist/types`),
+    )
+    .then(() => console.log('Build finished successfully'))
+    .catch(console.error);
 
-async function build(dir, format) {
-  console.log(`Building ${packageDir} in ${format} format...`);
+  async function build(dir, format) {
+    console.log(`Building ${packageDir} in ${format} format...`);
 
-  let bundle;
-  try {
-    const config = createConfig(dir, format);
-    bundle = await rollup(config);
+    let bundle;
+    try {
+      const config = createConfig(dir, format);
+      bundle = await rollup(config);
 
-    for (const outputOptions of config.output) {
-      console.log(`Writing ${format}...`);
-      await bundle.write(outputOptions);
-      console.log(`Wrote ${format}`);
+      for (const outputOptions of config.output) {
+        console.log(`Writing ${format}...`);
+        await bundle.write(outputOptions);
+        console.log(`Wrote ${format}`);
+      }
+    } catch (error) {
+      console.error(error);
+      process.exit(1);
+    } finally {
+      await bundle?.close();
     }
-  } catch (error) {
-    console.error(error);
-    process.exit(1);
-  } finally {
-    await bundle?.close();
   }
 }
 
 function createConfig(dir, format) {
-  const require = createRequire(dir);
-
   return {
     input: Object.fromEntries(
       glob
@@ -110,12 +86,14 @@ function createConfig(dir, format) {
       const absPath = path.isAbsolute(id)
         ? id
         : id.startsWith('.')
-        ? path.resolve(parentId, id)
-        : tryResolve(id, parentId);
+          ? path.resolve(parentId, id)
+          : tryResolve(id, parentId);
 
-      const internal = absPath.startsWith(dir);
+      if (!absPath) {
+        throw new Error(`Module ${id} was not resolved. Parent module: ${parentId}.`);
+      }
 
-      return !internal;
+      return !absPath.startsWith(dir);
     },
     output: [
       {
@@ -150,4 +128,31 @@ function createConfig(dir, format) {
       }),
     ],
   };
+}
+
+function tryResolve(id, parentId) {
+  const cjsResolve = (id, parentId) => {
+    const require = createRequire(parentId);
+    return require.resolve(id);
+  };
+
+  for (const resolve of [import.meta.resolve, cjsResolve]) {
+    try {
+      return resolve(id, parentId);
+    } catch (err) {
+      if (process.env.DEBUG_PACKAGE_RESOLUTION?.toLowerCase() === 'yes') {
+        console.log(
+          '----------------------------------------------------------------------------------------------------------',
+        );
+        console.log(resolve.name);
+        console.log({ id, parentId });
+        console.log(err);
+        console.log(
+          '----------------------------------------------------------------------------------------------------------',
+        );
+      }
+    }
+  }
+
+  return null;
 }

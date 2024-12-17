@@ -3,11 +3,9 @@ import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
 import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
 import { bytesToHex, formatHex } from '@dendreth/utils/ts-utils/bls';
-import { hexToBits } from '@dendreth/utils/ts-utils/hex-utils';
 import { KeyPrefix, WorkQueue, Item } from '@mevitae/redis-work-queue';
 import CONSTANTS from '../../../../kv_db_constants.json';
 import { computeEpochAt } from '@dendreth/utils/ts-utils/ssz-utils';
-import { panic } from '@dendreth/utils/ts-utils/common-utils';
 import {
   convertValidatorToValidatorInput,
   getDummyValidatorInput,
@@ -76,9 +74,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
     config.slot !== undefined
       ? BigInt(config.slot)
       : await beaconApi.getHeadSlot();
-  const { beaconState } =
-    (await beaconApi.getBeaconState(slot)) ||
-    panic('Could not fetch beacon state');
+  const { beaconState } = await beaconApi.getBeaconState(slot);
 
   const currentSSZFork = await beaconApi.getCurrentSSZ(slot);
 
@@ -174,7 +170,7 @@ export async function getBalancesInput(options: GetBalancesInputParameterType) {
               .map(v => convertValidatorToValidatorInput(v)),
             ...Array(
               (j + 1) * VALIDATORS_COUNT -
-                Math.min((j + 1) * VALIDATORS_COUNT, validators.length),
+              Math.min((j + 1) * VALIDATORS_COUNT, validators.length),
             ).fill(getDummyValidatorInput()),
           ],
           withdrawalCredentials: [withdrawalCredentials],
