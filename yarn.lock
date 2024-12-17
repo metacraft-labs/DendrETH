@@ -2144,6 +2144,7 @@ __metadata:
     "@mevitae/redis-work-queue": "npm:^0.1.5"
     "@noble/bls12-381": "npm:^1.4.0"
     "@types/node": "npm:^22.9.0"
+    "@types/underscore": "npm:^1.13.0"
     chalk: "npm:^4.1.2"
     circom-pairing: "link:../../../vendor/circom-pairing/"
     circomlibjs: "npm:^0.1.7"
@@ -6592,6 +6593,13 @@ __metadata:
   dependencies:
     "@types/node": "npm:*"
   checksum: 10/53e23a1f9fb14a491c00425b2a4fc443817564d77be5e1b95fcbeb6d009551b62ea82ffc3e5ca0c6b9f6b186824ca6ec46e7450c1bcd6674a46d1325f0116e24
+  languageName: node
+  linkType: hard
+
+"@types/underscore@npm:^1.13.0":
+  version: 1.13.0
+  resolution: "@types/underscore@npm:1.13.0"
+  checksum: 10/938a6a0a878ce108046601a7cceeec9870428cc565a0c6d7891b7ad39e7570f1f75a1c02bf81baf23c7c7948ef0693d00ccd1a8e05894a52fed4c584a4b7172e
   languageName: node
   linkType: hard
 

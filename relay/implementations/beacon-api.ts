@@ -18,7 +18,7 @@ import {
 } from '@dendreth/utils/ts-utils/ssz-utils';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 import { prometheusTiming } from '@dendreth/utils/ts-utils/prometheus-utils';
-import { panic, sleep } from '@dendreth/utils/ts-utils/common-utils';
+import { sleep } from '@dendreth/utils/ts-utils/common-utils';
 import EventSource from 'eventsource';
 // @ts-ignore
 import { StateId } from '@lodestar/api/beacon/routes/beacon';
@@ -286,8 +286,7 @@ export class BeaconApi implements IBeaconApi {
     const { beaconState: prevBeaconSate, stateTree: prevStateTree } =
       await prometheusTiming(
         async () =>
-          (await this.getBeaconState(BigInt(prevSlot))) ||
-          panic('Could not fetch beacon state'),
+          await this.getBeaconState(BigInt(prevSlot)),
         'getPrevBeaconState',
       );
 
@@ -315,8 +314,7 @@ export class BeaconApi implements IBeaconApi {
       stateTree: prevFinalizedBeaconStateTree,
     } = await prometheusTiming(
       async () =>
-        (await this.getBeaconState(BigInt(finalityHeader.slot))) ||
-        panic('Could not fetch beacon state'),
+        await this.getBeaconState(BigInt(finalityHeader.slot)),
       'getPrevFinalizedBeaconState',
     );
 
@@ -372,8 +370,7 @@ export class BeaconApi implements IBeaconApi {
   }> {
     const { beaconState, stateTree } = await prometheusTiming(
       async () =>
-        (await this.getBeaconState(BigInt(slot))) ||
-        panic('Could not fetch beacon state'),
+        await this.getBeaconState(BigInt(slot)),
       'getBeaconState',
     );
 
