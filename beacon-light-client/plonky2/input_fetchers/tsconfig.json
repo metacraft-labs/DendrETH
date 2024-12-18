@@ -1,11 +1,13 @@
 {
   "extends": "../../../tsconfig.json",
   "compilerOptions": {
+    "preserveSymlinks": true,
     "rootDir": ".",
     "baseUrl": "."
   },
   "exclude": ["dist"],
-  "files": [
-    "./kv_db_constants.json"
+  "include": [
+    "**/*.ts",
+    "**/*.json",
   ]
 }

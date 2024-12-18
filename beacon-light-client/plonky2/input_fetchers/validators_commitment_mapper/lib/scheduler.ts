@@ -19,7 +19,7 @@ import {
 } from '@dendreth/relay/types/types';
 import chalk from 'chalk';
 import { KeyPrefix, WorkQueue, Item } from '@mevitae/redis-work-queue';
-import CONSTANTS from '../../../kv_db_constants.json';
+import CONSTANTS from '../../kv_db_constants.json'; // PESHO
 import {
   commitmentMapperInputFromValidator,
   createDummyCommitmentMapperInput,

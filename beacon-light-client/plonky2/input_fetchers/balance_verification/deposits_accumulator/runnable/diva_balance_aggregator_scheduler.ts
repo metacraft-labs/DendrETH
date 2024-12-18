@@ -10,7 +10,7 @@ import {
   Redis,
   makeRedisURLSecret,
 } from '@dendreth/relay/implementations/redis';
-import CONSTANTS from '../../../../kv_db_constants.json';
+import CONSTANTS from '../../../kv_db_constants.json'; // PESHO
 import { sleep } from '@dendreth/utils/ts-utils/common-utils';
 import JSONbig from 'json-bigint';
 import 'dotenv/config';

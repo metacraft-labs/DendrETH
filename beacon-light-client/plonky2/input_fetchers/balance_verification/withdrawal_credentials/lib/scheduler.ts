@@ -4,13 +4,14 @@ import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
 import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
 import { bytesToHex, formatHex } from '@dendreth/utils/ts-utils/bls';
 import { KeyPrefix, WorkQueue, Item } from '@mevitae/redis-work-queue';
-import CONSTANTS from '../../../../kv_db_constants.json';
+import CONSTANTS from '../../../kv_db_constants.json'; // PESHO
 import { computeEpochAt } from '@dendreth/utils/ts-utils/ssz-utils';
 import {
   convertValidatorToValidatorInput,
   getDummyValidatorInput,
 } from '../../common';
-import commonConfig from '../../../../common_config.json';
+import commonConfig from '../../../common_config.json'; // PESHO
+import type { CommonConfig } from '../../../common_config';
 
 const commonConfigChecked = commonConfig satisfies CommonConfig;
 

@@ -12,13 +12,14 @@ import {
 } from '@dendreth/utils/ts-utils/common-utils';
 import { Redis as RedisLocal } from '@dendreth/relay/implementations/redis';
 import { Redis } from '@dendreth/relay/implementations/redis';
-import CONSTANTS from '../../../../kv_db_constants.json';
+import CONSTANTS from '../../../kv_db_constants.json'; // PESHO
 import commonConfig from '../../../../common_config.json';
 import { getCommitmentMapperProof } from '../../../utils/common_utils';
 import ValidatorsAccumulator from '../../../abi/validators_accumulator_abi.json';
 import { getEvents } from './event_fetcher';
 import chalk from 'chalk';
 import { queryContractDeploymentBlockNumber } from './utils';
+import type { CommonConfig } from '../../../common_config';
 
 enum Events {
   Deposited = 'Deposited',

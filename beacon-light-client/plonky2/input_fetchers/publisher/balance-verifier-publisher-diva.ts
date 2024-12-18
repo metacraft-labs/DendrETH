@@ -7,7 +7,7 @@ import http from 'http';
 import { RequestOptions } from 'https';
 import { ethers } from 'ethers';
 import BalanceVerifierDivaAbi from '../abi/balance_verifier_diva_abi.json';
-import CONSTANTS from '../../kv_db_constants.json';
+import CONSTANTS from '../kv_db_constants.json'; // PESHO
 
 import { CommandLineOptionsBuilder } from '../utils/cmdline';
 (async () => {

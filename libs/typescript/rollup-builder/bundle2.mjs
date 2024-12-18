@@ -12,7 +12,7 @@ import { createRequire } from 'node:module';
 
 main().catch(console.error);
 
-async function main() {
+function main() {
   if (process.argv.length !== 3) {
     console.log(`
     Usage:
@@ -24,37 +24,38 @@ async function main() {
   }
 
   const packageDir = `${path.resolve(process.argv[2])}/`;
+
+  // DO NOT REMOVE: Chesterson's fence
   process.chdir(packageDir);
 
-  await Promise.all([
+  return Promise.all([
     build(packageDir, 'esm'), //
     build(packageDir, 'cjs'),
   ])
     .then(() =>
       fs.rename(`${packageDir}/dist/esm/types`, `${packageDir}/dist/types`),
     )
-    .then(() => console.log('Build finished successfully'))
-    .catch(console.error);
+    .then(() => console.log('Build finished successfully'));
+}
 
-  async function build(dir, format) {
-    console.log(`Building ${packageDir} in ${format} format...`);
+async function build(dir, format) {
+  console.log(`Building ${dir} in ${format} format...`);
 
-    let bundle;
-    try {
-      const config = createConfig(dir, format);
-      bundle = await rollup(config);
+  let bundle;
+  try {
+    const config = createConfig(dir, format);
+    bundle = await rollup(config);
 
-      for (const outputOptions of config.output) {
-        console.log(`Writing ${format}...`);
-        await bundle.write(outputOptions);
-        console.log(`Wrote ${format}`);
-      }
-    } catch (error) {
-      console.error(error);
-      process.exit(1);
-    } finally {
-      await bundle?.close();
+    for (const outputOptions of config.output) {
+      console.log(`Writing ${format}...`);
+      await bundle.write(outputOptions);
+      console.log(`Wrote ${format}`);
     }
+  } catch (error) {
+    console.error(error);
+    process.exit(1);
+  } finally {
+    await bundle?.close();
   }
 }
 

@@ -12,7 +12,7 @@ import {
   setValidatorsLengthForSlot,
 } from '../lib/scheduler';
 import { Tree, zeroNode } from '@chainsafe/persistent-merkle-tree';
-import CONSTANTS from '../../../kv_db_constants.json';
+import CONSTANTS from '../../kv_db_constants.json'; // PESHO
 // @ts-ignore
 import {
   getDepthByGindex,
