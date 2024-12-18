@@ -1,0 +1,12 @@
+{
+  "pubkey-commitment-mapper": {
+    "blob-storage": {
+      "type": "filesystem",
+      "directory": "./proofs"
+    },
+    "metadata-storage": {
+      "host": "localhost",
+      "port": 6379
+    }
+  }
+}

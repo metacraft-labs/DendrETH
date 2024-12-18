@@ -8,7 +8,8 @@ import {
 import validatorsAccumulatorAbi from '../../../abi/validators_accumulator_abi.json';
 
 import { CommandLineOptionsBuilder } from '../../../utils/cmdline';
-import config from '../../../../common_config.json';
+import config from '../../../common_config.json';
+import type { CommonConfig } from '../../../common_config';
 
 config satisfies CommonConfig;
 

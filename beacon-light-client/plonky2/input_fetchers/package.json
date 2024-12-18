@@ -36,6 +36,7 @@
     "ethers": "^5.7.0",
     "ioredis": "^5.3.2",
     "json-bigint": "^1.0.0",
+    "tslib": "^2.8.1",
     "underscore": "^1.13.7",
     "web3": "1.10.4",
     "yargs": "^17.7.2"

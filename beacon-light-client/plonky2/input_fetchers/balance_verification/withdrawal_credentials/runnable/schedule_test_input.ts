@@ -3,7 +3,7 @@ import {
   GetBalancesInputParameterType,
   getBalancesInput,
 } from '../lib/scheduler';
-import config from '../../../../common_config.json';
+import config from '../../../common_config.json';
 
 (async () => {
   const options: GetBalancesInputParameterType & Record<string, any> = {
@@ -21,7 +21,7 @@ import config from '../../../../common_config.json';
 
   const scheduler = new CommitmentMapperScheduler();
   await scheduler.init(options);
-  await scheduler.start(true);
+  await scheduler.start();
   await scheduler.dispose();
 
   await getBalancesInput(options);

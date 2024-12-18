@@ -6,7 +6,7 @@ import {
 } from '@dendreth/relay/implementations/beacon-api';
 import { Redis } from '@dendreth/relay/implementations/redis';
 import { IndexedValidator } from '@dendreth/relay/types/types';
-import config from '../../../common_config.json';
+import config from '../../common_config.json';
 import {
   CommitmentMapperScheduler,
   setValidatorsLengthForSlot,

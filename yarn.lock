@@ -2153,6 +2153,7 @@ __metadata:
     ethers: "npm:^5.7.0"
     ioredis: "npm:^5.3.2"
     json-bigint: "npm:^1.0.0"
+    tslib: "npm:^2.8.1"
     tsx: "npm:^4.19.2"
     underscore: "npm:^1.13.7"
     web3: "npm:1.10.4"

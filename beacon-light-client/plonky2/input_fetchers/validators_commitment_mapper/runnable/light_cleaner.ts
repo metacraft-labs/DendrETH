@@ -29,7 +29,7 @@ import { Redis } from '@dendreth/relay/implementations/redis';
       );
       const queue = new WorkQueue(prefix);
       try {
-        await lightClean.call(queue, redis, prefix);
+        await lightClean.call(queue, redis.client, prefix);
       } catch { }
     }
 
