@@ -68,7 +68,7 @@ export async function addUpdate(
   return true;
 }
 
-async function getNextSlot(
+export async function getNextSlot(
   slot: number,
   slotsJump: number,
   headSlot: number,

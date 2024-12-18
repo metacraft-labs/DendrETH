@@ -6,3 +6,4 @@ import './remove-repeat-job';
 import './deploy-balance-verifier';
 import './balance-verifier-publisher';
 import './change-adapter-address';
+import './update-sync-committee-script';

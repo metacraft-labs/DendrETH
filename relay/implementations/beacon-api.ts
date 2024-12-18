@@ -164,6 +164,19 @@ export class BeaconApi implements IBeaconApi {
     return Number(currentHead.data.header.message.slot);
   }
 
+  async getCurrentFinalizedSlot(): Promise<number> {
+    logger.info('Getting CurrentFinalizedSlot..');
+
+    const currentFinalizedBlock = await prometheusTiming(
+      async () =>
+        (await this.fetchWithFallback('/eth/v1/beacon/headers/finalized')).json(),
+      'getCurrentFinalizedSlot',
+    );
+    logger.info('CurrentFinalizedSlot: ', currentFinalizedBlock.data.header.message.slot);
+
+    return Number(currentFinalizedBlock.data.header.message.slot);
+  }
+
   async getGenesisData(): Promise<
     ValueOfFields<{
       genesisTime: UintNumberType;
