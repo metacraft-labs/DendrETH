@@ -67,9 +67,9 @@ function createConfig(dir, format) {
         .filter(
           file =>
             !(
-              file.endsWith('spec.ts') ||
-              file.endsWith('.d.ts') ||
-              file.endsWith('.d.ts.map')
+              file.endsWith('.test.ts') ||
+              file.endsWith('.spec.ts') ||
+              file.endsWith('.d.ts')
             ),
         )
         .map(file => {

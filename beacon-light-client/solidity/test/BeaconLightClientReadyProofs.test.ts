@@ -1,20 +1,26 @@
 import * as path from 'path';
+import { readFile } from 'node:fs/promises';
 import { ethers } from 'hardhat';
 import { getFilesInDir, Proof } from './utils';
 import { convertProofToSolidityCalldata } from '@dendreth/utils/ts-utils/zk-utils';
-import INITIAL_UPDATE from '../../../vendor/eth2-light-client-updates/prater/capella-updates-94/update_5601823_5609044.json';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 
 const logger = getGenericLogger();
 
-describe('BeaconLightClientReadyProofs', async function () {
+describe('BeaconLightClientReadyProofs', async function() {
   let proofs: Proof[];
   let publics: any[];
   let updates: any[];
 
-  let blc;
+  let blc: any;
+  let INITIAL_UPDATE: {
+    attestedHeaderRoot: string;
+    attestedHeaderSlot: string;
+    finalizedHeaderRoot: string;
+    finalizedExecutionStateRoot: string;
+  };
 
-  beforeEach(async function () {
+  this.beforeAll(async function() {
     const dir = path.join(
       __dirname,
       '..',
@@ -25,6 +31,8 @@ describe('BeaconLightClientReadyProofs', async function () {
       'prater',
       'capella-updates-94',
     );
+
+    INITIAL_UPDATE = JSON.parse(await readFile(`${dir}/update_5601823_5609044.json`, 'ascii'));
 
     proofs = getFilesInDir(dir, 'proof*.json').map(p =>
       JSON.parse(p.toString()),
@@ -39,19 +47,18 @@ describe('BeaconLightClientReadyProofs', async function () {
     );
   });
 
-  beforeEach(async function () {
-    blc = await (
-      await ethers.getContractFactory('BeaconLightClient')
-    ).deploy(
-      INITIAL_UPDATE.attestedHeaderRoot,
-      INITIAL_UPDATE.attestedHeaderSlot,
-      INITIAL_UPDATE.finalizedHeaderRoot,
-      INITIAL_UPDATE.finalizedExecutionStateRoot,
-      '0x07000000628941ef21d1fe8c7134720add10bb91e3b02c007e0046d2472c6695',
-    );
+  beforeEach(async function() {
+    blc = await ethers.getContractFactory('BeaconLightClient')
+      .then(factory => factory.deploy(
+        INITIAL_UPDATE.attestedHeaderRoot,
+        INITIAL_UPDATE.attestedHeaderSlot,
+        INITIAL_UPDATE.finalizedHeaderRoot,
+        INITIAL_UPDATE.finalizedExecutionStateRoot,
+        '0x07000000628941ef21d1fe8c7134720add10bb91e3b02c007e0046d2472c6695',
+      ));
   });
 
-  it('Importing real data', async function () {
+  it('Importing real data', async function() {
     logger.info(' >>> Begin importing of real updates');
     for (let i = 1; i < updates.length; i++) {
       const proof = await convertProofToSolidityCalldata(proofs[i], publics[i]);
@@ -65,7 +72,7 @@ describe('BeaconLightClientReadyProofs', async function () {
         },
       );
 
-      const result = await transaction.wait();
+      await transaction.wait();
 
       logger.info(` >>> Successfully imported update ${i}!`);
     }
