@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-DENDRETH_DIR=$(git rev-parse --show-toplevel)
-
 # Check if --force_recompile argument was passed
 if [ "$1" == "--force_recompile" ]; then
   extra_args="--force_recompile"
@@ -11,12 +9,12 @@ fi
 
 # generate the ssz_num test cases
 (
-  cd "$DENDRETH_DIR/beacon-light-client/circom/test"
+  cd "$GIT_ROOT/beacon-light-client/circom/test"
   yarn tsx ./gen_ssz_num_positive_tests.ts
 )
 
 # Get the list of all directories one level deep inside the "test" folder
-folders=$(find ${DENDRETH_DIR}/beacon-light-client/circom/test/* -maxdepth 0 -type d)
+folders=$(find ${GIT_ROOT}/beacon-light-client/circom/test/* -maxdepth 0 -type d)
 
 # Loop through the directories and run tests for each folder
 for folder in $folders; do

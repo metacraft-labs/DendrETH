@@ -16,10 +16,10 @@ function main() {
   if (process.argv.length !== 3) {
     console.log(`
     Usage:
-        |yarn dendreth-bundle PATH|
+        |yarn bundle PATH|
 
       Called with:
-        |yarn dendreth-bundle${process.argv.slice(2).join(' ')}|`);
+        |yarn bundle${process.argv.slice(2).join(' ')}|`);
     process.exit(1);
   }
 

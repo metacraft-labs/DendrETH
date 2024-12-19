@@ -4,11 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "tsc -p ./tsconfig.json",
     "build:tsc": "tsc -p ./tsconfig.json",
     "build:sol": "hardhat compile",
     "ts": "yarn node --import tsx",
     "test": "yarn hardhat test",
-    "gas": "yarn hardhat run test/utils/gas-reporter/src/index.ts"
+    "gas": "yarn hardhat run test/utils/gas-reporter/src/index.ts",
+    "bundle": "yarn rollup-bundle ."
   },
   "type": "commonjs",
   "author": "",
@@ -18,6 +20,7 @@
     "@chainsafe/blst": "0.2.4",
     "@chainsafe/ssz": "0.14.3",
     "@dendreth/relay": "workspace:^",
+    "@dendreth/rollup": "workspace:^",
     "@dendreth/utils": "workspace:^",
     "@effect/schema": "^0.67.5",
     "@iden3/binfileutils": "^0.0.11",

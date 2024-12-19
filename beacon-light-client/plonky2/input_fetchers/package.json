@@ -7,11 +7,12 @@
     "build:tsc": "tsc -p ./tsconfig.json",
     "build:sol": "hardhat compile",
     "test": "yarn hardhat test",
-    "gas": "yarn hardhat run test/utils/gas-reporter/src/index.ts"
+    "gas": "yarn hardhat run test/utils/gas-reporter/src/index.ts",
+    "bundle": "yarn rollup-bundle ."
   },
   "type": "commonjs",
   "devDependencies": {
-    "@dendreth/rollup-builder": "workspace:^",
+    "@dendreth/rollup": "workspace:^",
     "@types/node": "^22.9.0",
     "@types/underscore": "^1.13.0",
     "tsx": "^4.19.2"

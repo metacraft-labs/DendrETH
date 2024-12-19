@@ -7,7 +7,7 @@ import { ethers } from 'ethers';
 import { sleep } from '@dendreth/utils/ts-utils/common-utils';
 import { GatewayIntentBits, Events, Partials } from 'discord.js';
 import * as Discord from 'discord.js';
-import lc_abi_json from '@dendreth/solidity/artifacts/BeaconLightClient.json';
+import beacon_light_client_sc_abi from './abi/beacon_light_client_abi.json';
 
 const env = process.env;
 
@@ -98,7 +98,7 @@ class DiscordMonitor {
     for (let endpoint in this.contracts) {
       let curLightClient = new ethers.Contract(
         this.contracts[endpoint].Address,
-        lc_abi_json.abi,
+        beacon_light_client_sc_abi,
         new ethers.providers.JsonRpcProvider(this.contracts[endpoint].RPC), // Provider
       );
 
