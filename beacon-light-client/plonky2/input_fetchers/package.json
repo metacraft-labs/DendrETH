@@ -40,5 +40,9 @@
     "underscore": "^1.13.7",
     "web3": "1.10.4",
     "yargs": "^17.7.2"
+  },
+  "bin": {
+    "validators_commitment_mapper_cjs": "beacon-light-client/plonky2/input_fetchers/dist/cjs/validators_commitment_mapper/runnable/run_scheduler.cjs",
+    "validators_commitment_mapper_esm": "beacon-light-client/plonky2/input_fetchers/dist/esm/validators_commitment_mapper/runnable/run_scheduler.esm"
   }
 }

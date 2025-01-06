@@ -2147,6 +2147,9 @@ __metadata:
     underscore: "npm:^1.13.7"
     web3: "npm:1.10.4"
     yargs: "npm:^17.7.2"
+  bin:
+    validators_commitment_mapper_cjs: beacon-light-client/plonky2/input_fetchers/dist/cjs/validators_commitment_mapper/runnable/run_scheduler.cjs
+    validators_commitment_mapper_esm: beacon-light-client/plonky2/input_fetchers/dist/esm/validators_commitment_mapper/runnable/run_scheduler.esm
   languageName: unknown
   linkType: soft
 
@@ -2198,7 +2201,6 @@ __metadata:
     "@rollup/plugin-typescript": "npm:^11.1.6"
     "@types/rollup-plugin-peer-deps-external": "npm:^2"
     glob: "npm:^11.0.0"
-    import-meta-resolve: "npm:^4.1.0"
     rollup: "npm:^4.20.0"
     rollup-plugin-delete: "npm:^2.0.0"
     rollup-plugin-peer-deps-external: "npm:^2.2.4"
@@ -11252,13 +11254,6 @@ __metadata:
   bin:
     import-local-fixture: fixtures/cli.js
   checksum: 10/bfcdb63b5e3c0e245e347f3107564035b128a414c4da1172a20dc67db2504e05ede4ac2eee1252359f78b0bfd7b19ef180aec427c2fce6493ae782d73a04cddd
-  languageName: node
-  linkType: hard
-
-"import-meta-resolve@npm:^4.1.0":
-  version: 4.1.0
-  resolution: "import-meta-resolve@npm:4.1.0"
-  checksum: 10/40162f67eb406c8d5d49266206ef12ff07b54f5fad8cfd806db9efe3a055958e9969be51d6efaf82e34b8bea6758113dcc17bb79ff148292a4badcabc3472f22
   languageName: node
   linkType: hard
 
