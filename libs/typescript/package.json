@@ -7,8 +7,7 @@
     "build:tsc": "tsc -p ./tsconfig.json",
     "build:sol": "hardhat compile",
     "test": "yarn hardhat test",
-    "gas": "yarn hardhat run test/utils/gas-reporter/src/index.ts",
-    "bundle": "yarn rollup-bundle ."
+    "gas": "yarn hardhat run test/utils/gas-reporter/src/index.ts"
   },
   "type": "commonjs",
   "devDependencies": {

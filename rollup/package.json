@@ -7,6 +7,11 @@
     "bundler",
     "bundle"
   ],
+  "scripts": {
+    "build:workspace": "yarn rollup-bundle $INIT_CWD",
+    "build:recursive": "yarn workspaces foreach --from $0 -Rp --exclude '{.,@dendreth/rollup}' --topological-dev run build:workspace",
+    "build:all": "yarn workspaces foreach --all -p --exclude '{.,@dendreth/rollup,circom}' --topological-dev run build:workspace"
+  },
   "dependencies": {
     "@rollup/plugin-commonjs": "^28.0.0",
     "@rollup/plugin-json": "^6.1.0",
