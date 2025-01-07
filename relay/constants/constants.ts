@@ -1,5 +1,6 @@
 export type Config = {
   SLOTS_PER_EPOCH: number;
+  SECONDS_PER_SLOT: number;
   EPOCHS_PER_SYNC_COMMITTEE_PERIOD: number;
   GENESIS_FORK_VERSION: string;
   FORK_VERSION: string;
@@ -10,6 +11,7 @@ export type Config = {
 
 export const PRATER: Config = {
   SLOTS_PER_EPOCH: 32,
+  SECONDS_PER_SLOT: 12,
   EPOCHS_PER_SYNC_COMMITTEE_PERIOD: 256,
   GENESIS_FORK_VERSION: '0x00001020',
   FORK_VERSION: '0x03001020',

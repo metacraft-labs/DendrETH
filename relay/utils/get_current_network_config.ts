@@ -5,6 +5,7 @@ interface Config {
   NETWORK_NAME: string;
   BEACON_REST_API: string[];
   SLOTS_PER_EPOCH: number;
+  SECONDS_PER_SLOT: number;
   EPOCHS_PER_SYNC_COMMITTEE_PERIOD: number;
   GENESIS_FORK_VERSION: string;
   FORK_VERSION: string;
@@ -16,6 +17,7 @@ const defaultConfig: Config = {
   NETWORK_NAME: '',
   BEACON_REST_API: [],
   SLOTS_PER_EPOCH: 0,
+  SECONDS_PER_SLOT: 0,
   EPOCHS_PER_SYNC_COMMITTEE_PERIOD: 0,
   GENESIS_FORK_VERSION: '',
   FORK_VERSION: '',
@@ -58,6 +60,7 @@ export async function getNetworkConfig(
   const config_genesis = await beaconApi.getGenesisData();
 
   config.SLOTS_PER_EPOCH = Number(await beaconApi.getSlotsPerEpoch());
+  config.SECONDS_PER_SLOT = Number(await beaconApi.getSecondsPerSlot());
   config.EPOCHS_PER_SYNC_COMMITTEE_PERIOD = Number(
     await beaconApi.getSlotsPerSyncCommitteePeriod(),
   );

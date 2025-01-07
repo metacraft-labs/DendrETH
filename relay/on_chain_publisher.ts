@@ -53,6 +53,7 @@ export async function publishProofs(
       beaconApi,
       smartContract,
       hashiAdapterContract,
+      networkConfig,
       rpcEndpoint,
       transactionSpeed,
       networkName,
@@ -65,6 +66,7 @@ export async function publishProofs(
           beaconApi,
           smartContract,
           hashiAdapterContract,
+          networkConfig,
           rpcEndpoint,
           transactionSpeed,
         );
@@ -83,6 +85,7 @@ export async function drainUpdatesInRedis(
   beaconApi: IBeaconApi,
   smartContract: ISmartContract,
   hashiAdapterContract: Contract | undefined,
+  networkConfig: Config,
   rpcEndpoint?: string,
   transactionSpeed: TransactionSpeed = 'avg',
   networkName?: string,
@@ -112,6 +115,7 @@ export async function drainUpdatesInRedis(
           beaconApi,
           lastSlotOnChain,
           hashiAdapterContract,
+          networkConfig,
           rpcEndpoint,
           transactionSpeed,
           networkName,
@@ -142,6 +146,7 @@ export async function postUpdateOnChain(
   beaconApi: IBeaconApi,
   lastSlotOnChain: number,
   hashiAdapterContract: Contract | undefined,
+  networkConfig: Config,
   rpcEndpoint?: string,
   transactionSpeed: TransactionSpeed = 'avg',
   networkName?: string,
@@ -214,10 +219,12 @@ export async function postUpdateOnChain(
 
   logger.info(`Current slot on the network is ${currentHeadSlot}`);
 
-  let prevSlotBehind = ((currentHeadSlot - lastSlotOnChain) * 12) / 60;
+  let prevSlotBehind =
+    ((currentHeadSlot - lastSlotOnChain) * networkConfig.SECONDS_PER_SLOT) / 60;
   logger.info(`Prev slot is ${prevSlotBehind} minutes behind`);
 
-  let transactionBehind = ((currentHeadSlot - transactionSlot) * 12) / 60;
+  let transactionBehind =
+    ((currentHeadSlot - transactionSlot) * networkConfig.SECONDS_PER_SLOT) / 60;
   logger.info(`Transaction is ${transactionBehind} minutes behind`);
 
   if (networkName) {
@@ -289,7 +296,9 @@ async function askForUpdates(
       ) {}
 
       let after = Date.now();
-      await sleep(12000 * slotsJump - (after - before));
+      await sleep(
+        networkConfig.SECONDS_PER_SLOT * 1000 * slotsJump - (after - before),
+      );
     } catch (e) {
       logger.error(`Error while fetching update ${e}`);
     }

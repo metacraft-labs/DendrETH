@@ -44,6 +44,15 @@ export class BeaconApi implements IBeaconApi {
     return BigInt(slotsPerEpoch);
   }
 
+  async getSecondsPerSlot(): Promise<number> {
+    const config = await (
+      await this.fetchWithFallback('/eth/v1/config/spec')
+    ).json();
+
+    const secondsPerSlot = config.data.SECONDS_PER_SLOT;
+    return secondsPerSlot;
+  }
+
   async getSlotsPerSyncCommitteePeriod(): Promise<bigint> {
     const config = await (
       await this.fetchWithFallback('/eth/v1/config/spec')
