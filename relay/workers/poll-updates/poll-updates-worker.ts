@@ -6,12 +6,10 @@ import {
   UPDATE_POLING_QUEUE,
 } from '../../constants/constants';
 import doUpdate from './do_update';
-import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
+import { getBeaconApi } from '../../implementations/beacon-api';
 import { checkConfig } from '@dendreth/utils/ts-utils/common-utils';
-import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
 import { initPrometheusSetup } from '@dendreth/utils/ts-utils/prometheus-utils';
 
-const logger = getGenericLogger();
 initPrometheusSetup();
 
 (async () => {

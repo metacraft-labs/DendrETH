@@ -1,8 +1,8 @@
-import { SolidityContract } from '@dendreth/relay/implementations/solidity-contract';
+import { SolidityContract } from '../implementations/solidity-contract';
 import {
   getBeaconApi,
   BeaconApi,
-} from '@dendreth/relay/implementations/beacon-api';
+} from '../implementations/beacon-api';
 import { ethers } from 'ethers';
 import { sleep } from '@dendreth/utils/ts-utils/common-utils';
 import { GatewayIntentBits, Events, Partials } from 'discord.js';
