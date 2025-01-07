@@ -64,7 +64,9 @@
     "test": "jest --verbose --silent -i",
     "test-emcc": "USE_EMCC=1 jest --verbose --silent",
     "ts": "yarn node --import tsx",
-    "build-plonky-2": "tsc -p beacon-light-client/plonky2/input_fetchers/tsconfig.json"
+    "build-plonky-2": "tsc -p beacon-light-client/plonky2/input_fetchers/tsconfig.json",
+    "build:recursive": "yarn workspaces foreach --from $0 -Rp --exclude '{.,@dendreth/rollup}' --topological-dev run rollup:build-workspace",
+    "build:all": "yarn workspaces foreach --all -p --exclude '{.,@dendreth/rollup,circom}' --topological-dev run rollup:build-workspace"
   },
   "dependencies": {
     "redis-commander": "^0.8.0",

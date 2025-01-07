@@ -61,6 +61,7 @@ async function build(dir, format) {
 
 function createConfig(dir, format) {
   return {
+    preserveSymlinks: true,
     input: Object.fromEntries(
       glob
         .globSync(`${dir}/**/*.ts`)
@@ -100,7 +101,7 @@ function createConfig(dir, format) {
       {
         dir: `${dir}/dist/${format}`,
         format: format,
-        entryFileNames: `[name].${format}`,
+        entryFileNames: `[name].${{ esm: 'mjs', cjs: 'cjs' }[format]}`,
       },
     ],
     plugins: [

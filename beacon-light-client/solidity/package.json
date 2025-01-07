@@ -56,7 +56,11 @@
     "typescript": "5.2.2"
   },
   "exports": {
-    "./*": "./*.ts",
+    "./*": {
+      "require": "./dist/cjs/*.cjs",
+      "import": "./dist/esm/*.mjs",
+      "types": "./*.ts"
+    },
     "./artifacts/BeaconLightClient.json": "./artifacts/contracts/bridge/src/truth/eth/BeaconLightClient.sol/BeaconLightClient.json"
   }
 }

@@ -49,6 +49,10 @@
   },
   "types": "./src/index.ts",
   "exports": {
-    "./*": "./*.ts"
+    "./*": {
+      "require": "./dist/cjs/*.cjs",
+      "import": "./dist/esm/*.mjs",
+      "types": "./*.ts"
+    }
   }
 }

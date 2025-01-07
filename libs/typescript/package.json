@@ -36,6 +36,10 @@
     "yargs": "^17.7.2"
   },
   "exports": {
-    "./*": "./*.ts"
+    "./*": {
+      "require": "./dist/cjs/*.cjs",
+      "import": "./dist/esm/*.mjs",
+      "types": "./*.ts"
+    }
   }
 }
