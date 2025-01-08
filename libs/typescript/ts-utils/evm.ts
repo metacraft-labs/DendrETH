@@ -1,4 +1,4 @@
-const networks = ['mainnet', 'sepolia', 'chiado', 'lukso'] as const;
+const networks = ['homestead', 'sepolia', 'chiado', 'lukso', 'xdai'] as const;
 
 export type NetworkName = (typeof networks)[number];
 
@@ -43,7 +43,7 @@ export const txHash = (hexDataString: string): TxHash | null => {
 };
 
 export const explorerUrls: Record<string, any> = {
-  mainnet: {
+  homestead: {
     tx: txHash => `https://etherscan.io/tx/${txHash}`,
     address: address => `https://etherscan.io/address/${address}`,
   },
@@ -55,6 +55,10 @@ export const explorerUrls: Record<string, any> = {
     tx: txHash => `https://gnosis-chiado.blockscout.com/tx/${txHash}`,
     address: address =>
       `https://gnosis-chiado.blockscout.com/address/${address}`,
+  },
+  xdai: {
+    tx: txHash => `https://gnosisscan.io/tx/${txHash}`,
+    address: address => `https://gnosisscan.io/address/${address}`,
   },
   lukso: {
     tx: txHash =>
