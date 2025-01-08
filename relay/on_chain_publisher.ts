@@ -96,7 +96,7 @@ export async function drainUpdatesInRedis(
   }
   isDrainRunning = true;
   let failedNumber = 0;
-  while (true) {
+  while (isDrainRunning) {
     try {
       const lastSlotOnChain = await getSlotOnChain(smartContract, beaconApi);
 
@@ -241,6 +241,11 @@ async function handleFailure(
   scopeError: string,
   failedNumber: number,
 ): Promise<[number, boolean]> {
+  if (error.code === "INSUFFICIENT_FUNDS") {
+    log(error, `Insufficient funds in ${scopeError}`, 'STOPPING');
+    isDrainRunning = false;
+    return [failedNumber, isDrainRunning];
+  }
   if (failedNumber > 10) {
     log(error, `ERROR occurred in ${scopeError}`, 'STOPPING');
     isDrainRunning = false;
