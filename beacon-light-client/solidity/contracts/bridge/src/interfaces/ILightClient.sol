@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.20;
 
 interface ILightClient {
   struct LightClientUpdate {
@@ -32,5 +32,5 @@ interface ILightClient {
 
   function lightClientUpdate(
     LightClientUpdate calldata update
-  ) external payable;
+  ) external;
 }

@@ -45,7 +45,7 @@ for key in ${keys}; do
 
     # Use jq to extract pi_a, pi_b, pi_c, and public
     extracted_proof=$(echo "${json_data}" | jq '.proof | {pi_a, pi_b, pi_c}')
-    extracted_public=$(echo "${json_data}" | jq '.public')
+    extracted_public=$(echo "${json_data}" | jq '.proof.public')
 
     # Extract update data from proofInput
     nextHeaderHash_bin=$(echo "${json_data}" | jq -r '.proofInput.nextHeaderHash // empty | map(.) | join("")')

@@ -18,7 +18,7 @@ export const getConstructorArgs = async (
 
   let result = sha256(
     config.FORK_VERSION.padEnd(66, '0') +
-      config.GENESIS_VALIDATORS_ROOT.slice(2),
+      config.GENESIS_VALIDATORS_ROOT,
   );
 
   return [
