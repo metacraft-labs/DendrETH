@@ -1,45 +1,34 @@
 import { ethers } from 'ethers';
 import * as Discord from 'discord.js';
-import contractAbi from '../../beacon-light-client/solidity/tasks/hashi_abi.json';
+import contractAbi from '../../beacon-light-client/solidity/artifacts/contracts/bridge/src/truth/eth/BeaconLightClient.sol/BeaconLightClient.json';
 import { getEnvString } from '@dendreth/utils/ts-utils/common-utils';
 
-async function getLastEventTime(
+async function startStateMonitor(
   contract: ethers.Contract,
-  network: string,
-): Promise<number> {
-  const latestBlock = await contract.provider.getBlockNumber();
-  const filter = contract.filters.HashStored();
+): Promise<() => number> {
+  let lastKnownState = await contract.optimisticHeaderSlot();
+  let lastUpdateTime = Date.now();
 
-  const events = await contract.queryFilter(
-    filter,
-    latestBlock - 100000,
-    latestBlock,
-  );
-  if (events.length === 0) {
-    console.log(`No events found for network '${network}'.`);
-    throw new Error('No events found.');
-  }
+  setInterval(async () => {
+    const currentState = await contract.optimisticHeaderSlot();
+    if (currentState.toString() != lastKnownState.toString()) {
+      console.log(`State updated from ${lastKnownState} to ${currentState}`);
+      lastKnownState = currentState;
+      lastUpdateTime = Date.now();
+    }
+  }, 60 * 1000);
 
-  return (await events[events.length - 1].getBlock()).timestamp * 1000;
+  return () => lastUpdateTime;
 }
 
-// Monitor function that checks for contract updates and dispatches Discord alerts
 async function checkContractUpdate(
-  providerUrl: string,
-  contractAddress: string,
+  getLastUpdateTime: () => number,
   network: string,
   alertThresholdMinutes: number,
   discordClient: Discord.Client,
 ) {
   try {
-    const provider = new ethers.providers.JsonRpcProvider(providerUrl);
-    const contract = new ethers.Contract(
-      contractAddress,
-      contractAbi,
-      provider,
-    );
-
-    const lastEventTime = await getLastEventTime(contract, network);
+    const lastEventTime = getLastUpdateTime();
     const delayInMinutes = (Date.now() - lastEventTime) / 1000 / 60;
 
     if (!discordClient.isReady()) {
@@ -106,13 +95,19 @@ async function monitorContracts(networksAndAddresses: string[]) {
 
     try {
       const rpcUrl = getEnvString(`${network.toUpperCase()}_RPC`);
+      const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
+      const contract = new ethers.Contract(
+        contractAddress,
+        contractAbi.abi,
+        provider,
+      );
 
       networks.push(network);
 
-      // Immediately check the contract update, then set interval
+      const getLastUpdateTime = await startStateMonitor(contract);
+
       checkContractUpdate(
-        rpcUrl,
-        contractAddress,
+        getLastUpdateTime,
         network,
         alertThresholdMinutes,
         discordClient,
@@ -121,14 +116,13 @@ async function monitorContracts(networksAndAddresses: string[]) {
       setInterval(
         () =>
           checkContractUpdate(
-            rpcUrl,
-            contractAddress,
+            getLastUpdateTime,
             network,
             alertThresholdMinutes,
             discordClient,
           ),
         5 * 60 * 1000,
-      );
+      ); // Check every 5 minutes
     } catch (error) {
       if (error instanceof Error) {
         console.warn(`Skipping network '${network}' due to:`, error.message);
