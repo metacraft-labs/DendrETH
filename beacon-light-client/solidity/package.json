@@ -44,7 +44,6 @@
     "web3": "1.10.4"
   },
   "devDependencies": {
-    "@dendreth/rollup": "workspace:^",
     "@types/chai": "^4.3.12",
     "@types/chai-as-promised": "^7",
     "@types/mocha": "^10.0.6",

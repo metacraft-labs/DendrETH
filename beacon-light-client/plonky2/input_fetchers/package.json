@@ -11,7 +11,6 @@
   },
   "type": "commonjs",
   "devDependencies": {
-    "@dendreth/rollup": "workspace:^",
     "@types/node": "^22.9.0",
     "@types/underscore": "^1.13.0",
     "tsx": "^4.19.2"
