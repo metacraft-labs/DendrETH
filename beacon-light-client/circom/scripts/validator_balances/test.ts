@@ -1,19 +1,10 @@
-import { ListBasicType, UintNumberType, ValueOf } from '@chainsafe/ssz';
-import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
-import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
-import { sha256 } from 'ethers/lib/utils';
-import {
-  verifyMerkleProof,
-  hashTreeRoot,
-} from '@dendreth/utils/ts-utils/ssz-utils';
-import { get } from 'node:http';
 
 (async () => {
   const { ssz } = await import('@lodestar/types');
-  const beaconApi = await getBeaconApi([
-    'http://unstable.prater.beacon-api.nimbus.team/',
-  ]);
+  // const beaconApi = await getBeaconApi([
+  //   'http://unstable.prater.beacon-api.nimbus.team/',
+  // ]);
 
   const beaconStateSZZ = await fetch(
     `http://testing.mainnet.beacon-api.nimbus.team/eth/v2/debug/beacon/states/6616005`,
@@ -31,11 +22,11 @@ import { get } from 'node:http';
   console.log(
     BigInt(
       '0x' +
-        bytesToHex(
-          ssz.phase0.Validator.fields.exitEpoch.hashTreeRoot(
-            beaconState.validators[0].exitEpoch,
-          ),
+      bytesToHex(
+        ssz.phase0.Validator.fields.exitEpoch.hashTreeRoot(
+          beaconState.validators[0].exitEpoch,
         ),
+      ),
     )
       .toString(2)
       .padStart(256, '0')
@@ -47,9 +38,9 @@ import { get } from 'node:http';
   console.log(
     BigInt(
       '0x' +
-        bytesToHex(
-          ssz.phase0.Validator.hashTreeRoot(beaconState.validators[0]),
-        ),
+      bytesToHex(
+        ssz.phase0.Validator.hashTreeRoot(beaconState.validators[0]),
+      ),
     )
       .toString(2)
       .padStart(256, '0')

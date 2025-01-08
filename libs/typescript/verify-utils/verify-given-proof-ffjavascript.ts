@@ -1,7 +1,9 @@
-import { concat } from 'ethers/lib/utils';
 import { Scalar, buildBn128 } from 'ffjavascript';
 import { unstringifyBigInts, bitTo2BigInts } from '../ts-utils/common-utils';
 import * as fs from 'fs';
+import { utils as ethersUtils } from 'ethers';
+
+const { concat } = ethersUtils;
 
 async function getCurveFromName(name) {
   let curve;

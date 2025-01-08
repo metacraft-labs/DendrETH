@@ -1,7 +1,8 @@
 import { writeFileSync } from 'fs';
-
-import { sha256 } from 'ethers/lib/utils';
 import { Tree } from '@chainsafe/persistent-merkle-tree';
+import { utils as ethersUtils } from 'ethers';
+
+const { sha256 } = ethersUtils;
 
 import {
   bytesToHex,

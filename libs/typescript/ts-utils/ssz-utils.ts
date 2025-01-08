@@ -1,6 +1,7 @@
 import { readFile } from 'fs/promises';
 
-import { sha256 } from 'ethers/lib/utils';
+import { utils as ethersUtils } from 'ethers';
+const { sha256 } = ethersUtils;
 
 import { Type } from '@chainsafe/ssz';
 

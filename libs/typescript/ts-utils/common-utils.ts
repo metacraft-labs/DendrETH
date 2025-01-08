@@ -1,8 +1,10 @@
 import * as fs from 'fs';
 import { promisify } from 'node:util';
 import { exec as exec_ } from 'node:child_process';
-import { sha256 } from 'ethers/lib/utils';
 import { assert } from 'console';
+import { utils as ethersUtils } from 'ethers';
+
+const { sha256 } = ethersUtils;
 
 const exec = promisify(exec_);
 

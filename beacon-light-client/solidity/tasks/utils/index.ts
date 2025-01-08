@@ -1,6 +1,8 @@
-import { sha256 } from 'ethers/lib/utils';
 import { IBeaconApi } from '@dendreth/relay/abstraction/beacon-api-interface';
 import { Config } from '@dendreth/relay/constants/constants';
+import { utils as ethersUtils } from 'ethers';
+const { sha256 } = ethersUtils;
+
 
 export const getConstructorArgs = async (
   beaconApi: IBeaconApi,
@@ -17,7 +19,7 @@ export const getConstructorArgs = async (
 
   let result = sha256(
     config.FORK_VERSION.padEnd(66, '0') +
-      config.GENESIS_VALIDATORS_ROOT.slice(2),
+    config.GENESIS_VALIDATORS_ROOT.slice(2),
   );
 
   return [

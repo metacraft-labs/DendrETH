@@ -1,6 +1,5 @@
 import { ethers, network } from 'hardhat';
 import { Contract } from 'ethers';
-import { sha256 } from 'ethers/lib/utils';
 import { hashTreeRoot } from '@dendreth/utils/ts-utils/ssz-utils';
 import {
   bytesToHex,
@@ -9,13 +8,16 @@ import {
 } from '@dendreth/utils/ts-utils/bls';
 import { expect } from 'chai';
 import depositItems from './utils/depositData.json';
+import { utils as ethersUtils } from 'ethers';
 
-describe('ValidatorsAccumulator tests', async function () {
+const { sha256 } = ethersUtils;
+
+describe('ValidatorsAccumulator tests', async function() {
   let validatorAccumulator: Contract;
   let pubkeys: Uint8Array[] = [];
   let accumulators: string[] = [];
 
-  beforeEach(async function () {
+  beforeEach(async function() {
     pubkeys = [];
     accumulators = [];
 
@@ -63,7 +65,7 @@ describe('ValidatorsAccumulator tests', async function () {
     return hashTreeRoot(leaves, 32);
   }
 
-  it('Should deposit', async function () {
+  it('Should deposit', async function() {
     for (const depositItem of depositItems) {
       await deposit(depositItem);
       expect(await validatorAccumulator.getValidatorsAccumulator()).to.equal(
@@ -72,7 +74,7 @@ describe('ValidatorsAccumulator tests', async function () {
     }
   });
 
-  it('Should find correct accumulator in consecutive blocks and prune all before it', async function () {
+  it('Should find correct accumulator in consecutive blocks and prune all before it', async function() {
     const startBlock =
       Number(await network.provider.send('eth_blockNumber')) + 1;
     for (const depositItem of depositItems) {
@@ -88,7 +90,7 @@ describe('ValidatorsAccumulator tests', async function () {
     expect(count.toNumber()).to.equal(index + 1);
   });
 
-  it('Should find correct accumulator in non-consecutive blocks and prune all before it', async function () {
+  it('Should find correct accumulator in non-consecutive blocks and prune all before it', async function() {
     await deposit(depositItems[0]);
     await network.provider.send('hardhat_mine', [ethers.utils.hexValue(2)]);
     const startBlock0 = Number(await network.provider.send('eth_blockNumber'));
@@ -117,7 +119,7 @@ describe('ValidatorsAccumulator tests', async function () {
     }
   });
 
-  it('Should return zero hash if block is before first deposit', async function () {
+  it('Should return zero hash if block is before first deposit', async function() {
     await deposit(depositItems[0]);
     const startBlock = Number(await network.provider.send('eth_blockNumber'));
 
@@ -130,7 +132,7 @@ describe('ValidatorsAccumulator tests', async function () {
     expect(count.toNumber()).to.equal(0);
   });
 
-  it('Should return zero hash if no validators have deposited', async function () {
+  it('Should return zero hash if no validators have deposited', async function() {
     const startBlock = Number(await network.provider.send('eth_blockNumber'));
 
     const [count, accumulator] =
