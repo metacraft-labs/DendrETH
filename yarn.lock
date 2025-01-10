@@ -2203,7 +2203,6 @@ __metadata:
     rollup: "npm:^4.20.0"
     rollup-plugin-delete: "npm:^2.0.0"
     rollup-plugin-peer-deps-external: "npm:^2.2.4"
-    rollup-plugin-string-import: "npm:^1.2.5"
     rollup-plugin-typescript2: "npm:^0.36.0"
     tslib: "npm:^2.8.1"
   bin:
@@ -15073,17 +15072,6 @@ __metadata:
   peerDependencies:
     rollup: "*"
   checksum: 10/49b7b3f5ca14550146249b5fd86043bffb82a2c40750c80a1845c3b694fadde58435bae0c912ad8cb1c1ef6c1f8ad64914153793391cb13d52e2bc3aa2ac61e2
-  languageName: node
-  linkType: hard
-
-"rollup-plugin-string-import@npm:^1.2.5":
-  version: 1.2.5
-  resolution: "rollup-plugin-string-import@npm:1.2.5"
-  dependencies:
-    "@rollup/pluginutils": "npm:^5.1.0"
-  peerDependencies:
-    rollup: 4.20.0
-  checksum: 10/968e0f0b80541e5b409d14afce44580a2a47130919a79a26cee5daa41a520ce262d9299d103711c86f0a04c7103d9979be743731556908bbdce61921f1666b13
   languageName: node
   linkType: hard
 
