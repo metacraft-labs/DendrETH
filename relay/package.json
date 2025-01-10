@@ -47,12 +47,11 @@
     "tsx": "^4.7.1",
     "typescript": "5.2.2"
   },
-  "types": "./src/index.ts",
   "exports": {
     "./*": {
       "require": "./dist/cjs/*.cjs",
       "import": "./dist/esm/*.mjs",
-      "types": "./*.ts"
+      "types": "./dist/types/*.d.ts"
     }
   }
 }

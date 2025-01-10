@@ -9,8 +9,9 @@
     "test": "yarn hardhat test",
     "gas": "yarn hardhat run test/utils/gas-reporter/src/index.ts"
   },
-  "type": "commonjs",
+  "type": "module",
   "devDependencies": {
+    "@types/json-bigint": "^1.0.4",
     "@types/node": "^22.9.0",
     "@types/underscore": "^1.13.0",
     "tsx": "^4.19.2"
@@ -48,6 +49,8 @@
     }
   },
   "bin": {
+    "diva_balance_aggregator_scheduler": "beacon-light-client/plonky2/input_fetchers/dist/cjs/balance_verification/deposits_accumulator/runnable/diva_balance_aggregator_scheduler.cjs",
+    "pubkey_commitment_mapper_scheduler": "beacon-light-client/plonky2/input_fetchers/dist/cjs/balance_verification/deposits_accumulator/runnable/run_pubkey_commitment_mapper_scheduler.cjs",
     "validators_commitment_mapper_cjs": "beacon-light-client/plonky2/input_fetchers/dist/cjs/validators_commitment_mapper/runnable/run_scheduler.cjs",
     "validators_commitment_mapper_esm": "beacon-light-client/plonky2/input_fetchers/dist/esm/validators_commitment_mapper/runnable/run_scheduler.mjs"
   }

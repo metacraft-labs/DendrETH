@@ -85,7 +85,14 @@ function createConfig(dir, format) {
         }),
     ),
 
-    external: (id, parentId, isResolved) => {
+    external: (id, parentId, _isResolved) => {
+      // if (id.endsWith('.json')) {
+      //   console.log(`-----------------------------------------------------------`);
+      //   console.log(`[external] \njson file: ${id}\nparentId: ${parentId})`);
+      //   console.log(`-----------------------------------------------------------`);
+      //   return true;
+      // }
+
       const absPath = path.isAbsolute(id)
         ? id
         : id.startsWith('.')
@@ -106,10 +113,15 @@ function createConfig(dir, format) {
       },
     ],
     plugins: [
+      del({ targets: `${dir}/dist`, force: true }),
+      // inlineJsonPlugin(),
       importAsString({
         include: ['**/*.lua'],
       }),
-      json(),
+      json({
+        preferConst: true,
+        namedExports: false,
+      }),
       commonjs(),
       peerDepsExternal({
         packageJsonPath: path.join(dir, 'package.json'),
@@ -121,7 +133,6 @@ function createConfig(dir, format) {
         mainFields: ['module', 'main'],
         modulesOnly: true,
       }),
-      del({ targets: `${dir}/dist`, force: true }),
       typescript({
         tsconfig: `${dir}/tsconfig.json`,
         composite: false,
@@ -161,4 +172,30 @@ function tryResolve(id, parentId) {
   }
 
   return null;
+}
+
+import { readFileSync } from 'fs';
+
+function inlineJsonPlugin() {
+  return {
+    name: 'inline-json',
+
+    // Intercept and resolve JSON file imports
+    resolveId(source, importer) {
+      if (source.endsWith('.json')) {
+        return path.resolve(path.dirname(importer), source); // Resolve the JSON file path
+      }
+      return null; // Let Rollup handle other imports
+    },
+
+    // Load the resolved JSON file and replace it with inline JSON
+    load(id) {
+      if (id.endsWith('.json')) {
+        const jsonContent = readFileSync(id, 'utf-8'); // Read the JSON file
+        const jsonString = JSON.stringify(JSON.parse(jsonContent)); // Convert it to a JSON string
+        return `export default ${jsonString};`; // Replace import with inline JSON definition
+      }
+      return null; // Let Rollup handle other files
+    },
+  };
 }

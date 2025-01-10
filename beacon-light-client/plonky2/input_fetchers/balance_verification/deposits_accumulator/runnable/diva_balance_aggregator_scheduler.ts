@@ -230,7 +230,7 @@ async function main() {
   console.log('\toffset:', options['offset']);
   console.log('\tredis-host:', options['redis-host']);
   console.log('\tredis-port:', options['redis-port']);
-  console.log('\tredis-auth-filepath:', options['redis-auth-filepath'].length);
+  console.log('\tredis-auth-filepath:', options['redis-auth-filepath']);
   console.log('\taddress:', options['address']);
   console.log('\tjson-rpc:', options['json-rpc']);
   console.log('\tbeacon-node:', options['beacon-node']);
