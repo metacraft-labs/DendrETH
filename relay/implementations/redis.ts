@@ -11,7 +11,10 @@ import { Redis as RedisClient, Result } from 'ioredis';
 import { getDepthByGindex } from '@dendreth/utils/ts-utils/common-utils';
 import JSONbig from 'json-bigint';
 import fs from 'fs';
-import path from 'path';
+
+import deletePatternScript from './redis-scripts/deletePattern.lua';
+import rebaseValidatorsCommitmentMapperScript from './redis-scripts/rebaseValidatorsCommitmentMapper.lua';
+import recomputeSlotScript from './redis-scripts/recomputeSlot.lua';
 
 declare module 'ioredis' {
   interface RedisCommander<Context> {
@@ -53,17 +56,17 @@ export class Redis implements IRedis {
 
     this.client.defineCommand('deletePattern', {
       numberOfKeys: 0,
-      lua: fs.readFileSync(path.resolve(__dirname, 'redis-scripts', 'deletePattern.lua'), 'utf8'),
+      lua: deletePatternScript,
     });
 
     this.client.defineCommand('rebaseValidatorsCommitmentMapper', {
       numberOfKeys: 0,
-      lua: fs.readFileSync(path.resolve(__dirname, 'redis-scripts', 'rebaseValidatorsCommitmentMapper.lua'), 'utf8'),
+      lua: rebaseValidatorsCommitmentMapperScript,
     });
 
     this.client.defineCommand('recomputeSlot', {
       numberOfKeys: 0,
-      lua: fs.readFileSync(path.resolve(__dirname, 'redis-scripts', 'recomputeSlot.lua'), 'utf8'),
+      lua: recomputeSlotScript,
     });
   }
 

@@ -9,6 +9,7 @@ import peerDepsExternal from 'rollup-plugin-peer-deps-external';
 import del from 'rollup-plugin-delete';
 import { glob } from 'glob';
 import { createRequire } from 'node:module';
+import { importAsString } from 'rollup-plugin-string-import';
 
 main().catch(console.error);
 
@@ -105,6 +106,9 @@ function createConfig(dir, format) {
       },
     ],
     plugins: [
+      importAsString({
+        include: ['**/*.lua'],
+      }),
       json(),
       commonjs(),
       peerDepsExternal({
