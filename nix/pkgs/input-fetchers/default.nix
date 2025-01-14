@@ -77,7 +77,9 @@
     dontFixup = true;
     installPhase = ''
       set -x
+
       dst="$out/libexec/$name"
+
       mkdir -p "$dst" "$out/bin"
       mv $PWD/{.yarn,.pnp.cjs,.pnp.loader.mjs,.yarnrc.yml,yarn.lock,package.json} "$dst/"
 
@@ -91,8 +93,14 @@
         )
       }
 
+      # Install executables listen in workspaces' package.json as "bin"
       for w in ${toString workspaces}; do
         installWorkspace "$w"
+      done
+
+      # Patch executables to pass `--import tsx` to nodejs
+      for file in $out/bin/*; do
+        sed -i "s/NODE_OPTIONS='/NODE_OPTIONS='--import tsx /" $file
       done
 
       rm -rf ".yarn"/{plugins,sdk}
