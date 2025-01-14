@@ -6,7 +6,8 @@
   callPackage,
   stdenvNoCC,
   ...
-}: let
+}:
+let
   root = ../../..;
   yarnPlugins = root + /.yarn/plugins;
 
@@ -28,13 +29,15 @@
     "relay"
   ];
 
-  yarnDepsSrc = with lib.fileset;
+  yarnDepsSrc =
+    with lib.fileset;
     unions [
       yarnPlugins
       (fileFilter (file: builtins.elem file.name yarnFilenames) root)
     ];
 
-  typeScriptSrc = with lib.fileset;
+  typeScriptSrc =
+    with lib.fileset;
     unions [
       yarnDepsSrc
       (fileFilter (file: (builtins.elem file.name tsconfigFiles)) root)
@@ -47,21 +50,26 @@
       (root + /rollup)
     ];
 
-  yarnProject = callPackage ./yarn-project.generated.nix {inherit nodejs;} {
-    src = with lib.fileset;
+  yarnProject = callPackage ./yarn-project.generated.nix { inherit nodejs; } {
+    src =
+      with lib.fileset;
       toSource {
         inherit root;
         fileset = yarnDepsSrc;
       };
     overrideAttrs = oldAttrs: {
       dontFixup = true;
-      buildInputs = oldAttrs.buildInputs ++ [python3 sqlite];
+      buildInputs = oldAttrs.buildInputs ++ [
+        python3
+        sqlite
+      ];
     };
   };
 
   finalProject = stdenvNoCC.mkDerivation {
     name = "input-fetchers";
-    src = with lib.fileset;
+    src =
+      with lib.fileset;
       toSource {
         inherit root;
         fileset = typeScriptSrc;
@@ -107,7 +115,7 @@
     '';
   };
 in
-  finalProject
+finalProject
 # project.overrideAttrs (oldAttrs: {
 #   name = "input-fetchers";
 #   buildInputs = oldAttrs.buildInputs ++ [python3 sqlite];
