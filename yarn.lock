@@ -1801,6 +1801,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@chainsafe/as-sha256@npm:^0.4.2":
+  version: 0.4.2
+  resolution: "@chainsafe/as-sha256@npm:0.4.2"
+  checksum: 10/f065f9346c3fce9859a68aa4bbdc479baca08a530bb0d6fd1a37623cc5a8de15ed34a652b013ae94e0e194e906444fd15c26edbc33d478b1e00603d3b28662f5
+  languageName: node
+  linkType: hard
+
 "@chainsafe/bls-hd-key@npm:^0.2.0":
   version: 0.2.1
   resolution: "@chainsafe/bls-hd-key@npm:0.2.1"
@@ -1905,12 +1912,12 @@ __metadata:
   linkType: hard
 
 "@chainsafe/persistent-merkle-tree@npm:^0.7.1":
-  version: 0.7.1
-  resolution: "@chainsafe/persistent-merkle-tree@npm:0.7.1"
+  version: 0.7.2
+  resolution: "@chainsafe/persistent-merkle-tree@npm:0.7.2"
   dependencies:
-    "@chainsafe/as-sha256": "npm:^0.4.1"
+    "@chainsafe/as-sha256": "npm:^0.4.2"
     "@noble/hashes": "npm:^1.3.0"
-  checksum: 10/28478576748b855a588ec74d81bf49120f18586303f21c1b21644edd221c517e9aa451b160d36a08c1e9d0dfb8f86910314357ef5e286ff8060b5573be9a05ca
+  checksum: 10/b7476ec138513fb321da9f96bd207f7966a9fb1cb475b4be9b721b17e1d176ecf232cf5c889e973ee033e6927958cd52f88adaa3daf70d8382b85bce5e8e03f9
   languageName: node
   linkType: hard
 
@@ -2259,7 +2266,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@dendreth/relay@workspace:relay"
   dependencies:
-    "@chainsafe/persistent-merkle-tree": "npm:^0.6.1"
+    "@chainsafe/persistent-merkle-tree": "npm:^0.7.1"
     "@chainsafe/ssz": "npm:0.14.3"
     "@cosmjs/cosmwasm-stargate": "npm:0.30.1"
     "@cosmjs/proto-signing": "npm:^0.32.2"
@@ -8184,7 +8191,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "circom@workspace:beacon-light-client/circom"
   dependencies:
-    "@chainsafe/persistent-merkle-tree": "npm:^0.6.1"
+    "@chainsafe/persistent-merkle-tree": "npm:^0.7.1"
     "@chainsafe/ssz": "npm:0.14.3"
     "@dendreth/relay": "workspace:^"
     "@dendreth/utils": "workspace:^"
