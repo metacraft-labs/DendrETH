@@ -16,13 +16,15 @@
     "@rollup/plugin-node-resolve": "^15.2.1",
     "@rollup/plugin-typescript": "^11.1.6",
     "@types/rollup-plugin-peer-deps-external": "^2",
+    "get-tsconfig": "^4.8.1",
     "glob": "^11.0.0",
     "rollup": "^4.20.0",
     "rollup-plugin-delete": "^2.0.0",
     "rollup-plugin-peer-deps-external": "^2.2.4",
     "rollup-plugin-string-import": "^1.2.5",
     "rollup-plugin-typescript2": "^0.36.0",
-    "tslib": "^2.8.1"
+    "tslib": "^2.8.1",
+    "typescript": "5.2.2"
   },
   "bin": {
     "rollup-bundle": "bundle.mjs"

@@ -2294,6 +2294,7 @@ __metadata:
     "@rollup/plugin-node-resolve": "npm:^15.2.1"
     "@rollup/plugin-typescript": "npm:^11.1.6"
     "@types/rollup-plugin-peer-deps-external": "npm:^2"
+    get-tsconfig: "npm:^4.8.1"
     glob: "npm:^11.0.0"
     rollup: "npm:^4.20.0"
     rollup-plugin-delete: "npm:^2.0.0"
@@ -2301,6 +2302,7 @@ __metadata:
     rollup-plugin-string-import: "npm:^1.2.5"
     rollup-plugin-typescript2: "npm:^0.36.0"
     tslib: "npm:^2.8.1"
+    typescript: "npm:5.2.2"
   bin:
     rollup-bundle: bundle.mjs
   languageName: unknown
@@ -10756,7 +10758,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"get-tsconfig@npm:^4.7.5":
+"get-tsconfig@npm:^4.7.5, get-tsconfig@npm:^4.8.1":
   version: 4.8.1
   resolution: "get-tsconfig@npm:4.8.1"
   dependencies:

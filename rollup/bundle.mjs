@@ -10,6 +10,7 @@ import del from 'rollup-plugin-delete';
 import { glob } from 'glob';
 import { createRequire } from 'node:module';
 import { importAsString } from 'rollup-plugin-string-import';
+import { getTsconfig } from 'get-tsconfig';
 
 main().catch(console.error);
 
@@ -39,12 +40,12 @@ function main() {
     .then(() => console.log('Build finished successfully'));
 }
 
-async function build(dir, format) {
-  console.log(`Building ${dir} in ${format} format...`);
+async function build(packageDir, format) {
+  console.log(`Building ${packageDir} in ${format} format...`);
 
   let bundle;
   try {
-    const config = createConfig(dir, format);
+    const config = createConfig(packageDir, format);
     bundle = await rollup(config);
 
     for (const outputOptions of config.output) {
@@ -60,12 +61,16 @@ async function build(dir, format) {
   }
 }
 
-function createConfig(dir, format) {
+function createConfig(packageDir, format) {
+  const tsconfig = getTsconfig();
+  const relativeRootDir = tsconfig.config.compilerOptions.rootDir;
+  const sourceDir = path.resolve(packageDir, relativeRootDir ?? '.');
+
   return {
     preserveSymlinks: true,
     input: Object.fromEntries(
       glob
-        .globSync(`${dir}/**/*.ts`)
+        .globSync(`${sourceDir}/**/*.ts`)
         .filter(
           file =>
             !(
@@ -77,7 +82,7 @@ function createConfig(dir, format) {
         .map(file => {
           return [
             path.relative(
-              dir,
+              sourceDir,
               file.slice(0, file.length - path.extname(file).length),
             ),
             file,
@@ -86,35 +91,29 @@ function createConfig(dir, format) {
     ),
 
     external: (id, parentId, _isResolved) => {
-      // if (id.endsWith('.json')) {
-      //   console.log(`-----------------------------------------------------------`);
-      //   console.log(`[external] \njson file: ${id}\nparentId: ${parentId})`);
-      //   console.log(`-----------------------------------------------------------`);
-      //   return true;
-      // }
-
       const absPath = path.isAbsolute(id)
         ? id
         : id.startsWith('.')
-          ? path.resolve(parentId, id)
-          : tryResolve(id, parentId);
+        ? path.resolve(parentId, id)
+        : tryResolve(id, parentId);
 
       if (!absPath) {
-        throw new Error(`Module ${id} was not resolved. Parent module: ${parentId}.`);
+        throw new Error(
+          `Module ${id} was not resolved. Parent module: ${parentId}.`,
+        );
       }
 
-      return !absPath.startsWith(dir);
+      return !absPath.startsWith(sourceDir);
     },
     output: [
       {
-        dir: `${dir}/dist/${format}`,
+        dir: `${packageDir}/dist/${format}`,
         format: format,
         entryFileNames: `[name].${{ esm: 'mjs', cjs: 'cjs' }[format]}`,
       },
     ],
     plugins: [
-      del({ targets: `${dir}/dist`, force: true }),
-      // inlineJsonPlugin(),
+      del({ targets: `${packageDir}/dist`, force: true }),
       importAsString({
         include: ['**/*.lua'],
       }),
@@ -124,7 +123,7 @@ function createConfig(dir, format) {
       }),
       commonjs(),
       peerDepsExternal({
-        packageJsonPath: path.join(dir, 'package.json'),
+        packageJsonPath: path.join(packageDir, 'package.json'),
       }),
       nodeResolve({
         extensions: ['.mjs', '.cjs', '.js', '.ts', '.json'],
@@ -134,14 +133,15 @@ function createConfig(dir, format) {
         modulesOnly: true,
       }),
       typescript({
-        tsconfig: `${dir}/tsconfig.json`,
+        tsconfig: `${packageDir}/tsconfig.json`,
         composite: false,
         declaration: format != 'cjs',
         declarationMap: format != 'cjs',
         noEmit: format == 'cjs',
-        outDir: format == 'cjs' ? undefined : `${dir}/dist/${format}/types`,
+        outDir:
+          format == 'cjs' ? undefined : `${packageDir}/dist/${format}/types`,
         declarationDir:
-          format == 'cjs' ? undefined : `${dir}/dist/${format}/types`,
+          format == 'cjs' ? undefined : `${packageDir}/dist/${format}/types`,
       }),
     ],
   };
@@ -172,30 +172,4 @@ function tryResolve(id, parentId) {
   }
 
   return null;
-}
-
-import { readFileSync } from 'fs';
-
-function inlineJsonPlugin() {
-  return {
-    name: 'inline-json',
-
-    // Intercept and resolve JSON file imports
-    resolveId(source, importer) {
-      if (source.endsWith('.json')) {
-        return path.resolve(path.dirname(importer), source); // Resolve the JSON file path
-      }
-      return null; // Let Rollup handle other imports
-    },
-
-    // Load the resolved JSON file and replace it with inline JSON
-    load(id) {
-      if (id.endsWith('.json')) {
-        const jsonContent = readFileSync(id, 'utf-8'); // Read the JSON file
-        const jsonString = JSON.stringify(JSON.parse(jsonContent)); // Convert it to a JSON string
-        return `export default ${jsonString};`; // Replace import with inline JSON definition
-      }
-      return null; // Let Rollup handle other files
-    },
-  };
 }
