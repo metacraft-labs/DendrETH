@@ -1,0 +1,27 @@
+{
+  "name": "@mevitae/redis-work-queue",
+  "version": "0.1.5",
+  "description": "A work queue, on top of a redis database, with implementations in Python, Rust, Go, Node.js (TypeScript) and Dotnet (C#).",
+  "keywords": [
+    "work queue",
+    "Redis"
+  ],
+  "authors": "Ilie Mihai Alexandru, Jacob O'Toole",
+  "license": "MIT",
+  "dependencies": {
+    "ioredis": "^5.3.2",
+    "tslib": "^2.8.1",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.3.1",
+    "@types/uuid": "^9.0.2"
+  },
+  "exports": {
+    ".": {
+      "require": "./dist/cjs/WorkQueue.cjs",
+      "import": "./dist/esm/WorkQueue.mjs",
+      "types": "./src/WorkQueue.ts"
+    }
+  }
+}

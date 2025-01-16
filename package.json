@@ -11,7 +11,8 @@
     "beacon-light-client/solidity",
     "libs/typescript",
     "rollup",
-    "relay"
+    "relay",
+    "thirdparty/typescript/libs/redis-work-queue"
   ],
   "directories": {
     "doc": "docs"

@@ -26,7 +26,7 @@
     "@dendreth/relay": "workspace:^",
     "@dendreth/utils": "workspace:^",
     "@lodestar/types": "^1.17.0",
-    "@mevitae/redis-work-queue": "^0.1.5",
+    "@mevitae/redis-work-queue": "workspace:^",
     "@noble/bls12-381": "^1.4.0",
     "chalk": "^4.1.2",
     "circom-pairing": "git+https://github.com/metacraft-labs/circom-pairing.git#commit=52db7a21544219e7b734e7f683d1f11328a0dc4e",
