@@ -14,6 +14,7 @@
     "@types/json-bigint": "^1.0.4",
     "@types/node": "^22.9.0",
     "@types/underscore": "^1.13.0",
+    "@types/yargs": "^17.0.33",
     "tsx": "^4.19.2"
   },
   "dependencies": {
