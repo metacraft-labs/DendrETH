@@ -3,30 +3,6 @@ import Redis from 'ioredis';
 import { sleep } from '@dendreth/utils/ts-utils/common-utils';
 import CONSTANTS from '../../../kv_db_constants.json'; // PESHO
 import { lightClean } from '../../../light_cleaner_common';
-import { CommandLineOptionsBuilder } from '../../../utils/cmdline';
-
-async function main() {
-  const options = new CommandLineOptionsBuilder()
-    .withRedisOpts()
-    .withLightCleanOpts()
-    .withProtocolOpts()
-    .build();
-
-  const redis = new Redis(
-    `redis://${options['redis-host']}:${options['redis-port']}`,
-  );
-
-  await lightCleanQueue({
-    redis,
-    protocol: options['protocol'],
-    cleanDuration: options['clean-duration'],
-    silent: false,
-  });
-}
-
-if (require.main === module) {
-  main().catch(console.error);
-}
 
 interface LightCleanParams {
   redis: Redis;
