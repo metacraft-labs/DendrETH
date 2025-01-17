@@ -1,6 +1,6 @@
 import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
 import common_config from './common_config.json';
-import { Tree } from '@chainsafe/persistent-merkle-tree/lib/tree';
+import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import { CommandLineOptionsBuilder } from './utils/cmdline';
 
