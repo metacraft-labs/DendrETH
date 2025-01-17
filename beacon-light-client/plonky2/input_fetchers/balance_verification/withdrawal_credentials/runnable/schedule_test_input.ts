@@ -4,8 +4,11 @@ import {
   getBalancesInput,
 } from '../lib/scheduler';
 import config from '../../../common_config.json';
+import { CommandLineOptionsBuilder } from '../../../utils/cmdline';
 
 (async () => {
+  new CommandLineOptionsBuilder().build(); // Help command
+
   const options: GetBalancesInputParameterType & Record<string, any> = {
     'beacon-node': config['beacon-node'],
     'redis-host': config['redis-host'],
