@@ -49,8 +49,8 @@
     }
   },
   "bin": {
-    "balance_aggregator_light_cleaner": "beacon-light-client/plonky2/input_fetchers/dist/cjs/balance_verification/deposits_accumulator/runnable/balance_aggregator_light_cleaner.cjs",
-    "diva_balance_aggregator_scheduler": "beacon-light-client/plonky2/input_fetchers/dist/cjs/balance_verification/deposits_accumulator/runnable/diva_balance_aggregator_scheduler.cjs",
+    "balance_aggregator_light_cleaner": "beacon-light-client/plonky2/input_fetchers/dist/esm/balance_verification/deposits_accumulator/runnable/balance_aggregator_light_cleaner.mjs",
+    "diva_balance_aggregator_scheduler": "beacon-light-client/plonky2/input_fetchers/dist/esm/balance_verification/deposits_accumulator/runnable/diva_balance_aggregator_scheduler.mjs",
     "diva_scheduler": "beacon-light-client/plonky2/input_fetchers/dist/esm/balance_verification/withdrawal_credentials/runnable/diva_scheduler.mjs",
     "fetch_validators_root": "beacon-light-client/plonky2/input_fetchers/dist/esm/validators_commitment_mapper/runnable/fetch_validators_root.mjs",
     "lido_scheduler": "beacon-light-client/plonky2/input_fetchers/dist/esm/balance_verification/withdrawal_credentials/runnable/lido_scheduler.mjs",
