@@ -101,7 +101,7 @@ pub fn proof_storage_definition_from_config<'a>(
     storage_name: &str,
 ) -> Result<&'a RedisBlobStorageDefinition> {
     cfg.get(storage_name)
-        .context("Proof storage is not in config")
+        .with_context(|| format!("Proof storage `{storage_name}` is not in config"))
 }
 
 pub fn load_storage_config(filepath: &str) -> Result<ProofStorageConfig> {
