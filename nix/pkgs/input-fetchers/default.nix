@@ -86,10 +86,6 @@ let
     '';
     dontFixup = true;
     installPhase = ''
-      dst="$out/libexec/$name"
-      mkdir -p "$dst" "$out/bin"
-      mv $PWD/{.yarn,.pnp.cjs,.pnp.loader.mjs,.yarnrc.yml,yarn.lock,package.json} "$dst/"
-
       installWorkspace() {
         local workspace="$1"
         mkdir -p "$dst/$workspace"
@@ -100,10 +96,24 @@ let
         )
       }
 
+      fixupNodeOptions() {
+        EXTRA_NODE_OPTIONS="--max-old-space-size=32768"
+
+        for bin in $out/bin/*; do
+          sed -i "s|NODE_OPTIONS='|NODE_OPTIONS='$EXTRA_NODE_OPTIONS |" $bin
+        done
+      }
+
+      dst="$out/libexec/$name"
+      mkdir -p "$dst" "$out/bin"
+      mv $PWD/{.yarn,.pnp.cjs,.pnp.loader.mjs,.yarnrc.yml,yarn.lock,package.json} "$dst/"
+
       # Install executables listed in workspaces' package.json as "bin"
       for w in ${toString workspaces}; do
         installWorkspace "$w"
       done
+
+      fixupNodeOptions
 
       rm -rf ".yarn"/{plugins,sdk}
     '';
