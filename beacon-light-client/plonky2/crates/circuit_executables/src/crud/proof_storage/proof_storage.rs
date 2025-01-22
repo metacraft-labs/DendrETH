@@ -6,7 +6,7 @@ use anyhow::{ensure, Context, Result};
 use redis::aio::Connection;
 use serde::{Deserialize, Serialize};
 
-use crate::crud::common::read_file_to_string;
+use crate::crud::{common::read_file_to_string, proof_storage::redis_proof_storage::RedisStorage};
 
 use super::{
     aws_proof_storage::{AwsStorage, S3BlobStorageDefinition},
@@ -38,6 +38,7 @@ pub struct RedisConnectionDefinition {
 pub enum BlobStorageDefinition {
     S3(S3BlobStorageDefinition),
     Filesystem(FilesystemBlobStorageDefinition),
+    Redis(RedisConnectionDefinition),
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -85,6 +86,11 @@ pub async fn blob_storage_from_definition(
             .await?,
         ),
         BlobStorageDefinition::Filesystem(cfg) => Box::new(FileStorage::new(cfg.directory.clone())),
+        BlobStorageDefinition::Redis(cfg) => {
+            let url = redis_url_from_definition(cfg)?;
+            let storage = RedisStorage::new(url).await?;
+            Box::new(storage)
+        }
     })
 }
 
