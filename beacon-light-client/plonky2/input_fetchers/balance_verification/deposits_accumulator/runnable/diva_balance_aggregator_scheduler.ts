@@ -17,8 +17,9 @@ import 'dotenv/config';
 import { getBeaconApi } from '@dendreth/relay/implementations/beacon-api';
 import { lightCleanQueue } from './balance_aggregator_light_cleaner';
 import util from 'util';
+import { exec } from 'child_process';
 
-const execAsync = util.promisify(require('child_process').exec);
+const execAsync = util.promisify(exec);
 
 // We're currently allowed to run 256 vCPUs in total.  Our main worker
 // image uses 8, hence 32 task instances at most.
@@ -181,20 +182,6 @@ async function waitForValidatorsCommitmentMapperProof(
 
     await sleep(12_000);
   }
-}
-
-async function executeCommand(
-  command: string,
-  config: any = undefined,
-): Promise<number> {
-  const promise = execAsync(command, config);
-
-  const child = promise.child;
-  child.stdout.on('data', (data: string) => console.log('stdout: ' + data));
-  child.stderr.on('data', (data: string) => console.log('stderr: ' + data));
-  child.on('close', (code: number) => console.log('exit code: ' + code));
-
-  return promise;
 }
 
 // +------+
@@ -365,7 +352,8 @@ async function handleSnapshotEvent(
       --redis ${redisURL}
   `;
   const circuitExecutablesDir = '../crates/circuit_executables/';
-  await executeCommand(command, { cwd: circuitExecutablesDir });
+  const { stdout, stderr } = await execAsync(command, { cwd: circuitExecutablesDir });
+  console.log({ stdout, stderr });
 
   console.log('Executed final layer');
 }
