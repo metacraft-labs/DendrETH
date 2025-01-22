@@ -909,15 +909,15 @@ pub fn write_to_file(file_path: &str, data: &[u8]) -> Result<()> {
 }
 
 pub fn write_file(file_path: &str, data: &[u8]) -> Result<()> {
-    fs::write(file_path, data).context(format!("Could not write file `{file_path}`"))
+    fs::write(file_path, data).with_context(|| format!("Could not write file `{file_path}`"))
 }
 
 pub fn read_file(file_path: &str) -> Result<Vec<u8>> {
-    fs::read(file_path).context(format!("Could not read file `{file_path}`"))
+    fs::read(file_path).with_context(|| format!("Could not read file `{file_path}`"))
 }
 
 pub fn read_file_to_string(file_path: &str) -> Result<String> {
-    fs::read_to_string(file_path).context(format!("Could not read file `{file_path}`"))
+    fs::read_to_string(file_path).with_context(|| format!("Could not read file `{file_path}`"))
 }
 
 pub fn load_circuit_data<T: Circuit>(dir: &str, name: &str) -> Result<CircuitData<T::F, T::C, 2>>
