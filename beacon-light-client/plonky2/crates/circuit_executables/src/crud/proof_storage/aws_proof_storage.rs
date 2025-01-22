@@ -3,7 +3,6 @@ use async_trait::async_trait;
 use aws_config::{default_provider::credentials, BehaviorVersion, ConfigLoader, Region};
 use aws_sdk_s3::{config::Credentials, primitives::ByteStream, Client};
 use serde::{Deserialize, Serialize};
-use std::fs;
 
 use crate::crud::common::read_file_to_string;
 

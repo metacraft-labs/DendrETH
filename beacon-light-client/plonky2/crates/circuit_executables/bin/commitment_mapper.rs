@@ -42,7 +42,7 @@ async fn main() -> Result<()> {
 
     let mut ctx = CommitmentMapperContext::new(
         work_queue_cfg,
-        &storage_cfg_filepath,
+        storage_cfg_filepath,
         serialized_circuits_dir,
     )
     .await?;
@@ -85,7 +85,7 @@ async fn complete_task(ctx: &mut CommitmentMapperContext, item: &VCMWorkQueueIte
         .await
         .is_err()
     {
-        println!("{}", format!("Cannot complete task").bold().red());
+        println!("{}", "Cannot complete task".bold().red());
     }
 }
 

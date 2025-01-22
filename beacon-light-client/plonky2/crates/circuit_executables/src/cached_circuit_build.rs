@@ -310,7 +310,7 @@ pub fn serialize_recursive_circuit<FL, IL>(
 {
     println!("Building level 0 circuit...");
 
-    let (first_level_target, first_level_data) = FL::build(&params);
+    let (first_level_target, first_level_data) = FL::build(params);
 
     println!("Serializing level 0 circuit...");
     serialize_recursive_circuit_single_level(

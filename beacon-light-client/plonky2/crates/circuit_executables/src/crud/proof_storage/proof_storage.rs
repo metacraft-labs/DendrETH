@@ -62,12 +62,12 @@ impl RedisBlobStorage {
 
     pub async fn from_config(cfg: &ProofStorageConfig, storage_name: &str) -> Result<Self> {
         let def = proof_storage_definition_from_config(cfg, storage_name)?;
-        Ok(Self::from_definition(def).await?)
+        Self::from_definition(def).await
     }
 
     pub async fn from_file(filepath: &str, storage_name: &str) -> Result<Self> {
         let config = load_storage_config(filepath)?;
-        Ok(Self::from_config(&config, storage_name).await?)
+        Self::from_config(&config, storage_name).await
     }
 }
 
@@ -100,9 +100,8 @@ pub fn proof_storage_definition_from_config<'a>(
     cfg: &'a ProofStorageConfig,
     storage_name: &str,
 ) -> Result<&'a RedisBlobStorageDefinition> {
-    Ok(cfg
-        .get(storage_name)
-        .context("Proof storage is not in config")?)
+    cfg.get(storage_name)
+        .context("Proof storage is not in config")
 }
 
 pub fn load_storage_config(filepath: &str) -> Result<ProofStorageConfig> {

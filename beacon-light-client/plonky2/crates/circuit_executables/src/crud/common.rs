@@ -913,11 +913,11 @@ pub fn write_file(file_path: &str, data: &[u8]) -> Result<()> {
 }
 
 pub fn read_file(file_path: &str) -> Result<Vec<u8>> {
-    Ok(fs::read(file_path).context(format!("Could not read file `{file_path}`"))?)
+    fs::read(file_path).context(format!("Could not read file `{file_path}`"))
 }
 
 pub fn read_file_to_string(file_path: &str) -> Result<String> {
-    Ok(fs::read_to_string(file_path).context(format!("Could not read file `{file_path}`"))?)
+    fs::read_to_string(file_path).context(format!("Could not read file `{file_path}`"))
 }
 
 pub fn load_circuit_data<T: Circuit>(dir: &str, name: &str) -> Result<CircuitData<T::F, T::C, 2>>
