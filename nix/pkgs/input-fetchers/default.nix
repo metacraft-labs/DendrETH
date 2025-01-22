@@ -107,7 +107,52 @@ let
 
       rm -rf ".yarn"/{plugins,sdk}
     '';
+
+    doInstallCheck = true;
+    installCheckPhase = ''
+      join_arr() {
+        local IFS="$1"
+        shift
+        echo "$*"
+      }
+
+      # NOTE: Set placeholder values for environment variables for bins using
+      # ECS to pass. The module expects the following set of environment
+      # variables to be set when imported
+      export ECS_REGION="placeholder"
+      export ECS_CLUSTER="placeholder"
+      export ECS_TASKDEF="placeholder"
+      export ECS_CONTAINER="placeholder"
+      export ECS_SUBNETS="placeholder"
+
+      set +e
+
+      echo "Executing check phase"
+
+      failing_scripts=()
+
+      for bin in $out/bin/*; do
+        bin_name=$(basename $bin)
+
+        echo "Testing \"$bin_name --help\"..."
+
+        stderr=$($bin --help 2>&1 >/dev/null)
+        exit_code=$?
+
+        if [[ $exit_code -ne 0 ]]; then
+          failing_scripts+=($bin_name)
+
+          echo "\`$bin_name --help\` failed. Make sure it supports \`--help\`
+          stderr:
+            $stderr"
+        fi
+      done
+
+      if [ ''${#failing_scripts[@]} -ne 0 ]; then
+        echo "Scripts failed: ''${failing_scripts[@]}"
+        exit 1
+      fi
+    '';
   };
 in
 finalProject
-  
