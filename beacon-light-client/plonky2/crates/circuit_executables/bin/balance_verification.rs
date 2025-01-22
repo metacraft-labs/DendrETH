@@ -12,7 +12,7 @@ use circuit_executables::{
             delete_balance_verification_proof_dependencies, fetch_proofs_balances,
             fetch_validator_balance_input, load_circuit_data, read_from_file, save_balance_proof,
         },
-        proof_storage::proof_storage::RedisBlobStorage,
+        proof_storage::proof_storage::MetadataBlobStorage,
     },
     db_constants::DB_CONSTANTS,
     provers::prove_inner_level,
@@ -83,7 +83,7 @@ async fn main() -> Result<()> {
 
     println!("{}", "Initializing storage connection...".yellow());
     let mut storage =
-        RedisBlobStorage::from_file(storage_config_filepath, "balance_verification").await?;
+        MetadataBlobStorage::from_file(storage_config_filepath, "balance_verification").await?;
 
     println!("{}", "Loading circuit data...".yellow());
     let circuit_data = load_circuit_data::<WithdrawalCredentialsBalanceAggregatorFirstLevel<8, 1>>(
@@ -147,7 +147,7 @@ async fn main() -> Result<()> {
 }
 
 async fn process_queue<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIALS_COUNT: usize>(
-    storage: &mut RedisBlobStorage,
+    storage: &mut MetadataBlobStorage,
     queue: &WorkQueue,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     inner_circuit_data: Option<&CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>>,
@@ -247,7 +247,7 @@ async fn process_first_level_task<
     const VALIDATORS_COUNT: usize,
     const WITHDRAWAL_CREDENTIALS_COUNT: usize,
 >(
-    storage: &mut RedisBlobStorage,
+    storage: &mut MetadataBlobStorage,
     queue: &WorkQueue,
     queue_item: Item,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
@@ -326,7 +326,7 @@ async fn process_inner_level_job<
     const VALIDATORS_COUNT: usize,
     const WITHDRAWAL_CREDENTIALS_COUNT: usize,
 >(
-    storage: &mut RedisBlobStorage,
+    storage: &mut MetadataBlobStorage,
     queue: &WorkQueue,
     queue_item: Item,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,

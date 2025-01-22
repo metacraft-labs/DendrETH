@@ -3,7 +3,7 @@ use circuit::SerdeCircuitTarget;
 use circuit_executables::{
     crud::{
         common::{load_circuit_data_starky, load_common_circuit_data_starky, read_from_file},
-        proof_storage::proof_storage::{ProofStorage, RedisBlobStorage},
+        proof_storage::proof_storage::{MetadataBlobStorage, ProofStorage},
     },
     utils::CommandLineOptionsBuilder,
 };
@@ -43,7 +43,7 @@ async fn main() -> Result<()> {
 
     let storage_config_filepath = matches.get_one::<String>("proof_storage_cfg").unwrap();
     let mut storage =
-        RedisBlobStorage::from_file(&storage_config_filepath, "bls-verification").await?;
+        MetadataBlobStorage::from_file(&storage_config_filepath, "bls-verification").await?;
 
     let mut pw = PartialWitness::<GoldilocksField>::new();
 

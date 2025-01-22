@@ -8,7 +8,7 @@ use redis_work_queue::{KeyPrefix, WorkQueue};
 
 use crate::{
     cached_circuit_build::CircuitTargetAndData,
-    crud::proof_storage::proof_storage::RedisBlobStorage, db_constants::DB_CONSTANTS,
+    crud::proof_storage::proof_storage::MetadataBlobStorage, db_constants::DB_CONSTANTS,
 };
 
 const CIRCUIT_NAME: &str = "commitment_mapper";
@@ -19,7 +19,7 @@ pub struct WorkQueueConfig {
 }
 
 pub struct CommitmentMapperContext {
-    pub storage: RedisBlobStorage,
+    pub storage: MetadataBlobStorage,
     pub work_queues: Vec<WorkQueue>,
     pub work_queue_cfg: WorkQueueConfig,
     pub first_level_circuit: CircuitTargetAndData<ValidatorsCommitmentMapperFirstLevel>,
@@ -53,7 +53,7 @@ impl CommitmentMapperContext {
         }
 
         let storage =
-            RedisBlobStorage::from_file(storage_cfg_filepath, "validators-commitment-mapper")
+            MetadataBlobStorage::from_file(storage_cfg_filepath, "validators-commitment-mapper")
                 .await?;
 
         let ctx = Self {

@@ -42,18 +42,18 @@ pub enum BlobStorageDefinition {
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub struct RedisBlobStorageDefinition {
+pub struct MetadataBlobStorageDefinition {
     pub blob_storage: BlobStorageDefinition,
     pub metadata_storage: RedisConnectionDefinition,
 }
 
-pub struct RedisBlobStorage {
+pub struct MetadataBlobStorage {
     pub blob: Box<dyn ProofStorage>,
     pub metadata: Connection,
 }
 
-impl RedisBlobStorage {
-    pub async fn from_definition(def: &RedisBlobStorageDefinition) -> Result<Self> {
+impl MetadataBlobStorage {
+    pub async fn from_definition(def: &MetadataBlobStorageDefinition) -> Result<Self> {
         Ok(Self {
             blob: blob_storage_from_definition(&def.blob_storage).await?,
             metadata: redis_connection_from_definition(&def.metadata_storage).await?,
@@ -99,7 +99,7 @@ pub async fn proof_storage_from_config<'a>(
 pub fn proof_storage_definition_from_config<'a>(
     cfg: &'a ProofStorageConfig,
     storage_name: &str,
-) -> Result<&'a RedisBlobStorageDefinition> {
+) -> Result<&'a MetadataBlobStorageDefinition> {
     cfg.get(storage_name)
         .with_context(|| format!("Proof storage `{storage_name}` is not in config"))
 }
@@ -126,4 +126,4 @@ pub fn redis_url_from_definition(def: &RedisConnectionDefinition) -> Result<Stri
     Ok(format!("redis://{}{}:{}", auth, def.host, def.port))
 }
 
-pub type ProofStorageConfig = HashMap<String, RedisBlobStorageDefinition>;
+pub type ProofStorageConfig = HashMap<String, MetadataBlobStorageDefinition>;

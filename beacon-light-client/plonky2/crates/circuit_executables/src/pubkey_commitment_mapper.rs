@@ -22,7 +22,7 @@ use serde_json::json;
 
 use crate::{
     cached_circuit_build::{build_recursive_circuit_cached, CircuitTargetAndData},
-    crud::proof_storage::proof_storage::{ProofStorage, RedisBlobStorage},
+    crud::proof_storage::proof_storage::{MetadataBlobStorage, ProofStorage},
     provers::prove_inner_level2,
 };
 
@@ -36,7 +36,7 @@ pub type PubkeyCommitmentMapperProof = ProofWithPublicInputs<F, C, D>;
 pub type PubkeyCommitmentMapperCircuitData = CircuitData<F, C, D>;
 
 pub struct PubkeyCommitmentMapperContext {
-    pub storage: RedisBlobStorage,
+    pub storage: MetadataBlobStorage,
     pub protocol: String,
     pub deposit_count: u64,
     pub zero_hash_proofs: Vec<PubkeyCommitmentMapperProof>,
@@ -60,7 +60,7 @@ impl PubkeyCommitmentMapperContext {
         );
 
         let mut storage =
-            RedisBlobStorage::from_file(storage_config_filepath, "pubkey-commitment-mapper")
+            MetadataBlobStorage::from_file(storage_config_filepath, "pubkey-commitment-mapper")
                 .await?;
 
         poll_ready(&mut storage.metadata, &protocol).await;

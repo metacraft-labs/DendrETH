@@ -7,7 +7,7 @@ use circuit::SerdeCircuitTarget;
 use circuit_executables::{
     crud::{
         common::{get_recursive_stark_targets, load_circuit_data_starky, read_from_file},
-        proof_storage::proof_storage::RedisBlobStorage,
+        proof_storage::proof_storage::MetadataBlobStorage,
     },
     provers::{
         generate_final_exponentiate, generate_fp12_mul_proof, generate_miller_loop_proof,
@@ -88,7 +88,7 @@ async fn async_main() -> Result<()> {
 
     let storage_config_filepath = matches.get_one::<String>("proof_storage_cfg").unwrap();
     let mut storage =
-        RedisBlobStorage::from_file(&storage_config_filepath, "bls-verification").await?;
+        MetadataBlobStorage::from_file(&storage_config_filepath, "bls-verification").await?;
 
     let (pp1, pp2) =
         handle_pairing_precomp(serialized_circuits_dir, &message_g2, &signature_g2).await;

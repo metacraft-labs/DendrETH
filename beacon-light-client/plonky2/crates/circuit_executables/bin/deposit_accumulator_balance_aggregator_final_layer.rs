@@ -7,7 +7,7 @@ use circuit_executables::{
             fetch_pubkey_commitment_mapper_proof, load_circuit_data,
             save_deposit_accumulator_final_proof,
         },
-        proof_storage::proof_storage::RedisBlobStorage,
+        proof_storage::proof_storage::MetadataBlobStorage,
     },
     utils::CommandLineOptionsBuilder,
     wrap_final_layer_in_poseidon_bn128::wrap_final_layer_in_poseidon_bn_128,
@@ -52,7 +52,7 @@ async fn main() -> Result<()> {
 
     let storage_config_filepath = matches.get_one::<String>("proof_storage_cfg").unwrap();
     let mut storage =
-        RedisBlobStorage::from_file(&storage_config_filepath, "balance-verification").await?;
+        MetadataBlobStorage::from_file(&storage_config_filepath, "balance-verification").await?;
 
     let elapsed = start.elapsed();
 

@@ -11,7 +11,7 @@ use circuit_executables::{
             fetch_validator_balance_aggregator_input, load_circuit_data,
             save_balance_aggregator_proof,
         },
-        proof_storage::proof_storage::{ProofStorage, RedisBlobStorage},
+        proof_storage::proof_storage::{MetadataBlobStorage, ProofStorage},
     },
     db_constants::DB_CONSTANTS,
     provers::prove_inner_level,
@@ -69,7 +69,7 @@ async fn main() -> Result<()> {
 
     let storage_config_filepath = matches.get_one::<String>("proof_storage_cfg").unwrap();
     let mut storage =
-        RedisBlobStorage::from_file(&storage_config_filepath, "balance-verification").await?;
+        MetadataBlobStorage::from_file(&storage_config_filepath, "balance-verification").await?;
 
     println!("{}", "Loading circuit data...".yellow());
 
@@ -147,7 +147,7 @@ async fn main() -> Result<()> {
 }
 
 async fn process_queue(
-    storage: &mut RedisBlobStorage,
+    storage: &mut MetadataBlobStorage,
     queue: &WorkQueue,
     circuit_data: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     inner_circuit_data: &Option<CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>>,
