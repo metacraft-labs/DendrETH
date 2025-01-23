@@ -55,10 +55,10 @@
     "diva_scheduler": "beacon-light-client/plonky2/input_fetchers/dist/esm/balance_verification/withdrawal_credentials/runnable/diva_scheduler.mjs",
     "fetch_validators_root": "beacon-light-client/plonky2/input_fetchers/dist/esm/validators_commitment_mapper/runnable/fetch_validators_root.mjs",
     "lido_scheduler": "beacon-light-client/plonky2/input_fetchers/dist/esm/balance_verification/withdrawal_credentials/runnable/lido_scheduler.mjs",
-    "light_cleaner": "beacon-light-client/plonky2/input_fetchers/dist/esm/validators_commitment_mapper/runnable/light_cleaner.mjs",
+    "pubkey_commitment_mapper_scheduler": "beacon-light-client/plonky2/input_fetchers/dist/esm/balance_verification/deposits_accumulator/runnable/run_pubkey_commitment_mapper_scheduler.mjs",
     "run_balance_aggregator": "beacon-light-client/plonky2/input_fetchers/dist/esm/balance_verification/deposits_accumulator/runnable/run_balance_aggregator.mjs",
-    "run_pubkey_commitment_mapper_scheduler": "beacon-light-client/plonky2/input_fetchers/dist/esm/balance_verification/deposits_accumulator/runnable/run_pubkey_commitment_mapper_scheduler.mjs",
     "schedule_test_input": "beacon-light-client/plonky2/input_fetchers/dist/esm/balance_verification/withdrawal_credentials/runnable/schedule_test_input.mjs",
+    "validators_commitment_mapper_light_cleaner": "beacon-light-client/plonky2/input_fetchers/dist/esm/validators_commitment_mapper/runnable/light_cleaner.mjs",
     "validators_commitment_mapper_scheduler": "beacon-light-client/plonky2/input_fetchers/dist/esm/validators_commitment_mapper/runnable/run_scheduler.mjs",
     "verify_finalized_epochs": "beacon-light-client/plonky2/input_fetchers/dist/esm/validators_commitment_mapper/runnable/verify_finalized_epochs.mjs",
     "withdrawal_credentials_balance_verification_scheduler": "beacon-light-client/plonky2/input_fetchers/dist/esm/balance_verification/withdrawal_credentials/runnable/run_scheduler.mjs"
