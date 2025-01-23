@@ -82,7 +82,7 @@ impl MetadataBlobStorage {
 pub async fn blob_storage_from_definition(
     def: &BlobStorageDefinition,
 ) -> Result<Box<dyn ProofStorage>> {
-    Ok(match def {
+    let storage: Box<dyn ProofStorage> = match def {
         BlobStorageDefinition::S3(cfg) => Box::new(
             AwsStorage::new(
                 cfg.region.clone(),
@@ -98,7 +98,9 @@ pub async fn blob_storage_from_definition(
             let storage = RedisStorage::new(url).await?;
             Box::new(storage)
         }
-    })
+    };
+
+    Ok(storage)
 }
 
 pub async fn proof_storage_from_config<'a>(
