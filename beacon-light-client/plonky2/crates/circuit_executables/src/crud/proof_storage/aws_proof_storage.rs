@@ -4,9 +4,7 @@ use aws_config::{default_provider::credentials, BehaviorVersion, ConfigLoader, R
 use aws_sdk_s3::{config::Credentials, primitives::ByteStream, Client};
 use serde::{Deserialize, Serialize};
 
-use crate::crud::common::read_file_to_string;
-
-use super::proof_storage::ProofStorage;
+use crate::crud::{common::read_file_to_string, proof_storage::ProofStorage};
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]

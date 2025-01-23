@@ -1,9 +1,10 @@
-use super::proof_storage::ProofStorage;
+use crate::crud::proof_storage::async_trait;
 use anyhow::Result;
-use async_trait::async_trait;
 use glob::glob;
 use serde::{Deserialize, Serialize};
 use std::fs;
+
+use crate::crud::proof_storage::ProofStorage;
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]

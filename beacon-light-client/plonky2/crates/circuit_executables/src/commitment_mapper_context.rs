@@ -7,8 +7,8 @@ use itertools::Itertools;
 use redis_work_queue::{KeyPrefix, WorkQueue};
 
 use crate::{
-    cached_circuit_build::CircuitTargetAndData,
-    crud::proof_storage::proof_storage::MetadataBlobStorage, db_constants::DB_CONSTANTS,
+    cached_circuit_build::CircuitTargetAndData, crud::proof_storage::MetadataBlobStorage,
+    db_constants::DB_CONSTANTS,
 };
 
 const CIRCUIT_NAME: &str = "commitment_mapper";

@@ -8,7 +8,7 @@ use circuit_executables::{
             fetch_final_layer_input, fetch_proof, fetch_proof_balances, load_circuit_data,
             save_final_proof,
         },
-        proof_storage::proof_storage::MetadataBlobStorage,
+        proof_storage::MetadataBlobStorage,
     },
     utils::CommandLineOptionsBuilder,
     wrap_final_layer_in_poseidon_bn128::wrap_final_layer_in_poseidon_bn_128,

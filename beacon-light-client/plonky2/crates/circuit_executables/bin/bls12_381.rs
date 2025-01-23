@@ -3,7 +3,7 @@ use circuit::SerdeCircuitTarget;
 use circuit_executables::{
     crud::{
         common::{load_circuit_data_starky, load_common_circuit_data_starky, read_from_file},
-        proof_storage::proof_storage::{MetadataBlobStorage, ProofStorage},
+        proof_storage::{MetadataBlobStorage, ProofStorage},
     },
     utils::CommandLineOptionsBuilder,
 };

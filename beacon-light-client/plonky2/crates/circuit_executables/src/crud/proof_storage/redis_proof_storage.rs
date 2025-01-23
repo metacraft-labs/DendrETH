@@ -1,7 +1,8 @@
-use super::proof_storage::ProofStorage;
 use anyhow::Result;
 use async_trait::async_trait;
 use redis::{aio::Connection, AsyncCommands};
+
+use crate::crud::proof_storage::ProofStorage;
 
 pub struct RedisStorage {
     connection: Connection,

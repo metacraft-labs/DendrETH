@@ -7,7 +7,7 @@ use circuit::SerdeCircuitTarget;
 use circuit_executables::{
     crud::{
         common::{get_recursive_stark_targets, load_circuit_data_starky, read_from_file},
-        proof_storage::proof_storage::MetadataBlobStorage,
+        proof_storage::MetadataBlobStorage,
     },
     provers::{
         generate_final_exponentiate, generate_fp12_mul_proof, generate_miller_loop_proof,

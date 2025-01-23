@@ -22,7 +22,7 @@ use serde_json::json;
 
 use crate::{
     cached_circuit_build::{build_recursive_circuit_cached, CircuitTargetAndData},
-    crud::proof_storage::proof_storage::{MetadataBlobStorage, ProofStorage},
+    crud::proof_storage::{MetadataBlobStorage, ProofStorage},
     provers::prove_inner_level2,
 };
 

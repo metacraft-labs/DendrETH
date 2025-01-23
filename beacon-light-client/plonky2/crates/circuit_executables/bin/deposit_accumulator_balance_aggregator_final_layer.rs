@@ -7,7 +7,7 @@ use circuit_executables::{
             fetch_pubkey_commitment_mapper_proof, load_circuit_data,
             save_deposit_accumulator_final_proof,
         },
-        proof_storage::proof_storage::MetadataBlobStorage,
+        proof_storage::MetadataBlobStorage,
     },
     utils::CommandLineOptionsBuilder,
     wrap_final_layer_in_poseidon_bn128::wrap_final_layer_in_poseidon_bn_128,

@@ -1,12 +1,13 @@
 use std::env;
 
-use super::proof_storage::ProofStorage;
 use anyhow::Result;
 use async_trait::async_trait;
 use azure_storage::ConnectionString;
 
 use azure_storage_blobs::{container::operations::BlobItem, prelude::*};
 use futures::StreamExt;
+
+use crate::crud::proof_storage::ProofStorage;
 
 pub struct AzureStorage {
     container_client: ContainerClient,

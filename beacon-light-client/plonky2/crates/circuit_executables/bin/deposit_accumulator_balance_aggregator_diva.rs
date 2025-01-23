@@ -11,7 +11,7 @@ use circuit_executables::{
             fetch_validator_balance_aggregator_input, load_circuit_data,
             save_balance_aggregator_proof,
         },
-        proof_storage::proof_storage::{MetadataBlobStorage, ProofStorage},
+        proof_storage::{MetadataBlobStorage, ProofStorage},
     },
     db_constants::DB_CONSTANTS,
     provers::prove_inner_level,

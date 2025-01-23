@@ -1,7 +1,8 @@
 use std::{fs, marker::PhantomData, thread, time::Duration};
 
 use crate::{
-    constants::VALIDATOR_REGISTRY_LIMIT, db_constants::DB_CONSTANTS, utils::get_depth_for_gindex,
+    constants::VALIDATOR_REGISTRY_LIMIT, crud::proof_storage::ProofStorage,
+    db_constants::DB_CONSTANTS, utils::get_depth_for_gindex,
 };
 use anyhow::{bail, ensure, Context, Result};
 use async_trait::async_trait;
@@ -36,8 +37,6 @@ use plonky2::{
 use plonky2_circuit_serializer::serializer::{CustomGateSerializer, CustomGeneratorSerializer};
 use redis::{aio::Connection, AsyncCommands, RedisError};
 use serde::{de::DeserializeOwned, Serialize};
-
-use super::proof_storage::proof_storage::ProofStorage;
 
 pub trait NeedsChange {
     fn needs_change(&self) -> bool;

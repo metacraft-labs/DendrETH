@@ -12,7 +12,7 @@ use circuit_executables::{
             delete_balance_verification_proof_dependencies, fetch_proofs_balances,
             fetch_validator_balance_input, load_circuit_data, read_from_file, save_balance_proof,
         },
-        proof_storage::proof_storage::MetadataBlobStorage,
+        proof_storage::MetadataBlobStorage,
     },
     db_constants::DB_CONSTANTS,
     provers::prove_inner_level,
