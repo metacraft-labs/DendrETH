@@ -12,9 +12,9 @@ pub fn get_validator_status<F: RichField + Extendable<D>, const D: usize>(
     current_epoch: &BigUintTarget,
     exit_epoch: &BigUintTarget,
 ) -> (BoolTarget, BoolTarget, BoolTarget) {
-    let activation_epoch_le_current_epoch = builder.cmp_biguint(&activation_epoch, &current_epoch);
+    let activation_epoch_le_current_epoch = builder.cmp_biguint(activation_epoch, current_epoch);
 
-    let current_epoch_le_exit_epoch = builder.cmp_biguint(&current_epoch, &exit_epoch);
+    let current_epoch_le_exit_epoch = builder.cmp_biguint(current_epoch, exit_epoch);
 
     let is_equal = biguint_is_equal(builder, current_epoch, exit_epoch);
     let not_equal = builder.not(is_equal);
@@ -39,8 +39,8 @@ pub fn get_validator_relevance<F: RichField + Extendable<D>, const D: usize>(
     current_epoch: &BigUintTarget,
     withdrawable_epoch: &BigUintTarget,
 ) -> BoolTarget {
-    let current_le_withdrawable_epoch = builder.cmp_biguint(&current_epoch, &withdrawable_epoch);
-    let activation_epoch_le_current_epoch = builder.cmp_biguint(&activation_epoch, &current_epoch);
+    let current_le_withdrawable_epoch = builder.cmp_biguint(current_epoch, withdrawable_epoch);
+    let activation_epoch_le_current_epoch = builder.cmp_biguint(activation_epoch, current_epoch);
 
     builder.and(
         current_le_withdrawable_epoch,
@@ -71,9 +71,9 @@ mod test {
     fn test_get_validator_relevance() -> Result<()> {
         let mut builder =
             CircuitBuilder::<GoldilocksField, 2>::new(CircuitConfig::standard_recursion_config());
-        let activation_epoch = builder.constant_biguint(&BigUint::from(28551 as u32));
-        let current_epoch = builder.constant_biguint(&BigUint::from(285512 as u32));
-        let withdrawable_epoch = builder.constant_biguint(&BigUint::from(2855125512 as u32));
+        let activation_epoch = builder.constant_biguint(&BigUint::from(28551_u32));
+        let current_epoch = builder.constant_biguint(&BigUint::from(285512_u32));
+        let withdrawable_epoch = builder.constant_biguint(&BigUint::from(2855125512_u32));
         let is_validator_relevant = get_validator_relevance(
             &mut builder,
             &activation_epoch,

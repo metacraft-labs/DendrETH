@@ -38,7 +38,7 @@ where
     let proof = define_recursive_proof::<F, C, S, C, D>(
         stark,
         inner_proof,
-        &inner_config,
+        inner_config,
         false,
         &mut builder,
     );

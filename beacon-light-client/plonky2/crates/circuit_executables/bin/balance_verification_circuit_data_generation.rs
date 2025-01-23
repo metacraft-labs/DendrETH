@@ -26,6 +26,8 @@ const CIRCUIT_NAME: &str = "balance_verification";
 const VALIDATORS_COUNT: usize = 8;
 const WITHDRAWAL_CREDENTIALS_COUNT: usize = 1;
 
+const RECURSION_DEPTH: usize = 37;
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let matches = CommandLineOptionsBuilder::new("balance_verification_circuit_data_generation")
@@ -55,9 +57,9 @@ async fn main() -> Result<()> {
         x => Some(x.parse::<usize>().unwrap()),
     };
 
-    if level != None && level.unwrap() > 37 {
+    if level.is_some() && level.unwrap() > RECURSION_DEPTH {
         bail!(
-            "Supplied level {} is larger than the maximum allowed level 37",
+            "Supplied level {} is larger than the maximum allowed level {RECURSION_DEPTH}",
             level.unwrap()
         );
     }
@@ -67,7 +69,7 @@ async fn main() -> Result<()> {
         WITHDRAWAL_CREDENTIALS_COUNT,
     >::build(&());
 
-    if level == None || level == Some(0) {
+    if level.is_none() || level == Some(0) {
         serialize_recursive_circuit_single_level(
             &first_level_target,
             &first_level_data,
@@ -81,16 +83,14 @@ async fn main() -> Result<()> {
         return Ok(());
     }
 
-    let max_level = if level == None {
-        37
-    } else {
-        clamp(level.unwrap(), 1, 37)
-    };
+    let max_level = level
+        .map(|level| clamp(level, 1, RECURSION_DEPTH))
+        .unwrap_or(RECURSION_DEPTH);
 
     let mut prev_circuit_data = first_level_data;
 
     for i in 1..=max_level {
-        if level == Some(i) || level == None {
+        if level == Some(i) || level.is_none() {
             let (target, data) = WithdrawalCredentialsBalanceAggregatorInnerLevel::<
                 VALIDATORS_COUNT,
                 WITHDRAWAL_CREDENTIALS_COUNT,

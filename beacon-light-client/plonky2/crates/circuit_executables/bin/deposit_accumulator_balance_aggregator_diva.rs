@@ -49,6 +49,7 @@ static GLOBAL: Jemalloc = Jemalloc;
 
 const CIRCUIT_NAME: &str = "deposit_accumulator_balance_aggregator_diva";
 
+#[allow(clippy::large_enum_variant)]
 enum Targets {
     FirstLevel(Option<CircuitTargetType<DepositAccumulatorBalanceAggregatorDivaFirstLevel>>),
     InnerLevel(Option<BasicRecursiveInnerCircuitTarget>),
@@ -69,7 +70,7 @@ async fn main() -> Result<()> {
 
     let storage_config_filepath = matches.get_one::<String>("proof_storage_cfg").unwrap();
     let mut storage =
-        MetadataBlobStorage::from_file(&storage_config_filepath, "balance-verification").await?;
+        MetadataBlobStorage::from_file(storage_config_filepath, "balance-verification").await?;
 
     println!("{}", "Loading circuit data...".yellow());
 
@@ -91,7 +92,7 @@ async fn main() -> Result<()> {
                 serialized_circuits_dir,
                 CIRCUIT_NAME,
                 config.circuit_level as usize,
-                &|| DepositAccumulatorBalanceAggregatorDivaInnerLevel::build(&inner_circuit_data),
+                &|| DepositAccumulatorBalanceAggregatorDivaInnerLevel::build(inner_circuit_data),
             );
 
             (Targets::InnerLevel(Some(circuit.0)), circuit.1)
@@ -141,11 +142,12 @@ async fn main() -> Result<()> {
         config.stop_after,
         config.lease_for,
         config.preserve_intermediary_proofs,
-        &protocol,
+        protocol,
     )
     .await
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn process_queue(
     storage: &mut MetadataBlobStorage,
     queue: &WorkQueue,
@@ -186,7 +188,7 @@ async fn process_queue(
 
         match targets {
             Targets::FirstLevel(targets) => {
-                match process_first_level_task(
+                let res = process_first_level_task(
                     &mut storage.metadata,
                     storage.blob.as_mut(),
                     queue,
@@ -195,22 +197,20 @@ async fn process_queue(
                     targets.as_ref().unwrap(),
                     protocol,
                 )
-                .await
-                {
-                    Err(err) => {
-                        println!(
-                            "{}",
-                            format!("Error processing first level task {:?}", err)
-                                .red()
-                                .bold()
-                        );
-                        continue;
-                    }
-                    Ok(_) => {}
+                .await;
+
+                if let Err(err) = res {
+                    println!(
+                        "{}",
+                        format!("Error processing first level task {:?}", err)
+                            .red()
+                            .bold()
+                    );
+                    continue;
                 };
             }
             Targets::InnerLevel(inner_circuit_targets) => {
-                match process_inner_level_job(
+                let res = process_inner_level_job(
                     &mut storage.metadata,
                     storage.blob.as_mut(),
                     queue,
@@ -222,18 +222,16 @@ async fn process_queue(
                     preserve_intermediary_proofs,
                     protocol,
                 )
-                .await
-                {
-                    Err(err) => {
-                        println!(
-                            "{}",
-                            format!("Error processing inner level task {:?}", err)
-                                .red()
-                                .bold()
-                        );
-                        continue;
-                    }
-                    Ok(_) => {}
+                .await;
+
+                if let Err(err) = res {
+                    println!(
+                        "{}",
+                        format!("Error processing inner level task {:?}", err)
+                            .red()
+                            .bold()
+                    );
+                    continue;
                 };
             }
         }
@@ -308,6 +306,7 @@ async fn process_first_level_task(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn process_inner_level_job(
     con: &mut Connection,
     proof_storage: &mut dyn ProofStorage,
@@ -352,15 +351,15 @@ async fn process_inner_level_job(
                     .red()
                     .bold()
             );
-            return Err(err);
+            Err(err)
         }
         Ok(proofs) => {
             let proof = prove_inner_level(
                 proofs.0,
                 proofs.1,
-                &inner_circuit_data,
-                &inner_circuit_target.as_ref().unwrap(),
-                &circuit_data,
+                inner_circuit_data,
+                inner_circuit_target.as_ref().unwrap(),
+                circuit_data,
             )?;
 
             match save_balance_aggregator_proof(

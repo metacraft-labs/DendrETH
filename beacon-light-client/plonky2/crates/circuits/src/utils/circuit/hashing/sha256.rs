@@ -1,3 +1,8 @@
+#![allow(clippy::clone_on_copy)]
+#![allow(clippy::same_item_push)]
+#![allow(clippy::unnecessary_cast)]
+#![allow(clippy::needless_range_loop)]
+
 use plonky2::{
     field::extension::Extendable, hash::hash_types::RichField, iop::target::BoolTarget,
     plonk::circuit_builder::CircuitBuilder,

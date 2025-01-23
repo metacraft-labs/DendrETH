@@ -102,7 +102,7 @@ impl CommitmentMapperTask {
 
 impl CommitmentMapperTask {
     pub fn deserialize(bytes: &[u8]) -> Result<CommitmentMapperTask> {
-        ensure!(bytes.len() > 0, "Task buffer is empty");
+        ensure!(!bytes.is_empty(), "Task buffer is empty");
 
         let task_tag = FromPrimitive::from_u8(u8::from_be_bytes(bytes[0..1].try_into()?))
             .context("Invalid task tag")?;

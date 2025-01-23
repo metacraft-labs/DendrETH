@@ -34,4 +34,4 @@ pub fn get_db_constants() -> DBConstants<'static> {
     serde_json::from_str(include_str!("../../../kv_db_constants.json")).unwrap()
 }
 
-pub static DB_CONSTANTS: Lazy<DBConstants> = Lazy::new(|| get_db_constants());
+pub static DB_CONSTANTS: Lazy<DBConstants> = Lazy::new(get_db_constants);

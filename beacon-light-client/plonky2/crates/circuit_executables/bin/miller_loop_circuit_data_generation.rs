@@ -83,7 +83,7 @@ fn main_thread() {
 
     fs::write(
         format!("{serialized_circuits_dir}/miller_loop.plonky2_circuit"),
-        &circuit_bytes,
+        circuit_bytes,
     )
     .unwrap();
 
@@ -91,7 +91,7 @@ fn main_thread() {
 
     fs::write(
         format!("{serialized_circuits_dir}/miller_loop.plonky2_common_data"),
-        &common_circuit_bytes,
+        common_circuit_bytes,
     )
     .unwrap();
 
@@ -99,7 +99,7 @@ fn main_thread() {
 
     fs::write(
         format!("{serialized_circuits_dir}/miller_loop.plonky2_targets"),
-        &targets,
+        targets,
     )
     .unwrap();
 

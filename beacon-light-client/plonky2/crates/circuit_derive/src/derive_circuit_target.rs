@@ -17,9 +17,9 @@ pub fn impl_derive_circuit_target(input_ast: DeriveInput) -> TokenStream {
         panic!("CircuitTarget is implemented only for structs");
     };
 
-    let targets_with_public_inputs_impl = impl_targets_with_public_inputs(&input_ast, &data);
-    let set_witness_impl = impl_set_witness(&input_ast, &data);
-    let readable_circuit_input_target_impl = impl_readable_circuit_input_target(&input_ast, &data);
+    let targets_with_public_inputs_impl = impl_targets_with_public_inputs(&input_ast, data);
+    let set_witness_impl = impl_set_witness(&input_ast, data);
+    let readable_circuit_input_target_impl = impl_readable_circuit_input_target(&input_ast, data);
 
     quote! {
         #targets_with_public_inputs_impl
@@ -210,7 +210,7 @@ fn impl_targets_with_public_inputs(
 fn filter_public_input_fields(fields: &Fields) -> Vec<Field> {
     fields
         .into_iter()
-        .filter(|&field| has_functional_attr_with_arg(&field, "target", "out"))
+        .filter(|&field| has_functional_attr_with_arg(field, "target", "out"))
         .cloned()
         .collect_vec()
 }
@@ -218,7 +218,7 @@ fn filter_public_input_fields(fields: &Fields) -> Vec<Field> {
 fn filter_circuit_input_fields(fields: &Fields) -> Vec<Field> {
     fields
         .into_iter()
-        .filter(|&field| has_functional_attr_with_arg(&field, "target", "in"))
+        .filter(|&field| has_functional_attr_with_arg(field, "target", "in"))
         .cloned()
         .collect_vec()
 }

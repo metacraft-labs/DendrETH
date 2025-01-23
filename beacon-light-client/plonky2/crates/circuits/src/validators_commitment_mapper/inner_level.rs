@@ -33,8 +33,8 @@ impl Circuit for ValidatorsCommitmentMapperInnerLevel {
         builder: &mut CircuitBuilder<Self::F, { Self::D }>,
         circuit_data: &Self::Params,
     ) -> Self::Target {
-        let proof1 = verify_proof(builder, &circuit_data);
-        let proof2 = verify_proof(builder, &circuit_data);
+        let proof1 = verify_proof(builder, circuit_data);
+        let proof2 = verify_proof(builder, circuit_data);
 
         let l_input =
             ValidatorsCommitmentMapperFirstLevel::read_public_inputs_target(&proof1.public_inputs);

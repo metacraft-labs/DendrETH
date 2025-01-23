@@ -49,7 +49,7 @@ pub fn prove_inner_level(
     pw.set_proof_with_pis_target(&inner_circuit_target.proof1, &inner_proof1);
     pw.set_proof_with_pis_target(&inner_circuit_target.proof2, &inner_proof2);
 
-    Ok(inner_circuit_data.prove(pw)?)
+    inner_circuit_data.prove(pw)
 }
 
 // TODO: Don't hard code the D
@@ -67,7 +67,7 @@ where
     pw.set_proof_with_pis_target(&inner_circuit_target.proof1, proof1);
     pw.set_proof_with_pis_target(&inner_circuit_target.proof2, proof2);
 
-    Ok(inner_circuit_data.prove(pw)?)
+    inner_circuit_data.prove(pw)
 }
 
 const D: usize = 2;

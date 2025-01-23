@@ -50,6 +50,7 @@ static GLOBAL: Jemalloc = Jemalloc;
 
 const CIRCUIT_NAME: &str = "balance_verification";
 
+#[allow(clippy::large_enum_variant)]
 enum Targets<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIALS_COUNT: usize>
 where
     [(); VALIDATORS_COUNT / 4]:,
@@ -141,11 +142,12 @@ async fn main() -> Result<()> {
         config.stop_after,
         config.lease_for,
         config.preserve_intermediary_proofs,
-        &protocol,
+        protocol,
     )
     .await
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn process_queue<const VALIDATORS_COUNT: usize, const WITHDRAWAL_CREDENTIALS_COUNT: usize>(
     storage: &mut MetadataBlobStorage,
     queue: &WorkQueue,
@@ -189,7 +191,7 @@ where
 
         match targets {
             Targets::FirstLevel(targets) => {
-                match process_first_level_task(
+                let res = process_first_level_task(
                     storage,
                     queue,
                     queue_item,
@@ -197,44 +199,41 @@ where
                     targets.as_ref().unwrap(),
                     protocol,
                 )
-                .await
-                {
-                    Err(err) => {
-                        println!(
-                            "{}",
-                            format!("Error processing first level task {:?}", err)
-                                .red()
-                                .bold()
-                        );
-                        continue;
-                    }
-                    Ok(_) => {}
+                .await;
+
+                if let Err(err) = res {
+                    println!(
+                        "{}",
+                        format!("Error processing first level task {:?}", err)
+                            .red()
+                            .bold()
+                    );
+                    continue;
                 };
             }
             Targets::InnerLevel(inner_circuit_targets) => {
-                match process_inner_level_job::<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>(
-                    storage,
-                    queue,
-                    queue_item,
-                    circuit_data,
-                    inner_circuit_data.unwrap(),
-                    inner_circuit_targets,
-                    level,
-                    preserve_intermediary_proofs,
-                    protocol,
-                )
-                .await
-                {
-                    Err(err) => {
-                        println!(
-                            "{}",
-                            format!("Error processing inner level task {:?}", err)
-                                .red()
-                                .bold()
-                        );
-                        continue;
-                    }
-                    Ok(_) => {}
+                let res =
+                    process_inner_level_job::<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>(
+                        storage,
+                        queue,
+                        queue_item,
+                        circuit_data,
+                        inner_circuit_data.unwrap(),
+                        inner_circuit_targets,
+                        level,
+                        preserve_intermediary_proofs,
+                        protocol,
+                    )
+                    .await;
+
+                if let Err(err) = res {
+                    println!(
+                        "{}",
+                        format!("Error processing inner level task {:?}", err)
+                            .red()
+                            .bold()
+                    );
+                    continue;
                 };
             }
         }
@@ -322,6 +321,7 @@ where
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn process_inner_level_job<
     const VALIDATORS_COUNT: usize,
     const WITHDRAWAL_CREDENTIALS_COUNT: usize,
@@ -376,15 +376,15 @@ where
                     .red()
                     .bold()
             );
-            return Err(err);
+            Err(err)
         }
         Ok(proofs) => {
             let proof = prove_inner_level(
                 proofs.0,
                 proofs.1,
-                &inner_circuit_data,
-                &inner_circuit_target.as_ref().unwrap(),
-                &circuit_data,
+                inner_circuit_data,
+                inner_circuit_target.as_ref().unwrap(),
+                circuit_data,
             )?;
 
             match save_balance_proof::<VALIDATORS_COUNT, WITHDRAWAL_CREDENTIALS_COUNT>(

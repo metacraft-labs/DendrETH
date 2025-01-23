@@ -47,8 +47,8 @@ where
         builder: &mut CircuitBuilder<Self::F, D>,
         circuit_data: &Self::Params,
     ) -> Self::Target where {
-        let proof1 = verify_proof(builder, &circuit_data);
-        let proof2 = verify_proof(builder, &circuit_data);
+        let proof1 = verify_proof(builder, circuit_data);
+        let proof2 = verify_proof(builder, circuit_data);
 
         let l_input = WithdrawalCredentialsBalanceAggregatorFirstLevel::<
             VALIDATORS_COUNT,

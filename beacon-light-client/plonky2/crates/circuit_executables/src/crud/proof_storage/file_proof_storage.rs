@@ -20,7 +20,7 @@ unsafe impl Sync for FileStorage {}
 
 impl FileStorage {
     pub fn new(folder_name: String) -> FileStorage {
-        if !fs::metadata(&folder_name).is_ok() {
+        if fs::metadata(&folder_name).is_err() {
             fs::create_dir_all(&folder_name).unwrap();
         }
 
@@ -45,7 +45,7 @@ impl ProofStorage for FileStorage {
     async fn get_keys_count(&mut self, pattern: String) -> usize {
         glob(&format!("{}/{}", self.folder_name, pattern))
             .unwrap()
-            .filter(|path| matches!(path, Ok(_)))
+            .filter(|path| path.is_ok())
             .count()
     }
 }

@@ -39,8 +39,8 @@ impl Circuit for DepositAccumulatorBalanceAggregatorInnerLevel {
         builder: &mut CircuitBuilder<Self::F, { Self::D }>,
         circuit_data: &Self::Params,
     ) -> Self::Target {
-        let left_range_proof = verify_proof(builder, &circuit_data);
-        let right_range_proof = verify_proof(builder, &circuit_data);
+        let left_range_proof = verify_proof(builder, circuit_data);
+        let right_range_proof = verify_proof(builder, circuit_data);
 
         let left_range = DepositAccumulatorBalanceAggregatorFirstLevel::read_public_inputs_target(
             &left_range_proof.public_inputs,
@@ -208,7 +208,7 @@ fn calc_counted_data<F: RichField + Extendable<D>, const D: usize>(
     is_rightmost_counted = builder.or(is_rightmost_counted, r_y);
     is_rightmost_counted = builder.or(is_rightmost_counted, r_z);
 
-    return (is_leftmost_counted, is_rightmost_counted);
+    (is_leftmost_counted, is_rightmost_counted)
 }
 
 fn deposit_has_same_pubkey_and_counted<F: RichField + Extendable<D>, const D: usize>(
@@ -247,12 +247,12 @@ fn accumulate_validator_stats<F: RichField + Extendable<D>, const D: usize>(
     left: &ValidatorStatusStatsTarget,
     right: &ValidatorStatusStatsTarget,
 ) -> ValidatorStatusStatsTarget {
-    return ValidatorStatusStatsTarget {
+    ValidatorStatusStatsTarget {
         non_activated_count: builder.add(left.non_activated_count, right.non_activated_count),
         active_count: builder.add(left.active_count, right.active_count),
         exited_count: builder.add(left.exited_count, right.exited_count),
         slashed_count: builder.add(left.slashed_count, right.slashed_count),
-    };
+    }
 }
 
 fn pubkeys_are_same_and_counted<F: RichField + Extendable<D>, const D: usize>(

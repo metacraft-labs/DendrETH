@@ -3,7 +3,7 @@ use std::{fs, marker::PhantomData, thread, time::Duration};
 use crate::{
     constants::VALIDATOR_REGISTRY_LIMIT, db_constants::DB_CONSTANTS, utils::get_depth_for_gindex,
 };
-use anyhow::{ensure, Context, Result};
+use anyhow::{bail, ensure, Context, Result};
 use async_trait::async_trait;
 use circuit::{Circuit, CircuitInput, SerdeCircuitTarget};
 use circuits::{
@@ -146,7 +146,7 @@ pub async fn fetch_validator_balance_aggregator_input(
     protocol: String,
     index: u64,
 ) -> Result<CircuitInput<DepositAccumulatorBalanceAggregatorDivaFirstLevel>> {
-    Ok(fetch_redis_json_object(
+    fetch_redis_json_object(
         con,
         format!(
             "{}:{}:{}",
@@ -157,7 +157,7 @@ pub async fn fetch_validator_balance_aggregator_input(
             index
         ),
     )
-    .await?)
+    .await
 }
 
 pub async fn fetch_validator_balance_input<
@@ -178,7 +178,7 @@ pub async fn fetch_validator_balance_input<
 where
     [(); VALIDATORS_COUNT / 4]:,
 {
-    Ok(fetch_redis_json_object(
+    fetch_redis_json_object(
         con,
         format!(
             "{}:{}:{}",
@@ -187,7 +187,7 @@ where
             index
         ),
     )
-    .await?)
+    .await
 }
 
 pub async fn fetch_final_layer_input<const WITHDRAWAL_CREDENTIALS_COUNT: usize>(
@@ -311,6 +311,7 @@ where
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn save_final_proof(
     con: &mut Connection,
     protocol: String,
@@ -345,6 +346,7 @@ pub async fn save_final_proof(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn save_deposit_accumulator_final_proof(
     con: &mut Connection,
     protocol: String,
@@ -501,9 +503,7 @@ pub fn get_block_number_with_latest_change(keys: Vec<u64>, block_number: u64) ->
     let mut min_key = keys[0];
     let mut min_key_difference = u64::MAX;
 
-    for i in 0..keys.len() {
-        let key = keys[i];
-
+    for key in keys {
         if block_number >= key && block_number - key < min_key_difference {
             min_key = key;
             min_key_difference = block_number - key;
@@ -511,7 +511,7 @@ pub fn get_block_number_with_latest_change(keys: Vec<u64>, block_number: u64) ->
     }
 
     if min_key_difference == u64::MAX {
-        return Err(anyhow::anyhow!("Could not find data for block number"));
+        bail!("Could not find data for block number");
     }
 
     Ok(min_key)
@@ -528,16 +528,16 @@ pub async fn fetch_pubkey_commitment_mapper_proof(
 
     let keys = keys
         .iter()
-        .map(|key| key.split(":").last().unwrap().parse().unwrap())
+        .map(|key| key.split(':').last().unwrap().parse().unwrap())
         .collect();
 
     let key = get_block_number_with_latest_change(keys, block_number)?;
 
-    Ok(fetch_redis_json_object(
+    fetch_redis_json_object(
         con,
         format!("{}:pubkey_commitment_mapper:root_proofs:{}", protocol, key),
     )
-    .await?)
+    .await
 }
 
 pub async fn fetch_validator(
@@ -552,7 +552,7 @@ pub async fn fetch_validator(
     );
 
     let latest_change_slot = get_slot_with_latest_change(con, &key, slot).await?;
-    Ok(fetch_redis_json_object(con, format!("{}:{}", key, latest_change_slot)).await?)
+    fetch_redis_json_object(con, format!("{}:{}", key, latest_change_slot)).await
 }
 
 pub async fn save_zero_validator_proof(
@@ -624,9 +624,7 @@ async fn save_vcm_proof_data(
             &bits_to_bytes(&proof_data.public_inputs.sha256_hash_tree_root[..])[..],
             &u64_to_ssz_leaf(length)[..],
         ]
-        .concat()
-        .try_into()
-        .unwrap();
+        .concat();
 
         let validators_root = hex::encode(hash_bytes(validators_root_bytes.as_slice()));
 

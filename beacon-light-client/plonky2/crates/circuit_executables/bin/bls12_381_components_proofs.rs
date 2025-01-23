@@ -88,7 +88,7 @@ async fn async_main() -> Result<()> {
 
     let storage_config_filepath = matches.get_one::<String>("proof_storage_cfg").unwrap();
     let mut storage =
-        MetadataBlobStorage::from_file(&storage_config_filepath, "bls-verification").await?;
+        MetadataBlobStorage::from_file(storage_config_filepath, "bls-verification").await?;
 
     let (pp1, pp2) =
         handle_pairing_precomp(serialized_circuits_dir, &message_g2, &signature_g2).await;
@@ -181,10 +181,7 @@ async fn handle_final_exponentiation(
     ))
     .unwrap();
 
-    let final_exp_proof =
-        generate_final_exponentiate(&fp12_mull, &final_exp_targets, &final_exp_circuit_data);
-
-    final_exp_proof
+    generate_final_exponentiate(fp12_mull, &final_exp_targets, &final_exp_circuit_data)
 }
 
 async fn handle_fp12_mul(
@@ -198,14 +195,12 @@ async fn handle_fp12_mul(
     let fp12_mul_targets =
         get_recursive_stark_targets(&format!("{serialized_circuits_dir}/fp12_mul")).unwrap();
 
-    let fp12_mul_proof = generate_fp12_mul_proof(
-        &miller_loop1,
-        &miller_loop2,
+    generate_fp12_mul_proof(
+        miller_loop1,
+        miller_loop2,
         &fp12_mul_targets,
         &fp12_mul_circuit_data,
-    );
-
-    fp12_mul_proof
+    )
 }
 
 async fn handle_miller_loop(
@@ -225,15 +220,15 @@ async fn handle_miller_loop(
         get_recursive_stark_targets(&format!("{serialized_circuits_dir}/miller_loop")).unwrap();
 
     let ml1 = generate_miller_loop_proof(
-        &pubkey_g1,
-        &message_g2,
+        pubkey_g1,
+        message_g2,
         &miller_loop_targets,
         &miller_loop_circuit_data,
     );
 
     let ml2 = generate_miller_loop_proof(
-        &neg_g1,
-        &signature_g2,
+        neg_g1,
+        signature_g2,
         &miller_loop_targets,
         &miller_loop_circuit_data,
     );
@@ -264,13 +259,13 @@ async fn handle_pairing_precomp(
         get_recursive_stark_targets(&format!("{serialized_circuits_dir}/pairing_precomp")).unwrap();
 
     let pp1 = generate_pairing_precomp_proof(
-        &message_g2,
+        message_g2,
         &pairing_precomp_targets,
         &pairing_precomp_circuit_data,
     );
 
     let pp2 = generate_pairing_precomp_proof(
-        &signature_g2,
+        signature_g2,
         &pairing_precomp_targets,
         &pairing_precomp_circuit_data,
     );

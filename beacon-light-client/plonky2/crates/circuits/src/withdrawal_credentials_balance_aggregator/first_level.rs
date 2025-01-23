@@ -121,7 +121,7 @@ where
             .iter()
             .zip(input.non_zero_validator_leaves_mask)
             .map(|(validator, is_not_zero)| {
-                hash_validator_poseidon_or_zeroes(builder, &validator, is_not_zero)
+                hash_validator_poseidon_or_zeroes(builder, validator, is_not_zero)
             })
             .collect_vec();
 

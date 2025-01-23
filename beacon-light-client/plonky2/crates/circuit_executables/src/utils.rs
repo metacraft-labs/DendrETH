@@ -46,10 +46,7 @@ pub fn parse_balance_verification_command_line_options(
             .unwrap(),
         time_to_run,
         preserve_intermediary_proofs: matches.get_flag("preserve_intermediary_proofs"),
-        protocol: match matches.value_of("protocol") {
-            None => None,
-            Some(protocol) => Some(protocol.to_owned()),
-        },
+        protocol: matches.value_of("protocol").map(ToOwned::to_owned),
     }
 }
 
@@ -129,7 +126,7 @@ impl<'a> CommandLineOptionsBuilder<'a> {
     }
 
     pub fn with_redis_options(self, host: &str, port: usize, auth: &str) -> Self {
-        let at: String = if auth.len() > 0 {
+        let at: String = if !auth.is_empty() {
             format!("{auth}@")
         } else {
             auth.to_string()
@@ -199,19 +196,11 @@ pub fn get_default_config() -> Result<CommonConfigOptions> {
 }
 
 pub fn gindex_from_validator_index(index: u64, depth: u32) -> u64 {
-    return 2u64.pow(depth) + index;
+    2u64.pow(depth) + index
 }
 
 pub fn get_depth_for_gindex(gindex: u64) -> u64 {
     gindex.ilog2() as u64
-}
-
-pub fn format_hex(str: String) -> String {
-    if str.starts_with("0x") {
-        return str[2..].to_string();
-    }
-
-    return str;
 }
 
 #[derive(PrimeField)]

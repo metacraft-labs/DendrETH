@@ -20,7 +20,7 @@ pub fn impl_derive_add_virtual_target(input_ast: DeriveInput) -> TokenStream {
         quote!(let #field_name = <#field_type as circuit::AddVirtualTarget>::add_virtual_target(builder);)
     });
 
-    let return_result = gen_shorthand_struct_initialization(&ident, &input_ast.generics, &fields);
+    let return_result = gen_shorthand_struct_initialization(ident, &input_ast.generics, &fields);
 
     quote! {
         impl #impl_generics circuit::AddVirtualTarget for #ident #type_generics #where_clause {

@@ -73,8 +73,7 @@ async fn main() -> Result<()> {
     let proof_str: String = con
         .get(format!(
             "{}:{}",
-            protocol.to_string(),
-            DB_CONSTANTS.final_layer_proof_key
+            protocol, DB_CONSTANTS.final_layer_proof_key
         ))
         .await?;
     let final_layer_proof: BalanceVerificationFinalProofData = serde_json::from_str(&proof_str)?;

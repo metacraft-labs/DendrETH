@@ -98,7 +98,7 @@ fn main_thread() {
 
     fs::write(
         format!("{serialized_circuits_dir}/fp12_mul.plonky2_circuit"),
-        &circuit_bytes,
+        circuit_bytes,
     )
     .unwrap();
 
@@ -106,7 +106,7 @@ fn main_thread() {
 
     fs::write(
         format!("{serialized_circuits_dir}/fp12_mul.plonky2_common_data"),
-        &common_data_bytes,
+        common_data_bytes,
     )
     .unwrap();
 
@@ -114,7 +114,7 @@ fn main_thread() {
 
     fs::write(
         format!("{serialized_circuits_dir}/fp12_mul.plonky2_targets"),
-        &targets,
+        targets,
     )
     .unwrap();
 

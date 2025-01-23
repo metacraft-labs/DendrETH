@@ -150,7 +150,7 @@ impl Circuit for DepositAccumulatorBalanceAggregatorFirstLevel {
         builder.assert_implication(deposit_is_real, is_valid);
 
         let (bls_verification_proof, signature_is_valid) =
-            verify_bls_signature(builder, &input, &bls_circuit_data);
+            verify_bls_signature(builder, &input, bls_circuit_data);
 
         let deposit_is_processed =
             builder.cmp_biguint(&input.deposit.deposit_index, &input.eth1_deposit_index);
@@ -896,7 +896,7 @@ mod test {
         pw.set_proof_with_pis_target(&targets.bls_verification_proof, &bls_proof);
 
         let s = Instant::now();
-        let proof = circuit.prove(pw).unwrap();
+        _ = circuit.prove(pw).unwrap();
         println!("Proof generated in {:?}", s.elapsed());
     }
 }

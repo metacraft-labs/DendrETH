@@ -125,8 +125,8 @@ pub fn restore_merkle_root_poseidon<
     branch: &PoseidonMerkleBranchTarget<DEPTH>,
     gindex: &BigUintTarget,
 ) -> HashOutTarget {
-    let bits = biguint_to_le_bits_target(builder, &gindex);
-    let mut current = leaf.clone();
+    let bits = biguint_to_le_bits_target(builder, gindex);
+    let mut current = *leaf;
 
     for level in 0..DEPTH {
         let (left_hash, right_hash) =

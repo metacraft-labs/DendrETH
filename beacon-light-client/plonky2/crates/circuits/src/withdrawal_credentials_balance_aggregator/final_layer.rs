@@ -92,9 +92,9 @@ impl<const WITHDRAWAL_CREDENTIALS_COUNT: usize> Circuit
     ) -> Self::Target {
         let input = Self::read_circuit_input_target(builder);
 
-        let balance_verification_proof = verify_proof(builder, &balance_verification_circuit_data);
+        let balance_verification_proof = verify_proof(builder, balance_verification_circuit_data);
         let validators_commitment_mapper_proof =
-            verify_proof(builder, &validators_commitment_mapper_circuit_data);
+            verify_proof(builder, validators_commitment_mapper_circuit_data);
 
         let balance_verification_pi =
             WithdrawalCredentialsBalanceAggregatorFirstLevel::<

@@ -56,7 +56,7 @@ async fn main() -> Result<()> {
     let start = Instant::now();
 
     let mut storage =
-        MetadataBlobStorage::from_file(&storage_config_filepath, "balance-verification").await?;
+        MetadataBlobStorage::from_file(storage_config_filepath, "balance-verification").await?;
 
     let elapsed = start.elapsed();
 

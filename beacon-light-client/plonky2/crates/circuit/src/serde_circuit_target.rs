@@ -37,7 +37,7 @@ impl SerdeCircuitTarget for Target {
     where
         Self: Sized,
     {
-        Ok(buffer.read_target()?)
+        buffer.read_target()
     }
 }
 
@@ -52,7 +52,7 @@ impl SerdeCircuitTarget for BoolTarget {
     where
         Self: Sized,
     {
-        Ok(buffer.read_target_bool()?)
+        buffer.read_target_bool()
     }
 }
 
@@ -67,14 +67,14 @@ impl SerdeCircuitTarget for HashOutTarget {
     where
         Self: Sized,
     {
-        Ok(buffer.read_target_hash()?)
+        buffer.read_target_hash()
     }
 }
 
 impl<const D: usize> SerdeCircuitTarget for ProofWithPublicInputsTarget<D> {
     fn serialize(&self) -> IoResult<Vec<u8>> {
         let mut buffer: Vec<u8> = Vec::new();
-        buffer.write_target_proof_with_public_inputs(&self)?;
+        buffer.write_target_proof_with_public_inputs(self)?;
         Ok(buffer)
     }
 
@@ -82,14 +82,14 @@ impl<const D: usize> SerdeCircuitTarget for ProofWithPublicInputsTarget<D> {
     where
         Self: Sized,
     {
-        Ok(buffer.read_target_proof_with_public_inputs()?)
+        buffer.read_target_proof_with_public_inputs()
     }
 }
 
 impl SerdeCircuitTarget for VerifierCircuitTarget {
     fn serialize(&self) -> IoResult<Vec<u8>> {
         let mut buffer: Vec<u8> = Vec::new();
-        buffer.write_target_verifier_circuit(&self)?;
+        buffer.write_target_verifier_circuit(self)?;
         Ok(buffer)
     }
 
@@ -97,7 +97,7 @@ impl SerdeCircuitTarget for VerifierCircuitTarget {
     where
         Self: Sized,
     {
-        Ok(buffer.read_target_verifier_circuit()?)
+        buffer.read_target_verifier_circuit()
     }
 }
 
@@ -114,7 +114,7 @@ impl<T: SerdeCircuitTarget + std::fmt::Debug, const N: usize> SerdeCircuitTarget
     where
         Self: Sized,
     {
-        Ok([(); N].try_map(|_| T::deserialize(buffer))?)
+        [(); N].try_map(|_| T::deserialize(buffer))
     }
 }
 

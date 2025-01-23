@@ -248,6 +248,7 @@ pub fn split_into_chunks(leaf: &[BoolTarget; 256]) -> [[BoolTarget; 64]; 4] {
     chunks.try_into().unwrap()
 }
 
+#[allow(clippy::needless_range_loop)]
 pub fn get_balance_from_leaf<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     leaf: &SSZTarget,
@@ -274,7 +275,7 @@ pub fn get_balance_from_leaf<F: RichField + Extendable<D>, const D: usize>(
 
 pub fn biguint_target_from_limbs(limbs: &[Target]) -> BigUintTarget {
     BigUintTarget {
-        limbs: limbs.iter().cloned().map(|x| U32Target(x)).collect_vec(),
+        limbs: limbs.iter().cloned().map(U32Target).collect_vec(),
     }
 }
 
@@ -346,15 +347,15 @@ mod test_ssz_num_from_bits {
         let bound_test_cases =
             get_test_cases("../../../../vendor/eth2.0-tests/ssz/uint_bounds.yaml")?
                 .iter()
-                .cloned()
                 .filter(|x| x.valid)
+                .cloned()
                 .collect_vec();
 
         let random_test_cases =
             get_test_cases("../../../../vendor/eth2.0-tests/ssz/uint_random.yaml")?
                 .iter()
-                .cloned()
                 .filter(|x| x.valid)
+                .cloned()
                 .collect_vec();
 
         let test_cases = bound_test_cases
@@ -404,13 +405,12 @@ mod test_ssz_num_from_bits {
 
                 let target = ssz_num_from_bits(&mut builder, &bits);
 
-                let value = test_case.value.parse::<BigUint>().expect(
-                    format!(
+                let value = test_case.value.parse::<BigUint>().unwrap_or_else(|_| {
+                    panic!(
                         "Unable to parse value: {}_{}",
                         test_case.r#type, test_case.tags[2]
                     )
-                    .as_str(),
-                );
+                });
 
                 let expected_target = builder.constant_biguint(&value);
 
@@ -436,21 +436,19 @@ mod test_ssz_num_from_bits {
                     pw.set_bool_target(bits[i], expected_bits[i]);
                 }
 
-                let proof = data.prove(pw).expect(
-                    format!(
+                let proof = data.prove(pw).unwrap_or_else(|_| {
+                    panic!(
                         "Prove failed for {}_{}",
                         test_case.r#type, test_case.tags[2]
                     )
-                    .as_str(),
-                );
+                });
 
-                data.verify(proof).expect(
-                    format!(
+                data.verify(proof).unwrap_or_else(|_| {
+                    panic!(
                         "Prove failed for {}_{}",
                         test_case.r#type, test_case.tags[2]
                     )
-                    .as_str(),
-                );
+                });
             }
         }
 
@@ -479,9 +477,9 @@ mod test_ssz_num_from_bits {
         .unwrap();
 
         let balance_index_0 = builder.zero_biguint();
-        let balance_index_1 = builder.constant_biguint(&BigUint::from(1 as u32));
-        let balance_index_2 = builder.constant_biguint(&BigUint::from(2 as u32));
-        let balance_index_3 = builder.constant_biguint(&BigUint::from(3 as u32));
+        let balance_index_1 = builder.constant_biguint(&BigUint::from(1_u32));
+        let balance_index_2 = builder.constant_biguint(&BigUint::from(2_u32));
+        let balance_index_3 = builder.constant_biguint(&BigUint::from(3_u32));
         let balance_from_leaf_at_index_0 =
             get_balance_from_leaf(&mut builder, &leaf, balance_index_0);
         let balance_from_leaf_at_index_1 =
@@ -491,14 +489,10 @@ mod test_ssz_num_from_bits {
         let balance_from_leaf_at_index_3 =
             get_balance_from_leaf(&mut builder, &leaf, balance_index_3);
 
-        let expected_balance_at_index_0 =
-            builder.constant_biguint(&BigUint::from(32000579388 as u64));
-        let expected_balance_at_index_1 =
-            builder.constant_biguint(&BigUint::from(32000574671 as u64));
-        let expected_balance_at_index_2 =
-            builder.constant_biguint(&BigUint::from(32000579312 as u64));
-        let expected_balance_at_index_3 =
-            builder.constant_biguint(&BigUint::from(32000581683 as u64));
+        let expected_balance_at_index_0 = builder.constant_biguint(&BigUint::from(32000579388_u64));
+        let expected_balance_at_index_1 = builder.constant_biguint(&BigUint::from(32000574671_u64));
+        let expected_balance_at_index_2 = builder.constant_biguint(&BigUint::from(32000579312_u64));
+        let expected_balance_at_index_3 = builder.constant_biguint(&BigUint::from(32000581683_u64));
 
         builder.connect_biguint(&balance_from_leaf_at_index_0, &expected_balance_at_index_0);
         builder.connect_biguint(&balance_from_leaf_at_index_1, &expected_balance_at_index_1);

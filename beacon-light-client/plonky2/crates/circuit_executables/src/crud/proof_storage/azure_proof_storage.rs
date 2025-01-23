@@ -24,7 +24,7 @@ impl AzureStorage {
                 .storage_credentials()
                 .unwrap(),
         )
-        .container_client(&container);
+        .container_client(container);
 
         AzureStorage { container_client }
     }

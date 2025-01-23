@@ -32,7 +32,7 @@ impl<'a> PublicInputsTargetReader<'a> {
 
     pub fn read_object<R: PublicInputsTargetReadable>(&mut self) -> R {
         let read_targets = self.read_n(R::get_size());
-        R::from_targets(&read_targets)
+        R::from_targets(read_targets)
     }
 }
 
@@ -103,7 +103,7 @@ impl PublicInputsTargetReadable for BigUintTarget {
     fn from_targets(targets: &[Target]) -> Self {
         assert_eq!(targets.len(), Self::get_size());
         BigUintTarget {
-            limbs: targets.iter().cloned().map(|x| U32Target(x)).collect_vec(),
+            limbs: targets.iter().cloned().map(U32Target).collect_vec(),
         }
     }
 }

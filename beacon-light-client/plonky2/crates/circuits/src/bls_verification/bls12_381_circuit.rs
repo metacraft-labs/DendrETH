@@ -87,12 +87,12 @@ impl Circuit for BLSVerificationCircuit {
     ) -> Self::Target {
         let input = Self::read_circuit_input_target(builder);
 
-        let pt_pp1 = verify_proof(builder, &pairing_precomp_circuit_data);
-        let pt_pp2 = verify_proof(builder, &pairing_precomp_circuit_data);
-        let pt_ml1 = verify_proof(builder, &miller_loop_circuit_data);
-        let pt_ml2 = verify_proof(builder, &miller_loop_circuit_data);
-        let pt_fp12m = verify_proof(builder, &fp12_mul_circuit_data);
-        let pt_fe = verify_proof(builder, &final_exponentiation_circuit_data);
+        let pt_pp1 = verify_proof(builder, pairing_precomp_circuit_data);
+        let pt_pp2 = verify_proof(builder, pairing_precomp_circuit_data);
+        let pt_ml1 = verify_proof(builder, miller_loop_circuit_data);
+        let pt_ml2 = verify_proof(builder, miller_loop_circuit_data);
+        let pt_fp12m = verify_proof(builder, fp12_mul_circuit_data);
+        let pt_fe = verify_proof(builder, final_exponentiation_circuit_data);
 
         let hm = hash_to_curve(builder, &input.msg);
 
@@ -176,7 +176,6 @@ fn get_g2_point_from_pairing_precomp<F: RichField + Extendable<D>, const D: usiz
 ) -> PointG2Target {
     let sig_point_x0 = BigUintTarget {
         limbs: (0..N)
-            .into_iter()
             .map(|i| {
                 U32Target(pt_pp2.public_inputs[calc_pairing_precomp::X0_PUBLIC_INPUTS_OFFSET + i])
             })
@@ -184,7 +183,6 @@ fn get_g2_point_from_pairing_precomp<F: RichField + Extendable<D>, const D: usiz
     };
     let sig_point_x1 = BigUintTarget {
         limbs: (0..N)
-            .into_iter()
             .map(|i| {
                 U32Target(pt_pp2.public_inputs[calc_pairing_precomp::X1_PUBLIC_INPUTS_OFFSET + i])
             })
@@ -192,7 +190,6 @@ fn get_g2_point_from_pairing_precomp<F: RichField + Extendable<D>, const D: usiz
     };
     let sig_point_y0 = BigUintTarget {
         limbs: (0..N)
-            .into_iter()
             .map(|i| {
                 U32Target(pt_pp2.public_inputs[calc_pairing_precomp::Y0_PUBLIC_INPUTS_OFFSET + i])
             })
@@ -200,7 +197,6 @@ fn get_g2_point_from_pairing_precomp<F: RichField + Extendable<D>, const D: usiz
     };
     let sig_point_y1 = BigUintTarget {
         limbs: (0..N)
-            .into_iter()
             .map(|i| {
                 U32Target(pt_pp2.public_inputs[calc_pairing_precomp::Y1_PUBLIC_INPUTS_OFFSET + i])
             })
@@ -272,7 +268,6 @@ fn connect_miller_loop_with_g1<F: RichField + Extendable<D>, const D: usize>(
 fn get_g1_from_miller_loop(pt_ml1: &ProofWithPublicInputsTarget<D>) -> PointG1Target {
     let g1_x = BigUintTarget {
         limbs: (0..N)
-            .into_iter()
             .map(|i| {
                 U32Target(pt_ml1.public_inputs[calc_pairing_precomp::X0_PUBLIC_INPUTS_OFFSET + i])
             })
@@ -281,7 +276,6 @@ fn get_g1_from_miller_loop(pt_ml1: &ProofWithPublicInputsTarget<D>) -> PointG1Ta
 
     let g1_y = BigUintTarget {
         limbs: (0..N)
-            .into_iter()
             .map(|i| {
                 U32Target(pt_ml1.public_inputs[calc_pairing_precomp::X1_PUBLIC_INPUTS_OFFSET + i])
             })

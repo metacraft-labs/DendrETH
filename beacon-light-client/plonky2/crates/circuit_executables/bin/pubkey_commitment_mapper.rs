@@ -42,7 +42,7 @@ async fn main() -> Result<()> {
 
     let mut ctx = PubkeyCommitmentMapperContext::new(
         matches.value_of("protocol").unwrap().to_owned(),
-        &matches.get_one::<String>("proof_storage_cfg").unwrap(),
+        matches.get_one::<String>("proof_storage_cfg").unwrap(),
         serialized_circuits_dir,
     )
     .await?;
@@ -80,14 +80,14 @@ async fn main() -> Result<()> {
                         &mut pipe,
                         ctx.storage.blob.as_mut(),
                         &ctx.protocol,
-                        &merkle_root,
+                        merkle_root,
                         block_number,
                     )
                     .await?;
                 }
 
                 complete_task(&mut pipe, &ctx.protocol);
-                _ = pipe.query_async(&mut ctx.storage.metadata).await?;
+                pipe.query_async(&mut ctx.storage.metadata).await?;
             }
             Err(_) => {
                 println!("Sleeping");

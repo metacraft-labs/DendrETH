@@ -13,9 +13,9 @@ pub fn impl_derive_public_inputs_readable(input_ast: DeriveInput) -> TokenStream
         panic!("PublicInputsReadable is implemented only for structs");
     };
 
-    let public_inputs_target_readable_impl = impl_public_inputs_target_readable(&input_ast, &data);
-    let public_inputs_readable_impl = impl_public_inputs_readable(&input_ast, &data);
-    let to_targets_impl = impl_to_targets(&input_ast, &data);
+    let public_inputs_target_readable_impl = impl_public_inputs_target_readable(&input_ast, data);
+    let public_inputs_readable_impl = impl_public_inputs_readable(&input_ast, data);
+    let to_targets_impl = impl_to_targets(&input_ast, data);
 
     quote! {
         #public_inputs_target_readable_impl
@@ -46,7 +46,7 @@ fn impl_public_inputs_target_readable(
     let read_targets = gen_reader_read(&fields);
 
     let return_from_targets_result =
-        gen_shorthand_struct_initialization(&ident, &input_ast.generics, &fields);
+        gen_shorthand_struct_initialization(ident, &input_ast.generics, &fields);
 
     quote! {
         #public_inputs_target_struct_def

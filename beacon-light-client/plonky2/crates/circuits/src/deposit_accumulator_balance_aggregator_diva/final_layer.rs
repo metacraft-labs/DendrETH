@@ -111,16 +111,14 @@ impl Circuit for DepositAccumulatorBalanceAggregatorDivaFinalLayer {
     ) -> Self::Target {
         let input = Self::read_circuit_input_target(builder);
 
-        let balance_aggregation_proof = verify_proof(
-            builder,
-            &deposit_accumulator_balance_aggregator_circuit_data,
-        );
+        let balance_aggregation_proof =
+            verify_proof(builder, deposit_accumulator_balance_aggregator_circuit_data);
         let validators_commitment_mapper_root_proof =
-            verify_proof(builder, &validators_commitment_mapper_root_circuit_data);
+            verify_proof(builder, validators_commitment_mapper_root_circuit_data);
         let validators_commitment_mapper_65536gindex_proof =
-            verify_proof(builder, &validators_commitment_mapper_65536_circuit_data);
+            verify_proof(builder, validators_commitment_mapper_65536_circuit_data);
         let pubkey_commitment_mapper_proof =
-            verify_proof(builder, &pubkey_commitment_mapper_circuit_data);
+            verify_proof(builder, pubkey_commitment_mapper_circuit_data);
 
         let balance_aggregation_pis =
             DepositAccumulatorBalanceAggregatorDivaFirstLevel::read_public_inputs_target(
@@ -216,7 +214,7 @@ fn validate_data_against_block_root<F: RichField + Extendable<D>, const D: usize
 
     assert_merkle_proof_is_valid_const_sha256(
         builder,
-        &validators_root_left,
+        validators_root_left,
         &input.state_root,
         &input.validators_branch,
         86,
@@ -224,7 +222,7 @@ fn validate_data_against_block_root<F: RichField + Extendable<D>, const D: usize
 
     assert_merkle_proof_is_valid_const_sha256(
         builder,
-        &balances_root_level_22,
+        balances_root_level_22,
         &input.state_root,
         &input.balance_branch,
         5767168,

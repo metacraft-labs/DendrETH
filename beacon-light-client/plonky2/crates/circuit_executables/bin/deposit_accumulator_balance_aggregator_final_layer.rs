@@ -52,7 +52,7 @@ async fn main() -> Result<()> {
 
     let storage_config_filepath = matches.get_one::<String>("proof_storage_cfg").unwrap();
     let mut storage =
-        MetadataBlobStorage::from_file(&storage_config_filepath, "balance-verification").await?;
+        MetadataBlobStorage::from_file(storage_config_filepath, "balance-verification").await?;
 
     let elapsed = start.elapsed();
 

@@ -45,8 +45,8 @@ impl Circuit for PubkeyCommitmentMapperIL {
         builder: &mut plonky2::plonk::circuit_builder::CircuitBuilder<Self::F, { Self::D }>,
         circuit_data: &Self::Params,
     ) -> Self::Target {
-        let left = verify_proof(builder, &circuit_data);
-        let right = verify_proof(builder, &circuit_data);
+        let left = verify_proof(builder, circuit_data);
+        let right = verify_proof(builder, circuit_data);
 
         let left_pis = PubkeyCommitmentMapperFL::read_public_inputs_target(&left.public_inputs);
         let right_pis = PubkeyCommitmentMapperFL::read_public_inputs_target(&right.public_inputs);

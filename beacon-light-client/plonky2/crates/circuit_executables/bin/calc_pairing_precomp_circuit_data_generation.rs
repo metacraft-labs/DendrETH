@@ -82,13 +82,13 @@ fn main_thread() {
 
     fs::write(
         format!("{serialized_circuits_dir}/pairing_precomp.plonky2_common_data"),
-        &common_circuit_bytes,
+        common_circuit_bytes,
     )
     .unwrap();
 
     fs::write(
         format!("{serialized_circuits_dir}/pairing_precomp.plonky2_circuit"),
-        &circuit_bytes,
+        circuit_bytes,
     )
     .unwrap();
 
@@ -96,7 +96,7 @@ fn main_thread() {
 
     fs::write(
         format!("{serialized_circuits_dir}/pairing_precomp.plonky2_targets"),
-        &targets,
+        targets,
     )
     .unwrap();
 

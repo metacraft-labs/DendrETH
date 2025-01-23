@@ -48,7 +48,7 @@ fn main() -> Result<()> {
     let (validators_balance_verification_targets, first_level_data) =
         ValidatorsCommitmentMapperFirstLevel::build(&());
 
-    if level == None || level == Some(0) {
+    if level.is_none() || level == Some(0) {
         serialize_recursive_circuit_single_level(
             &validators_balance_verification_targets,
             &first_level_data,
@@ -67,7 +67,7 @@ fn main() -> Result<()> {
     for current_level in 1..=40 {
         let (targets, data) = ValidatorsCommitmentMapperInnerLevel::build(&prev_circuit_data);
 
-        if level == Some(current_level) || level == None {
+        if level == Some(current_level) || level.is_none() {
             serialize_recursive_circuit_single_level(
                 &targets,
                 &data,

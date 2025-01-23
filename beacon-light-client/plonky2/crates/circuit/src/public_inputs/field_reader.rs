@@ -83,7 +83,7 @@ impl PublicInputsReadable for HashOutTarget {
         assert_eq!(elements.len(), Self::get_size());
         Array::<u64, NUM_HASH_OUT_ELTS>(
             elements
-                .into_iter()
+                .iter()
                 .map(|elem| elem.to_canonical_u64())
                 .collect_vec()
                 .try_into()

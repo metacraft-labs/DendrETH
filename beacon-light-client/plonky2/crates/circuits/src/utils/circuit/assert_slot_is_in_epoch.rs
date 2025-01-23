@@ -9,7 +9,7 @@ pub fn assert_slot_is_in_epoch<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     slot: &BigUintTarget,
     current_epoch: &BigUintTarget,
-) -> () {
+) {
     let slots_per_epoch = builder.constant_biguint(&BigUint::from_u32(32).unwrap());
     let slot_epoch = builder.div_biguint(slot, &slots_per_epoch);
     builder.connect_biguint(&slot_epoch, current_epoch);
@@ -104,7 +104,7 @@ mod test_assert_slot_is_in_epoch {
 
     #[test]
     #[should_panic]
-    fn test_assert_slot_is_not_in_epoch() -> () {
+    fn test_assert_slot_is_not_in_epoch() {
         const D: usize = 2;
         type C = PoseidonGoldilocksConfig;
         type F = GoldilocksField;

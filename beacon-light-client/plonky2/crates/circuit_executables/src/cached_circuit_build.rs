@@ -163,16 +163,16 @@ pub fn serialize_circuit<
         .unwrap();
 
     fs::write(
-        &get_serialized_circuit_data_path(dir, circuit_name),
-        &data_bytes,
+        get_serialized_circuit_data_path(dir, circuit_name),
+        data_bytes,
     )
     .unwrap();
 
     let target_bytes = target.serialize().unwrap();
 
     fs::write(
-        &get_serialized_circuit_target_path(dir, circuit_name),
-        &target_bytes,
+        get_serialized_circuit_target_path(dir, circuit_name),
+        target_bytes,
     )
     .unwrap();
 }

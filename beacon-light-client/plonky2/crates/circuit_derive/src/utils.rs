@@ -48,13 +48,11 @@ pub fn has_functional_attr_with_arg(field: &Field, attr: &str, arg: &str) -> boo
 }
 
 pub fn match_attr(attr: &Attribute, string: &str) -> bool {
-    attr.path().segments.last().unwrap().ident.to_string() == string
+    attr.path().segments.last().unwrap().ident == string
 }
 
 pub fn find_attr<'a>(attrs: &'a [Attribute], attr: &str) -> Option<&'a Attribute> {
-    attrs
-        .into_iter()
-        .find(|&attribute| match_attr(attribute, attr))
+    attrs.iter().find(|&attribute| match_attr(attribute, attr))
 }
 
 #[allow(dead_code)]
@@ -91,12 +89,12 @@ pub fn create_struct_with_fields(
 pub fn filter_attrs(attrs: &[Attribute], filter_set: &[&str]) -> Vec<Attribute> {
     attrs
         .iter()
-        .cloned()
         .filter(|attr| {
             filter_set
                 .iter()
                 .any(|inherited_attr| match_attr(attr, inherited_attr))
         })
+        .cloned()
         .collect_vec()
 }
 
@@ -109,10 +107,10 @@ pub fn create_struct_with_fields_and_inherited_attrs_target_primitive(
 ) -> TokenStream {
     let (impl_generics, _, where_clause) = generics.split_for_impl();
 
-    let inherited_struct_attrs = filter_attrs(&attrs, inherited_attrs);
+    let inherited_struct_attrs = filter_attrs(attrs, inherited_attrs);
     let inherited_struct_attrs_tokens = inherited_struct_attrs.iter().map(|attr| quote!(#attr));
 
-    let primitive_fields = fields.into_iter().map(|field| {
+    let primitive_fields = fields.iter().map(|field| {
         let field_name = &field.ident;
         let target_type = &field.ty;
         let primitive_type = quote!(<#target_type as circuit::TargetPrimitive>::Primitive);
@@ -135,7 +133,7 @@ pub fn create_struct_with_fields_and_inherited_attrs_target_primitive(
 pub fn tokenize_struct_fields(fields: &[Field]) -> TokenStream {
     concat_token_streams(
         fields
-            .into_iter()
+            .iter()
             .map(|field| {
                 let field_ty = &field.ty;
                 let field_type = quote!(#field_ty);
@@ -188,7 +186,7 @@ pub fn extend_generics_with_type_param(
 
 pub fn list_struct_fields(fields: &[Field]) -> Vec<TokenStream> {
     fields
-        .into_iter()
+        .iter()
         .map(|field| {
             let field_ident = &field.ident;
             quote!(#field_ident,)

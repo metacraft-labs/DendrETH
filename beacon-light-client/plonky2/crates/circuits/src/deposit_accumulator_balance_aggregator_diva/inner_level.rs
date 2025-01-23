@@ -18,7 +18,7 @@ use plonky2::{
 use plonky2_crypto::biguint::CircuitBuilderBiguint;
 
 use super::first_level::{
-    DivaAccumulatedDataTarget, DepositAccumulatorBalanceAggregatorDivaFirstLevel,
+    DepositAccumulatorBalanceAggregatorDivaFirstLevel, DivaAccumulatedDataTarget,
 };
 
 pub struct DepositAccumulatorBalanceAggregatorDivaInnerLevel;
@@ -39,8 +39,8 @@ impl Circuit for DepositAccumulatorBalanceAggregatorDivaInnerLevel {
         builder: &mut CircuitBuilder<Self::F, D>,
         circuit_data: &Self::Params,
     ) -> Self::Target where {
-        let proof1 = verify_proof(builder, &circuit_data);
-        let proof2 = verify_proof(builder, &circuit_data);
+        let proof1 = verify_proof(builder, circuit_data);
+        let proof2 = verify_proof(builder, circuit_data);
 
         let l_input = DepositAccumulatorBalanceAggregatorDivaFirstLevel::read_public_inputs_target(
             &proof1.public_inputs,
@@ -103,12 +103,12 @@ fn accumulate_validator_stats<F: RichField + Extendable<D>, const D: usize>(
     left: &ValidatorStatusStatsTarget,
     right: &ValidatorStatusStatsTarget,
 ) -> ValidatorStatusStatsTarget {
-    return ValidatorStatusStatsTarget {
+    ValidatorStatusStatsTarget {
         non_activated_count: builder.add(left.non_activated_count, right.non_activated_count),
         active_count: builder.add(left.active_count, right.active_count),
         exited_count: builder.add(left.exited_count, right.exited_count),
         slashed_count: builder.add(left.slashed_count, right.slashed_count),
-    };
+    }
 }
 
 fn connect_pass_through_data<F: RichField + Extendable<D>, const D: usize>(

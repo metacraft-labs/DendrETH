@@ -56,7 +56,7 @@ impl PubkeyCommitmentMapperContext {
             "pubkey_commitment_mapper",
             DEPTH,
             &|| PubkeyCommitmentMapperFL::build(&()),
-            &|prev_circuit_data| PubkeyCommitmentMapperIL::build(prev_circuit_data),
+            &PubkeyCommitmentMapperIL::build,
         );
 
         let mut storage =
@@ -111,10 +111,7 @@ async fn poll_ready(redis: &mut Connection, protocol: &str) {
     let ready_set = Ok("1".to_owned());
 
     if redis.get(&ready_key).await != ready_set {
-        println!(
-            "{}",
-            format!("Redis context is not ready. {ready_key} must be set to \"1\"")
-        );
+        println!("Redis context is not ready. {ready_key} must be set to \"1\"");
     }
 
     while redis.get(&ready_key).await != ready_set {
@@ -123,7 +120,7 @@ async fn poll_ready(redis: &mut Connection, protocol: &str) {
 }
 
 fn parse_processing_queue_item(item: &str) -> (String, u64) {
-    let parts = item.split(",").collect_vec();
+    let parts = item.split(',').collect_vec();
     let pubkey = parts[0];
     let block_number: u64 = parts[1].parse().unwrap();
 
@@ -172,8 +169,8 @@ pub fn generate_zero_hash_proofs(
         vec![generate_leaf_zero_hash_proof(first_level_circuit)?],
         |mut proofs, level| {
             proofs.push(prove_inner_level2(
-                &proofs.last().unwrap(),
-                &proofs.last().unwrap(),
+                proofs.last().unwrap(),
+                proofs.last().unwrap(),
                 &inner_level_circuits[level - 1].target,
                 &inner_level_circuits[level - 1].data,
             )?);
@@ -403,7 +400,7 @@ pub async fn save_root_for_block_number(
         .await?;
 
     let public_inputs = PubkeyCommitmentMapperFL::read_public_inputs(&root.public_inputs);
-    let sha256_hex = hex::encode(&bits_to_bytes(public_inputs.sha256.as_slice()));
+    let sha256_hex = hex::encode(bits_to_bytes(public_inputs.sha256.as_slice()));
 
     println!(
         "{}",

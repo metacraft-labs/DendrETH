@@ -43,7 +43,7 @@ async fn main() -> Result<()> {
 
     let storage_config_filepath = matches.get_one::<String>("proof_storage_cfg").unwrap();
     let mut storage =
-        MetadataBlobStorage::from_file(&storage_config_filepath, "bls-verification").await?;
+        MetadataBlobStorage::from_file(storage_config_filepath, "bls-verification").await?;
 
     let mut pw = PartialWitness::<GoldilocksField>::new();
 
@@ -104,14 +104,11 @@ async fn get_final_exp_proof(
     let final_exp_circuit_data = load_common_circuit_data_starky(&format!(
         "{serialized_circuits_dir}/final_exponentiate_circuit"
     ));
-    let final_exp_proof =
-        ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
-            (proof_storage.get_proof("final_exp_proof".to_string()).await).unwrap(),
-            &final_exp_circuit_data,
-        )
-        .unwrap();
-
-    final_exp_proof
+    ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
+        (proof_storage.get_proof("final_exp_proof".to_string()).await).unwrap(),
+        &final_exp_circuit_data,
+    )
+    .unwrap()
 }
 
 async fn get_fp12_mul_proof(
@@ -120,14 +117,11 @@ async fn get_fp12_mul_proof(
 ) -> ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2> {
     let fp12_mul_circuit_data =
         load_common_circuit_data_starky(&format!("{serialized_circuits_dir}/fp12_mul"));
-    let fp12_mul_proof =
-        ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
-            (proof_storage.get_proof("fp12_mul_proof".to_string()).await).unwrap(),
-            &fp12_mul_circuit_data,
-        )
-        .unwrap();
-
-    fp12_mul_proof
+    ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
+        (proof_storage.get_proof("fp12_mul_proof".to_string()).await).unwrap(),
+        &fp12_mul_circuit_data,
+    )
+    .unwrap()
 }
 
 async fn get_miller_loop_proofs(
