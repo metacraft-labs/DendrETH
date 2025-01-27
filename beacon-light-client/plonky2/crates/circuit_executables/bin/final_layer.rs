@@ -8,7 +8,7 @@ use circuit_executables::{
             fetch_final_layer_input, fetch_proof, fetch_proof_balances, load_circuit_data,
             save_final_proof,
         },
-        proof_storage::MetadataBlobStorage,
+        proof_storage::{get_storages_from_matches, load_storage_config},
     },
     utils::CommandLineOptionsBuilder,
     wrap_final_layer_in_poseidon_bn128::wrap_final_layer_in_poseidon_bn_128,
@@ -40,23 +40,28 @@ use plonky2::{
 const VALIDATORS_COUNT: usize = 8;
 const WITHDRAWAL_CREDENTIALS_COUNT: usize = 1;
 
+const STORAGE_ARG_NAMES: [&str; 2] = ["validators-commitment-mapper", "balance-verification"];
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let matches = CommandLineOptionsBuilder::new("final_layer")
         .with_protocol_options()
         .with_serialized_circuits_dir()
         .with_proof_storage_config()
+        .add_proof_storages(&STORAGE_ARG_NAMES)
         .get_matches();
 
     let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
 
     let storage_config_filepath = matches.value_of("proof_storage_cfg").unwrap();
+
+    let storage_config = load_storage_config(storage_config_filepath)?;
+    let [mut vcm_storage, mut bv_storage] =
+        get_storages_from_matches(&matches, &storage_config, &STORAGE_ARG_NAMES).await?;
+
     let protocol = matches.value_of("protocol").unwrap();
 
     let start = Instant::now();
-
-    let mut storage =
-        MetadataBlobStorage::from_file(storage_config_filepath, "balance-verification").await?;
 
     let elapsed = start.elapsed();
 
@@ -65,15 +70,17 @@ async fn main() -> Result<()> {
         format!("Redis connection took: {:?}", elapsed).yellow()
     );
 
-    let circuit_input = fetch_final_layer_input(&mut storage.metadata, protocol).await?;
+    let circuit_input = fetch_final_layer_input(&mut bv_storage.metadata, protocol).await?;
 
     let balance_proof_data: WithdrawalCredentialsBalanceVerificationProofData<
         VALIDATORS_COUNT,
         WITHDRAWAL_CREDENTIALS_COUNT,
-    > = fetch_proof_balances(&mut storage.metadata, protocol, 37, 0).await?;
+    > = fetch_proof_balances(&mut bv_storage.metadata, protocol, 37, 0).await?;
 
-    let balance_verification_proof_bytes =
-        storage.blob.get_proof(balance_proof_data.proof_key).await?;
+    let balance_verification_proof_bytes = bv_storage
+        .blob
+        .get_proof(balance_proof_data.proof_key)
+        .await?;
 
     let balance_verification_circuit_data = load_circuit_data::<
         WithdrawalCredentialsBalanceAggregatorInnerLevel<8, 1>,
@@ -89,13 +96,13 @@ async fn main() -> Result<()> {
         )?;
 
     let validators_commitment_mapper_proof_data: ValidatorsCommitmentMapperProofData = fetch_proof(
-        &mut storage.metadata,
+        &mut vcm_storage.metadata,
         1,
         circuit_input.slot.to_u64().unwrap(),
     )
     .await?;
 
-    let validators_commitment_mapper_proof_bytes = storage
+    let validators_commitment_mapper_proof_bytes = vcm_storage
         .blob
         .get_proof(validators_commitment_mapper_proof_data.proof_key)
         .await?;
@@ -152,7 +159,7 @@ async fn main() -> Result<()> {
         .collect_vec();
 
     save_final_proof(
-        &mut storage.metadata,
+        &mut bv_storage.metadata,
         protocol.to_string(),
         &proof,
         hex::encode(bits_to_bytes(circuit_input.block_root.as_slice())),
@@ -180,7 +187,7 @@ async fn main() -> Result<()> {
     println!("{}", "Running wrapper...".blue().bold());
 
     wrap_final_layer_in_poseidon_bn_128(
-        &mut storage.metadata,
+        &mut bv_storage.metadata,
         false,
         circuit_data,
         proof,

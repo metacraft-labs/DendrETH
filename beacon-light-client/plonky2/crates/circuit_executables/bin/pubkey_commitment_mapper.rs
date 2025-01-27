@@ -3,6 +3,7 @@ use std::{thread::sleep, time::Duration};
 
 use anyhow::Result;
 use circuit_executables::{
+    crud::proof_storage::get_storage_key_from_matches,
     pubkey_commitment_mapper::{
         append_pubkey_and_recalc_merkle_branch, complete_task, compute_merkle_root, finished_block,
         poll_processing_queue, save_branch, save_root_for_block_number,
@@ -22,6 +23,7 @@ async fn main() -> Result<()> {
         .with_protocol_options()
         .with_serialized_circuits_dir()
         .with_proof_storage_config()
+        .add_proof_storage(None)
         .arg(
             Arg::with_name("fast_sync_to")
                 .long("fast-sync-to")
@@ -43,6 +45,7 @@ async fn main() -> Result<()> {
     let mut ctx = PubkeyCommitmentMapperContext::new(
         matches.value_of("protocol").unwrap().to_owned(),
         matches.get_one::<String>("proof_storage_cfg").unwrap(),
+        get_storage_key_from_matches(&matches, None)?,
         serialized_circuits_dir,
     )
     .await?;

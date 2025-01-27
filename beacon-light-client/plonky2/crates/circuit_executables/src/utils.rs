@@ -4,6 +4,8 @@ use ff::PrimeField;
 use serde::Deserialize;
 use std::time::Duration;
 
+use crate::crud::proof_storage::get_storage_key;
+
 pub struct BalanceVerificationConfig {
     pub redis_connection: String,
     pub circuit_level: u64,
@@ -89,6 +91,26 @@ impl<'a> CommandLineOptionsBuilder<'a> {
         );
 
         Self { command }
+    }
+
+    pub fn add_proof_storage(self, arg_name: Option<&str>) -> Self {
+        let arg_name: &str = get_storage_key(arg_name).leak();
+
+        let command = self.command.arg(
+            Arg::with_name(arg_name)
+                .long(arg_name)
+                .value_name("storage_name")
+                .takes_value(true)
+                .required(true),
+        );
+
+        Self { command }
+    }
+
+    pub fn add_proof_storages(self, arg_names: &[&str]) -> Self {
+        arg_names
+            .iter()
+            .fold(self, |acc, arg_name| acc.add_proof_storage(Some(arg_name)))
     }
 
     pub fn with_balance_verification_options(self) -> Self {

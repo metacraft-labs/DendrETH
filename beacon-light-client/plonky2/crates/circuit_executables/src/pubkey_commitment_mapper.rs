@@ -49,6 +49,7 @@ impl PubkeyCommitmentMapperContext {
     pub async fn new(
         protocol: String,
         storage_config_filepath: &str,
+        storage_name: &str,
         serialized_circuits_dir: &str,
     ) -> Result<Self> {
         let (first_level_circuit, inner_level_circuits) = build_recursive_circuit_cached(
@@ -60,8 +61,7 @@ impl PubkeyCommitmentMapperContext {
         );
 
         let mut storage =
-            MetadataBlobStorage::from_file(storage_config_filepath, "pubkey-commitment-mapper")
-                .await?;
+            MetadataBlobStorage::from_file(storage_config_filepath, storage_name).await?;
 
         poll_ready(&mut storage.metadata, &protocol).await;
 

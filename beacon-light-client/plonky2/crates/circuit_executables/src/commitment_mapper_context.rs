@@ -30,6 +30,7 @@ impl CommitmentMapperContext {
     pub async fn new(
         work_queue_cfg: WorkQueueConfig,
         storage_cfg_filepath: &str,
+        storage_name: &str,
         serialized_circuits_dir: &str,
     ) -> Result<Self> {
         let work_queues = (0..=40)
@@ -52,9 +53,7 @@ impl CommitmentMapperContext {
             )?);
         }
 
-        let storage =
-            MetadataBlobStorage::from_file(storage_cfg_filepath, "validators-commitment-mapper")
-                .await?;
+        let storage = MetadataBlobStorage::from_file(storage_cfg_filepath, storage_name).await?;
 
         let ctx = Self {
             storage,

@@ -11,7 +11,7 @@ use circuit_executables::{
             fetch_validator_balance_aggregator_input, load_circuit_data,
             save_balance_aggregator_proof,
         },
-        proof_storage::{MetadataBlobStorage, ProofStorage},
+        proof_storage::{get_storage_key_from_matches, MetadataBlobStorage, ProofStorage},
     },
     db_constants::DB_CONSTANTS,
     provers::prove_inner_level,
@@ -62,6 +62,7 @@ async fn main() -> Result<()> {
         .with_work_queue_options()
         .with_serialized_circuits_dir()
         .with_proof_storage_config()
+        .add_proof_storage(None)
         .get_matches();
 
     let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
@@ -69,8 +70,8 @@ async fn main() -> Result<()> {
     let config = parse_balance_verification_command_line_options(&matches);
 
     let storage_config_filepath = matches.get_one::<String>("proof_storage_cfg").unwrap();
-    let mut storage =
-        MetadataBlobStorage::from_file(storage_config_filepath, "balance-verification").await?;
+    let storage_key = get_storage_key_from_matches(&matches, None)?;
+    let mut storage = MetadataBlobStorage::from_file(storage_config_filepath, storage_key).await?;
 
     println!("{}", "Loading circuit data...".yellow());
 

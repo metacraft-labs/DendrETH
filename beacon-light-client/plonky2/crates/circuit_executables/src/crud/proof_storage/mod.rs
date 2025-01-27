@@ -9,6 +9,8 @@ use std::{collections::HashMap, fs};
 use async_trait::async_trait;
 
 use anyhow::{ensure, Context, Result};
+use clap::ArgMatches;
+use futures::future::try_join_all;
 use redis::aio::Connection;
 use serde::{Deserialize, Serialize};
 
@@ -79,6 +81,12 @@ impl MetadataBlobStorage {
     }
 }
 
+impl std::fmt::Debug for MetadataBlobStorage {
+    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Ok(())
+    }
+}
+
 pub async fn blob_storage_from_definition(
     def: &BlobStorageDefinition,
 ) -> Result<Box<dyn ProofStorage>> {
@@ -142,3 +150,44 @@ pub fn redis_url_from_definition(def: &RedisConnectionDefinition) -> Result<Stri
 }
 
 pub type ProofStorageConfig = HashMap<String, MetadataBlobStorageDefinition>;
+
+pub fn get_storage_key(storage_name: Option<&str>) -> String {
+    format!(
+        "{}storage-key",
+        storage_name
+            .map(|name| format!("{name}-"))
+            .unwrap_or_default()
+    )
+}
+
+pub fn get_storage_key_from_matches<'a>(
+    matches: &'a ArgMatches,
+    storage_arg_name: Option<&str>,
+) -> Result<&'a str> {
+    let storage_key = get_storage_key(storage_arg_name);
+    matches
+        .value_of(&storage_key)
+        .with_context(|| format!("Option --{storage_key} is not set"))
+}
+
+pub async fn get_storage_from_matches(
+    matches: &ArgMatches,
+    storage_config: &ProofStorageConfig,
+    storage_arg_name: Option<&str>,
+) -> Result<MetadataBlobStorage> {
+    let storage_name = get_storage_key_from_matches(matches, storage_arg_name)?;
+    MetadataBlobStorage::from_config(storage_config, storage_name).await
+}
+
+pub async fn get_storages_from_matches<const N: usize>(
+    matches: &ArgMatches,
+    storage_config: &ProofStorageConfig,
+    storage_arg_names: &[&str; N],
+) -> Result<[MetadataBlobStorage; N]> {
+    let storages = try_join_all(storage_arg_names.map(|storage_arg_name| {
+        get_storage_from_matches(matches, storage_config, Some(storage_arg_name))
+    }))
+    .await?;
+
+    Ok(storages.try_into().unwrap())
+}

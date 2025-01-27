@@ -7,7 +7,7 @@ use circuit_executables::{
             fetch_pubkey_commitment_mapper_proof, load_circuit_data,
             save_deposit_accumulator_final_proof,
         },
-        proof_storage::MetadataBlobStorage,
+        proof_storage::{get_storages_from_matches, load_storage_config},
     },
     utils::CommandLineOptionsBuilder,
     wrap_final_layer_in_poseidon_bn128::wrap_final_layer_in_poseidon_bn_128,
@@ -36,23 +36,32 @@ use plonky2::{
     plonk::{config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs},
 };
 
+const STORAGE_ARG_NAMES: [&str; 3] = [
+    "validators-commitment-mapper",
+    "pubkey-commitment-mapper",
+    "balance-verification",
+];
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let matches = CommandLineOptionsBuilder::new("final_layer")
         .with_protocol_options()
         .with_serialized_circuits_dir()
         .with_proof_storage_config()
+        .add_proof_storages(&STORAGE_ARG_NAMES)
         .get_matches();
-
-    let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
-
-    let protocol = matches.value_of("protocol").unwrap();
 
     let start = Instant::now();
 
     let storage_config_filepath = matches.get_one::<String>("proof_storage_cfg").unwrap();
-    let mut storage =
-        MetadataBlobStorage::from_file(storage_config_filepath, "balance-verification").await?;
+    let storage_config = load_storage_config(storage_config_filepath)?;
+
+    let [mut vcm_storage, mut pcm_storage, mut bv_storage] =
+        get_storages_from_matches(&matches, &storage_config, &STORAGE_ARG_NAMES).await?;
+
+    let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
+
+    let protocol = matches.value_of("protocol").unwrap();
 
     let elapsed = start.elapsed();
 
@@ -62,19 +71,21 @@ async fn main() -> Result<()> {
     );
 
     let circuit_input =
-        fetch_deposit_accumulator_final_layer_input(&mut storage.metadata, protocol).await?;
+        fetch_deposit_accumulator_final_layer_input(&mut bv_storage.metadata, protocol).await?;
 
     let balance_proof_data =
         fetch_proof_balances::<DepositAccumulatorBalanceAggregatorDivaProofData>(
-            &mut storage.metadata,
+            &mut bv_storage.metadata,
             protocol,
             32,
             0,
         )
         .await?;
 
-    let balance_verification_proof_bytes =
-        storage.blob.get_proof(balance_proof_data.proof_key).await?;
+    let balance_verification_proof_bytes = bv_storage
+        .blob
+        .get_proof(balance_proof_data.proof_key)
+        .await?;
 
     let balance_verification_circuit_data =
         load_circuit_data::<DepositAccumulatorBalanceAggregatorDivaInnerLevel>(
@@ -91,26 +102,26 @@ async fn main() -> Result<()> {
 
     let validators_commitment_mapper_root_proof_data: ValidatorsCommitmentMapperProofData =
         fetch_proof(
-            &mut storage.metadata,
+            &mut vcm_storage.metadata,
             1,
             circuit_input.slot.to_u64().unwrap(),
         )
         .await?;
 
-    let validators_commitment_mapper_root_proof_bytes = storage
+    let validators_commitment_mapper_root_proof_bytes = vcm_storage
         .blob
         .get_proof(validators_commitment_mapper_root_proof_data.proof_key)
         .await?;
 
     let validators_commitment_mapper_65536_gindex_proof_data: ValidatorsCommitmentMapperProofData =
         fetch_proof(
-            &mut storage.metadata,
+            &mut vcm_storage.metadata,
             65536,
             circuit_input.slot.to_u64().unwrap(),
         )
         .await?;
 
-    let validators_commitment_mapper_65536gindex_proof_bytes = storage
+    let validators_commitment_mapper_65536gindex_proof_bytes = vcm_storage
         .blob
         .get_proof(validators_commitment_mapper_65536_gindex_proof_data.proof_key)
         .await?;
@@ -143,9 +154,10 @@ async fn main() -> Result<()> {
 
     let block_number = circuit_input.execution_block_number.to_u64().unwrap();
     let pubkey_commitment_mapper_proof =
-        fetch_pubkey_commitment_mapper_proof(&mut storage.metadata, protocol, block_number).await?;
+        fetch_pubkey_commitment_mapper_proof(&mut pcm_storage.metadata, protocol, block_number)
+            .await?;
 
-    let pubkey_commitment_mapper_proof_bytes = storage
+    let pubkey_commitment_mapper_proof_bytes = pcm_storage
         .blob
         .get_proof(pubkey_commitment_mapper_proof.proof_key)
         .await?;
@@ -207,7 +219,7 @@ async fn main() -> Result<()> {
         );
 
     save_deposit_accumulator_final_proof(
-        &mut storage.metadata,
+        &mut bv_storage.metadata,
         protocol.to_string(),
         &proof,
         circuit_input.slot.to_u64().unwrap(),
@@ -252,7 +264,7 @@ async fn main() -> Result<()> {
     println!("{}", "Running wrapper...".blue().bold());
 
     wrap_final_layer_in_poseidon_bn_128(
-        &mut storage.metadata,
+        &mut bv_storage.metadata,
         false,
         circuit_data,
         proof,
