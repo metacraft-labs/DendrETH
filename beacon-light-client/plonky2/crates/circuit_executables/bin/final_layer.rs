@@ -49,8 +49,8 @@ async fn main() -> Result<()> {
         .get_matches();
 
     let serialized_circuits_dir = matches.value_of("serialized_circuits_dir").unwrap();
-    let storage_config_filepath = matches.value_of("proof-storage-cfg").unwrap();
 
+    let storage_config_filepath = matches.value_of("proof_storage_cfg").unwrap();
     let protocol = matches.value_of("protocol").unwrap();
 
     let start = Instant::now();
