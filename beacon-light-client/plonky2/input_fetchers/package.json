@@ -54,7 +54,6 @@
     "balance_verifier_publisher_diva": "beacon-light-client/plonky2/input_fetchers/dist/esm/publisher/balance-verifier-publisher-diva.mjs",
     "balance_verifier_publisher_lido": "beacon-light-client/plonky2/input_fetchers/dist/esm/publisher/balance-verifier-publisher-lido.mjs",
     "diva_balance_aggregator_scheduler": "beacon-light-client/plonky2/input_fetchers/dist/esm/balance_verification/deposits_accumulator/runnable/diva_balance_aggregator_scheduler.mjs",
-    "diva_scheduler": "beacon-light-client/plonky2/input_fetchers/dist/esm/balance_verification/withdrawal_credentials/runnable/diva_scheduler.mjs",
     "fetch_validators_root": "beacon-light-client/plonky2/input_fetchers/dist/esm/validators_commitment_mapper/runnable/fetch_validators_root.mjs",
     "lido_scheduler": "beacon-light-client/plonky2/input_fetchers/dist/esm/balance_verification/withdrawal_credentials/runnable/lido_scheduler.mjs",
     "pubkey_commitment_mapper_scheduler": "beacon-light-client/plonky2/input_fetchers/dist/esm/balance_verification/deposits_accumulator/runnable/run_pubkey_commitment_mapper_scheduler.mjs",
