@@ -8,10 +8,12 @@ import { RequestOptions } from 'https';
 import { ethers } from 'ethers';
 import BalanceVerifierDivaAbi from '../abi/balance_verifier_diva_abi.json';
 import CONSTANTS from '../kv_db_constants.json'; // PESHO
+import fs from 'fs';
 
 import { CommandLineOptionsBuilder } from '../utils/cmdline';
 (async () => {
   const commandOptions = new CommandLineOptionsBuilder()
+    .withPrivateKey()
     .withRedisOpts()
     .option('rpc-url', {
       describe: 'The RPC URL',
@@ -36,10 +38,12 @@ import { CommandLineOptionsBuilder } from '../utils/cmdline';
 
   const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
 
-  let privateKey = process.env.USER_PRIVATE_KEY;
+  const privateKey = commandOptions !== null
+    ? fs.readFileSync(commandOptions['private-key-path'], 'utf-8')
+    : process.env.USER_PRIVATE_KEY;
 
   if (privateKey === undefined) {
-    throw new Error('USER_PRIVATE_KEY unset');
+    throw new Error('No private-key-path argument or USER_PRIVATE_KEY env variable provided');
   }
 
   let publisher = new ethers.Wallet(privateKey, provider);

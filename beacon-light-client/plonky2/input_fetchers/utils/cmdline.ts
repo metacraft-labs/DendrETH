@@ -147,6 +147,17 @@ export class CommandLineOptionsBuilder {
     return this;
   }
 
+  withPrivateKey() {
+    args
+      .option('private-key-path', {
+        type: 'string',
+        default: null,
+        description: 'Filepath to the private key secret',
+      });
+
+    return this;
+  }
+
   option(opt: string, settings: Options) {
     args.option(opt, settings);
     return this;
