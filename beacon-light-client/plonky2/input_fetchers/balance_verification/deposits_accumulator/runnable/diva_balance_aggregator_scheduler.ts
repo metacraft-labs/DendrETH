@@ -191,7 +191,6 @@ async function waitForValidatorsCommitmentMapperProof(
 async function main() {
   const options = new CommandLineOptionsBuilder()
     .withRedisOpts()
-    .withBeaconNodeOpts()
     .withRangeOpts()
     .withProtocolOpts()
     .withBeaconNodeOpts()
