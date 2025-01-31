@@ -1,4 +1,5 @@
 use anyhow::Result;
+use circuit::Circuit;
 use circuits::validators_commitment_mapper::{
     first_level::ValidatorsCommitmentMapperFirstLevel,
     inner_level::ValidatorsCommitmentMapperInnerLevel,
@@ -7,11 +8,13 @@ use itertools::Itertools;
 use redis_work_queue::{KeyPrefix, WorkQueue};
 
 use crate::{
-    cached_circuit_build::CircuitTargetAndData, crud::proof_storage::MetadataBlobStorage,
+    cached_circuit_build::{build_recursive_circuit_cached, CircuitTargetAndData},
+    crud::proof_storage::MetadataBlobStorage,
     db_constants::DB_CONSTANTS,
 };
 
 const CIRCUIT_NAME: &str = "commitment_mapper";
+const DEPTH: usize = 40;
 
 pub struct WorkQueueConfig {
     pub stop_after: u64,
@@ -33,25 +36,20 @@ impl CommitmentMapperContext {
         storage_name: &str,
         serialized_circuits_dir: &str,
     ) -> Result<Self> {
-        let work_queues = (0..=40)
+        let work_queues = (0..=DEPTH)
             .map(|depth| {
                 let key_prefix_str = format!("{}:{}", DB_CONSTANTS.validator_proofs_queue, depth);
                 WorkQueue::new(KeyPrefix::new(key_prefix_str))
             })
             .collect_vec();
 
-        let first_level_circuit =
-            CircuitTargetAndData::load_recursive(serialized_circuits_dir, CIRCUIT_NAME, 0)?;
-
-        let mut inner_level_circuits = Vec::new();
-
-        for level in 1..=40 {
-            inner_level_circuits.push(CircuitTargetAndData::load_recursive(
-                serialized_circuits_dir,
-                CIRCUIT_NAME,
-                level,
-            )?);
-        }
+        let (first_level_circuit, inner_level_circuits) = build_recursive_circuit_cached(
+            serialized_circuits_dir,
+            CIRCUIT_NAME,
+            DEPTH,
+            &|| ValidatorsCommitmentMapperFirstLevel::build(&()),
+            &ValidatorsCommitmentMapperInnerLevel::build,
+        );
 
         let storage = MetadataBlobStorage::from_file(storage_cfg_filepath, storage_name).await?;
 
