@@ -1,11 +1,10 @@
 use circuit::{Circuit, SetWitness};
 use circuit_executables::{
-    cached_circuit_build::build_circuit_cached,
+    cached_circuit_build::{build_circuit_cached, load_circuit_data_recursive},
     crud::{
         common::{
             fetch_deposit_accumulator_final_layer_input, fetch_proof, fetch_proof_balances,
-            fetch_pubkey_commitment_mapper_proof, load_circuit_data,
-            save_deposit_accumulator_final_proof,
+            fetch_pubkey_commitment_mapper_proof, save_deposit_accumulator_final_proof,
         },
         proof_storage::{get_storages_from_matches, load_storage_config},
     },
@@ -88,9 +87,10 @@ async fn main() -> Result<()> {
         .await?;
 
     let balance_verification_circuit_data =
-        load_circuit_data::<DepositAccumulatorBalanceAggregatorDivaInnerLevel>(
+        load_circuit_data_recursive::<DepositAccumulatorBalanceAggregatorDivaInnerLevel>(
             serialized_circuits_dir,
-            "deposit_accumulator_balance_aggregator_diva_32",
+            "deposit_accumulator_balance_aggregator_diva",
+            32,
         )
         .unwrap();
 
@@ -127,16 +127,18 @@ async fn main() -> Result<()> {
         .await?;
 
     let validators_commitment_mapper_root_circuit_data =
-        load_circuit_data::<ValidatorsCommitmentMapperInnerLevel>(
+        load_circuit_data_recursive::<ValidatorsCommitmentMapperInnerLevel>(
             serialized_circuits_dir,
-            "commitment_mapper_40",
+            "commitment_mapper",
+            40,
         )
         .unwrap();
 
     let validators_commitment_mapper_65536gindex_circuit_data =
-        load_circuit_data::<ValidatorsCommitmentMapperInnerLevel>(
+        load_circuit_data_recursive::<ValidatorsCommitmentMapperInnerLevel>(
             serialized_circuits_dir,
-            "commitment_mapper_24",
+            "commitment_mapper",
+            24,
         )
         .unwrap();
 
@@ -162,11 +164,13 @@ async fn main() -> Result<()> {
         .get_proof(pubkey_commitment_mapper_proof.proof_key)
         .await?;
 
-    let pubkey_commitment_mapper_circuit_data = load_circuit_data::<PubkeyCommitmentMapperIL>(
-        serialized_circuits_dir,
-        "pubkey_commitment_mapper_32",
-    )
-    .unwrap();
+    let pubkey_commitment_mapper_circuit_data =
+        load_circuit_data_recursive::<PubkeyCommitmentMapperIL>(
+            serialized_circuits_dir,
+            "pubkey_commitment_mapper",
+            32,
+        )
+        .unwrap();
 
     let pubkey_commitment_mapper_proof =
         ProofWithPublicInputs::<GoldilocksField, PoseidonGoldilocksConfig, 2>::from_bytes(
