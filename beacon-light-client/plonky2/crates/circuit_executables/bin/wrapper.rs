@@ -84,7 +84,7 @@ async fn main() -> Result<()> {
     wrap_final_layer_in_poseidon_bn_128(
         &mut con,
         compile_circuit,
-        circuit_data,
+        &circuit_data,
         final_layer_proof,
         protocol.to_string(),
     )

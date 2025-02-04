@@ -82,33 +82,41 @@ pub struct DepositAccumulatorBalanceAggregatorDivaFinalLayerTarget {
     pub slot_branch: Sha256MerkleBranchTarget<5>,
 }
 
+type F = GoldilocksField;
+type C = PoseidonGoldilocksConfig;
+const D: usize = 2;
+
+pub struct DependenciesCircuitData {
+    pub deposit_accumulator_balance_aggregator_circuit_data: CircuitData<F, C, D>,
+    pub validators_commitment_mapper_root_circuit_data: CircuitData<F, C, D>,
+    pub validators_commitment_mapper_65536_circuit_data: CircuitData<F, C, D>,
+    pub pubkey_commitment_mapper_circuit_data: CircuitData<F, C, D>,
+}
+
 pub struct DepositAccumulatorBalanceAggregatorDivaFinalLayer;
 
 impl Circuit for DepositAccumulatorBalanceAggregatorDivaFinalLayer {
-    type F = GoldilocksField;
-    const D: usize = 2;
-    type C = PoseidonGoldilocksConfig;
+    type F = F;
+    const D: usize = D;
+    type C = C;
 
     const CIRCUIT_CONFIG: CircuitConfig = CircuitConfig::standard_recursion_config();
 
     type Target = DepositAccumulatorBalanceAggregatorDivaFinalLayerTarget;
 
-    type Params = (
-        CircuitData<Self::F, Self::C, { Self::D }>,
-        CircuitData<Self::F, Self::C, { Self::D }>,
-        CircuitData<Self::F, Self::C, { Self::D }>,
-        CircuitData<Self::F, Self::C, { Self::D }>,
-    );
+    type Params = DependenciesCircuitData;
 
     fn define(
         builder: &mut CircuitBuilder<Self::F, { Self::D }>,
-        (
+        dependencies_circuit_data: &Self::Params,
+    ) -> Self::Target {
+        let DependenciesCircuitData {
             deposit_accumulator_balance_aggregator_circuit_data,
             validators_commitment_mapper_root_circuit_data,
             validators_commitment_mapper_65536_circuit_data,
             pubkey_commitment_mapper_circuit_data,
-        ): &Self::Params,
-    ) -> Self::Target {
+        } = dependencies_circuit_data;
+
         let input = Self::read_circuit_input_target(builder);
 
         let balance_aggregation_proof =

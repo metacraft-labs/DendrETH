@@ -1,5 +1,10 @@
 use anyhow::Result;
-use std::{fs, marker::PhantomData};
+use std::{
+    fs,
+    io::{stdout, Write},
+    marker::PhantomData,
+    time::{Duration, Instant},
+};
 
 use circuit::{
     serde_circuit_target::deserialize_circuit_target, Circuit, CircuitTargetType,
@@ -16,7 +21,7 @@ use plonky2::{
 };
 use plonky2_circuit_serializer::serializer::{CustomGateSerializer, CustomGeneratorSerializer};
 
-use crate::crud::common::read_from_file;
+use crate::crud::common::read_file;
 
 fn load_circuit_target_recursive<T: Circuit>(
     dir: &str,
@@ -26,7 +31,7 @@ fn load_circuit_target_recursive<T: Circuit>(
 where
     <T as Circuit>::Target: SerdeCircuitTarget,
 {
-    let target_bytes = read_from_file(&format!("{dir}/{circuit_name}_{level}.plonky2_targets"))?;
+    let target_bytes = read_file(&format!("{dir}/{circuit_name}_{level}.plonky2_targets"))?;
     let mut target_buffer = Buffer::new(&target_bytes);
 
     Ok(deserialize_circuit_target::<T>(&mut target_buffer).unwrap())
@@ -46,8 +51,7 @@ where
         _phantom: PhantomData::<T::C>,
     };
 
-    let circuit_data_bytes =
-        read_from_file(&format!("{dir}/{circuit_name}_{level}.plonky2_circuit"))?;
+    let circuit_data_bytes = read_file(&format!("{dir}/{circuit_name}_{level}.plonky2_circuit"))?;
 
     Ok(CircuitData::<T::F, T::C, 2>::from_bytes(
         &circuit_data_bytes,
@@ -242,16 +246,48 @@ pub fn build_circuit_cached<
 where
     <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
 {
+    let before = Instant::now();
+
     let data_exists = path_exists(&get_serialized_circuit_data_path(dir, circuit_name));
     let target_exists = path_exists(&get_serialized_circuit_target_path(dir, circuit_name));
 
-    if !data_exists || !target_exists {
+    let result = if !data_exists || !target_exists {
+        print!("Building circuit \"{circuit_name}\"");
+        stdout().flush().unwrap();
+
         let (target, data) = circuit_build_proc();
         serialize_circuit(&target, &data, dir, circuit_name);
         (target, data)
     } else {
+        print!("Deserializing circuit \"{circuit_name}\"");
+        stdout().flush().unwrap();
+
         deserialize_circuit(dir, circuit_name).unwrap()
+    };
+
+    let after = Instant::now();
+    let time_taken = after - before;
+    println!(" (took {})", format_time_taken(time_taken));
+
+    result
+}
+
+fn format_time_taken(duration: Duration) -> String {
+    let seconds = duration.as_secs() % 60;
+    let minutes = duration.as_secs() / 60;
+    let millis_subsec = duration.subsec_millis();
+
+    let mut components = Vec::new();
+    if minutes > 0 {
+        components.push(format!("{minutes}m"));
     }
+    if seconds > 0 {
+        components.push(format!("{seconds}s"));
+    }
+
+    components.push(format!("{millis_subsec}ms"));
+
+    components.join(" ")
 }
 
 pub fn build_recursive_circuit_cached<FC: Circuit, IC: Circuit<F = FC::F, C = FC::C>>(

@@ -1,3 +1,4 @@
+use num_traits::ToPrimitive;
 use std::{fs, marker::PhantomData, thread, time::Duration};
 
 use crate::{
@@ -6,7 +7,7 @@ use crate::{
 };
 use anyhow::{bail, ensure, Context, Result};
 use async_trait::async_trait;
-use circuit::{Circuit, CircuitInput, SerdeCircuitTarget};
+use circuit::{Circuit, CircuitInput, CircuitOutput, SerdeCircuitTarget};
 use circuits::{
     bls_verification::build_stark_proof_verifier::RecursiveStarkTargets,
     deposit_accumulator_balance_aggregator_diva::{
@@ -348,27 +349,41 @@ pub async fn save_final_proof(
 #[allow(clippy::too_many_arguments)]
 pub async fn save_deposit_accumulator_final_proof(
     con: &mut Connection,
-    protocol: String,
+    protocol: &str,
     proof: &ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
-    slot: u64,
-    block_number: u64,
-    block_root: String,
-    balance_sum: u64,
-    number_of_non_activated_validators: u64,
-    number_of_active_validators: u64,
-    number_of_exited_validators: u64,
-    number_of_slashed_validators: u64,
+    circuit_input: &CircuitInput<DepositAccumulatorBalanceAggregatorDivaFinalLayer>,
+    balance_verification_pis: &CircuitOutput<DepositAccumulatorBalanceAggregatorDivaFirstLevel>,
 ) -> Result<()> {
     let final_proof = DepositAccumulatorFinalProofData {
         needs_change: false,
-        slot,
-        block_number,
-        block_root,
-        balance_sum,
-        number_of_non_activated_validators,
-        number_of_active_validators,
-        number_of_exited_validators,
-        number_of_slashed_validators,
+        slot: circuit_input.slot.to_u64().unwrap(),
+        block_number: circuit_input
+            .execution_block_number
+            .to_u64()
+            .context("Slot is not a valid u64")?,
+        block_root: hex::encode(bits_to_bytes(circuit_input.block_root.as_slice())),
+        balance_sum: balance_verification_pis
+            .accumulated_data
+            .balance
+            .to_u64()
+            .context("Slot is not a valid u64")?,
+        number_of_non_activated_validators: balance_verification_pis
+            .accumulated_data
+            .validator_status_stats
+            .non_activated_count,
+        number_of_active_validators: balance_verification_pis
+            .accumulated_data
+            .validator_status_stats
+            .active_count,
+        number_of_exited_validators: balance_verification_pis
+            .accumulated_data
+            .validator_status_stats
+            .exited_count,
+
+        number_of_slashed_validators: balance_verification_pis
+            .accumulated_data
+            .validator_status_stats
+            .slashed_count,
         proof: proof.to_bytes(),
     };
 
@@ -516,7 +531,7 @@ pub fn get_block_number_with_latest_change(keys: Vec<u64>, block_number: u64) ->
     Ok(min_key)
 }
 
-pub async fn fetch_pubkey_commitment_mapper_proof(
+pub async fn fetch_pubkey_commitment_mapper_proof_data(
     con: &mut Connection,
     protocol: &str,
     block_number: u64,

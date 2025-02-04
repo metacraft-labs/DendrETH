@@ -18,7 +18,7 @@ use crate::poseidon_bn128_config::PoseidonBN128GoldilocksConfig;
 pub async fn wrap_final_layer_in_poseidon_bn_128(
     con: &mut Connection,
     compile_circuit: bool,
-    final_layer_circuit: CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    final_layer_circuit: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     final_layer_proof: ProofWithPublicInputs<GoldilocksField, PoseidonGoldilocksConfig, 2>,
     protocol: String,
 ) -> Result<(), anyhow::Error> {
@@ -78,7 +78,7 @@ pub fn generate_wrapper_proof(
 }
 
 pub fn build_wrapper(
-    final_layer_circuit: CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
+    final_layer_circuit: &CircuitData<GoldilocksField, PoseidonGoldilocksConfig, 2>,
 ) -> (
     ProofWithPublicInputsTarget<2>,
     CircuitData<GoldilocksField, PoseidonBN128GoldilocksConfig, 2>,
