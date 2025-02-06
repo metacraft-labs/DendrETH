@@ -7,13 +7,11 @@ use std::time::Duration;
 use crate::crud::proof_storage::get_storage_key;
 
 pub struct BalanceVerificationConfig {
-    pub redis_connection: String,
     pub circuit_level: u64,
     pub stop_after: u64,
     pub lease_for: u64,
     pub time_to_run: Option<Duration>,
     pub preserve_intermediary_proofs: bool,
-    pub protocol: Option<String>,
 }
 
 pub fn parse_balance_verification_command_line_options(
@@ -30,7 +28,6 @@ pub fn parse_balance_verification_command_line_options(
     };
 
     BalanceVerificationConfig {
-        redis_connection: matches.value_of("redis_connection").unwrap().to_string(),
         circuit_level: matches
             .value_of("circuit_level")
             .unwrap()
@@ -48,7 +45,6 @@ pub fn parse_balance_verification_command_line_options(
             .unwrap(),
         time_to_run,
         preserve_intermediary_proofs: matches.get_flag("preserve_intermediary_proofs"),
-        protocol: matches.value_of("protocol").map(ToOwned::to_owned),
     }
 }
 
