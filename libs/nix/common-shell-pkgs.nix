@@ -97,7 +97,7 @@ in
     nim-wasm
 
     # EOS
-    metacraft-labs.leap
+    # metacraft-labs.leap
     metacraft-labs.eos-vm
     metacraft-labs.cdt
     # A basic Cosmos SDK app to host WebAssembly smart contracts

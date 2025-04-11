@@ -23,9 +23,9 @@
     # * end up with multiple copies of the same package from nixpkgs
     # * be unable to use the binary cache, since the packages there where
     #   using different versions of their dependencies from nixpkgs
-    mcl-blockchain.url = "github:metacraft-labs/nix-blockchain-development";
-    nixpkgs.follows = "mcl-blockchain/nixpkgs-unstable";
-    flake-parts.follows = "mcl-blockchain/flake-parts";
+    mcl-nixos-modules.url = "github:metacraft-labs/nixos-modules/feat/nix-blockchain-development-migration";
+    nixpkgs.follows = "mcl-nixos-modules/nixpkgs-unstable";
+    flake-parts.follows = "mcl-nixos-modules/flake-parts";
 
     dendreth-build-artifacts = {
       flake = false;
@@ -37,7 +37,7 @@
     self,
     flake-parts,
     nixpkgs,
-    mcl-blockchain,
+    mcl-nixos-modules,
     dendreth-build-artifacts,
     ...
   }:
@@ -57,7 +57,7 @@
         inputs',
         ...
       }: let
-        inherit (inputs'.mcl-blockchain.legacyPackages) nix2container rust-stable rust-nightly;
+        inherit (inputs'.mcl-nixos-modules.legacyPackages) nix2container rust-stable rust-nightly;
 
         docker-images = import ./libs/nix/docker-images.nix {inherit pkgs nix2container;};
         light-client = pkgs.callPackage ./libs/nix/light-client/default.nix {
@@ -67,7 +67,7 @@
         _module.args.pkgs = import nixpkgs {
           inherit system;
           overlays = [
-            mcl-blockchain.overlays.default
+            mcl-nixos-modules.overlays.default
           ];
           config.permittedInsecurePackages = [
             # wasm3 is insecure if used to execute untrusted third-party code
