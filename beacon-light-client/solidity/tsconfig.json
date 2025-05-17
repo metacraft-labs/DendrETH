@@ -4,8 +4,8 @@
     "rootDir": ".",
     // must duplicate settings due to:
     // https://github.com/rollup/plugins/issues/1583
-    "module": "ESNext",
-    "moduleResolution": "Bundler"
+    "target": "es2020",
+    "esModuleInterop": true,
   },
   "include": [
     "**/*.ts"
