@@ -13,7 +13,7 @@ import { Tree } from '@chainsafe/persistent-merkle-tree';
 import { bytesToHex } from '@dendreth/utils/ts-utils/bls';
 import {
   SSZ,
-  CapellaOrDeneb,
+  ForkSSZ,
   computeSyncCommitteePeriodAt,
 } from '@dendreth/utils/ts-utils/ssz-utils';
 import { getGenericLogger } from '@dendreth/utils/ts-utils/logger';
@@ -54,18 +54,23 @@ export class BeaconApi implements IBeaconApi {
     public readonly ssz: SSZ,
   ) { }
 
-  async getCurrentSSZ(slot: bigint): Promise<CapellaOrDeneb> {
+  async getCurrentSSZ(slot: bigint): Promise<ForkSSZ> {
     const forkSchedule = await (
       await this.fetchWithFallback('/eth/v1/config/fork_schedule')
     ).json();
-    const forkEpoch = BigInt(
-      forkSchedule.data[BEACON_CHAIN_FORK_IDX.DENEB].epoch,
-    );
-    const SLOTS_PER_EPOCH = 32n;
 
-    return (
-      slot >= forkEpoch * SLOTS_PER_EPOCH ? this.ssz.deneb : this.ssz.capella
-    ) as CapellaOrDeneb;
+    const denebEpoch = BigInt(forkSchedule.data[BEACON_CHAIN_FORK_IDX.DENEB].epoch);
+    const electraEpoch = BigInt(forkSchedule.data[BEACON_CHAIN_FORK_IDX.ELECTRA].epoch);
+
+    const currentEpoch = slot / 32n;
+
+    if (currentEpoch >= electraEpoch) {
+      return this.ssz.electra as ForkSSZ;
+    } else if (currentEpoch >= denebEpoch) {
+      return this.ssz.deneb as ForkSSZ;
+    } else {
+      return this.ssz.capella as ForkSSZ;
+    }
   }
 
   getBeaconRestApis(): string[] {

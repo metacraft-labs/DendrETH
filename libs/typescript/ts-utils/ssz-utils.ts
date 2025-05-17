@@ -13,7 +13,8 @@ export type SSZ = typeof ssz;
 export type Phase0 = typeof ssz.phase0;
 export type Deneb = typeof ssz.deneb;
 export type Capella = typeof ssz.capella;
-export type CapellaOrDeneb = Capella & Deneb;
+export type Electra = typeof ssz.electra;
+export type ForkSSZ = Capella & Deneb & Electra;
 
 export function verifyMerkleProof(
   branch: string[],
@@ -26,9 +27,9 @@ export function verifyMerkleProof(
   for (const proofElement of branch) {
     hash = sha256(
       '0x' +
-        (index % 2n === 0n ? [hash, proofElement] : [proofElement, hash])
-          .map(formatHex)
-          .join(''),
+      (index % 2n === 0n ? [hash, proofElement] : [proofElement, hash])
+        .map(formatHex)
+        .join(''),
     );
 
     index /= 2n;
