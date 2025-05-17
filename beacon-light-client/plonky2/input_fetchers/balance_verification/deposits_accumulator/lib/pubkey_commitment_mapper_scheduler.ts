@@ -104,7 +104,7 @@ export async function rebuildCommitmentMapperTree(
     );
 
   if (contractDeploymentBlockNumber === null) {
-    console.log('Error: Invalid contract address');
+    console.error('Error: Invalid contract address');
     await destroySchedulerContext(ctx);
     process.exit(1);
   }
