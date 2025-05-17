@@ -56,10 +56,13 @@ task('deploy-accumulator', 'Deploy the validators accumulator contract')
         'ValidatorsAccumulator',
       );
 
+      //const kurtosisDepositContractAddress = '0x4242424242424242424242424242424242424242';
+      const ethereumMainnetDepositContractAddress = '0x00000000219ab540356cbb839cbe05303d7705fa';
+
       console.log('Deploying validator accumulator contract');
       validatorAccumulator = await contractFactory
         .connect(signer)
-        .deploy('0x4242424242424242424242424242424242424242');
+        .deploy(ethereumMainnetDepositContractAddress);
 
       await validatorAccumulator.deployed();
 
