@@ -104,7 +104,7 @@ export default {
     hardhat: {
       forking: {
         url: conf.ETHEREUM_MAINNET_RPC,
-        blockNumber: 19931139,
+        blockNumber: 22503475
       },
     },
     ropsten: {
