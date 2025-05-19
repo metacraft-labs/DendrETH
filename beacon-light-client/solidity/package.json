@@ -38,7 +38,7 @@
     "hardhat-gas-reporter": "^1.0.8",
     "json-bigint": "^1.0.0",
     "r1csfile": "^0.0.40",
-    "snarkjs": "https://github.com/metacraft-labs/snarkjs.git#commit=0ddd56f9be79ca561e72b85ced3223cb66a2bbb4",
+    "snarkjs": "https://github.com/metacraft-labs/snarkjs.git#commit=c5d616f9eaf6eba208f852b2e033fe7d44ced700",
     "ts-node": "^10.9.1",
     "tslib": "^2.8.1",
     "web3": "1.10.4"

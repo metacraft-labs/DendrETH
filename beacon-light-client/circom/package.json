@@ -26,7 +26,7 @@
     "js-yaml": "^4.1.0",
     "redis": "^4.6.5",
     "snarkit2": "git+https://git@github.com/fluidex/snarkit2.git#commit=70142d8bbc5ec79cfa6869205263ff77e8423975",
-    "snarkjs": "https://github.com/metacraft-labs/snarkjs.git#commit=0ddd56f9be79ca561e72b85ced3223cb66a2bbb4",
+    "snarkjs": "https://github.com/metacraft-labs/snarkjs.git#commit=c5d616f9eaf6eba208f852b2e033fe7d44ced700",
     "ts-node": "^10.9.1"
   },
   "devDependencies": {

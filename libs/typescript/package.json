@@ -30,7 +30,7 @@
     "ffjavascript": "0.2.57",
     "ioredis": "^5.3.2",
     "prom-client": "^15.1.0",
-    "snarkjs": "https://github.com/metacraft-labs/snarkjs.git#commit=0ddd56f9be79ca561e72b85ced3223cb66a2bbb4",
+    "snarkjs": "https://github.com/metacraft-labs/snarkjs.git#commit=c5d616f9eaf6eba208f852b2e033fe7d44ced700",
     "winston": "^3.13.0",
     "yargs": "^17.7.2"
   },

@@ -72,7 +72,7 @@
   },
   "dependencies": {
     "snarkit2": "^0.2.0",
-    "snarkjs": "https://github.com/metacraft-labs/snarkjs.git#commit=0ddd56f9be79ca561e72b85ced3223cb66a2bbb4"
+    "snarkjs": "https://github.com/metacraft-labs/snarkjs.git#commit=c5d616f9eaf6eba208f852b2e033fe7d44ced700"
   },
   "bin": {
     "diva_balance_aggregator_scheduler": "beacon-light-client/plonky2/input_fetchers/balance_verification/deposits_accumulator/runnable/diva_balance_aggregator_scheduler.js",

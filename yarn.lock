@@ -2358,7 +2358,7 @@ __metadata:
     ioredis: "npm:^5.3.2"
     json-bigint: "npm:^1.0.0"
     redis: "npm:^4.6.10"
-    snarkjs: "https://github.com/metacraft-labs/snarkjs.git#commit=0ddd56f9be79ca561e72b85ced3223cb66a2bbb4"
+    snarkjs: "https://github.com/metacraft-labs/snarkjs.git#commit=c5d616f9eaf6eba208f852b2e033fe7d44ced700"
     ts-node: "npm:^10.9.1"
     tsx: "npm:^4.7.1"
     typescript: "npm:5.2.2"
@@ -2427,7 +2427,7 @@ __metadata:
     hardhat-gas-reporter: "npm:^1.0.8"
     json-bigint: "npm:^1.0.0"
     r1csfile: "npm:^0.0.40"
-    snarkjs: "https://github.com/metacraft-labs/snarkjs.git#commit=0ddd56f9be79ca561e72b85ced3223cb66a2bbb4"
+    snarkjs: "https://github.com/metacraft-labs/snarkjs.git#commit=c5d616f9eaf6eba208f852b2e033fe7d44ced700"
     ts-node: "npm:^10.9.1"
     tslib: "npm:^2.8.1"
     typescript: "npm:5.2.2"
@@ -2455,7 +2455,7 @@ __metadata:
     ffjavascript: "npm:0.2.57"
     ioredis: "npm:^5.3.2"
     prom-client: "npm:^15.1.0"
-    snarkjs: "https://github.com/metacraft-labs/snarkjs.git#commit=0ddd56f9be79ca561e72b85ced3223cb66a2bbb4"
+    snarkjs: "https://github.com/metacraft-labs/snarkjs.git#commit=c5d616f9eaf6eba208f852b2e033fe7d44ced700"
     tsx: "npm:^4.7.1"
     winston: "npm:^3.13.0"
     yargs: "npm:^17.7.2"
@@ -6831,7 +6831,7 @@ __metadata:
     prettier: "npm:^2.6.2"
     redis-commander: "npm:^0.8.0"
     snarkit2: "npm:^0.2.0"
-    snarkjs: "https://github.com/metacraft-labs/snarkjs.git#commit=0ddd56f9be79ca561e72b85ced3223cb66a2bbb4"
+    snarkjs: "https://github.com/metacraft-labs/snarkjs.git#commit=c5d616f9eaf6eba208f852b2e033fe7d44ced700"
     ts-jest: "npm:^29.1.2"
     ts-node: "npm:^10.9.1"
     tsx: "npm:^4.7.1"
@@ -8291,7 +8291,7 @@ __metadata:
     js-yaml: "npm:^4.1.0"
     redis: "npm:^4.6.5"
     snarkit2: "git+https://git@github.com/fluidex/snarkit2.git#commit=70142d8bbc5ec79cfa6869205263ff77e8423975"
-    snarkjs: "https://github.com/metacraft-labs/snarkjs.git#commit=0ddd56f9be79ca561e72b85ced3223cb66a2bbb4"
+    snarkjs: "https://github.com/metacraft-labs/snarkjs.git#commit=c5d616f9eaf6eba208f852b2e033fe7d44ced700"
     ts-node: "npm:^10.9.1"
     tsx: "npm:^4.7.1"
     typescript: "npm:5.2.2"
@@ -15769,9 +15769,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"snarkjs@https://github.com/metacraft-labs/snarkjs.git#commit=0ddd56f9be79ca561e72b85ced3223cb66a2bbb4":
+"snarkjs@https://github.com/metacraft-labs/snarkjs.git#commit=c5d616f9eaf6eba208f852b2e033fe7d44ced700":
   version: 0.7.4
-  resolution: "snarkjs@https://github.com/metacraft-labs/snarkjs.git#commit=0ddd56f9be79ca561e72b85ced3223cb66a2bbb4"
+  resolution: "snarkjs@https://github.com/metacraft-labs/snarkjs.git#commit=c5d616f9eaf6eba208f852b2e033fe7d44ced700"
   dependencies:
     "@iden3/binfileutils": "npm:0.0.12"
     bfj: "npm:^7.0.2"
@@ -15785,7 +15785,7 @@ __metadata:
     r1csfile: "npm:0.0.48"
   bin:
     snarkjs: build/cli.cjs
-  checksum: 10/11dd01fd5c26fcd6715fb050eb348c2622a6ff2c318e1b9b51577eaaa2e377e71f351419bb2d537749fc747f938afefa21d56512b745de35113b3f64cf4feaa5
+  checksum: 10/de3dbd0dd9e78bc7e695f5eb201f59f88cb2b4edc92f01496094a5b3cfd399ef5736d5c22cbfecd69b839570f908a391c38fddb905cf4c6c81d19e6635757751
   languageName: node
   linkType: hard
 
