@@ -1,13 +1,20 @@
 {...}: {
   perSystem = {
     self',
+    inputs',
     pkgs,
     ...
   }: let
     inherit (self'.legacyPackages) rustToolchain;
   in {
     devShells.default = with pkgs; let
-      shell-pkgs = import ./nix/common-shell-pkgs.nix {inherit pkgs self';};
+      shell-pkgs = import ./nix/common-shell-pkgs.nix {
+        inherit
+          pkgs
+          self'
+          inputs'
+          ;
+      };
     in
       mkShell {
         packages = [rustToolchain.rust] ++ shell-pkgs;

@@ -1,10 +1,12 @@
 {
   pkgs,
   self',
+  inputs',
 }:
 with pkgs; let
-  inherit (self'.legacyPackages) rustToolchain;
+  inherit (self'.legacyPackages) rustToolchain nodejsToolchain;
   llvm = llvmPackages_14;
+  metacraft-labs = inputs'.mcl-blockchain.packages;
   emscripten = metacraft-labs.emscripten;
   nim = pkgs.nim1;
   nim-wasm = callPackage ./nim-wasm {inherit llvm emscripten nim;};
@@ -27,8 +29,8 @@ in
     tmux
     tmuxinator
     # Node.js dev environment for unit tests
-    nodejs_20
-    corepack_20
+    nodejsToolchain.nodejs
+    nodejsToolchain.corepack
 
     # For WebAssembly unit-testing
     wasm3 # wasmer is currently broken on macOS ARM

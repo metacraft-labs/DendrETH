@@ -26,6 +26,10 @@
     mcl-blockchain.url = "github:metacraft-labs/nix-blockchain-development";
     nixpkgs.follows = "mcl-blockchain/nixpkgs-unstable";
     flake-parts.follows = "mcl-blockchain/flake-parts";
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs @ {
@@ -56,7 +60,7 @@
         _module.args.pkgs = import nixpkgs {
           inherit system;
           overlays = [
-            mcl-blockchain.overlays.default
+            inputs.rust-overlay.overlays.default
           ];
           config.permittedInsecurePackages = [
             # wasm3 is insecure if used to execute untrusted third-party code
