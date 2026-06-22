@@ -1,21 +1,14 @@
 name: 'Common Setup Steps'
 description: 'Checks out the repo and installs dependencies'
 inputs:
-  cachix_auth_token:
-    description: 'Cachix Cache Authentication Token'
-    required: true
 runs:
   using: 'composite'
   steps:
-    - name: Install Nix
-      uses: DeterminateSystems/nix-installer-action@v9
-      if: ${{ runner.environment == 'github-hosted' }}
+    - name: Setup Nix
+      uses: metacraft-labs/nixos-modules/.github/setup-nix@main
       with:
-        extra-conf: accept-flake-config = true
-    - uses: cachix/cachix-action@v15
-      with:
-        name: mcl-blockchain-packages
-        authToken: '${{ inputs.cachix_auth_token }}'
+        trusted-public-keys: ${{ vars.TRUSTED_PUBLIC_KEYS }}
+        substituters: ${{ vars.SUBSTITUTERS }}
     - name: Build Nix dev shell
       shell: bash
       run: ./scripts/build-nix-shell.sh

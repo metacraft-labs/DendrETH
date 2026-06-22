@@ -23,8 +23,6 @@ jobs:
           submodules: recursive
       - name: Use local my-action
         uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       - name: Run yarn format check
         run: nix develop -c yarn format:check
@@ -37,8 +35,6 @@ jobs:
           submodules: recursive
       - name: Use local my-action
         uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       - name: Build all
         run: nix develop -c yarn check:build
@@ -52,7 +48,6 @@ jobs:
   #     - name: Use local my-action
   #       uses: ./.github/actions/setup
   #       with:
-  #         cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
   #     - name: Run Verifier in EOS - Relayer test
   #       run: nix develop -c yarn test './tests/eosLightClient/test-verifier-in-EOS-relay.ts'
@@ -65,8 +60,6 @@ jobs:
           submodules: recursive
       - name:
         uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       - name: Run Solidity Validators accumulator tests
         run: nix develop -c make test-validator-accumulator
@@ -80,7 +73,6 @@ jobs:
   #     - name: Use local my-action
   #       uses: ./.github/actions/setup
   #       with:
-  #         cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
   #
   #     - name: Run Nim Light Client compiled with emsctipten tests
   #       run: nix develop -c yarn test-emcc './tests/test-nim-to-wasm.ts' 'test-nim-light-client.ts'
@@ -93,8 +85,6 @@ jobs:
           submodules: recursive
       - name: Use local my-action
         uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       - name: Run Nim Light Client compiled with clang tests
         run: nix develop -c yarn test './tests/test-nim-to-wasm.ts' 'test-nim-light-client.ts'
@@ -107,8 +97,6 @@ jobs:
           submodules: recursive
       - name: Use local my-action
         uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       - name: Run Nim groth16 verifier tests
         run: nix develop -c make test-groth16-verifier
@@ -123,7 +111,6 @@ jobs:
   #     - name: Use local my-action
   #       uses: ./.github/actions/setup
   #       with:
-  #         cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
   #     - name: Run Light Client in Cosmos test
   #       run: nix develop -c yarn test './tests/cosmosLightClient/test-nim-light-client-in-cosmos.ts'
@@ -137,7 +124,6 @@ jobs:
   #     - name: Use local my-action
   #       uses: ./.github/actions/setup
   #       with:
-  #         cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
   #     - name: Run Verifier in Cosmos test
   #       run: nix develop -c yarn test './tests/cosmosLightClient/test-verifier-in-cosmos.ts'
@@ -151,7 +137,6 @@ jobs:
   #     - name: Use local my-action
   #       uses: ./.github/actions/setup
   #       with:
-  #         cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
   #     - name: Run Verifier in Cosmos - Relayer test
   #       run: nix develop -c yarn test './tests/cosmosLightClient/test-verifier-in-cosmos-relay.ts'
@@ -165,8 +150,6 @@ jobs:
 
       - name: Use local my-action
         uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       - name: Run circom tests
         run: nix develop -c make test-circom-circuits
@@ -180,8 +163,6 @@ jobs:
 
       - name: Use local my-action
         uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       - name: Run plonky2 circuit tests
         run: nix develop -c make test-plonky2-circuits
@@ -194,8 +175,6 @@ jobs:
           submodules: recursive
       - name: Use local my-action
         uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       - name: Run Verify given proof - test using bncurve and constantine
         run: nix develop -c nim c -r 'tests/verify_proof/verify_given_proof_test.nim'
@@ -208,8 +187,6 @@ jobs:
           submodules: recursive
       - name: Use local my-action
         uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       - name: Run Verify given proof - test using ffJavascript
         run: nix develop -c yarn test ./tests/verify_proof/verify_given_proof_test.ts
@@ -222,8 +199,6 @@ jobs:
           submodules: recursive
       - name: Use local my-action
         uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       - name: Run Solidity verifier tests
         run: nix develop -c make evm-simulation
@@ -236,8 +211,6 @@ jobs:
           submodules: recursive
       - name: Use local my-action
         uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       - name: Run one shot syncing simulation
         run: nix develop -c make one-shot-syncing-simulation
@@ -250,8 +223,6 @@ jobs:
           submodules: recursive
       - name: Use local my-action
         uses: ./.github/actions/setup
-        with:
-          cachix_auth_token: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       - name: Run one of the scripts building the circom circuits
         run: nix develop -c ./scripts/build-circom-compress-circuits.sh

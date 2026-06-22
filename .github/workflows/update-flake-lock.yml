@@ -15,11 +15,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: cachix/install-nix-action@v20
+      - name: Setup Nix
+        uses: metacraft-labs/nixos-modules/.github/setup-nix@main
         with:
-          nix_path: nixpkgs=channel:nixos-unstable
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-
+          trusted-public-keys: ${{ vars.TRUSTED_PUBLIC_KEYS }}
+          substituters: ${{ vars.SUBSTITUTERS }}
+          nix-github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run `nix flake update`
         id: update-lockfile
         run: ./scripts/commit_flake_update.bash
